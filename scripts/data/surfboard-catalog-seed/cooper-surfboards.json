@@ -1,0 +1,112 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cooper-surfboards",
+      "name": "Cooper Surfboards",
+      "website_url": "https://coopersurfboards.com/",
+      "location_label": "Newquay, Cornwall, United Kingdom",
+      "founder_name": "Ollie Cooper",
+      "lead_shaper_name": "Ollie Cooper",
+      "short_description": "Independent Newquay, Cornwall shaper. Ollie Cooper has built custom surfboards since 2012.",
+      "models": [
+        {
+          "name": "Electric Twin",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Electric_Twin_Fish_56_Golden_Yellow_By_Cooper_Surfboard_Uk.jpg",
+          "description": "The Electric Twin is the most versatile fish shape available; extremely refined, short, and wide. It’s my personal favourite that I surf 90% of the time in the UK.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fresh Fish",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Fresh_Fish_Performance_Twin_By_Cooper_Surfboards_Uk.jpg",
+          "description": "The fresh fish is a performance twin fin fish designed for knee to overhead waves. Developed with the Gilroy brothers, we wanted to create a fish that retains the maneuverability and responsiveness of a shortboard with the paddle power and twin fin feel of a trad fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Zero",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Zero_Performance_Twin_by_Cooper_Surfboards.jpeg",
+          "description": "Founded on the principles of the Two.Five and Electric Twin, this little pocket rocket is our highest peformance twin fin. A board that carries incredible speed and surfs fast in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Two.Five",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Two_Five_Orange_Deck_45crop.jpg",
+          "description": "The Two.Five, named after it’s twin fin plus mini trailer setup, is a great hybrid style surfboard that’s guaranteed to improve your surfing in everyday waves. It’s a true one-board quiver that absolutely flies in waist high to overhead conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sidekick",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Sidekick_Performance_Hybrid_Shortboard_Fish_by_Cooper_Surfboards_uk.jpg",
+          "description": "If you’re looking for a board for steeper waves, that keeps loads of paddle power and allows you to push your surfing this is just the thing. The sidekick is my exploration of shortboards from a fish viewpoint, designed to offer really easy paddling, insane speed down the line, while allowing a top-to-bottom surfing approach.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hideaway",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Hideaway_One_Deck_Edit.jpg",
+          "description": "A specialist shortboard designed to perform at the highest level for everyday surfers. Tuned into UK waves with a progressive rocker line that carries speed through the flats, and some hidden volume to overcome stiff winds and thick winter rubber.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Roundaway",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/roundaway_uk_shaper_good_wave_surfboard_cooper-1.jpg",
+          "description": "Our ultimate average-to-good wave shortboard with a strong performance pedigree. Inspired by my work with Lost, this board has been a firm favourite on the custom order list, from both everyday surfers to experienced chargers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Semi Guns",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Semi_Gun_Step_Up_Cooper_Surfboards_UK_Portrait-1.jpg",
+          "description": "Strictly custom order and built especially for the waves you’re planning to surf. There’s a lot to be said for having a semi-gun in your quiver, most simply won’t have the correct board when those big swells roll through, they’re a must if you want to make the most of those big days.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "POG",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/POG_Mid_Length_Single_Fin_Cooper_Surfboards.jpg",
+          "description": "The next step in the mid length evolution, the POG is a more conservative approach to getting more foam under your feet, without the ‘retro’ drawbacks. It’s fondly been called a ‘shortboard in disguise’ and offers loads of paddle power, a rocker line you can trust in most waves, but with a round tail reminiscent of a hybrid shortboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mono",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Mono_Modern_Performance_Single_Fin_8_foot_Surfboard_by_Cooper_uk.jpg",
+          "description": "Narrow, lightweight, and nimble, a performance-forward single fin that hovers between mid length and mini-glider territory. Inspired by the lines drawn by Tudor, Knost et al.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Pin",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/MiniPin_Midlength_Mini_Longboard_Cooper_Surfboards.jpg",
+          "description": "The Mini Pin is a follow on from the popular Mini Noserider. A pintail variation with a bit more rocker that can handle bigger and steeper waves more effectively.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Nose Rider",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Mini-Noserider-Cooper_Surfboards_mid_Length_Single_Fin.jpg",
+          "description": "Our most popular and longstanding model, the Mini Nose Rider does what it says on the tin… if you can believe it. A noseriding longboard with the middle section removed, easier to turn, more control on big days, and fewer steps to the nose.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Yonder Mini Mal",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/yonder_mal-copy.jpg",
+          "description": "Designed in collaboration with my friends at Yonder, tuned and proven over hundreds of lessons and years of experience.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Perch",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/perch_single_fin_noserider_longboard_UK_surfboard_shaper.jpg",
+          "description": "To settle or rest in an elevated position, as if on a perch. A contemporary noserider designed for classic logging, the Perch provides a stable platform for cross-stepping and noseriding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cali Square Tail",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Cali_Square_Tail_Single_Fin_Longboard_Cooper_Surfboards_uk.jpg",
+          "description": "Characterised by its wide round nose and hipped tail, the Cali Square Tail follows an infamous outline well-known for its hang time and easy riding. A great all-round longboard for waves from knee high to head high, designed to noseride, turn, and everything in between.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Quickstep",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/IMG_20180522_145313-scaled.jpg",
+          "description": "This is my do-everything longboard shape, round concaved nose with a single channel through the middle, leading into a rolled pulled in tail section. Slightly narrower with a touch more blended rocker than my other models, but still a stable and stylish cruiser.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
