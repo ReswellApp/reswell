@@ -1,0 +1,76 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "bos-surfboards",
+      "name": "BOS Surfboards",
+      "website_url": "https://wearebos.com/",
+      "location_label": "Newlyn, Cornwall, United Kingdom",
+      "founder_name": "Hugh Brockman",
+      "lead_shaper_name": "Hugh Brockman",
+      "short_description": "Cornwall surfboards handcrafted by Hugh Brockman at a factory just outside Newlyn.",
+      "models": [
+        {
+          "name": "Sunfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1190851.png?v=1712261234",
+          "description": "\"Not just your traditional fish\" The classic fish is often written off as an old fashioned design, but our Sunfish is no such thing. The low rocker and beveled rails at the front might have a retro feel to them yes, but the heavily foiled, refined & somewhat pulled in tail (for a fish) along with varying bottom contours brings the Sunfish right into the 21st century - This is very much a progressive surfboard design made for ripping.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Double Pin Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/glider_1of8_6aefbbb5-e702-4a10-9b33-d3e5b7d77c5b.png?v=1727467255",
+          "description": "The Double Pin Twin (DPT) is one of the most exciting models in the BOS range right now. Originally developed back in 2024, as an offset version of my popular Twin Pin, the DPT has evolved into a highly refined performance fish designed for speed, drive and control across a huge range of conditions. The original concept was essentially a sporty twin pin - Featuring a channel bottom, more rocker, lower rails, and a thinner foil to push performance. Over the last few years, working closely with my good friend and team rider Ryan Watts, the board has evolved significantly into a highly adaptable, finely tuned wave-riding vehicle.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1180885.png?v=1705269275",
+          "description": "Just like everyone else, i too watched the clips of Torren Martyn riding big Cloudbreak on a longer twin fin and got DEEPLY inspired.. so the twin pin is my take on this.. The Twin pin is a highly refined excitingly fast, fluid channel bottom twin design. It trims well from the middle and turns hard off the tail..",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Midnight Express",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1190046.png?v=1705271715",
+          "description": "Our go-to traditional single fin log template. Featuring a flat entry rocker with a nice tail kick which combined with a narrow underneath extended nose concave running into a rolled vee. Regal on the nose and very fine off the tail, the Midnight Express is the board of choice for anyone looking to dominate in classic logging conditions, it will not disappoint ..",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Switchblade",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1200343.png?v=1715517780",
+          "description": "BOS X SAM CROOKSHANK Present the SWITCHBLADE. The rails & concave are sharp. The rocker is flat with a bit of kick. Designed for speed, power, flow.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "TPH - Tri Plane Hull",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1180790.png?v=1705270325",
+          "description": "A continued evolution of my VBM template, i wanted too utilize the VBM curves - but like usual i'm always looking at design evolution - I find the VBM is a highly functional plan shape for the majority of UK waves, yet i wanted too open up a new feeling for the template and have it perform differently in a new range of waves - thus the Tri Plane Hull (TPH) edition, seemed like the logical direction too head in.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Trad Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1170989.png?v=1695673350",
+          "description": "The TRAD FISH has been an off menu custom for quite sometime now, which gained a lot of popularity in late 2023 so i have decided too add it too our range as an offering.. Essentially this is my Take on the traditional San Diego style fish design, pioneered by knee boarder Steve Lis in 1960's - its probably one of the most revolutionary surfboard designs too date in my opinion.. The TRAD FISH as the name suggests is traditional in every sense: wide swallow tail, low rocker's, wide point forward, flat deck with down rails and a beak and with very slight bottom shape.. the TRAD FISH comes as standard with Geppy glassed on fins and a fiberglass leash loop.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Vee Bottom Middy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1160360.png?v=1690035180",
+          "description": "As the name suggests the VBM has a vee bottom, it also has medium rails, flat rocker and a full(ish) foil - some would say a logger's shortboard, others a shortboard's longboard - all i know is I rate this as one of my best all-rounder mid size boards which i think anyone can relate too and have fun on. - In fact if i were to be stuck on a desert island with just one board, it would be this one... Featuring a wider nose template with the wide point slightly forward of centre and a pulled in tail for control, the flatness and pulled-in tail also make for a great tube rider - There's something for everyone in the VBM, and this versatility keeps it as a staple model within the BOS range.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Widowmaker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/products/L1150009_6f2da5f7-a93a-4ac7-a645-75ff6b070510.png?v=1656018527",
+          "description": "THE Widowmaker has been one of my longest and best selling models for quite sometime now, inspired by some of the boards i was building and riding while working for Mikey Meyer in Jeffrey's Bay, drawing deep inspiration from Dave Parmenter's Widowmaker fin set up. What we have is a wide point forward single fin type template, modernised with some interesting rocker lines, bottom contours and fins placements (i don't recommend riding as a single fin - infact I FORBID THIS). I find the Widowmaker set up provides all the benefits of riding a single fin but with the added snap and bite of the side fins.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Grim Ripper",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1170054.png?v=1687417526",
+          "description": "A board for those that like a slightly more fun orientated shorter board without sacrificing a performance edge. Just like a good old fashioned MULLET The GRIM RIPPER is all BUSINESS up front: wider outline, late flip rocker, beak nose and foam under the chest and 100% PARTY in the back: Either a deep double/vee OR a Pronounced bonzer inspired double concave too VEE (or channels also available) and of course a pulled in fluted wing baby swallow tail or pounded pin with a pushed forward hard tucked edge.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
