@@ -11,31 +11,25 @@ type ShippingLabelReadyMetadata = {
   orderId: string
 }
 
-function parseShippingLabelReadyMetadata(metadata: unknown): ShippingLabelReadyMetadata | null {
-  if (!metadata || typeof metadata !== "object") return null
-  const m = metadata as { kind?: unknown; orderId?: unknown }
-  if (m.kind !== SHIPPING_LABEL_READY_KIND) return null
-  if (typeof m.orderId !== "string" || !m.orderId.trim()) return null
-  return { kind: SHIPPING_LABEL_READY_KIND, orderId: m.orderId.trim() }
+function isUniqueViolation(error: { code?: string } | null): boolean {
+  return error?.code === "23505"
 }
 
 async function shippingLabelReadyNotificationAlreadySent(
   supabase: SupabaseClient,
-  conversationId: string,
   orderId: string,
 ): Promise<boolean> {
-  const { data: rows } = await supabase
+  const { data, error } = await supabase
     .from("messages")
-    .select("metadata")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: false })
-    .limit(40)
+    .select("id")
+    .contains("metadata", { kind: SHIPPING_LABEL_READY_KIND, orderId })
+    .limit(1)
 
-  for (const row of rows ?? []) {
-    const parsed = parseShippingLabelReadyMetadata(row.metadata)
-    if (parsed?.orderId === orderId) return true
+  if (error) {
+    console.error("[postReswellShippingLabelReady] already-sent check:", error.message)
+    return false
   }
-  return false
+  return Boolean(data?.[0]?.id)
 }
 
 function buildShippingLabelReadyMessage(params: {
@@ -64,7 +58,8 @@ function buildShippingLabelReadyMessage(params: {
 
 /**
  * Posts a buyer–seller thread message when a Reswell-purchased shipping label is ready.
- * Idempotent per order — safe to call after attach or on checkout retries.
+ * Idempotent per order — checkout finalize and the Stripe webhook can overlap; the unique
+ * index on shipping_label_ready metadata makes the second insert a no-op.
  */
 export async function postReswellShippingLabelReadyThreadNotification(
   supabase: SupabaseClient,
@@ -100,11 +95,7 @@ export async function postReswellShippingLabelReadyThreadNotification(
     conv = { id: ensured.id, listing_id: params.listingId }
   }
 
-  const alreadySent = await shippingLabelReadyNotificationAlreadySent(
-    supabase,
-    conv.id,
-    params.orderId,
-  )
+  const alreadySent = await shippingLabelReadyNotificationAlreadySent(supabase, params.orderId)
   if (alreadySent) return
 
   const displayOrderNum = formatOrderNumForCustomer(params.orderNum, params.orderId)
@@ -128,6 +119,7 @@ export async function postReswellShippingLabelReadyThreadNotification(
   })
 
   if (msgErr) {
+    if (isUniqueViolation(msgErr)) return
     console.error("[postReswellShippingLabelReady] message insert:", msgErr.message)
     return
   }
