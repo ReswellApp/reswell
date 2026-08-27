@@ -1,0 +1,196 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dp-surfboards",
+      "name": "DP Surfboards",
+      "website_url": "https://dpsurfboards.com.au/",
+      "location_label": "Bulli, New South Wales, Australia",
+      "founder_name": "Dylan Perese",
+      "lead_shaper_name": "Dylan Perese",
+      "short_description": "South Coast Australia surfboards founded by Dylan Perese in the 1990s and hand-finished at the DP factory in Bulli.",
+      "models": [
+        {
+          "name": "4wesome",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/4wesome-top_88335786-1663-44fd-9df2-48bc2f396cc2.png?v=1639076521",
+          "description": "An all-round performance shape with a quad fin set-up that is one of our most suited models for quality waves and steep faces. The heavily curved plan shape with lots of rocker between the feet allows the 4wesome to turn tight in the pocket whilst maintaining the drive quads are renowned for.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Apex",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/apex-top_c884458c-8d9d-420c-bcd9-a2c8cd6f79de.png?v=1638588554",
+          "description": "This is the pinnacle of high performance surfing. The Apex takes it's rocker and foil from our step up, the Supermodel and gears these curves towards powerful and explosive surfing in waves of the 3-8ft range. This shape was always about distributing volume in all the right places and by refining the tail of the Apex for ultimate control and maneuverability we've concentrated a generous amount of foam under the front foot to create a solid and forgiving sweet spot.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Apex T3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/files/t31.png?v=1779428236",
+          "description": "A modified file of our original Apex, developed over 12 months of research, development, and testing. Being underfoot of many of our team riders and curious customers alike, the Apex T3 file has quickly accelerated in popularity - plausibly stemming from its versatility, and high-performance pedigree.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "B-Side",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/b-side-3.png?v=1550606096",
+          "description": "With a parallel outline carrying width through to the nose and tail, coupled with a flatter rocker and deep concave bottom the B-Side is your summer speed machine! With mild tail rocker, a hip at the side fins, and some vee under the wider tail, this is a fast, responsive little rocket that skates through dead sections but still surfs great in the pocket.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Beez Kneez",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/beez-kneez-3_e08ce33a-6bde-4f40-a240-fcda0d4eaf4c.png?v=1637468909",
+          "description": "Designed as an evolutionary step for the upcoming grom who wants to progress to a smaller board, but still requires stability and paddle power. A drawn out, wide point towards the nose combined with plenty of thickness under the chest gives them the ability to catch waves with ease and keeps the board nice and stable.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Comet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/comet-top_5e50770f-ba12-4705-b04c-a4f9a473d864.png?v=1650312186",
+          "description": "Traditional lines with a modern twist. Comet borrows characters of the conventional twin fin design - a full nose and flat rocker to aid paddle power and speed in weaker waves – with a variety of high performance features to add versatility to your summer board. The combination of a swallow tail and the prevalent single channel give Comet drive and acceleration.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Goldfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/goldfish-1.png?v=1550606362",
+          "description": "Combining the shorter wider plan shape of a traditional style fish with the modern day refinement to the foil and rocker gives the goldfish a unique, fun, easy to ride board that has a little extra spark. Setup with a 5 fin option to get the best of both worlds.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gus Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/files/gustwin1.png?v=1779429238",
+          "description": "If you want to liven up and take a different approach to surfing small waves The Gus Twin (GT) will have you drawing playful fast and new lines. The GT originated from team rider Gus' vision of a small wave performance board. Over a few beers, some foam was mowed and the skeleton of the funnest twin fish we've all ridden arose.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Indo Performa",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/indo-performa-top-c_276c37d4-9102-4fe9-8921-69c85a721689.png?v=1635446283",
+          "description": "The Indo Performa is our trusted, versatile Performa with some adjustments to suit bigger, faster, and more powerful conditions. The Indo Performa features half a litre more volume than the standard Performa and a slightly lower rail line for more response and bite with a smooth round-pin tail for added control.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/IMG_5822.jpg?v=1664845178",
+          "description": "The D.Perese Keel Fish is more of a retro design, which fits well in any summer quiver. The Keel fish was originally a collaborative effort between Dylan and FinBox Thirroul created for beach days and really fun on wally point breaks. From nose to tail there is minimal rocker, this helps create a board that easily catches the smallest of waves and plows through dead sections.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Little Mate",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/little-mate-top_a483c275-3901-4094-8484-2d86d8ee1355.png?v=1632860605",
+          "description": "Designed for the grom who is developing their skills and style. Mostly a scaled down version of the Performa with some adjustments to suit the feather weights. We work with some of the most promising up and coming grommets in Australia, so know the importance of providing the right board for the rising stars.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Pancake",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/files/pan1.png?v=1779428591",
+          "description": "The Pancake is affectionately named after our South Coast Ambassador, Luke O'connell – AKA Pancake. Like a whole list of underground world class surfers to come out of the area, Luke felt he needed that bit extra when traveling and competing in subpar, weak, grovely waves. He approached us with these particular requirements in mind – It had to be high performance, super fast, yet forgiving and easy to ride, holds under back foot pressure, and have a lot of spark! Subsequently the Pancake was born.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Performa",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/performa-top_583d348b-8a2f-469a-99a6-766bb364f26c.png?v=1638585029",
+          "description": "The foundation of any surfer's quiver. The Performa is a result of many years of craftsmanship and close work with team riders to create our all round performance board. The design combines a smooth, constant outline and bottom curve with added tail rocker to fit tight in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ranger",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/ranger-1_0e73af60-cc5c-4aa2-abe1-5e3d15e7f27f.png?v=1635880694",
+          "description": "The Ranger is for those who want to tackle serious surf as big as our coastline can produce. It features a significant amount of volume under the chest area to make navigating big and dangerous ocean conditions easy. This model features lots of volume out to the rail for paddle-power, as well as extra-strong glassing, and the option of thick and/or multiple stringers for added strength.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Renegade",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/files/ren1.png?v=1779428986",
+          "description": "Constant development often leads to small changes but in this case we opted for a full revolution of what feels normal and familiar in board design. Introducing the Renegade, a small wave performance board that is aimed at getting the most out of everyday conditions without having to step on to something too far away from your regular shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Rhythm Stick",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/files/RSTICK-WEB-1.jpg?v=1769505927",
+          "description": "The Rhythm Stick is a high-performance twin fin that blends shortboard precision with twin fin freedom, unlocking paddle power, maximum drive, speed and flow.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Scout",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/scout-top-c_bdda5ab5-91aa-4500-80fa-d63db7e337f6.png?v=1638593504",
+          "description": "Our newest summer all-rounder will complete any task at hand. The Scout combines the small wave prowess of the B-Side with our modern short board, The Rover to create a unique blend of grovel power and performance. Designed to be ridden 1-2 inches shorter than your Rover, the Scout's relaxed rocker planes through dead sections, while being curvy enough to handle bigger waves and tighter pockets.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Shadow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/shadow-top.png?v=1580518877",
+          "description": "The 4wesome set the benchmark for a board that has the speed and drive of a regular quad, but with the added ability to be surfed top to bottom, and on the rail. The Shadow casts all of these features into a shorter, wider package to create your new summer sled.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Stalker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/stalker-top_2a05501e-1dc9-4af7-9407-126855358f58.png?v=1640122678",
+          "description": "Short and wide with a flat curve throughout. The Stalker is a direct result of board design going shorter and wider to make life easier on those less attractive days. Best in waves head high or under, the Stalker packs plenty of foam into a shorter shape to make paddling a breeze.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Supermodel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/supermodel-top.png?v=1550606816",
+          "description": "The Supermodel combines slender smooth curves, with volume concentrated and refined in all the right places to produce a board that provides confidence when the surf is solid and powerful. This model has been thoroughly tested on bombies, reefs, points and beaches all along Australia's East Coast by team riders and local chargers.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Asteroid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/asteroid-top_fc3e29dd-9738-4007-b1e5-5e54c1ccd30c.png?v=1650401560",
+          "description": "Ramp up your Summer with our latest cosmic shape to join the range! The Asteroid inherits the design characteristics of the successful Comet, with additional high performance attributes. The nose has been pulled in and rocker added to allow tighter, more powerful surfing in the pocket.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Blimp",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/the-blimp-top_261b3eee-e51c-4c2a-ac4d-b7cb2ef7272b.png?v=1649706502",
+          "description": "Short, with plenty of area and volume as the name suggests. The extra wide square tail provides amazing glide in waves you would normally deem unsurfable! Includes 5 plugs for a quad setup and a small, nub style fin in the centre is recommended to hold the big tail in place when pushing the board through its paces.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Blue Flame",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/files/BF-WEB-1_ad3cacdf-ba3f-4ab0-b0a4-10c45915dd24.jpg?v=1769503252",
+          "description": "A high-performance everyday shortboard, designed to glide through weaker waves, hold long arcs, and deliver responsive, playful turns across a range of conditions. Built for everyday waves, this board takes the same outline and foil as The Pyro.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Fizz",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/the-fizz-top-c_e0e5a528-0569-400d-b1e2-7b764b553e46.png?v=1633460397",
+          "description": "The Fizz is the go-to performance board for groms. With the high-calibre of young talent on our Grom Team we are at the forefront of featherweight board design. The outline features a medium sized tail area, allowing the board to flow through dead sections, coupled with less area between the feet to allow more responsive surfing for lightweight surfers with limited strength.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Hunter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/files/hun1.png?v=1779429899",
+          "description": "With the South Coast being home to some of the best slabs in the country and half of our team constantly hunting these waves, it was only natural that we included the Hunter in our board range. With paddling power being the main focus here we carried extra foam through to the front third of the board to be able to get into and under heavy waves with ease.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Pyro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/the-pyro-top-c_91caa7b8-dd6f-43fb-a992-d4617d66e161.png?v=1652211331",
+          "description": "With some deep R&D with our team we burnt down the profile of our popular Rover model and rebuilt it with a few tweaks to increase performance and speed. Carrying reliable features from it's predecessor such as foam distribution and gentle hips, we straightened out the rocker between the feet to maximise drive, added single to double concave and slightly increased tail rocker to create a speedy and responsive shortboard that will work in a variety of conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Sequel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/the-sequel-top.png?v=1644259883",
+          "description": "In the case of Jaws, sequels don't always live up to their predecessors, but in other instances, like Batman, everything works out just fine. Introducing The Sequel. Combining the best of The Pulse's design characteristics with a shorter, wider theory, The Sequel is the most performance-geared summer groveller yet! The double concave deck and beveled rail maintain volume throughout the board while allowing for a low, sharp rail line.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Sibling",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/sibling-top_aaea5d7e-af2e-4dbc-9221-fb069dd7962b.png?v=1638592014",
+          "description": "The sibling is a go to model for many team riders and everyday surfers alike. With the genetics of the Performa , the little brother Sibling also features a smooth outline and bottom curve with a single to double concave throughout. The Sibling carries more foam to the rail and is flatter in rocker allowing it to handle weaker conditions and flatter faces whilst still holding its line in more powerful overhead surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Throwdown",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/products/throwdown-top.png?v=1550605553",
+          "description": "This model carries width and thickness throughout the length of the board, which gives the rider the ability to paddle into anything summer has to offer. With full rails, flat rocker and subtle single to double concave, the Throwdown will plane through dead sections whilst maintaining manoeuvrability and performance.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Zen Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0363/9749/files/IMG_0560_2.heic?v=1759374614&format=jpg",
+          "description": "The Zen Twin stemmed from a long time friend and team rider Zen Joyce who had an idea simmering inside him for a board that would surf smaller gutless waves around home (East Coast Aus) and also be a sturdy blade in the pumping waves of the Mentawai Islands as he had a trip coming up that he would be guiding for a few months.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
