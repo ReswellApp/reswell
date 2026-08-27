@@ -1,0 +1,135 @@
+{
+  "generated_for": "Carson Shapes official named standup catalog",
+  "source": "https://carsonshapes.com.au/boardmodels/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "carson-shapes",
+      "name": "Carson Shapes",
+      "website_url": "https://carsonshapes.com.au/",
+      "location_label": "Thirroul, NSW, Australia",
+      "short_description": "Handshaped custom surf craft from Thirroul, NSW — named fishes, funboards, mid-lengths, logs, step-ups, and gliders since 2000.",
+      "models": [
+        {
+          "name": "Pish",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Fish5-SQ-Sml.jpg",
+          "description": "Performance orientated keel fish design. Slightly narrower nose and tail creating more curve in the outline. Designed to be fast down the line but still go top to bottom easily when you find that nice turn section.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Trad Fish",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Fish-Trad1-SQ-Sml.jpg",
+          "description": "Original keel fish design from 2002. A full nose and wide swallow tail with a straighter outline through the feet. Fast down the line and suited to more drawn out point style waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rocket Fish",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Fish-Rock1-SQ-Sml.jpg",
+          "description": "Designed as a stepping stone for shortboard surfers wanting to ride a fish. More curve in the outline, a tighter swallow and quad fin combination plus slightly more rocker make this design an easy transition from a performance shortboard to a fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Vivid",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Fun4-SQ-Sml.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "PT",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Fun5-SQ-Sml.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Bonzer",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Bonzer-SQ-Sml.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Vivid Twin",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Fun1-SQ-Sml.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "FNS",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Fun2-SQ-Sml.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Blob Twin",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Fun3-SQ-Sml.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mid Twin",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Mid7-SQ-Sml.jpg",
+          "description": "If you could only take 1 board on a trip somewhere it would be a mid length twin. They cover a variety of waves from 1ft to 6ft plus. Upright twin fins plus the pin tail give plenty of hold with low volume rails and tail similar to a shortboard. Available in 6’6 to 7ft.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Vivid Mid",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Mid1-SQ-Sml.jpg",
+          "description": "A great all round mid length. Quad fin setup provides plenty of drive with the diamond tail having a shorter rail line for tighter turns. Low volume rails and tail similar to a shortboard. Available in 6’6 to 7ft.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid Length",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Mid8-SQ-Sml.jpg",
+          "description": "A great all round mid length that covers a variety of wave types. Available as any fin configuration depending on the feel you are after and what waves you would like to surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Long Fish",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Mid4-SQ-Sml.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Splice",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Log2-SQ-Sml.jpg",
+          "description": "A great all round log, solid underfoot when trimming and on the nose but swings around easliy for turns when on the tail. Suits a varity of waves from beach breaks to points.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "White Lung",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Log3-SQ-Sml.jpg",
+          "description": "A straighter outline than the Splice model which provides less drag. More suited to faster down the line waves like point breaks or running beach breaks. Very stable on the nose and pivots nicely on the pin tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mod Pig",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Log1-SQ-Sml.jpg",
+          "description": "A modern variation of the “Pig” surfboard design. Narrower in the nose with the wide point further back to create more curve in the outline through the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Side Step",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Side1-SQ-Sml.jpg",
+          "description": "Designed as a slab or heavier wave board. Ridden as a similar length to your standard shortboard or 1-2 inches longer. With full volume under the chest, these paddle great and get you in early but feel like your standard shortboard on the tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Step Up",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Gun4-SQ-Sml.jpg",
+          "description": "The extra length of a step up or small gun makes a huge difference with paddle speed and getting you into waves earlier when it’s bigger. Extra volume under the chest with a tight swallow or pin tail. Available as a thruster, quad or five fin setup.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Memory Maker Gun",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Gun1-SQ-Sml.jpg",
+          "description": "A more serious gun for when the waves are big. Designed for maximum paddle power and hold through the tail. Available in 8’0 – 10’4.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "12'2 Glider",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Glide7-SQ-Sml.jpg",
+          "description": "Gliders offer a unique feel of surfing that you can’t get on other surfboards. They are designed to lift and trim through sections as opposed to dragging to slow you down for nose rides. These are not designed to nose ride but more to move around on to position yourself for that perfect trim section.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "10'4 Glider",
+          "image_url": "https://carsonshapes.com.au/wp-content/uploads/2025/02/Glide4-SQ-Sml.jpg",
+          "description": "Gliders offer a unique feel of surfing that you can’t get on other surfboards. They are designed to lift and trim through sections as opposed to dragging to slow you down for nose rides. These are not designed to nose ride but more to move around on to position yourself for that perfect trim section.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
