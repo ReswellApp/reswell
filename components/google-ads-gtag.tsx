@@ -4,13 +4,19 @@ import {
   getGoogleAdsAwId,
   getGoogleAdsSignupConversionSendTo,
 } from '@/lib/google-ads/config'
+import { buildGoogleAdsConfigCommand } from '@/lib/google-ads/gtag-init'
 import { GOOGLE_SIGN_UP_SUCCESS_PATH } from '@/lib/google-ads/sign-up-success-path'
 
 /**
  * Google Ads global site tag (gtag.js). Renders nothing unless NEXT_PUBLIC_GOOGLE_ADS_ID is set
  * to a valid AW-* measurement ID (see .env.example).
  *
- * Fires the sign-up conversion when the user lands on {@link GOOGLE_SIGN_UP_SUCCESS_PATH}.
+ * Loads the tag site-wide so the conversion linker can store gclid. Does not send
+ * AW page views — those get mixed into Purchase goals when the conversion action
+ * is page-load or when automatically created conversions are primary. Grouped as
+ * `ads` so GA4 page_view / session_start / user_engagement stay off this tag.
+ *
+ * Fires the sign-up conversion only on {@link GOOGLE_SIGN_UP_SUCCESS_PATH}.
  */
 export function GoogleAdsGtag() {
   const id = getGoogleAdsAwId()
@@ -42,7 +48,7 @@ export function GoogleAdsGtag() {
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', '${id}');
+${buildGoogleAdsConfigCommand(id)}
 ${signupInline}
 `}
       </Script>

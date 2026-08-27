@@ -21,7 +21,12 @@ function safeInlineJson(value: unknown): string {
     .replace(/\u2029/g, "\\u2029")
 }
 
-/** Inline JS that waits for gtag and reports one GA4 ecommerce purchase per order. */
+/**
+ * Inline JS that waits for gtag and reports one GA4 ecommerce purchase per order.
+ * Always `send_to` the G- id so this is analytics, not an Ads website conversion.
+ * If Ads imports this `purchase` event, turn off the website AW tag
+ * (`NEXT_PUBLIC_GOOGLE_ADS_IMPORT_GA4_PURCHASE`) to avoid double-counting.
+ */
 export function buildGa4PurchaseInlineScript(options: {
   orderId: string
   value: number

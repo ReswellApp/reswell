@@ -86,10 +86,16 @@ export function buildPurchaseConversionInlineScript(options: {
     var dedupKey = '${dedupKey}';
     var cookieName = '${cookieName}';
 
+    if (window.location.pathname.indexOf('/successpage/') !== 0) return;
+
+    function cookieIsSet() {
+      return ('; ' + document.cookie + ';').indexOf('; ' + cookieName + '=1;') !== -1;
+    }
+
     function wasReported() {
       try { if (localStorage.getItem(dedupKey) === '1') return true; } catch (e) {}
       try { if (sessionStorage.getItem(dedupKey) === '1') return true; } catch (e) {}
-      return document.cookie.indexOf(cookieName + '=1') !== -1;
+      return cookieIsSet();
     }
 
     function markReported() {
