@@ -1,0 +1,145 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dk-surfboards",
+      "name": "DK Surfboards",
+      "website_url": "https://dksurfboards.com/",
+      "location_label": "North County, San Diego, California",
+      "founder_name": "D.J. Kane",
+      "lead_shaper_name": "D.J. Kane",
+      "short_description": "North County San Diego surfboards shaped by D.J. Kane (DK), spanning high-performance shortboards and alternative designs.",
+      "models": [
+        {
+          "name": "Semi-Bro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/DKSurfboardsSemi-BroMain.webp?v=1699986503",
+          "board_category_slug": "shortboard",
+          "description": "The modern California shortboard made for the average surfer…or fat ex-pro. The Semi-Bro has a wider nose (13”) helping dramatically with paddling ability. Bottom contours feature a triple concave under your front foot peaking between your feet. The triple (meaning a double concave sat inside of a single concave) keeps the board drivey but feeling free during rail to rail transitions. This board features a medium hip in the tail allowing the board to have some pivot while still being able to lay it on rail for heavy carves. This is a great every day board for someone looking for high performance while having some hidden paddle power, Dad volumes, and/or surfing of sub par waves. This IS my go-to shortboard that has been refined over the years and proven all over the world."
+        },
+        {
+          "name": "Generator",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/GeneratorDKSurfboardsShortboardStepUp.webp?v=1719601918",
+          "board_category_slug": "shortboard",
+          "description": "The Generator is an every day shortboard design utilizing a swallow tail meant to be a versatile design which excels in most conditions. A fuller nose template with a wider tail area the last 18” give the board plenty of drive, while modern rocker and concave’s keep it skatey and loose. The wider tail is suited well for a 5 fin configuration making this a true Swiss Army knife of a shortboard. The Generator is definitely one of the great all around boards in this year’s line up. Length should be an inch or two shorter than your traditional shortboard depending on width and thickness you have chosen."
+        },
+        {
+          "name": "Jesco",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Jesco_Step_Up_Shortboard_DK_Surfboards.webp?v=1719514584",
+          "board_category_slug": "groveler",
+          "description": "The Jesco is a small to decent wave grovel board that excels up to a foot or two overhead. A little extra width compared to your average shortboard helps the Jesco move through flat gutless sections with ease, while still providing solid maneuverability and top to bottom surfing when the waves might not be ideal. A triple concave under the front foot makes it free and fun rail to rail, while the double in the tail works with the slight hip to keep the board drivey but rippable. Everyone should have one of these in their quiver!"
+        },
+        {
+          "name": "Nugget",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Nugget_DK_Surfboards_Step_Up_Shortboard.webp?v=1719611214",
+          "board_category_slug": "shortboard",
+          "description": "The most unique shortboard in the lineup, the Nugget features a concave deck and a pinched down rail with a boxy finish. Featuring a single to double bottom contour with plenty of flip in the tail, this board is well suited in small to medium waves and surfs well for the front footed surfer or someone who is looking for something different. The concave deck is not a gimmick and has been something I have designed on multiple models over the years. It’s main attributes are an enhanced deck rocker line and added heal/toe pressure while leaning in to a turn. Think about your skateboard… It has a concave deck for a reason. The nugget should be ordered 1/8”-1/4” thinner than your traditional shortboard as it has a lot of volume hidden in the concave deck."
+        },
+        {
+          "name": "The Bullet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/BulletShortboardDKSurfboards.webp?v=1719513992",
+          "board_category_slug": "step-up-gun",
+          "description": "The Bullet is a good wave barrel rider…plain and simple. The Bullet utilizes a round tail, rides the pocket well, and is designed to get you into the wave and under the lip while still achieving peak performance out on the clean face. Designed for punchy beach breaks, slabs, and grinding point breaks, The Bullet is made for high performance surfing. A slightly flatter deck with a turned down rail allows me to hide some foam in this modern shortboard helping you get in to the wave easier. The bottom features a moderate single concave deepest right in front of the fins. Originally designed as a thruster, it is also available as a 4 or 5 fin if you prefer to ride quads in waves of consequence or switch back and forth. If you are surfing slabs or simply like the idea of a clean and rippable round tail this is the board for you."
+        },
+        {
+          "name": "Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Step-Up_DK_Surfboards_Shortboard_Step_Up.webp?v=1719611451",
+          "board_category_slug": "step-up-gun",
+          "description": "No introduction needed, you know what it’s for. Whether you are headed to Hawaii or charging your local break everyone needs to have a quality Step-up in their quiver. Plenty of curve in the right places and a slight single concave help you control the speed and navigate through the chop. A narrower pulled round tail allows you to hold on steep faces and the flowing continuous rocker helps on the air drops. I listed stock dimensions but I truly believe this is one model that should be custom to your size and needs. Some people are looking for more foam to get in early while some might just want a little longer version of their shortboard to control the speed and power. Semi-Gun and Gun Models available upon request."
+        },
+        {
+          "name": "Swordfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Swordfish_Carbon_Black_DK_Surfboards.webp?v=1719603574",
+          "board_category_slug": "fish",
+          "description": "The gold standard in performance fish design. With a sleek, thinned out fish foil and modern performance bottom contours, it planes and drives off your front foot like that of a wider fish. The long continuous curve in the outline in the last 18\" of the tail makes for more stability in faster hollower waves and/or powerful rail surfing. Having no bumps or \"wings\" allows the rider to choose his turns more. Instead of water hitting wings and releasing it wraps the curve of the tail more and turns your back foot into a steering wheel. Letting you decide when and how tight of a turn you make depending on how much pressure you put on your tail. The Swordfish is a great all around board that can catch a knee high wave and can also crank off the bottom and do a vertical snap off the top on a double overhead wave. The quad fin design and fin placement in conjunction with the rail rocker and outline allows the board to excel in a wide range of conditions and go bigger than you ever thought a fish could go while still having that effortless down the line speed everyone wants in a fish. Narrower than your standard fish the Swordfish should be ridden a couple inches longer than your Keel Fish."
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/KeelFishDKSurfboardsRedMatte.webp?v=1719605501",
+          "board_category_slug": "fish",
+          "description": "One of my most popular designs, a nostalgic looking design with a modern ride. The DK Keel fish is NOT your neighbors old knee board. Modern rocker and rails with an updated more stood up single foiled fin template, this is my version of a Keel fish that works! A touch of vee in the entry gets you into the wave and allows the board to change from rail to rail with ease. A single concave through the fin area and out the tail make this Keel fish as fast as any you have ridden. Many good surfers have fallen victim to this board and neglected the rest of their quiver! This board is suited for beginner to pro level surfers and works in most waves from knee high to a few feet overhead."
+        },
+        {
+          "name": "Dialer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/DialerDKSurfboardsFish.webp?v=1719603894",
+          "board_category_slug": "fish",
+          "description": "The Dialer is a refined quad fish featuring a double bump in the tail outline and an overall high performance fish design. Based on Rich Pavel’s extremely popular “Speedialer” model with slight tweaks of my own, this was one of the most popular boards around in the late 2000’s when I was apprenticing under Rich. Fast, loose, and fun come to mind when describing the Dialer and it has maintained it’s place in many peoples quivers even still today. I recommend riding it 2 inches longer than your Keel Fish."
+        },
+        {
+          "name": "Classic Quad Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/ClassicQuadFishDKSurfboards.webp?v=1719606453",
+          "board_category_slug": "fish",
+          "description": "Classic fish design with an upgrade as a quad. Very similar shape and outline to the DK Keel fish design with a little added curve in the outline in the last 8” of the tail as well as a touch more of tail rocker. This board works well for the surfer who wants the traditional fish outline and feel, but prefers the drive and stability of a quad fin setup. The Classic Quad Fish is designed to be ridden from knee high to slightly overhead and should be compatible with a wide range of surfers."
+        },
+        {
+          "name": "Cliffs Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Cliffs_Fish_DK_Surfboards_Fish.webp?v=1719610984",
+          "board_category_slug": "fish",
+          "description": "The Cliffs Fish is an underrated design that I have been making and tweaking for many years before the “mid length” trend hit. Over the years, older surfers and surfers coming down from Longboards and looking for something a bit spicier would ask if I made fish that were more in the 7’ range and this was my response. Utilizing a nice outline curve and rocker in conjunction with modern bottom contours and finely foiled out rails, the Long Fish dominates Sunset cliffs, Beacons, and your favorite mushy point break. Whether you are an extra large human or just looking for something a little longer, this board gives you plenty of paddle power while packing a lot of performance into a fish that’s a bit longer than the standard fish."
+        },
+        {
+          "name": "Twinzer Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Twinzer_Fish_DK_Surfboards_Blue_Water_Graphics_1.webp?v=1719605051",
+          "board_category_slug": "fish",
+          "description": "The newest of the DK fish series is the Twinzer Fish. Over the years I have made tons of twin fins and every once in a while a customer asks for a Twinzer. In the last couple years the twinzer’s popularity has grown in the alternative board world and many people are enjoying the benefits of this turbo charged twin fin. The DK Twinzer fish model features a Bonzer type bottom with a double concave going through the fin area plateauing at the edge of the fins. A hard wing pushed back towards the tail works with the fins and gives the rail a nice release point. This board is drivey, fast, and extremely fun!"
+        },
+        {
+          "name": "Twin Cousin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/TwinCousinDKSurfboardsAlternativeTwinFin.webp?v=1719608974",
+          "board_category_slug": "fish",
+          "description": "Designed as a shortboard/twin fin hybrid mix, the Twin Cousin is a modern take of a performance twin fin. Utilizing a narrower nose than the twin fins of the 80’s and a pulled in winged roundtail, performance rails as well as a modern rocker and bottom contours, the Twin Cousin is a blast. Available with channels for an additional fee."
+        },
+        {
+          "name": "Revenant Twin Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Revenant_Twin_Fin_DK_Surfboards_Alternative.webp?v=1719675006",
+          "board_category_slug": "groveler",
+          "description": "80’s twin fin brought back to life! Updated with some refinement in rails and bottom contours while still keeping the chunky small wave groveling capabilities. The Revenant Twin is a blast in every day surf and a great addition to anyone’s quiver. The beak nose allows plenty of foam to be hidden in the front end for paddle power while the winged swallow tail keeps things free and loose."
+        },
+        {
+          "name": "Machete",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/MacheteQuadAlternativeDKSurfboards.webp?v=1719675031",
+          "board_category_slug": "fish",
+          "description": "The Machete was originally designed on a shaping trip to Portugal as a step-up round tail version of a Swordfish. A couple years went by and I made another for a friend heading to chase waves in Nicaragua. Shortly after that I hand shaped myself a shorter fatter Machete and took it on a trip to Panama. After having a blast on it the whole trip I came back and had it scanned in to the computer. The bottom contours are very similar to the Swordfish with a slight vee under the front foot, going into a double concave in front of the fins, triple concave through the fins, and single out the tail. The Machete rides a lot more loose than the Swordfish due to the round tail adding a lot of curve to the outline in the last 16” of the board while still having that fun and fast down the line speed. This board can be ridden in knee high to well overhead waves and can be made as more of a grovel board or tuned up to be more of a fishy step-up style board depending on what your intentions are. Due to the thinly foiled out roundtail it also hangs on the wall and rides the barrel very well. I generally offer this board as a quad but unlike its fishy counterpart it is available as a 5 fin if you’d like the option to ride it as a thruster as well."
+        },
+        {
+          "name": "Mid-Grade",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Mid-GradeSingleFinAlternativeDKSurfboards.webp?v=1719936991",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bonzer Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/BonzerEggAlternativeDKSurfboards.webp?v=1719936492",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Bonzer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/PerformanceBonzerAlternativeBonzerStepUpSurfboardDKSurfboards.webp?v=1719935265",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tear Drop Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Tear_Drop_Single_Fin_Alternative_DK_Surfboards_Model.webp?v=1719675798",
+          "board_category_slug": "hybrid",
+          "description": "The classic and clean single fin model featuring a flat deck and down rail. Wide point pushed way forward with a very slight tri-plane under your front foot going flat between your feet and a bit of vee out the back end. This board is offered as either a round pin tail or diamond tail. Well suited for groveling in mediocre surf or catching large outer reef swells this board could be ridden by a variety of different surfers in many different conditions."
+        },
+        {
+          "name": "ChamP",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/ChamP_SingleFin_Longboard_DK_Surfboards_Model_Hero.webp?v=1722447058",
+          "board_category_slug": "longboard",
+          "description": "Recently birthed as a revamped version of the “ChamPigne “ with a Pig like wide point back/ narrower nose type longboard, I refined it for a friend and added a little extra width nose and knifed the rail down combining a few different models and was very happy with the results. The ChamP is a nose rider made for the experienced longboarder. Knifed out rails, a deep single concave under the nose, and lots of flip out of the tail with a little tweak to the tips of the tail on the deck. The ChamP is an elegant blade made for nose riding."
+        },
+        {
+          "name": "Model-D",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Model-D_SingleFin_Longboard_DK_Surfboards_Model.webp?v=1719937929",
+          "board_category_slug": "longboard",
+          "description": "Featuring 50/50 rails, a deep single concave in the nose, and plenty of vee out the tail, the Model-D is a classic nose rider that carries plenty of glide and paddle power without losing maneuverability. A relaxed nose rocker and plenty of flip in the tail helps hold in on those long nose rides. Suitable for most surfers in micro-small to chest high conditions, like most longboards it enjoys a nice point break or playful peeling type wave."
+        },
+        {
+          "name": "Performance-Log",
+          "image_url": "https://cdn.shopify.com/s/files/1/0672/8479/5628/files/Performance-LogSingleFinLongboardDKSurfboards.webp?v=1719677611",
+          "board_category_slug": "longboard",
+          "description": "Made to be an all around fun time the Performance log is a mix of nose riding and cranking turns. Featuring a round tail and a hard edge the last 12” of the tail, this board should be well suited for someone who has never ridden a bigger board or a seasoned Malibu local. I have made these with 1,2,3 and 4 fins although it is generally ridden with a single fin or 2+1 fin set up. Although it is designed to be the most user friendly of the DK longboards, it is also suited to be ridden in the best waves of the batch."
+        }
+      ]
+    }
+  ]
+}
