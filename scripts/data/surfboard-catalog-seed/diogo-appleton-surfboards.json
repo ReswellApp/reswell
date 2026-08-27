@@ -1,0 +1,64 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "diogo-appleton-surfboards",
+      "name": "Diogo Appleton Surfboards",
+      "website_url": "https://www.diogoappletonsurfboards.com/",
+      "location_label": "Lisbon, Portugal",
+      "founder_name": "Diogo Appleton",
+      "lead_shaper_name": "Diogo Appleton",
+      "short_description": "Handshaped in Lisbon. Official homepage copy says Diogo Appleton Surfboards are handshaped in Lisbon.",
+      "models": [
+        {
+          "name": "Spitball",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/b0a1c34a-ece5-48f1-91dc-40ab344d525c/IMG_0009.jpg",
+          "description": "Official copy says a high-performance shortboard background helped turn this model into a thruster. It features a high-performance curve hidden by its template, with a round nose that forgives mistakes and helps catch waves. Official page says it draws beautiful lines and some of the best trims a surfboard can generate, and can be ridden at least three or four inches shorter than a standard shortboard. Example size 5'9 x 19 1/8 x 2 1/2.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lucid Wing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/0141e317-2efb-4ec9-8d3b-5a9f0efde460/IMG_0005.jpg",
+          "description": "Official copy says this design stretches a classic fish outline, adjusts width, and extends the rail line for more performance while keeping fish essentials: a beak nose and a flat deck. Wings break up the outline width into a narrower tail for tighter, more responsive turns. Official page says the rocker mirrors a Twin Pin setup, with an aggressive tail rocker. Example size 5'7 x 19 1/8 x 2 1/2.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/84a93a14-a235-4894-8066-8e54060c5876/IMG_2950.jpg",
+          "description": "Official copy says the Twin Pin honors the twin-fin era without a third fin. A pin tail helps control the board, as do optional channels. Official page lists a beak nose, high-performance tail rocker, modern bottom contours, and enough nose lift for more critical surf, from 2 ft up to 6 ft. Example size 6'3 x 19 3/4 x 2 1/2.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/69edba3c-8905-4b5e-9dc0-3be08f565911/IMG_0058.jpg",
+          "description": "Official copy says this fish is known for speed across flat and fat sections, with water flowing freely between the fins and at the tail. A straight outline curve improves hold and reduces drag. Official page says generous volume in a compact design helps paddling and flotation, with a beak nose, flat deck, and traditional glass-on keel fins. Example size 5'3 x 20 x 2 3/8.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Current Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/d3222834-f372-4691-9911-47ea7099cf2b/Rhythm_Maldive",
+          "description": "Official copy says this refines a keel-fish concept by replacing traditional glass-on keels with upright fins. The tail is pulled in to remove surface area behind the back foot, tightening control. Official page says upright fins make the board sharper and more eager to climb the face, and that the shaper confirmed the design in the Maldives in August 2025. Example size 5'4 x 19 3/4 x 2 1/4.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Point Shooter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/322d05d4-8037-43f6-adc2-475a727c0b45/IMG_0054.jpg",
+          "description": "Official copy calls this a true mid-length designed for effortless trim, especially on point breaks, inspired by the era when longboards became shorter. A single concave runs through the bottom, balanced with low tail rocker and nose lift. Official page says beveled rails smooth rail-to-rail transitions, and that the board shines in summer conditions or between winter swells. Example size 8'0 x 22 x 2 3/4.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/5a1e87b2-682d-4d59-ade4-c2a548ce535b/IMG_0061.jpg",
+          "description": "Official named model on the Surfboard Models menu. Official copy describes a traditional classic longboard with 50/50 rails, no edge, a belly bottom, and a concave on the nose, shaped a bit more refined and foiled. Example size 9'4 x 23 x 3.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/79d36dcc-4cc6-46c6-bce2-f2c1d88686f8/IMG_0056.jpg",
+          "description": "Official copy says longer boards are built for clean lines and long walls, shining on lined-up point breaks or soft rolling beach breaks. Designed for trim and projection rather than sharp turns. Official page says it starts at an imposing 10 feet. Example size 10'2 x 23 1/2 x 3 1/4.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
