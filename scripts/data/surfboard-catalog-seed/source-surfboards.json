@@ -1,0 +1,159 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "source-surfboards",
+      "name": "Source Surfboards",
+      "website_url": "https://sourcesurfboards.com/",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Nick Palandrani",
+      "lead_shaper_name": "Nick Palandrani",
+      "short_description": "Hand-shaped Santa Cruz surfboards by Nick Palandrani. One-man shaping bay building customs since 1998.",
+      "models": [
+        {
+          "name": "Chubster",
+          "image_url": "https://sourcesurfboards.com/images/boards/Chubster/source-surfboards-chubster-top.jpg",
+          "board_category_slug": "hybrid",
+          "description": "The Chubster Model is the ultimate egg and is a great alternative to your longboard when the surf is soft. This model was designed with a low rocker and twinzer fin setup making it amazingly fast. The bottom is contoured with a shallow concave under the front that flows into a mild spiral vee. This allows the board to get up on rail and skate through the sections."
+        },
+        {
+          "name": "Duster",
+          "image_url": "https://sourcesurfboards.com/images/boards/duster/source-surfboards-duster_top.jpg",
+          "board_category_slug": "other",
+          "description": "The Duster is a full body sled with low rocker and is a wave catching magnet. The bottom is setup with a rolled entry that flows into a single concave through the midsection and then transitions to vee off the tail, which loosens up the board. In addition, there are 4 channels shaped into the tail to propel water through the board and converts this water flow to forward thrust."
+        },
+        {
+          "name": "Sprite",
+          "image_url": "https://sourcesurfboards.com/images/boards/sprite/source-surfboards-sprite_top.jpg",
+          "board_category_slug": "hybrid",
+          "description": "Has the look of a late 1960’s transitional board. The Sprite has low entry rocker for optimal paddle power and trim speed. The tail is stringerless for variable rocker. The bottom is contoured with a rolled entry to a slight single concave flowing to a moderate spiral vee off the tail block. This board is extremely fast down the line and will allow you to snap turns in critical parts of the wave."
+        },
+        {
+          "name": "Mini Simmons",
+          "image_url": "https://sourcesurfboards.com/images/boards/hule/source-surfboards-hule_top.jpg",
+          "board_category_slug": "other",
+          "description": "Inspired by Bob Simmons and the crew at Hydrodynamica. This tri-fin planing hull can be surfed in a wide variety of conditions. It has a rolled entry that fades in the midsection lets the board handle a variety of wave conditions with ease. Laminar flow under the board arrives at the bullet concave which runs through the fin section to give the board tremendous lift off the tail block. The wings reduce area in the tail section, which enhances maneuverability and works to prevent spin outs. The spoon nose on the deck minimizes swing weight making the Winged-Simmons a very lively board."
+        },
+        {
+          "name": "Arc Tail Scrambler",
+          "image_url": "https://sourcesurfboards.com/images/boards/scrambler/source-surfboards-scrambler-top.jpg",
+          "board_category_slug": "other",
+          "description": "This board has much influence from Greenough's Velo, The bladed out arc tail, low tail rocker and general outline speak to his revolutionary performance concepts. We've made some simple departures in outline and contours so the board has much in common with displacement hulls. We abandoned the center fin in the conception of the design because we wanted increase snap, drive and down-line trim speed. It's intended as a stand up board but certainly could be ridden as a knee board. The custom fins are intuitive developed along the fin outlines of a bonefish. The board is done as either a twin or a novel adaptation of theTwinzer concept both with the novel bonefish type templates. The Arc Tail Scrambler works in anything ~ forehand, backhand, lined up walls, glass or onshore mush. We made sure of it by having it tested by the best short and long board surfers Santa Cruz has to offer and using their feed back to refine the design work."
+        },
+        {
+          "name": "Split Tail Scrambler",
+          "image_url": "https://sourcesurfboards.com/images/boards/split-tail-scrambler/source-surfboards-split-tail-scrambler_fin-top.jpg",
+          "board_category_slug": "other",
+          "description": "The tempalate, foil and shape is the same as the arc tail scrambler the only change is the tail block. The bladed out split tail allows tail rocker to flex when loaded and gives an added performance boost and snappier feel. The Split tail Scrambler works in anything ~ forehand, backhand, lined up walls, glass or onshore mush. We made sure of it by having it tested by the best short and long board surfers Santa Cruz has to offer and using their feed back to refine the design work."
+        },
+        {
+          "name": "Turbo Bottom Scrambler",
+          "image_url": "https://sourcesurfboards.com/images/boards/turbo-bottom-scrambler/source-surfboards-turbo-bottom-scrambler_top.jpg",
+          "board_category_slug": "other",
+          "description": "The foil of the board remains the same but to make it ride high & fast, concaves are foiled into either side of the bottom. They are edged a hand span in from the rail line to maintain excellent maneuverability. The turbos get \"The Scrambler\" hydroplaning when the race is on as well as providing that extra lift to fly across the flats. The Turbo Bottom Scrambler works in anything ~ forehand, backhand, lined up walls, glass or onshore mush. We made sure of it by having it tested by the best short and long board surfers Santa Cruz has to offer and using their feed back to refine the design work"
+        },
+        {
+          "name": "Stubby Hull",
+          "image_url": "https://sourcesurfboards.com/images/boards/stubby-hull/source-surfboards-stubby-hull_top.jpg",
+          "board_category_slug": "other",
+          "description": "A short and wide board built up to 6'11\". The curvier outline will allow for very tight radius turning. This modified hull has a rolled entry then flattens through the mid-section of the board and off the tail. It has a hard edge around the last 15\" of the tail to allow clean water release. Rails are pinched for positive engagement and a S deck is cut for flex and twist. Tuna like flex fin for a low drag feeling while in trim. The design of this board allows you to cover a lot of wave face with rail engagement."
+        },
+        {
+          "name": "Point Hull",
+          "image_url": "https://sourcesurfboards.com/images/boards/point-hull/source-surfboards-point-hull-top.jpg",
+          "board_category_slug": "other",
+          "description": "Designed with sizing to start at 7'0\"and up. The elongated rail is designed for projecting long arcing turns while jetting down the line. This modified hull has a rolled entry then flattens through the mid-section of the board and off the tail. It has a hard edge around the last 15\" of the tail to allow clean water release. Pinched rails for board engagement and a S deck for flex and twist. Tuna like flex fin for a low drag feeling while in trim. The design of this board allows you to work the wave face while on rail."
+        },
+        {
+          "name": "Keel Fin Fish",
+          "image_url": "https://sourcesurfboards.com/images/boards/keel-fin-fish/source-surfboards-keel-fin-fish-top.jpg",
+          "board_category_slug": "fish",
+          "description": "Designed with a full outline, relaxed rocked, and a slight single to mild reverse spiral vee. It's proven to be extremely versatile, super fast down the line and glides like a dream. A must have for everyone's quiver."
+        },
+        {
+          "name": "Wing'd Neo Fish",
+          "image_url": "https://sourcesurfboards.com/images/boards/wingd-neo-fish/source-surfboards-wingd-neo-fish-top.jpg",
+          "board_category_slug": "fish",
+          "description": "This shape is designed with a pulled-in retro style bullet outline. The bottom is set up with a moderate rocker and a mild single concave to a reversed spiral vee, which keeps the board engaged and give's it tremendous drive. Go to the \"Double\" Wing Neo-Fish with bigger and more critical waves."
+        },
+        {
+          "name": "Firecracker",
+          "image_url": "https://sourcesurfboards.com/images/boards/firecracker/source-surfboards-firecracker-top.jpg",
+          "board_category_slug": "fish",
+          "description": "The Firecracker is a modern style performance fish. It has low rocker to enable easy paddling and speeding across mushy sections. It's setup with a slight concave that runs through the bottom with a spiral vee out the tail. Shaped with double wings in the tail, which pulls in the tail block to make it snap in the pocket."
+        },
+        {
+          "name": "Wing Pin",
+          "image_url": "https://sourcesurfboards.com/images/boards/wing-pin-quad/source-surfboards-wing-pin-quad-top.jpg",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Seed",
+          "image_url": "https://sourcesurfboards.com/images/boards/seed/source-surfboards-seed-top.jpg",
+          "board_category_slug": "hybrid",
+          "description": "Surf it any day or everyday it's a most versatile model. Design: Entry = slight roll Mid = shallow single concave Exit = reverse spiral vee Moderate rocker Beak nose optional to provide added floatation"
+        },
+        {
+          "name": "Bosker",
+          "image_url": "https://sourcesurfboards.com/images/boards/bosker/source-surfboards-bosker_top.jpg",
+          "board_category_slug": "other",
+          "description": "This is a refined version of one originally developed by the Campbell Bros. in the early 70\"s. It's Turbo-Charged! Canted side runners and bottom contours make this one hydroplane. It has phenomenal wave engagement and drive."
+        },
+        {
+          "name": "Cali Classic",
+          "image_url": "https://sourcesurfboards.com/images/boards/cali-classic/source-surfboards-cali-classic-top.jpg",
+          "board_category_slug": "longboard",
+          "description": "A fast trimming progressive single fin log. The board has low entry rocker and a lot flip in the tail. Complete with down rail in the nose, a flat panel vee entry to mild roll throughout the board and pinched 60/40 rails. This model was designed for mid-sized days when the swell is building."
+        },
+        {
+          "name": "Lincoln Log",
+          "image_url": "https://sourcesurfboards.com/images/boards/lincoln-log/source-surfboards-lincoln-log-top_green.jpg",
+          "board_category_slug": "longboard",
+          "description": "A new-age log - the only traditional element is the volan glass and the weight. This model has a flat entry rocker for trim speed and a ton of tail rocker to help with noseriding. Designed with a chined rail, a flowing concave in the nose and roll throughout the body. To achieve optimal wave engagement the rails are pinched 50/50 with a progressive foil from nose to tail."
+        },
+        {
+          "name": "Cuda Pin Tail",
+          "image_url": "https://sourcesurfboards.com/images/boards/cuda-pin-tail/source-surfboards-cuda-pin-tail_top.jpg",
+          "board_category_slug": "longboard",
+          "description": "The Cuda is a narrow traditional single fin log. It has a flat rocker for quick trim speed. The bottom is setup with a deep concave that runs 1/3 back from the nose, and then flows into a mild roll. The nose rail is chined to increase control while noseriding, the rail then transitions to a pinched 50/50 through the mid-section and off the tail block. The Cuda is a very lively log for zippy waves. Available in a pin tail or squaretail."
+        },
+        {
+          "name": "Cuda Square Tail",
+          "image_url": "https://sourcesurfboards.com/images/boards/cuda-square-tail/source-surfboards-cuda-square-tail_top.jpg",
+          "board_category_slug": "longboard",
+          "description": "The Cuda is a narrow traditional single fin log. It has a flat rocker for quick trim speed. The bottom is setup with a deep concave that runs 1/3 back from the nose, and then flows into a mild roll. The nose rail is chined to increase control while noseriding, the rail then transitions to a pinched 50/50 through the mid-section and off the tail block. The Cuda is a very lively log for zippy waves. Available in a pin tail or squaretail."
+        },
+        {
+          "name": "Modernist",
+          "image_url": "https://sourcesurfboards.com/images/boards/modernist/source-surfboards-modernist-top.jpg",
+          "board_category_slug": "longboard",
+          "description": "A very lively all around performance longboard. designed with increased nose rocker and a tear drop concave to give you the lift needed to pull cheater 5's, though the barrels and across steep sections. Has a down rail in the tail with a pulled in tail block, which assists with tighter turns in the pocket. This model will give you the confidence you needed to push your surfing ability to the next level."
+        },
+        {
+          "name": "Sponson",
+          "image_url": "https://sourcesurfboards.com/images/boards/sponson/source-surfboards-sponson-top.jpg",
+          "board_category_slug": "longboard",
+          "description": "The Sponson is a full body noserider. The width of the board is carried through to the squash nose making it a stable platform for hanging ten. The square tail block is shaped with a slight scoop, which enables water to flow over the deck, through the tail section of the board creating fin engagement and lift in the nose. This noserider has chined \"Sponson\" rails in the nose for additional stability and power steering while on the tip. The rails then drop to a 50/50 and continue down the board. On the bottom, a deep tunnel hull concave that starts in the nose block and runs through the entry of the board. A mild roll through the mid section and off the tail was added to get this board up on rail quickly. The Sponson has the perfect amount of trim speed and will not pearl while on the tip. You will have the confidence to hang ten on the sketchiest of faces."
+        },
+        {
+          "name": "Sponson Outrigger",
+          "image_url": "https://sourcesurfboards.com/images/boards/sponson-outrigger/source-surfboards-sponson-outrigger-top.jpg",
+          "board_category_slug": "longboard",
+          "description": "The Sponson Outrigger has the same ingredients as the original Sponson model, but with a very progressive tail section making it the ultimate noserider. It is shaped with a scooped fang tail block and Wil Jobson slot tail channels on the bottom for controlled water flow behind the fin and out the tail. The reverse wing-like \"outriggers\" in the tail are foiled out like fins and have a harmonious flow with the bottom rocker. When you catch a wave and set your rail, the water flows over the outriggers, which pushes the tail down and lifts nose. As trim speed is increased, the nose will levitate higher allowing you to hang ten like never before and giving you confidence knowing that this board will not pearl."
+        },
+        {
+          "name": "Vee Hull",
+          "image_url": "https://sourcesurfboards.com/images/boards/vee-hull/source-surfboards-vee-hull_top.jpg",
+          "board_category_slug": "other",
+          "description": "The Vee Hull has a similar look to a 1960's Australian transitional shape. It has a displacement hull entry that flattens through mid-section and then flows into a heavy vee in front of the fin which decreases as it approaches the tail block. The vee helps loosen up the board as well as facilitate rail transition. It also helps the tail to engage quickly. It's shaped with a spoon nose to cut down swing weight and help the board to come around quicker. The Vee Hull has a tuna like flex fin for low drag while in trim. This is a unique and very smooth, fun board to add to your quiver."
+        },
+        {
+          "name": "66'",
+          "image_url": "https://sourcesurfboards.com/images/boards/magic-sam/source-surfboards-magic-sam-top.jpg",
+          "board_category_slug": "longboard",
+          "description": "This model is my interpretation of Nat Young's ride in the '66 world surfing contest. It's slightly thinner & narrower than a standard longboard with a moderately rolled bottom and the wide point pulled rear of board center. Rails are pinched 50/50. It comes standard with a Source Whip flex fin to facilitate engagement and drive through the turning arc. Recommended Dimensions: 9'4\" Tail: 15.75\" Mid: 22 5/8\" Nose: 17\""
+        }
+      ]
+    }
+  ]
+}
