@@ -1,0 +1,70 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ellie-miller-surfboards",
+      "name": "Ellie Miller Surfboards",
+      "website_url": "https://www.millersurfboards.co.uk/",
+      "location_label": "Swimbridge, North Devon, United Kingdom",
+      "founder_name": "Ellie Miller",
+      "lead_shaper_name": "Ellie Miller",
+      "short_description": "Handmade custom surfboards by Ellie Miller, individually handcrafted in a small workshop in Swimbridge, North Devon since 2012.",
+      "models": [
+        {
+          "name": "Slider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/3674728e-9443-42a5-8d87-fe985c9bad9d/FullSizeRender.jpeg",
+          "description": "I designed the Slider way back in 2014, and it's been one of my trademark designs ever since with very few changes to the original design. However in 2020 I moved to new spot and new a local break with slower, fatter and less consistent waves, often with a lot of crumbling sections. I found the 50/50 rails produced too much hold in the tail and wanted to be able to clear the sections with more ease...that's when the 'Hard Tail' or 'HT version' came to be. Both versions are popular, but the HT has been a real game changer for folks wanting a nose riding traditional log - with all the glide and easy paddling, but with more manoeuvrability and versatility in different breaks and conditions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rev",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/d95bf8f5-a2e2-4251-af43-8b5b6523e3c4/491452085_18495835924053358_1638284934095851853_n.jpg",
+          "description": "This exciting shape allows for fluid stylish moves, allowing you to cut back with ease, accelerate out of turns, climb and drop to draw speed from steep sections, or just enjoy the outstanding wave catching ability and smooth fast trim on waves from 1ft to overhead. It achieves all this due to a gently rolled belly and flat rocker. Gently kicked tail rocker and Vee for easy rail to rail transitions, combined with a hard edged rail in the tail section for release.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Styler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/e8991478-363a-470b-b6b5-b926104e236b/507253626_24015097124817686_3008546160062451041_n.jpg",
+          "description": "My aim with 'The Styler' was to create a noserider that still has all the capability on the nose, but blends that with easier manoeuvrability for effortless cutbacks, and a more lively, exciting feel. To achieve the feel I wanted I swapped the traditional defined spoon like concave for something more subtle, longer and blended, giving the board a smoother, quicker trim, better paddle speed ..especially in brisk off shores.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DB Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/f330d8ad-6ac1-430d-9139-47b7d2f08032/513966163_24121958770798187_4574482528768631501_n.jpg",
+          "description": "The DB pig was designed for local surfer Danni Bradford. Known and admired for her effortless old skool style, whippy faded turns, head dips, stretch five's, and no paddle take off's! Danni attributes the development of her distinctive style to the \"freedom of expression\" she got from riding her DB pig. With the DB Pig you get all the fun and liveliness a traditional pig is renowned for, without any of the drawbacks, and something much more functional and suited to our British waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Evo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/ae1f6ad8-7fae-4609-81f4-a228c4d7f82e/509363024_24055085117485553_6392952540294846656_n.jpg",
+          "description": "The wide tail allows for great wave catching ability and planing capabilities. Combined with the vee through the tail and wide point slightly back can really crank a turn! Features a low rocker with gentle S deck, and crowned deck profile, pinched 50/50 rails which flow from up in the nose to low and hard through the tail, providing release through turns, and hold in steeper waves, rolled belly for a smooth fast hull like connection, transitioning to flat past the fin. Fast, smooth as butter, and so much fun off the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SVR",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/372471cd-2109-4b76-b532-dba2fe2aecf7/506410488_24012250135102385_5179554751207218644_n.jpg",
+          "description": "I took foundational elements of displacement hull design and mellowed them out to make a smooth, fast, buttery mid length that is functional in a wide range of breaks for a wide range of riders. Named the SVR because of the 'S' deck foil, 'Vee' through the tail, and 'Roll' through the belly of the board, and best described as a hybrid hull meets egg. In short the SVR is a user friendly hully eggy midlength that feels smooth and silky fast, paddles and catches waves with ease and allows for effortless turns.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Blimp",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/605ee5d4-f6cd-49b0-bd3d-7d5553c8dcd1/509361208_24055075004153231_2357967588128505123_n.jpg",
+          "description": "The Blimp is a hugely popular model. Shortboarders love it short (5'4 - 5'10) as a step up for smaller, less powerful waves, and longboarders love it long (6'0 - 6'6) to give a totally different wave riding experience or as something to take out on bigger days. Unlike the traditional shape with its broad hip outline and squared off tail, the Blimp features a more pulled in plan shape through the hip and a curved tail template.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Po'boy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/b4cad36f-feaf-4453-8c00-b41742d17042/514334901_24131649463162451_1207639746839219460_n.jpg",
+          "description": "The full outline, low rocker and single to double concave of the Blimp are blended with the modern performance down rail, split swallow tail and deck foil of the fish. This equals a whole lot of fun for both Shortboarders wanting a step up for weaker or smaller days, and for long boarders wanting something for bigger days or just to experience a totally different feel on small to medium days. This design gives you the best of both worlds...matching the skatey but stable feel of the Blimp with the control and performance of a twin keel fish for tighter manoeuvres within the more critical sections of a wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "G-fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/ced8802d-31ec-4295-a3cc-281ab0288784/510978815_24098620856465312_7753847687819333990_n.jpg",
+          "description": "My version has been designed to really make the most out of the waves we get here in the UK. Subtle Vee entry to flat, with a generous 6mm single concave running from knuckle out the tail, paired with a relatively flat entry rocker with some lift through the tail, combine to make this board possibly one of the fastest you'll find anywhere on the planet. As well as its ability to generate warp speeds in even the weakest of surf, it maintains great hold on a rail, and is a design capable of handling anything from double overhead reeling points down to knee high onshore beach breaks.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
