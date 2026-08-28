@@ -127,8 +127,8 @@ export async function quoteReswellPeerShippingUsd(input: {
  *   • every listing mode `"free"` → $0
  *   • no `"reswell"` listing (flat/free mix) → sum of the flat shipping prices
  *   • any `"reswell"` listing → single combined-box ShipEngine quote
- *     (biggest item's dims + summed weights — flat prices are NOT added on top,
- *     since the whole bundle ships in that one carton)
+ *     (2–3 surfboards: longest board + 4″ × 27 × 7 × 22 lb; otherwise biggest-DIM carton.
+ *     Flat prices are NOT added on top — the whole bundle ships in that one carton)
  */
 export async function computePeerBundleShippingUsd(input: {
   listings: PeerListingForShippingQuote[]

@@ -169,14 +169,23 @@ export function CartPageView({
 
     const sellerGroupCount = peerSellerGroups.size
 
+    const maxSurfboardsInSellerGroup = Math.max(
+      0,
+      ...[...peerSellerGroups.values()].map(
+        (rows) => rows.filter(({ listing }) => listing.section === "surfboards").length,
+      ),
+    )
+
     const note =
       sellerGroupCount > 1
         ? "Multiple sellers — checkout each group separately. Reswell shop items are included with whichever seller group you check out first."
-        : shopRows.length > 0 && peerRows.length > 0
-          ? "Peer listings and Reswell shop items check out together in one payment."
-          : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
-            ? "Shipping cost and delivery timing are finalized at checkout."
-            : "Pickup or shipping details are confirmed when you check out."
+        : maxSurfboardsInSellerGroup >= 2
+          ? "These surfboards ship together in one box. Live shipping is quoted at checkout from the longest board."
+          : shopRows.length > 0 && peerRows.length > 0
+            ? "Peer listings and Reswell shop items check out together in one payment."
+            : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
+              ? "Shipping cost and delivery timing are finalized at checkout."
+              : "Pickup or shipping details are confirmed when you check out."
 
     return {
       availableTotal: total,

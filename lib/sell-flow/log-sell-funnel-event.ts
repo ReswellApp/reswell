@@ -1,7 +1,6 @@
 "use client"
 
 import posthog from "posthog-js"
-import { logSellFunnelEventAction } from "@/lib/actions/sellFunnelActions"
 import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import type {
   PeerListingSection,
@@ -29,17 +28,20 @@ export function logSellFunnelEvent(event: SellFunnelEventInput): void {
     entry_point: payload.entryPoint,
   })
 
-  void logSellFunnelEventAction(payload)
-    .then((res) => {
-      if ("error" in res && process.env.NODE_ENV === "development") {
-        console.warn("[sell] funnel event not recorded:", res.error, payload)
-      }
-    })
-    .catch((err) => {
-      if (process.env.NODE_ENV === "development") {
-        console.warn("[sell] funnel event failed:", err)
-      }
-    })
+  // Route handler, not a Server Action: Server Actions POST to the current
+  // /sell URL and refresh RSC, which aborts the in-flight listings update
+  // ("Save was interrupted").
+  void fetch("/api/sell/funnel", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }).catch((err) => {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[sell] funnel event failed:", err)
+    }
+  })
 }
 
 const FIELD_INTERACTED_PREFIX = "reswell.sell.funnel.fieldInteracted."

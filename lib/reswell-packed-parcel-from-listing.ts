@@ -45,6 +45,16 @@ import {
   surfboardShippingDimIn,
   validateSurfboardLabelParcelLimits,
 } from "@/lib/shipping/surfboard-label-limits"
+import {
+  boardLengthInchesFromListing,
+  countSurfboardListings,
+  isSurfboardListingSection,
+  MULTI_SURFBOARD_BOX_HEIGHT_IN,
+  MULTI_SURFBOARD_BOX_WEIGHT_LB,
+  MULTI_SURFBOARD_BOX_WIDTH_IN,
+  multiSurfboardOneBoxLengthIn,
+  peerCheckoutSurfboardCountError,
+} from "@/lib/surfboard-multi-board-parcel"
 
 export type ListingPackedParcelSource = {
   section?: string | null
@@ -353,16 +363,22 @@ export type ResolvedPackedParcel = {
 /**
  * Combined one-box parcel for multiple listings shipped together (same seller).
  *
- * Box sizing policy: every item is assumed to fit in the carton of the **largest-DIM item**
- * (highest Box Length + 2×Width + 2×Height), so the combined parcel uses that item's
- * dimensions and the **sum of every item's weight**. If any listing cannot resolve a parcel,
- * the whole combination fails — checkout must not silently under-quote.
+ * **2–3 surfboards:** length = longest bare board + 4″, width 27″, height 7″,
+ * weight = 22 lb. Single-board tier cartons are not used.
+ *
+ * **Otherwise:** largest-DIM item's carton + summed weights (fins/shop add-ons with one board).
  */
 export function resolveCombinedPackedParcelFromListings(
   rows: ListingPackedParcelSource[],
 ): { ok: true } & ResolvedPackedParcel | { ok: false; error: string } {
   if (rows.length === 0) {
     return { ok: false, error: "No listings to build a shipping parcel from." }
+  }
+
+  const surfboardCount = countSurfboardListings(rows)
+  const countError = peerCheckoutSurfboardCountError(surfboardCount)
+  if (countError) {
+    return { ok: false, error: countError }
   }
 
   const parcels: ResolvedPackedParcel[] = []
@@ -374,6 +390,36 @@ export function resolveCombinedPackedParcelFromListings(
     parcels.push(resolved)
   }
 
+  const totalWeightOz = Math.round(parcels.reduce((sum, p) => sum + p.weightOz, 0) * 100) / 100
+
+  if (surfboardCount >= 2) {
+    let longestBoardIn = 0
+    for (const row of rows) {
+      if (!isSurfboardListingSection(row.section)) continue
+      const lengthIn = boardLengthInchesFromListing(row)
+      if (lengthIn == null || lengthIn <= 0) {
+        return {
+          ok: false,
+          error:
+            "Every surfboard in this checkout needs a listed length so we can quote one shared shipping box.",
+        }
+      }
+      longestBoardIn = Math.max(longestBoardIn, lengthIn)
+    }
+    if (longestBoardIn <= 0) {
+      return { ok: false, error: "Could not read surfboard length for this order." }
+    }
+
+    return {
+      ok: true,
+      source: "board+heuristic-weight",
+      weightOz: MULTI_SURFBOARD_BOX_WEIGHT_LB * 16,
+      lengthIn: multiSurfboardOneBoxLengthIn(longestBoardIn),
+      widthIn: MULTI_SURFBOARD_BOX_WIDTH_IN,
+      heightIn: MULTI_SURFBOARD_BOX_HEIGHT_IN,
+    }
+  }
+
   let biggest = parcels[0]!
   let biggestDim = surfboardShippingDimIn(biggest.lengthIn, biggest.widthIn, biggest.heightIn)
   for (const p of parcels.slice(1)) {
@@ -383,8 +429,6 @@ export function resolveCombinedPackedParcelFromListings(
       biggestDim = dim
     }
   }
-
-  const totalWeightOz = Math.round(parcels.reduce((sum, p) => sum + p.weightOz, 0) * 100) / 100
 
   return {
     ok: true,

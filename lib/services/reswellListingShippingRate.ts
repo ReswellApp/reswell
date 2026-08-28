@@ -34,6 +34,10 @@ import {
   type ShippingAddressInput,
 } from "@/lib/shipping/shipengine-rate-helpers"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+import {
+  isMultiSurfboardOneBoxShipment,
+  validateMultiSurfboardOneBoxParcel,
+} from "@/lib/surfboard-multi-board-parcel"
 
 /** Minimum listing slice required to rate a Reswell-shipped surfboard at checkout. */
 export type ReswellRateableListing = ListingPackedParcelSource & {
@@ -268,9 +272,9 @@ export async function getCheapestReswellRateForListing(input: {
 /**
  * One-box rate for multiple same-seller listings shipped together.
  *
- * The combined parcel uses the **biggest item's dimensions** and the **sum of all item weights**
- * (see {@link resolveCombinedPackedParcelFromListings}). Ship-from is resolved from the first
- * listing — all listings belong to one seller, so localities match.
+ * The combined parcel is {@link resolveCombinedPackedParcelFromListings}
+ * (2–3 surfboards: longest board + 4″ × 27 × 7 × 22 lb; otherwise biggest-DIM carton + summed weights).
+ * Ship-from is resolved from the first listing — all listings belong to one seller.
  */
 function resolveSelectedCheckoutRate(
   decorated: ReswellListingRateRow[],
@@ -371,8 +375,16 @@ export async function getCheapestReswellRateForListings(input: {
     .map((listing) => resolveSurfboardShippingTierIdFromListing(listing))
     .filter((tierId): tierId is SurfboardShippingTierId => tierId != null)
   const usesFreightTier = listingTiers.some((tierId) => !surfboardShippingTierUsesUpsParcelLimits(tierId))
+  const multiSurfboardBox = isMultiSurfboardOneBoxShipment(input.listings)
 
-  if (usesFreightTier) {
+  if (multiSurfboardBox) {
+    if (!usesFreightTier) {
+      const multiCheck = validateMultiSurfboardOneBoxParcel(dims)
+      if (!multiCheck.ok) {
+        return multiCheck
+      }
+    }
+  } else if (usesFreightTier) {
     for (const listing of input.listings) {
       const tierId = resolveSurfboardShippingTierIdFromListing(listing)
       if (!tierId) continue

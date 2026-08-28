@@ -9,6 +9,10 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 import {
+  countSurfboardListings,
+  peerCheckoutSurfboardCountError,
+} from "@/lib/surfboard-multi-board-parcel"
+import {
   applyAcceptedOfferToPeerCheckoutListings,
   priceListingsFromAcceptedOffer,
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
@@ -147,6 +151,11 @@ export async function POST(request: NextRequest) {
 
   if (listingsOrdered.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
+  }
+
+  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
+  if (surfboardCapError) {
+    return NextResponse.json({ error: surfboardCapError }, { status: 422 })
   }
 
   for (const listing of listingsOrdered) {

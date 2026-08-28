@@ -16,6 +16,11 @@ import { isReswellShopListing } from "@/lib/reswell-shop"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import {
+  countSurfboardListings,
+  isSurfboardListingSection,
+  peerCheckoutSurfboardCountError,
+} from "@/lib/surfboard-multi-board-parcel"
+import {
   cartFromCartCheckoutHref,
   cartItemCountFromQuantities,
   type AddedToCartPreview,
@@ -237,6 +242,34 @@ export async function addCartItem(
   const maxQty = isShop ? stock : 1
   if (addQty > maxQty) {
     return { ok: false, error: isShop ? "Not enough stock available" : "This listing is already limited to one" }
+  }
+
+  if (isSurfboardListingSection(check.listing.section)) {
+    const { data: cartPeerRows } = await supabase
+      .from("cart_items")
+      .select("listing_id, listings!inner ( user_id, section )")
+      .eq("profile_id", user.id)
+    const alreadyIds = new Set<string>()
+    const sellerBoards: Array<{ section?: string | null }> = []
+    for (const row of cartPeerRows ?? []) {
+      const raw = row as {
+        listing_id?: string
+        listings?: { user_id?: string; section?: string | null } | { user_id?: string; section?: string | null }[] | null
+      }
+      const listing = Array.isArray(raw.listings) ? raw.listings[0] : raw.listings
+      const listingId = String(raw.listing_id ?? "").trim()
+      if (listingId) alreadyIds.add(listingId)
+      if (listing?.user_id === check.listing.user_id) {
+        sellerBoards.push({ section: listing.section })
+      }
+    }
+    if (!alreadyIds.has(listingId)) {
+      const nextCount = countSurfboardListings(sellerBoards) + 1
+      const capError = peerCheckoutSurfboardCountError(nextCount)
+      if (capError) {
+        return { ok: false, error: capError }
+      }
+    }
   }
 
   const metaEventId = randomUUID()

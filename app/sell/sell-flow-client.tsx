@@ -3311,6 +3311,7 @@ function SellPageContentInner({
             return updated
           }
           const updated = await retryOnceOnSellSubmitAbort(persistOwnerListingUpdate, {
+            delayMs: 400,
             onRetry: async () => {
               await resolveClientSessionForMutation(supabase)
             },
@@ -3632,15 +3633,25 @@ function SellPageContentInner({
         if (editId && !usedImpersonationListingApi) {
           const willSyncNewPhotos = images.some((im) => !im.id && im.url)
           if (willSyncNewPhotos) goSubmitStep(1)
-          await syncListingImages(listingId)
-          const { nextVideo } = await syncListingDraftVideosClient(
-            supabase,
-            listingId,
-            video,
-            removedVideoIds,
+          await retryOnceOnSellSubmitAbort(
+            async () => {
+              await syncListingImages(listingId)
+              const { nextVideo } = await syncListingDraftVideosClient(
+                supabase,
+                listingId,
+                video,
+                removedVideoIds,
+              )
+              setVideo(nextVideo)
+              setRemovedVideoIds([])
+            },
+            {
+              delayMs: 400,
+              onRetry: async () => {
+                await resolveClientSessionForMutation(supabase)
+              },
+            },
           )
-          setVideo(nextVideo)
-          setRemovedVideoIds([])
           goSubmitStep(2)
         }
         if (publishedDraftNeedsSideEffects) {

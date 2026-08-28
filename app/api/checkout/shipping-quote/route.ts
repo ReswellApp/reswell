@@ -14,6 +14,10 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { signCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
 import {
+  countSurfboardListings,
+  peerCheckoutSurfboardCountError,
+} from "@/lib/surfboard-multi-board-parcel"
+import {
   findPeerCheckoutRateOption,
   findPeerCheckoutRateOptionByServiceCode,
 } from "@/lib/shipping/peer-checkout-usps-services"
@@ -169,6 +173,14 @@ export async function POST(request: Request) {
     )
   }
   const sellerId = mixedSeller.sellerId
+
+  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingRows))
+  if (surfboardCapError) {
+    return NextResponse.json(
+      { error: surfboardCapError },
+      { status: 422, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
 
   if (!listingRows.every((l) => !!l.shipping_available)) {
     return NextResponse.json(

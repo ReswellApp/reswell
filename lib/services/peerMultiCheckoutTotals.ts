@@ -12,6 +12,10 @@ import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
 import { getSellerEarnings } from "@/lib/seller-fees"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { getReswellShopLineEarnings, isReswellShopListing } from "@/lib/reswell-shop"
+import {
+  countSurfboardListings,
+  peerCheckoutSurfboardCountError,
+} from "@/lib/surfboard-multi-board-parcel"
 
 export type PeerCheckoutLineComputation = {
   listingId: string
@@ -29,7 +33,7 @@ export type PeerCheckoutLineComputation = {
  * Computes totals for peer listings (same seller) and/or Reswell shop lines.
  *
  * Multi-line shipping ships as **one box**: a single combined-parcel quote
- * (biggest item's dims + summed weights — see {@link computePeerBundleShippingUsd}).
+ * (see {@link computePeerBundleShippingUsd} — multi-surfboard boxes use longest board + 4″).
  * The bundle shipping charge is carried on the first line; subsequent lines have $0 shipping.
  */
 export async function computePeerMultiCheckoutUsd(params: {
@@ -77,6 +81,11 @@ export async function computePeerMultiCheckoutUsd(params: {
 
   if (listingsOrdered.length === 0) {
     return { ok: false, error: "No listings to checkout" }
+  }
+
+  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
+  if (surfboardCapError) {
+    return { ok: false, error: surfboardCapError }
   }
 
   const sellerResolved = resolveMixedCheckoutSellerId(

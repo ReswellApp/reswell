@@ -5,12 +5,17 @@ import {
 } from "@/lib/shipengine/surfboard-label"
 import {
   listingUsesAdminCustomSurfboardCarton,
+  resolveCombinedPackedParcelFromListings,
   resolvePackedParcelFromListing,
   resolveSurfboardShippingTierIdFromListing,
   suggestPackedBoxInchesFromListing,
   type ListingPackedParcelSource,
   type ResolvedPackedParcelSource,
 } from "@/lib/reswell-packed-parcel-from-listing"
+import {
+  isMultiSurfboardOneBoxShipment,
+  validateMultiSurfboardOneBoxParcel,
+} from "@/lib/surfboard-multi-board-parcel"
 
 /** Seller flat/free labels: never auto-quote from listing volume heuristics — seller must enter parcel. */
 export const SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR =
@@ -104,6 +109,71 @@ export function resolveOrderLabelParcelFromListing(
       heightIn: r.heightIn,
       weightLb,
     },
+  })
+
+  return {
+    ok: true,
+    parcel: {
+      lengthIn: r.lengthIn,
+      widthIn: r.widthIn,
+      heightIn: r.heightIn,
+      weightLb,
+      source: r.source,
+      tierId,
+    },
+  }
+}
+
+/**
+ * One-box label parcel for a same-seller order. Multi-surfboard orders use
+ * longest board + 4″ × 27 × 7 (same as checkout quotes).
+ */
+export function resolveOrderLabelParcelFromListings(
+  listings: ListingPackedParcelSource[],
+): { ok: true; parcel: ResolvedOrderLabelParcel } | { ok: false; error: string } {
+  if (listings.length === 0) {
+    return { ok: false, error: "No listings to size a shipping label for." }
+  }
+  if (listings.length === 1) {
+    return resolveOrderLabelParcelFromListing(listings[0]!)
+  }
+
+  const r = resolveCombinedPackedParcelFromListings(listings)
+  if (!r.ok) {
+    return { ok: false, error: r.error }
+  }
+
+  const weightLb = Math.max(LABEL_PARCEL_MIN_WEIGHT_LB, r.weightOz / 16)
+  const dims = {
+    lengthIn: r.lengthIn,
+    widthIn: r.widthIn,
+    heightIn: r.heightIn,
+    weightLb,
+  }
+
+  if (isMultiSurfboardOneBoxShipment(listings)) {
+    const multiCheck = validateMultiSurfboardOneBoxParcel(dims)
+    if (!multiCheck.ok) {
+      return multiCheck
+    }
+  } else {
+    const limitCheck = validateLabelParcelEntry(dims)
+    if (!limitCheck.ok) {
+      return limitCheck
+    }
+  }
+
+  const firstSurfboard = listings.find((row) => resolveSurfboardShippingTierIdFromListing(row) != null)
+  const tierId = firstSurfboard ? resolveSurfboardShippingTierIdFromListing(firstSurfboard) : null
+
+  logPackBandLabelTelemetry({
+    listingId:
+      firstSurfboard && "id" in firstSurfboard
+        ? String((firstSurfboard as { id?: string }).id ?? "")
+        : null,
+    tierId,
+    bandId: firstSurfboard?.shipping_package_band,
+    dims,
   })
 
   return {

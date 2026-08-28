@@ -9,7 +9,7 @@ import { getLatestOrderShippingLabelUrlsForOrder } from "@/lib/db/orderShippingL
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { attachOrderShippingLabel } from "@/lib/services/attachOrderShippingLabel"
 import { ensureReswellShippingLabelReadyThreadNotification } from "@/lib/services/postReswellShippingLabelReadyNotification"
-import { resolveOrderLabelParcelFromListing } from "@/lib/services/orderShippingLabel"
+import { resolveOrderLabelParcelFromListings } from "@/lib/services/orderShippingLabel"
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
 import { logPackBandLabelTelemetry } from "@/lib/shipping/pack-band-telemetry"
 import { purchaseShipEngineLabelForOrderOnce } from "@/lib/services/purchaseShipEngineLabelForOrderOnce"
@@ -215,8 +215,8 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     }
 
     {
-      const labelParcel = resolveOrderLabelParcelFromListing(
-        listing as unknown as ListingPackedParcelSource,
+      const labelParcel = resolveOrderLabelParcelFromListings(
+        listingsForQuote as unknown as ListingPackedParcelSource[],
       )
       if (labelParcel.ok) {
         logPackBandLabelTelemetry({
