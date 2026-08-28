@@ -1,0 +1,94 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "kun-tiqi",
+      "name": "Kun_tiqi",
+      "website_url": "https://www.kuntiqi.com/",
+      "location_label": "Loredo, Cantabria, Spain",
+      "founder_name": "Stefan Weckert",
+      "lead_shaper_name": "Stefan Weckert",
+      "short_description": "Hollow fibreglass-free paulownia wooden surfboards handcrafted in Loredo, Cantabria, with a named standup range and official dedicated model pages.",
+      "models": [
+        {
+          "name": "60s SINGLEFIN",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Wooden-Classic-Singlefin-Surfboard-60s-Kun_tiqi.png",
+          "description": "Swooping arcs. Smooth turns. Beautiful lines. The 60s wooden surfboard is about being in rhythm with the waves and surfing with a sense of ease that no thruster will ever give you. As such, it requires a surfer with finesse who prefers to glide and cruise rather than one who wants to rip the wave apart (although the V bottom does assist with manoeuvrability). This effortless sensation extends to paddling and catching waves as well thanks to the widepoint being situated directly under the chest.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "RETRO QUAD",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Wooden-Quad-Retro-Fish-Surfboard-Kun_tiqi.png",
+          "description": "Fast, stable and manoeuvrable, the Retro Quad is a real wave catcher that’s perfectly designed for fun, high-speed surfing. But don’t be fooled into thinking that this wooden surfboard is strictly for small or weak waves. The double concave, quad fin setup and reinforced hardwood nose and tail ensure it performs in larger and steeper waves, making it a versatile fish for a wide variety of conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BEAN",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Wooden-Mini-Simmons-Paulownia-wood-hollow-Bean-Kun_tiqi.png",
+          "description": "For a fresh and funky surfing experience, you can’t go past our Mini Simmons-style Bean wooden surfboard. It catches waves like a longboard or Malibu thanks to the thick and wide design, but it’s also super manoeuvrable which gives it a distinctly skatey feel. Needless to say, if you’re looking for big fun in a small package, you can’t beat the Bean.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "PHENI",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Eco-surfboard-Wood-Pheni-Kun_tiqi.png",
+          "description": "The performance and control of a shortboard, the wave catching ability and speed of a fish. Our Pheni wooden surfboard bridges the gap between your everyday shortboard and an alternative shape. And because of its unique outline and the fact it can be configured as both a thruster or a quad, it’s an excellent travel board that excels in everything from junky Dutch beach breaks to hollow Canary Island barrels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "70s SINGLEFIN",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Paulownia-Wood-Surfboard-Singlefin-70s-Kun_tiqi.png",
+          "description": "Love gliding down the line and channelling your inner soul surfer but also desire a sense of modern performance? The 70s is for you. It offers an incredibly free and loose feeling thanks to the single fin. However, the more refined edges at the tail and the V-shaped bottom ensure you can still maintain control when needed. Perfect for small to midsize waves regardless of whether they’re powerful or weak, this retro-meets-modern board is cruisy yet able to perform when the conditions demand it.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "RETRO TWIN FISH",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Wooden-Twin-Retro-Fish-Surfboard-Kun_tiqi-e1724076411282.png",
+          "description": "Seeking a wooden surfboard with a genuine twin-fin feel? Our Retro Twin Fish will be right up your alley. Fast and skatey with plenty of drive, it’s a tried and tested small wave board for surfers of all skill levels. Enjoy how easily it paddles and experience the thrill of gliding over flat sections on weaker waves. This is a twinny that’s easy to ride and designed to make even the most average conditions feel super fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "MALIBU",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Malibu-Surfboard-Wooden-hollow-construction-Kun_tiqi.png",
+          "description": "Simple, stylish and easy to both paddle and catch waves on, the Malibu is a highly popular board amongst longboard lovers. The Malibu is one of our best sellers due to its timeless design and its performance capabilities. Not only can you trim along waves and go toes on the nose, but the squash tail adds a certain looseness and manoeuvrability that allow for quick directional changes. Simple, stylish and incredibly easy to both paddle and catch waves on, it’s no surprise that the Malibu is such a popular choice amongst surfers of all skill levels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "ORCA",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Sustainable-Paulownia-wood-surfboard-Orca-Kun_tiqi.png",
+          "description": "A small wave weapon that generates plenty of speed in average waves, the Orca is a handy travel board for surfers seeking a versatile sled that’s also forgiving. Anyone looking to transition from a beginner board to a shortboard will love the Orca. However, more skilled surfers will also enjoy the way it transforms terrible conditions into epic sessions. Word of warning though – this impressive wave-catcher won’t make you any friends in crowded lineups!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "EGG",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Sustainable-Wooden-Surfboard-Egg-Kun_tiqi-2.png",
+          "description": "The Egg is our ultimate all-in-one-board. You get the glide of a longer board, the pivot of a shortboard and the easy paddling and wave-catching capabilities of a step-up. This makes it the perfect board for travellers seeking a one-board quiver, but it’s just as suitable for anyone who enjoys smooth turns and boards that cruise. Better yet, with multiple fin combos possible, you can surf it as a traditional single fin, a 2+1 or even a thruster for added stability. A genuinely versatile board that won’t let you down!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "FEGG",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Wooden-Surfboard-Midlength-Fegg-1-e1724076436994.png",
+          "description": "Once you go Fegg, you never go back… or at least that’s what we’re told. The reason being that this wooden surfboard is perfect for those who find longboards too bulky and shortboards too radical. With lots of volume, a flat and fast rocker plus amazing stability, it’s quick on fat waves yet able to turn on a dime thanks to the single pivot point that the rounded tail offers. A fantastically loveable board, the Fegg is your antidote to an average forecast.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "PERFORMER LONGBOARD",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Sustainable-Longboard-Surfboard-Performer-Kun_tiqi-e1724076343960.png",
+          "description": "The Performer Longboard is our ultimate surprise package. Why? Because despite having a traditional Longboard shape, it loves going fast and being surfed in the pocket. Sharper turns are possible thanks to the narrow tail while the V bottom allows for more radical surfing. In short, it feels like we’ve put a Ferrari engine into a stretch limo – for steeper, bigger and faster waves. Note: keep in mind that it’s still ultra fun on smaller days.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider – Henrietta",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/06/Wooden-Classic-Noserider-Longboard-Henrietta-Kun_tiqi-e1724076544452.png",
+          "description": "Whether you live near a peeling point break or a cruisy beachbreak, the Classic Noserider has you covered. Inspired by the noseriding savants of Malibu, Old Man’s and Byron Bay, this timeless wooden surfboard has a deep teardrop concave for better stability and trimming during noserides plus a super quick, flat nose rocker. Fast and comfortable underfoot, it’s a cross-steppers dream ride and ideal for gravity-defying noserides.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "NOSERIDER",
+          "image_url": "https://www.kuntiqi.com/wp-content/uploads/2022/12/WEb5-1.png",
+          "description": "Do you prefer to live life with your toes on the nose? Then baby… we’ve got a board for you! Introducing the Noserider – a classic longboard shape that allows you to hang 1, 5 or 10 across mellow waves all day long. With 50/50 rails, a concave nose and slight V bottom, you’ll be popping up quickly, trimming with ease and planting your toes on the nose like a pro. It’s all in a day’s work for our much-adored Noserider.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
