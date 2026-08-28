@@ -210,7 +210,12 @@ export async function loadAcceptedOfferCheckoutListings(
 
   const { data: listingRows, error: listErr } = await supabase
     .from("listings")
-    .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
+    .select(
+      `
+      ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT},
+      listing_images ( url, thumbnail_url, is_primary )
+    `.trim(),
+    )
     .in("id", listingIdsOrdered)
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
