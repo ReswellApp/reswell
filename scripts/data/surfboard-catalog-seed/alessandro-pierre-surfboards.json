@@ -1,0 +1,106 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "alessandro-pierre-surfboards",
+      "name": "Alessandro Pierre Surfboards",
+      "website_url": "https://alessandropierre-surfboards.com/",
+      "location_label": "Hossegor / Seignosse, France",
+      "founder_name": "Alessandro Pierre",
+      "lead_shaper_name": "Alessandro Pierre",
+      "short_description": "Performance surfboards shaped by Alessandro Pierre at AP Shapes production in Hossegor / Seignosse, France.",
+      "models": [
+        {
+          "name": "Black Scorpion",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/06/black_scorp_first.jpg",
+          "description": "High performance polyvalent board, functional in all types of conditions, recommended for surfers of a certain technical level. Its single concave starting 1’ from the nose that gently finishes at the tail (more level on the rocker line of the stringer) delivers speed and a lot of drive and projection on the bottom turns to get to the lip quickly with velocity. The outline is quite curved and clean and helps ease turns and manoeuvres for those that have the vision and technique to do so. Its not a toy for everyone but if your body demands more and better, the BS can deliver it.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "AP PRO",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/AP_pro_first.jpg",
+          "description": "AP-Pro is designed based on feedback from the Pro-riders to achieve better performance in both beach break and reef break. It’s an aggressive board with a lot of fluidity, it gives great control facilitating rail transition projecting the board from base to lip of the wave at high velocity. The bottom consists of an accentuated concave and a balanced rocker. The more technical surfer will get the most out of this board but you don’t need to be a pro to surf with it, take full advantage of it and rip.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bagus",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/Bagus_first-1.jpg",
+          "description": "The Bagus can be defined as the easy life version of the Black Scorpion (BS) which is a board that demands more technique. This board’s rails are more boxy and the outline is more generous making it more adequate for smaller swell and apt for a less technical level than for the BS. Its bottom also consists of a single concave deepest underfoot that helps get to the lip of the wave at speed and execute manoeuvres with more precision. To sum this up, this board is adequate in smaller conditions if you are a more technical surfer and in waves up to 1.5m if you are an intermediate surfer who enjoys high performance boards.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "PB CARVE",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/06/PB_Carve_first_2.jpg",
+          "description": "This board has been entirely developed alongside the pro surfer Patrick Beven at Capbreton and Hossegor. After a lot of hard work between surfer and shaper, we’ve managed to achieve a highly explosive board. It has rapid and aggressive responses, throwing a large amount of water on the curves. Its perfect grip on the rails makes the board gain high velocity in the barrels whilst not ceasing to be manoeuvrable in less hollow, weaker conditions. It has an easy rail to rail transition facilitating tighter bottom turns. Adequate for beach and reef breaks.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "ST5",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/ST5_first.jpg",
+          "description": "This is a board for those that enjoy powerful, barreling waves. Approved by riders at Mundaka, Hossegor and Capbreton amongst other waves of the same level. It has a lot of security on take off and the rails grip perfectly accelerating the board through the barrel section. Works well on Tri fins and quads, indispensable on trips.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "ARPEX",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/Arpex_first.jpg",
+          "description": "The principal characteristic of this board is that it gives rapid and aggressive response even when the wave looses momentum and you need that extra spark to get to the critical point. A progressive rocker but not very pronounced, it adapts to every “moment” and its double concave between the fins is designed to accelerate and direct the manoeuvres with ease. A “juicer” for the waves that doesn’t need as much technique as the Black Scorpion, it could be a good board as a quiver for the more technical surfer in irregular conditions (waves that transition from strong to weak during its course).",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Diamond Fox",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/02/diamond_fox_uebersicht.jpg",
+          "description": "The Diamond Fox is a board with many benefits for the intermediate or advanced level surfer. Its recommended for high level surfers to order this board 3” or 4” shorter than your normal size. The concept is a high performance board like the Arpex but by flattening the nose so that the widest part of the board is more in front and levelling the curve of the nose so that we get an easy paddle and a lot of velocity. The concept at the tail, including the double concave on the bottom is the same as the Arpex, a board with many benefits in all conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BLACK ANGEL",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/Black_angel_first-1.jpg",
+          "description": "This board has many benefits, designed for anyone that loves aerials and those that want to start. It has a rail distribution and bottom designed for these manoeuvres, funnelling the flow of water through the shallow channels at the front of the board directing it to the fins and the double concave between them. This provides an extra boost on the takeoffs and greater stability on the landings accelerating the board once more to complete the manoeuvre. this board is very polyvalent suitable for all wave types.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Free Mind",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/free_mind_first.jpg",
+          "description": "Free Mind has been developed to surf small to medium summer waves but with a lot of aggression for those with a bit more technique whilst still being adequate for surfers of all levels. with a generous outline, a more level rocker and a concave that starts 12” from the nose moving to a gentle double concave between the fins providing speed and easy turns on the rail transfers. The ideal size is 3” to 4” shorter than your everyday board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "WILD CAT",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/WildCat_2_first-1.jpg",
+          "description": "The Wild Cat is a very intricate model, a mix of many ideas and design details. Thought out for surfers of all levels from beginners to the more radical. The Wild Cat is a really dynamic enjoyable board to surf with. It has a generous outline that works well with either fin combination (3 or 4).The bottom design starts with a V that facilitates rapid entry into the wave and then converts into a single concave mid board and a double concave between the fins that provide control. This combination, together a small V at the end that helps change from rail to rail, gives a sense of ease to the turns. A good companion for intermediate surfers and a skateboard for shortboard experts.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "PANCHO",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/Pancho_first.jpg",
+          "description": "This board has many benefits in all conditions. Stable due to its generous outline, fast thanks to its level rocker and easily manoeuvrable due to the design of its bottom. A classic single to double concave ending in a V, giving it a very easy rail to rail transfer and a very comfortable ride equally in small and medium waves. The round tail and its progressive narrowing, gives it many advantages in waves of a certain size.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "PANCHO SLIM",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/06/Pancho_Slim_first.jpg",
+          "description": "This is a more narrow version of the Pancho keeping its main characteristics but reducing the outline and giving it a more pronounced rocker at the nose making the board more versatile for all conditions equally for small waves or more powerful ones. Its design on the bottom and the round pin tail makes it easier to make turns and to grip when necessary.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "BROTHER",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/07/BROTHER_NEU_ZUSAMMEn.jpg",
+          "description": "If you want to surf non-stop, progress in your surfing or have fun despite not having time everyday to stay on form; the Brother is more than just a friend. Everything about this board is well thought out for catching lots of waves and to move comfortably. Its very level rocker enters the waves like a longboard. Its ample area gives the sensation of standing on the board always reasonably well. Its rounded and generous rails prevent the board from snagging on the wave, helping to iron out inaccuracies. Its short length allows surprising manoeuvrability, a modern concept for improving quickly. Maybe you are just starting out or you are a more senior surfer, if this is your case or for any other reason that you might need that little extra help, the Big Brother is the board for you.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Brother",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/big_brother_first.jpg",
+          "description": "With the name Big Bother the board already speaks for itself. It has all the characteristics of The Brother but in bigger dimensions. It is made for catching waves non-stop, apt for all levels of surfer. For those that are starting, haven’t surfed for a while, have gained some weight and want to go back to surfing this is the perfect board due to its buoyancy and stability. For those with a bit more experience this board is pure amusement, especially in small waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flow",
+          "image_url": "https://alessandropierre-surfboards.com/wp-content/uploads/2022/03/flow_first.jpg",
+          "description": "Flow is a versatile longboard, its balanced curve isn’t excessively level in order to be able to turn the board, nor too curved so as not to lose speed, it adapts to all conditions. A smooth concave at the nose provides speed and stability to nose riding. The double V on the bottom at the rear facilitates turns and rail transfers.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
