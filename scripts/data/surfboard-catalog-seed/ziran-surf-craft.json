@@ -1,0 +1,88 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ziran-surf-craft",
+      "name": "Ziran Surf Craft",
+      "website_url": "https://www.ziransurfcraft.com/",
+      "location_label": "Zelah / Truro, Cornwall, United Kingdom",
+      "founder_name": "Andy Teasdale",
+      "lead_shaper_name": "Andy Teasdale",
+      "short_description": "Hand-shaped surfboards by Andy Teasdale at Lanteague Studios in Zelah, Cornwall.",
+      "models": [
+        {
+          "name": "THE GANNET",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/fed831b9-4515-4a1c-a9cd-349f41c5695c/Untitled-1.jpg",
+          "description": "Excited to add 'The Gannet' to the Ziran line up as a new model for 2025. Going back to my San Diego roots this shape draws inspiration from Skip Frye's famous 'Eagle' glider with added Ziran tweaks to accommodate a wider range of conditions. Most notably: a reduced nose outline and the wide-point placed further back to improve agility while still maintaining the section connecting magic of the straight rail line in the front half of the board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "THE ODYSSEY TWIN",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/f322710a-5d0b-4f87-88c2-3354a2b423c5/Untitled-1.jpg",
+          "description": "The Odyssey Twin takes the rocker profile, foiled rails and generous concave from high performance thrusters, with a specific twin fin template to give you a very fast and drivey design with less drag than the standard thruster. Likes to be surfed in waves good wall and a bit of power. This board is an exciting edition to the line up allowing for a familiar high performance feel with a new zap!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "OG TWIN",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/c445332f-c971-4a3b-9477-d46ca80bcdf2/ccccccc-1.jpg",
+          "description": "The OG Twin fits somewhere between a ‘Classic Keel Fish’ and a ‘Performance Twin Fin’. The outline is narrower than a ‘Classic Fish’ allowing quicker rail to rail movements. This shape also features a wing in the tail designed specifically to create a pivot point under the back foot for achieving tighter arcs than a traditional ‘Keel Fish’. Paired with either an upright or a hybrid (upright/keel) fin template, The OG Twin is an extremely versatile everyday Twin Fin for high performance surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "UNIT SHIFTER - 80s",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/e8006cbf-490c-41d5-a3b3-0d5d30852030/470CBEAF-F855-4DCB-A8C6-56A3893DE2F9.png",
+          "description": "The Unit shifter 80s is a modern take on the performance boards from the 80s. We took the positive features of these older designs like the flatter rocker, flat deck and wider tail with a hip squash and refined them into a modern shortboard. This shape offers medium entry rocker with medium exit rocker for a good get up and go speed. Keeping a little bit of width pushed up in the nose to aid with planing and paddle power and a wider tail block with a subtle hip around the fin cluster to pivot off of. We wanted this design to grovel well in weaker surf but still be a great choice when the waves turn on. Order these 1-2” shorter and 1/4 - 1/2” wider than your High performance good wave shortboard for a very forgiving all round design.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MODROS STAGE 2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/d6e6c0c2-60e2-42a9-ab82-283496a41c2b/tempImageAtwscU.jpg",
+          "description": "The Mordros Stage 2 is our take on a performance orientated Twin with added length. Longer Twinnies have increased in popularity in recent years however there are some big adjustments that occur if you’re stepping off a 6’0” shortboard and jumping on a 7’ Midlength. The Modros 2 is your gateway to cleaner surfing. An approachable board for someone coming from a high performance shortboard background and is wanting to venture into riding longer Twinnies. We took the original Mordros template, narrowed it slightly and added a hip in the tail template to create a pivot point under the back foot, as well as an increase in overall rocker curve creating a much tighter turning radius than the original. This board carries so much speed and glide, similar to the Mordros, yet can be thrashed around, and felt like the harder we pushed it the better it went. We’ve tested it in short period mush and are stoked on its grovelling capabilities. Through increasing the rail line makes you use your rail without a sacrifice to performance. The same paddle power, flow and speed, just not an overwhelming leap in size. Order 3-4 inches longer and 1/2” - 3/4” inches wider than your standard shortboard for a very fun user-friendly board that will handle anything from 2ft to double overhead tubes.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SPACECAKE",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/4b226ddd-adc0-498c-9de5-8c1a8f290619/IMG_4753.png",
+          "description": "Our most popular shortboard for small to medium waves. The Spacecake is the sweet spot between the speed of a mini-simmons and the control of a high performance shortboard. This shape features a sleek and efficient outline, forgiving rails and a generous double concave running nose to tail allowing it to flow effortlessly rail to rail with plenty of speed and drive. The Space Cake is a truly unique board that offers a great balance of speed and control.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "FREEDOM STONE",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/9a75ec47-a5b5-4eaf-8113-b54b761aebe9/35A1695A-1009-4311-ABEA-AC9F9799172E.jpeg",
+          "description": "A modern shortboard take on the Michael Peterson stubby famously ridden in morning of the earth. Think down the line speed and open face power carves. Features a generous rocker line with single concave running nose to tail. This is my choice when the waves are barreling or providing some bigger faces to open up your rail game.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "LOVEBEAM",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/c27f57b4-9d55-4847-b9be-d96cdb3fb348/tempImagedXamhr.jpg",
+          "description": "This is a board designed with smooth effortless glide in mind. Inspired by the curves of the classic mid 70s Californian egg, refined with a modern twist. A very user friendly design for all level of abilities from beginner to advanced. Elegance, flow and glide are the main ingredients of this board. The Lovebeam comes with a soft rolled entry for forgiveness, transitioning Into a double concave in front of the fins with v out the tail. This board flows rail to rail with ease, loves to get going in trim and feels very lively off the tail. Recommended fin options are 2+1, twin fin, single fin or thruster depending on your surfing preferences.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MOONDANCER",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/605e83e6-4d6e-43c5-a71c-468c22fd4e0c/moondancer-1.jpg",
+          "description": "Based on years of research and development and combining elements of two very popular styles of logging, the Moondancer sits somewhere between your Aussie wide point back 60s Log and the classic Californian Noserider. This board is designed to be surfed from tip to tail; it likes to be surfed with flow, linking turns, cross-stepping and nose rides. The Moondancer features a moderate nose concave blending into a subtle rolled bottom and 50-50 rails throughout. The wide point is placed further back achieving a nice controllable swing weight from the tail, with a straight rail section in the front half giving speedy trim sections and a good amount of width in the nose for stable noserides. The nose rocker is minimal with a generous tail kick to create lift and also a lot of sensitivity for turning. Comes default with a squash tail but also goes well as a pin depending on the waves you prefer to surf.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "LIGHTSEED",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/295cfc7d-ee89-461c-ac2b-6092a9b2e559/lightseed.jpg",
+          "description": "The Lightseed is our take on the traditional Mini-Simmons. Best ridden very short and wide. Comes with a very subtle displacement hull entry/ roll under your front foot for effortless rail to rail transitions and a V - double concave under the back foot to drive off of. You can take this out in tiny waves and still fly! A great option for small waves if logging isn’t your thing. The Lighseed thrives in waves 1-5 feet delivering maximum speed and fun. This board works well with either a twin keel or a split keel quad. The classic keel set up will surf slightly more laterally which will suit waves a that are a bit stretched out and walled like a point whereas the split keel quad will have a performance edge allowing for a tighter turning radius and quicker looser turns which will aid your surfing in wedgy beach break style waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "MORDROS",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/6a8f8f29-b1bf-4e3e-8349-2c5e7bef1d6b/mordros-1.jpg",
+          "description": "This board was first designed during a winter trip back to Andy’s hometown of San Diego. He wanted to make something that would go well in the overhead clean days at the reefs which come to life during a good Californian winter – a wave with enough room to draw some long smooth rail carves . This is our most versatile shape proving to not only light up in larger waves, but also perform in small to medium waves. The Mordros offers effortless speed and drive with no worry of slipping out. Featuring a soft V entry for forgiveness, a subtle single concave under the front foot, double in front of the back foot, V double out the tail and enhanced rail rocker that loosens up the long rail line. These features contribute to this boards speed and power. If you want to go very fast without working for it, and flow seamlessly through your turns, we would highly recommend adding The Mordros to your quiver.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "LOMA KEEL",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/686ce6648a371f24f892340d/1eac1e3b-7333-4fec-818b-9df61079bc77/08F8813D-057A-4C34-A7D4-2D69E298A346.jpeg",
+          "description": "Originating from the Sunset Cliffs reef breaks along the Point Loma region of San Diego, the classic ‘Keel Fin Fish’ was born. Traditionally designed by a local kneeboarder in the 70s, ‘The Fish’ quickly gained popularity amongst standup surfers and is one of the most revolutionary surfboard designs to date. Our version of The Fish has just the right amount of modern performance design features sprinkled in while still honouring the traditional shape. One of the most common issues people had with the originals was the uncontrollability and reckless speed they carry. This was mainly due to the very straight, chunky rail line and the parallel, upright keel fins. To combat these issues, we’ve added some tweaks to the outline, including a slight hip right right around the back foot, progressive adjustments to rail line rocker and concave. The break in the outline unlocks the performance without sacrificing the classic speed the fish is so famous for. Once you find the sweet spot on these boards, you can push them seriously hard in a wide range of conditions. And can be surfed backhand extremely well which contradicts the limitations of the traditional fish. Definitely not strictly a groveller, in fact these light up when there’s a bit of wave to work with. Recommended to size them short, wide and thin for the best combo of speed and control. For size reference: Andy’s HP shortboard is 6’1” x 19” x 2 1/2” and his Loma keel would sit at 5’4” x 20 3/4” x 2 3/8”.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
