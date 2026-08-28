@@ -1,0 +1,100 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "folklore-surf",
+      "name": "Folklore Surf",
+      "website_url": "https://flklrsurf.com/",
+      "location_label": "Florida, USA & Canggu, Bali",
+      "founder_name": "Mar Cubillos",
+      "lead_shaper_name": "Mar Cubillos",
+      "short_description": "Retro progressive surfboards from two shaping bays in Florida, USA and Canggu, Bali, founded by Mar Cubillos.",
+      "models": [
+        {
+          "name": "Mokana",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-custom-surfboards-matador-03.jpg",
+          "description": "Arch your back, raise your arms, stand tall and ride proud on the tip of this board - you'll be doing nothing but feeling the love of this ride in the water. This board was created exclusively for those seeking more tip action, the lower hips on this beauty make for more stability on the nose. A true Californian Classic.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "MarMar",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-marmar-00.jpg",
+          "description": "See the sea longer on this nine-foot superstar. MAR MAR was designed to coast through those fast breaks. A concaved nose for steady, speedy noserides on slow waves and pinched rails that'll keep you trimming on track. A (bat) tail that turns on a dime and gives back a buck eighty back. Holler at this dollar and change.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Shiva",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-shiva-002.jpg",
+          "description": "\"Give me some of the sweet shiva\" — Said a lot of people. That's why we found the meaning of Shiva appropriate for this beauty — striking perfect energy and balance while turning and gliding your way up to the nose. Our sweet Shiva will leave you feeling nice and high after each session.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mizu",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/FLKLR-Balinciaga-Desktop.png",
+          "description": "Stop feeling like a long fish out of water and let Balinciaga dig deep into those bottom turns and long carving sessions. Balinciaga loves to put rail to rail when you need it most.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Ranchero",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-ranchero-01.jpg",
+          "description": "The only thing you'll be going below with this board is the border. Whether they're fast sections or mini pocket noserides, this board cruises them like a low-rider through Compton. Say h(ola) and holler at Ranchero.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Kahu",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/FLK_-_Kahu_-_cranberry_-_3.jpg",
+          "description": "Cash in your karma and let Kahu take care of you. With channels designed to keep you grounded and provide extra stability as you turn, Kahu gives you that unique feel of a twin fin with added power in your turns. Make new waves with Kahu.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nuki",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-nuki-00.jpg",
+          "description": "We all need a little NUKI in our quiver. This little one packs speed, balance and a lot of flexibility on the tail. Not bragging but we know how to fish, we fish good, besides who doesn't like twins...",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Da Dodge",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-da-dodgee-01.jpg",
+          "description": "Face it, you and your board just aren't seeing eye to eye anymore. You're bored. At first sight, you loved those high volume mass produced stock models, but year after year of mediocre rides and you're left yearning for something more. Have a little four-fin foreplay with this handcrafted high performance beauty. Once you dodge, the game changes.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tonkay",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-tonkay-intro-00.jpg",
+          "description": "Tonkay is just smooth and ready to lather you up and down with juicy packed turns. Our bar soap version has a slight channel concave towards the tail and less channel depth and slightly bigger middle. Best described as a loose skateboard in a pool. Get your bar soap game on point.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "El Capi",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-el-capi-00.jpg",
+          "description": "A smooth sea never made a skilled sailor. You'll feel at home at the helm of El Capi (the captain). From wind chops to barrels, you'll be styling and sailing all day. Our new re-design version of the Captain loves to charge in the water.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Messy Tessi",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/flklrsurf-messy-tessi-00.jpg",
+          "description": "We don't have favorites, but if we did this smooth lady would be right up there. The Messy Tessi embodies the best of '70s single fin style with a modern twist. Her generous curves and bottom wings mean that you can turn on a dime and still hold you steady. Her wide nose will help you shuffle up your toes down to the nose & help you catch easier some of those sweet rides. Trust Messy Tessi, she'll take you for a good spin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Polka",
+          "image_url": "https://flklrsurf.com/cdn/shop/files/Folklore-Polka-shortboard-1_2048x2048.jpg",
+          "description": "The Polka may look brutally cold-hearted but take her out for a ride and you'll see her sweet side. Have a peek in her undercarriage and you'll find channels and reverse concave shaping to make you turn like you're riding with fins. Step back for control and when you're ready for it, lean forward and go for a spin. The Polka is the more loving sister of the timeless Alaia board. Take her out for a spin.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Dash",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/FLKLR-IMAGE-BOARDS-5.jpg",
+          "description": "For all of us fish lovers, DASH creates more speed and high performance maneuverability, with thinner rails and channels to put you in the right track. Put a dash of speed in your quiver.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Keramakasih",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/collections/FLKLR-Keramas-White-3.jpg",
+          "description": "Keramakasih is our go to fast board. Made to perform in critical sections in the wave, while allowing you to carve- smooth turns on waves that demand more top to bottom performance. A single concave swallow to tail to keep you in the pocket, with reinforced carbon fiber on deck to give that flexibility and strong hold while making snapy turns. Order your Keramas board today.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
