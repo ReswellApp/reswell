@@ -1,0 +1,154 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "escape-surfboards",
+      "name": "Escape Surfboards",
+      "website_url": "https://www.escapesurfboards.com/",
+      "location_label": "St Minver, Cornwall, United Kingdom",
+      "founder_name": "Bill Attlee",
+      "lead_shaper_name": "Bill Attlee",
+      "short_description": "Hand-shaped surfboards by Bill Attlee from a small workshop at Pityme Industrial Estate, St Minver, near Polzeath, Cornwall, since 1997.",
+      "models": [
+        {
+          "name": "Diamond Geezer",
+          "image_url": "https://assets.bigcartel.com/product_images/370691830/8-2+Diamond+Geazer+T_B.jpg",
+          "description": "The Diamond Geezer is the perfect fun board for those who want to move down from their longboard or others looking to catch more waves and enjoy easy paddling. There are plenty of fin options from single fin, 2+1, thruster, quad or even as a twin fin — the Diamond Geezer is the Swiss Army knife of surfing. Surf the DG from the tail and throw some spray or move forward and cruise the trim line.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Waltz",
+          "image_url": "https://assets.bigcartel.com/product_images/421600371/9-6+Waltz+Green+Tint.jpg",
+          "description": "Waltz Classic Longboard Overview. Designed with a focus on style, stability, and fluid movement, this longboard gives you the effortless glide and nose-riding confidence that classic log surfers want. Handcrafted in the Cornish workshop near Polzeath, combining classic lines with enhanced rail control, glide, and nose-riding stability.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Flight",
+          "image_url": "https://assets.bigcartel.com/product_images/379763958/6-8+Flight+Black+Rails+T_B.jpg",
+          "description": "The Flight is a totally modern single fin surfboard with serious high-performance credentials. Designed for speed, control, and confidence, this board blends classic single-fin flow with contemporary shaping refinements. The bottom contour combines a single concave flowing into double concave, finishing with a subtle V through the tail. It thrives in heavier, more powerful waves, yet remains surprisingly playful for lighter surfers.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flying Carpet",
+          "image_url": "https://assets.bigcartel.com/product_images/f79a44e6-d05b-4ea0-9ab8-703f56d20629/7-3-flying-carpet-polyola-foam-epoxy-biosap-laminate.jpg",
+          "description": "The Flying Carpet is a compact version of a longboard and Escape's most popular retro style board, fun for a beginner or intermediate surfer looking to get to grips with down-the-line surfing or a more experienced surfer looking for a fun styling mid length. A stable platform with good weight carrying ability. The rocker is designed to balance paddle speed and wave catching with manoeuvrability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Legend",
+          "image_url": "https://assets.bigcartel.com/product_images/375201952/7-6+Bill+Legend.jpg",
+          "description": "Legend midlength with rolled V nose to mid-point, double concave through the tail, a fat deck, and a swallow tail for hold and drive through the turns. Bill Attlee built the idea from a late-1970s winged swallow single fin inspired by a Gordon and Smith advert, and the 7'6 surfed better than his fish.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Spark",
+          "image_url": "https://assets.bigcartel.com/product_images/265e95d1-7270-404e-8845-4fda0e511321/the-spark-classic-fun-longboard-surfboard.jpg",
+          "description": "The Spark is Escape's longest-serving longboard: a simple, uncluttered classic built for maximum fun, glide, and wave count. Medium-low rocker with enough lift in the nose to prevent pearling and just enough tail kick to turn easily. The bottom runs from single concave through the midsection into double concave, finishing with a subtle V in the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Peanut",
+          "image_url": "https://assets.bigcartel.com/product_images/398053635/6-6+Peanut+Green+Tint+Bottom.jpg",
+          "description": "The Peanut epitomises the Escape Surfboards design philosophy of getting the best performance out of the most compact design possible. A curvy easy-to-turn high-performance egg with a drivey single to double concave. One of Escape's oldest designs, still popular as a small-wave board for experienced surfers and a first shortboard for learners.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Bobby",
+          "image_url": "https://assets.bigcartel.com/product_images/360377518/7-0+Trim+Too.jpg",
+          "description": "The Bobby takes the Escape Trim shape and tunes it for small grovel waves: catch the waves that only the mals and soft boards can get, then surf them rather than just go in a straight line. Full egg outline with thumb squash tail, super-smooth nose-to-tail rocker, rolled V nose to flat V in the tail, and a 10\" centre box with FCS II side bites.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Brother",
+          "image_url": "https://assets.bigcartel.com/product_images/89e3ff86-fead-44d5-b3c6-62930accef36/the-brother-versatile-midlength-surfboard-by-bill-attlee.jpg",
+          "description": "Designed and hand-shaped by Bill Attlee, the Brother is a highly versatile midlength built as a daily driver or travel board. An extended egg outline with the wide point forward of centre places volume under the chest for fast paddling and easy take-off. Available in sizes from 6'6\" to 8'2\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin Stick",
+          "image_url": "https://assets.bigcartel.com/product_images/379763865/5-10+Twin+Stick.jpg",
+          "description": "The Twin Stick is a full-outlined twin for the smallest and mushiest waves. Continuous moderate rocker keeps it active, with single concave from nose to tail, a double-barrelled concave between the fins, and a winged swallow that pivots under back-foot pressure. Standard sizes from 5'6\" to 6'6\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Allegro",
+          "image_url": "https://assets.bigcartel.com/product_images/406333533/9-6+Harrys+Allegro.jpg",
+          "description": "The Allegro is a high-performance Malibu-style longboard designed by Bill Attlee with team rider Harry Hilder to complement the Stepper when the waves are bigger and choppier. Based on the Waltz with a little more nose width and the single concave moved further down the board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Big Fish",
+          "image_url": "https://assets.bigcartel.com/product_images/398002458/7-1+Big+Fish+Rainbow.jpg",
+          "description": "The Big Fish is a fun-board-inspired mid fish with volume focused beneath the chest, a flatter deck, rails that taper from the midpoint back, and a deep fish tail that grips through turns. V with double concave from nose to tail and twin Future boxes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Eclipse",
+          "image_url": "https://assets.bigcartel.com/product_images/404433309/7-8+Eclipse+Egg.jpg",
+          "description": "The Eclipse is Escape's modern mid-length egg — sleek, stylish, and designed to perform in almost any wave. Egg outline, balanced rocker, and a versatile fin setup that blends speed, stability, and smooth turning. Ride it as a single fin or 2+1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Funk",
+          "image_url": "https://assets.bigcartel.com/product_images/1868a9f2-9f58-471a-942e-5446c2e35dc3/6-0-funk-surfboard.jpg",
+          "description": "Escape's most popular small-wave performance surfboard. The Funk will surf small stuff and come alive when the waves get bigger — a compact thruster with a bit more width and foam so it still rips average conditions. Made from 5'6\" to 6'2\", ridden 4–6\" under a normal shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin Brother",
+          "image_url": "https://assets.bigcartel.com/product_images/383151684/7-4+SuperEgg+T_B.jpg",
+          "description": "The Twin Brother is a Bill Attlee twin-fin midlength: classic egg-shaped outline with a modern rocker and rail shape, fitted with Future boxes. Designed for agile, progressive surfing with the freedom of a twin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Barnstormer",
+          "image_url": "https://assets.bigcartel.com/product_images/379759335/9-2+Barnstormer+PolyT_B+.jpg",
+          "description": "The Barnstormer is a progressive step-up longboard for surfers who want a longboard experience without the bulk of a traditional full-nose Malibu. Narrower 14 1/2\" nose and 14 3/8\" tail, refined rails, and a V-to-single-to-double concave bottom.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Big Twin",
+          "image_url": "https://assets.bigcartel.com/product_images/379766244/7-2+Big+Twin+T_B.jpg",
+          "description": "The Big Twin is a midlength designed in its own right for Polzeath's long-slope beach breaks and long paddle-outs, while still handling reefs, points, and steeper waves. Built around modern Future and FCS II twin fins that can be swapped to suit the day.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SuperFrog",
+          "image_url": "https://assets.bigcartel.com/product_images/8f36bd31-bb44-42d1-9164-b921e5028cec/7-3-superfrog-mid-length-surfboard-epoxy-laminate-fcs11-fins.jpg",
+          "description": "The SuperFrog is a mid-length pintail derived from the Flying Carpet / Wasp family, with volume under the chest, a flatter deck, more V in the nose, and a pintail for hold in faster manoeuvres. FCS 10\" centre box with FCS II side bites; twin fin is an option.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stepper",
+          "image_url": "https://assets.bigcartel.com/product_images/379759449/9-8+StepperT_B.jpg",
+          "description": "The Stepper was designed to catch waves as early as possible and be the most stable and forgiving nose rider. Contemporary parallel outline with a wide square tail, single concave from nose to midsection then rolled V to the tail, and sizes from 8'0\" to 10'2\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://assets.bigcartel.com/product_images/379758825/5-9+Keel+FishYellow+Green.jpg",
+          "description": "The modern Keel Fish updates the 1970s template with a single concave nose and midsection to double concave V in the tail, thinner refined rails, and fins set further forward so it no longer tracks. FCS II or Future boxes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stickato",
+          "image_url": "https://assets.bigcartel.com/product_images/379759083/9-0+Stickato+Top+and+Bottom+.jpg",
+          "description": "The Stickato is a progressive Malibu with a slimmer outline for control in heavier waves, a high-performance tail, hard thinned-out rails toward the back, and a modest-width nose with deep single concave for lift when hanging toes. Sizes from 8'2\" to 9'8\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Dew Drop",
+          "image_url": "https://assets.bigcartel.com/product_images/379759542/9-6+DewDrop.jpg",
+          "description": "The Dew Drop is designed to get the maximum volume possible from the shortest lengths while still retaining good surfing characteristics. Full and wide through the nose and midpoint for stability and wave catching in the smallest waves, then a more modest tail so you can pivot when you step back. Sizes from 8'0\" to 10'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Wasp",
+          "image_url": "https://assets.bigcartel.com/product_images/370470085/7-10+Wasp+Grey+Bill.jpg",
+          "description": "The Wasp is inspired by West Coast USA designs: a low-rockered full nose with deep single concave through to rolled V in the midsection and a thin pintail with a wack of tail lift. Cruise from the middle, hang time on the nose, or snap from the tail. Single, quad, 2+1, or thruster.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
