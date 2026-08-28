@@ -42,7 +42,12 @@ import {
   OfferNegotiationEventCard,
 } from '@/components/features/messages/offer-negotiation-event-card'
 import type { OfferRowLite } from '@/components/features/messages/seller-offer-response-dialog'
-import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiation-message'
+import {
+  parseOfferNegotiationMessage,
+  resolveActionableCounteredOffer,
+  resolveAcceptedOfferForCheckout,
+} from '@/lib/utils/parse-offer-negotiation-message'
+import { parseOfferLineItems } from '@/lib/types/offer-line-item'
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
 import { parseOrderRefundedMessageMetadata } from '@/lib/validations/order-refunded-message-metadata'
@@ -1007,6 +1012,31 @@ export function ConversationThreadClient({
 
                     const negotiationKind = parseOfferNegotiationMessage(message.content)
                     if (negotiationKind) {
+                      const listingIdForOffer =
+                        threadPrimaryListingId ?? conversation?.listing_id
+                      const offersList = Object.values(offersById)
+                      const actionable =
+                        !isSeller &&
+                        (negotiationKind === 'counter' || negotiationKind === 'seller_offer')
+                          ? resolveActionableCounteredOffer(
+                              offersList,
+                              negotiationKind,
+                              message.content,
+                              listingIdForOffer,
+                            )
+                          : null
+                      const checkoutOffer =
+                        !isSeller && negotiationKind === 'accepted'
+                          ? resolveAcceptedOfferForCheckout(
+                              offersList,
+                              negotiationKind,
+                              message.content,
+                              listingIdForOffer,
+                            )
+                          : null
+                      const checkoutLineItems = checkoutOffer
+                        ? parseOfferLineItems(checkoutOffer.line_items)
+                        : null
                       return (
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <OfferNegotiationEventCard
@@ -1015,6 +1045,11 @@ export function ConversationThreadClient({
                             createdAt={message.created_at}
                             isOwn={isOwn}
                             showSellerDashboardLink={isSeller && isOwn}
+                            actionableOfferId={actionable?.id ?? null}
+                            actionableExpiresAt={actionable?.expires_at ?? null}
+                            checkoutOfferId={checkoutOffer?.id ?? null}
+                            checkoutLineItemCount={checkoutLineItems?.length ?? 0}
+                            onThreadRefresh={loadThread}
                           />
                         </div>
                       )

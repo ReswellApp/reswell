@@ -18,7 +18,7 @@ function fulfillmentLabel(fulfillment: "pickup" | "shipping", shippingAmount: nu
   if (shippingAmount != null && shippingAmount > 0) {
     return `Shipping (+${formatMoney(shippingAmount)})`
   }
-  return "Shipping (Reswell rate at checkout)"
+  return "Shipping calculated at checkout"
 }
 
 function bundleSummary(lineItems: OfferLineItem[]): string {

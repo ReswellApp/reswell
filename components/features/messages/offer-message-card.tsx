@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
-import { BuyerCounterOfferDialog, type BuyerCounterOfferRow } from "@/components/features/offers/buyer-counter-offer-dialog"
+import { BuyerCounterRespondButtons } from "@/components/features/messages/buyer-counter-respond-buttons"
 import { resolveOfferThreadNote } from "@/lib/utils/parse-offer-negotiation-message"
 import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import { buildOfferMessageDisplay } from "@/lib/utils/offer-message-display"
@@ -76,7 +76,6 @@ export function OfferMessageCard({
   onThreadRefresh: () => void | Promise<void>
 }) {
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [buyerDialogOpen, setBuyerDialogOpen] = useState(false)
   const pending = offer.status === "PENDING"
   const countered = offer.status === "COUNTERED"
   const counterDeadlineMs = offer.expires_at ? new Date(offer.expires_at).getTime() : null
@@ -91,24 +90,13 @@ export function OfferMessageCard({
   const offerLineItems = parseOfferLineItems(offer.line_items) ?? []
   const isBundleOffer = offerLineItems.length > 1
   const display = buildOfferMessageDisplay(offer, messageContent, isSeller)
-  const buyerDialogOffer: BuyerCounterOfferRow | null = showBuyerCounterActions
-    ? {
-        id: offer.id,
-        status: offer.status,
-        initial_amount: offer.initial_amount ?? offer.current_amount,
-        current_amount: offer.current_amount,
-        seller_counter_note:
-          latestSellerCounterNoteFromTimeline(offer.offer_timeline) ??
-          resolveOfferThreadNote(messageContent, offer.offer_timeline, {
-            sellerInitiated: sellerInitiated,
-          }),
-        seller_initiated: sellerInitiated,
-        expires_at: offer.expires_at ?? null,
-        fulfillment: offer.fulfillment ?? null,
-        shipping_amount: offer.shipping_amount ?? null,
-        line_items: offer.line_items,
-      }
-    : null
+  // Prefer timeline note for countered cards (message content may be the opening offer line).
+  const shownNote = showBuyerCounterActions
+    ? latestSellerCounterNoteFromTimeline(offer.offer_timeline) ??
+      resolveOfferThreadNote(messageContent, offer.offer_timeline, {
+        sellerInitiated: sellerInitiated,
+      })
+    : display.note
 
   return (
     <>
@@ -171,12 +159,12 @@ export function OfferMessageCard({
             </ul>
           ) : null}
 
-          {display.note ? (
-            <p className="text-[14px] leading-snug text-foreground/90">&ldquo;{display.note}&rdquo;</p>
+          {shownNote ? (
+            <p className="text-[14px] leading-snug text-foreground/90">&ldquo;{shownNote}&rdquo;</p>
           ) : null}
 
           {isSeller && (
-            <p className={cn("text-[12px] leading-snug text-muted-foreground", display.note && "mt-2")}>
+            <p className={cn("text-[12px] leading-snug text-muted-foreground", shownNote && "mt-2")}>
               <Link
                 href="/messages/offers"
                 className="font-medium text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors hover:decoration-foreground/60"
@@ -200,7 +188,7 @@ export function OfferMessageCard({
           )}
 
           {!showSellerActions && isSeller && !pending && (
-            <p className={cn("text-[12px] text-muted-foreground", (display.note || isSeller) && "mt-2")}>
+            <p className={cn("text-[12px] text-muted-foreground", (shownNote || isSeller) && "mt-2")}>
               {offer.status === "COUNTERED"
                 ? sellerInitiated
                   ? "Waiting for the buyer to respond to your offer."
@@ -210,19 +198,19 @@ export function OfferMessageCard({
           )}
 
           {!isSeller && countered && counterExpired && (
-            <p className={cn("text-[12px] text-muted-foreground", display.note && "mt-2")}>
+            <p className={cn("text-[12px] text-muted-foreground", shownNote && "mt-2")}>
               This offer has expired.
             </p>
           )}
 
           {!isSeller && countered && !counterExpired && offer.expires_at ? (
-            <p className={cn("text-[12px] text-muted-foreground", display.note && "mt-2")}>
+            <p className={cn("text-[12px] text-muted-foreground", shownNote && "mt-2")}>
               Accept or decline {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}.
             </p>
           ) : null}
 
           {!isSeller && offer.status === "ACCEPTED" && (
-            <div className={cn("mt-3 space-y-2", display.note && "mt-2")}>
+            <div className={cn("mt-3 space-y-2", shownNote && "mt-2")}>
               <Button
                 type="button"
                 size="sm"
@@ -244,51 +232,31 @@ export function OfferMessageCard({
           )}
 
           {!isSeller && pending && (
-            <p className={cn("text-[12px] text-muted-foreground", display.note && "mt-2")}>
+            <p className={cn("text-[12px] text-muted-foreground", shownNote && "mt-2")}>
               Waiting for the seller to respond.
             </p>
           )}
 
-          {!isSeller && sellerInitiated && (
-            <div
-              className={cn(
-                "mt-3 flex flex-col gap-2",
-                showBuyerCounterActions && "sm:flex-row sm:flex-wrap sm:items-stretch",
-              )}
-            >
-              {showBuyerCounterActions ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-10 w-full rounded-xl text-[14px] font-semibold sm:min-w-[8rem] sm:flex-1"
-                  onClick={() => setBuyerDialogOpen(true)}
-                >
-                  Accept or decline
-                </Button>
-              ) : null}
+          {showBuyerCounterActions ? (
+            <BuyerCounterRespondButtons
+              offerId={offer.id}
+              onCompleted={onThreadRefresh}
+              className="mt-3"
+            />
+          ) : null}
+
+          {!isSeller && sellerInitiated && !showBuyerCounterActions ? (
+            <div className="mt-3">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 w-full shrink-0 rounded-xl text-[14px] font-semibold sm:w-auto sm:min-w-[10rem]"
+                className="h-10 w-full shrink-0 rounded-xl text-[14px] font-semibold"
                 asChild
               >
                 <Link href="/messages/offers">View in Offers</Link>
               </Button>
             </div>
-          )}
-
-          {!isSeller && !sellerInitiated && showBuyerCounterActions && (
-            <div className="mt-3">
-              <Button
-                type="button"
-                size="sm"
-                className="h-10 w-full rounded-xl text-[14px] font-semibold sm:min-w-[8rem]"
-                onClick={() => setBuyerDialogOpen(true)}
-              >
-                Review counteroffer
-              </Button>
-            </div>
-          )}
+          ) : null}
 
           <p className="mt-2.5 text-[11px] tabular-nums leading-none text-muted-foreground">
             {formatThreadTime(createdAt)}
@@ -305,15 +273,6 @@ export function OfferMessageCard({
         minOfferAmount={minOfferAmount}
         minOfferPct={minOfferPct}
         buyerNote={display.note}
-        onCompleted={onThreadRefresh}
-      />
-
-      <BuyerCounterOfferDialog
-        open={buyerDialogOpen}
-        onOpenChange={setBuyerDialogOpen}
-        offer={buyerDialogOffer}
-        listingTitle={listingTitle}
-        listPrice={listPrice}
         onCompleted={onThreadRefresh}
       />
     </>

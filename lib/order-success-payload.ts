@@ -56,6 +56,8 @@ type OrderSuccessOrderRow = {
   fulfillment_method: string | null
   pickup_code: string | null
   seller_id: string | null
+  tracking_number: string | null
+  tracking_carrier: string | null
   shipping_address: ShippingAddressJson
   listings:
     | SuccessListingEmbed
@@ -183,6 +185,15 @@ function mapOrderRowToCheckoutPayload(
     order.is_admin_test !== true &&
     (status === "confirmed" || status === "refunding" || status === "refunded")
 
+  const trackingNumber =
+    typeof order.tracking_number === "string" && order.tracking_number.trim()
+      ? order.tracking_number.trim()
+      : null
+  const trackingCarrier =
+    typeof order.tracking_carrier === "string" && order.tracking_carrier.trim()
+      ? order.tracking_carrier.trim()
+      : null
+
   return {
     orderId: order.id,
     displayNumber,
@@ -204,6 +215,8 @@ function mapOrderRowToCheckoutPayload(
           email: ship.email ?? null,
         }
       : null,
+    trackingNumber,
+    trackingCarrier,
   }
 }
 
@@ -234,6 +247,8 @@ export async function fetchBuyerOrderSuccessPayload(
       fulfillment_method,
       pickup_code,
       seller_id,
+      tracking_number,
+      tracking_carrier,
       shipping_address,
       listings (
         id,

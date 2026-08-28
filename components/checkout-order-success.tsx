@@ -5,9 +5,11 @@ import Image from "next/image"
 import Link from "next/link"
 import confetti from "canvas-confetti"
 import { motion } from "motion/react"
-import { ArrowRight, Check, Package, Truck } from "lucide-react"
+import { ArrowRight, Check, ExternalLink, Package, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
+import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
+import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 
 export type CheckoutOrderSuccessPayload = {
   orderId: string
@@ -46,6 +48,12 @@ export type CheckoutOrderSuccessPayload = {
     addressLines: string[] | null
     email: string | null
   } | null
+  /**
+   * Present when a Reswell label was auto-purchased at checkout (or seller/admin
+   * already attached tracking). Null until then for seller-own shipping.
+   */
+  trackingNumber: string | null
+  trackingCarrier: string | null
 }
 
 function money(n: number) {
@@ -101,6 +109,15 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
   }, [])
 
   const fulfill = data.fulfillmentMethod
+  const trackingNumber = data.trackingNumber?.trim() || null
+  const trackingCarrier = data.trackingCarrier?.trim() || null
+  const trackUrl = trackingNumber
+    ? carrierTrackingUrl(trackingNumber, trackingCarrier)
+    : null
+  const carrierLabel = trackingNumber
+    ? formatCarrierDisplayName(trackingCarrier, null)
+    : null
+
   const shippingTitle =
     fulfill === "shipping" ? "Standard shipping" : fulfill === "pickup" ? "Local pickup" : "Delivery"
   const shippingBody =
@@ -110,11 +127,13 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
         ? "Coordinate time and place with the seller via Messages."
         : "Details are available on your purchase page."
   const shippingHint =
-    fulfill === "shipping"
-      ? "Seller will add tracking from your purchases page when it ships."
-      : fulfill === "pickup"
-        ? "Bring your pickup code when you meet the seller."
-        : null
+    fulfill === "shipping" && trackingNumber
+      ? null
+      : fulfill === "shipping"
+        ? "Seller will add tracking from your purchases page when it ships."
+        : fulfill === "pickup"
+          ? "Bring your pickup code when you meet the seller."
+          : null
 
   const lines = data.orderLines
   const head = lines[0]
@@ -253,6 +272,17 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
                   <div>
                     <div className="mb-1 text-sm">{shippingTitle}</div>
                     <div className="text-sm text-muted-foreground">{shippingBody}</div>
+                    {trackingNumber ? (
+                      <div className="mt-2 space-y-0.5">
+                        <div className="text-xs font-medium text-foreground">
+                          Tracking
+                          {carrierLabel && carrierLabel !== "Carrier" ? ` · ${carrierLabel}` : ""}
+                        </div>
+                        <div className="font-mono text-sm text-muted-foreground break-all">
+                          {trackingNumber}
+                        </div>
+                      </div>
+                    ) : null}
                     {shippingHint ? (
                       <div className="mt-1 text-xs text-muted-foreground">{shippingHint}</div>
                     ) : null}
@@ -270,10 +300,17 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
           className="flex flex-col justify-center gap-3 sm:flex-row sm:justify-center"
         >
           <Button size="lg" asChild>
-            <Link href="/dashboard/purchases" className="gap-2">
-              Track purchase
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            {trackUrl ? (
+              <a href={trackUrl} target="_blank" rel="noopener noreferrer" className="gap-2">
+                Track package
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            ) : (
+              <Link href="/dashboard/purchases" className="gap-2">
+                Track purchase
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
           </Button>
           <Button size="lg" variant="outline" asChild>
             <Link href="/boards">Continue shopping</Link>

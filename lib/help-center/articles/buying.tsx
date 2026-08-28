@@ -188,8 +188,8 @@ export const buyingHelpArticles: HelpArticle[] = [
               ]}
             />
             <p>
-              If they counter, open the thread and tap <strong>Review counteroffer</strong> to{" "}
-              <strong>Accept</strong> or <strong>Decline</strong>. Accepting saves the agreed price for
+              If they counter, open the thread and tap <strong>Accept</strong> or{" "}
+              <strong>Decline</strong> on the counteroffer message. Accepting saves the agreed price for
               checkout. You are not charged until you actually pay.
             </p>
           </>

@@ -238,8 +238,8 @@ export async function respondToCounterOfferService(
 
   const acceptText =
     lineItems && lineItems.length > 1
-      ? `Offer accepted — $${current.toFixed(2)} for ${lineItems.length} items. You can check out the full bundle in one payment from messages or Offers.`
-      : `Counteroffer accepted — $${current.toFixed(2)} for “${title}”. You can purchase at this price from messages or the listing when you choose; you’re not required to.`
+      ? `Offer accepted — $${current.toFixed(2)} for ${lineItems.length} items.`
+      : `Counteroffer accepted — $${current.toFixed(2)}.`
 
   await appendNegotiationLine(supabase, offer, buyerUserId, acceptText)
 

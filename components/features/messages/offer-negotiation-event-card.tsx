@@ -2,12 +2,16 @@
 
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { format, isToday, isYesterday } from "date-fns"
+import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
+import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns"
 import {
   parseCounterofferNoteFromThread,
+  parseNegotiationAmountFromContent,
   type OfferNegotiationKind,
 } from "@/lib/utils/parse-offer-negotiation-message"
+import { BuyerCounterRespondButtons } from "@/components/features/messages/buyer-counter-respond-buttons"
 
 function formatThreadTime(dateStr: string) {
   const date = new Date(dateStr)
@@ -16,7 +20,10 @@ function formatThreadTime(dateStr: string) {
   return format(date, "MMM d, h:mm a")
 }
 
-function statusBadge(kind: OfferNegotiationKind): { label: string; variant: "default" | "secondary" | "outline" } {
+function statusBadge(kind: OfferNegotiationKind): {
+  label: string
+  variant: "default" | "secondary" | "outline"
+} {
   switch (kind) {
     case "accepted":
       return { label: "Accepted", variant: "default" }
@@ -29,43 +36,56 @@ function statusBadge(kind: OfferNegotiationKind): { label: string; variant: "def
   }
 }
 
-function footerHint(kind: OfferNegotiationKind, isOwn: boolean): string | null {
+function formatAmountLabel(amount: number | null): string | null {
+  if (amount == null) return null
+  return `$${amount.toFixed(2)}`
+}
+
+function headlineForKind(kind: OfferNegotiationKind, isOwn: boolean): string {
+  switch (kind) {
+    case "counter":
+      return isOwn ? "Your counteroffer" : "Seller counteroffer"
+    case "seller_offer":
+      return isOwn ? "Your offer to buyer" : "Offer from seller"
+    case "accepted":
+      return "Offer accepted"
+    case "declined":
+      return "Offer declined"
+  }
+}
+
+function footerHint(
+  kind: OfferNegotiationKind,
+  isOwn: boolean,
+  hasBuyerActions: boolean,
+  hasCheckout: boolean,
+  expiresAt: string | null | undefined,
+): string | null {
+  if (hasBuyerActions && expiresAt) {
+    return `Accept or decline ${formatDistanceToNow(new Date(expiresAt), { addSuffix: true })}.`
+  }
   if (kind === "seller_offer" && isOwn) {
     return "Waiting for the buyer to respond to your offer."
   }
   if (kind === "seller_offer" && !isOwn) {
-    return "Review the offer and reply when you're ready."
+    return null
   }
   if (kind === "counter" && isOwn) {
     return "Waiting for the buyer to reply to your counter."
   }
   if (kind === "counter" && !isOwn) {
-    return "Review the counter and reply when you're ready."
+    return null
   }
   if (kind === "declined") {
     return "This offer is closed."
   }
+  if (kind === "accepted" && hasCheckout) {
+    return "Pay at your agreed price. You’re not required to complete a purchase."
+  }
   if (kind === "accepted") {
-    return "Next step: complete checkout from the listing when you're ready."
+    return "Next step: complete checkout when you're ready."
   }
   return null
-}
-
-function formatNegotiationBody(kind: OfferNegotiationKind, content: string): string {
-  const trimmed = content.trim()
-  if (kind === "seller_offer") {
-    const amountMatch = /^Offer from seller:\s*(\$[\d,]+(?:\.\d{2})?)/i.exec(trimmed)
-    if (amountMatch?.[1]) {
-      return `Offer from seller: ${amountMatch[1]}`
-    }
-  }
-  if (kind === "counter") {
-    const amountMatch = /^Counteroffer:\s*(\$[\d,]+(?:\.\d{2})?)/i.exec(trimmed)
-    if (amountMatch?.[1]) {
-      return `Counteroffer: ${amountMatch[1]}`
-    }
-  }
-  return trimmed
 }
 
 /** Legacy mirrored line when `messages.offer_id` was missing — same shell as other offer cards. */
@@ -110,6 +130,7 @@ export function OfferLegacyMirrorCard({
 
 /**
  * Renders seller (or system) negotiation outcomes in the same visual language as `OfferMessageCard`.
+ * Buyers get Accept / Decline on open counters, and Checkout on accepted offers.
  */
 export function OfferNegotiationEventCard({
   kind,
@@ -117,6 +138,11 @@ export function OfferNegotiationEventCard({
   createdAt,
   isOwn,
   showSellerDashboardLink,
+  actionableOfferId,
+  actionableExpiresAt,
+  checkoutOfferId,
+  checkoutLineItemCount,
+  onThreadRefresh,
 }: {
   kind: OfferNegotiationKind
   content: string
@@ -124,14 +150,26 @@ export function OfferNegotiationEventCard({
   isOwn: boolean
   /** Seller-authored outcome lines — link to offers hub */
   showSellerDashboardLink?: boolean
+  /** When set, buyer can accept/decline this open counter (or seller-initiated offer) here. */
+  actionableOfferId?: string | null
+  actionableExpiresAt?: string | null
+  /** When set, buyer can check out the accepted offer from this card. */
+  checkoutOfferId?: string | null
+  checkoutLineItemCount?: number
+  onThreadRefresh?: () => void | Promise<void>
 }) {
   const { label, variant } = statusBadge(kind)
-  const hint = footerHint(kind, isOwn)
-  const body = formatNegotiationBody(kind, content)
+  const hasBuyerActions = Boolean(actionableOfferId && onThreadRefresh)
+  const hasCheckout = Boolean(checkoutOfferId)
+  const hint = footerHint(kind, isOwn, hasBuyerActions, hasCheckout, actionableExpiresAt)
+  const amount = formatAmountLabel(parseNegotiationAmountFromContent(content))
+  const headline = headlineForKind(kind, isOwn)
   const note =
     kind === "seller_offer" || kind === "counter"
       ? parseCounterofferNoteFromThread(content)
       : null
+  const bundleCount = checkoutLineItemCount ?? 0
+  const isBundleCheckout = bundleCount > 1
 
   return (
     <div
@@ -152,9 +190,16 @@ export function OfferNegotiationEventCard({
             {label}
           </Badge>
         </div>
-        <p className="mt-2 whitespace-pre-wrap break-words text-[15px] font-medium leading-snug text-foreground">
-          {body}
-        </p>
+        <p className="mt-2 text-[13px] font-medium leading-snug text-muted-foreground">{headline}</p>
+        {amount ? (
+          <p className="mt-1 text-[26px] font-semibold tabular-nums leading-none tracking-tight text-foreground">
+            {amount}
+          </p>
+        ) : (
+          <p className="mt-2 whitespace-pre-wrap break-words text-[15px] font-medium leading-snug text-foreground">
+            {content.trim()}
+          </p>
+        )}
       </div>
       <div className="px-3.5 py-3">
         {note ? (
@@ -171,10 +216,36 @@ export function OfferNegotiationEventCard({
           </p>
         )}
         {hint && (
-          <p className={cn("text-[12px] leading-snug text-muted-foreground", (showSellerDashboardLink || note) && "mt-2")}>
+          <p
+            className={cn(
+              "text-[12px] leading-snug text-muted-foreground",
+              (showSellerDashboardLink || note) && "mt-2",
+            )}
+          >
             {hint}
           </p>
         )}
+        {hasBuyerActions && actionableOfferId && onThreadRefresh ? (
+          <BuyerCounterRespondButtons
+            offerId={actionableOfferId}
+            onCompleted={onThreadRefresh}
+            className="mt-3"
+          />
+        ) : null}
+        {hasCheckout && checkoutOfferId ? (
+          <div className="mt-3 space-y-2">
+            <Button
+              type="button"
+              size="sm"
+              className="h-10 w-full rounded-xl text-[14px] font-semibold"
+              asChild
+            >
+              <Link href={acceptedOfferCheckoutHref(checkoutOfferId)}>
+                {isBundleCheckout ? `Checkout all ${bundleCount} items` : "Checkout now"}
+              </Link>
+            </Button>
+          </div>
+        ) : null}
         <p className="mt-2.5 text-[11px] tabular-nums leading-none text-muted-foreground">
           {formatThreadTime(createdAt)}
         </p>

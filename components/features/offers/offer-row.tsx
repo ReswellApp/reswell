@@ -334,7 +334,7 @@ export function OfferRow({
                 type="button"
                 onClick={() => onViewCounterOpen?.(offer)}
               >
-                {offer.seller_initiated ? "Accept or decline" : "View counteroffer"}
+                Accept or decline
               </Button>
             )}
             {showRespond && (
