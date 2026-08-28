@@ -1,0 +1,138 @@
+{
+  "generated_for": "Howie Shapes official named standup catalog",
+  "source": "https://www.howieshapes.com.au/board-models",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "howie-shapes",
+      "name": "Howie Shapes",
+      "website_url": "https://www.howieshapes.com.au/",
+      "location_label": "Mona Vale, New South Wales, Australia",
+      "founder_name": "Luke Howarth",
+      "lead_shaper_name": "Luke Howarth",
+      "short_description": "Hand-shaped surfboards by Luke Howarth in Mona Vale on Sydney's Northern Beaches.",
+      "models": [
+        {
+          "name": "Biggie Smalls",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62cb9b8006078f16c2b35c57_BIGGIE_SMALLS_TOP.png",
+          "description": "The Biggie Smalls is our classic all-rounder and the board you’ll be reaching for most sessions. If you keep a board in your car or you’re riding to the beach with one under your arm, this should be it. Our most popular model and a favourite amongst our team riders for good reason, the Biggie Smalls will tear up everything from 2 foot Sydney beachies to 4 foot+ Indonesian reef breaks. Simply put, the Biggie Smalls is a must have in your quiver.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Black Unicorn",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62cba4c0c50496912bc94e77_BLACK_UNICORN_TOP.png",
+          "description": "The Black Unicorn model is named after Howie Shapes test pilot and legendary Mentawaiian surfer ‘Kaliang’ (aka @blackpearlsurfphotography). The Black Unicorn is a close relative of the Biggie Smalls with slight tweaks to the outline, rocker and bottom resulting in a board that delivers speed and responsiveness. The Black Unicorn will suit intermediate to advanced surfers and will go best best in 2ft-4ft+ beach breaks and reef breaks.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bugg",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b27d13f95b053d369db0d7_BUGG_TOP.png",
+          "description": "Our Bugg model is all about high performance surfing in all types of waves from 2-5ft. This board is a labour of love between Howie and one of Tassie’s most powerful top to bottom surfers Clifton’s beach’s Luke Bugg. The Bugg comes rock ‘n’ roll ready will hard edges, deep concaves and has plenty of curve and personality to destroy any section in front of you. This board is best suited to intermediate to advanced surfer or for anyone who wants to push the limits of their rail to rail surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "DFSB",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b27ff9e4da58dd6cf2a20d_DFSB_TOP.png",
+          "description": "Double Flyer Swallow Baby. This is Howie's Shapes high performance fish, designed for carving up waves in the 2 - 4 foot range. This board is fuller in the nose with a parallel back half of the outline that steps into a double flyer which pulls the tail into the rocket swallow tail. The rocker and bottom design work together to cut through any dead section. The Double Flyer Swallow Baby is all about adding speed and flow on the front foot and plenty of response on the back foot.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "F8B11 Grom",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62cb9c5fe00ff80dbfb09f67_F8B11_GROM_TOP.png",
+          "description": "The F8B2 Grom (Flying Eight Ball Two Grom) model is for the grom that wants to drive hard off the bottom and explode off the lip. This board will have you pushing your surfing; sharp in the nose area with a pronounced hip just in front of fins creates less friction and more response. Full rocker deep single double concaves with vee exiting the tail adds speed, power with the added touch of flow to your surfing. The F8B2 Grom is the ultimate weapon for high performance surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "F8B11 Step",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62cba17e87e9155a727f6a57_F8B11_STEP_TOP.png",
+          "description": "As the name suggests the F8BII STEP caters for bigger, more powerful waves and water movement in mind - this is a board you reach for when the waves are cooking. Sleek in outline with the centre point forward which focus's on paddle power. Narrow in back half of the outline for quicker rail to rail manoeuvrability and stability. Rocker combining with bottom design to maximize speed, flow and control - the F8BII is a no-bullshit step up you can rely on when your local turns it on. Built for waves 4 to 6+ foot.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Good Times",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b27fad758ff43d8d3beedb_GOOD_TIMES_TOP.png",
+          "description": "Designed to tear up 2-4ft Sydney beach breaks, the Good Times is a small wave high performance board. Similar in design to the Spider Pig but has less volume in the rail and slightly narrower outline allowing more response. Performance-oriented with tweaks to reflect the reality of the waves we’re surfing day to day - think, better surfing in worse waves. Get Howie to shape your Good Times slightly smaller, wider and a touch thicker than your normal board. Let the good times roll.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Guns'N'Roses",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b28065cd148d04ebc7bca6_GUNS_N_ROSES_TOP.png",
+          "description": "Sharp in outline with centre point well forward. Elongating the outline in shape. The centre point being moved forward adjusts the wide point to be under your chest for paddle power and also volume distribution. The foam is where you need it and the sleek back half of the board is for bite and quick action in the bigger more powerful conditions.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "H-1",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b280eaeb46690b204b8a57_H1_TOP.png",
+          "description": "The H1 is Howie’s favourite high performance board in the range. This thing has been built to blast in perfect conditions at either your local break or Indonesian reef. Sharp in the outline with a small tail block. Can ride in standard ripper dimensions or as a step up for when the waves get solid. The H-1 is a board for those truly memorable sessions. Definitely, look to pack one of these on your next boat trip or strike mission down the coast.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "H-Bubble",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b27f662894ca927dd66070_H_BUBBLE_TOP.png",
+          "description": "This is Howie's first model concept with a concave deck design. The concave deck, coupled with a low rail shape and high deck-line creates extra drive in and out of turns. A simple outline with wide point forward makes it easy to paddle and catch waves combined with the round tail allows smooth effortless surfing in small waves for all abilities.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "H-Bubble Pop",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62cb994065c5295324e69c22_H_BUBBLE_POP_TOP.png",
+          "description": "Another Howie High Performance fish with a timeless, functional outline that’s easy on the eye. The evolution of the H Bubble concave deck has arrived with the H Bubble series. The main difference between the H Bubble and the H Bubble POP is the H Bubble POP comes with double flyers and less thickness in the tail for added response with bite and allows you to take your surfing in small waves to the next level. Designed for waves 4 feet and under for all abilities.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Killer Pigme",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62cba2a5b01eb403c7a07eeb_KILLER_PIGME_TOP.png",
+          "description": "The Killer Pigme is your go-to small wave groveller but will also perform in head-high perfect waves as well. Plenty of foam under the chest for stability, flotation and easy paddling coupled with soft forgiving rails for speed and drive through dead sections. Great summer board, and something worth bringing on every trip. Whether you are 90kg+ looking for a standard short board or under 90kg looking for a small wave performance board the Killer Pigme caters for all abilities.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "King Grom",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b27c75b33dc4a829dfc65d_KING_GROM_TOP.png",
+          "description": "Little kids + little waves = big manoeuvres. The King Grom model has a tight curved outline for maximum speed and response in small to mid-size waves 1ft-4ft. This board will have groms pushing their surfing and linking sections with increasing maturity. The rails are soft and low-volumed to cut through dead sections with ease paired with a nose to tail rocker that never fails to deliver speed. Speed, response and ease of manoeuvrability are the main design features of the King Grom.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "King K",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/68f7320bbcdd9c8e6c2dd87e__King_K_TOP%203.png",
+          "description": "The King K is our latest high-performance all-rounder. After months of testing from our team riders, with a lot of positive feedback, we felt it was time to let-loose the King K on the general public. Most commonly the feedback we get is that the board feels easy to ride, smooth and responsive. The overall outline is smooth and appealing to the eye, with a little more curve in the back half of the board, and a smaller tail block than the other 'All-Rounder' in our range (the Biggie Smalls). It fits in our range between the Biggie Smalls and Black Unicorn models.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lions Mane",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62f5d9b8364a0941587b5f1e_LIONS_MANE_TOP.png",
+          "description": "The Lions Mane is our latest high-performance all-rounder. After months of testing from our team riders, with a lot of positive feedback, we felt it was time to let-loose the Lions Mane on the general public. Most commonly the feedback we get is that the board feels easy to ride, smooth and responsive. The overall outline is smooth and appealing to the eye, with a little more curve in the back half of the board, and a smaller tail block than the other 'All-Rounder' in our range (the Biggie Smalls). It fits in our range between the Biggie Smalls and Black Unicorn models.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Little Johnny",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62cba2297c26b5e056588a82_LITTLE_JOHNNY_TOP.png",
+          "description": "Go from zero-to-hero with our “Little Johnny” model under your feet. The Little Johnny has all the response and speed any little ripper needs to punt for glory or destroy any section. A Sharp outline with a change of direction through the tail allows their little chicken legs to arc effortlessly off the bottom with total response and release; off the top, in the pocket or in the air. The Little Johnny model makes every grom a winner!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pigme Pro",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b27e9ad42435a1d8252eaa_PIGME_PRO_TOP.png",
+          "description": "The Pigme Pro is the model you want to ride when the waves are small and you want a board that goes and doesn’t require too much effort. Perfect for those slower days or when your local boardriders runs in less optimal conditions. Ride 2 inches smaller 1/2 to 3/4 wider and 1/8 thicker than your standard ripper. Rocker is low to generate speed. Outline sharp yet full in curve with a medium sized tail block.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Project 8",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62cb986a827b651d6d905880_PROJECT8_TOP.png",
+          "description": "The Project 8 is a combination of 2 board designs (Biggie Smalls & Bugg). It is designed for marginal to decent waves in the 0-4ft range, the result is a board that’s both lively and forgiving. Full in outline from nose-to-tail with good balance, the nose and tail are proportional to width and length. This board is designed to react in beach breaks combining with speed and flow.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spider Pig",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b27e4fbb69cb63bf6d1364_SPIDER_PIG_TOP.png",
+          "description": "Full in outline with slight bump in tail. Ride 2 inches smaller 1/4 inch wider and 1/16 to 1/8 thicker. Small wave high performance board also caters for Grommets entry level and the Bigger guys that want to ride smaller yet wider and thicker boards for more performance.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "White Rabbit",
+          "image_url": "https://cdn.prod.website-files.com/617f4e917f7e88632cf40680/62b27db776761f23b5a6afe0_WHITE_RABBIT_TOP.png",
+          "description": "This Is the executive model Howie Shapes surfboard that caters for the Friday afternoon group surf or Saturday morning get together. Larger dimensions in the outline for bigger guys that's built for speed. Voluptuous volume for ease of paddling but cleverly hidden, this board will have you keen to up your weekly surfs. Perfect board for an intergenerational surf with your groms or for anyone who prefers a bit more volume. A well balanced, forgiving board with drive and bite.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
