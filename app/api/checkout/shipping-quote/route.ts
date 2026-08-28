@@ -12,7 +12,10 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
-import { signCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
+import {
+  signCheckoutShippingQuoteToken,
+  type CheckoutShippingPackageRate,
+} from "@/lib/services/checkoutShippingQuoteToken"
 import {
   countSurfboardListings,
   peerCheckoutSurfboardCountError,
@@ -21,6 +24,13 @@ import {
   findPeerCheckoutRateOption,
   findPeerCheckoutRateOptionByServiceCode,
 } from "@/lib/shipping/peer-checkout-usps-services"
+import {
+  checkoutOffersShippingPackagingChoice,
+  DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveShippingPackagingMode,
+  type ShippingPackagingMode,
+} from "@/lib/shipping/packaging-mode"
+import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 
 function buildQuoteResponse(input: {
   itemPrice: number
@@ -30,6 +40,8 @@ function buildQuoteResponse(input: {
   buyerId: string
   listingIds: string[]
   addressId: string
+  packagingMode?: ShippingPackagingMode
+  packageRates?: CheckoutShippingPackageRate[]
   reswellQuote?: {
     rateId: string
     serviceCode: string
@@ -57,6 +69,7 @@ function buildQuoteResponse(input: {
     shippingUsd: input.shippingUsd,
     totalUsd: input.totalUsd,
     usedReswellQuote: input.usedReswellQuote,
+    packagingMode: input.packagingMode ?? DEFAULT_SHIPPING_PACKAGING_MODE,
     selectedRate,
     availableShippingRates: input.reswellQuote?.availableRates ?? null,
     quoteToken:
@@ -71,6 +84,8 @@ function buildQuoteResponse(input: {
             usedReswellQuote: true,
             rateId: input.reswellQuote?.rateId ?? null,
             serviceCode: input.reswellQuote?.serviceCode ?? null,
+            packagingMode: input.packagingMode,
+            packageRates: input.packageRates,
           })
         : null,
   }
@@ -118,6 +133,10 @@ export async function POST(request: Request) {
   const selectedRateId = String(bodyObj.selected_rate_id ?? "").trim() || null
   const selectedServiceCode = String(bodyObj.selected_service_code ?? "").trim() || null
   const offerId = String(bodyObj.offer_id ?? "").trim() || null
+  const packagingModeRequested = resolveShippingPackagingMode(
+    bodyObj.packaging_mode,
+    DEFAULT_SHIPPING_PACKAGING_MODE,
+  )
 
   if (listingIds.length === 0 || !addressId) {
     return NextResponse.json(
@@ -271,7 +290,46 @@ export async function POST(request: Request) {
     )
   }
 
-  /** Multi-item bundle ships as one box — single combined-parcel quote for the seller group. */
+  const packagingMode: ShippingPackagingMode =
+    checkoutOffersShippingPackagingChoice(listingRows) && packagingModeRequested === "separate"
+      ? "separate"
+      : "together"
+
+  if (packagingMode === "separate") {
+    const quantityByListingId = Object.fromEntries(qtyById.entries())
+    const multi = await computePeerMultiCheckoutUsd({
+      supabase,
+      listingsOrdered: listingRows,
+      fulfillment: "shipping",
+      buyerAddress,
+      diagnosticTagPrefix: `checkout-quote-separate:${listingIds.join(",")}`,
+      packagingMode: "separate",
+      quantityByListingId,
+    })
+    if (!multi.ok) {
+      return NextResponse.json({ error: multi.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
+    }
+
+    return NextResponse.json(
+      {
+        data: buildQuoteResponse({
+          itemPrice: multi.totalItemPriceUsd,
+          shippingUsd: multi.totalShippingUsd,
+          totalUsd: multi.totalUsd,
+          usedReswellQuote: multi.anyUsedReswellQuote,
+          buyerId: user.id,
+          listingIds,
+          addressId,
+          packagingMode: "separate",
+          packageRates: multi.packageRates,
+          reswellQuote: multi.reswellQuote ?? undefined,
+        }),
+      },
+      { headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+
+  /** Multi-item together: one combined-parcel quote for the seller group. */
   const itemPriceSum = listingRows.reduce((sum, l) => {
     const p = parseFloat(String(l.price))
     const qty = qtyById.get(l.id) ?? 1
@@ -302,6 +360,7 @@ export async function POST(request: Request) {
         buyerId: user.id,
         listingIds,
         addressId,
+        packagingMode: "together",
         reswellQuote: bundleShipping.quote,
       }),
     },

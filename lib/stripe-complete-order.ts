@@ -8,6 +8,12 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
+import {
+  DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveShippingPackagingMode,
+} from "@/lib/shipping/packaging-mode"
+import { insertOrderShipmentsForOrder } from "@/lib/db/orderShipments"
 import {
   applyAcceptedOfferToPeerCheckoutListings,
   priceListingsFromAcceptedOffer,
@@ -134,6 +140,36 @@ function applyTerminalCustomerToOrderShippingJson(
     email: customer.email,
     phone: customer.phone,
     admin_terminal: true,
+  }
+}
+
+function parseShipenginePackageRatesMeta(raw: string | null | undefined): CheckoutShippingPackageRate[] | null {
+  const text = raw?.trim()
+  if (!text) return null
+  try {
+    const parsed = JSON.parse(text) as unknown
+    if (!Array.isArray(parsed) || parsed.length === 0) return null
+    const out: CheckoutShippingPackageRate[] = []
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null
+      const r = entry as Record<string, unknown>
+      const listingId = typeof r.listingId === "string" ? r.listingId.trim() : ""
+      const rateId = typeof r.rateId === "string" ? r.rateId.trim() : ""
+      const shippingCents =
+        typeof r.shippingCents === "number" && Number.isFinite(r.shippingCents)
+          ? Math.round(r.shippingCents)
+          : NaN
+      if (!listingId || !rateId || !Number.isFinite(shippingCents) || shippingCents < 0) return null
+      out.push({
+        listingId,
+        rateId,
+        shippingCents,
+        serviceCode: typeof r.serviceCode === "string" ? r.serviceCode : null,
+      })
+    }
+    return out
+  } catch {
+    return null
   }
 }
 
@@ -575,6 +611,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         buyerAddress,
         diagnosticTagPrefix: "finalize-order",
         quantityByListingId,
+        packagingMode: resolveShippingPackagingMode(
+          pi.metadata.shipping_packaging_mode,
+          DEFAULT_SHIPPING_PACKAGING_MODE,
+        ),
         ...(pi.metadata.reswell_shipping_cents?.trim() &&
         /^\d+$/.test(pi.metadata.reswell_shipping_cents.trim())
           ? {
@@ -583,6 +623,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
                 usedReswellQuote: true,
                 rateId: pi.metadata.shipengine_rate_id?.trim() || null,
                 serviceCode: pi.metadata.shipengine_service_code?.trim() || null,
+                packageRates: parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates),
               },
             }
           : {}),
@@ -718,6 +759,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const orderId = randomUUID()
 
+  const packagingModeForOrder =
+    fulfillmentMethod === "shipping" && listingsOrdered.length > 1
+      ? resolveShippingPackagingMode(
+          pi.metadata.shipping_packaging_mode,
+          DEFAULT_SHIPPING_PACKAGING_MODE,
+        )
+      : null
+
   const { data: purchase, error: insertError } = await serviceSupabase
     .from("orders")
     .insert({
@@ -739,6 +788,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       delivery_status: deliveryStatus,
       pickup_code: pickupCode,
       sales_channel: isAdminTerminalSale ? "admin_terminal" : "online",
+      ...(packagingModeForOrder ? { shipping_packaging_mode: packagingModeForOrder } : {}),
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
     })
     .select()
@@ -777,6 +827,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       msg.includes("delivery_status") ||
       msg.includes("pickup_code") ||
       msg.includes("shipping_amount") ||
+      msg.includes("shipping_packaging_mode") ||
       msg.includes("order_items") ||
       msg.includes("sales_channel") ||
       msg.includes("buyer_required") ||
@@ -810,7 +861,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     seller_earnings: line.sellerEarnings,
   }))
 
-  const { error: orderItemsErr } = await serviceSupabase.from("order_items").insert(orderItemsPayload)
+  const { data: insertedOrderItems, error: orderItemsErr } = await serviceSupabase
+    .from("order_items")
+    .insert(orderItemsPayload)
+    .select("id, listing_id, sort_order")
 
   if (orderItemsErr) {
     console.error("[stripe-complete-order] order_items insert:", orderItemsErr)
@@ -826,6 +880,43 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       }
     }
     return { ok: false, error: "Could not create order lines", status: 500 }
+  }
+
+  if (fulfillmentMethod === "shipping" && insertedOrderItems && insertedOrderItems.length > 0) {
+    const packageRates = parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates)
+    const rateByListing = new Map(
+      (packageRates ?? []).map((r) => [r.listingId, r.rateId] as const),
+    )
+    const togetherRate = pi.metadata.shipengine_rate_id?.trim() || null
+    const sortedItems = [...insertedOrderItems].sort(
+      (a, b) =>
+        (Number((a as { sort_order?: number }).sort_order) || 0) -
+        (Number((b as { sort_order?: number }).sort_order) || 0),
+    )
+    const shipmentLines = sortedItems.map((row) => {
+      const r = row as { id: string; listing_id: string }
+      const perLineRate = rateByListing.get(r.listing_id) ?? null
+      return {
+        orderItemId: r.id,
+        listingId: r.listing_id,
+        shipengineRateId:
+          packagingModeForOrder === "separate"
+            ? perLineRate
+            : togetherRate || perLineRate,
+      }
+    })
+
+    const shipmentsCreated = await insertOrderShipmentsForOrder({
+      supabase: serviceSupabase,
+      orderId: purchase.id,
+      packagingMode: packagingModeForOrder ?? DEFAULT_SHIPPING_PACKAGING_MODE,
+      lines: shipmentLines,
+    })
+    if (!shipmentsCreated.ok) {
+      console.error("[stripe-complete-order] shipments:", shipmentsCreated.error)
+      // Non-fatal for payment success — label automation can still attach later after backfill,
+      // but surface loudly so ops notices missing shipment rows.
+    }
   }
 
   if (!isAdminTerminalSale) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { loadShippingLabelPdfBytes } from "@/lib/services/resolveOrderShippingLabelPdf"
+import { listOrderShippingLabelsForOrder } from "@/lib/db/orderShippingLabels"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -17,6 +18,7 @@ function contentDispositionHeader(fileName: string, inline: boolean): string {
  * GET /api/orders/:id/shipping-label/download
  *
  * Seller-only download/view for a prepared Reswell or admin shipping label PDF.
+ * Optional `label_id` selects a specific marketplace label when the order has multiple packages.
  */
 export async function GET(
   request: NextRequest,
@@ -47,10 +49,25 @@ export async function GET(
   }
 
   const serviceSupabase = createServiceRoleClient()
+  const labelIdParam = request.nextUrl.searchParams.get("label_id")?.trim() || null
+  let trackingForLoad =
+    typeof order.tracking_number === "string" ? order.tracking_number : null
+  let labelId: string | null = null
+
+  if (labelIdParam && UUID_RE.test(labelIdParam)) {
+    const labels = await listOrderShippingLabelsForOrder(serviceSupabase, orderId)
+    const match = labels.find((l) => l.id === labelIdParam)
+    if (!match) {
+      return NextResponse.json({ error: "No shipping label for this order" }, { status: 404 })
+    }
+    trackingForLoad = match.tracking_number
+    labelId = match.id
+  }
+
   const loaded = await loadShippingLabelPdfBytes(serviceSupabase, {
     orderId,
-    trackingNumber:
-      typeof order.tracking_number === "string" ? order.tracking_number : null,
+    trackingNumber: trackingForLoad,
+    labelId,
   })
   if (!loaded.ok) {
     if (loaded.reason === "not_found") {

@@ -47,8 +47,10 @@ import {
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import {
   getLatestPreparedShippingLabelForOrder,
+  listOrderShippingLabelsForOrder,
   preparedLabelHasPaperlessQr,
 } from "@/lib/db/orderShippingLabels"
+import { listOrderShipmentsWithItems } from "@/lib/db/orderShipments"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -130,12 +132,18 @@ type SaleDetail = {
   delivery_status: string
   tracking_number: string | null
   tracking_carrier: string | null
+  shipping_packaging_mode?: string | null
   buyer_id: string | null
   listing_id: string
   payment_method: string | null
   stripe_checkout_session_id: string | null
   listings: OrderListingRow | OrderListingRow[] | null
-  order_items?: Array<{ sort_order: number | null; listings: OrderListingRow | OrderListingRow[] | null }> | null
+  order_items?: Array<{
+    id?: string
+    listing_id?: string
+    sort_order: number | null
+    listings: OrderListingRow | OrderListingRow[] | null
+  }> | null
 }
 
 function unwrapListing<R>(raw: R | R[] | null | undefined): R | null {
@@ -208,6 +216,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       delivery_status,
       tracking_number,
       tracking_carrier,
+      shipping_packaging_mode,
       buyer_id,
       listing_id,
       payment_method,
@@ -222,6 +231,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         listing_images ( url, thumbnail_url, is_primary )
       ),
       order_items (
+        id,
+        listing_id,
         sort_order,
         listings (
           id,
@@ -317,18 +328,37 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
   const serviceSupabase = createServiceRoleClient()
   const preparedShippingLabel = await getLatestPreparedShippingLabelForOrder(serviceSupabase, id)
-  const hasPreparedShippingLabel = !!preparedShippingLabel
+  const marketplaceLabels = await listOrderShippingLabelsForOrder(serviceSupabase, id)
+  const shipments = await listOrderShipmentsWithItems(serviceSupabase, id)
+  const hasPreparedShippingLabel = !!preparedShippingLabel || marketplaceLabels.length > 0
   const hasPaperlessQr = preparedLabelHasPaperlessQr(preparedShippingLabel)
   const hasAccessibleShippingLabelPdf = await orderHasAccessibleShippingLabelPdf(serviceSupabase, {
     orderId: id,
     trackingNumber: sale.tracking_number,
   })
   const hasShippingTracking = !!sale.tracking_number?.trim()
+  const shipsSeparately =
+    (sale.shipping_packaging_mode === "separate" || shipments.some((s) => s.packaging_kind === "separate_item")) &&
+    (shipments.length > 1 || marketplaceLabels.length > 1)
+  const listingTitleByOrderItemId = new Map<string, string>()
+  for (const item of sortedPack) {
+    if (!item.id) continue
+    const listing = unwrapListing(item.listings)
+    if (listing?.title) {
+      listingTitleByOrderItemId.set(item.id, capitalizeWords(listing.title))
+    }
+  }
+  const labelByShipmentId = new Map(
+    marketplaceLabels
+      .filter((l) => l.shipment_id)
+      .map((l) => [l.shipment_id as string, l] as const),
+  )
   const reswellLabelStillPreparing =
     isReswellShippingOrder &&
     sale.delivery_status === "pending" &&
     !hasAccessibleShippingLabelPdf &&
-    !hasShippingTracking
+    !hasShippingTracking &&
+    marketplaceLabels.length === 0
   const returnSummaries = await getOrderReturnSummariesByOrderIds(
     supabase,
     [id],
@@ -623,13 +653,74 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           </Card>
 
           {sale.fulfillment_method === "shipping" &&
-          (hasAccessibleShippingLabelPdf || (isReswellShippingOrder && hasShippingTracking)) ? (
-            <SellerPreparedShippingLabelCard
-              orderId={sale.id}
-              hasPaperlessQr={hasPaperlessQr}
-              paperlessInstructions={preparedShippingLabel?.paperless_instructions ?? null}
-              paperlessHandoffCode={preparedShippingLabel?.paperless_handoff_code ?? null}
-            />
+          (hasAccessibleShippingLabelPdf ||
+            marketplaceLabels.length > 0 ||
+            (isReswellShippingOrder && hasShippingTracking)) ? (
+            shipsSeparately ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  This order ships as separate packages — print and attach each label to the matching board.
+                </p>
+                {(shipments.length > 0
+                  ? shipments.map((shipment, index) => {
+                      const label = labelByShipmentId.get(shipment.id) ?? marketplaceLabels[index] ?? null
+                      if (!label) return null
+                      const orderItemId = shipment.order_item_ids[0] ?? label.order_item_id ?? null
+                      const boardTitle =
+                        (orderItemId ? listingTitleByOrderItemId.get(orderItemId) : null) ||
+                        (displayListings[index]?.title
+                          ? capitalizeWords(displayListings[index]!.title!)
+                          : `Board ${index + 1}`)
+                      const tracking = shipment.tracking_number || label.tracking_number
+                      const carrier =
+                        shipment.tracking_carrier || label.tracking_carrier || "Carrier"
+                      return (
+                        <SellerPreparedShippingLabelCard
+                          key={label.id}
+                          orderId={sale.id}
+                          labelId={label.id}
+                          title={`Package ${index + 1}: ${boardTitle}`}
+                          description={tracking ? `${carrier} · ${tracking}` : undefined}
+                          hasPaperlessQr={preparedLabelHasPaperlessQr(label)}
+                          paperlessInstructions={label.paperless_instructions}
+                          paperlessHandoffCode={label.paperless_handoff_code}
+                        />
+                      )
+                    })
+                  : marketplaceLabels.map((label, index) => {
+                      const boardTitle =
+                        (label.order_item_id
+                          ? listingTitleByOrderItemId.get(label.order_item_id)
+                          : null) ||
+                        (displayListings[index]?.title
+                          ? capitalizeWords(displayListings[index]!.title!)
+                          : `Board ${index + 1}`)
+                      return (
+                        <SellerPreparedShippingLabelCard
+                          key={label.id}
+                          orderId={sale.id}
+                          labelId={label.id}
+                          title={`Package ${index + 1}: ${boardTitle}`}
+                          description={
+                            label.tracking_number
+                              ? `${label.tracking_carrier || "Carrier"} · ${label.tracking_number}`
+                              : undefined
+                          }
+                          hasPaperlessQr={preparedLabelHasPaperlessQr(label)}
+                          paperlessInstructions={label.paperless_instructions}
+                          paperlessHandoffCode={label.paperless_handoff_code}
+                        />
+                      )
+                    })}
+              </div>
+            ) : (
+              <SellerPreparedShippingLabelCard
+                orderId={sale.id}
+                hasPaperlessQr={hasPaperlessQr}
+                paperlessInstructions={preparedShippingLabel?.paperless_instructions ?? null}
+                paperlessHandoffCode={preparedShippingLabel?.paperless_handoff_code ?? null}
+              />
+            )
           ) : null}
 
           {/* ── Seller actions ── */}

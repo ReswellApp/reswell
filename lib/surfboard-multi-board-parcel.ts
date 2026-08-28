@@ -39,7 +39,7 @@ export function countSurfboardListings(
 
 export function peerCheckoutSurfboardCountError(count: number): string | null {
   if (count <= MAX_SURFBOARDS_PER_SELLER_CHECKOUT) return null
-  return `You can buy up to ${MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards from the same seller in one checkout. They ship together in one box.`
+  return `You can buy up to ${MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards from the same seller in one checkout.`
 }
 
 export function boardLengthInchesFromListing(row: { dimensions?: string | null }): number | null {

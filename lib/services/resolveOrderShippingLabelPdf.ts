@@ -61,8 +61,31 @@ async function resolveShipEngineLabelPdfByTracking(
 /** Stored marketplace/admin PDF first; Reswell-purchased labels may be resolved from ShipEngine by tracking. */
 export async function resolveOrderShippingLabelPdf(
   supabase: SupabaseClient,
-  input: { orderId: string; trackingNumber: string | null },
+  input: { orderId: string; trackingNumber: string | null; labelId?: string | null },
 ): Promise<ResolvedOrderShippingLabelPdf | null> {
+  if (input.labelId?.trim()) {
+    const { data } = await supabase
+      .from("order_shipping_labels")
+      .select(
+        "label_pdf_url, label_storage_path, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code",
+      )
+      .eq("order_id", input.orderId)
+      .eq("id", input.labelId.trim())
+      .maybeSingle()
+    if (data) {
+      const row = data as {
+        label_pdf_url: string | null
+        label_storage_path: string | null
+      }
+      if (row.label_pdf_url?.trim() || row.label_storage_path?.trim()) {
+        return {
+          label_pdf_url: row.label_pdf_url?.trim() || null,
+          label_storage_path: row.label_storage_path?.trim() || null,
+        }
+      }
+    }
+  }
+
   const stored = await getLatestPreparedShippingLabelForOrder(supabase, input.orderId)
   if (stored) return stored
 
@@ -80,7 +103,7 @@ export async function resolveOrderShippingLabelPdf(
 
 export async function orderHasAccessibleShippingLabelPdf(
   supabase: SupabaseClient,
-  input: { orderId: string; trackingNumber: string | null },
+  input: { orderId: string; trackingNumber: string | null; labelId?: string | null },
 ): Promise<boolean> {
   const resolved = await resolveOrderShippingLabelPdf(supabase, input)
   return Boolean(resolved?.label_pdf_url || resolved?.label_storage_path)
@@ -95,7 +118,7 @@ export type LoadShippingLabelPdfBytesResult =
 /** Downloads the resolved label PDF bytes from storage or the carrier URL. */
 export async function loadShippingLabelPdfBytes(
   supabase: SupabaseClient,
-  input: { orderId: string; trackingNumber: string | null },
+  input: { orderId: string; trackingNumber: string | null; labelId?: string | null },
 ): Promise<LoadShippingLabelPdfBytesResult> {
   const label = await resolveOrderShippingLabelPdf(supabase, input)
   if (!label) return { ok: false, reason: "not_found" }

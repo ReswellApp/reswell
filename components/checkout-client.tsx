@@ -40,6 +40,11 @@ import {
   peerCheckoutCopyFromSections,
   peerListingsItemNounForm,
 } from "@/lib/peer-listing-item-nouns"
+import {
+  checkoutOffersShippingPackagingChoice,
+  DEFAULT_SHIPPING_PACKAGING_MODE,
+  type ShippingPackagingMode,
+} from "@/lib/shipping/packaging-mode"
 
 export type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 
@@ -120,6 +125,15 @@ export function CheckoutClient({
 
   const needsShipping = impliedFulfillment === "shipping"
 
+  const offersPackagingChoice =
+    needsShipping && checkoutOffersShippingPackagingChoice(listings)
+  const [packagingMode, setPackagingMode] = useState<ShippingPackagingMode>(
+    DEFAULT_SHIPPING_PACKAGING_MODE,
+  )
+  const effectivePackagingMode: ShippingPackagingMode = offersPackagingChoice
+    ? packagingMode
+    : DEFAULT_SHIPPING_PACKAGING_MODE
+
   const resolved = useMemo(() => {
     if (isBundle) {
       let itemSum = 0
@@ -195,7 +209,7 @@ export function CheckoutClient({
     setShipQuoteToken(null)
     setSelectedShippingServiceCode(null)
     pendingPromoAutoApplyTried.current = false
-  }, [listingIdsKey, impliedFulfillment])
+  }, [listingIdsKey, impliedFulfillment, effectivePackagingMode])
 
   useEffect(() => {
     void prefetchStripeCheckout({ immediate: true })
@@ -248,6 +262,7 @@ export function CheckoutClient({
           body: JSON.stringify({
             listing_ids: listingIdsKey.split(","),
             address_id: purchaseDetails.shippingAddressId,
+            packaging_mode: effectivePackagingMode,
             ...(offerId ? { offer_id: offerId } : {}),
             ...(selectedShippingServiceCode
               ? { selected_service_code: selectedShippingServiceCode }
@@ -315,6 +330,7 @@ export function CheckoutClient({
     purchaseDetails.shippingAddressId,
     resolved,
     selectedShippingServiceCode,
+    effectivePackagingMode,
   ])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
@@ -500,10 +516,17 @@ export function CheckoutClient({
                 <span className="font-semibold text-foreground">{itemCountPhrase}</span> from one seller in a
                 single payment.{" "}
                 {needsShipping ? (
-                  <>
-                    Everything ships together in <span className="font-medium text-foreground">one box</span> — shipping
-                    is quoted once for the whole order.
-                  </>
+                  offersPackagingChoice ? (
+                    <>
+                      Choose whether boards ship in one box or each get their own shipping label below.
+                    </>
+                  ) : (
+                    <>
+                      Everything ships together in{" "}
+                      <span className="font-medium text-foreground">one box</span> — shipping is quoted once for
+                      the whole order.
+                    </>
+                  )
                 ) : (
                   <>
                     This combined checkout uses <span className="font-medium text-foreground">local pickup</span> —
@@ -563,7 +586,9 @@ export function CheckoutClient({
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
                         {isBundle && !shipQuote
-                          ? `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
+                          ? offersPackagingChoice
+                            ? `Choose packaging below — rate is calculated for your address.`
+                            : `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
                           : shipQuote?.usedReswellQuote
                             ? displayTotals.shipping > 0
                               ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
@@ -571,6 +596,61 @@ export function CheckoutClient({
                             : displayTotals.shipping > 0
                               ? `Includes $${displayTotals.shipping.toFixed(2)} shipping (set by seller).`
                               : "Seller offers free shipping."}
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
+            ) : null}
+
+            {offersPackagingChoice ? (
+              <div className="mb-10 space-y-3">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Packaging</h2>
+                <p className="text-[13px] leading-relaxed text-neutral-600">
+                  Ship both boards in one box, or request a separate shipping label for each board.
+                </p>
+                <RadioGroup
+                  value={effectivePackagingMode}
+                  onValueChange={(v) => setPackagingMode(v as ShippingPackagingMode)}
+                  className="grid gap-3 sm:grid-cols-2"
+                >
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
+                      effectivePackagingMode === "together"
+                        ? "border-[#5574AD] bg-[#5574AD]/[0.04] shadow-[inset_0_0_0_1px_rgba(85,116,173,0.15)]"
+                        : "border-neutral-200 bg-white hover:border-neutral-300",
+                    )}
+                  >
+                    <RadioGroupItem
+                      value="together"
+                      id="packaging-together"
+                      className="mt-0.5 border-neutral-400 text-[#5574AD]"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-foreground">Ship together</span>
+                      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                        One box, one shipping label — usually the lower rate.
+                      </p>
+                    </div>
+                  </label>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
+                      effectivePackagingMode === "separate"
+                        ? "border-[#5574AD] bg-[#5574AD]/[0.04] shadow-[inset_0_0_0_1px_rgba(85,116,173,0.15)]"
+                        : "border-neutral-200 bg-white hover:border-neutral-300",
+                    )}
+                  >
+                    <RadioGroupItem
+                      value="separate"
+                      id="packaging-separate"
+                      className="mt-0.5 border-neutral-400 text-[#5574AD]"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-foreground">Ship separately</span>
+                      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                        Each board gets its own box and shipping label.
                       </p>
                     </div>
                   </label>
@@ -698,6 +778,7 @@ export function CheckoutClient({
                   offerId={offerId}
                   promoCode={appliedPromo?.code ?? null}
                   shippingQuoteToken={shipQuoteToken}
+                  packagingMode={offersPackagingChoice ? effectivePackagingMode : null}
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter

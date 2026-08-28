@@ -13,6 +13,8 @@ export type OrderShippingLabelPaperlessFields = {
 export type OrderShippingLabelRow = {
   id: string
   order_id: string
+  order_item_id: string | null
+  shipment_id: string | null
   origin: OrderShippingLabelOrigin
   label_pdf_url: string | null
   label_storage_path: string | null
@@ -21,6 +23,31 @@ export type OrderShippingLabelRow = {
   shipengine_rate_id: string | null
   created_at: string
 } & OrderShippingLabelPaperlessFields
+
+/** All marketplace labels for an order (together = usually one; separate = one per line). */
+export async function listOrderShippingLabelsForOrder(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<OrderShippingLabelRow[]> {
+  const { data, error } = await supabase
+    .from("order_shipping_labels")
+    .select(
+      "id, order_id, order_item_id, shipment_id, origin, label_pdf_url, label_storage_path, tracking_number, tracking_carrier, shipengine_rate_id, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code, created_at",
+    )
+    .eq("order_id", orderId)
+    .order("created_at", { ascending: true })
+
+  if (error || !data?.length) return []
+  return data.map((row) => {
+    const r = row as OrderShippingLabelRow
+    return {
+      ...r,
+      order_item_id: r.order_item_id ?? null,
+      shipment_id: r.shipment_id ?? null,
+      ...normalizePaperless(r),
+    }
+  })
+}
 
 export type PreparedShippingLabelUrls = {
   label_pdf_url: string | null
@@ -47,6 +74,8 @@ export async function insertOrderShippingLabel(
   row: {
     order_id: string
     origin: OrderShippingLabelOrigin
+    order_item_id?: string | null
+    shipment_id?: string | null
     label_pdf_url?: string | null
     label_storage_path?: string | null
     tracking_number?: string | null
@@ -62,6 +91,8 @@ export async function insertOrderShippingLabel(
   const { error } = await supabase.from("order_shipping_labels").insert({
     order_id: row.order_id,
     origin: row.origin,
+    order_item_id: row.order_item_id ?? null,
+    shipment_id: row.shipment_id ?? null,
     label_pdf_url: row.label_pdf_url ?? null,
     label_storage_path: row.label_storage_path ?? null,
     tracking_number: row.tracking_number ?? null,

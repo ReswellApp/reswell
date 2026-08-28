@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/shipEngineLabelPurchaseLocks"
 import { purchaseLabelWithRateId } from "@/lib/services/orderShippingLabel"
 import type { PurchasedShipEngineLabelResult } from "@/lib/shipengine/surfboard-label"
+import { TOGETHER_PACKAGE_KEY } from "@/lib/shipping/packaging-mode"
 
 export type { PurchasedShipEngineLabelResult }
 
@@ -43,25 +44,53 @@ async function loadOrderTracking(
 async function loadExistingPreparedLabelSummary(
   supabase: SupabaseClient,
   orderId: string,
+  packageKey: string,
 ): Promise<{
   trackingNumber: string | null
   trackingCarrier: string | null
   labelPdfUrl: string | null
 } | null> {
-  const order = await loadOrderTracking(supabase, orderId)
-  const [marketplace, admin] = await Promise.all([
-    getLatestOrderShippingLabelUrlsForOrder(supabase, orderId),
-    getLatestAdminLabelUrlsForOrder(supabase, orderId),
-  ])
-  const labelPdfUrl =
-    marketplace?.label_pdf_url?.trim() ||
-    admin?.label_pdf_url?.trim() ||
-    null
-  const hasPdf = Boolean(labelPdfUrl || marketplace?.label_storage_path || admin?.label_storage_path)
-  if (!order.trackingNumber && !hasPdf) return null
+  if (packageKey === TOGETHER_PACKAGE_KEY) {
+    const order = await loadOrderTracking(supabase, orderId)
+    const [marketplace, admin] = await Promise.all([
+      getLatestOrderShippingLabelUrlsForOrder(supabase, orderId),
+      getLatestAdminLabelUrlsForOrder(supabase, orderId),
+    ])
+    const labelPdfUrl =
+      marketplace?.label_pdf_url?.trim() ||
+      admin?.label_pdf_url?.trim() ||
+      null
+    const hasPdf = Boolean(labelPdfUrl || marketplace?.label_storage_path || admin?.label_storage_path)
+    if (!order.trackingNumber && !hasPdf) return null
+    return {
+      trackingNumber: order.trackingNumber,
+      trackingCarrier: order.trackingCarrier,
+      labelPdfUrl,
+    }
+  }
+
+  const { data } = await supabase
+    .from("order_shipping_labels")
+    .select("tracking_number, tracking_carrier, label_pdf_url, label_storage_path")
+    .eq("order_id", orderId)
+    .or(`shipment_id.eq.${packageKey},order_item_id.eq.${packageKey}`)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const row = data as {
+    tracking_number?: string | null
+    tracking_carrier?: string | null
+    label_pdf_url?: string | null
+    label_storage_path?: string | null
+  } | null
+  const trackingNumber = row?.tracking_number?.trim() || null
+  const labelPdfUrl = row?.label_pdf_url?.trim() || null
+  const hasPdf = Boolean(labelPdfUrl || row?.label_storage_path?.trim())
+  if (!trackingNumber && !hasPdf) return null
   return {
-    trackingNumber: order.trackingNumber,
-    trackingCarrier: order.trackingCarrier,
+    trackingNumber,
+    trackingCarrier: row?.tracking_carrier?.trim() || null,
     labelPdfUrl,
   }
 }
@@ -69,22 +98,24 @@ async function loadExistingPreparedLabelSummary(
 async function waitForPurchasedLock(
   supabase: SupabaseClient,
   orderId: string,
+  packageKey: string,
   attempts = 40,
   intervalMs = 500,
 ): Promise<ShipEngineLabelPurchaseLockRow | null> {
   for (let i = 0; i < attempts; i++) {
-    const lock = await getShipEngineLabelPurchaseLock(supabase, orderId)
+    const lock = await getShipEngineLabelPurchaseLock(supabase, orderId, packageKey)
     if (lock?.status === "purchased" && lock.tracking_number?.trim()) {
       return lock
     }
     if (lock?.status === "failed") {
       return lock
     }
-    const existing = await loadExistingPreparedLabelSummary(supabase, orderId)
+    const existing = await loadExistingPreparedLabelSummary(supabase, orderId, packageKey)
     if (existing?.trackingNumber) {
       await syncShipEngineLabelPurchaseLockFromExisting({
         supabase,
         orderId,
+        packageKey,
         trackingNumber: existing.trackingNumber,
         trackingCarrier: existing.trackingCarrier,
         labelPdfUrl: existing.labelPdfUrl,
@@ -92,6 +123,7 @@ async function waitForPurchasedLock(
       })
       return {
         order_id: orderId,
+        package_key: packageKey,
         owner_key: "synced_existing",
         status: "purchased",
         shipengine_rate_id: lock?.shipengine_rate_id ?? null,
@@ -108,8 +140,10 @@ async function waitForPurchasedLock(
 }
 
 /**
- * Purchase a ShipEngine label for an order at most once.
+ * Purchase a ShipEngine label for an order package at most once.
  * All card / wallet / admin / auto paths must call this instead of raw purchaseLabelWithRateId.
+ *
+ * `packageKey` is `together` for one-box labels, or `order_items.id` for separate packages.
  */
 export async function purchaseShipEngineLabelForOrderOnce(params: {
   supabase: SupabaseClient
@@ -117,6 +151,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
   /** Stable id for this attempt (Stripe PI id, wallet:{orderId}, auto:{orderId}, admin:…). */
   ownerKey: string
   rateId: string
+  packageKey?: string
 }): Promise<
   | {
       ok: true
@@ -129,12 +164,14 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
   if (!rateId) {
     return { ok: false, error: "Missing ShipEngine rate id.", status: 400 }
   }
+  const packageKey = params.packageKey?.trim() || TOGETHER_PACKAGE_KEY
 
-  const existing = await loadExistingPreparedLabelSummary(params.supabase, params.orderId)
+  const existing = await loadExistingPreparedLabelSummary(params.supabase, params.orderId, packageKey)
   if (existing?.trackingNumber) {
     await syncShipEngineLabelPurchaseLockFromExisting({
       supabase: params.supabase,
       orderId: params.orderId,
+      packageKey,
       trackingNumber: existing.trackingNumber,
       trackingCarrier: existing.trackingCarrier,
       labelPdfUrl: existing.labelPdfUrl,
@@ -156,7 +193,11 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
     }
   }
 
-  const existingLock = await getShipEngineLabelPurchaseLock(params.supabase, params.orderId)
+  const existingLock = await getShipEngineLabelPurchaseLock(
+    params.supabase,
+    params.orderId,
+    packageKey,
+  )
   if (existingLock?.status === "purchased" && existingLock.tracking_number?.trim()) {
     return {
       ok: true,
@@ -182,6 +223,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
       orderId: params.orderId,
       ownerKey: params.ownerKey,
       rateId,
+      packageKey,
     })
   } else if (!existingLock) {
     const inserted = await insertShipEngineLabelPurchaseLock({
@@ -189,6 +231,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
       orderId: params.orderId,
       ownerKey: params.ownerKey,
       rateId,
+      packageKey,
     })
     if (!inserted.ok) {
       return { ok: false, error: inserted.error, status: 500 }
@@ -197,7 +240,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
   }
 
   if (!acquired) {
-    const waited = await waitForPurchasedLock(params.supabase, params.orderId)
+    const waited = await waitForPurchasedLock(params.supabase, params.orderId, packageKey)
     if (waited?.status === "purchased" && waited.tracking_number?.trim()) {
       return {
         ok: true,
@@ -220,6 +263,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
         orderId: params.orderId,
         ownerKey: params.ownerKey,
         rateId,
+        packageKey,
       })
       if (!reclaimed) {
         return {
@@ -238,13 +282,17 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
     }
   }
 
-  // Re-check after acquiring the lock (another worker may have finished attach).
-  const existingAfterLock = await loadExistingPreparedLabelSummary(params.supabase, params.orderId)
+  const existingAfterLock = await loadExistingPreparedLabelSummary(
+    params.supabase,
+    params.orderId,
+    packageKey,
+  )
   if (existingAfterLock?.trackingNumber) {
     await markShipEngineLabelPurchaseLockPurchased({
       supabase: params.supabase,
       orderId: params.orderId,
       ownerKey: params.ownerKey,
+      packageKey,
       rateId,
       trackingNumber: existingAfterLock.trackingNumber,
       trackingCarrier: existingAfterLock.trackingCarrier,
@@ -272,6 +320,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
       supabase: params.supabase,
       orderId: params.orderId,
       ownerKey: params.ownerKey,
+      packageKey,
     })
     return purchased
   }
@@ -280,16 +329,17 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
     supabase: params.supabase,
     orderId: params.orderId,
     ownerKey: params.ownerKey,
+    packageKey,
     rateId,
     trackingNumber: purchased.result.trackingNumber,
     trackingCarrier: purchased.result.trackingCarrier,
     labelPdfUrl: purchased.result.labelUrl,
   })
   if (!marked.ok) {
-    // Label was purchased — do not fail open into a retry that buys again.
     console.error(
       "[purchaseShipEngineLabelForOrderOnce] CRITICAL: ShipEngine label purchased but lock mark failed",
       params.orderId,
+      packageKey,
       purchased.result.trackingNumber,
       marked.error,
     )

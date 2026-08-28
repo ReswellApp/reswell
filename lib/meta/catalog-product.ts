@@ -55,7 +55,7 @@ export type MetaCatalogFeedItem = {
   google_product_category: string
   additional_image_link?: string
   identifier_exists: "no"
-  /** Product-set filter for Meta Ads — e.g. HaydenGarfield / OutSurfing shop only. */
+  /** Product-set filter for Meta Ads — e.g. HaydenGarfield / OutSurfing / Brownstone shop only. */
   custom_label_0?: string
   /** Direct downloadable video file URL (Meta Advantage+ catalog ads). */
   "video[0].url"?: string
@@ -65,6 +65,7 @@ export type MetaCatalogFeedItem = {
 export type MetaCatalogFeedContext = {
   haydenShopUserId: string | null
   outSurfingShopUserId: string | null
+  brownstoneShopUserId: string | null
 }
 
 const MAX_DESCRIPTION_LENGTH = 5000
@@ -136,6 +137,12 @@ export const META_CATALOG_DEFAULT_OUTSURFING_SHOP_CUSTOM_LABEL = "OutSurfing"
 /** Profile email for OutSurfing’s seller shop (fallback when USER_ID env unset). */
 export const META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL = "davidacason@gmail.com"
 
+/** Default `custom_label_0` for Brownstone’s shop (Meta product-set / ads filter). */
+export const META_CATALOG_DEFAULT_BROWNSTONE_SHOP_CUSTOM_LABEL = "Brownstone"
+
+/** Profile email for Brownstone’s seller shop (fallback when USER_ID env unset). */
+export const META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL = "eric@questavolta.com"
+
 /**
  * Meta Commerce `custom_label_0` for Hayden Garfield shop listings.
  * Override with `META_CATALOG_HAYDEN_SHOP_CUSTOM_LABEL`.
@@ -159,8 +166,19 @@ export function getMetaCatalogOutSurfingShopCustomLabel(): string {
 }
 
 /**
+ * Meta Commerce `custom_label_0` for Brownstone shop listings.
+ * Override with `META_CATALOG_BROWNSTONE_SHOP_CUSTOM_LABEL`.
+ */
+export function getMetaCatalogBrownstoneShopCustomLabel(): string {
+  return (
+    process.env.META_CATALOG_BROWNSTONE_SHOP_CUSTOM_LABEL?.trim() ||
+    META_CATALOG_DEFAULT_BROWNSTONE_SHOP_CUSTOM_LABEL
+  )
+}
+
+/**
  * `custom_label_0` for a listing — shop label when `user_id` matches a known seller, else omitted.
- * Use in Meta Ads: Catalog → Product sets → filter Custom Label 0 = HaydenGarfield | OutSurfing.
+ * Use in Meta Ads: Catalog → Product sets → filter Custom Label 0 = HaydenGarfield | OutSurfing | Brownstone.
  */
 export function getMetaCatalogCustomLabel0ForListing(
   listing: Pick<MetaListingProductSource, "user_id">,
@@ -174,6 +192,9 @@ export function getMetaCatalogCustomLabel0ForListing(
 
   const outSurfingId = context.outSurfingShopUserId?.trim()
   if (outSurfingId && ownerId === outSurfingId) return getMetaCatalogOutSurfingShopCustomLabel()
+
+  const brownstoneId = context.brownstoneShopUserId?.trim()
+  if (brownstoneId && ownerId === brownstoneId) return getMetaCatalogBrownstoneShopCustomLabel()
 
   return undefined
 }

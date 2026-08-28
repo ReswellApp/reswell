@@ -37,6 +37,8 @@ interface PurchaseOptionsProps {
   promoCode?: string | null
   /** Signed token from `/api/checkout/shipping-quote` — charges that ShipEngine rate without a second lookup. */
   shippingQuoteToken?: string | null
+  /** Multi-surfboard: together (one box) vs separate (one label per board). */
+  packagingMode?: "together" | "separate" | null
   /** When false, card checkout stays disabled until purchase details are complete. */
   purchaseDetailsReady?: boolean
   /** True when the order ships (includes ship-only listings where fulfillment is undefined). */
@@ -65,6 +67,7 @@ export function PurchaseOptions({
   offerId,
   promoCode,
   shippingQuoteToken,
+  packagingMode = null,
   purchaseDetailsReady = true,
   needsShipping = false,
   submitButtonLabel,
@@ -108,6 +111,7 @@ export function PurchaseOptions({
             offerId={offerId ?? null}
             promoCode={promoCode ?? null}
             shippingQuoteToken={shippingQuoteToken ?? null}
+            packagingMode={packagingMode}
             purchaseDetailsReady
             needsShipping={needsShipping}
             submitButtonLabel={submitButtonLabel}

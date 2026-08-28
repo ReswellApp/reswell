@@ -39,9 +39,16 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
+import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
 import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
+import {
+  checkoutOffersShippingPackagingChoice,
+  DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveShippingPackagingMode,
+  type ShippingPackagingMode,
+} from "@/lib/shipping/packaging-mode"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -103,6 +110,7 @@ export async function POST(request: NextRequest) {
     offer_id?: string | null
     promo_code?: string | null
     quote_token?: string | null
+    packaging_mode?: string | null
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -368,8 +376,23 @@ export async function POST(request: NextRequest) {
         usedReswellQuote: boolean
         rateId?: string | null
         serviceCode?: string | null
+        packageRates?: CheckoutShippingPackageRate[] | null
       }
     | undefined
+  let packagingMode: ShippingPackagingMode = DEFAULT_SHIPPING_PACKAGING_MODE
+  const packagingFromBody = resolveShippingPackagingMode(
+    body.packaging_mode,
+    DEFAULT_SHIPPING_PACKAGING_MODE,
+  )
+  if (
+    impliedFulfillment === "shipping" &&
+    listingIdsOrdered.length > 1 &&
+    checkoutOffersShippingPackagingChoice(listingsOrdered) &&
+    packagingFromBody === "separate"
+  ) {
+    packagingMode = "separate"
+  }
+
   const quoteTokenRaw = body.quote_token?.trim()
   if (impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
     const verified = verifyCheckoutShippingQuoteToken(quoteTokenRaw, {
@@ -383,11 +406,22 @@ export async function POST(request: NextRequest) {
     if (!verified.payload.usedReswellQuote) {
       return NextResponse.json({ error: "Invalid shipping quote token." }, { status: 400, headers: JSON_NO_STORE_HEADERS })
     }
+    const tokenPackaging = resolveShippingPackagingMode(
+      verified.payload.packagingMode,
+      DEFAULT_SHIPPING_PACKAGING_MODE,
+    )
+    if (tokenPackaging !== packagingMode) {
+      return NextResponse.json(
+        { error: "Shipping quote does not match packaging choice. Refresh shipping and try again." },
+        { status: 400, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
     preverifiedShipping = {
       shippingUsd: verified.payload.shippingCents / 100,
       usedReswellQuote: true,
       rateId: verified.payload.rateId?.trim() || null,
       serviceCode: verified.payload.serviceCode?.trim() || null,
+      packageRates: verified.payload.packageRates ?? null,
     }
   }
 
@@ -397,6 +431,7 @@ export async function POST(request: NextRequest) {
     fulfillment: impliedFulfillment,
     buyerAddress,
     diagnosticTagPrefix: "payment-intent",
+    packagingMode,
     preverifiedShipping,
     quantityByListingId,
   })
@@ -512,7 +547,7 @@ export async function POST(request: NextRequest) {
         ...(bundle.anyUsedReswellQuote
           ? {
               reswell_shipping_cents: String(Math.round(bundle.totalShippingUsd * 100)),
-              ...(bundle.reswellQuote?.rateId
+              ...(bundle.reswellQuote?.rateId && packagingMode === "together"
                 ? {
                     shipengine_rate_id: bundle.reswellQuote.rateId,
                     ...(bundle.reswellQuote.serviceCode
@@ -520,7 +555,22 @@ export async function POST(request: NextRequest) {
                       : {}),
                   }
                 : {}),
+              ...(packagingMode === "separate" && bundle.packageRates.length > 0
+                ? {
+                    shipengine_package_rates: JSON.stringify(
+                      bundle.packageRates.map((r) => ({
+                        listingId: r.listingId,
+                        rateId: r.rateId,
+                        shippingCents: r.shippingCents,
+                        serviceCode: r.serviceCode ?? null,
+                      })),
+                    ),
+                  }
+                : {}),
             }
+          : {}),
+        ...(impliedFulfillment === "shipping" && listingIdsOrdered.length > 1
+          ? { shipping_packaging_mode: packagingMode }
           : {}),
       },
       description: stripeDescription.slice(0, 1000),

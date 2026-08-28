@@ -57,6 +57,17 @@ export async function tryReleaseShippingPayoutAfterCarrierHold(
     return { released: false }
   }
 
+  // Belt-and-suspenders: never release if any shipment is still undelivered.
+  const { count: openShipments } = await supabase
+    .from("order_shipments")
+    .select("id", { count: "exact", head: true })
+    .eq("order_id", orderId)
+    .neq("delivery_status", "delivered")
+
+  if (typeof openShipments === "number" && openShipments > 0) {
+    return { released: false }
+  }
+
   const result = await markShippingDeliveredAndReleaseSellerEarnings(orderId)
   if (!result.ok) {
     return { released: false, error: result.error }

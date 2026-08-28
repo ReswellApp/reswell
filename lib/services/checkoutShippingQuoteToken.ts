@@ -1,7 +1,19 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
+import {
+  parseShippingPackagingMode,
+  type ShippingPackagingMode,
+} from "@/lib/shipping/packaging-mode"
 
 /** How long a shipping-quote token remains valid to charge the same ShipEngine rate (no second /rates call). */
 export const CHECKOUT_SHIPPING_QUOTE_TOKEN_TTL_MS = 15 * 60 * 1000
+
+/** Per-line ShipEngine rate when packaging is separate. */
+export type CheckoutShippingPackageRate = {
+  listingId: string
+  rateId: string
+  shippingCents: number
+  serviceCode?: string | null
+}
 
 export type CheckoutShippingQuoteTokenPayload = {
   buyerId: string
@@ -11,9 +23,12 @@ export type CheckoutShippingQuoteTokenPayload = {
   shippingCents: number
   totalCents: number
   usedReswellQuote: boolean
-  /** ShipEngine rate id selected at checkout (fins / magazines). */
+  /** ShipEngine rate id selected at checkout (single package / together). */
   rateId?: string | null
   serviceCode?: string | null
+  packagingMode?: ShippingPackagingMode
+  /** Separate packaging: one purchasable rate per listing. */
+  packageRates?: CheckoutShippingPackageRate[]
   exp: number
 }
 
@@ -25,6 +40,31 @@ function signingSecret(): string | null {
 
 function encodePayload(payload: CheckoutShippingQuoteTokenPayload): string {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url")
+}
+
+function parsePackageRates(raw: unknown): CheckoutShippingPackageRate[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined
+  const out: CheckoutShippingPackageRate[] = []
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return undefined
+    const r = entry as Record<string, unknown>
+    const listingId = typeof r.listingId === "string" ? r.listingId.trim() : ""
+    const rateId = typeof r.rateId === "string" ? r.rateId.trim() : ""
+    const shippingCents =
+      typeof r.shippingCents === "number" && Number.isFinite(r.shippingCents)
+        ? Math.round(r.shippingCents)
+        : NaN
+    if (!listingId || !rateId || !Number.isFinite(shippingCents) || shippingCents < 0) {
+      return undefined
+    }
+    out.push({
+      listingId,
+      rateId,
+      shippingCents,
+      serviceCode: typeof r.serviceCode === "string" ? r.serviceCode : null,
+    })
+  }
+  return out
 }
 
 function decodePayload(encoded: string): CheckoutShippingQuoteTokenPayload | null {
@@ -45,7 +85,19 @@ function decodePayload(encoded: string): CheckoutShippingQuoteTokenPayload | nul
     ) {
       return null
     }
-    return parsed
+    const packagingMode =
+      parsed.packagingMode == null
+        ? undefined
+        : parseShippingPackagingMode(parsed.packagingMode) ?? undefined
+    if (parsed.packagingMode != null && packagingMode == null) return null
+    const packageRates =
+      parsed.packageRates == null ? undefined : parsePackageRates(parsed.packageRates)
+    if (parsed.packageRates != null && packageRates == null) return null
+    return {
+      ...parsed,
+      packagingMode,
+      packageRates,
+    }
   } catch {
     return null
   }
@@ -69,9 +121,22 @@ export function signCheckoutShippingQuoteToken(input: {
   usedReswellQuote: boolean
   rateId?: string | null
   serviceCode?: string | null
+  packagingMode?: ShippingPackagingMode | null
+  packageRates?: CheckoutShippingPackageRate[] | null
 }): string | null {
   const secret = signingSecret()
   if (!secret) return null
+
+  const packagingMode = parseShippingPackagingMode(input.packagingMode) ?? undefined
+  const packageRates =
+    packagingMode === "separate" && input.packageRates && input.packageRates.length > 0
+      ? input.packageRates.map((r) => ({
+          listingId: r.listingId.trim(),
+          rateId: r.rateId.trim(),
+          shippingCents: Math.round(r.shippingCents),
+          serviceCode: r.serviceCode?.trim() || null,
+        }))
+      : undefined
 
   const payload: CheckoutShippingQuoteTokenPayload = {
     buyerId: input.buyerId.trim(),
@@ -83,6 +148,8 @@ export function signCheckoutShippingQuoteToken(input: {
     usedReswellQuote: input.usedReswellQuote,
     rateId: input.rateId?.trim() || null,
     serviceCode: input.serviceCode?.trim() || null,
+    packagingMode,
+    packageRates,
     exp: Date.now() + CHECKOUT_SHIPPING_QUOTE_TOKEN_TTL_MS,
   }
 

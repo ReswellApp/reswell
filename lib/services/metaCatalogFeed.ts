@@ -3,6 +3,7 @@ import { z } from "zod"
 import { fetchMetaCatalogFeedPage } from "@/lib/db/metaCatalogFeed"
 import {
   listingToMetaCatalogFeedItem,
+  META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL,
   META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL,
   META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL,
   type MetaCatalogFeedItem,
@@ -79,6 +80,21 @@ export async function resolveMetaCatalogOutSurfingShopUserId(
   })
 }
 
+/**
+ * Resolves Brownstone’s seller profile id for Meta `custom_label_0`.
+ * Prefer `META_CATALOG_BROWNSTONE_SHOP_USER_ID`, else email
+ * (`META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL` or eric@questavolta.com).
+ */
+export async function resolveMetaCatalogBrownstoneShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  return resolveShopUserIdByEnvOrEmail(supabase, {
+    userIdEnv: "META_CATALOG_BROWNSTONE_SHOP_USER_ID",
+    emailEnv: "META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL",
+    defaultEmail: META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL,
+  })
+}
+
 function catalogFeedMaxItems(): number {
   const raw = process.env.META_CATALOG_FEED_MAX_ITEMS?.trim()
   if (!raw) return DEFAULT_MAX_ITEMS
@@ -98,11 +114,12 @@ export async function buildMetaCatalogFeed(
   supabase: SupabaseClient,
 ): Promise<MetaCatalogFeedItem[]> {
   const maxItems = catalogFeedMaxItems()
-  const [haydenShopUserId, outSurfingShopUserId] = await Promise.all([
+  const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId] = await Promise.all([
     resolveMetaCatalogHaydenShopUserId(supabase),
     resolveMetaCatalogOutSurfingShopUserId(supabase),
+    resolveMetaCatalogBrownstoneShopUserId(supabase),
   ])
-  const feedContext = { haydenShopUserId, outSurfingShopUserId }
+  const feedContext = { haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId }
   const items: MetaCatalogFeedItem[] = []
   let offset = 0
 

@@ -180,7 +180,7 @@ export function CartPageView({
       sellerGroupCount > 1
         ? "Multiple sellers — checkout each group separately. Reswell shop items are included with whichever seller group you check out first."
         : maxSurfboardsInSellerGroup >= 2
-          ? "These surfboards ship together in one box. Live shipping is quoted at checkout from the longest board."
+          ? "These surfboards can ship together in one box or separately — choose at checkout. Live shipping is quoted from your address."
           : shopRows.length > 0 && peerRows.length > 0
             ? "Peer listings and Reswell shop items check out together in one payment."
             : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
