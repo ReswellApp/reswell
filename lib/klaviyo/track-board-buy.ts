@@ -1,3 +1,4 @@
+import { boardBuyQuotePath } from "@/lib/board-buy/quote-href"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
@@ -21,7 +22,7 @@ export async function trackBoardBuySubmitted(submission: BoardBuySubmission): Pr
     properties: {
       Title: submission.title,
       asking_price_display: money(submission.askingPrice),
-      submission_url: `${origin}/dashboard/we-buy/${submission.id}`,
+      submission_url: `${origin}${boardBuyQuotePath(submission.id)}`,
       admin_url: `${origin}/admin/we-buy/${submission.id}`,
     },
   })
@@ -38,7 +39,7 @@ export async function trackBoardBuyQuoteReady(submission: BoardBuySubmission): P
       asking_price_display: money(submission.askingPrice),
       offered_price_display: money(submission.offeredPrice),
       quote_source: submission.quoteSource ?? "",
-      submission_url: `${origin}/dashboard/we-buy/${submission.id}`,
+      submission_url: `${origin}${boardBuyQuotePath(submission.id)}`,
     },
   })
 }

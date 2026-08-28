@@ -26,6 +26,7 @@ import type { BoardBuyAdminListItem, BoardBuySubmission } from "@/lib/types/boar
 import type { z } from "zod"
 import type {
   boardBuyOpsQuoteSchema,
+  boardBuySellerParcelSchema,
   boardBuySellerRespondSchema,
   boardBuySubmitSchema,
 } from "@/lib/validations/board-buy"
@@ -162,17 +163,53 @@ export async function sellerRespondBoardBuyService(
       status: "accepted",
       accepted_at: now,
     })
-    const accepted = await getBoardBuySubmissionById(service, row.id)
-    if (accepted) {
-      const label = await purchaseBoardBuyInboundLabel(accepted)
-      if (!label.ok) {
-        console.error("[boardBuy] label after accept", label.error)
-      }
-    }
     return { success: true, data: { id: row.id } }
   } catch (e) {
     console.error("[boardBuy] seller respond", e)
     return { error: "Could not save your response." }
+  }
+}
+
+export async function sellerSubmitBoardBuyParcelService(
+  input: z.infer<typeof boardBuySellerParcelSchema>,
+): Promise<ActionResult<{ id: string }>> {
+  const auth = await requireUser()
+  if (!auth.ok) return { error: auth.error }
+
+  try {
+    const row = await getBoardBuySubmissionForUser(
+      auth.supabase,
+      auth.user.id,
+      input.submissionId,
+    )
+    if (!row) return { error: "Not found" }
+    if (row.status !== "accepted") {
+      return { error: "Accept the offer, then submit packed box measurements." }
+    }
+    if (row.labelPdfUrl) {
+      return { error: "A label is already purchased for this board." }
+    }
+
+    const service = createServiceRoleClient()
+    await updateBoardBuySubmission(service, row.id, {
+      parcel_length_in: input.parcelLengthIn,
+      parcel_width_in: input.parcelWidthIn,
+      parcel_height_in: input.parcelHeightIn,
+      parcel_weight_lb: input.parcelWeightLb,
+    })
+    const updated = await getBoardBuySubmissionById(service, row.id)
+    if (!updated) return { error: "Could not save box measurements." }
+
+    const label = await purchaseBoardBuyInboundLabel(updated)
+    if (!label.ok) {
+      return {
+        error: `Measurements saved, but the label could not be purchased yet: ${label.error}`,
+      }
+    }
+    return { success: true, data: { id: row.id } }
+  } catch (e) {
+    console.error("[boardBuy] seller parcel", e)
+    return { error: "Could not save box measurements." }
   }
 }
 
@@ -285,6 +322,9 @@ export async function opsQuoteBoardBuyService(
         declined_at: now,
         quote_source: "ops",
         ops_notes: input.opsNotes?.trim() || null,
+        quote_message:
+          input.quoteMessage?.trim() ||
+          "We’re not able to buy this board right now. You’re welcome to list it on the marketplace instead.",
       })
       return { success: true, data: { id: row.id } }
     }
@@ -295,12 +335,18 @@ export async function opsQuoteBoardBuyService(
       return { error: "Enter a counter price." }
     }
 
+    const defaultMessage =
+      offered === row.askingPrice
+        ? "We’ll buy this board at your asking price. Accept below, then box it (max 22\" × 5\" W × H) and send packed measurements so we can purchase your prepaid label."
+        : "Here’s our offer for this board. Accept to sell it to Reswell, then box it (max 22\" × 5\" W × H) and send packed measurements for a prepaid label."
+
     await updateBoardBuySubmission(service, row.id, {
       status: "quoted",
       quote_source: "ops",
       offered_price: offered.toFixed(2),
       quoted_at: now,
       ops_notes: input.opsNotes?.trim() || null,
+      quote_message: input.quoteMessage?.trim() || defaultMessage,
     })
     const quoted = await getBoardBuySubmissionById(service, row.id)
     if (quoted) {

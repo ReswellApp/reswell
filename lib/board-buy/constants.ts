@@ -4,10 +4,14 @@ export const BOARD_BUY_MAX_PHOTOS = 8
 export const BOARD_BUY_MIN_PHOTOS = 1
 export const BOARD_BUY_MAX_PHOTO_BYTES = 10 * 1024 * 1024
 
+/** Packed-box limits for inbound We Buy labels (width × height). Length follows the board. */
+export const BOARD_BUY_MAX_BOX_WIDTH_IN = 22
+export const BOARD_BUY_MAX_BOX_HEIGHT_IN = 5
+
 export const BOARD_BUY_DEFAULT_PARCEL = {
   lengthIn: 78,
-  widthIn: 22,
-  heightIn: 6,
+  widthIn: BOARD_BUY_MAX_BOX_WIDTH_IN,
+  heightIn: BOARD_BUY_MAX_BOX_HEIGHT_IN,
   weightLb: 18,
 } as const
 

@@ -11,12 +11,12 @@ const STEPS = [
   {
     icon: Clock,
     title: "Quote in under 30 minutes",
-    body: "We accept your asking price or send our best offer. If we miss the window, you automatically get 20% off your ask.",
+    body: "We accept your asking price or send our best offer.",
   },
   {
     icon: Package,
-    title: "Print the label and ship",
-    body: "We buy the prepaid label. You box the board and drop it with the carrier.",
+    title: "Box it, then we buy the label",
+    body: "You must ship in a carton no more than 22\" wide and 5\" high. After you pack it, send us the outer measurements and weight. We purchase the prepaid label then — not at accept.",
   },
   {
     icon: Wallet,
@@ -39,8 +39,8 @@ export function WeBuyLanding({ signedIn }: { signedIn: boolean }) {
             We’ll buy your surfboard
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-[#5c6b89] sm:text-lg">
-            Skip the listing wait. Send photos and your asking price — we’ll get back to you in
-            under 30 minutes with an accept or our best offer. Prepaid label. Paid to your wallet.
+            Send photos and your asking price — we’ll get back to you in under 30 minutes with an
+            accept or our best offer. Box within 22&quot; × 5&quot; (W × H). Paid to your wallet.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button

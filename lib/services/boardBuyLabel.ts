@@ -1,4 +1,3 @@
-import { BOARD_BUY_DEFAULT_PARCEL } from "@/lib/board-buy/constants"
 import { getBoardBuyWarehouseAddress } from "@/lib/board-buy/warehouse-address"
 import { updateBoardBuySubmission } from "@/lib/db/boardBuy"
 import {
@@ -25,12 +24,14 @@ function shipFromAddress(sub: BoardBuySubmission): RateQuoteAddressFields {
 }
 
 function parcelFromSubmission(sub: BoardBuySubmission) {
-  return {
-    lengthIn: sub.parcelLengthIn ?? BOARD_BUY_DEFAULT_PARCEL.lengthIn,
-    widthIn: sub.parcelWidthIn ?? BOARD_BUY_DEFAULT_PARCEL.widthIn,
-    heightIn: sub.parcelHeightIn ?? BOARD_BUY_DEFAULT_PARCEL.heightIn,
-    weightLb: sub.parcelWeightLb ?? BOARD_BUY_DEFAULT_PARCEL.weightLb,
+  const lengthIn = sub.parcelLengthIn
+  const widthIn = sub.parcelWidthIn
+  const heightIn = sub.parcelHeightIn
+  const weightLb = sub.parcelWeightLb
+  if (lengthIn == null || widthIn == null || heightIn == null || weightLb == null) {
+    return null
   }
+  return { lengthIn, widthIn, heightIn, weightLb }
 }
 
 export async function purchaseBoardBuyInboundLabel(
@@ -43,6 +44,14 @@ export async function purchaseBoardBuyInboundLabel(
     return { ok: true }
   }
 
+  const parcel = parcelFromSubmission(submission)
+  if (!parcel) {
+    return {
+      ok: false,
+      error: "Wait until the seller boxes the board and submits packed measurements.",
+    }
+  }
+
   const warehouse = getBoardBuyWarehouseAddress()
   if (!warehouse.ok) {
     return warehouse
@@ -51,7 +60,7 @@ export async function purchaseBoardBuyInboundLabel(
   const rates = await fetchShipEngineRatesForSurfboard({
     shipFrom: shipFromAddress(submission),
     shipTo: warehouse.address,
-    parcel: parcelFromSubmission(submission),
+    parcel,
     tierId: "shortboard",
   })
   if (!rates.ok) {

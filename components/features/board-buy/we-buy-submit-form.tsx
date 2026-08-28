@@ -40,11 +40,16 @@ export function WeBuySubmitForm({ userId }: { userId: string }) {
       setError(result.error)
       return
     }
-    router.push(`/dashboard/we-buy/${result.data.id}`)
+    router.push(`/we-buy/quotes/${result.data.id}`)
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      <div className="rounded-lg border border-[#001A4A]/15 bg-[#F4F7FB] p-4 text-sm text-[#001A4A]">
+        You will be required to ship this board in a box with a maximum width of 22 inches and a
+        maximum height of 5 inches. After you accept an offer, box the board, measure the packed
+        carton, and send those numbers — we purchase the shipping label then, not at accept.
+      </div>
       <div className="space-y-2">
         <Label htmlFor="title">Board title</Label>
         <Input id="title" name="title" required placeholder="CI Twin Pin 5'10" />
@@ -65,7 +70,9 @@ export function WeBuySubmitForm({ userId }: { userId: string }) {
       <fieldset className="space-y-3 rounded-lg border p-4">
         <legend className="px-1 text-sm font-medium">Ship-from address</legend>
         <p className="text-xs text-muted-foreground">
-          We’ll print a prepaid label to Reswell from this address after you accept.
+          After you accept, you’ll box the board (max 22&quot; wide and 5&quot; high) and send us
+          the packed measurements. We buy the prepaid label to Reswell from this address only after
+          that.
         </p>
         <Input name="shipFromName" required placeholder="Full name" />
         <Input name="shipFromPhone" required placeholder="Phone" />

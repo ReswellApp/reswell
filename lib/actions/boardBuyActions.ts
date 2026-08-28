@@ -10,12 +10,14 @@ import {
   opsPurchaseBoardBuyLabelService,
   opsQuoteBoardBuyService,
   sellerRespondBoardBuyService,
+  sellerSubmitBoardBuyParcelService,
   submitBoardBuyService,
   withdrawBoardBuyService,
 } from "@/lib/services/boardBuy"
 import {
   boardBuyIdSchema,
   boardBuyOpsQuoteSchema,
+  boardBuySellerParcelSchema,
   boardBuySellerRespondSchema,
   boardBuySubmitSchema,
 } from "@/lib/validations/board-buy"
@@ -32,6 +34,7 @@ export async function submitBoardBuyAction(input: unknown) {
   const result = await submitBoardBuyService(parsed.data)
   if ("success" in result) {
     revalidatePath("/dashboard/we-buy")
+    revalidatePath(`/we-buy/quotes/${result.data.id}`)
     revalidatePath("/admin/we-buy")
   }
   return result
@@ -42,8 +45,23 @@ export async function sellerRespondBoardBuyAction(input: unknown) {
   if (!parsed.success) return { error: flattenZod(parsed.error) }
   const result = await sellerRespondBoardBuyService(parsed.data)
   if ("success" in result) {
+    revalidatePath(`/we-buy/quotes/${parsed.data.submissionId}`)
     revalidatePath(`/dashboard/we-buy/${parsed.data.submissionId}`)
     revalidatePath("/dashboard/we-buy")
+    revalidatePath("/admin/we-buy")
+  }
+  return result
+}
+
+export async function sellerSubmitBoardBuyParcelAction(input: unknown) {
+  const parsed = boardBuySellerParcelSchema.safeParse(input)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  const result = await sellerSubmitBoardBuyParcelService(parsed.data)
+  if ("success" in result) {
+    revalidatePath(`/we-buy/quotes/${parsed.data.submissionId}`)
+    revalidatePath(`/dashboard/we-buy/${parsed.data.submissionId}`)
+    revalidatePath("/dashboard/we-buy")
+    revalidatePath(`/admin/we-buy/${parsed.data.submissionId}`)
     revalidatePath("/admin/we-buy")
   }
   return result
@@ -55,6 +73,7 @@ export async function withdrawBoardBuyAction(input: unknown) {
   const result = await withdrawBoardBuyService(parsed.data.submissionId)
   if ("success" in result) {
     revalidatePath("/dashboard/we-buy")
+    revalidatePath(`/we-buy/quotes/${parsed.data.submissionId}`)
     revalidatePath(`/dashboard/we-buy/${parsed.data.submissionId}`)
     revalidatePath("/admin/we-buy")
   }
@@ -68,6 +87,7 @@ export async function opsQuoteBoardBuyAction(input: unknown) {
   if ("success" in result) {
     revalidatePath("/admin/we-buy")
     revalidatePath(`/admin/we-buy/${parsed.data.submissionId}`)
+    revalidatePath(`/we-buy/quotes/${parsed.data.submissionId}`)
   }
   return result
 }
@@ -78,6 +98,7 @@ export async function opsPurchaseBoardBuyLabelAction(input: unknown) {
   const result = await opsPurchaseBoardBuyLabelService(parsed.data.submissionId)
   if ("success" in result) {
     revalidatePath(`/admin/we-buy/${parsed.data.submissionId}`)
+    revalidatePath(`/we-buy/quotes/${parsed.data.submissionId}`)
     revalidatePath(`/dashboard/we-buy/${parsed.data.submissionId}`)
   }
   return result
@@ -91,6 +112,7 @@ export async function opsMarkReceivedAndPayAction(input: unknown) {
     revalidatePath(`/admin/we-buy/${parsed.data.submissionId}`)
     revalidatePath("/admin/we-buy")
     revalidatePath("/dashboard/wallet")
+    revalidatePath(`/we-buy/quotes/${parsed.data.submissionId}`)
     revalidatePath(`/dashboard/we-buy/${parsed.data.submissionId}`)
   }
   return result

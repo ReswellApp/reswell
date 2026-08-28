@@ -1,5 +1,10 @@
 import { z } from "zod"
-import { BOARD_BUY_MAX_PHOTOS, BOARD_BUY_MIN_PHOTOS } from "@/lib/board-buy/constants"
+import {
+  BOARD_BUY_MAX_BOX_HEIGHT_IN,
+  BOARD_BUY_MAX_BOX_WIDTH_IN,
+  BOARD_BUY_MAX_PHOTOS,
+  BOARD_BUY_MIN_PHOTOS,
+} from "@/lib/board-buy/constants"
 
 const moneySchema = z.coerce.number().finite().gt(0).max(50_000)
 
@@ -18,9 +23,23 @@ export const boardBuySubmitSchema = z.object({
   shipFromState: z.string().trim().min(2).max(40),
   shipFromPostal: z.string().trim().min(5).max(16),
   parcelLengthIn: z.coerce.number().finite().gt(0).max(140).optional().nullable(),
-  parcelWidthIn: z.coerce.number().finite().gt(0).max(40).optional().nullable(),
-  parcelHeightIn: z.coerce.number().finite().gt(0).max(40).optional().nullable(),
+  parcelWidthIn: z.coerce.number().finite().gt(0).max(BOARD_BUY_MAX_BOX_WIDTH_IN).optional().nullable(),
+  parcelHeightIn: z.coerce
+    .number()
+    .finite()
+    .gt(0)
+    .max(BOARD_BUY_MAX_BOX_HEIGHT_IN)
+    .optional()
+    .nullable(),
   parcelWeightLb: z.coerce.number().finite().gt(0).max(150).optional().nullable(),
+})
+
+export const boardBuySellerParcelSchema = z.object({
+  submissionId: z.string().uuid(),
+  parcelLengthIn: z.coerce.number().finite().gt(0).max(140),
+  parcelWidthIn: z.coerce.number().finite().gt(0).max(BOARD_BUY_MAX_BOX_WIDTH_IN),
+  parcelHeightIn: z.coerce.number().finite().gt(0).max(BOARD_BUY_MAX_BOX_HEIGHT_IN),
+  parcelWeightLb: z.coerce.number().finite().gt(0).max(150),
 })
 
 export const boardBuyOpsQuoteSchema = z.object({
@@ -28,6 +47,7 @@ export const boardBuyOpsQuoteSchema = z.object({
   mode: z.enum(["accept_asking", "counter", "decline"]),
   offeredPrice: moneySchema.optional(),
   opsNotes: z.string().trim().max(2000).optional().nullable(),
+  quoteMessage: z.string().trim().max(2000).optional().nullable(),
 })
 
 export const boardBuySellerRespondSchema = z.object({

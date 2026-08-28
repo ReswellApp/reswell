@@ -32,6 +32,7 @@ export function AdminBoardBuyDetail({ submission }: { submission: BoardBuyAdminL
       mode,
       offeredPrice: mode === "counter" ? Number(offeredRaw) : undefined,
       opsNotes: String(data.get("opsNotes") ?? "") || null,
+      quoteMessage: String(data.get("quoteMessage") ?? "") || null,
     })
     setPending(false)
     if ("error" in result) {
@@ -99,6 +100,12 @@ export function AdminBoardBuyDetail({ submission }: { submission: BoardBuyAdminL
           {submission.sellerNote}
         </p>
       ) : null}
+      {submission.quoteMessage ? (
+        <p className="text-sm">
+          <span className="font-medium">Seller-facing message: </span>
+          {submission.quoteMessage}
+        </p>
+      ) : null}
 
       <p className="text-sm text-muted-foreground">
         Ship from {submission.shipFromName}, {submission.shipFromLine1}, {submission.shipFromCity},{" "}
@@ -110,6 +117,10 @@ export function AdminBoardBuyDetail({ submission }: { submission: BoardBuyAdminL
           <div className="space-y-2">
             <Label htmlFor="offeredPrice">Counter price</Label>
             <Input id="offeredPrice" name="offeredPrice" inputMode="decimal" placeholder={String(autoOffer)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="quoteMessage">Message to seller (shown on quote)</Label>
+            <Textarea id="quoteMessage" name="quoteMessage" rows={3} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="opsNotes">Internal notes</Label>
@@ -129,9 +140,30 @@ export function AdminBoardBuyDetail({ submission }: { submission: BoardBuyAdminL
         </form>
       ) : null}
 
+      {submission.status === "accepted" && !submission.labelPdfUrl ? (
+        <p className="text-sm text-muted-foreground">
+          Label waits until the seller submits packed box size
+          {submission.parcelLengthIn != null
+            ? ` (saved ${submission.parcelLengthIn}×${submission.parcelWidthIn}×${submission.parcelHeightIn} in, ${submission.parcelWeightLb} lb).`
+            : "."}
+        </p>
+      ) : null}
+
       {submission.status === "accepted" || submission.status === "label_ready" ? (
         <div className="flex flex-wrap gap-2">
-          <Button type="button" disabled={pending} variant="outline" onClick={() => void buyLabel()}>
+          <Button
+            type="button"
+            disabled={
+              pending ||
+              Boolean(submission.labelPdfUrl) ||
+              submission.parcelLengthIn == null ||
+              submission.parcelWidthIn == null ||
+              submission.parcelHeightIn == null ||
+              submission.parcelWeightLb == null
+            }
+            variant="outline"
+            onClick={() => void buyLabel()}
+          >
             {submission.labelPdfUrl ? "Label purchased" : "Purchase inbound label"}
           </Button>
           <Button type="button" disabled={pending} onClick={() => void pay()}>

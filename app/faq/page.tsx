@@ -89,7 +89,7 @@ const sections: FaqSection[] = [
       {
         question: "Will Reswell buy my surfboard?",
         answerPlain:
-          "Yes. Sign in and go to We’ll buy your surfboard. Upload photos, a title, and your asking price. We reply in under 30 minutes with an accept or our best offer. If we miss that window, you automatically get an offer at 20% off your asking price. Accept, print the prepaid label, ship to Reswell, and we pay your wallet — cash out to your bank when you’re ready.",
+          "Yes. Sign in and go to We’ll buy your surfboard. Upload photos, a title, and your asking price. We reply in under 30 minutes with an accept or our best offer. If we miss that window, you automatically get an offer at 20% off your asking price. You must ship in a box no more than 22 inches wide and 5 inches high. After you accept, box the board, send packed measurements, then we buy the prepaid label. We pay your wallet when the board arrives — cash out to your bank when you’re ready.",
         answer: (
           <>
             Yes. Sign in and go to{" "}
@@ -98,7 +98,9 @@ const sections: FaqSection[] = [
             </Link>
             . Upload photos, a title, and your asking price. We reply in under 30 minutes with an
             accept or our best offer. If we miss that window, you automatically get an offer at 20%
-            off your asking price. Accept, print the prepaid label, ship to Reswell, and we pay your{" "}
+            off your asking price. You must ship in a box no more than 22&quot; wide and 5&quot;
+            high. After you accept, box the board and send packed measurements — we buy the prepaid
+            label then, not at accept. We pay your{" "}
             <Link href="/dashboard/wallet" className="text-primary underline">
               wallet
             </Link>

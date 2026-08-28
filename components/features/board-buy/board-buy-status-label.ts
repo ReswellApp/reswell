@@ -11,7 +11,7 @@ export function boardBuyStatusLabel(status: BoardBuyStatus): string {
     case "declined":
       return "Declined"
     case "accepted":
-      return "Accepted — label next"
+      return "Accepted — box and measure"
     case "label_ready":
       return "Ship it"
     case "received":

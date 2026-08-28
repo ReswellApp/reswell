@@ -17,6 +17,7 @@ type SubmissionRow = {
   received_at: string | null
   paid_at: string | null
   ops_notes: string | null
+  quote_message?: string | null
   seller_note: string | null
   ship_from_name: string
   ship_from_phone: string
@@ -80,6 +81,7 @@ export function mapBoardBuyRow(
     receivedAt: row.received_at,
     paidAt: row.paid_at,
     opsNotes: row.ops_notes,
+    quoteMessage: row.quote_message ?? null,
     sellerNote: row.seller_note,
     shipFromName: row.ship_from_name,
     shipFromPhone: row.ship_from_phone,

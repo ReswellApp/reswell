@@ -21,7 +21,9 @@ export default async function WeBuySubmitPage() {
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-10 sm:px-6">
       <h1 className="font-headline text-3xl font-bold text-[#001A4A]">Get a quote</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        We’ll accept your asking price or send our best offer within 30 minutes.
+        We’ll accept your asking price or send our best offer within 30 minutes. You’ll be required
+        to ship in a box no more than 22&quot; wide and 5&quot; high. We buy a prepaid label only
+        after you pack the board and submit those measurements.
       </p>
       <div className="mt-8">
         <WeBuySubmitForm userId={data.user.id} />

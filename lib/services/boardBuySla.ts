@@ -25,6 +25,8 @@ export async function applyOverdueBoardBuyAutoQuotes(): Promise<{ quoted: number
       quote_source: "auto_sla",
       offered_price: offered.toFixed(2),
       quoted_at: now,
+      quote_message:
+        "Here’s our offer for this board. Accept to sell it to Reswell, then box it (max 22\" × 5\" W × H) and send packed measurements for a prepaid label.",
     })
     const fresh = await getBoardBuySubmissionById(supabase, row.id)
     if (fresh) {

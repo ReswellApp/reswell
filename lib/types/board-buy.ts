@@ -21,6 +21,7 @@ export interface BoardBuySubmission {
   receivedAt: string | null
   paidAt: string | null
   opsNotes: string | null
+  quoteMessage: string | null
   sellerNote: string | null
   shipFromName: string
   shipFromPhone: string

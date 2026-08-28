@@ -418,7 +418,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("we-buy", "marketing", "We’ll buy your surfboard", {
     title: "We’ll Buy Your Surfboard | Reswell",
     description:
-      "Sell your surfboard to Reswell. Upload photos and your asking price — we quote in under 30 minutes, send a prepaid label, and pay your wallet.",
+      "Sell your surfboard to Reswell. Quote in under 30 minutes. Ship in a box max 22\" wide and 5\" high — we buy the prepaid label after you send packed measurements.",
     path: "/we-buy",
     keywords: ["sell surfboard", "we buy surfboards", "surfboard quote", "sell board to Reswell"],
   }),
