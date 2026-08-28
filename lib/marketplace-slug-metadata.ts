@@ -54,8 +54,9 @@ export function boardsBrowseBoardTypeLabel(type: string | undefined | null): str
 const BOARDS_CONDITION_LABELS = LISTING_CONDITION_LABELS
 
 /**
- * Default surfboards browse sort: 24h seeded shuffle of all live listings
- * (Query: `sort` omitted or `sort=top-picks`). Filtered browse uses newest instead.
+ * Default surfboards browse sort: admin-pinned listings first, then a 24h seeded
+ * shuffle of remaining live listings (Query: `sort` omitted or `sort=top-picks`).
+ * Filtered browse uses newest instead.
  */
 export const BOARDS_BROWSE_TOP_PICKS_SORT = "top-picks" as const
 export const BOARDS_BROWSE_DEFAULT_SORT = BOARDS_BROWSE_TOP_PICKS_SORT

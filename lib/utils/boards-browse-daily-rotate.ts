@@ -92,3 +92,35 @@ export function orderListingIdsForDailyRotate(
     .sort((a, b) => compareRotateIdRowsForDailyRotate(a, b, seed))
     .map((row) => row.id)
 }
+
+/**
+ * Admin-pinned listings stay at the front of `/boards` in curation order.
+ * `skipIds` (e.g. suppressed) keep their existing position instead of being promoted.
+ * Unknown pin ids (inactive / not in this view) are dropped.
+ */
+export function prependPinnedListingIds(
+  orderedIds: string[],
+  pinnedIds: string[],
+  opts?: { skipIds?: ReadonlySet<string> },
+): string[] {
+  if (pinnedIds.length === 0) return orderedIds
+
+  const skip = opts?.skipIds
+  const orderedSet = new Set(orderedIds)
+  const pinnedSet = new Set(pinnedIds)
+  const seen = new Set<string>()
+  const pinnedFront: string[] = []
+
+  for (const id of pinnedIds) {
+    if (seen.has(id)) continue
+    seen.add(id)
+    if (!orderedSet.has(id)) continue
+    if (skip?.has(id)) continue
+    pinnedFront.push(id)
+  }
+
+  if (pinnedFront.length === 0) return orderedIds
+
+  const rest = orderedIds.filter((id) => !pinnedSet.has(id) || Boolean(skip?.has(id)))
+  return [...pinnedFront, ...rest]
+}

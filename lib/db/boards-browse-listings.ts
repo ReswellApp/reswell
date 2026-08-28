@@ -10,11 +10,13 @@ import {
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { sortRecordsByIdOrder } from "@/lib/utils/sort-by-id-order"
+import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
 import {
   boardsBrowseDailyRotateSeed,
   compareRotateIdRowsForDailyRotate,
   listingCreatedAtMs,
   orderListingIdsForDailyRotate,
+  prependPinnedListingIds,
 } from "@/lib/utils/boards-browse-daily-rotate"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
 import {
@@ -122,7 +124,7 @@ export function compareBoardBrowseRows(
   return tb - ta
 }
 
-/** Default unfiltered `/boards` sort: 24h seeded shuffle (`sort=top-picks` kept for URL compat). */
+/** Default unfiltered `/boards` sort: admin pins first, then 24h seeded shuffle (`sort=top-picks` kept for URL compat). */
 export function isBoardsBrowseTopPicksSort(sort: string): boolean {
   return sort === BOARDS_BROWSE_TOP_PICKS_SORT
 }
@@ -239,7 +241,7 @@ async function hydrateSurfboardBrowseRowsByIds(
   return sortRecordsByIdOrder((data ?? []) as unknown as BoardBrowseListingRow[], ids)
 }
 
-/** Paginated unfiltered browse in a 24h seeded random order. */
+/** Paginated unfiltered browse: admin pins first, then 24h seeded random order. */
 export async function fetchBoardsBrowseDailyRotatePage(
   supabase: SupabaseClient,
   params: {
@@ -253,11 +255,16 @@ export async function fetchBoardsBrowseDailyRotatePage(
   const page = Number.isFinite(params.page) && params.page >= 1 ? params.page : 1
   const offset = (page - 1) * limit
   const seed = params.rotateSeed ?? boardsBrowseDailyRotateSeed()
-  const idRows = await listSurfboardBrowseRotateIdRows(supabase, {
-    boardType: params.boardType,
-    condition: params.condition,
-  })
-  const orderedIds = orderListingIdsForDailyRotate(idRows, seed)
+  const [idRows, pinnedIds] = await Promise.all([
+    listSurfboardBrowseRotateIdRows(supabase, {
+      boardType: params.boardType,
+      condition: params.condition,
+    }),
+    listBoardsBrowseTopPickListingIdsOrdered(supabase),
+  ])
+  const rotatedIds = orderListingIdsForDailyRotate(idRows, seed)
+  const suppressedIds = new Set(idRows.filter((row) => row.suppressed).map((row) => row.id))
+  const orderedIds = prependPinnedListingIds(rotatedIds, pinnedIds, { skipIds: suppressedIds })
   const totalPages =
     orderedIds.length === 0 ? 0 : Math.max(1, Math.ceil(orderedIds.length / limit))
   const pageIds = orderedIds.slice(offset, offset + limit)
