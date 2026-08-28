@@ -1,0 +1,190 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "neilson-surfboards",
+      "name": "Neilson Surfboards",
+      "website_url": "https://www.tomneilsonshapes.com/",
+      "location_label": "Cocoa Beach, Florida",
+      "founder_name": "Tom Neilson",
+      "lead_shaper_name": "Tom Neilson",
+      "short_description": "With 40 years of shaping experience, Tom Neilson has reached cult status on the East Coast for his custom surfboards and innovative design concepts. Shaped and glassed in Central FL.",
+      "models": [
+        {
+          "name": "Dreamsicle",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/dreamsicle.png",
+          "description": "Features a smooth flowing concave in the nose that is not excessive but just right for the moderate nose rocker in this board. This transitions to a flat then to a perfectly balanced spiral vee in the last 1/3 of the board. The tail rocker is a geometrically accelerating curve which means it helps the board turn quickly. The tail rocker is not excessive or gimmicky which can make a board stall in a cutback forcing a rider to make herky jerky tail turns in order to quickly move forward and avoid a stall. This tail rocker keeps it all flowing and literally going. The overall rocker in this board allows you to turn from the nose, the mid section or more quickly from the tail. There are no \"dead spots\" that you have to quickly move through in order to avoid stopping or falling over dead in the water!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pintastic",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/pintastic-deck.png",
+          "description": "A modern finely tuned progressive longboard. Features a slightly wider, deeper concave nose with specific rail shape for holding the nose in on a steeper face for ease of locking in solid nose rides. It’s a real performance longboard with decades of shaping experience dialing in this proven shape that is meant to be playful under your feet with a full panel Vee bottom, spiral Vee tail with an imbedded light 2x concave along with a geometrically accelerating tail rocker. The wider hip helps you nose ride when the tail is buried under the breaking wave and the rocker and pin tail helps hold you in on better surf days or set you up for the 1,2,3 nose ride if so desired. The rail plan shape is modern progressive soft box rails except in the fin area where it has short board edges to keep the speed up through power turns for those big buckets, full speed short boarder style power cut backs. It’s all there, there in this must have all around modern longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/classic.png",
+          "description": "The \"Classic\" 9' 0\" to 9' 6\" - 60/40 rails, panel vee, flowing nose concave and \"sweet\" template make for a beautiful classic that you can be proud of and keep for years of surfing pleasure.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Perch",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/perch.png",
+          "description": "At 9'2 the dimensions are 9'2 x 23\" x 2 7/8\" but can be custom ordered in sizes from 9' to 10'. This board is a nod back to the classic longboards in trying to keep things true to form. Glassing combines E-glass and volan deck knee patches and bottom tail patches to give you a perfect balance of strength and weight that is not too heavy but keeps that classic look. It's a classic noserider with a very lively feel under your feet.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Buzz",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/buzz.png",
+          "description": "The Buzz model is a pure high performance longboard made for surfing hollow beach break and waves with power. The board has a normal thickness of 2 7/8 but the rails are foiled in such a way that the rail engages the wave and does not spin out for deep powerful bottom turns. Its fast, to make sections and make it out of tube rides. If you want a longboard that is a refined high performance board then this is the board for you.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Right Coast Cruiser",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/right-coast-cruiser.png",
+          "description": "\"10\" The Tommy Evans Team rider board. This is Tommy's favorite board and designed specifically for hanging heels, noseriding trimming with tons of soul. Flatter rocker, sweet flowing nose concave and a specialized secret concaves and vee's with a traditional square tail put it all together.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Levitation",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/levitation-deck.png",
+          "description": "This board is called the Levitation because it nose rides incredibly well. The board features a very unique bottom with no nose concave, but has low entry rocker/rail shape to facilitate nose riding. The entire bottom shape of the rails and tail curve rocker are all very specific to this model. It’s a high-performance retro longboard shape allowing you to do cutting edge long boarding to your hearts desire.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Alchemist",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/alchemist.png",
+          "description": "The Alchemist model is a copy of a 1966 board re-imagined for Alex Wilson. It came out so good, Alex said it rode better than the one he got from a California shaper. Which is quite the compliment coming from him. The original model was made in 1966 by Hap Jacobs and Dale Velzy. It was called the 422 and in that period it was all about nose riding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Flying Floatey Fish",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/floatey-fish-2.png",
+          "description": "The rails are a flowing blend of soft box rails that taper and foil perfectly. This is to keep you up out of the water when paddling, flowing through turns and skating across dead sections. The bottom is pure hydrodynamic science and thirty years of shaping experience. A perfectly balanced flowing tri-concave (a single front foot concave flowing into two concaves on either side of the stringer that flow out through the tail). The rocker is pinnacle, in that it flows through out the board with some acceleration in the last third of tail - not too excessive as that can ruin a fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Super Squash",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/super-squash.png",
+          "description": "The Super Squash is a small wave groveler that is designed with a forward wide point to give you excellent paddling and early wave entry along with lower nose rocker that is concentrated in the last part of the board to keep it forgiving.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Summer Fish",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/summer-fish.png",
+          "description": "The Summer Fish was my personal board that my friend Kyle got to ride when he was visiting from California. He liked it so much that he got me to ship it to him in California where he rides it to this day. This is a really clean no nonsense board that well keep you stoked on surfing for years to come without any fancy wings, channels or other gimmicks. Ride it as a quad which helps keep it fast and loose at the same time.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Classic Fish",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/classic-fish.png",
+          "description": "The Classic Fish is an original old school template with straighter hips and super modern vee and concaves to create one of the fastest boards you will ever ride. Available with FCSII, Futures or glass on keel fins. This is not an ugly cut in half longboard that some like to call a Retro Fish. This is a refined, foiled and very functional retro replica.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "3X Pro",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/3x-pro.png",
+          "description": "3X Pro - The 3X Pro is a highly refined performance shortboard for those wishing to really push their surfing ability. With a lighter glass job, thinner nose, tail and rail section curve for high performance top to bottom surfing, The 3X Pro is highly responsive and finely tuned for tight turns in the pocket. It has lots of drive with a lower nose rocker and smooth concaves for consistent performance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "DWRT",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/dwrt.png",
+          "description": "The speed and paddling power of the Flying Floaty Fish, but with the double wing round tail (DWRT). This creates a board that is fast and yet with the pulled in tail allows you to surf in more hollow or powerful waves. The DWRT is a great choice to add to your quiver to have a flexible, versatile board that will allow you to have fun in knee high summer surf or overhead hurricane swell.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pro Grom II",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/pro-grom2.png",
+          "description": "A scaled down shape for the young grom who wants to take his surfing to the next level. The Pro Grom II is great for speed, airs and solid snaps. A clean outline, thin rails. The Pro Grom II comes standard with a squash tail but can be custom ordered with any tail shape your prefer. Typically ridden as a thruster but available in a quad or five-fin convertible setup as well.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Roundo",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/roundo.png",
+          "description": "Developed with team rider Tom Furey who now lives in Hawaii and visits his roots in Boca from time to time. The Roundo has a ton of drive and rides well in the best hollow surf or can grovel the smaller stuff with the best of them. This is great \"all-around\" board and a great option if you want maximum range out of a single board. Pair this with the 5-fin convertible setup and you've got a board that can take you from weak thigh high surf to well overhead barrels.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Boost",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/boost.png",
+          "description": "The Boost is a diamond tail shape that allows the board to pivot off the Diamond tail shape. It has a pronounced deep dish single concave with a single concave in the tail. This bottom is all about speed and drive. The Boost has a low nose entry rocker with a smooth foiling in thickness flow. The tail rocker has a slight acceleration in the last section behind the front fins for controlled looseness without sacrificing speed. The fin cluster has a specific arrangement for quick tight turns and helps give good rotation in the turns. Boost rails feature a pronounced domed deck to keep the rails performance oriented in shape and thickness. The tail is thicker than normal to keep it up and out of the water for drive and speed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Boss",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/the-boss.png",
+          "description": "This board fills that gap by creating a board that is not super boaty and thick but is not a super chip. It is based on the same profile and bottom concaves as my team riders have but just a thicker version. Usually you get this in epoxy to give you that extra 15% float versus a normal poly board. These boards go vertical, make late take offs and travel well to any waves in the world and still charge in overhead powerful waves. This is the board for the surfer who is in shape but wants a real board for real surfing and still have decent float and paddle power. This model has been proven to work in good surf here in Florida and all over the world. Normally ridden as a thruster.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini-Gun",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/mini-gun.png",
+          "description": "Hurricane Season or a trip to Central America calls for the addition of a Mini Gun to your quiver. In waves of consequence you need the right board for the job and this is it. Get in early and pull in deep. Good for overhead days, glassy, hollow, point or beach breaks. More foiled out like the Pro 3x with balanced concave, clean tail curves and a smooth round pintail template for hold on big waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Venturi Vee",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/venturi-vee.png",
+          "description": "The Venturi Vee is super fast, especially the better the waves get, the faster it goes. It's a great travel board as it has the retro front half for float and paddle power and from the wide point back it is a modern short board. It features a light concave to a vee set inside two more pronounced double concaves in the last 1/3 of the board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gemini Twin",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/gemini-twin-bottom.webp",
+          "description": "This is a really good mid length twin fin with nice foiling in the last half of the board for quick precise turning. It has a third fin box for a nubster or smaller fin for really hollow conditions but with the outside fin’s set farther back it is rarely needed with proper modern twin fins.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Mango",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/mango.png",
+          "description": "This model originally started out as a custom board for a crypto currency private label display board. I hand shaped two boards and liked it so much after shaping that I shaped one for myself too. Then rode it in gutless small waves in Cocoa Beach and it just tore it up! It caught waves easily, turned really good and made surfing really fun. I had the board I was riding scanned by the computer cad machine and then hand finish each one personally to make sure it is refined and perfect like the original. The original is 6' x 20\" x 2 5/16\". I like mine in poly using US blanks foam and normal 6/4 deck and a 4 bottom giving good flex qualities.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Soul (Eggo)",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/soul.png",
+          "description": "The Soul is a classic wide-point forward single fin. Lots of volume and low rocker make this a fast, wave catching machine. A totally different approach than the modern shortboard. Mix it up a bit and see how fun single fins can be!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Blunt",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/blunt.png",
+          "description": "This board is all about catching waves and having fun. Lots of width and volume in a shorter package allow you to paddle easily and catch any the slightest ripple that pops up and ride it however you want. The Blunt is a rippable small wave machine. One of the funnest boards in my quiver. It's a wave catching machine that nose rides, turns on a dime and makes surfing just insanely fun. This is a great board for guys on longboards who want to drop down to a shorter board without giving up wave count. I have had guys that weigh anywhere from 130 to 240 ride it and just babble about how good a session they had on this board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Kracken",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/kracken.png",
+          "description": "This is a state of the art board inspired by a team riders travels to Oahu. This is shaped to be a modern fuller shape in nose and tail that also allows you to ride bigger more powerful waves and not give up paddle power like you do when you ride a chippy short board or mini gun. You can ride this in a shorter range depending on your height or weight (5'8\" to 6'4\") with normal lengths being 5'10\" to 6'0\" for someone around 175 pounds. It features a progressive double concaves and specialized vee. This model has been proven in Hawaii and in heaving point breaks and rock breaks in South America and yes, even good days here in Florida which we do occasionally get!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cheetah",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/cheetah.png",
+          "description": "It's considered cheating if you are a die hard short boarder to ride a board with hidden extra foam in it that lets you catch more waves! It's the Cheetah model because - well it’s just crazy fast and goes around sections other boards get stuck behind!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Ripper",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/mini-ripper.png",
+          "description": "This board is all about Summer time fun in a mid range mini longboard shape. Semi pointed nose for punching through waves and a fuller more longboard nose for cheating five or getting you in the wave early. The round pin will not spin out on those better days and also keeps it loose when the waves are slower and more playful.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sting Fun",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/sting-fun.png",
+          "description": "The sting in the funshape outline allows the board to ride like a fun shape when you are farther forward and then by sliding your back foot over the tail to turn it more like a shortboard. Lots of drive and tight turns for it's size.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HP Fun",
+          "image_url": "https://www.tomneilsonshapes.com/images/board-models/hp_fun.png",
+          "description": "This model lets you take a board reserved for cruising and learning and turns it into a board the experienced surfer can rip on. Good to have in anyones quiver for the slower hard to catch waves or those good days where it is a longer period swell.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
