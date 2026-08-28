@@ -17,6 +17,7 @@ import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { shippingLabelPostBodySchema } from "@/lib/validations/order-shipping-label"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
 export const dynamic = "force-dynamic"
 
@@ -123,8 +124,15 @@ export async function GET(
     .eq("profile_id", user.id)
     .order("is_default", { ascending: false })
 
-  const sellerAddresses = (addrRows ?? []).map((a) => {
-    const ar = a as ProfileAddressRow
+  let sellerAddressRows = (addrRows ?? []) as ProfileAddressRow[]
+  if (sellerAddressRows.length === 0) {
+    const recovered = await resolveSellerShipFromAddress(supabase, user.id)
+    if (recovered.ok) {
+      sellerAddressRows = [recovered.address]
+    }
+  }
+
+  const sellerAddresses = sellerAddressRows.map((ar) => {
     const one = [ar.line1, [ar.city, ar.state, ar.postal_code].filter(Boolean).join(", ")]
       .filter(Boolean)
       .join(" · ")
@@ -246,37 +254,25 @@ export async function POST(
   }
 
   if (body.action === "rates") {
-    let sellerAddressId = body.seller_address_id?.trim() || null
-    if (!sellerAddressId) {
-      const { data: addrRows } = await supabase
-        .from("addresses")
-        .select("*")
-        .eq("profile_id", user.id)
-        .order("is_default", { ascending: false })
-      const rows = (addrRows ?? []) as ProfileAddressRow[]
-      const preferred = rows.find((r) => r.is_default) ?? rows[0]
-      if (!preferred) {
-        return NextResponse.json(
-          { error: "Save a ship-from address on your profile first." },
-          { status: 400 },
-        )
-      }
-      sellerAddressId = preferred.id
-    }
-
-    const { data: addr, error: addrErr } = await supabase
-      .from("addresses")
-      .select("*")
-      .eq("id", sellerAddressId)
-      .eq("profile_id", user.id)
-      .maybeSingle()
-
-    if (addrErr || !addr) {
-      return NextResponse.json({ error: "Seller address not found" }, { status: 400 })
+    const shipFrom = await resolveSellerShipFromAddress(
+      supabase,
+      user.id,
+      body.seller_address_id?.trim() || null,
+    )
+    if (!shipFrom.ok) {
+      return NextResponse.json(
+        {
+          error:
+            shipFrom.error === "Seller has no ship-from address on file."
+              ? "Save a ship-from address on your profile first."
+              : shipFrom.error,
+        },
+        { status: 400 },
+      )
     }
 
     const resolved = resolveAddressesForLabel({
-      sellerAddress: addr as ProfileAddressRow,
+      sellerAddress: shipFrom.address,
       orderShippingJson: o.shipping_address,
     })
     if (!resolved.ok) {

@@ -6,7 +6,6 @@ import {
   listOrderItemReturnsForOrder,
   type OrderItemReturnRow,
 } from "@/lib/db/orderItemReturns"
-import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
   listingUsesAdminCustomSurfboardCarton,
   type ListingPackedParcelSource,
@@ -26,6 +25,7 @@ import {
   downloadAndStorePaperlessQr,
 } from "@/lib/services/storeOrderShippingLabelAssets"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
+import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -61,38 +61,6 @@ type OrderRowForReturn = {
   status: string
   fulfillment_method: string | null
   shipping_address: unknown
-}
-
-async function resolveSellerAddress(
-  supabase: SupabaseClient,
-  sellerId: string,
-  sellerAddressId?: string | null,
-): Promise<{ ok: true; address: ProfileAddressRow } | { ok: false; error: string }> {
-  if (sellerAddressId) {
-    const { data, error } = await supabase
-      .from("addresses")
-      .select("*")
-      .eq("id", sellerAddressId)
-      .eq("profile_id", sellerId)
-      .maybeSingle()
-    if (error || !data) {
-      return { ok: false, error: "Seller address not found." }
-    }
-    return { ok: true, address: data as ProfileAddressRow }
-  }
-
-  const { data, error } = await supabase
-    .from("addresses")
-    .select("*")
-    .eq("profile_id", sellerId)
-    .order("is_default", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (error || !data) {
-    return { ok: false, error: "Seller has no ship-from address on file." }
-  }
-  return { ok: true, address: data as ProfileAddressRow }
 }
 
 export async function listReturnableOrderLines(
@@ -255,7 +223,7 @@ export async function quoteOrderItemReturnRates(params: {
     return { ok: false, error: "This item already has an active return.", status: 409 }
   }
 
-  const addr = await resolveSellerAddress(
+  const addr = await resolveSellerShipFromAddress(
     params.supabase,
     order.seller_id,
     params.sellerAddressId,
@@ -430,7 +398,7 @@ export async function purchaseOrderItemReturnLabel(params: {
   }
 
   // Ensure seller destination still resolves (do not re-quote — rate_id is already chosen).
-  const addr = await resolveSellerAddress(
+  const addr = await resolveSellerShipFromAddress(
     params.supabase,
     eligible.order.seller_id,
     params.sellerAddressId,

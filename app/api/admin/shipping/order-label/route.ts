@@ -37,6 +37,7 @@ import {
   listingUsesAdminCustomSurfboardCarton,
   type ListingPackedParcelSource,
 } from "@/lib/reswell-packed-parcel-from-listing"
+import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
 export const dynamic = "force-dynamic"
 
@@ -152,8 +153,15 @@ export async function GET(request: NextRequest) {
     .eq("profile_id", row.seller_id)
     .order("is_default", { ascending: false })
 
-  const sellerAddresses = (addrRows ?? []).map((a) => {
-    const ar = a as ProfileAddressRow
+  let sellerAddressRows = (addrRows ?? []) as ProfileAddressRow[]
+  if (sellerAddressRows.length === 0) {
+    const recovered = await resolveSellerShipFromAddress(supabase, row.seller_id)
+    if (recovered.ok) {
+      sellerAddressRows = [recovered.address]
+    }
+  }
+
+  const sellerAddresses = sellerAddressRows.map((ar) => {
     const one = [ar.line1, [ar.city, ar.state, ar.postal_code].filter(Boolean).join(", ")]
       .filter(Boolean)
       .join(" · ")
@@ -444,37 +452,25 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action === "rates") {
-    let sellerAddressId = body.seller_address_id?.trim() || null
-    if (!sellerAddressId) {
-      const { data: addrRows } = await supabase
-        .from("addresses")
-        .select("*")
-        .eq("profile_id", o.seller_id)
-        .order("is_default", { ascending: false })
-      const rows = (addrRows ?? []) as ProfileAddressRow[]
-      const preferred = rows.find((r) => r.is_default) ?? rows[0]
-      if (!preferred) {
-        return NextResponse.json(
-          { error: "Seller has no ship-from address on file. Add one on the seller’s profile first." },
-          { status: 400 },
-        )
-      }
-      sellerAddressId = preferred.id
-    }
-
-    const { data: addr, error: addrErr } = await supabase
-      .from("addresses")
-      .select("*")
-      .eq("id", sellerAddressId)
-      .eq("profile_id", o.seller_id)
-      .maybeSingle()
-
-    if (addrErr || !addr) {
-      return NextResponse.json({ error: "Seller address not found" }, { status: 400 })
+    const shipFrom = await resolveSellerShipFromAddress(
+      supabase,
+      o.seller_id,
+      body.seller_address_id?.trim() || null,
+    )
+    if (!shipFrom.ok) {
+      return NextResponse.json(
+        {
+          error:
+            shipFrom.error === "Seller has no ship-from address on file."
+              ? "Seller has no ship-from address on file. Add one on the seller’s profile first."
+              : shipFrom.error,
+        },
+        { status: 400 },
+      )
     }
 
     const resolved = resolveAddressesForLabel({
-      sellerAddress: addr as ProfileAddressRow,
+      sellerAddress: shipFrom.address,
       orderShippingJson: o.shipping_address,
     })
     if (!resolved.ok) {

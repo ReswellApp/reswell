@@ -14,6 +14,7 @@ import { getSellerBalance } from "@/lib/getSellerBalance"
 import { autoDispatchOrderIfTrackingReady } from "@/lib/services/markOrderShipped"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { resolveAddressesForLabel } from "@/lib/services/orderShippingLabel"
+import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 import { purchaseShipEngineLabelForOrderOnce } from "@/lib/services/purchaseShipEngineLabelForOrderOnce"
 import {
   effectiveBoardShippingMode,
@@ -362,37 +363,18 @@ async function resolveSellerAddress(
   sellerId: string,
   sellerAddressId: string | null,
 ): Promise<{ ok: true; address: ProfileAddressRow } | { ok: false; error: string; status: number }> {
-  let addressId = sellerAddressId?.trim() || null
-  if (!addressId) {
-    const { data: addrRows } = await supabase
-      .from("addresses")
-      .select("*")
-      .eq("profile_id", sellerId)
-      .order("is_default", { ascending: false })
-    const rows = (addrRows ?? []) as ProfileAddressRow[]
-    const preferred = rows.find((r) => r.is_default) ?? rows[0]
-    if (!preferred) {
-      return {
-        ok: false,
-        error: "Save a ship-from address on your profile first.",
-        status: 400,
-      }
+  const resolved = await resolveSellerShipFromAddress(supabase, sellerId, sellerAddressId)
+  if (!resolved.ok) {
+    return {
+      ok: false,
+      error:
+        resolved.error === "Seller has no ship-from address on file."
+          ? "Save a ship-from address on your profile first."
+          : resolved.error,
+      status: 400,
     }
-    addressId = preferred.id
   }
-
-  const { data: addr, error: addrErr } = await supabase
-    .from("addresses")
-    .select("*")
-    .eq("id", addressId)
-    .eq("profile_id", sellerId)
-    .maybeSingle()
-
-  if (addrErr || !addr) {
-    return { ok: false, error: "Seller address not found", status: 400 }
-  }
-
-  return { ok: true, address: addr as ProfileAddressRow }
+  return { ok: true, address: resolved.address }
 }
 
 export async function resolveSellerShippingLabelRate(params: {

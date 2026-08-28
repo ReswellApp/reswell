@@ -30,6 +30,7 @@ import {
   profileAddressToOrderShippingJson,
   type ProfileAddressRow,
 } from "@/lib/profile-address"
+import { ensureProfileAddressFromOrderShipping } from "@/lib/services/sellerShipFromAddress"
 import { generatePickupCode } from "@/lib/order-status"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
@@ -789,6 +790,13 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       }
     }
     return { ok: false, error: "Could not create order", status: 500 }
+  }
+
+  // Keep buyer shipping addresses on the profile so they can later ship as sellers.
+  if (buyerId && shippingAddressJson && fulfillmentMethod === "shipping" && !isTerminalGuestSale) {
+    void ensureProfileAddressFromOrderShipping(serviceSupabase, buyerId, shippingAddressJson, {
+      makeDefaultIfEmpty: true,
+    })
   }
 
   const orderItemsPayload = bundle.lines.map((line, idx) => ({

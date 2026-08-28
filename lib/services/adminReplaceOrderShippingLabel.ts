@@ -18,6 +18,7 @@ import { voidShipEngineLabelForOrder } from "@/lib/services/voidShipEngineLabelF
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
 import { orderShippingJsonToRateQuoteAddress } from "@/lib/shipping/rate-address"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
+import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
 export type AdminExactParcel = {
   lengthIn: number
@@ -172,6 +173,12 @@ async function resolveShipFromAddressForAdminReplace(params: {
     return { ok: true, address: sellerPreferred, source: "seller" }
   }
 
+  // Recover ship-from from past orders where this seller was the buyer.
+  const recovered = await resolveSellerShipFromAddress(params.supabase, params.sellerId)
+  if (recovered.ok) {
+    return { ok: true, address: recovered.address, source: "seller" }
+  }
+
   const adminPreferred = adminRows.find((r) => r.is_default) ?? adminRows[0]
   if (adminPreferred) {
     return { ok: true, address: adminPreferred, source: "admin" }
@@ -231,10 +238,17 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
   }
 
   const sellerRows = await loadProfileAddresses(params.supabase, order.seller_id)
+  let effectiveSellerRows = sellerRows
+  if (effectiveSellerRows.length === 0) {
+    const recovered = await resolveSellerShipFromAddress(params.supabase, order.seller_id)
+    if (recovered.ok) {
+      effectiveSellerRows = [recovered.address]
+    }
+  }
   const adminRows = await loadProfileAddresses(params.supabase, params.adminUserId)
   const shipFromSource: AdminReplaceShipFromSource =
-    sellerRows.length > 0 ? "seller" : "admin"
-  const shipFromAddresses = (shipFromSource === "seller" ? sellerRows : adminRows).map(
+    effectiveSellerRows.length > 0 ? "seller" : "admin"
+  const shipFromAddresses = (shipFromSource === "seller" ? effectiveSellerRows : adminRows).map(
     toShipFromOption,
   )
 
