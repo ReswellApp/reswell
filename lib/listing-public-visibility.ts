@@ -46,6 +46,22 @@ export function isListingPurchasable(listing: ListingPublicVisibilityFields): bo
 }
 
 /**
+ * Whether the listing detail page should show Buy / Add to cart / Make offer.
+ * Hidden-from-site listings stay viewable for owners and staff, but never purchasable.
+ */
+export function canShowPeerListingPurchaseActions(params: {
+  isOwnListing: boolean
+  listing: ListingPublicVisibilityFields
+  fulfillmentAvailable: boolean
+}): boolean {
+  return (
+    !params.isOwnListing &&
+    isListingPurchasable(params.listing) &&
+    params.fulfillmentAvailable
+  )
+}
+
+/**
  * Public sold feed / recently sold strips.
  * Seller-archived sold listings stay visible; admin hide-from-site (no archive) does not.
  */

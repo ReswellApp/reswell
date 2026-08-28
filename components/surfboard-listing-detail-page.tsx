@@ -85,6 +85,10 @@ import { listSellerReviewPreviews } from "@/lib/db/order-reviews"
 import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswell-platform-rating-widget"
 import { MetaViewContentTracker } from "@/components/meta/meta-view-content-tracker"
 import { isMetaCatalogEligibleListing } from "@/lib/meta/catalog-product"
+import {
+  canShowPeerListingPurchaseActions,
+  isListingPurchasable,
+} from "@/lib/listing-public-visibility"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -232,11 +236,18 @@ export async function SurfboardListingDetailPage({
   const pickupOffered = board.local_pickup !== false
   const shippingOffered = !!board.shipping_available
 
-  const canPeerPurchase =
-    !isOwnListing &&
-    !isSold &&
-    (board.status === "active" || board.status === "pending_sale") &&
-    (pickupOffered || shippingOffered)
+  const purchaseVisibility = {
+    status: String(board.status ?? ""),
+    title: board.title as string | null | undefined,
+    hidden_from_site: board.hidden_from_site as boolean | null | undefined,
+    archived_at: board.archived_at as string | null | undefined,
+  }
+  const listingPurchasable = isListingPurchasable(purchaseVisibility)
+  const canPeerPurchase = canShowPeerListingPurchaseActions({
+    isOwnListing,
+    listing: purchaseVisibility,
+    fulfillmentAvailable: pickupOffered || shippingOffered,
+  })
 
   const freeBrandLabel = (board as { brand?: string | null }).brand?.trim() ?? ""
   const modelForSpecs = (board as { model?: string | null }).model?.trim() ?? ""
@@ -511,7 +522,7 @@ export async function SurfboardListingDetailPage({
                 shippingCostMode={boardShippingCostMode}
                 shippingFlatRate={shippingFlatRate}
                 locationLine={listingLocationLine}
-                showScarcity={!isSold && !isOwnListing && board.status === "active"}
+                showScarcity={canPeerPurchase && board.status === "active"}
                 views={listingViews}
                 watchers={listingWatchersCount}
                 cartHolderCount={cartHolderCount}
@@ -521,7 +532,7 @@ export async function SurfboardListingDetailPage({
                     : null
                 }
                 createdAt={board.created_at}
-                showPurchaseProtection={!isSold && !isOwnListing}
+                showPurchaseProtection={canPeerPurchase}
                 agreedPriceUsd={buyerAgreedPriceUsd}
                 compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
                 afterPrice={
@@ -594,7 +605,9 @@ export async function SurfboardListingDetailPage({
                       {shippingPriceCaption ? (
                         <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
                       ) : null}
-                      <ListingKlarnaAsLowAs listingId={board.id} isLoggedIn={!!user} className="mt-2" />
+                      {listingPurchasable ? (
+                        <ListingKlarnaAsLowAs listingId={board.id} isLoggedIn={!!user} className="mt-2" />
+                      ) : null}
                     </div>
                     {buyerAgreedPriceUsd != null ? (
                       <p className="mt-2 text-[15px] font-medium text-emerald-700 dark:text-emerald-400">
@@ -604,7 +617,7 @@ export async function SurfboardListingDetailPage({
                   </>
                 )}
                 <ListingBoardSpecTable rows={boardSpecRows} className="mt-5" />
-                {!isSold && !isOwnListing && board.status === "active" ? (
+                {!isSold && !isOwnListing && listingPurchasable && board.status === "active" ? (
                   <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
                     <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
                     <span>
@@ -613,7 +626,7 @@ export async function SurfboardListingDetailPage({
                     </span>
                   </p>
                 ) : null}
-                {!isSold && !isOwnListing ? (
+                {canPeerPurchase ? (
                   <p className="mt-3 text-[14px] leading-snug text-muted-foreground">
                     Eligible checkout is covered by our{" "}
                     <Link href="/protection-policy" className="text-foreground underline decoration-dashed underline-offset-2 hover:no-underline">

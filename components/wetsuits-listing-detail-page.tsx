@@ -49,6 +49,10 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
+import {
+  canShowPeerListingPurchaseActions,
+  isListingPurchasable,
+} from "@/lib/listing-public-visibility"
 import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
@@ -217,11 +221,18 @@ export async function WetsuitsListingDetailPage({
   const pickupOffered = wetsuit.local_pickup !== false
   const shippingOffered = !!wetsuit.shipping_available
 
-  const canPeerPurchase =
-    !isOwnListing &&
-    !isSold &&
-    (wetsuit.status === "active" || wetsuit.status === "pending_sale") &&
-    (pickupOffered || shippingOffered)
+  const purchaseVisibility = {
+    status: String(wetsuit.status ?? ""),
+    title: wetsuit.title as string | null | undefined,
+    hidden_from_site: wetsuit.hidden_from_site as boolean | null | undefined,
+    archived_at: wetsuit.archived_at as string | null | undefined,
+  }
+  const listingPurchasable = isListingPurchasable(purchaseVisibility)
+  const canPeerPurchase = canShowPeerListingPurchaseActions({
+    isOwnListing,
+    listing: purchaseVisibility,
+    fulfillmentAvailable: pickupOffered || shippingOffered,
+  })
 
   const freeBrandLabel = (wetsuit.brand as string | null)?.trim() ?? ""
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
@@ -453,7 +464,7 @@ export async function WetsuitsListingDetailPage({
               shippingCostMode={boardShippingCostMode}
               shippingFlatRate={shippingFlatRate}
               locationLine={listingLocationLine}
-              showScarcity={!isSold && !isOwnListing && wetsuit.status === "active"}
+              showScarcity={canPeerPurchase && wetsuit.status === "active"}
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
@@ -463,7 +474,7 @@ export async function WetsuitsListingDetailPage({
                   : null
               }
               createdAt={wetsuit.created_at}
-              showPurchaseProtection={!isSold && !isOwnListing}
+              showPurchaseProtection={canPeerPurchase}
               agreedPriceUsd={buyerAgreedPriceUsd}
                 compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
             >
@@ -526,7 +537,9 @@ export async function WetsuitsListingDetailPage({
                     {shippingPriceCaption ? (
                       <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
                     ) : null}
-                    <ListingKlarnaAsLowAs listingId={wetsuit.id} isLoggedIn={!!user} className="mt-2" />
+                    {listingPurchasable ? (
+                      <ListingKlarnaAsLowAs listingId={wetsuit.id} isLoggedIn={!!user} className="mt-2" />
+                    ) : null}
                   </div>
                   {buyerAgreedPriceUsd != null ? (
                     <p className="mt-2 text-[15px] font-medium text-emerald-700 dark:text-emerald-400">
@@ -535,7 +548,7 @@ export async function WetsuitsListingDetailPage({
                   ) : null}
                 </>
               )}
-              {!isSold && !isOwnListing && wetsuit.status === "active" ? (
+              {!isSold && !isOwnListing && listingPurchasable && wetsuit.status === "active" ? (
                 <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
                   <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
                   <span>
@@ -544,7 +557,7 @@ export async function WetsuitsListingDetailPage({
                   </span>
                 </p>
               ) : null}
-              {!isSold && !isOwnListing ? (
+              {canPeerPurchase ? (
                 <p className="mt-3 text-[14px] leading-snug text-muted-foreground">
                   Eligible checkout is covered by our{" "}
                   <Link href="/protection-policy" className="text-foreground underline decoration-dashed underline-offset-2 hover:no-underline">

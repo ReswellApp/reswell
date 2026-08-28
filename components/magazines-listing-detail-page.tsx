@@ -45,6 +45,10 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
+import {
+  canShowPeerListingPurchaseActions,
+  isListingPurchasable,
+} from "@/lib/listing-public-visibility"
 import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
@@ -197,11 +201,18 @@ export async function MagazinesListingDetailPage({
 
   const shippingOffered = !!magazine.shipping_available
 
-  const canPeerPurchase =
-    !isOwnListing &&
-    !isSold &&
-    (magazine.status === "active" || magazine.status === "pending_sale") &&
-    shippingOffered
+  const purchaseVisibility = {
+    status: String(magazine.status ?? ""),
+    title: magazine.title as string | null | undefined,
+    hidden_from_site: magazine.hidden_from_site as boolean | null | undefined,
+    archived_at: magazine.archived_at as string | null | undefined,
+  }
+  const listingPurchasable = isListingPurchasable(purchaseVisibility)
+  const canPeerPurchase = canShowPeerListingPurchaseActions({
+    isOwnListing,
+    listing: purchaseVisibility,
+    fulfillmentAvailable: shippingOffered,
+  })
 
   const specsBrandLabel = ((magazine.brand as string | null)?.trim() ?? "") || null
   const magazineYearRaw = magazine.magazine_year as number | string | null | undefined
@@ -392,7 +403,7 @@ export async function MagazinesListingDetailPage({
               shippingCostMode={boardShippingCostMode}
               shippingFlatRate={shippingFlatRate}
               locationLine={listingLocationLine}
-              showScarcity={!isSold && !isOwnListing && magazine.status === "active"}
+              showScarcity={canPeerPurchase && magazine.status === "active"}
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
@@ -402,7 +413,7 @@ export async function MagazinesListingDetailPage({
                   : null
               }
               createdAt={magazine.created_at}
-              showPurchaseProtection={!isSold && !isOwnListing}
+              showPurchaseProtection={canPeerPurchase}
               compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
             >
               {canPeerPurchase ? (
@@ -453,11 +464,13 @@ export async function MagazinesListingDetailPage({
                     {shippingPriceCaption ? (
                       <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
                     ) : null}
-                    <ListingKlarnaAsLowAs listingId={magazine.id} isLoggedIn={!!user} className="mt-2" />
+                    {listingPurchasable ? (
+                      <ListingKlarnaAsLowAs listingId={magazine.id} isLoggedIn={!!user} className="mt-2" />
+                    ) : null}
                   </div>
                 </>
               )}
-              {!isSold && !isOwnListing && magazine.status === "active" ? (
+              {!isSold && !isOwnListing && listingPurchasable && magazine.status === "active" ? (
                 <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
                   <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
                   <span>
@@ -466,7 +479,7 @@ export async function MagazinesListingDetailPage({
                   </span>
                 </p>
               ) : null}
-              {!isSold && !isOwnListing ? (
+              {canPeerPurchase ? (
                 <p className="mt-3 text-[14px] leading-snug text-muted-foreground">
                   Eligible checkout is covered by our{" "}
                   <Link href="/protection-policy" className="text-foreground underline decoration-dashed underline-offset-2 hover:no-underline">
