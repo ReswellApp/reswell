@@ -1,0 +1,112 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "custard-point-surfboards",
+      "name": "Custard Point Surfboards",
+      "website_url": "https://www.custardpointsurfboards.com/",
+      "location_label": "Newquay, Cornwall",
+      "founder_name": "Tim Mellors",
+      "lead_shaper_name": "Tim Mellors",
+      "short_description": "Newquay, Cornwall surfboards shaped since 1983, with resident shaper Tim Mellors specializing in longboards, mini-mals, and alternative shortboard shapes.",
+      "models": [
+        {
+          "name": "Ultimate Nose Rider",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_9e52bf9322cc439dbfe15cf77217f45f~mv2.png",
+          "description": "The Custard Point Ultimate Noserider is our best selling surfboard. Over the years it has undergone a long refinement process, resulting in this gem of a longboard that we see today. The initial design brief was to create a small wave noserider for the competitive arena, that would aid the surfer to get to the set waves first, have early effortless take-off and maintain speed whilst still able to pull gouging cut-backs, top turns and of course, a super stable noserider. More than anything it is just a real fun board. I think it's popularity is that it appeals to all levels of rider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Classic",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_ded5cbcb51c3417d94d832c2f06a5a5c~mv2.png",
+          "description": "The Custard Point Classic is our best selling medium volume longboard and is great longboard for all wave types and conditions. It was first shaped by Tim Mellors in the late eighties and has stood the test of time with little enhancements needed. The board borrows its curves from the traditional Malibu pintails of the 60's and combines them with more modern performance enhancing features. The parabolic nose channel (also found in the Ultimate Nose Rider) allows it to nose ride extremely well, but the boards sleeker profile and the high performance rails makes this board very lively and effortless to turn.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Classic Wide",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_78e26a3b248047efbdb1db511dc5caf6~mv2.png",
+          "description": "The Custard Point Classic Wide is basically a high volume version of our best selling medium volume longboard The Classic. This board with its extra flotation and surface area gives excellent wave catching ability, increases the stability for walking and allows longer on the nose. The features of the original stay the same, however this board is now more of a small wave longboard with a bit more liveliness than your average log. It was first shaped by Tim Mellors in the late eighties and has stood the test of time with little enhancements needed.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Pro Longboard",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_984f2b01c07f444fb54a7b07c586dd66~mv2_d_1535_1535_s_2.png",
+          "description": "The Pro! is our most recent addition to the Custard Point longboard range. Although its development has taken place over many years. Lee Hallam has designed a seriously modern template for those stronger conditions. We wanted to create a super progressive longboard that would suit the modern competitive surf style. A kind of longboard shortboard hybrid. The main feature of this board is in how easily it rotates. The high line performance rails offer sharp rail to rail surfing and effortless ( for a long board ) turning.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Allrounder",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_6081813e1f8f4440a1768275354fc88d~mv2.png",
+          "description": "The Allrounder has a long history as one of the most well known Custard Point longboards. It has a high rocker profile but, a nice medium volume. This makes it a perfect longboard for lots of differing wave types and surfing styles. Shaped by Tim Mellors it was a result of combining and refining boards throughout the 80s and 90s. Sleeker rails and high rockers were popular in surfing and Tim created a board that although had good float, it also had a more performance orientation.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Explorer",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_acfde063699543a196c8f3f9e63336a6~mv2.png",
+          "description": "The Custard Point Explorer is one of our newest longboard shapes. Designed by Tim Mellors as a high volume log alternative to the Ultimate Nose Rider. It is a very fun and cruisey board to surf. It has similar stats to the UNR, the same width and thickness for example. However it features a slightly more progressive pulled in nose offering easier turning on the wave face. And instead of a big wide squash tail the Explorer has this lovely big round tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Predator",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_066786c5b24640e983af4eb063e38a09~mv2.png",
+          "description": "The Predator was designed for those who want a high performance longboard to ride slightly larger waves than your normal longboard allows. We usually catagorise most longboards into three groups. Small wave, All-round and Big wave. The most important design difference between a small wave and big wave board is the degree of lift created through rocker and bottom shape. Small waves are traveling slower with less power. So, you need to create extra lift to be able to get the board up to paddling speed as quickly as possible and to enable you to catch waves and maintain speed.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Magic Stick",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_4c692ebae8744867849c35fc9520d6c4~mv2.png",
+          "description": "The Magic Stick is one of our newest and best selling surfboards. What started out as a fun project to see how small you can make a board that will still nose ride. Turned into one hell of a unique and \"Magestical\" board!!! It was first shaped by Lee Hallam for a friend as a bit of a fun summer board. \"He wanted a sort of Egg / Magic Carpet type thing and I had been working on seeing how you could increase lift without the planing length.\" So after some long conversations and deep thought Lee set about shaping a 6'8\" mini nose rider.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "High Volume Mini Mal",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_e7c0425c7ded4e7daeac8dc677611273~mv2.png",
+          "description": "The Custard Point High Volume Mini Mal is perfect for learning to surf and also great as a small wave cruiser for more experienced surfers. It has even proved a great choice for longboarders wishing for a more maneuverable drop down from their less lively log. This board is the result of piecing together the best features of all our best mini mal shapes over the last 30 years. From Tim's early proven shapes to custom designs requested by our customers.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Medium Volume Mini Mal",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_8e1c6260ac254d308671460241be4714~mv2.png",
+          "description": "The Custard Point Medium Volume Mini Mal is perfect for beginners through to intermediate surfers. It is possible to learn to surf on this mini mal as it still catches waves very easily and is pretty stable. However, the Medium Volume Mini Mal is focused more on maneuverability than the high volume model and it features more of a sleeker profile. This is one of Lee Hallam's shapes so you can be sure it includes something a bit different from a standard mini mal.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pro Mini Mal",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_34ae65e0484f46f0b86ab773a5e3ff64~mv2.png",
+          "description": "The Custard Point Pro Mini Mal is one of the most fun boards we make. Picture a hybrid surfboard half way between a mini mal and a shortboard. Perfect if you don't get to go surfing as often as you would like or you are just not quite ready for making the leap to a shortboard. Tim shaped this beauty back in the early 90s for the more experienced surfers wanting an easier paddle, but still great performance. Now a staple board on the shelf in our shop and a firm favorite.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Retro Fish",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_5941c372b03f4d279f77965a89b17ae7~mv2.png",
+          "description": "The Custard Point Retro Fish is probably our most famous surfboard. It not only looks great, but surfs great too. An incredibly high volume fish with a retro feel and simple curvaceous lines. Means you can catch those waves right out back and still throw it around like a shortboard. At first glance the Retro fish is deceiving. It seems like a throw back to a bygone era but when you take a close look you realise how technical and modern the board actually is.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Fishster",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_32f2522958304c5499890a69aa5a1e8b~mv2.png",
+          "description": "The Fishster has proven to be a very popular board this year. The template was designed by Lee Hallam as a project to find an original fish shape. The first Fishster was shaped for 3 x British Champion Holly Donnelly as a tiny 5'2. Holly's feedback was vital and led Lee to go onwards with the design and he shaped himself a 6'2 version. From there the shop model was produced and now it is a firm favorite.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Egg 2.0",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_655150ffef484a709fdf8128302dde14~mv2.png",
+          "description": "The Egg 2.0 is our latest board and is the result of combining our original Egg with the high performance round nose shortboard The Channel Hopper. We had the idea of re-vamping the Egg shape that you all know and love, with some more technical and modern adjustments. The idea was to inject a bit of energy into an often somewhat forgotten shape. \"I basically just wondered what effect the huge channel would have on the traditional egg shape \"",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Hybrid",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_182e8dc4e2e84993818233255f8a7b7d~mv2.png",
+          "description": "The Hybrid is the perfect step down shortboard for those coming off mini mals and wanting to get a foot in the door of the shortboarding world. It is also a great board for those struggling with catching waves on there current shortboard. It is basically a cut and shut job. Originally designed as a colab with Nigel Simmens. We combined the wave catching and stability of a minimal with the profile and rails of a shortboard. The resulting board is forgiving yet very maneuverable.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Wave Machine",
+          "image_url": "https://static.wixstatic.com/media/9f8f2e_7b3cc7b66fe04782ab43fcc56955cb72~mv2.png",
+          "description": "The Wave Machine is one of our newest and currently best selling shortboards. It started out as a custom order and finished in Lee Hallam shaping one for himself. \"The guy just wanted a board similar to what he had already but, that just caught a wave much better and planned through crappy sections.\" We simply widened out the whole profile to give more stability. Added a squash tail to give a bit more speed whist keeping the maneuverability of the old shape.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
