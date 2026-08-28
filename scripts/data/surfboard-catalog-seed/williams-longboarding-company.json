@@ -1,0 +1,46 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "williams-longboarding-company",
+      "name": "Williams Longboarding Company",
+      "website_url": "https://www.thewilliamslongboardingcompanyinc.co.uk/",
+      "location_label": "Gower Peninsula, South Wales, United Kingdom",
+      "founder_name": "Adam Williams",
+      "lead_shaper_name": "Adam Williams",
+      "short_description": "Hand-crafted, planet-friendly surf boards, made in the heart of the Gower Peninsula, South Wales.",
+      "models": [
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68877da4959a556982c81c4e/7361d034-4273-47e0-83fe-8e7534e1c162/glider.png",
+          "description": "From 9’ to 12’. A Glider is perfect for riding those smaller, laid-back summer waves but it’s also surprisingly agile when taken in to better quality, larger waves. The Glider gives the chance of early entry into waves so enabling the surfer to enjoy unparalleled section-beating performance. This board is very easy to paddle & as a result will increase paddle speed & therefore wave count. Best ridden in ripples to whatever surf you’re comfortable with!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cali Cruz",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68877da4959a556982c81c4e/b464ae70-a532-401a-a96d-331eef6d8d7d/calicruz.JPG",
+          "description": "From 9’6” to 10’6”. This Cali Cruz is a traditional 60s-style hot dogging longboard. This Cali Cruz is a versatile all-round nose rider which allows plenty of tip time but is also happy to be thrown around from the tail. This board performs well in knee to shoulder high surf.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "AR 2 + 1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68877da4959a556982c81c4e/5dd8ef97-f971-4bea-8e63-619ea3661a6f/AR21.JPG",
+          "description": "From 8’6” to 9’6”. The AR 2 + 1 model is a versatile all-rounder so can be treated like more of a performance longboard rather than a log. The AR 2 + 1 can be surfed in small mushy waves but it really comes alive in head-high, fast & hollow waves. It is easy to paddle allowing for early entry into steeper waves. This model is very manoeuvrable therefore making it possible for some power surfing.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Circa 64",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68877da4959a556982c81c4e/9acd8e66-e026-43b8-b793-3d49244ec44f/circa.JPG",
+          "description": "From 9’ to 9’6”. This is an updated traditional single fin longboard. It works in anything from ripples to head-high waves. It’s basically a fun hot-dogging board which is easy to paddle, great early wave entry, glides well but also hangs in the steeper pocket. It’s great for tip time but also those big power cut-backs on the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Little Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68877da4959a556982c81c4e/c8fda71e-a1ad-429b-b055-f78f6e59a953/littlelog.jpeg",
+          "description": "From 8’ to 8’6”. This is a condensed longboard. A 9’6” with a foot & half cut out of the middle! A great fun board that does everything that a bigger board does just in a smaller package. For those who don’t want to go full longboard or want a bit more ease travelling around & chucking it in the car. One of the most fun boards you can ride.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
