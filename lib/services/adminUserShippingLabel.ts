@@ -13,6 +13,10 @@ import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
 import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import type { AdminUserShippingLabelShipTo } from "@/lib/validations/adminUserShippingLabel"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import {
+  getReswellWarehouseAddress,
+  RESWELL_WAREHOUSE_ADDRESS,
+} from "@/lib/reswell-warehouse-address"
 
 export type AdminUserLabelAddressOption = {
   id: string
@@ -38,18 +42,8 @@ export type AdminUserLabelContext = {
   }
 }
 
-export const RESWELL_SHIP_FROM: RateQuoteAddressFields = {
-  name: "Reswell",
-  phone: "",
-  company_name: "Reswell",
-  address_line1: "915 De La Vina",
-  address_line2: "",
-  city_locality: "Santa Barbara",
-  state_province: "CA",
-  postal_code: "93101",
-  country_code: "US",
-  residential: "no",
-}
+/** @deprecated Prefer `RESWELL_WAREHOUSE_ADDRESS` from `@/lib/reswell-warehouse-address`. */
+export const RESWELL_SHIP_FROM: RateQuoteAddressFields = RESWELL_WAREHOUSE_ADDRESS
 
 function formatAddressOneLine(a: RateQuoteAddressFields): string {
   return [a.address_line1, [a.city_locality, a.state_province, a.postal_code].filter(Boolean).join(", ")]
@@ -73,7 +67,7 @@ function shipToToRateQuoteAddress(shipTo: AdminUserShippingLabelShipTo): RateQuo
 }
 
 function resolveReswellShipFrom(): RateQuoteAddressFields {
-  return RESWELL_SHIP_FROM
+  return getReswellWarehouseAddress()
 }
 
 function buildPackageOnTheWayMessage(params: {

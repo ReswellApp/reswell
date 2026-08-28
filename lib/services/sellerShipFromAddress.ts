@@ -56,29 +56,49 @@ export async function ensureProfileAddressFromOrderShipping(
 /**
  * Prefer an explicit / saved seller address. If none exist, recover from the most
  * recent shipping address on orders where this user was the buyer, and save it.
+ * Optionally fall back to another profile’s address (e.g. admin) for ops returns.
  */
 export async function resolveSellerShipFromAddress(
   supabase: SupabaseClient,
   sellerId: string,
   sellerAddressId?: string | null,
-): Promise<{ ok: true; address: ProfileAddressRow } | { ok: false; error: string }> {
+  opts?: { fallbackProfileId?: string | null },
+): Promise<
+  | { ok: true; address: ProfileAddressRow; source: "seller" | "admin" }
+  | { ok: false; error: string }
+> {
   if (sellerAddressId?.trim()) {
+    const id = sellerAddressId.trim()
     const { data, error } = await supabase
       .from("addresses")
       .select("*")
-      .eq("id", sellerAddressId.trim())
+      .eq("id", id)
       .eq("profile_id", sellerId)
       .maybeSingle()
-    if (error || !data) {
-      return { ok: false, error: "Seller address not found." }
+    if (!error && data) {
+      return { ok: true, address: data as ProfileAddressRow, source: "seller" }
     }
-    return { ok: true, address: data as ProfileAddressRow }
+
+    const fallbackId = opts?.fallbackProfileId?.trim()
+    if (fallbackId) {
+      const { data: adminAddr, error: adminErr } = await supabase
+        .from("addresses")
+        .select("*")
+        .eq("id", id)
+        .eq("profile_id", fallbackId)
+        .maybeSingle()
+      if (!adminErr && adminAddr) {
+        return { ok: true, address: adminAddr as ProfileAddressRow, source: "admin" }
+      }
+    }
+
+    return { ok: false, error: "Seller address not found." }
   }
 
   const { addresses } = await fetchProfileAddresses(supabase, sellerId)
   const preferred = addresses.find((r) => r.is_default) ?? addresses[0]
   if (preferred) {
-    return { ok: true, address: preferred }
+    return { ok: true, address: preferred, source: "seller" }
   }
 
   const recentShipping = await fetchRecentBuyerShippingAddresses(supabase, sellerId)
@@ -90,9 +110,22 @@ export async function resolveSellerShipFromAddress(
       { makeDefaultIfEmpty: true, label: "From past order" },
     )
     if (recovered) {
-      return { ok: true, address: recovered }
+      return { ok: true, address: recovered, source: "seller" }
     }
   }
 
-  return { ok: false, error: "Seller has no ship-from address on file." }
+  const fallbackId = opts?.fallbackProfileId?.trim()
+  if (fallbackId) {
+    const { addresses: adminAddresses } = await fetchProfileAddresses(supabase, fallbackId)
+    const adminPreferred = adminAddresses.find((r) => r.is_default) ?? adminAddresses[0]
+    if (adminPreferred) {
+      return { ok: true, address: adminPreferred, source: "admin" }
+    }
+  }
+
+  return {
+    ok: false,
+    error:
+      "Seller has no ship-from address on file (and no past buyer shipping address to recover).",
+  }
 }

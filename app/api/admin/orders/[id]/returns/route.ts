@@ -89,7 +89,6 @@ export async function POST(
       orderId,
       orderItemId: parsed.data.order_item_id,
       listingId: parsed.data.listing_id,
-      sellerAddressId: parsed.data.seller_address_id,
       parcel: parsed.data.parcel,
     })
     if (!result.ok) {
@@ -113,7 +112,6 @@ export async function POST(
     adminProfileId: gate.ctx.user.id,
     orderItemId: parsed.data.order_item_id,
     listingId: parsed.data.listing_id,
-    sellerAddressId: parsed.data.seller_address_id,
     rateId: parsed.data.rate_id,
   })
 

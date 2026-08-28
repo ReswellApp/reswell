@@ -25,7 +25,6 @@ import {
   downloadAndStorePaperlessQr,
 } from "@/lib/services/storeOrderShippingLabelAssets"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
-import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -180,7 +179,6 @@ export async function quoteOrderItemReturnRates(params: {
   orderId: string
   orderItemId?: string | null
   listingId?: string | null
-  sellerAddressId?: string | null
   parcel?: {
     length_in: number
     width_in: number
@@ -223,15 +221,7 @@ export async function quoteOrderItemReturnRates(params: {
     return { ok: false, error: "This item already has an active return.", status: 409 }
   }
 
-  const addr = await resolveSellerShipFromAddress(
-    params.supabase,
-    order.seller_id,
-    params.sellerAddressId,
-  )
-  if (!addr.ok) return { ok: false, error: addr.error, status: 400 }
-
   const addresses = resolveAddressesForReturnLabel({
-    sellerAddress: addr.address,
     orderShippingJson: order.shipping_address,
   })
   if (!addresses.ok) return { ok: false, error: addresses.error, status: 400 }
@@ -363,7 +353,6 @@ export async function purchaseOrderItemReturnLabel(params: {
   adminProfileId: string
   orderItemId?: string | null
   listingId?: string | null
-  sellerAddressId?: string | null
   rateId: string
 }): Promise<
   | { ok: true; returnRow: OrderItemReturnRow; alreadyPurchased: boolean }
@@ -397,15 +386,8 @@ export async function purchaseOrderItemReturnLabel(params: {
     return eligible
   }
 
-  // Ensure seller destination still resolves (do not re-quote — rate_id is already chosen).
-  const addr = await resolveSellerShipFromAddress(
-    params.supabase,
-    eligible.order.seller_id,
-    params.sellerAddressId,
-  )
-  if (!addr.ok) return { ok: false, error: addr.error, status: 400 }
+  // Confirm buyer → Reswell still resolves (do not re-quote — rate_id is already chosen).
   const addresses = resolveAddressesForReturnLabel({
-    sellerAddress: addr.address,
     orderShippingJson: eligible.order.shipping_address,
   })
   if (!addresses.ok) return { ok: false, error: addresses.error, status: 400 }

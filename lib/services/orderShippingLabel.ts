@@ -26,6 +26,7 @@ import {
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { getReswellWarehouseAddress } from "@/lib/reswell-warehouse-address"
 import {
   LABEL_PARCEL_MIN_WEIGHT_LB,
   SURFBOARD_LABEL_LIMITS_ERROR,
@@ -231,20 +232,16 @@ export function resolveAddressesForLabel(params: {
 }
 
 /**
- * Return label: buyer ships back to the seller's ship-from address.
- * `from` = buyer order shipping address, `to` = seller profile address.
+ * Return label: buyer ships back to Reswell HQ (915 De La Vina).
+ * `from` = buyer order shipping address, `to` = Reswell warehouse.
  */
 export function resolveAddressesForReturnLabel(params: {
-  sellerAddress: ProfileAddressRow
   orderShippingJson: unknown
 }): { ok: true; from: RateQuoteAddressFields; to: RateQuoteAddressFields } | { ok: false; error: string } {
   const from = orderShippingJsonToRateQuoteAddress(params.orderShippingJson)
   if (!from) {
     return { ok: false, error: "This order does not have a complete buyer shipping address for the return." }
   }
-  const to = profileRowToRateQuoteAddress(params.sellerAddress)
-  if (!to.name?.trim() || !to.address_line1?.trim() || !to.city_locality?.trim() || !to.state_province?.trim()) {
-    return { ok: false, error: "Seller ship-from address is incomplete." }
-  }
+  const to = getReswellWarehouseAddress()
   return { ok: true, from, to }
 }

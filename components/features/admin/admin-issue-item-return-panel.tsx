@@ -234,7 +234,7 @@ export function AdminIssueItemReturnPanel({
           Item returns
         </p>
         <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-          Authorize a return for one item: buy a prepaid return label (buyer → seller), mark the item
+          Authorize a return for one item: buy a prepaid return label (buyer → Reswell), mark the item
           returned, and refund automatically 24 hours after return delivery.
         </p>
       </div>
@@ -280,7 +280,7 @@ export function AdminIssueItemReturnPanel({
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     From (buyer): {quoteMeta.shipFromSummary}
                     <br />
-                    To (seller): {quoteMeta.shipToSummary}
+                    To (Reswell): {quoteMeta.shipToSummary}
                     <br />
                     Refund after delivery: {money(quoteMeta.refundAmountUsd)} · clawback{" "}
                     {money(quoteMeta.sellerClawbackUsd)}

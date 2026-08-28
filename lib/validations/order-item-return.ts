@@ -20,7 +20,6 @@ export const adminOrderItemReturnPostBodySchema = z.union([
       action: z.literal("rates"),
       order_item_id: z.string().uuid().optional(),
       listing_id: z.string().uuid().optional(),
-      seller_address_id: z.string().uuid().optional(),
       parcel: shippingLabelParcelSchema.optional(),
     })
     .superRefine(refineHasLineRef),
@@ -29,7 +28,6 @@ export const adminOrderItemReturnPostBodySchema = z.union([
       action: z.literal("purchase"),
       order_item_id: z.string().uuid().optional(),
       listing_id: z.string().uuid().optional(),
-      seller_address_id: z.string().uuid().optional(),
       rate_id: z.string().min(5).max(128),
       parcel: shippingLabelParcelSchema.optional(),
     })
