@@ -273,7 +273,7 @@ export async function getCheapestReswellRateForListing(input: {
  * One-box rate for multiple same-seller listings shipped together.
  *
  * The combined parcel is {@link resolveCombinedPackedParcelFromListings}
- * (2–3 surfboards: longest board + 4″ × 27 × 7 × 22 lb; otherwise biggest-DIM carton + summed weights).
+ * (2 surfboards: longest + 4″ × 22 × 5 × 22 lb; 3 boards: × 27 × 7; otherwise biggest-DIM carton + summed weights).
  * Ship-from is resolved from the first listing — all listings belong to one seller.
  */
 function resolveSelectedCheckoutRate(

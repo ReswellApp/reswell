@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { countCheckoutBlockedHiddenActiveListings } from '@/lib/db/adminHiddenListings'
+import { countSubmittedBoardBuys } from '@/lib/db/boardBuy'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 
 export type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
@@ -20,7 +21,7 @@ export async function fetchAdminNavBadgeCounts(
   supabase: SupabaseClient,
   options: { includeBrandRequests: boolean },
 ): Promise<AdminNavBadgeCounts> {
-  const [supportNewRes, fraudRes, opsOpenRes, brandPendingRes, labelFailuresRes, hiddenActiveRes] =
+  const [supportNewRes, fraudRes, opsOpenRes, brandPendingRes, labelFailuresRes, hiddenActiveRes, buyQueue] =
     await Promise.all([
       supabase
         .from('contact_messages')
@@ -44,6 +45,7 @@ export async function fetchAdminNavBadgeCounts(
             .eq('status', 'open')
         : Promise.resolve({ count: 0 as number | null, error: null }),
       fetchHiddenActiveCheckoutBlockedCount(),
+      countSubmittedBoardBuys(supabase),
     ])
 
   const take = (res: { count: number | null; error: unknown }): number => {
@@ -56,6 +58,7 @@ export async function fetchAdminNavBadgeCounts(
     '/admin/fraud-messages': take(fraudRes),
     '/admin/ops': take(opsOpenRes),
     '/admin/listings/hidden': hiddenActiveRes,
+    '/admin/we-buy': buyQueue,
   }
 
   if (options.includeBrandRequests) {

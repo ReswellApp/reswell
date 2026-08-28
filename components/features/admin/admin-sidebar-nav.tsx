@@ -37,6 +37,7 @@ import {
   MapPin,
   Ticket,
   BookOpen,
+  Handshake,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -115,6 +116,8 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
       return <Ticket className={NAV_ICON_CLASS} aria-hidden />
     case 'bookOpen':
       return <BookOpen className={NAV_ICON_CLASS} aria-hidden />
+    case 'handshake':
+      return <Handshake className={NAV_ICON_CLASS} aria-hidden />
     case 'bellRing':
       return <BellRing className={NAV_ICON_CLASS} aria-hidden />
     case 'code':

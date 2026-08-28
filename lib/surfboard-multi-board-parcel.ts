@@ -2,8 +2,8 @@
  * Same-seller multi-surfboard checkout (2–3 boards in one carton).
  *
  * Quote and label use the longest bare board length + a fixed packing buffer,
- * with a constant shortboard-style profile (27 × 7 × 22 lb). Single-board
- * box-length ceilings do not apply to the combined carton.
+ * with a count-based shortboard-style profile (2 boards: 22 × 5; 3 boards: 27 × 7;
+ * 22 lb). Single-board box-length ceilings do not apply to the combined carton.
  */
 
 import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurements"
@@ -19,8 +19,10 @@ export const MAX_SURFBOARDS_PER_SELLER_CHECKOUT = 3
 /** Extra inches added to the longest board for the shared carton. */
 export const MULTI_SURFBOARD_PACK_LENGTH_BUFFER_IN = 4
 
-export const MULTI_SURFBOARD_BOX_WIDTH_IN = 27
-export const MULTI_SURFBOARD_BOX_HEIGHT_IN = 7
+export const MULTI_SURFBOARD_TWO_BOX_WIDTH_IN = 22
+export const MULTI_SURFBOARD_TWO_BOX_HEIGHT_IN = 5
+export const MULTI_SURFBOARD_THREE_BOX_WIDTH_IN = 27
+export const MULTI_SURFBOARD_THREE_BOX_HEIGHT_IN = 7
 export const MULTI_SURFBOARD_BOX_WEIGHT_LB = 22
 
 export const MULTI_SURFBOARD_BUNDLE_MAX_WEIGHT_LB = MULTI_SURFBOARD_BOX_WEIGHT_LB
@@ -55,6 +57,23 @@ export function isMultiSurfboardOneBoxShipment(
 
 export function multiSurfboardOneBoxLengthIn(longestBoardLengthIn: number): number {
   return Math.ceil(longestBoardLengthIn + MULTI_SURFBOARD_PACK_LENGTH_BUFFER_IN)
+}
+
+/** Shared carton width × height from how many surfboards are in the box. */
+export function multiSurfboardBoxCrossSection(surfboardCount: number): {
+  widthIn: number
+  heightIn: number
+} {
+  if (surfboardCount <= 2) {
+    return {
+      widthIn: MULTI_SURFBOARD_TWO_BOX_WIDTH_IN,
+      heightIn: MULTI_SURFBOARD_TWO_BOX_HEIGHT_IN,
+    }
+  }
+  return {
+    widthIn: MULTI_SURFBOARD_THREE_BOX_WIDTH_IN,
+    heightIn: MULTI_SURFBOARD_THREE_BOX_HEIGHT_IN,
+  }
 }
 
 export function validateMultiSurfboardOneBoxParcel(parcel: {

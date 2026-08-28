@@ -50,6 +50,10 @@
       "schedule": "5 * * * *"
     },
     {
+      "path": "/api/cron/board-buy-sla",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/google-merchant-refresh",
       "schedule": "20 * * * *"
     },

@@ -415,6 +415,13 @@ export const MANAGED_PAGES: ManagedPage[] = [
   }),
 
   // ---- Marketing & growth ----
+  page("we-buy", "marketing", "We’ll buy your surfboard", {
+    title: "We’ll Buy Your Surfboard | Reswell",
+    description:
+      "Sell your surfboard to Reswell. Upload photos and your asking price — we quote in under 30 minutes, send a prepaid label, and pay your wallet.",
+    path: "/we-buy",
+    keywords: ["sell surfboard", "we buy surfboards", "surfboard quote", "sell board to Reswell"],
+  }),
   page("listyoursurfboard", "marketing", "List your surfboard", {
     title: "List your surfboard | Reswell",
     description:

@@ -49,9 +49,8 @@ import {
   boardLengthInchesFromListing,
   countSurfboardListings,
   isSurfboardListingSection,
-  MULTI_SURFBOARD_BOX_HEIGHT_IN,
   MULTI_SURFBOARD_BOX_WEIGHT_LB,
-  MULTI_SURFBOARD_BOX_WIDTH_IN,
+  multiSurfboardBoxCrossSection,
   multiSurfboardOneBoxLengthIn,
   peerCheckoutSurfboardCountError,
 } from "@/lib/surfboard-multi-board-parcel"
@@ -363,8 +362,8 @@ export type ResolvedPackedParcel = {
 /**
  * Combined one-box parcel for multiple listings shipped together (same seller).
  *
- * **2–3 surfboards:** length = longest bare board + 4″, width 27″, height 7″,
- * weight = 22 lb. Single-board tier cartons are not used.
+ * **2–3 surfboards:** length = longest bare board + 4″, 2 boards 22″ × 5″,
+ * 3 boards 27″ × 7″, weight = 22 lb. Single-board tier cartons are not used.
  *
  * **Otherwise:** largest-DIM item's carton + summed weights (fins/shop add-ons with one board).
  */
@@ -410,13 +409,14 @@ export function resolveCombinedPackedParcelFromListings(
       return { ok: false, error: "Could not read surfboard length for this order." }
     }
 
+    const cross = multiSurfboardBoxCrossSection(surfboardCount)
     return {
       ok: true,
       source: "board+heuristic-weight",
       weightOz: MULTI_SURFBOARD_BOX_WEIGHT_LB * 16,
       lengthIn: multiSurfboardOneBoxLengthIn(longestBoardIn),
-      widthIn: MULTI_SURFBOARD_BOX_WIDTH_IN,
-      heightIn: MULTI_SURFBOARD_BOX_HEIGHT_IN,
+      widthIn: cross.widthIn,
+      heightIn: cross.heightIn,
     }
   }
 

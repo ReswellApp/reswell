@@ -87,6 +87,26 @@ const sections: FaqSection[] = [
     description: "Listing gear, handling offers, and closing the sale.",
     faqs: [
       {
+        question: "Will Reswell buy my surfboard?",
+        answerPlain:
+          "Yes. Sign in and go to We’ll buy your surfboard. Upload photos, a title, and your asking price. We reply in under 30 minutes with an accept or our best offer. If we miss that window, you automatically get an offer at 20% off your asking price. Accept, print the prepaid label, ship to Reswell, and we pay your wallet — cash out to your bank when you’re ready.",
+        answer: (
+          <>
+            Yes. Sign in and go to{" "}
+            <Link href="/we-buy" className="text-primary underline">
+              We’ll buy your surfboard
+            </Link>
+            . Upload photos, a title, and your asking price. We reply in under 30 minutes with an
+            accept or our best offer. If we miss that window, you automatically get an offer at 20%
+            off your asking price. Accept, print the prepaid label, ship to Reswell, and we pay your{" "}
+            <Link href="/dashboard/wallet" className="text-primary underline">
+              wallet
+            </Link>
+            — cash out to your bank when you’re ready.
+          </>
+        ),
+      },
+      {
         question: "How do I list something for sale?",
         answerPlain:
           "Sign in and tap Sell in the header, or go straight to /sell. Choose a category (boards, fins, wetsuits, and more), add good photos, your price, condition, and whether you want to offer local pickup, shipping, or both. Posting a listing is free.",

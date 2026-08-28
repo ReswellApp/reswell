@@ -37,6 +37,7 @@ export type AdminNavIconKey =
   | 'mapPin'
   | 'ticket'
   | 'bookOpen'
+  | 'handshake'
 
 export interface AdminNavItemConfig {
   href: string
@@ -97,6 +98,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin/shop', label: 'Reswell inventory', icon: 'store' },
       { href: '/admin/shop/orders', label: 'Shop orders', icon: 'shoppingBag' },
+      { href: '/admin/we-buy', label: 'Buy program', icon: 'handshake' },
     ],
   },
   {

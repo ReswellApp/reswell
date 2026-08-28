@@ -126,7 +126,7 @@ export function resolveOrderLabelParcelFromListing(
 
 /**
  * One-box label parcel for a same-seller order. Multi-surfboard orders use
- * longest board + 4″ × 27 × 7 (same as checkout quotes).
+ * longest board + 4″ and a count-based profile (2 boards 22 × 5; 3 boards 27 × 7).
  */
 export function resolveOrderLabelParcelFromListings(
   listings: ListingPackedParcelSource[],
