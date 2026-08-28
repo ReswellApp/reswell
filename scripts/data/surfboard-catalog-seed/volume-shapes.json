@@ -1,0 +1,64 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "volume-shapes",
+      "name": "Volume Shapes",
+      "website_url": "https://www.volumeshapes.com/",
+      "location_label": "New South Wales, Australia",
+      "founder_name": "Richie Lovett",
+      "lead_shaper_name": "Richie Lovett",
+      "short_description": "Everyday surfboards for everyday surfers, designed and shaped by Richie Lovett.",
+      "models": [
+        {
+          "name": "Midlength",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ff67baefecfce2c71b617fd/0e5a0640-c43c-40a3-ae6b-a21f93c99ade/Mid+1_Sized.jpg",
+          "description": "The Volume Mid has nothing to do with middle-age laziness and everything to do with maintaining your wave count and delivering quality water time. From ankle high to overhead, this board is tuned so you can paddle onto waves early, set your line and go.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cruiser",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ff67baefecfce2c71b617fd/1611123843581-ZZRUX8F9HEUA3ZYNOIL2/DSB+Cruiser+White+Web1.jpg",
+          "description": "The Volume Cruiser is a shorter, but higher volume version of the classic midlength shape from the retro era. The idea of this model was to reduce the length to enhance turning performance, yet maintain sufficient buoyancy for easy paddling and speed retention in softer waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ff67baefecfce2c71b617fd/1626250059944-SFQRPGK8FA3KP44S243X/DSB+Fish+copy.jpg",
+          "description": "The Volume Fish takes the confusion out of choosing just one board for every day use. This is a modern utility fish, meaning it’ll work in variety of conditions for a variety of surfers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mid Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ff67baefecfce2c71b617fd/1626294708548-Q3P2LAR68PGDK7T3EMC5/Board_11+copy.jpg",
+          "description": "The Volume Mid Twin combines the best features of a midlength, namely paddle power and flow, and adds a layer of speed, smoothness and the ability to pivot tighter off the tail. This board reeks of down-the-line glide with a healthy serving of release.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ff67baefecfce2c71b617fd/674d3761-8309-46cd-bd10-3b2d605245f7/Board_22.8.3_1.jpg",
+          "description": "Not quite a shorty, the Hybrid is a one board quiver for experienced surfers needing a board that’ll work in all sorts of waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hybrid+",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ff67baefecfce2c71b617fd/4acbd52b-e5dd-4827-ba84-ef3a02c12997/Board_22.8.3_3.jpg",
+          "description": "The Hybrid+ has a little more buoyancy, a touch less rocker and a slightly wider nose compared to the standard Volume Hybrid. All elements targeted at surfers making the transition from intermediate + into the experienced skill category.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shorty+",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ff67baefecfce2c71b617fd/db6e82e8-878e-481f-88ed-467c719667a7/Board_22.8.3_2.jpg",
+          "description": "You’ve mastered a funboard and you’re ready for a ‘shortboard’… What should you do? I’ve been asked this question a thousand times, and it’s the reason I designed the Shorty+.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ff67baefecfce2c71b617fd/1626245817452-XRCOE4QZ8E36129ETFR5/DSB+Twin.jpg",
+          "description": "The Volume Twin is my interpretation of a modern twin offering three key performance traits; speed, pivot and control.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
