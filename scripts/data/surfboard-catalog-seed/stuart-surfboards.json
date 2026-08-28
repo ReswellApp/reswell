@@ -1,0 +1,160 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "stuart-surfboards",
+      "name": "Stuart Surfboards",
+      "website_url": "https://www.stuartsurf.com.au/",
+      "location_label": "Mermaid Beach, Gold Coast, Australia",
+      "founder_name": "Stuart Smith",
+      "lead_shaper_name": "Stuart Smith",
+      "short_description": "Custom surfboards shaped by Stuart Smith at Stuart Surf Design in Mermaid Beach on the Gold Coast, covering high-performance shortboards, hybrids, small-wave designs and longboards.",
+      "models": [
+        {
+          "name": "Bender – X",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surfboards-gold-coast-bender-step-round-front-white-e1603592890836.jpg",
+          "description": "The Bender – X surfboard model features a single to double concave low entry rocker and subtle wing, ideal for use in 1 to 5 foot swell where you can surf anything from a beach break through to points and reefs. Skill level is suitable for learner all the way through to advanced surfer. The wider tail assists with early entry into the waves, giving you extra speed and time to put the board in the best position to make your turns extra critical. The deck is also flatter, giving a slightly fuller rail to help negotiate softer and flatter wave faces. Through the extra flotation of this design you can ride the board shorter than a normal HPX style and therefore, help with more explosive and spontaneous manoeuvres.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bender Mini Gun X (BMG-X)",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surfboards-gold-coast-bender-mini-gun-front-white-e1603592870526.jpg",
+          "description": "The Bender Minigun X (BMG-X) is a fantastic transition surfboard ideal for use in 1 to 8 foot swell where you can surf anything from a beach break through to points and reefs. Skill level is suitable from a confident learner through to advanced surfer. The smooth rounded area pin tail is perfect for holding a great line in the tube, high speed snaps and carves. Due to the extra stability of the Bender series, paddling into waves and early wave entry is a defining feature of this design. It can be surfed equally well as a three fin or four fin surfboard. This surfboard model is our most popular design due to its ability to be used in such a broad range of waves and accessible to most skill levels – sometimes referred to as the “Quiver Killer” as this will be the only surfboard you need.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bender X Step",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surfboards-gold-coast-bender-step-front-white-e1603592518627.jpg",
+          "description": "The Bender X Step surfboard model is ideal for use in 1 to 6 foot swell targeted for use at beach breaks through to points and reefs. Skill level is suitable for learner through to advanced surfer. This design is a close cousin to the Bender – X but with a slightly narrower tail featuring the swallow for a little more drive and wave height suitability. It has great flotation and stability due to the nature of the design with a mid-low rocker entry and wider outline. Another characteristic of this design is the single to double concave. Through the extra flotation of this design you can ride the board shorter than a normal HPX style and therefore, help with more explosive and spontaneous manoeuvres.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Double Shaka",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surf-shop-double-shaka-front-white-e1603592817503.jpg",
+          "description": "The Double Shaka surfboard model is designed for use in 1 to 5 foot swell targeted for use at beach breaks, points and reefs. An all-rounder surfboard, this model is suitable for a learner all the way through to advanced surfer. This design is similar to the Pro Elite Funboard but a little bit narrower and thinner to enhance manoeuvres and turns. A surprisingly versatile design that many seasoned surfers will go back to because it does everything. This surfboard will give you the best bang for your buck for the budget conscious learner.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fat Albert",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/2018-Surfboard-model-images18-e1603593141331.jpg",
+          "description": "The Fat Albert surfboard model is ideal for use in 1 to 4 foot swell which can be used at beach breaks, points or reefs. A great versatile model which is suitable for a learner through to advanced surfer. Featuring the “vee” double bonza style concave bottom and flat rocker with minimal nose lift. The rounded pin turns on a dime and the fat nose provides great paddle power and flotation. The 10″ single fin box with FCS plugs in a quad configuration allows the board to be ridden as single fin on its own or with some side bites, go to a thruster or a quad – it is the ultra “convertible” surfboard. This surfboard model is a great alternative to riding a mal on those super small point waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "FX – 2.0 Fish",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/2018-Surfboard-model-images36-e1603593023541.jpg",
+          "description": "The FX – 2.0 Fish tail inspired surfboard model is suited for use in 1 to 5 foot swell where you can surf anything from a beach break through to points and reefs. Skill level covers all ability ranges due to its much wider nose and overall outline with a flatter rocker entry. Due to the extra flotation in this model you can catch small waves very easily giving an earlier take off entry into the wave. This surfboard model retains a lot of speed through all manoeuvres even if the wave is weak, this is due to the fuller wider overall nature of the board. It features a single to double concave for super-efficient water flow giving quick acceleration.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "FX – 2.0 Round Tail",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/stuart-surfboards-fx-2-front-white-1-e1603592767684.jpg",
+          "description": "The FX – 2.0 Round Tail surfboard model is designed for use in 1 to 5 foot swell where you can surf beach breaks, points and reefs. Due to the round tail curve it can be pushed harder through turns making it suitable for a bit larger waves in comparison fish swallow. Skill level covers all ability ranges due to its much wider nose and overall outline with a flatter rocker entry. Due to the extra flotation in this model you can catch small waves very easily giving an earlier take off entry into the wave. Retaining lots of speed through all manoeuvres even if the wave is weak, this is due to the fuller wider overall nature of the board. It features a single to double concave for super-efficient water flow giving quick acceleration.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "FX – 3.0 Rocket",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surfboards-gold-coast-fx-rocket-front-white-e1603592715698.jpg",
+          "description": "The FX – 3.0 Rocket surfboard model is ideal for use in 1 to 4 foot swell where you can take this model out for a session at a beach break, point or reef. Skill level is suitable for a learner through to advanced surfer. The FX – 3.0 Rocket has an off the top snap that feels like a rounded square but then the carve of a swallow that allows for nice figure eight cutbacks. The paddle power is the major benefit with more area forward, you have a more forward paddle trim position which helps to pick off waves that don’t always let you in so you can set up early for a better ride. This model features the single to double concave where it can surprise you by allowing you to surf a bit larger waves than what is recommended for this model.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "FX – 4.0 Round Tail",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surfboards-gold-coast-fx-4-round-front-white-e1603592704541.jpg",
+          "description": "The FX – 4.0 Round Tail surfboard model is ideal for use in 1 to 5 foot swell where you can surf anything from a beach break through to points and reefs. This surfboard is versatile for all skill levels being accessible from a learner through to advanced surfer. On the bottom features a flat nose entry into a massive double bonza style concave through the back half of the board. The wide twin fin nose lends itself to great paddle power, stability and flotation. This design has blistering speed no matter what the conditions and can be ridden as a twin, thruster or quad fin depending on your preference. The round tail allows you to push harder through your turns with greater edge control compared to the swallow design. The FX – 4.0 Round Tail is right alongside the swallow tail version of this model as the ultimate summer small wave design surfboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "FX – 4.0 Swallow",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surfboards-gold-coast-fx-4-swallow-front-white-e1603592692241.jpg",
+          "description": "The FX – 4.0 Swallow surfboard features a chunky wide swallow tail ideal for use in 1 to 4 foot swell, targeted for use at beach breaks, points and reefs. Skill level is suitable from a learner through to advanced surfer. On the bottom features a flat nose entry into a massive double bonza style concave through the back half of the board. The wide twin fin nose lends itself to great paddle power, stability and flotation. This design has blistering speed no matter what the conditions and can be ridden as a twin, thruster or quad fin depending on your preference. The swallow tail gives you greater take off speed and momentum through your turns on weaker waves due to its noticeable width. The FX – 4.0 Swallow is the ultimate summer small wave go to design. FX – 4.0 Swallow Tail",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "GX – 1.0",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/2018-Surfboard-model-images37-e1603593028916.jpg",
+          "description": "The GX – 1.0 surfboard is a big wave design model for use in 4 to 12 foot swell great for use on beach breaks, points and reefs. Due to the nature of the big waves required for this board to shine, the skill level of this board is targeted for advanced surfers. A little less concave and a small amount of “vee” is a good combination in this design to enhance your turning ability while retaining plenty of speed and drive. More often the choice of surfboard surfed by the traveling surfer to places like Indonesia, Hawaii, Fiji and the South Pacific and the known big wave spots in Australia.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "HPX – 1.0",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/2018-Surfboard-model-images22-e1603593120114.jpg",
+          "description": "The HPX – 1.0 surfboard model is a high performance model aimed to be used in 2 to 6 foot swell for use at beach breaks, points or reefs. Ideally this model is suited to a skill level of an advanced and seasoned surfer where this style of surfboard is suitable for top to bottom critical moves. The reduced rail volume allows for more spontaneous and radical turns and the outline is just pure clean curves as a unique characteristic of this design. This is combining with a little more concave and overall rocker to give it maximum performance. This surfboard model is ideal if you want to emulate and surf the same pro equipment as the best in the world.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HPX – 2.0",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surf-shop-hpx-2-front-white-e1603592668713.jpg",
+          "description": "The HPX – 2.0 surfboard model is targeted for use in 1 to 6 foot swell aimed to be used in anything from beach breaks through to points and reefs. Due to its wider outline it allows for more flotation and can be used for intermediate to advanced levels of surfers. The wider outline of the nose and tail of this board is critical in allowing manoeuvres in steep face waves and flatter fuller faced waves. You can also cut off one or two inches in comparison to the HPX – 1.0 because of the extra flotation. While still retaining the same rocker and rail as our HPX – 1.0 the width throughout this board really makes high performance surfing more natural and forgiving.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HPX – 3.0",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/stuart-surfboards-hpx-3-front-white-e1603592654198.jpg",
+          "description": "The HPX – 3.0 surfboard model is ideal for use in 2 to 8 foot waves as a step up design where you can surf anything from beach breaks, points and reefs. This model is ideal for intermediate to advance surfers due to the surfboard being designed for bigger waves, tube riding, and driving / carving moves. It has the slightly fuller nose of the HPX – 2.0 to give you better paddle power and ability to carve. The rounded pin tail gives you superior holding power in the tube and grip through high speed bottom turns and driving cut backs. This surfboard can be ridden as a three or four fin design. An ideal board to take on an epic surf trip to locations such as Indonesia, Fiji, Hawaii and destinations iconic for large swell.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Jolly Roger",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/stuart-surfboards-jolly-roger-front-white-1-e1603592637220.jpg",
+          "description": "The Jolly Roger surfboard model is ideal for use in 1 to 6 foot swell where you can surf anything from a beach break through to points and reefs. Skill level is suitable for a learner through to advanced surfer. This model has the nose borrowed from the FX – 3.0 Rocket and the blended tail design of the Bender Mini Gun X allowing super tight radius turns because of the round tail. Lower rocker entry but with a slight nose flip and a mid-rail combined with a single to double concave makes it a great paddling board with lots of stability. To sum it up a great paddler with lots of stability but the tail allows for some stinging whips and lip cracks.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Krakens Fury",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/krakens-fury-stuart-surf-design-gold-coast-surfboard-front.png",
+          "description": "The Krakens Fury surfboard model is ideal for use in 1 to 6 foot swell targeted for use at beach breaks through to points and reefs. Skill level is suitable for learner through to advanced surfer. This design is essentially the step-up performance version of the Midlength , narrower throughout to enable intuitive rail to rail maneuvering with great paddle power and wave range height suitability. It has superior flotation and stability due to the nature of the design with a low rocker entry and full-ish nose providing extra paddle glide . Importantly the bottom design is a reverse Vee inserted into a single concave bottom curve through to tail vee allowing effortless rail to rail turns with on tap speed . Essentially designed as a cruiser with a performance edge. An absolute blast as a twin fin with the extra plugs to go all fin combinations if desired.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Miami Midlife",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/Stuart-Surf-Design-Surfboard-Miami-Midlife-F.png",
+          "description": "The Miami Midlife model is the mid-length design of our range ideal for use in almost all conditions and for all skill levels. Originally concepted while surfing the beach breaks at Miami, Gold Coast, Queensland during the COVID lockdowns and dealing with the overcrowded conditions and a midlife existential crisis. This surfboard is perfect for use in 1 to 5 foot swell. Awesome paddling power combined with that beautiful curvy rounded pin tail and the bonza bottom curve giving super responsive rail to rail surfing in all conditions. It is also available in a swallow tail for a more retro feel. As per all Stuart Surf Design models, the glassing concept features the three phase concept. This means a full layer of 6oz, then a ¾ layer of 4oz, plus a 4oz tail patch resulting in a reduced swing weight.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pantera – X",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/stuart-surfboards-pantera-front-white-e1603592806388.jpg",
+          "description": "The Pantera – X surfboard model is ideal for use in 1 to 5 foot swell where you can surf anything from a beach break through to points and reefs. Skill level is suitable for a learner through to advanced surfer. With a much wider nose and tail than the Bender series, this width gives this craft great momentum across any soft sections while having that great super responsive area round tail to pivot and arc on. We have tweaked the bottom curve featuring a single through to double concave with “tail vee” running out from the tail fin further enhancing this boards pivot and turning ability. With a mid-low rocker entry it’s a winner on the flats but with enough rocker to attack any steep sucky section that often pops up.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pantera – XXX",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/Stuart-Surf-Design-Surfboard-Pantera-XXX-F.png",
+          "description": "The Pantera – XXX surfboard model is a transition to the flyer / swallow tail version of our Pantera – X model. Obviously the tail features make this surfboard quite different in its approach to the waves. There’s a lot more glide and speed generation from bottom to top turns, giving it a great ability to push out of the lip ultra quickly and connect the sections with super speed bursts through the ‘squirty’ swallow tail / flyer combo. Similar to the Pantera – X this model is great for 1 to 5 foot swell where you can surf anything from a beach break through to points and reefs. Skill level is suitable for a learner through to advanced surfer. With a much wider nose and tail than the Bender series, this width gives this craft great momentum across any soft sections while having that great super responsive area round tail to pivot and arc on. We have tweaked the bottom curve featuring a single through to double concave with “tail vee” running out from the tail fin further enhancing this boards pivot and turning ability. With a mid-low rocker entry it’s a winner on the flats but with enough rocker to attack any steep sucky section that often pops up.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pro Elite Funboard",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surfboards-gold-coast-pro-elite-funboard-front-white-e1603592791178.jpg",
+          "description": "The Pro Elite Funboard – The Seahorse surfboard model is ideal for use in 1 to 6 foot swell aimed to be used at beach breaks, points and reefs. A great versatile surfboard, it is suitable for use by learners all the way through to advanced surfers. This board design is essentially a mini-mal with a slightly pulled in nose that allows for more reactive turns while still retaining stacks of flotation and stability. The glass work is super strong with a double 6-ounce deck lamination and single 6-ounce bottom lamination, it equates to the same amount of fibreglass that you would normally find on a 9-foot longboard, making it stronger and more robust than it really needs to be.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pro Elite Mal",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/stuart-surfboards-pro-elite-mal-front-white-e1603592780332.jpg",
+          "description": "The Pro Elite Mal – The Seahorse surfboard model is ideal for use in 1 to 5 foot swell and can be used at beach break, points or reefs. A surfboard recommended for any skill level from a learner all the way through to advanced surfer. This design features a double 6-ounce deck lamination and single 6-ounce bottom with a big double bonza style concave featured in the back third of the board for max speed and turn arc.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Psycho Badger",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surf-shop-psycho-badger-front.jpg",
+          "description": "The Psycho Badger is an ideal small to mid-wave surfboard for optimum size waves 1 to 4 foot swell. Extra width up the front of this surfboard helps with extra paddle power and stability when swinging to your feet. At the back end the wider rounded square tail with single flyer gives you a real kick through turns and blistering speed off the mark, combines beautifully with single to double concave underneath. The paddle power is the major benefit with more area forward, you have a more forward paddle trim position which helps to pick off waves that don’t always let you in so you can set up early for a better ride. This model will bring out your inner animal instincts to Badger your way onto more waves and go Psycho on the faces. An ideal model for all levels of surfers.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Retro Twin",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/2018-Surfboard-model-images38-e1603593034158.jpg",
+          "description": "The Retro Twin model has been designed for use in 1 to 4 foot swell where you can surf anything from a beach break through to points and reefs. Skill level targeted for this model of surfboard is ideal anywhere from a learner to advanced surfer. Speed take offs and maintaining speed is the key feature of this model, making it a real small wave machine. Design characteristics feature a super wide nose area and traditional deep swallow tail combined with a flatter rocker and a bonza double concave through the back half of the board. Can be ridden quite short in length compared to all other surfboard models.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "S – Bolt",
+          "image_url": "https://www.stuartsurf.com.au/wp-content/uploads/surf-shop-s-bolt-front-white-e1603592622334.jpg",
+          "description": "The S – Bolt surfboard model is a solid high-performance series design ideal for use in 2 to 8 foot swell where you can surf anything from a beach break through to points and reefs. Skill level is suitable for intermediate through to advanced surfer. It features extra nose width for a more “forward” paddle trim position to allow for an earlier wave entry when you need it. High performance rocker and deck roll combines beautifully with a single to double concave bottom curve (all borrowed from the HPX – 3.0 model). Comes as a squash or thumb tail design that will allow for full on rail surfing that you can blend with fin release and max tube control. Step Up and Big Wave model is the thumb tail option. High Performance model is the squash tail option.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
