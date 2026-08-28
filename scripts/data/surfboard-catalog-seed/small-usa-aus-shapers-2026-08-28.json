@@ -1,0 +1,245 @@
+{
+  "generated_for": "reswell daily small USA / Australia surfboard catalog growth",
+  "generated_on": "2026-08-28",
+  "product_category_slug": "surfboards",
+  "integrity": {
+    "first_party_only": true,
+    "surfboard_models_only": true,
+    "require_unique_image_description_logo": true,
+    "collapsed_size_color_construction_variants": true
+  },
+  "summary": {
+    "brand_count": 2,
+    "model_count": 32,
+    "brands": [
+      {
+        "slug": "bauer-surfboards",
+        "name": "Bauer Surfboards",
+        "models": 6
+      },
+      {
+        "slug": "carabine-surfboards",
+        "name": "Carabine Surfboards",
+        "models": 26
+      }
+    ]
+  },
+  "brands": [
+    {
+      "slug": "bauer-surfboards",
+      "name": "Bauer Surfboards",
+      "website_url": "https://www.bauersurfboards.com",
+      "location_label": "Port Angeles, Washington",
+      "founder_name": "Chris Bauer",
+      "lead_shaper_name": "Chris Bauer",
+      "short_description": "Hand-shaped Pacific Northwest surfboards from Chris Bauer in Port Angeles — stock models tested in cold-water beach breaks.",
+      "logo_url": "https://www.bauersurfboards.com/cdn/shop/files/bauerCovered.png",
+      "models": [
+        {
+          "name": "Bull Kelp",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/BullKelp_NWNoseRider9_8_7d674e43-ab75-4d87-b1a0-5d88b301117d.jpg",
+          "description": "Bottom contour features a deep nose concave which blends to a rolled bottom through the front 2/3 of the board. The last 1/3 of the board features vee panels with an edge. Rails are turned up 60/40 to the vee panel. Designed and shaped for the NW and our wonky waves. Will ride from the nose and the tail equally well, keeping you in the waves, no matter the weather. Easy cutbacks paired with plenty of hold through the turns, the Bull Kelp will make sections a lot of other soft tail longboards can't. (In Photo: 9'8\" Bull Kelp)",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/Glider10_1_e107a894-9169-436a-b31b-1b24867aa886.jpg",
+          "description": "Features a more parallel rail contour, and pointed nose and tail. The bottom rail is turned up to a hard edge in the tail to 18\" up. Rolled bottom entry through the front 2/3 of the board into double concave through the last 1/3 and into the fin area. Provides early entry into waves, allowing the rider to set up a line early. It's shaped to trim to the max but is plenty nimble on the cutback. Gauranteed to up your wave count once you master the glide.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP Driver Round Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/Short-Round_0bbab1ed-be7e-4cc9-bf98-80c16ac32f3e.jpg",
+          "description": "Deep single concave from entry to fin area. Has a healthy rail rocker line and flat stinger. High performance step-up driver. Designed and shaped for easy entry into STEEP waves. Provides tons of drives and speed, has a healthy rail rocker and a flat stringer line provides plenty of hold through turns and maneuvers. Available as a thruster or quad fin configuration, with optional channel bottom.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini-Malibu",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/MiniMal8_8_056553ab-3ed1-42ab-8ca9-4718eccac037.jpg",
+          "description": "Wide nose, square tail outline with plenty of single nose concave to a rolled bottom. Tail has a slight edge 16\" up for a responsive tail ride. The Mini Malibu is small in size, but rides huge. It has plenty of paddle volume and can easily noseride. Has a more agressive rail, with dialed nose and tail foils for a very responsive ride. Available in 2+1 or single fin options available.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/RockFish.jpg",
+          "description": "Bottom has a flat entry to a very slight single concave for lift. The last 1/3 of the board is a spiral vee panel off the tail tips. Foiled tail tips help to keep the board nimble. The Bauer Retro Fish is steeped in tradition. Shaped to ride and feel just like the 70's fish did. Paddles effortlessly with easy wave entry and draws skatey lines with an edge that can handle bigger carves. Available with twin fin configuration or double foil glass-on keel fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spicoli's Speed Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/SpicoliPro.jpg",
+          "description": "The Speed Egg has a flat entry to a single concave under the chest and front foot. Has a double concave through the tail and fin area. Foiled rails, nose and tail for a very responsive ride. Most versatile and multipurpose board in the Bauer Surfboards quiver. Easy takeoff and plenty of speed and hold to surf just about all conditions. Available in round, rounded pin, and diamond tail options, 2+1 or thruster fin setup.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    },
+    {
+      "slug": "carabine-surfboards",
+      "name": "Carabine Surfboards",
+      "website_url": "https://carabine.surf",
+      "location_label": "Bellambi, New South Wales, Australia",
+      "founder_name": null,
+      "lead_shaper_name": null,
+      "short_description": "Wollongong-area custom surfboards from Carabine — shortboards, fishes, mid-lengths, and longboards shaped and glassed on site.",
+      "logo_url": "https://carabine.surf/wp-content/uploads/2019/10/Carabine-Surf-Text-Blue.png",
+      "models": [
+        {
+          "name": "EVIL MONKEY",
+          "image_url": "https://carabine.surf/wp-content/uploads/2021/06/EM-Front-1.jpg",
+          "description": "This is the perfect board for young surfers who want to make the jump from a larger learn to surf board to a smaller, more responsive fiberglass board. It has been designed with a flatter short board rocker, single concave, and a medium friendly rail that enables young surfers to progress and adapt quickly to the sensitivity of a regular short board. The outline through the nose has been widened for easy of paddling and the tail narrowed to increase maneuverability. Other possibilities Length Width Thickness Volume 4’7 16 1/2 2 14.1 4’8 16 3/4 2 16.6 4’9 16 3/4 2 16.9 4’10 17 2 17.4 4’11 17 1/4 2 18 5’0 17 1/2 2 18.6 5’1 17 1/2 2 18.9 5’2 17 3/4 2 19.6 5’3 17 7/8 2 20 5’4 17 7/8 2 1/8 21.6…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "V3",
+          "image_url": "https://carabine.surf/wp-content/uploads/2021/07/V3-Front.jpg",
+          "description": "The V3 is a blend of two of our most popular performance boards. This has created a perfect combination of speed, power and flow. Lowering the entry and exit rockers, giving it a single to double while widening the nose outline has created an extremely fast dynamic surfboard. Everyone that tried our prototype ordered one. Performance Plus. Other Custom possibilities Length Width Thickness Volume 5’10 18 3/4 2 1/4 25.7 5’11 18 3/4 2 3/8 27.4 5’11 18 7/8 2 3/8 27.65 6’0 19 2 3/8 28.16 6’0 19 3/8 2 7/16 29.89 6’1 19 1/4 2 1/2 30.29 6’2 19 1/4 2 1/2 30.86 6’4 19 1/2 2 1/2 32.63 6’4 20 2 9/16 34.1 6’6 20 1/2 2 5/8 36.76 Design Your Own New Board",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BIG O",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/big-o.png",
+          "description": "The Big O has a deep single concave, great speed and agility. It has high rockers in both nose and tail, allowing the board to perform big manoeuvrer’s in critical sections. The biggest difference between this and the rest of our boards is minimisation of foam in front of your front foot. This allows the board to turn with ease. This craft is designed for the advanced surfer. Makes an excellent step up board. Length Width Thickness Volume 5’10 18 3/4 2 1/4 26.67 5’11 18 7/8 2 5/16 27.9 6’0 18 7/8 2 3/8 29.03 6’0 19 2 3/8 29.21 6’1 19 2 3/8 29.64 6’2 18 3/4 2 3/8 30.07 6’2 19 2 7/16 30.82 6’2 19 1/4 2 7/16 31.2 6’4 19 1/2 2 1/2 33.28",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BOMB",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/Bomb-2-scaled.jpg",
+          "description": "It’s called the bomb for a reason. It’s the perfect performance surfboard. Slightly modified single to double concave with generous rocker, full rails and a relatively flat deck roll. We have created an excellent combination for performance surfing. This board allows you to push through turns and release all that power out the tail, maintaining with smooth rail to rail transitions. It’s the bomb Length Width Thickness Volume 5’8 18 1/2 2 1/4 24.94 5’9 18 5/8 2 1/4 25.53 5’10 18 3/4 2 1/4 26.12 5’11 18 3/4 2 3/8 27.84 5’11 18 7/8 2 3/8 28.02 6’0 18 7/8 2 3/8 28.48 6’0 19 2 7/16 29.32 6’1 19 1/4 2 7/16 30.15 6’2 19 1/4 2 1/2 31.31 Custom Board Builder",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HORNET",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/hornet.png",
+          "description": "Hornet is the all-rounder in the midrange boards, the forgiving rail shape and rounded square tail greatly increase manoeuvrability regardless of the surfers skill level. Normally a conventional thruster setup this board is extremely versatile in a variety of wave conditions. Great beginners board. Length Width Thickness Volume 7’2 21 1/2 2 3/4 49.4 7’4 21 1/2 2 3/4 50.6 7’6 22 2 3/4 54.2 7’8 22 2 7/8 56.6 7’10 22 1/2 2 7/8 59.3 Custom Board Builder",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "IFISH",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/i-fish.png",
+          "description": "The iFish is designed for those how like the with a wider nose but not too wide It still has great catching wave ability but a little less foam so you can still throw it around, it has a pulled in fish tail to increase agility, this board is lively and maintains a high level of performance. Single to double concave for speed and with straighter outline the ifish is friendly to all level of surfer, great for the smaller fatter days. This board can be ridden 4 – 6 inches shorter than your normal board and also work As your everyday board, 6 Foot + Length Width Thickness Volume 6’0 20 2 1/2 33.46 6’0 20 1/4 2 1/2 35.43 6’2 20 1/2 2 1/2 35.8 6’2 20 3/4 2 5/8 37.52 6’4 20 3/4 2 5/8 39 6’6 21 2…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "KONG",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/kong-1.png",
+          "description": "The Kong model is a high-volume not so short board for big blokes. Normally at 7’6, it has a full nose, a pined tail for easy rail to rail transition and generous concaves for speed. The wide point is at the half way point and extra volume under your chest making the board easy to paddle. Once you are up and riding that narrow tail really comes into play. The board comes with either a thruster or a 2+1 fin set-up, but can also be ridden as a single fin if preferred. Length Width Thickness Volume 7’2 21 1/2 2 3/4 47.1 7’4 21 1/2 2 3/4 48.4 7’6 22 2 3/4 50.7 7’8 22 2 7/8 54.1 7’10 22 1/2 2 7/8 56.6 Custom Board Builder",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MINI Frother",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/mini-frother.png",
+          "description": "It has been designed with a very flat rocker, single double concave, and a full friendly rail that enables young surfers to progress and adapt quickly to the sensitivity of a fiberglass board. The outline through the nose has been widened for easy of paddling and the tail is also very broad. This design is to increase stability and help little grommies adapt to the fiberglass board. Length Width Thickness Volume 4’7 16 1/2 1 3/4 14.1 4’8 16 3/4 2 16.6 4’9 16 3/4 2 16.9 4’10 17 2 17.4 4’11 17 1/4 2 18 5’0 17 1/2 2 18.6 5’1 17 1/2 2 18.9 5’2 17 3/4 2 19.6 5’3 17 7/8 2 20 5’4 17 7/8 2 1/8 21.6",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MLOW",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/m-low.png",
+          "description": "This board has plenty of rocker with a pulled in nose with forward volume and a tight tail making you feel more connected to the wave. Hollow, bigger waves excellent when it gets over 6 foot. Length Width Thickness Volume 6’6 19 2 3/8 32.05 6’8 19 1/4 2 1/2 35 6’10 19 1/2 2 1/2 36.39 7’0 19 1/2 2 5/8 39.07 7’2 19 1/2 2 5/8 40.04 7’4 20 2 3/4 43.93 Custom Board Builder",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "MODEL T",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/Model-T-2-scaled.jpg",
+          "description": "Model T is our best all-rounder. It has a bottom curve designed for speed and a special fin set up to loosen it up. This is a high performance board that is very forgiving. Single to double concave with generous tail rocker. The nose is a little flatter than our other performance boards. The MODEL T is designed to surf free and easy. Length Width Thickness Volume 5’8 18 3/4 2 1/4 25.23 5’9 18 7/8 2 1/4 25.78 5’10 18 7/8 2 1/4 26.15 5’11 18 7/8 2 3/8 27.99 5’11 19 2 3/8 28.18 6’0 19 2 3/8 28.59 6’0 19 1/4 2 3/8 28.96 6’1 19 1/4 2 7/16 29.76 6’2 19 1/2 2 1/2 31.29 6’2 19 3/4 2 1/2 32.12 6’4 20 2 5/8 35.07 6’6 21 2 3/4 35.58 Custom Board Builder",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Modfish",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/Mod-fish-set.jpg",
+          "description": "Modfish is the ultimate small wave high-performance board. It makes small surf extremely fun. It’s fast, loose and really easy to turn. It has a wider outline with more nose area for floatation and paddling power and a winged swallow tail for bite and grunt. Best ridden as a twin fin with a small rear stabilizer. Awesome fun in small surf. Length Width Thickness Volume 5’8 19 3/4 2 1/2 29.88 5’9 19 3/4 2 1/2 30.35 5’10 19 3/4 2 1/2 30.84 5’11 20 2 9/16 32.36 6’0 20 2 5/8 33.57 6’0 20 1/4 2 5/8 34.06 6’1 20 1/4 2 5/8 34.74 6’2 20 1/2 2 5/8 35.7 6’2 20 3/4 2 3/4 37.67 6’4 20 3/4 2 3/4 38.79 6’6 21 2 3/4 40.43 Custom Board Builder",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mr. ED",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/mr-ed.png",
+          "description": "Low, relaxed rocker makes this board paddle onto waves really well, accelerate from the take off with minimal effort, the narrowness of the tail and generous tail rocker, allow for free flowing turns on the face of the wave. There’s plenty of volume in the nose and tail, and out towards the rails, this provides added stability and makes this board simple and easy to ride. Length Width Thickness Volume 8’0 21 1/2 2 7/8 59.3 8’2 21 1/2 2 7/8 60.4 8’4 22 2 7/8 63.3 8’6 22 3 67.3 Custom Board Builder",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MUDRAT",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/Mud-Rat-set.jpg",
+          "description": "The mud rat is the modern fish. It has a high amount of volume under the chest, which enables it to paddle like a dream. The outline resembles an old single fin with its wide point forward of centre, then reduces back to tight rounded pintail. The rocker is flat throughout, with a very slight nose kick. This helps when taking off late or in steeper sections of the wave. This board is built for speed, enabling you to make sections you don’t normally make. The concave is a slight single into a vee double concave out the tail this gives the board great speed and control from rail to rail. Length Width Thickness Volume 6’0 20 2 1/2 33.13 6’0 20 1/4 2 5/8 35.04 6’1 20 1/4 2 5/8 35.58 6’2 20 1/2…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "NICK OFF",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/nick-off.png",
+          "description": "This board is light and fast. Can have a combination of fin configurations thruster, quad or 2+1 fin set up. The quad set up loosens things up and takes speed to the next level. This board is superfast, and turns on a dime. The Nose still allows you to take a trip to the front for a quick nose ride, should you feel the urge. This is one for the advanced surfer looking for performance, and speed. It will handle almost any size you are willing to go out in. Length Width Thickness Volume 9’0 22 1/2 2 3/4 63.7 9’1 22 3/4 2 3/4 65.6 9’2 22 3/4 2 7/8 69.2 9’3 22 3/4 2 7/8 69.8 9’4 23 2 7/8 71.2 9’5 23 2 7/8 71.8 9’6 23 2 7/8 72.5 9’7 23 1/8 3 76.7 9’8 23 1/8 3 77.4 9’9 23 1/2 3 78 9’10 23 1/2 3…",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "NO 12",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/No-12-2-scaled.jpg",
+          "description": "No 12 is perfect for slower weaker waves. It has a medium rocker throughout with some extra paddling power due to increased volume in the front and bottom of the board. A slightly narrower outline in the tail allows for increased control and release while still giving you plenty of speed. This combined with a deep single concave gives you plenty of lift and natural speed. Length Width Thickness Volume 5’8 18 1/2 2 1/4 24.7 5’9 18 5/8 2 1/4 25.26 5’10 18 3/4 2 1/4 25.81 5’11 18 3/4 2 3/8 27.6 5’11 18 7/8 2 3/8 27.78 6’0 18 7/8 2 3/8 28.19 6’0 19 2 7/16 29.08 6’1 19 1/4 2 7/16 29.89 6’2 19 1/4 2 1/2 31.03 Custom Board Builder",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PIN HEAD",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/pin-head.png",
+          "description": "The pinched hulled nose allows effortless paddling. 50/50 rail and a gentle bottom curve from nose to tail makes for smooth free rail to rail transitions, and critically does not drive you unintentionally ahead of the wave’s curl. Pin Head is designed to stay in syc with the waves natural speed. A brilliant nose rider with smooth and effortless transitions Length Width Thickness Volume 9’0 22 1/2 2 3/4 62 9’1 22 3/4 2 3/4 63.9 9’2 22 3/4 2 7/8 67.4 9’3 22 3/4 2 7/8 68 9’4 23 2 7/8 69.4 9’5 23 2 7/8 70 9’6 23 2 7/8 70.6 9’7 23 1/8 3 74.7 9’8 23 1/8 3 75.3 9’9 23 1/2 3 76 9’10 23 1/2 3 77.2",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Quadzilla",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/Quadzilla.jpg",
+          "description": "A great small wave board with unique design aspects, this separates it from other small wave performance fish designs. A low entry and exit rocker, makes it a fast board for riding clean smaller waves, it has a low bevelled rail so it feels very lively through turns, scooped in the nose and tail to hug your foot during manoeuvres. Great for the small summer days. Length Width Thickness Volume 5’8 19 3/4 2 7/16 31.72 5’9 19 3/4 2 1/2 32.68 5’10 19 3/4 2 1/2 33.23 5’11 20 2 9/16 34.59 6’0 20 2 5/8 36.22 Custom Board Builder",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SHAKEY",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/shakey.png",
+          "description": "Wide point in the middle, long straight rail lines and 50/50 rail. Subtle concave in the nose, gentle soft roll in the middle to a rolled Vee out the tail. The rocker is quite flat in the nose and generous kick in the tail. This rocker gives plenty of control on the nose ride and easy to turn when you need it. Shakey encourages you to surf the entire board, Classic lines, hard arcs and long nose-rides. Shakey has it all. Length Width Thickness Volume 9’0 22 1/2 2 3/4 65.6 9’1 22 3/4 2 3/4 67.6 9’2 22 3/4 2 7/8 71.2 9’3 22 3/4 2 7/8 71.8 9’4 23 2 7/8 73.3 9’5 23 2 7/8 74 9’6 23 2 7/8 74.6 9’7 23 1/8 3 78.9 9’8 23 1/8 3 79.6 9’9 23 1/2 3 81.6 9’10 23 1/2 3 82.3",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SPACE PIG",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/Space-Pig-THUMB.jpg",
+          "description": "Flattened nose rocker, moderate kick in the tail, rolled under the nose and in the belly with more of a vee out the tail. Easy entry, a snappy bottom turn, fast nimble walking. Great for pivot trim noseride approach for smaller waves. Length Width Thickness Volume 9’0 22 1/2 2 3/4 61 9’1 22 3/4 2 3/4 62.9 9’2 22 3/4 2 7/8 65.7 9’3 22 3/4 2 7/8 66.9 9’4 23 2 7/8 68.2 9’5 23 2 7/8 68.8 9’6 23 2 7/8 69.5 9’7 23 1/8 3 72.8 9’8 23 1/8 3 74.1 9’9 23 1/2 3 74.8 9’10 23 1/2 3 75.4",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "T2",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/T2-3-1-scaled.jpg",
+          "description": "This is the model T with a few high performance upgrades. We have increased nose rocker and narrowed it down. This gives more agile front half of the board, allowing it to fly through lip turns. Deep single concave and slightly wider round tail to increase drive. T2 is designed to surf tight in the pocket, fly through and drive out of turns. Best in performance waves. Length Width Thickness Volume 5’10 18 3/4 2 1/4 25.8 5’11 18 7/8 2 5/16 27.43 6’0 18 7/8 2 3/8 28.51 6’0 19 2 3/8 28.74 6’1 19 2 3/8 29.14 6’2 18 3/4 2 3/8 29.17 6’2 19 2 7/16 30.29 6’2 19 1/4 2 7/16 30.69 6’4 19 1/2 2 1/2 32.75 Custom Board Builder",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TAKA",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/taka.png",
+          "description": "An excellent summer fun board! Surf the board from the nose or from the tail. This board will absolutely fly when ridden on the nose. With a true “pin” tail and a 2+1 fin setup, this board will perform the tightest of turns when pushed to its limits. Probably one of the funest small boards out there, 60/40 rail for controlled manoeuvrability. Full round nose allows easy wave catching and the pin tail gives you increased turning ability. Coming in lengths from 5’10 to 6’10. An excellent alternative for someone looking for a fun summer board. Length Width Thickness Volume 6’0 20 2 5/8 35.71 6’0 20 1/4 2 5/8 36.15 6’1 20 1/4 2 5/8 36.65 6’2 20 1/2 2 5/8 37.69 6’2 20 3/4 2 3/4 39.75 6’4 20 3/4…",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "TFL",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/TFL-2-scaled.jpg",
+          "description": "The bottom has a deep single concave and an aggressive flip in the tail. The full outline provides enough volume to ride the TFL about the same length as your height. This short board turns very quick and performs best in the pocket. Length Width Thickness Volume 5’10 18 3/4 2 1/4 25.69 5’11 18 3/4 2 3/8 27.45 5’11 18 7/8 2 3/8 27.6 6’0 19 2 3/8 28.57 6’0 19 1/4 2 3/8 28.58 6’1 19 1/4 2 7/16 29.73 6’2 19 1/4 2 1/2 31.3",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Bull",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/kps.png",
+          "description": "The The Bull is a short board for big guys. A little wider through its rail line give more float and paddle. Deep single to double concave give great speed and agility and generous nose rocker in allows this board to perform on the open face. The extra width gives extra momentum through the fat sections. This board works best on its rail. This craft is designed for the competent surfer. Excellent power surfing board. Length Width Thickness Volume 6’2 19 1/2 2 7/16 31.5 6’2 19 3/4 2 1/2 32.58 6’3 19 3/4 2 1/2 33.05 6’4 19 3/4 2 1/2 33.95 6’4 20 2 5/8 35.53 6’5 20 2 5/8 35.97 6’6 19 3/4 2 1/2 34.45 6’6 20 2 3/4 38.13 Custom Board Builder",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "THE SUB",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/the-sub.png",
+          "description": "Broad in the nose so it’s super easy to nose ride, this width continues through the centre, and with the narrowing pin tail, it’s extremely manoeuvrable. The Sub has 60/40 rails, Concave in the nose an almost flat centre, with a slight vee out the tail. Mostly ridden as a single fin, this board is the perfect if you only want to own one board. Performance nose rider. Length Width Thickness Volume 9’0 22 1/2 2 3/4 67.5 9’1 22 3/4 2 3/4 69.5 9’2 22 3/4 2 7/8 73.2 9’3 22 3/4 2 7/8 73.9 9’4 23 2 7/8 75.4 9’5 23 2 7/8 76.1 9’6 23 2 7/8 76.8 9’7 23 1/8 3 81.1 9’8 23 1/8 3 81.8 9’9 23 1/2 3 84 9’10 23 1/2 3 84.6",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "WHIPPA",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/Whippa-set-copy.jpg",
+          "description": "If you love rounded pins then you will love the Whippa. This is one of our shorter and wider models. It has lower entry rocker, wider outline and full round tail. The flat single concave on entry and under your chest offers lift and speed through to a double concave between the fins for drive and off the top release. This board is outstanding from 1-3 foot. Try this model and you will be hooked. Ride this board 3-4 inches shorter than your normal short board. Length Width Thickness Volume 5’8 19 3/4 2 1/4 27.6 5’9 19 3/4 2 1/4 28.03 5’10 19 3/4 2 3/8 29.94 5’11 20 2 3/8 30.79 6’0 20 2 7/16 31.64 6’0 20 1/4 2 7/16 32.39 6’1 20 1/4 2 7/16 33.28 6’2 20 1/2 2 1/2 34.98 Custom Board Builder",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "XLR8",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/xlr8.png",
+          "description": "Particularly good in the indo reef breaks. Best ridden at 3-6 inches longer than your short board, it should be about the same width with added thickness, making it easier to paddle into larger waves. This board has a single concave through to the tail, and some extra nose rocker making it perfect for the steep drop. Best in bigger waves. Length Width Thickness Volume 6’6 19 2 3/8 30.84 6’7 19 1/4 2 1/2 33.58 6’8 19 1/4 2 1/2 34.15 6’10 19 1/2 2 1/2 35.62 7’0 19 1/2 2 5/8 38.25 7’2 19 3/4 2 5/8 39.77 7’4 20 2 3/4 43.12",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
