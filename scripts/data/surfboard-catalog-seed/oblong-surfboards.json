@@ -1,0 +1,76 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "oblong-surfboards",
+      "name": "Oblong Surfboards",
+      "website_url": "https://oblongsurfboards.com/",
+      "location_label": "Newquay, Cornwall, United Kingdom",
+      "founder_name": "Steve Hendon",
+      "lead_shaper_name": "Steve Hendon",
+      "short_description": "Handshaped custom surfboards by Steve Hendon in Cornwall, covering classic and performance longboards, midlengths and retro boards.",
+      "models": [
+        {
+          "name": "Middy",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20220701_150454.jpg?v=1710154890",
+          "description": "The mid length, the new improved mini mal and all characters of a longboard. A simple design that is very easy to use and will accommodate a wide range of conditions. The novice can progress rapidly and the intermediate-plus rider can breathe some new style into their repertoire. This board is a very good option as a first board for the surfer wanting to make leaps forward in their surfing and then graduate to either smaller or larger equipment. Sizes start at 7'8 and go up to 8'6. Recommended as a central fin box with smaller side fins (2 plus 1).",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Charger",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20220701_120915.jpg?v=1656703374",
+          "description": "The extreme end of modern longboarding. If you want a longboard with speed and manoeuvrability that lends itself to high performance surfing then this is it. The Charger has two different widths, wider for 3' through 6'+ waves and narrow for waves of a rather more serious tone. A curvaceous outline, aggressive foil and light-weight construction make this a very fast and responsive board. Sizes start at 9'1 and go up to 9'4. Choose from thruster or 2 plus 1 fin set-ups.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mustang",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20211108_153101.jpg?v=1636449911",
+          "description": "Ultimate all rounder. All conditions from 1' through to as big as you can push yourself. The Mustang seems to know no limits as the ultimate California style performance noserider. Huge flowing turns complemented by unreal noseriding performance, means a board that works as well from the nose as the tail. The Mustang handles smaller surf because it has less rocker than the Charger. Ridden as a single fin or 2 plus 1. Sizes start at 9' and go up to 9'6.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "RATTU",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20210815_143603.jpg?v=1650019111",
+          "description": "Adjusted from the Caddy. Aim to make it easier for the lady surfer who wants a single fin log, slightly narrower, thinner and less volume but no less fun and nose time. Rattu is Indonesian for Queen. Adapted from original Sixties designed Californian nose rider and refined for today's performance standards to make it the tool for tip time in waves under 4'. Easy to ride through a broader range of ability, with low rocker, soft rails and rolled V through the hull. Sizes start at 9'0 and go up to 9'4. Single fin box.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Caddy",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20220702_111845.jpg?v=1657648000",
+          "description": "Adapted from original Sixties design concepts and refined for today's performance standards to make it the tool for tip time in waves under 3'. This board is not as quirky as the Model 66 — it's easier to ride and can be enjoyed through a broader range of ability. It's a treat in smaller waves due to its low rocker, soft rails and the rolled V through the hull. Ridden as a single fin. Sizes start at 9'4 and go up to 9'8.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Model 66",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/files/20231222-155034.jpg?v=1704387114",
+          "description": "Classic 9'4 x 18 1/2 x 23 x 16 x 3, or 9'6 x 18 1/2 x 23 1/8 x 17 x 3 1/8. Old school glide: rolled bottom shape, 50/50 rails, low rocker and plenty of tail lift. This retro is recommended for the rider out to broaden their existing longboarding experience. All about trim and stall surfing. Sizes go from 9' to 9'6. Single fin only.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wave Walker",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20210717_133103.jpg?v=1626531815",
+          "description": "Based around the Caddy but with a reverse rocker, which enables more tail lift and kick tail to aid nose riding. Low rocker traditional log and 50/50 rails. Adapted from original Sixties design concepts and refined for today's standards to make it the tool for tip time in waves under 3'. Ridden as a single fin. Sizes start at 9'6 and go up to 10'.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "M.P",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20200719_191451.jpg?v=1595183299",
+          "description": "The iconic Michael Peterson. This board is based round M.P's 70s single fin. Fully adjustable; single fin. M.P.2 has a slightly more pulled in nose and more progressive 2+1 or thruster fin set up. A great step down from a Telur.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Telur",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20191224-114310.jpg?v=1592129977",
+          "description": "Telur is Indonesian for egg. Sometimes known as the Retro Egg, a great replacement for a minimal and a good starter board. The ultimate fun shape for longboarders who want to try a small board or shortboarders that want a bigger board. The design has the same nose, tail, width and thickness as a full Malibu, but is only six or seven feet long. Sizes between 6'2 and 7'4. Single or 2 plus 1 fin set-ups.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "R.P.T",
+          "image_url": "https://cdn.shopify.com/s/files/1/1951/8159/products/20211119_155201.jpg?v=1637347555",
+          "description": "The round pin twin. Seventies inspired retro. Twin fin, low rocker, 4 channel speed machine, plenty of glide and drive in the turns. Inspired by Morning of the Earth surfboards. Custom ordered from 6'0 up to 7'0.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
