@@ -799,7 +799,7 @@ function SellPageContentInner({
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
   /** Guests exit to browse; signed-in sellers to their listings hub (`/listings` → dashboard). */
-  const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
+  const sellListingsHubHref = "/sell"
   const listingIsDraft = editListingStatus === "draft"
   /**
    * Published (or non-draft) listing edit: stepper may reflect saved data without forcing

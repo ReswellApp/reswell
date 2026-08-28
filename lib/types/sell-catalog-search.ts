@@ -36,7 +36,7 @@ export function sellCatalogSearchCategorySellPath(
     case "surfboards":
       return SURFBOARD_SELL_CATALOG_HANDOFF_HREF
     case "fins":
-      return "/sell/fins?new=1"
+      return "/sell/fins?new=1&from=catalog"
     case "wetsuits":
       return "/sell/wetsuits?new=1"
     case "apparel":

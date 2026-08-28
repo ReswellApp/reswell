@@ -103,6 +103,8 @@ import {
 import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
 import {
   takeSellCatalogHandoff,
+  peekSellCatalogHandoff,
+  markSellCatalogSearchAgain,
   sellCatalogHandoffToFinSelection,
   sellCatalogHandoffToSelectionCard,
 } from "@/lib/sell-flow/catalog-handoff"
@@ -263,11 +265,9 @@ export default function SellFinsFlow({
   const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [draftHydrated, setDraftHydrated] = useState(Boolean(editId))
-  const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
   const [publishValidationBanner, setPublishValidationBanner] = useState<string | null>(null)
   const [startNewListingBusy, setStartNewListingBusy] = useState(false)
 
-  const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
   const finSellReturnPath = useCallback(
     () =>
       typeof window === "undefined"
@@ -376,6 +376,9 @@ export default function SellFinsFlow({
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
+      const fromCatalog =
+        new URLSearchParams(window.location.search).get("from") === "catalog"
+      if (fromCatalog) markSellCatalogSearchAgain()
       if (!isPendingPublish("fins")) {
         try {
           sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
@@ -654,18 +657,6 @@ export default function SellFinsFlow({
   const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
 
   useEffect(() => {
-    void supabaseRef.current.auth.getUser().then(({ data: { user } }) => {
-      setSignedInUserId(user?.id ?? null)
-    })
-    const {
-      data: { subscription },
-    } = supabaseRef.current.auth.onAuthStateChange((_event, session) => {
-      setSignedInUserId(session?.user?.id ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
     if (!draftHydrated || editId) return
     const pending = draftPhotosPendingRef.current
     if (!pending?.length) return
@@ -721,10 +712,7 @@ export default function SellFinsFlow({
         ...prev,
         brand: selection.brandName,
         brandId: selection.brandId,
-        title: selection.suggestedTitle || prev.title,
-      }
-      if (selection.suggestedDescription) {
-        next.description = selection.suggestedDescription
+        title: prev.title.trim() ? prev.title : selection.suggestedTitle,
       }
       if (selection.kind === "model" || selection.kind === "variant") {
         next.model = selection.modelName
@@ -743,19 +731,21 @@ export default function SellFinsFlow({
     enterFormStep()
   }, [enterFormStep])
 
-  // One-shot prefill from the /sell cross-category catalog search wall.
+  // After draft hydration so `?new=1` URL strip/remount cannot consume the
+  // session handoff before the form is ready — same order as surfboards.
   const catalogHandoffTakenRef = useRef(false)
   const [catalogSelectionCard, setCatalogSelectionCard] =
     useState<SellCatalogSelectionCardData | null>(null)
   useEffect(() => {
-    if (catalogHandoffTakenRef.current || editId) return
+    if (!draftHydrated || catalogHandoffTakenRef.current || editId) return
     catalogHandoffTakenRef.current = true
+    if (peekSellCatalogHandoff("fins")) markSellCatalogSearchAgain()
     const handoff = takeSellCatalogHandoff("fins")
     if (!handoff) return
     setCatalogSelectionCard(sellCatalogHandoffToSelectionCard(handoff))
     const selection = sellCatalogHandoffToFinSelection(handoff)
     if (selection) applyCatalogSelection(selection)
-  }, [editId, applyCatalogSelection])
+  }, [editId, draftHydrated, applyCatalogSelection])
 
   const sellSectionCompletion = useMemo(
     () =>
@@ -1156,7 +1146,7 @@ export default function SellFinsFlow({
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                    <Link href={sellListingsHubHref}>Listings</Link>
+                    <Link href="/sell">Sell</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
@@ -1173,14 +1163,14 @@ export default function SellFinsFlow({
                 <div className="flex items-center gap-3">
                   {finDraftControls}
                   <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
-                    <Link href={sellListingsHubHref} onClick={exitSellFlow}>
+                    <Link href="/sell" onClick={exitSellFlow}>
                       <X className="h-4 w-4" aria-hidden />
                     </Link>
                   </Button>
                 </div>
               ) : (
                 <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
-                  <Link href={sellListingsHubHref} onClick={exitSellFlow}>
+                  <Link href="/sell" onClick={exitSellFlow}>
                     <X className="h-4 w-4" aria-hidden />
                   </Link>
                 </Button>
@@ -1226,7 +1216,7 @@ export default function SellFinsFlow({
                 complete={sellSectionCompletion["sell-fins-section-photos-title"] === true}
               >
                 <div className="space-y-8">
-                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                  {catalogSelectionCard ? (
                     <SellCatalogSelectionCard
                       selection={catalogSelectionCard}
                       onRemove={() => {

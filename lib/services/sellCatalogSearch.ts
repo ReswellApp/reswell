@@ -31,7 +31,23 @@ import {
   type SellCatalogSearchVariantRow,
 } from "@/lib/types/sell-catalog-search"
 
-const MAX_RANKED_RESULTS = 12
+const MAX_RANKED_RESULTS = 20
+
+/** Catalog rows that are really used-listing titles, not sellable models. */
+function catalogModelLooksLikeListingTitle(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  if (!n) return false
+  if (/\bused\b/.test(n)) return true
+  if (/\bteam board\b/.test(n)) return true
+  if (/^\d+\s*\/\s*\d+/.test(n)) return true
+  return false
+}
+
+function rowLooksLikeListingTitle(row: SellCatalogSearchResultRow): boolean {
+  if (row.kind === "model") return catalogModelLooksLikeListingTitle(row.name)
+  if (row.kind === "variant") return catalogModelLooksLikeListingTitle(row.modelName)
+  return false
+}
 /** Single-letter typeahead: skip ES + fin variants; prefix `ilike` is enough. */
 const SHORT_PREFIX_MAX_LEN = 1
 /** Pull every model for an ES brand hit only once the query looks like a real name. */
@@ -173,14 +189,17 @@ function rankSellCatalogResults(
       ? out.filter((row) => row.kind === "brand" || row.category === preferred)
       : out
 
-  if (preferred) {
-    narrowed.sort((a, b) => {
-      return (
-        sellCatalogSearchCategoryRank(a.category, intent) -
-        sellCatalogSearchCategoryRank(b.category, intent)
-      )
-    })
-  }
+  narrowed.sort((a, b) => {
+    const brandDelta = Number(b.kind === "brand") - Number(a.kind === "brand")
+    if (brandDelta !== 0) return brandDelta
+    const listingDelta = Number(rowLooksLikeListingTitle(a)) - Number(rowLooksLikeListingTitle(b))
+    if (listingDelta !== 0) return listingDelta
+    if (!preferred) return 0
+    return (
+      sellCatalogSearchCategoryRank(a.category, intent) -
+      sellCatalogSearchCategoryRank(b.category, intent)
+    )
+  })
 
   return narrowed.slice(0, limit)
 }

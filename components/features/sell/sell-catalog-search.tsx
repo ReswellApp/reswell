@@ -16,7 +16,6 @@ import {
   type ExternalSuggestRenderContext,
 } from "@/components/search-input-with-suggest"
 import {
-  SiteSearchFormSubmitButton,
   siteSearchInputClassName,
 } from "@/components/site-search-bar"
 import {
@@ -25,7 +24,6 @@ import {
   sellCatalogSearchRowBrandName,
   sellCatalogSearchRowCategory,
   sellCatalogSearchRowModelName,
-  type SellCatalogSearchCategory,
   type SellCatalogSearchResult,
   type SellCatalogSearchResultRow,
 } from "@/lib/types/sell-catalog-search"
@@ -161,37 +159,23 @@ function productMetaLine(row: SellCatalogSearchResultRow): string | null {
     if (parts.length > 0) return parts.join(" · ")
     return row.variantLabel.trim() || row.brandName
   }
+  const category = sellCatalogSearchCategoryLabel(row.category)
   if (row.kind === "model") {
-    return `${row.brandName} · ${sellCatalogSearchCategoryLabel(row.category)}`
+    const brand = row.brandName.trim()
+    if (!brand) return category
+    if (brand.toLowerCase().includes(category.toLowerCase())) return brand
+    return `${brand} · ${category}`
   }
   const desc = row.shortDescription?.trim()
-  const category = sellCatalogSearchCategoryLabel(row.category)
   if (!desc) return category
+  if (desc.toLowerCase().includes(category.toLowerCase())) {
+    return desc.length > 48 ? `${desc.slice(0, 45).trimEnd()}…` : desc
+  }
   return `${desc.length > 48 ? `${desc.slice(0, 45).trimEnd()}…` : desc} · ${category}`
 }
 
 function rowKey(row: SellCatalogSearchResultRow): string {
   return `${row.kind}-${row.id}`
-}
-
-function partitionDropdownRows(rows: SellCatalogSearchResultRow[]): {
-  suggestions: SellCatalogSearchResultRow[]
-  products: SellCatalogSearchResultRow[]
-} {
-  const suggestions: SellCatalogSearchResultRow[] = []
-  const products: SellCatalogSearchResultRow[] = []
-  for (const row of rows) {
-    if (row.kind === "variant") {
-      products.push(row)
-      continue
-    }
-    if (row.kind === "model" && thumbForRow(row)) {
-      products.push(row)
-      continue
-    }
-    suggestions.push(row)
-  }
-  return { suggestions, products }
 }
 
 function escapeRegExp(value: string): string {
@@ -232,39 +216,6 @@ function highlightQueryParts(text: string, query: string): React.ReactNode {
     }
     return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
   })
-}
-
-function SuggestionRow({
-  row,
-  query,
-  onSelect,
-}: {
-  row: SellCatalogSearchResultRow
-  query: string
-  onSelect: (row: SellCatalogSearchResultRow) => void
-}) {
-  const brand = sellCatalogSearchRowBrandName(row)
-  const model = sellCatalogSearchRowModelName(row)
-
-  return (
-    <li role="option">
-      <button
-        type="button"
-        className="mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none flex-wrap items-baseline gap-x-1.5 gap-y-0.5 rounded-lg px-3 py-2.5 text-left text-sm outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80 min-h-touch"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => onSelect(row)}
-      >
-        <span className="font-semibold text-foreground">
-          {highlightQueryParts(brand, query)}
-        </span>
-        {model ? (
-          <span className="text-foreground/85">
-            {highlightQueryParts(model, query)}
-          </span>
-        ) : null}
-      </button>
-    </li>
-  )
 }
 
 function CatalogThumb({
@@ -323,7 +274,7 @@ function ProductRow({
     <li role="option" className="min-w-0">
       <button
         type="button"
-        className="flex h-full w-full cursor-pointer select-none items-center gap-3 rounded-xl border border-border/70 bg-background p-2.5 text-left outline-none transition-colors hover:border-cerulean/40 hover:bg-muted/40 focus-visible:border-cerulean/40 focus-visible:bg-muted/40 sm:p-3"
+        className="flex w-full cursor-pointer select-none items-center gap-3 px-4 py-2 text-left outline-none transition-colors hover:bg-muted/70 focus-visible:bg-muted/70 min-h-touch"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => onSelect(row)}
       >
@@ -332,15 +283,15 @@ function ProductRow({
           alt={title}
           fallbackLetter={title}
           isLogo={isLogo}
-          className="h-16 w-16 rounded-lg sm:h-20 sm:w-20 sm:rounded-xl"
-          imageSizes="(max-width:640px) 64px, 80px"
+          className="h-10 w-10 rounded-sm sm:h-11 sm:w-11"
+          imageSizes="44px"
         />
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:text-base">
+          <p className="truncate text-sm leading-snug text-foreground" title={title}>
             {highlightQueryParts(title, query)}
           </p>
           {meta ? (
-            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
               {highlightQueryParts(meta, query)}
             </p>
           ) : null}
@@ -350,9 +301,8 @@ function ProductRow({
   )
 }
 
-/** Block-card grid for catalog product results — 2-up on desktop so images stay large. */
-const productGridClassName =
-  "grid min-h-0 max-h-[min(50dvh,340px)] grid-cols-1 gap-2 overflow-y-auto overscroll-contain px-3 pb-3 pt-1 sm:max-h-[min(56dvh,480px)] sm:grid-cols-2 sm:gap-2.5 sm:px-4"
+/** Single-column typeahead list. Scroll lives on the panel, not nested here. */
+const productListClassName = "min-h-0 py-1"
 
 /** Quiet uppercase section label — lighter than the banded nav-search header. */
 function PanelSectionHeader({ title }: { title: string }) {
@@ -365,24 +315,6 @@ function PanelSectionHeader({ title }: { title: string }) {
   )
 }
 
-function groupProductRowsByCategory(
-  products: SellCatalogSearchResultRow[],
-): { category: SellCatalogSearchCategory; rows: SellCatalogSearchResultRow[] }[] {
-  const groups: { category: SellCatalogSearchCategory; rows: SellCatalogSearchResultRow[] }[] = []
-  const indexByCategory = new Map<SellCatalogSearchCategory, number>()
-  for (const row of products) {
-    const category = sellCatalogSearchRowCategory(row)
-    const existing = indexByCategory.get(category)
-    if (existing != null) {
-      groups[existing]?.rows.push(row)
-      continue
-    }
-    indexByCategory.set(category, groups.length)
-    groups.push({ category, rows: [row] })
-  }
-  return groups
-}
-
 function DropdownResults({
   rows,
   query,
@@ -392,49 +324,16 @@ function DropdownResults({
   query: string
   onSelect: (row: SellCatalogSearchResultRow) => void
 }) {
-  const { suggestions, products } = partitionDropdownRows(rows)
-  if (suggestions.length === 0 && products.length === 0) return null
-
-  const productGroups = groupProductRowsByCategory(products)
-  const showCategoryHeadings = productGroups.length > 1
+  const products = rows.filter((row) => row.kind !== "brand")
+  const visible = products.length > 0 ? products : rows
+  if (visible.length === 0) return null
 
   return (
-    <>
-      {suggestions.length > 0 ? (
-        <div>
-          <PanelSectionHeader title="Suggestions" />
-          <ul className="min-h-0 max-h-[min(34dvh,220px)] overflow-y-auto overscroll-contain pb-1 sm:max-h-[min(36dvh,240px)]">
-            {suggestions.map((row) => (
-              <SuggestionRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {products.length > 0 ? (
-        <div>
-          <PanelSectionHeader title="Catalog matches" />
-          {showCategoryHeadings
-            ? productGroups.map((group) => (
-                <div key={group.category}>
-                  <PanelSectionHeader title={sellCatalogSearchCategoryLabel(group.category)} />
-                  <ul className={productGridClassName}>
-                    {group.rows.map((row) => (
-                      <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
-                    ))}
-                  </ul>
-                </div>
-              ))
-            : (
-                <ul className={productGridClassName}>
-                  {products.map((row) => (
-                    <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
-                  ))}
-                </ul>
-              )}
-        </div>
-      ) : null}
-    </>
+    <ul className={productListClassName} key={query}>
+      {visible.map((row) => (
+        <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
+      ))}
+    </ul>
   )
 }
 
@@ -467,41 +366,11 @@ function NlHelperResults({
       <PanelSectionHeader
         title={summary ? `Suggested: ${summary}` : "Suggested matches"}
       />
-      <ul className={productGridClassName}>
+      <ul className={productListClassName}>
         {rows.map((row) => (
           <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
         ))}
       </ul>
-    </div>
-  )
-}
-
-/**
- * Smoothly animates the dropdown between content heights: measures the inner
- * content with a ResizeObserver and transitions an explicit pixel height, so
- * result changes while typing glide instead of snapping the panel size.
- */
-function AnimatedPanelHeight({ children }: { children: React.ReactNode }) {
-  const innerRef = React.useRef<HTMLDivElement>(null)
-  const [height, setHeight] = React.useState<number | null>(null)
-
-  React.useLayoutEffect(() => {
-    const el = innerRef.current
-    if (!el) return
-    setHeight(el.offsetHeight)
-    const observer = new ResizeObserver(() => {
-      setHeight(el.offsetHeight)
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  return (
-    <div
-      className="overflow-hidden transition-[height] duration-200 ease-out motion-reduce:transition-none"
-      style={{ height: height == null ? "auto" : `${height}px` }}
-    >
-      <div ref={innerRef}>{children}</div>
     </div>
   )
 }
@@ -685,7 +554,11 @@ function SellBrandModelsPanel({
       ) : error ? (
         <div className="px-4 py-4 text-sm text-destructive">{error}</div>
       ) : visibleRows.length > 0 ? (
-        <ul role="listbox" aria-label={`${brand.name} models`} className={productGridClassName}>
+        <ul
+          role="listbox"
+          aria-label={`${brand.name} models`}
+          className="max-h-[min(56dvh,480px)] overflow-y-auto overscroll-contain py-1"
+        >
           {visibleRows.map((row) => (
             <ProductRow key={rowKey(row)} row={row} query={filter} onSelect={onSelect} />
           ))}
@@ -940,12 +813,11 @@ export function SellCatalogSearch({
                   "w-full min-w-0 overflow-hidden border border-border bg-background",
                   "transition-[border-radius,box-shadow] duration-200 ease-out motion-reduce:transition-none",
                   showResultsPanel
-                    ? // Open: the panel owns the shadow; no ring so bar + panel read as one card.
-                      "rounded-t-[1.75rem] rounded-b-none max-sm:rounded-t-3xl"
+                    ? "rounded-t-[1.75rem] rounded-b-none border-b-0 max-sm:rounded-t-3xl"
                     : "rounded-full focus-within:border-cerulean/40 focus-within:ring-2 focus-within:ring-cerulean/15 focus-within:shadow-sm",
                 )}
               >
-                <div className="flex w-full min-w-0 items-center gap-0.5 pl-1 pr-1 py-0.5 sm:gap-1 sm:pl-2 sm:pr-1.5">
+                <div className="flex w-full min-w-0 items-center gap-0.5 pl-1 pr-1 py-0.5 sm:pl-2 sm:pr-1.5">
                   <div className="relative min-w-0 flex-1">
                     <SearchInputWithSuggest
                       value={query}
@@ -961,19 +833,15 @@ export function SellCatalogSearch({
                       externalSuggest={externalSuggest as ExternalSuggestConfig<unknown>}
                     />
                   </div>
-                  {/* Mobile: quiet icon submit (Reverb-like). sm+: labeled Search pill. */}
                   <Button
                     type="submit"
                     size="icon"
                     variant="ghost"
                     aria-label="Search"
-                    className="h-11 w-11 shrink-0 rounded-full text-foreground hover:bg-muted/60 sm:hidden"
+                    className="h-11 w-11 shrink-0 rounded-full text-foreground hover:bg-muted/60"
                   >
                     <Search className="h-5 w-5" strokeWidth={2} aria-hidden />
                   </Button>
-                  <SiteSearchFormSubmitButton type="submit" className="hidden sm:inline-flex">
-                    Search
-                  </SiteSearchFormSubmitButton>
                 </div>
               </form>
 
@@ -987,16 +855,15 @@ export function SellCatalogSearch({
                   aria-live="polite"
                   aria-busy={suggestState.loading && !hasDisplayRows}
                   className={cn(
-                    "absolute inset-x-0 top-full z-[80] -mt-px overflow-hidden rounded-b-2xl border border-t border-border bg-popover text-popover-foreground shadow-md",
-                    "border-t-border/60 max-sm:rounded-b-xl",
-                    "max-h-[min(72dvh,520px)]",
+                    "absolute inset-x-0 top-full z-[80] overflow-y-auto overscroll-contain rounded-b-2xl border border-t-0 border-border bg-popover text-popover-foreground shadow-md",
+                    "max-sm:rounded-b-xl",
+                    "max-h-[min(70dvh,480px)]",
                     "animate-in fade-in duration-150 ease-out motion-reduce:animate-none",
                   )}
                   onMouseDown={(event) => {
                     event.preventDefault()
                   }}
                 >
-                  <AnimatedPanelHeight>
                     {showPanelSkeleton ? (
                       <NavSuggestPanelSkeleton />
                     ) : (
@@ -1015,7 +882,6 @@ export function SellCatalogSearch({
                         nlHelper={nlHelper}
                       />
                     )}
-                  </AnimatedPanelHeight>
                 </div>
               ) : null}
             </div>
