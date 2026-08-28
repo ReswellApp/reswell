@@ -24,3 +24,12 @@ export function giveawayCtaHref(opts: {
 }): string {
   return opts.isLoggedIn ? giveawaySellHref(opts.brand) : giveawaySignUpHref(opts.brand)
 }
+
+/**
+ * Already on the surfboard sell form — enter in place instead of navigating away
+ * and wiping an in-progress board listing.
+ */
+export function isGiveawayStayOnSellPath(pathname: string | null): boolean {
+  if (!pathname) return false
+  return pathname === "/sell/boards" || pathname.startsWith("/sell/boards/")
+}

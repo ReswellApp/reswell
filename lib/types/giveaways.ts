@@ -23,7 +23,12 @@ export type GiveawayEntryStatus = "pending" | "qualified"
 export const GIVEAWAY_EVENT_KINDS = ["cta_click", "brand_click"] as const
 export type GiveawayEventKind = (typeof GIVEAWAY_EVENT_KINDS)[number]
 
-export const GIVEAWAY_EVENT_SURFACES = ["homepage", "popup", "giveaway_page"] as const
+export const GIVEAWAY_EVENT_SURFACES = [
+  "homepage",
+  "popup",
+  "giveaway_page",
+  "sell",
+] as const
 export type GiveawayEventSurface = (typeof GIVEAWAY_EVENT_SURFACES)[number]
 
 export type Giveaway = {
