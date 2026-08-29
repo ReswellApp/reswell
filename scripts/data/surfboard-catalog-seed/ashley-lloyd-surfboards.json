@@ -1,0 +1,94 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ashley-lloyd-surfboards",
+      "name": "Ashley Lloyd Surfboards",
+      "website_url": "https://www.ashleylloydsurfboards.com/",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Ashley Lloyd",
+      "lead_shaper_name": "Ashley Lloyd",
+      "short_description": "Santa Cruz surfboards shaped by Ashley Lloyd since 2002, drawing on a Malibu single-fin background and ECOBoard materials.",
+      "models": [
+        {
+          "name": "AAA",
+          "image_url": "https://static.wixstatic.com/media/14443e_a8b283545df144d3aecc9758a0a4db41~mv2.jpg",
+          "description": "Single fin pintail midlength. Blends longboard glide with the maneuverability of reduced length. Wider than your typical midlength with low rocker and soft entry profile. Soft 60/40 rails, harder edge and vee in the tail gives release in turns. Maybe you’re a shortboarder looking for a more loggy ride but aren’t keen to jump all the way up to traditional longboards. Or, maybe you’re stepping down in size and want the comfortable feeling of your longboard in a smaller package!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tip Timer",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_b6394e05992a427e8137a93a56d4f7c9~mv2.jpg",
+          "description": "Wide nosed and wide tail nose-rider. Calibrated to ground into the wave, and to invite the feet to walk and have some time on the tip.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Everything",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_e1810ed09c0044038df3b80a34bec0b8~mv2.jpg",
+          "description": "A board with a little bit of everything, including turning and noseriding. It’s versatility makes it a good option for beach breaks, point breaks, small, medium to med-large conditions. Hard edge in the tail allows for a fast-releasing turn. Slight nose concave helps provide lift and stability on the nose while noseriding. Moderate width, thickness and rail foil. Available as a single fin or two + one fin setup to further specialize your approach to the wave. A great option for beginner surfers growing into intermediate and advanced.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Model A",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_d9c175afbcb2414480ee0bcf2252ec41~mv2.png",
+          "description": "This is the board if you’re looking for a less hefty nose rider. Carve a smooth turn, walk the board and noseride. Rounded diamond tail, slight roll on the bottom, 50/50 rails, and nose concave. The bottom and rails allow for hold in the wave - lending itself to a more classic noserider feel while still maintaining maneuverability.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Comfy Cruiser",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_512b46e20254452081b0444fab39483b~mv2.png",
+          "description": "Classic squaretail, moderate rocker with optional added nose rocker for beginners. Downturned rail in the tail for turning ease and good flow while staying grounded. An all-arounder, great in a variety of smaller wave conditions. Not too cumbersome, but still comfy and stable. A popular choice for lots of intermediates keen to cruise!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Duct Tape Pintail",
+          "image_url": "https://static.wixstatic.com/media/14443e_a0641ea455794183b042059908d7e112~mv2.jpg",
+          "description": "I shaped this model for myself to surf in the Duct Tape Invitational back in 2018! I wanted to make a super flowy single fin with the contest in mind. This board is a beautiful, full volume, mega-fun log! With full, forgiving 50/50 rails it rolls from turn to turn seamlessly, allowing for a beautifully smooth, light and easy going feel on the wave.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SweetSpeed",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_da345bddfede4861ba8ad8304ed87c31~mv2.jpg",
+          "description": "The Sweetspeed is a super versatile board suited to a wide range of surfing abilities. Great winter longboard, its high volume lets you in early and the rails are foiled for speed and performance. Lots of nose rocker lets you send it on steep drops and racy sections. Good for someone looking to build confidence in bigger, steeper surf on a longer board. Also great for newer surfers, as increased nose rocker can help to avoid nosedives. Single to double concave and downturned rail in the tail makes it great for turning. Can still get up on the nose, but not built to be a classic noserider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tessa Timmons",
+          "image_url": "https://static.wixstatic.com/media/14443e_db951e449d1143c089fc677e89674306~mv2.jpg",
+          "description": "Inspired by Tessa Timmons, this is a model that we have been working on over the years. She's done lots of traveling with it and its always a friend favorite. Heavy nose concave and moderate rails. Not a huge loggy board but medium weight and balanced in flow and stability.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Jane Reynolds",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_815611b17b014af09a58d7fc8fdca967~mv2.jpg",
+          "description": "Mini Glider. Hull entry moving into a double barrel vee means that it feels smooth entering the wave and asks for long drawn out carves on the face. Hard edged v in the back for continuous speed and hold. Fuller volume is great for getting in early and gliding. Beautiful speed-shape outline for bigger surf.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Flowbird",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_a383d65e275e4dba8e64aa7f8b3599c7~mv2.jpg",
+          "description": "This board is made to flow. Foam is distributed throughout the board to have plenty of float for its size, while incorporating progressive aspects of contour design and maneuverability. Single to double concave bottom with tail vee, and a beak on the nose blends together the new and old. 5 fin convertible setup allows for many fin options including single, thruster and quad fins.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Swish Fish",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_e8cc8e9f9ea44513978cba6efb08c9ce~mv2.jpg",
+          "description": "A smooth and fast fish. Features a single to double concave and double barrel v out the tail. It works great as a quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Zeufie Egg",
+          "image_url": "https://static.wixstatic.com/media/14443e_dbbbfdef63ce43349022a8fae7aac15c~mv2.jpg",
+          "description": "Made with love for Zeufie, she was a dear friend who I shaped boards for. She wanted to try shorter boards than what she had been surfing, and this was a step down from her AAA. It has similar bottom contours to the Gordon’s Egg but adding more width, thickness, and length for easier wave catching and more stability. Single to double concave, soft to hard rail in the tail. 2+1 fin set-up. A more forgiving version of the Gordon’s Egg, but not quite as loggy as the AAA.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gordon's Egg",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_6b6ff9447bc642e68ec4174d4ee677e9~mv2.jpg",
+          "description": "Gordon's traveling Egg is choice if you can only take one board with you on your next surf adventure. Originally made to surf everything from Ocean Beach to Santa Cruz’s point breaks, such that it holds up in pitchier, faster surf but is still enjoyable when the waves aren’t quite as intense. Mid-length with a 2+1 fin set up. Single to double concave for ease of water flow control and maneuverability. Soft to hard rail in the tail for turns. Highly versatile in a variety of conditions from waves waist to well overhead.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
