@@ -24,7 +24,7 @@ export function listingAlwaysUsesReswellShipping(
  * `/sell/apparel` or create/update apparel listings. `/apparel` browse stays public.
  * Flip to `false` when peer sellers can list apparel.
  */
-export const APPAREL_SELL_ADMIN_ONLY = true
+export const APPAREL_SELL_ADMIN_ONLY = false
 
 /**
  * Fixed `categories.id` for peer-to-peer apparel. Must match the seed in
