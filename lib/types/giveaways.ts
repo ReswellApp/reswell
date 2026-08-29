@@ -28,6 +28,7 @@ export const GIVEAWAY_EVENT_SURFACES = [
   "popup",
   "giveaway_page",
   "sell",
+  "boards",
 ] as const
 export type GiveawayEventSurface = (typeof GIVEAWAY_EVENT_SURFACES)[number]
 

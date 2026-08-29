@@ -55,9 +55,9 @@ const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
   eyebrow: "Giveaway",
   headline: "List a board. Win a custom.",
   summary:
-    `Publish a surfboard on Reswell and you’re entered to win a custom from ${GIVEAWAY_PRIZE_BRAND_LIST_COPY}. You pick the brand.`,
+    `Publish a surfboard on Reswell and you’re entered to win a custom from ${GIVEAWAY_PRIZE_BRAND_LIST_COPY}. After you list, you pick the brand.`,
   description:
-    "We’re giving away a custom surfboard to one seller who lists a board on Reswell. Sign up, choose the brand you want to ride, publish a surfboard listing, and you’re in the raffle. One entry per person.",
+    "We’re giving away a custom surfboard to one seller who lists a board on Reswell. Sign up, publish a surfboard listing, then choose the brand you want to ride — you’re in the raffle. One entry per person.",
   prizeLabel: `One custom surfboard from ${GIVEAWAY_PRIZE_BRAND_LIST_COPY}`,
   startsAt: "2026-08-18T00:00:00.000Z",
   endsAt: "2026-09-30T23:59:59.000Z",
@@ -80,18 +80,18 @@ const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
       body: "Create a free Reswell account. Takes about a minute.",
     },
     {
-      title: "Pick a brand",
-      body: "Choose the brand you want.",
+      title: "List a surfboard",
+      body: "Publish a board by September 30th. That’s your raffle ticket.",
     },
     {
-      title: "List a surfboard",
-      body: "Publish a board by September 30th. That’s your raffle ticket. Winner drawn October 3rd.",
+      title: "Pick your custom",
+      body: "After you list, choose which brand you want to win. Winner drawn October 3rd.",
     },
   ],
   rules: [
     "Open to people 18 or older who live in the United States. Only surfers in the USA can win.",
     "One entry per person. Publishing a surfboard listing during the giveaway window enters you.",
-    "Choose one prize brand when you enter. You can change it any time before the giveaway ends, and again if you win and want a different maker.",
+    "After you list, choose one prize brand. You can change it any time before the giveaway ends, and again if you win and want a different maker.",
     "Listings must be real surfboards offered for sale on Reswell. Drafts do not count.",
     "No purchase necessary beyond creating a free listing. Shipping or selling the board is not required to stay entered.",
     "Entries close September 30th. The winner is selected at random from qualified entries on October 3rd and notified by email.",

@@ -2,7 +2,6 @@ import type { ReactNode } from "react"
 import Image from "next/image"
 import { formatGiveawayEndDate } from "@/lib/giveaways/catalog"
 import { wideShimmer } from "@/lib/image-shimmer"
-import { cn } from "@/lib/utils"
 import type { Giveaway } from "@/lib/types/giveaways"
 import heroBackdrop from "@/public/images/home/hero-backdrop-tahiti.jpg"
 
@@ -13,18 +12,10 @@ type GiveawayHeroProps = {
 
 export function GiveawayHero({ giveaway, children }: GiveawayHeroProps) {
   const ends = formatGiveawayEndDate(giveaway.endsAt)
-  const tall = Boolean(children)
 
   return (
     <section className="relative overflow-hidden">
-      <div
-        className={cn(
-          "relative isolate",
-          tall
-            ? "min-h-[26rem] sm:min-h-[30rem] lg:min-h-[32rem]"
-            : "min-h-[20rem] sm:min-h-[24rem] lg:min-h-[26rem]",
-        )}
-      >
+      <div className="relative isolate min-h-[22rem] sm:min-h-[26rem]">
         <Image
           src={heroBackdrop}
           alt=""
@@ -40,14 +31,7 @@ export function GiveawayHero({ giveaway, children }: GiveawayHeroProps) {
           className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/30"
           aria-hidden
         />
-        <div
-          className={cn(
-            "relative z-10 mx-auto flex max-w-3xl flex-col justify-end px-4 pt-8 sm:px-6",
-            tall
-              ? "min-h-[26rem] pb-16 sm:min-h-[30rem] sm:pb-20 lg:min-h-[32rem]"
-              : "min-h-[20rem] pb-14 sm:min-h-[24rem] sm:pb-16 lg:min-h-[26rem]",
-          )}
-        >
+        <div className="relative z-10 mx-auto flex min-h-[22rem] max-w-2xl flex-col justify-end px-4 pb-12 pt-8 sm:min-h-[26rem] sm:px-6 sm:pb-14">
           <p className="text-xs font-semibold uppercase tracking-widest text-white/80">
             {giveaway.eyebrow}
             {ends ? (

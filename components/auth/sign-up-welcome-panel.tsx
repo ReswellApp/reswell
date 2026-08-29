@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { CheckCircle2, Loader2 } from "lucide-react"
@@ -28,8 +28,6 @@ import {
 } from "@/lib/giveaways/catalog"
 import {
   clearGiveawayEntryIntent,
-  parseGiveawayBrandParam,
-  readGiveawayEntryIntent,
   writeGiveawayEntryIntent,
 } from "@/lib/giveaways/intent-storage"
 import { logGiveawayEvent } from "@/lib/giveaways/log-event"
@@ -72,9 +70,6 @@ export function SignUpWelcomePanel({
   const giveaway = getGiveawayBySlug(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
   const showGiveawayOffer = Boolean(giveaway && isGiveawayOpen(giveaway) && !resumeListing)
   const continueStartedRef = useRef(false)
-  const urlBrand = parseGiveawayBrandParam(nextPathSearchParams(nextPath).get("brand"))
-  const [storedBrand, setStoredBrand] = useState<GiveawayPrizeBrandId | null>(null)
-  const savedBrand = urlBrand ?? storedBrand
 
   const leaveWelcome = useCallback(
     (dest: string) => {
@@ -125,51 +120,36 @@ export function SignUpWelcomePanel({
   }, [leaveWelcome, nextPath])
 
   const handleListSurfboard = useCallback(
-    (brand: GiveawayPrizeBrandId | null) => {
+    (_brand: GiveawayPrizeBrandId | null) => {
       const fromGiveawayCta = nextPathSearchParams(nextPath).get("from") === "giveaway"
       writeGiveawayEntryIntent({
         slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
-        brand,
+        brand: null,
         fromCta: fromGiveawayCta,
       })
       logGiveawayEvent({
         slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
         event: "cta_click",
         surface: "popup",
-        preferredBrand: brand,
+        preferredBrand: null,
       })
       setSellEntryPoint("giveaway")
       dismissGiveawaySignupPopup()
       void submitGiveawayEntry({
         slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
-        preferredBrand: brand,
+        preferredBrand: null,
         signedUpFromCta: fromGiveawayCta,
       })
-      leaveWelcome(giveawaySellHref(brand))
+      leaveWelcome(giveawaySellHref(null))
     },
     [leaveWelcome, nextPath],
   )
-
-  const handleGiveawayBrand = useCallback((brand: GiveawayPrizeBrandId) => {
-    logGiveawayEvent({
-      slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
-      event: "brand_click",
-      surface: "popup",
-      preferredBrand: brand,
-    })
-  }, [])
 
   const handleDeclineGiveaway = useCallback(() => {
     clearGiveawayEntryIntent()
     dismissGiveawaySignupPopup()
     leaveWelcome("/")
   }, [leaveWelcome])
-
-  useEffect(() => {
-    if (urlBrand) return
-    const stored = readGiveawayEntryIntent()?.brand ?? null
-    if (stored) setStoredBrand(stored)
-  }, [urlBrand])
 
   useEffect(() => {
     if (!goToSell || showGiveawayOffer) return
@@ -183,12 +163,8 @@ export function SignUpWelcomePanel({
   if (showGiveawayOffer && giveaway) {
     return (
       <SignUpGiveawayScreen
-        key={savedBrand ?? "choose"}
         giveaway={giveaway}
         firstName={firstName}
-        initialBrand={savedBrand}
-        hideBrandPicker={Boolean(savedBrand)}
-        onBrandChange={handleGiveawayBrand}
         onList={handleListSurfboard}
         onDecline={handleDeclineGiveaway}
       />

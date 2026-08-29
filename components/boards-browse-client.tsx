@@ -17,6 +17,10 @@ import {
 import { BoardsBrowseFacetControls } from "@/components/boards-browse-facet-controls"
 import { useBoardsFilterState } from "@/components/boards-browse-filter-state"
 import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
+import {
+  BoardsGiveawayEnterControls,
+  type BoardsGiveawayEnterProps,
+} from "@/components/features/giveaways/boards-giveaway-enter-button"
 import { ListYourSurfboardSellCta } from "@/components/features/marketing/list-your-surfboard-sell-cta"
 import { facetOptionLabel, FACET_PARAM_KEYS } from "@/lib/boards-browse-facets"
 import { logBrowseButtonClick } from "@/lib/log-browse-button-click"
@@ -43,6 +47,8 @@ type BoardsBrowseClientProps = {
   showSaveSearch?: boolean
   /** Mobile hover-bar sell CTA — city landings only. */
   showHoverBarListBoard?: boolean
+  /** Open raffle CTA for the hero + mobile hover bar. */
+  giveawayEnter?: BoardsGiveawayEnterProps | null
 }
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
@@ -99,6 +105,7 @@ export function BoardsBrowseClient({
   afterHeader,
   showSaveSearch = true,
   showHoverBarListBoard = false,
+  giveawayEnter = null,
 }: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -172,7 +179,10 @@ export function BoardsBrowseClient({
     return out
   }, [state])
 
-  return (
+  const shell = (giveawayButtons: {
+    desktopButton: ReactNode
+    mobileButton: ReactNode
+  } | null) => (
     <>
       <CategoryBrowsePageHeader
         title={title}
@@ -188,6 +198,7 @@ export function BoardsBrowseClient({
         action={
           <div className="hidden flex-wrap items-center gap-2 md:flex">
             {headerAction}
+            {giveawayButtons?.desktopButton}
             <BoardsShipToMeButton
               pressed={state.shippingAvailable}
               onToggle={() => {
@@ -305,6 +316,7 @@ export function BoardsBrowseClient({
         label="Browse filters"
         dropoffSentinel={dropoffSentinelRef}
       >
+        {giveawayButtons?.mobileButton}
         <BoardsShipToMeButton
           pressed={state.shippingAvailable}
           onToggle={() => {
@@ -424,5 +436,15 @@ export function BoardsBrowseClient({
         </SheetContent>
       </Sheet>
     </>
+  )
+
+  if (!giveawayEnter) {
+    return shell(null)
+  }
+
+  return (
+    <BoardsGiveawayEnterControls giveaway={giveawayEnter.giveaway}>
+      {(buttons) => shell(buttons)}
+    </BoardsGiveawayEnterControls>
   )
 }

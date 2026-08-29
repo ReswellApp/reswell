@@ -70,6 +70,8 @@ import {
   boardsBrowseEffectiveSort,
   boardsBrowseHasSidebarFilters,
 } from "@/lib/boards-browse-sidebar-filters"
+import { getOpenBoardsGiveaway } from "@/lib/giveaways/boards-enter-props"
+import type { BoardsGiveawayEnterProps } from "@/components/features/giveaways/boards-giveaway-enter-button"
 
 async function BoardsBrowseAdminCuratorGate() {
   const { supabase, user } = await getCachedRequestSession()
@@ -93,12 +95,14 @@ async function BoardsBrowseFiltersSection({
   title,
   description,
   headerAction,
+  giveawayEnter = null,
 }: {
   searchParams: Promise<BoardsBrowseSearchParams>
   children: ReactNode
   title?: string
   description?: string
   headerAction?: ReactNode
+  giveawayEnter?: BoardsGiveawayEnterProps | null
 }) {
   const searchParams = await searchParamsPromise
   const facetCounts = await getBoardsBrowseFacetCountsMapCached(searchParams)
@@ -108,6 +112,7 @@ async function BoardsBrowseFiltersSection({
       title={title}
       description={description}
       headerAction={headerAction}
+      giveawayEnter={giveawayEnter}
     >
       {children}
     </BoardsBrowseClient>
@@ -820,6 +825,10 @@ export async function BoardsBrowsePage(props: {
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
   const pageTitle = typeCrumb ?? surfboardsBrowseRootLabel
+  const openGiveaway = props.showListYourSurfboardCta ? null : getOpenBoardsGiveaway()
+  const giveawayEnter: BoardsGiveawayEnterProps | null = openGiveaway
+    ? { giveaway: openGiveaway }
+    : null
 
   return (
     <main className="flex-1">
@@ -871,6 +880,7 @@ export async function BoardsBrowsePage(props: {
               searchParams={searchParamsPromise}
               title={props.showListYourSurfboardCta ? undefined : pageTitle}
               description={undefined}
+              giveawayEnter={giveawayEnter}
               headerAction={
                 props.showListYourSurfboardCta ? undefined : (
                   <Suspense fallback={null}>

@@ -125,7 +125,7 @@ export function GiveawayDetail({
           </p>
         ) : entry ? (
           <p className="text-sm font-medium text-listingHeart">
-            Brand saved. List a surfboard to finish your entry.
+            List a surfboard to finish your entry. You&apos;ll pick your custom after.
           </p>
         ) : null}
 
@@ -139,7 +139,7 @@ export function GiveawayDetail({
             <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
               {qualified
                 ? "This is the brand you’re entered for."
-                : "Pick a brand, then list a surfboard. That’s your entry."}
+                : "List a surfboard to enter. You’ll pick your custom after you publish."}
             </p>
             <Card className={cn(SELL_SECTION_CARD_CLASS, "mt-5 shadow-surface")}>
               <CardContent className="p-5 sm:p-7">

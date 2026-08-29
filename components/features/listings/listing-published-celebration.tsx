@@ -5,6 +5,7 @@ import Link from "next/link"
 import { CheckCircle2, Landmark, Link2, Plus, Sparkles, X } from "lucide-react"
 import { toast } from "sonner"
 
+import { GiveawayBrandPicker } from "@/components/features/giveaways/giveaway-brand-picker"
 import { Button } from "@/components/ui/button"
 import {
   consumeJustPublishedListingMarker,
@@ -19,24 +20,19 @@ import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sel
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import {
   getGiveawayBySlug,
+  giveawayPrizeBrandsFor,
   isGiveawayOpen,
   WIN_A_SURFBOARD_GIVEAWAY_SLUG,
 } from "@/lib/giveaways/catalog"
+import { logGiveawayEvent } from "@/lib/giveaways/log-event"
+import { submitGiveawayEntry } from "@/lib/giveaways/submit-entry"
 import { cn } from "@/lib/utils"
+import type { GiveawayPrizeBrandId } from "@/lib/types/giveaways"
 
 const RAFFLE_CELEBRATION_SEEN_PREFIX = "reswell.giveaway.raffleCelebrationSeen."
 
 function raffleCelebrationSeenKey(slug: string): string {
   return `${RAFFLE_CELEBRATION_SEEN_PREFIX}${slug}`
-}
-
-function hasSeenRaffleCelebration(slug: string): boolean {
-  if (typeof window === "undefined") return false
-  try {
-    return window.localStorage.getItem(raffleCelebrationSeenKey(slug)) === "1"
-  } catch {
-    return false
-  }
 }
 
 function markRaffleCelebrationSeen(slug: string): void {
@@ -45,6 +41,15 @@ function markRaffleCelebrationSeen(slug: string): void {
     window.localStorage.setItem(raffleCelebrationSeenKey(slug), "1")
   } catch {
     /* private mode — one-time copy is best-effort */
+  }
+}
+
+function hasSeenRaffleCelebration(slug: string): boolean {
+  if (typeof window === "undefined") return false
+  try {
+    return window.localStorage.getItem(raffleCelebrationSeenKey(slug)) === "1"
+  } catch {
+    return false
   }
 }
 
@@ -79,13 +84,18 @@ function sellAgainHref(section: string): string {
  * fresh publish. The seller lands on their real, live listing (the payoff),
  * with a share link, a "list another" prompt, and — when payouts aren't set
  * up yet — a non-blocking Stripe Connect nudge so payday isn't a surprise.
- * Raffle copy is one-time: only the listing that is their raffle ticket.
+ * Raffle: when this listing is their ticket and they haven't picked a custom
+ * yet, ask which prize brand they want to win.
  */
 export function ListingPublishedCelebration({ listingParam }: { listingParam: string }) {
   const [marker, setMarker] = useState<JustPublishedListingMarker | null>(null)
   const [visible, setVisible] = useState(false)
   const [payoutsNeedSetup, setPayoutsNeedSetup] = useState(false)
   const [showRaffleEntry, setShowRaffleEntry] = useState(false)
+  const [needsBrandPick, setNeedsBrandPick] = useState(false)
+  const [raffleBrand, setRaffleBrand] = useState<GiveawayPrizeBrandId | null>(null)
+  const [savingBrand, setSavingBrand] = useState(false)
+  const [brandSaved, setBrandSaved] = useState(false)
   const [enrichmentGaps, setEnrichmentGaps] = useState<ListingEnrichmentGap[]>([])
   const consumedRef = useRef(false)
 
@@ -150,14 +160,11 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
         /* prompts are best-effort */
       })
 
-    // Raffle line: only the first qualifying surfboard (the locked ticket).
+    // Raffle: first qualifying surfboard (locked ticket) — prompt brand if missing.
+    // Always show on just-published (marker is one-shot); localStorage only
+    // suppresses the soft "you're in" line on later publishes of other gear.
     const giveaway = getGiveawayBySlug(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
-    if (
-      found.section === "surfboards" &&
-      giveaway &&
-      isGiveawayOpen(giveaway) &&
-      !hasSeenRaffleCelebration(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
-    ) {
+    if (found.section === "surfboards" && giveaway && isGiveawayOpen(giveaway)) {
       void fetch(`/api/giveaways/${WIN_A_SURFBOARD_GIVEAWAY_SLUG}/entry`, {
         cache: "no-store",
         signal: controller.signal,
@@ -165,14 +172,23 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
         .then(async (res) => {
           if (!res.ok) return
           const json = (await res.json()) as {
-            data?: { entry?: { listingId?: string | null; status?: string } | null }
+            data?: {
+              entry?: {
+                listingId?: string | null
+                status?: string
+                preferredBrand?: GiveawayPrizeBrandId | null
+              } | null
+            }
           }
           const entry = json.data?.entry
           if (entry?.status !== "qualified") return
-          if (entry.listingId === found.listingId) {
-            setShowRaffleEntry(true)
+          if (entry.listingId !== found.listingId) return
+          setShowRaffleEntry(true)
+          if (!entry.preferredBrand) {
+            setNeedsBrandPick(true)
+          } else if (!hasSeenRaffleCelebration(WIN_A_SURFBOARD_GIVEAWAY_SLUG)) {
+            markRaffleCelebrationSeen(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
           }
-          markRaffleCelebrationSeen(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
         })
         .catch(() => {
           /* raffle line is best-effort */
@@ -186,6 +202,9 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
   }, [listingParam])
 
   if (!marker) return null
+
+  const giveaway = getGiveawayBySlug(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
+  const prizeBrands = giveaway ? giveawayPrizeBrandsFor(giveaway) : []
 
   const handleShare = async () => {
     const url = window.location.href.split(/[?#]/)[0]
@@ -201,6 +220,30 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
     }
   }
 
+  const handleSaveBrand = async () => {
+    if (!raffleBrand || savingBrand) return
+    setSavingBrand(true)
+    logGiveawayEvent({
+      slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
+      event: "brand_click",
+      surface: "sell",
+      preferredBrand: raffleBrand,
+    })
+    const result = await submitGiveawayEntry({
+      slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
+      preferredBrand: raffleBrand,
+    })
+    setSavingBrand(false)
+    if (!result.ok) {
+      toast.error(result.error ?? "Could not save your pick.")
+      return
+    }
+    setBrandSaved(true)
+    setNeedsBrandPick(false)
+    markRaffleCelebrationSeen(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
+    toast.success("Custom pick saved. You're in the raffle.")
+  }
+
   return (
     <div
       role="status"
@@ -214,7 +257,9 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
         className={cn(
           "pointer-events-auto w-full max-w-md rounded-2xl border border-listingHeart/25 bg-white p-5 shadow-soft",
           "transition-all duration-500 ease-smooth",
-          "md:w-auto md:max-w-none md:rounded-xl md:p-2 md:pl-2.5",
+          needsBrandPick
+            ? "md:max-w-lg md:rounded-2xl md:p-4"
+            : "md:w-auto md:max-w-none md:rounded-xl md:p-2 md:pl-2.5",
           visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
         )}
       >
@@ -225,7 +270,7 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
           <div className="min-w-0 flex-1 md:flex-none">
             <p className="font-headline text-base font-bold text-foreground md:whitespace-nowrap md:text-sm">
               Your listing is live
-              {showRaffleEntry ? (
+              {showRaffleEntry && !needsBrandPick ? (
                 <span className="hidden font-sans text-xs font-normal text-muted-foreground md:inline">
                   {" "}
                   ·{" "}
@@ -240,7 +285,7 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
             </p>
             <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground md:hidden">
               Buyers can see it right now. Share it to sell faster.
-              {showRaffleEntry ? (
+              {showRaffleEntry && !needsBrandPick ? (
                 <>
                   {" "}
                   You&apos;re also in the{" "}
@@ -255,31 +300,33 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
               ) : null}
             </p>
           </div>
-          <div className="hidden shrink-0 gap-1.5 md:flex">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1 px-2.5"
-              onClick={handleShare}
-            >
-              <Link2 className="size-3.5" aria-hidden />
-              Share
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              className="h-8 gap-1 bg-listingHeart px-2.5 text-white hover:bg-listingHeart/90"
-            >
-              <Link
-                href={sellAgainHref(marker.section)}
-                onClick={() => setSellEntryPoint("celebration")}
+          {!needsBrandPick ? (
+            <div className="hidden shrink-0 gap-1.5 md:flex">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1 px-2.5"
+                onClick={handleShare}
               >
-                <Plus className="size-3.5" aria-hidden />
-                List another
-              </Link>
-            </Button>
-          </div>
+                <Link2 className="size-3.5" aria-hidden />
+                Share
+              </Button>
+              <Button
+                asChild
+                size="sm"
+                className="h-8 gap-1 bg-listingHeart px-2.5 text-white hover:bg-listingHeart/90"
+              >
+                <Link
+                  href={sellAgainHref(marker.section)}
+                  onClick={() => setSellEntryPoint("celebration")}
+                >
+                  <Plus className="size-3.5" aria-hidden />
+                  List another
+                </Link>
+              </Button>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => setVisible(false)}
@@ -293,33 +340,61 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
           </button>
         </div>
 
-        <div className="mt-4 flex gap-2 md:hidden">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-1.5"
-            onClick={handleShare}
-          >
-            <Link2 className="size-4" aria-hidden />
-            Share link
-          </Button>
-          <Button
-            asChild
-            size="sm"
-            className="flex-1 gap-1.5 bg-listingHeart text-white hover:bg-listingHeart/90"
-          >
-            <Link
-              href={sellAgainHref(marker.section)}
-              onClick={() => setSellEntryPoint("celebration")}
+        {needsBrandPick && !brandSaved ? (
+          <div className="mt-4 border-t border-listingHeart/15 pt-4">
+            <p className="text-sm font-semibold text-foreground">
+              Which custom do you want to win?
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              You&apos;re in the raffle. Pick your prize brand — you can change it later.
+            </p>
+            <div className="mt-3">
+              <GiveawayBrandPicker
+                brands={prizeBrands}
+                value={raffleBrand}
+                onChange={setRaffleBrand}
+              />
+            </div>
+            <Button
+              type="button"
+              disabled={!raffleBrand || savingBrand}
+              className="mt-3 h-10 w-full rounded-full bg-listingHeart text-sm font-medium text-white hover:bg-listingHeart/90"
+              onClick={() => void handleSaveBrand()}
             >
-              <Plus className="size-4" aria-hidden />
-              List another
-            </Link>
-          </Button>
-        </div>
+              {savingBrand ? "Saving…" : "Save my pick"}
+            </Button>
+          </div>
+        ) : null}
 
-        {enrichmentGaps.length > 0 ? (
+        {!needsBrandPick ? (
+          <div className="mt-4 flex gap-2 md:hidden">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1.5"
+              onClick={handleShare}
+            >
+              <Link2 className="size-4" aria-hidden />
+              Share link
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              className="flex-1 gap-1.5 bg-listingHeart text-white hover:bg-listingHeart/90"
+            >
+              <Link
+                href={sellAgainHref(marker.section)}
+                onClick={() => setSellEntryPoint("celebration")}
+              >
+                <Plus className="size-4" aria-hidden />
+                List another
+              </Link>
+            </Button>
+          </div>
+        ) : null}
+
+        {enrichmentGaps.length > 0 && !needsBrandPick ? (
           <div className="mt-3 rounded-lg bg-listingHeart/5 px-3 py-2.5 md:mt-2 md:px-2 md:py-1.5">
             <p className="flex items-center gap-1.5 text-[13px] font-medium text-foreground md:text-xs">
               <Sparkles className="size-3.5 text-listingHeart" aria-hidden />
@@ -340,7 +415,7 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
           </div>
         ) : null}
 
-        {payoutsNeedSetup ? (
+        {payoutsNeedSetup && !needsBrandPick ? (
           <Link
             href="/dashboard/payouts"
             className="mt-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-muted/70 md:mt-2 md:px-2 md:py-1.5 md:text-xs"

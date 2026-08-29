@@ -5,12 +5,10 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { X } from "lucide-react"
-import { GiveawayBrandPicker } from "@/components/features/giveaways/giveaway-brand-picker"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import {
   GIVEAWAY_PRIZE_BRAND_LIST_COPY,
-  giveawayPrizeBrandsFor,
   getGiveawayBySlug,
   isGiveawayOpen,
   WIN_A_SURFBOARD_GIVEAWAY_SLUG,
@@ -25,7 +23,6 @@ import {
 import { submitGiveawayEntry } from "@/lib/giveaways/submit-entry"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
-import type { GiveawayPrizeBrandId } from "@/lib/types/giveaways"
 
 const RECENT_SIGNUP_MS = 24 * 60 * 60 * 1000
 
@@ -56,7 +53,6 @@ export function GiveawaySignupPopup({
   const router = useRouter()
   const giveaway = getGiveawayBySlug(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
   const [open, setOpen] = useState(forceOpen)
-  const [brand, setBrand] = useState<GiveawayPrizeBrandId | null>(null)
 
   useEffect(() => {
     if (forceOpen) {
@@ -75,44 +71,32 @@ export function GiveawaySignupPopup({
     setOpen(false)
   }, [])
 
-  const handleBrand = useCallback((next: GiveawayPrizeBrandId) => {
-    setBrand(next)
-    logGiveawayEvent({
-      slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
-      event: "brand_click",
-      surface: "popup",
-      preferredBrand: next,
-    })
-  }, [])
-
   const handleList = useCallback(() => {
     writeGiveawayEntryIntent({
       slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
-      brand,
+      brand: null,
     })
     logGiveawayEvent({
       slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
       event: "cta_click",
       surface: "popup",
-      preferredBrand: brand,
+      preferredBrand: null,
     })
     setSellEntryPoint("giveaway")
     dismissGiveawaySignupPopup()
     void submitGiveawayEntry({
       slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
-      preferredBrand: brand,
+      preferredBrand: null,
     })
-    const href = giveawaySellHref(brand)
+    const href = giveawaySellHref(null)
     if (forceOpen) {
       void navigateAfterClientAuth(href, router)
       return
     }
     window.location.assign(href)
-  }, [brand, forceOpen, router])
+  }, [forceOpen, router])
 
   if (!giveaway || !isGiveawayOpen(giveaway) || !open) return null
-
-  const brands = giveawayPrizeBrandsFor(giveaway)
 
   return (
     <Dialog
@@ -145,12 +129,8 @@ export function GiveawaySignupPopup({
           </p>
           <p className="mt-2 text-[14px] leading-relaxed text-black/65">
             Publish a board and you&apos;re entered for a custom from{" "}
-            {GIVEAWAY_PRIZE_BRAND_LIST_COPY}. Pick your brand, then list.
+            {GIVEAWAY_PRIZE_BRAND_LIST_COPY}. Pick which brand you want after you list.
           </p>
-
-          <div className="mt-5">
-            <GiveawayBrandPicker brands={brands} value={brand} onChange={handleBrand} />
-          </div>
 
           <Button
             type="button"

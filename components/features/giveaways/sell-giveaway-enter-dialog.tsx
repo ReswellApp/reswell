@@ -5,13 +5,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { toast } from "sonner"
 import { X } from "lucide-react"
-import { GiveawayBrandPicker } from "@/components/features/giveaways/giveaway-brand-picker"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import {
-  formatGiveawayEndDate,
-  giveawayPrizeBrandsFor,
-} from "@/lib/giveaways/catalog"
+import { formatGiveawayEndDate } from "@/lib/giveaways/catalog"
 import { writeGiveawayEntryIntent } from "@/lib/giveaways/intent-storage"
 import { logGiveawayEvent } from "@/lib/giveaways/log-event"
 import {
@@ -21,7 +17,7 @@ import {
 } from "@/lib/giveaways/paths"
 import { submitGiveawayEntry } from "@/lib/giveaways/submit-entry"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
-import type { Giveaway, GiveawayPrizeBrandId } from "@/lib/types/giveaways"
+import type { Giveaway, GiveawayEventSurface } from "@/lib/types/giveaways"
 
 type SellGiveawayEnterDialogProps = {
   open: boolean
@@ -29,46 +25,39 @@ type SellGiveawayEnterDialogProps = {
   isLoggedIn: boolean
   onOpenChange: (open: boolean) => void
   onEntered: () => void
+  /** Analytics surface for CTA events. Defaults to sell. */
+  surface?: GiveawayEventSurface
 }
 
+/**
+ * List-first enter dialog: explains the raffle and sends people to publish a
+ * surfboard. Prize brand is chosen after the listing goes live.
+ */
 export function SellGiveawayEnterDialog({
   open,
   giveaway,
   isLoggedIn,
   onOpenChange,
   onEntered,
+  surface = "sell",
 }: SellGiveawayEnterDialogProps) {
   const pathname = usePathname()
-  const [brand, setBrand] = useState<GiveawayPrizeBrandId | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const brands = giveawayPrizeBrandsFor(giveaway)
   const ends = formatGiveawayEndDate(giveaway.endsAt)
   const stayOnSell = isGiveawayStayOnSellPath(pathname)
 
-  const persistBrand = (next: GiveawayPrizeBrandId) => {
-    setBrand(next)
-    writeGiveawayEntryIntent({ slug: giveaway.slug, brand: next })
-    logGiveawayEvent({
-      slug: giveaway.slug,
-      event: "brand_click",
-      surface: "sell",
-      preferredBrand: next,
-    })
-  }
-
   const handleEnter = async () => {
-    if (!brand) return
     writeGiveawayEntryIntent({
       slug: giveaway.slug,
-      brand,
+      brand: null,
       fromCta: !isLoggedIn,
     })
     logGiveawayEvent({
       slug: giveaway.slug,
       event: "cta_click",
-      surface: "sell",
-      preferredBrand: brand,
+      surface,
+      preferredBrand: null,
     })
     setSellEntryPoint("giveaway")
 
@@ -77,7 +66,7 @@ export function SellGiveawayEnterDialog({
       setError(null)
       const result = await submitGiveawayEntry({
         slug: giveaway.slug,
-        preferredBrand: brand,
+        preferredBrand: null,
       })
       setSaving(false)
       if (!result.ok) {
@@ -87,15 +76,15 @@ export function SellGiveawayEnterDialog({
       if (stayOnSell) {
         toast.success(
           result.entry?.status === "qualified"
-            ? "You're in the raffle."
-            : "Brand saved. Publish this board to finish your entry.",
+            ? "You're in the raffle. Pick your custom after you publish — or on the listing page."
+            : "Publish this board to finish your entry. You'll pick your custom after.",
         )
       }
     }
 
     onEntered()
     if (stayOnSell) return
-    window.location.assign(giveawayCtaHref({ isLoggedIn, brand }))
+    window.location.assign(giveawayCtaHref({ isLoggedIn, brand: null }))
   }
 
   return (
@@ -152,39 +141,29 @@ export function SellGiveawayEnterDialog({
             ))}
           </ol>
 
-          <form
-            className="mt-6"
-            onSubmit={(event) => {
-              event.preventDefault()
-              void handleEnter()
-            }}
+          {error ? (
+            <p className="mt-4 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <Button
+            type="button"
+            disabled={saving}
+            className="mt-6 h-11 w-full rounded-full bg-listingHeart text-[14px] font-medium text-white hover:bg-[#2a4170]"
+            onClick={() => void handleEnter()}
           >
-            <p className="mb-2.5 text-sm font-medium text-black">
-              Which custom do you want?
-            </p>
-            <GiveawayBrandPicker brands={brands} value={brand} onChange={persistBrand} />
-            {error ? (
-              <p className="mt-2 text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <Button
-              type="submit"
-              disabled={!brand || saving}
-              className="mt-5 h-11 w-full rounded-full bg-listingHeart text-[14px] font-medium text-white hover:bg-[#2a4170]"
-            >
-              {saving
-                ? "Saving…"
-                : stayOnSell
-                  ? "Enter the raffle"
-                  : isLoggedIn
-                    ? "Enter & list a surfboard"
-                    : "Sign up & list a surfboard"}
-            </Button>
-            <p className="mt-2.5 text-center text-[12px] leading-snug text-black/45">
-              Free to enter. Publishing a surfboard is your ticket.
-            </p>
-          </form>
+            {saving
+              ? "Saving…"
+              : stayOnSell
+                ? "Continue listing to enter"
+                : isLoggedIn
+                  ? "List a surfboard to enter"
+                  : "Sign up & list a surfboard"}
+          </Button>
+          <p className="mt-2.5 text-center text-[12px] leading-snug text-black/45">
+            Free to enter. Publishing a surfboard is your ticket — pick your custom after.
+          </p>
 
           <p className="mt-3 text-center text-[11px] text-black/40">
             <Link
