@@ -1,0 +1,28 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "kona-surf-co",
+      "name": "Kona Surf Co",
+      "website_url": "https://konasurfco.com/",
+      "location_label": "Wildwood, New Jersey",
+      "founder_name": "Mike Sciarra",
+      "lead_shaper_name": "Mike Sciarra",
+      "short_description": "Wildwood, New Jersey surfboards by Mike Sciarra — performance shortboards, fishes, and mid-lengths.",
+      "models": [
+        {
+          "name": "Zen XL",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSZENXL_Clear-Blue-450.jpg?v=1781731459",
+          "description": "The Zen XL is an elevated version of the popular Zen, designed specifically for larger surfers seeking high performance and fun in the water. Over 6 feet in length with ample volume, it offers improved paddling, glide, and wave catching ability, especially on smaller days. Its classic fish outline features a rounded nose, a forward wide point, and extra length that enhances paddling and stability. Single to double concave with channels, swallow tail with double wings, and tucked-in rails. Outline: performance midlength with wide point center. Tail: swallow with slight wing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "ZoSO",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSERIES3_BabyBlue-Whi-450.jpg?v=1782412305",
+          "description": "The ZoSO is a versatile board that combines classic egg-inspired design with modern performance features. Streamlined low-entry rocker and well-distributed foam for paddling and speed on smaller days; double-barrel concave and tail channels for controlled turns from shoulder-high to overhead. Chined rails in the midsection transitioning to sharper rails forward. Ride as a twin for a loose feel or with a small stabilizer for more drive. Outline: hybrid egg with wide point forward. Tail: double rounded with slight wing.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
