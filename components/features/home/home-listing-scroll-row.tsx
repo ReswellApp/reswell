@@ -25,17 +25,21 @@ export function HomeListingScrollRow({
   uniformCardHeights = true,
   tileWrapClassName = homeUniformScrollCarouselTileWrapClass,
   rowGapClassName = "gap-3",
+  /** Keep the row inset in a padded band (city chapter strips) instead of full-bleed. */
+  inset = false,
 }: {
   children: ReactNode
   /** Stretch all cards to the row height (surfboards, PDP similar rows, shop strip). */
   uniformCardHeights?: boolean
   tileWrapClassName?: string
   rowGapClassName?: string
+  inset?: boolean
 }) {
   const inner = (
     <div
       className={cn(
-        "flex w-max pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none",
+        "flex w-max snap-x snap-proximity sm:snap-none",
+        inset ? "pr-3 sm:pr-5" : "pr-4 sm:pr-6 lg:pr-8",
         rowGapClassName,
         uniformCardHeights && "min-h-0 items-stretch",
       )}
@@ -54,6 +58,14 @@ export function HomeListingScrollRow({
   )
 
   return (
-    <div className={cn(homeHorizontalScrollOuterClassName, homeHorizontalScrollPlDefault)}>{inner}</div>
+    <div
+      className={cn(
+        inset
+          ? "scroll-smooth overscroll-x-contain overflow-x-auto overflow-y-visible pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pl-3 sm:pl-5"
+          : cn(homeHorizontalScrollOuterClassName, homeHorizontalScrollPlDefault),
+      )}
+    >
+      {inner}
+    </div>
   )
 }

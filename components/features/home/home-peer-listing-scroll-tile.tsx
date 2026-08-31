@@ -71,6 +71,7 @@ export function HomePeerListingScrollTile({
   imagePriority = false,
   compact = false,
   cardContentClassName,
+  cardClassName,
   metaFooterClassName,
 }: {
   listing: HomePeerScrollListing
@@ -93,6 +94,8 @@ export function HomePeerListingScrollTile({
   compact?: boolean
   /** Overrides default body inset (e.g. auth landing grid). */
   cardContentClassName?: string
+  /** Overrides default card shell (e.g. city spotlight strip on navy). */
+  cardClassName?: string
   /** Overrides footer spacing below title/subtitle. */
   metaFooterClassName?: string
 }) {
@@ -130,7 +133,9 @@ export function HomePeerListingScrollTile({
       imagePriority={imagePriority}
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
-      cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}
+      cardClassName={
+        cardClassName ?? (isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass)
+      }
       cardContentClassName={
         cardContentClassName ??
         (compact ? homeMostViewedCompactBodyClass : homeUniformScrollBodyClass)

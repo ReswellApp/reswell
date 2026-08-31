@@ -1,4 +1,5 @@
 import type { RecentListing } from "@/components/recent-feed-client"
+import type { CityTopSeller } from "@/lib/types/city-top-sellers"
 import type { TopCityDirectoryRow } from "@/lib/types/top-cities-directory"
 
 export type CityLandingListing = RecentListing & {
@@ -15,6 +16,7 @@ export type CityLandingListing = RecentListing & {
 export type CityLandingPageData = {
   city: TopCityDirectoryRow
   listings: CityLandingListing[]
+  topSellers: CityTopSeller[]
   pickupCount: number
   hasMore: boolean
   boardsBrowseHref: string

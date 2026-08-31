@@ -1,6 +1,6 @@
 "use client"
 
-import { type ReactNode, Suspense, useMemo, useRef, useState, useTransition } from "react"
+import { type ReactNode, Suspense, useCallback, useMemo, useRef, useState, useTransition } from "react"
 import type { StaticImageData } from "next/image"
 import { Check, Truck, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { CategoryBrowseFilterButton } from "@/components/category-browse-filter-
 import {
   BrowseFiltersHoverBar,
   browseFiltersHoverBarClearanceClassName,
+  browseFiltersHoverBarPinnedClearanceClassName,
 } from "@/components/features/browse/browse-filters-hover-bar"
 import { BoardsBrowseFacetControls } from "@/components/boards-browse-facet-controls"
 import { useBoardsFilterState } from "@/components/boards-browse-filter-state"
@@ -42,11 +43,23 @@ type BoardsBrowseClientProps = {
   /** Overrides the default boards atmosphere photo (e.g. city landings). */
   atmosphereImage?: StaticImageData | string
   atmosphereImageClassName?: string
-  /** Rendered between the page header and the filter/results row. */
+  /** Rendered at the top of the results column (beside the filter sidebar). */
   afterHeader?: ReactNode
   showSaveSearch?: boolean
   /** Mobile hover-bar sell CTA — city landings only. */
   showHoverBarListBoard?: boolean
+  /** City landings: hide location/radius — the page is already city-scoped. */
+  showLocationFilter?: boolean
+  /**
+   * City infinite scroll: keep the floating Filters bar pinned on mobile and
+   * desktop so Filters stays reachable without scrolling to the header.
+   */
+  persistFiltersHoverBar?: boolean
+  /**
+   * City landings: scroll the board grid (chips + listings) into view when a
+   * filter changes, so users skip Top listings / shops / sellers strips.
+   */
+  scrollListingsIntoViewOnFilter?: boolean
   /** Open raffle CTA for the hero + mobile hover bar. */
   giveawayEnter?: BoardsGiveawayEnterProps | null
 }
@@ -105,13 +118,30 @@ export function BoardsBrowseClient({
   afterHeader,
   showSaveSearch = true,
   showHoverBarListBoard = false,
+  showLocationFilter = true,
+  persistFiltersHoverBar = false,
+  scrollListingsIntoViewOnFilter = false,
   giveawayEnter = null,
 }: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
   const dropoffSentinelRef = useRef<HTMLDivElement>(null)
-  const state = useBoardsFilterState(startTransition)
+  const listingsAnchorRef = useRef<HTMLDivElement>(null)
+
+  const scrollListingsIntoView = useCallback(() => {
+    if (!scrollListingsIntoViewOnFilter) return
+    const node = listingsAnchorRef.current
+    if (!node) return
+    // Defer past layout from optimistic filter updates / mobile sheet.
+    requestAnimationFrame(() => {
+      node.scrollIntoView({ behavior: "smooth", block: "start" })
+    })
+  }, [scrollListingsIntoViewOnFilter])
+
+  const state = useBoardsFilterState(startTransition, {
+    onAfterNavigate: scrollListingsIntoViewOnFilter ? scrollListingsIntoView : undefined,
+  })
 
   const chips = useMemo<ActiveChip[]>(() => {
     const out: ActiveChip[] = []
@@ -155,14 +185,14 @@ export function BoardsBrowseClient({
         onRemove: () => state.setPriceRange(null, null),
       })
     }
-    if (state.location.trim()) {
+    if (showLocationFilter && state.location.trim()) {
       out.push({
         id: "location",
         label: state.location.trim(),
         onRemove: () => state.setLocationQuery(""),
       })
     }
-    if (state.radius !== "any") {
+    if (showLocationFilter && state.radius !== "any") {
       out.push({
         id: "radius",
         label: `${state.radius} mi`,
@@ -177,7 +207,16 @@ export function BoardsBrowseClient({
       })
     }
     return out
-  }, [state])
+  }, [state, showLocationFilter])
+
+  const locationActiveExtras = showLocationFilter
+    ? 0
+    : (state.location.trim() ? 1 : 0) + (state.radius !== "any" ? 1 : 0)
+  const activeFilterCount = Math.max(0, state.activeCount - locationActiveExtras)
+  const hasAnyActiveFilter =
+    showLocationFilter
+      ? state.hasAnyActive
+      : activeFilterCount > 0
 
   const shell = (giveawayButtons: {
     desktopButton: ReactNode
@@ -196,58 +235,73 @@ export function BoardsBrowseClient({
           atmosphereImageClassName ?? "object-[38%_72%] md:object-[40%_60%]"
         }
         action={
-          <div className="hidden flex-wrap items-center gap-2 md:flex">
-            {headerAction}
-            {giveawayButtons?.desktopButton}
-            <BoardsShipToMeButton
-              pressed={state.shippingAvailable}
-              onToggle={() => {
-                const next = !state.shippingAvailable
-                logBrowseButtonClick({
-                  category: "boards",
-                  button: "ship_to_me",
-                  detail: next ? "enabled" : "disabled",
-                })
-                state.setShippingAvailable(next)
-              }}
-              className="h-10 px-4"
-              label="Ship to me"
-            />
-            <CategoryBrowseFilterButton
-              category="boards"
-              activeFilterCount={state.activeCount}
-              onOpenMobileFilters={() => setMobileOpen(true)}
-              desktopFiltersOpen={desktopFiltersOpen}
-              onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
-            />
-          </div>
+          persistFiltersHoverBar ? (
+            headerAction || giveawayButtons?.desktopButton ? (
+              <div className="hidden flex-wrap items-center gap-2 md:flex">
+                {headerAction}
+                {giveawayButtons?.desktopButton}
+              </div>
+            ) : null
+          ) : (
+            <div className="hidden flex-wrap items-center gap-2 md:flex">
+              {headerAction}
+              {giveawayButtons?.desktopButton}
+              <BoardsShipToMeButton
+                pressed={state.shippingAvailable}
+                onToggle={() => {
+                  const next = !state.shippingAvailable
+                  logBrowseButtonClick({
+                    category: "boards",
+                    button: "ship_to_me",
+                    detail: next ? "enabled" : "disabled",
+                  })
+                  state.setShippingAvailable(next)
+                }}
+                className="h-10 px-4"
+                label="Ship to me"
+              />
+              <CategoryBrowseFilterButton
+                category="boards"
+                activeFilterCount={activeFilterCount}
+                onOpenMobileFilters={() => setMobileOpen(true)}
+                desktopFiltersOpen={desktopFiltersOpen}
+                onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
+              />
+            </div>
+          )
         }
       />
 
-      {afterHeader}
-
       <div
         className={cn(
-          "flex w-full min-w-0 gap-6",
-          afterHeader ? "mt-0" : "mt-5",
-          browseFiltersHoverBarClearanceClassName,
+          "mt-5 flex w-full min-w-0 gap-6",
+          persistFiltersHoverBar
+            ? browseFiltersHoverBarPinnedClearanceClassName
+            : browseFiltersHoverBarClearanceClassName,
         )}
       >
         {/* Desktop: collapsible left sidebar (toggled by the toolbar Filters button) */}
         <aside className={cn("hidden w-[260px] shrink-0", desktopFiltersOpen && "md:block")}>
-          <div className="sticky top-4">
-            <div className="mb-2 flex items-center justify-between">
+          <div
+            className={cn(
+              "sticky top-[calc(var(--site-header-height,4rem)+0.75rem)] flex flex-col",
+              persistFiltersHoverBar
+                ? "max-h-[calc(100dvh-var(--site-header-height,4rem)-1.5rem-5.25rem-env(safe-area-inset-bottom,0px))]"
+                : "max-h-[calc(100dvh-var(--site-header-height,4rem)-1.5rem)]",
+            )}
+          >
+            <div className="mb-2 flex shrink-0 items-center justify-between">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
                   Filter
                 </h2>
-                {state.activeCount > 0 ? (
+                {activeFilterCount > 0 ? (
                   <Badge variant="secondary" className="h-5 rounded-full px-2 text-[11px] tabular-nums">
-                    {state.activeCount}
+                    {activeFilterCount}
                   </Badge>
                 ) : null}
               </div>
-              {state.hasAnyActive ? (
+              {hasAnyActiveFilter ? (
                 <button
                   type="button"
                   onClick={state.clearAll}
@@ -257,56 +311,72 @@ export function BoardsBrowseClient({
                 </button>
               ) : null}
             </div>
-            <BoardsBrowseFacetControls
-              state={state}
-              counts={counts}
-              locationListboxId="boards-location-sidebar"
-            />
-            {showSaveSearch ? (
-              <>
-                <Separator className="my-4" />
-                <Suspense fallback={null}>
-                  <BoardsSaveSearchPanel />
-                </Suspense>
-              </>
-            ) : null}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] pr-1">
+              <BoardsBrowseFacetControls
+                state={state}
+                counts={counts}
+                locationListboxId="boards-location-sidebar"
+                showLocationFilter={showLocationFilter}
+              />
+              {showSaveSearch ? (
+                <>
+                  <Separator className="my-4" />
+                  <Suspense fallback={null}>
+                    <BoardsSaveSearchPanel />
+                  </Suspense>
+                </>
+              ) : null}
+            </div>
           </div>
         </aside>
 
-        {/* Results column */}
+        {/* Results column — strips (top listings / shops / sellers) live here so
+            opening the sidebar narrows them with the board grid. */}
         <div className="min-w-0 flex-1">
-          {chips.length > 0 ? (
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              {chips.map((chip) => (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={chip.onRemove}
-                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-sm text-primary transition-colors hover:bg-primary/20"
-                >
-                  {chip.label}
-                  <X className="ml-0.5 h-3 w-3 shrink-0" />
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={state.clearAll}
-                className="text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-              >
-                Clear all
-              </button>
-            </div>
-          ) : null}
+          {afterHeader}
 
           <div
-            className={cn(
-              "relative transition-[opacity] duration-300 ease-out motion-reduce:transition-none",
-              isPending && "opacity-[0.97]",
-            )}
-            aria-busy={isPending}
+            ref={scrollListingsIntoViewOnFilter ? listingsAnchorRef : undefined}
+            id={scrollListingsIntoViewOnFilter ? "city-board-listings" : undefined}
+            className={
+              scrollListingsIntoViewOnFilter
+                ? "scroll-mt-[calc(var(--site-header-height,4rem)+0.75rem)]"
+                : undefined
+            }
           >
-            {children}
-            <div ref={dropoffSentinelRef} className="h-px w-full" aria-hidden />
+            {chips.length > 0 ? (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                {chips.map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={chip.onRemove}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-sm text-primary transition-colors hover:bg-primary/20"
+                  >
+                    {chip.label}
+                    <X className="ml-0.5 h-3 w-3 shrink-0" />
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={state.clearAll}
+                  className="text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Clear all
+                </button>
+              </div>
+            ) : null}
+
+            <div
+              className={cn(
+                "relative transition-[opacity] duration-300 ease-out motion-reduce:transition-none",
+                isPending && "opacity-[0.97]",
+              )}
+              aria-busy={isPending}
+            >
+              {children}
+              <div ref={dropoffSentinelRef} className="h-px w-full" aria-hidden />
+            </div>
           </div>
         </div>
       </div>
@@ -315,6 +385,7 @@ export function BoardsBrowseClient({
         hidden={mobileOpen}
         label="Browse filters"
         dropoffSentinel={dropoffSentinelRef}
+        persist={persistFiltersHoverBar}
       >
         {giveawayButtons?.mobileButton}
         <BoardsShipToMeButton
@@ -333,7 +404,7 @@ export function BoardsBrowseClient({
         />
         <CategoryBrowseFilterButton
           category="boards"
-          activeFilterCount={state.activeCount}
+          activeFilterCount={activeFilterCount}
           onOpenMobileFilters={() => setMobileOpen(true)}
           desktopFiltersOpen={desktopFiltersOpen}
           onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
@@ -389,9 +460,9 @@ export function BoardsBrowseClient({
           <div className="flex items-center justify-between border-b px-4 py-3.5">
             <div className="flex items-center gap-2">
               <SheetTitle className="text-base font-semibold text-foreground">Filters</SheetTitle>
-              {state.activeCount > 0 ? (
+              {activeFilterCount > 0 ? (
                 <Badge variant="secondary" className="h-5 rounded-full px-2 text-[11px] tabular-nums">
-                  {state.activeCount}
+                  {activeFilterCount}
                 </Badge>
               ) : null}
             </div>
@@ -403,6 +474,7 @@ export function BoardsBrowseClient({
                 state={state}
                 counts={counts}
                 locationListboxId="boards-location-drawer"
+                showLocationFilter={showLocationFilter}
               />
               {showSaveSearch ? (
                 <>
@@ -420,7 +492,7 @@ export function BoardsBrowseClient({
               type="button"
               variant="outline"
               className="flex-1 rounded-full"
-              disabled={!state.hasAnyActive}
+              disabled={!hasAnyActiveFilter}
               onClick={state.clearAll}
             >
               Clear all
@@ -428,7 +500,10 @@ export function BoardsBrowseClient({
             <Button
               type="button"
               className="flex-1 rounded-full"
-              onClick={() => setMobileOpen(false)}
+              onClick={() => {
+                setMobileOpen(false)
+                scrollListingsIntoView()
+              }}
             >
               Show results
             </Button>

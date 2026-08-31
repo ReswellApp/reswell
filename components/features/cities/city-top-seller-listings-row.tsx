@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { CityLandingStripSection } from "@/components/features/cities/city-landing-strip-section"
 import { HomeListingScrollRow } from "@/components/features/home/home-listing-scroll-row"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { cityTopListingTileWrapClass } from "@/lib/home-listing-scroll-styles"
@@ -54,14 +55,15 @@ export function CityTopSellerListingsRow({
   if (listings.length === 0) return null
 
   return (
-    <section className="mt-8 mb-8 sm:mt-10 sm:mb-10" aria-label={`Top listings in ${cityName}`}>
-      <h2 className="mb-4 text-xl font-bold tracking-tight text-foreground sm:mb-5 sm:text-2xl">
-        Top listings in {cityName}
-      </h2>
+    <CityLandingStripSection
+      label={`Top listings in ${cityName}`}
+      title={`Top listings in ${cityName}`}
+      emphasis
+    >
       <HomeListingScrollRow
         uniformCardHeights
         tileWrapClassName={cityTopListingTileWrapClass}
-        rowGapClassName="gap-1.5 sm:gap-2"
+        rowGapClassName="gap-2 sm:gap-2.5"
       >
         {listings.map((listing, tileIdx) => (
           <HomePeerListingScrollTile
@@ -90,6 +92,6 @@ export function CityTopSellerListingsRow({
           />
         ))}
       </HomeListingScrollRow>
-    </section>
+    </CityLandingStripSection>
   )
 }

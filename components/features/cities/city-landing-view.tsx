@@ -7,6 +7,7 @@ import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { CityLandingListings } from "@/components/features/cities/city-landing-listings"
 import { CitySurfShopsRow } from "@/components/features/cities/city-surf-shops-row"
 import { CityTopSellerListingsRow } from "@/components/features/cities/city-top-seller-listings-row"
+import { CityTopSellersRow } from "@/components/features/cities/city-top-sellers-row"
 import {
   cityLandingFacetCounts,
   filterCityListingsByBrowseParams,
@@ -89,7 +90,7 @@ function cityAtmosphere(city: CityLandingPageData["city"]): CityAtmosphere | und
 }
 
 export function CityLandingView({ data }: { data: CityLandingPageData }) {
-  const { city, listings } = data
+  const { city, listings, topSellers } = data
   const searchParams = useSearchParams()
   const query = searchParams.toString()
 
@@ -104,7 +105,8 @@ export function CityLandingView({ data }: { data: CityLandingPageData }) {
   const topSellerListings = useMemo(() => pickCityTopSellerListings(listings), [listings])
   const surfShops = surfShopsForCity(city)
   const atmosphere = cityAtmosphere(city)
-  const hasAfterHeader = topSellerListings.length > 0 || surfShops.length > 0
+  const hasAfterHeader =
+    topSellerListings.length > 0 || surfShops.length > 0 || topSellers.length > 0
 
   return (
     <section className="bg-offwhite">
@@ -116,13 +118,25 @@ export function CityLandingView({ data }: { data: CityLandingPageData }) {
           atmosphereImage={atmosphere?.image}
           atmosphereImageClassName={atmosphere?.className}
           showHoverBarListBoard
+          showLocationFilter={false}
+          persistFiltersHoverBar
+          scrollListingsIntoViewOnFilter
           afterHeader={
             hasAfterHeader ? (
               <>
                 {topSellerListings.length > 0 ? (
                   <CityTopSellerListingsRow cityName={city.city} listings={topSellerListings} />
                 ) : null}
-                <CitySurfShopsRow cityName={city.city} shops={surfShops} />
+                <CitySurfShopsRow
+                  cityName={city.city}
+                  shops={surfShops}
+                  showDivider={topSellerListings.length > 0}
+                />
+                <CityTopSellersRow
+                  cityName={city.city}
+                  sellers={topSellers}
+                  showDivider={topSellerListings.length > 0 || surfShops.length > 0}
+                />
               </>
             ) : null
           }

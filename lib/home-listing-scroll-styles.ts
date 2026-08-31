@@ -93,6 +93,26 @@ export const cityTopListingTileWrapClass = cn(
   "w-[calc((100svw-1rem-1.5rem)/2.85)] sm:w-40",
 )
 
+/**
+ * City surf-shops / top-sellers strip — secondary to board tiles.
+ * Narrower (~3.6 peeks on mobile, `sm:w-28`) so the board grid stays primary.
+ */
+export const cityEntityTileWrapClass = cn(
+  "flex min-h-0 shrink-0 snap-start self-stretch flex-col",
+  "w-[calc((100svw-1rem-1.25rem)/3.6)] sm:w-28",
+)
+
+export const cityEntityTileBodyClass =
+  "flex min-h-0 min-w-0 flex-1 flex-col px-1.5 pb-1.5 pt-1"
+
+export const cityEntityTileTitleClass = cn(
+  listingTileTitleHeadingClassName,
+  "text-[11px] font-semibold leading-snug tracking-tight text-foreground line-clamp-2 sm:text-xs",
+)
+
+export const cityEntityTileSubtitleClass =
+  "mt-0.5 text-[10px] font-normal leading-snug text-foreground/90"
+
 export const homeMostViewedCompactBodyClass =
   "flex min-h-0 min-w-0 flex-1 flex-col px-2 pb-2 pt-2"
 

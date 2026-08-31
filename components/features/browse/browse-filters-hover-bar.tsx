@@ -7,20 +7,35 @@ import { cn } from "@/lib/utils"
 export const browseFiltersHoverBarClearanceClassName =
   "pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] md:pb-0"
 
+/** City pages: floating bar stays on desktop too, so keep clearance at all breakpoints. */
+export const browseFiltersHoverBarPinnedClearanceClassName =
+  "pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))]"
+
 export function BrowseFiltersHoverBar({
   children,
   hidden = false,
   label,
   dropoffSentinel,
+  persist = false,
 }: {
   children: ReactNode
   hidden?: boolean
   label: string
   dropoffSentinel: RefObject<HTMLElement | null>
+  /**
+   * City infinite scroll: keep the bar pinned and show it on desktop too
+   * (not only `md:hidden`). Skips the end-of-list dropoff hide.
+   */
+  persist?: boolean
 }) {
   const [listingsInView, setListingsInView] = useState(true)
 
   useEffect(() => {
+    if (persist) {
+      setListingsInView(true)
+      return
+    }
+
     const node = dropoffSentinel.current
     if (!node) return
 
@@ -56,14 +71,15 @@ export function BrowseFiltersHoverBar({
       viewport?.removeEventListener("resize", onScrollOrResize)
       viewport?.removeEventListener("scroll", onScrollOrResize)
     }
-  }, [dropoffSentinel])
+  }, [dropoffSentinel, persist])
 
-  const visible = !hidden && listingsInView
+  const visible = !hidden && (persist || listingsInView)
 
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 md:hidden",
+        "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2",
+        persist ? null : "md:hidden",
         "transform-gpu transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none",
         visible ? "translate-y-0 opacity-100" : "translate-y-[120%] opacity-0",
       )}

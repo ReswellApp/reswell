@@ -1,24 +1,24 @@
 import { CityLandingStripSection } from "@/components/features/cities/city-landing-strip-section"
+import { CityTopSellerCard } from "@/components/features/cities/city-top-seller-card"
 import { HomeListingScrollRow } from "@/components/features/home/home-listing-scroll-row"
-import { SurfShopCard } from "@/components/features/surf-shops/surf-shop-card"
-import type { CitySurfShop } from "@/lib/city-landing-surf-shops"
 import { cityEntityTileWrapClass } from "@/lib/home-listing-scroll-styles"
+import type { CityTopSeller } from "@/lib/types/city-top-sellers"
 
-export function CitySurfShopsRow({
+export function CityTopSellersRow({
   cityName,
-  shops,
+  sellers,
   showDivider = false,
 }: {
   cityName: string
-  shops: CitySurfShop[]
+  sellers: CityTopSeller[]
   showDivider?: boolean
 }) {
-  if (shops.length === 0) return null
+  if (sellers.length === 0) return null
 
   return (
     <CityLandingStripSection
-      label={`Surf shops in ${cityName}`}
-      title={`Surf shops in ${cityName}`}
+      label={`Top sellers in ${cityName}`}
+      title={`Top sellers in ${cityName}`}
       showDivider={showDivider}
     >
       <HomeListingScrollRow
@@ -26,8 +26,8 @@ export function CitySurfShopsRow({
         tileWrapClassName={cityEntityTileWrapClass}
         rowGapClassName="gap-2 sm:gap-2.5"
       >
-        {shops.map((shop, index) => (
-          <SurfShopCard key={shop.id} shop={shop} imagePriority={index === 0} density="compact" />
+        {sellers.map((seller, index) => (
+          <CityTopSellerCard key={seller.id} seller={seller} imagePriority={index === 0} />
         ))}
       </HomeListingScrollRow>
     </CityLandingStripSection>

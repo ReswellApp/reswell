@@ -211,19 +211,25 @@ export function BoardsBrowseFacetControls({
   state,
   counts,
   locationListboxId,
+  showLocationFilter = true,
 }: {
   state: BoardsFilterState
   counts: FacetCountsMap
   locationListboxId: string
+  /** City landings omit location/radius — the page is already scoped to a city. */
+  showLocationFilter?: boolean
 }) {
   const { selections } = state
   const advancedCount = advancedFilterCount(selections)
+  const openSections = showLocationFilter
+    ? PRIMARY_SECTION_IDS
+    : PRIMARY_SECTION_IDS.filter((id) => id !== "location")
 
   return (
     <Accordion
       type="multiple"
       defaultValue={[
-        ...PRIMARY_SECTION_IDS,
+        ...openSections,
         ...(advancedCount > 0 ? (["advanced"] as const) : []),
       ]}
       className="w-full"
@@ -232,9 +238,11 @@ export function BoardsBrowseFacetControls({
         <PriceSection state={state} />
       </FacetAccordionItem>
 
-      <FacetAccordionItem id="location" title="Location">
-        <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
-      </FacetAccordionItem>
+      {showLocationFilter ? (
+        <FacetAccordionItem id="location" title="Location">
+          <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
+        </FacetAccordionItem>
+      ) : null}
 
       <FacetAccordionItem id="shipping" title="Shipping">
         <label
