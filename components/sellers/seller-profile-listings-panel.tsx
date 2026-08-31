@@ -403,6 +403,7 @@ export function SellerProfileListingsPanel({
                 user_id: listing.user_id,
                 title: listing.title,
                 price: listing.price,
+                compare_at_price: listing.compare_at_price,
                 status: listing.status ?? "active",
                 section: listing.section,
                 local_pickup: listing.local_pickup,
