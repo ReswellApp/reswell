@@ -1,0 +1,53 @@
+{
+  "generated_for": "Casco Surf Co official named standup catalog",
+  "source": "https://cascosurfco.com/pages/designs",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "casco-surf-co",
+      "name": "Casco Surf Co",
+      "website_url": "https://cascosurfco.com",
+      "location_label": "Byron Bay, New South Wales, Australia",
+      "founder_name": "Casco",
+      "lead_shaper_name": "Casco",
+      "short_description": "Byron Bay surfboards by Casco — original designs refined in Uruguay and adapted to the Australian coastline.",
+      "models": [
+        {
+          "name": "Capitan",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/9665/5602/files/falsacap_web-Photoroom.jpg?v=1758669206",
+          "description": "Versatile and lively, The Captain is built to handle anything from playful summer surf to solid overhead days. Its low entry rocker ensures smooth paddling and quick takeoffs, while the round pin tail and spiral V through the tail give it exceptional drive and flow through turns. Available in sizes from 5'8\" to 6'4\", The Captain offers the option of a twin or 2+1 fin setup. The extra width provides added flotation and easy glide, making it ideal for surfers seeking a reliable all-rounder with a touch of classic twin-fin spirit.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "CS Noserider",
+          "image_url": "https://cascosurfco.com/cdn/shop/files/DSC01579-2.jpg?v=1754377633&width=1500",
+          "description": "Our classic CS Noserider, designed for joy with full focus on the ride. With a flat nose, gentle rocker, and tail kick, it delivers effortless noseriding and smooth turning in smaller waves. Available from 9'0\" to 10'0\", this model combines glide, stability, and smooth turning flow. Its reverse rocker and concave nose deliver effortless lift for nose riding, while the rolled V through the tail ensures clean, fluid turns when stepping back. With a square tail and single fin setup, it's built for small to mid-size waves and classic longboard style.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "El Gran Pez",
+          "description": "El Pez may be a master of speed and agility, but El Gran Pez takes versatility to new heights. Engineered for full-speed performance and exceptional maneuverability across all ranges of waves, this larger variant promises an even more dynamic surfing experience.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "El Pez",
+          "image_url": "https://cascosurfco.com/cdn/shop/files/DSC01513.jpg?v=1763192059&width=1500",
+          "description": "Boasting a flat deck and low rails, this board strategically distributes extra volume from tail to nose, accentuated by the distinctive baked nose design. Enjoy enhanced flotation under the front part of the board, making catching waves a breeze. El Pez is engineered for full-speed performance and exceptional maneuverability across all ranges of waves. Whether you're riding smaller waves or challenging larger swells, this board promises a versatile and dynamic surfing experience.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mistica Cosmica",
+          "image_url": "https://cascosurfco.com/cdn/shop/files/DSC00906.jpg?v=1763191053&width=1500",
+          "description": "The Mistica was a board designed by Casco for himself, and it has always been tested by the shaper's own hands in the water. Adapted to a wide range of waves—from small summer days to powerful offshore winter swells—the Mistica is a magical board that flows like air through the cosmos. It carries the spirit of the surfer who is not chasing competition, but searching for his own joy. A standout all-rounder for any quiver. Available in sizes from 6'4\" to 7'0\", this model offers a balanced blend of flow, speed, and control. Its lifted nose allows for confident late drops, while the flat midsection generates drive and speed down the line. A pronounced tail kick enhances responsiveness in the pocket, paired with a single-to-double concave. Featuring a pin tail, twin fin setup with quad channels, and Futures fin boxes.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Vortex Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/9665/5602/files/vortex_white-Photoroom.jpg?v=1754290593",
+          "description": "Featuring a distinctive fish shape with a versatile 2+1 fin setup, this board excels in a variety of conditions, offering smooth turns and explosive maneuvers. Its streamlined design ensures a swift ride, while the unique fin configuration enhances stability and control. Perfect for carving through waves and catching every opportunity to ride, The Vortex Fish delivers an exhilarating surf experience.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
