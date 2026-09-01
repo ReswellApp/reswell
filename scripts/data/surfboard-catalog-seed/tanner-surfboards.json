@@ -1,0 +1,113 @@
+{
+  "generated_for": "Tanner Surfboards official model catalog",
+  "source": "https://tannersurfboards.co/models-2",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "tanner-surfboards",
+      "name": "Tanner Surfboards",
+      "website_url": "https://tannersurfboards.co",
+      "location_label": "Costa Mesa, California",
+      "founder_name": "Tanner Prairie",
+      "lead_shaper_name": "Tanner Prairie",
+      "short_description": "Costa Mesa, California surfboard shaper Tanner Prairie, mentored by Mike Marshall and working out of PureGlass. Modern takes on classic longboards, hulls, gliders, and mid-lengths.",
+      "models": [
+        {
+          "name": "Baby",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/0f5c5902-1a49-4946-bc98-6dec8c396450/tanner+baby",
+          "description": "Inspired by Phil Edwards and his balsa board he called “baby”. This model trims and turns with ease. The outline is sleek and overall rocker is flat. The 60/40 rails provide control and flow through turns. Works best in waves 2-6 feet.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mike Rogers Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/25b1f0df-6bc8-4602-8637-0ea4f8de62ce/mr+model.jpg",
+          "description": "The Mike Rogers model is a design Tanner and Mike have been working on for over 10 years. It has a very balanced outline and foil. It is a great all around board and daily rider. Works great in a variety of waves from 2-3 foot blackies to 6-8 foot Newport Point.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Dirty Martini",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/b58803e6-ecb8-4187-8302-3d76ca986383/MARTINI+SMALL.jpg",
+          "description": "Levi Prairie signature model. Great all around log with a pulled in nose. Really loose and jivey in the pocket. Enhances style and subtle flair. Flat rocker overall and pinched 50/50 rails. Works best in 2-4 foot waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Baby 2.0",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/6b7d4a25-7886-4df1-aef7-47808afafc30/0.jpeg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gliders",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/38708ba0-e5c1-431c-ba19-5907421ea261/IMG_0845.jpg",
+          "description": "Inspired by Skip Frye. This style board is meant to harness the beauty and simplicity of riding waves. Around 11 foot in length these boards glide into waves with ease. They like to trim in the pocket and the length encourages smooth turns. Really fun in a variety of waves from 2-6 feet.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Marshall Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/fb383299-18ea-4dd9-8ae1-c700dce0976f/IMG-1884.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mr. Wizard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/e73d12f9-1f93-4247-898b-655c2a89f55a/Screen+Shot+2022-12-10+at+5.59.51+AM.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Dash",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/b8b9bfc2-721d-462f-9099-7623cf66ab23/IMG-2348.jpg",
+          "description": "Inspired by the “malibu chip” board from the 1950’s. This board is a modern take on a classic era. The original outline was pulled off a Mike Marshall board shaped for Kio aka Yellow Rat. This design encourages in the pocket traditional surfing and finding the perfect trim. Works best in clean logging waves and point breaks. Overall flat rocker and neutral bottom with 60/40 rails.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tradesman",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/e57513d7-48e8-429c-840c-31811e8922a2/IMG-2612.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Luna",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/924bcd2a-14db-43eb-b697-575c6a95cb46/2-9.jpg",
+          "description": "Luna is my take on the traditional noserider. Nose concave, parallel rail, wide point aft of center, and tail kick work simultaneously to provide lift and a steady platform when on the nose. Everything is blended in a way to not compromise trim when on the center of the board. Take a step back and the tail kick allows you to pivot from rail to rail. Works best in 2-4 foot waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "T ~ Chip",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/b8215e98-09f7-46d5-a750-8dc0615272f2/IMG_2603.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Paisley",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/0d1eaa68-b518-42eb-ad2e-451242ff5397/SURFOBARD_TOP_01.jpg",
+          "description": "This pintail egg is a really fun all around board. It catches waves easily and gets up to trim even on smaller waves. Works well in 3-6 foot waves. Can be customized with different fin configurations.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Standard Hull",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/2654645d-e3a4-4206-845d-800f9e7a5405/IMG-1769.jpg",
+          "description": "If effortless speed and down the line trim is what your after then this is the board. Inspired by Greg Liddle. This board works well in point waves and clean, lined up beach breaks. Smooth plane shape, pinched rails, hull entry and “s” deck are what give this board its unique characteristics.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flower",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/6b41c78e-88c6-41a5-8683-a051ad1277bf/IMG_1774.jpg",
+          "description": "This model is a cross between a vee bottom and a hull. Yet it’s more user friendly than both. It excels in point waves and clean beach breaks. Hull entry, neutral bottom, and rolled vee in the tail. Catches waves easy. My favorite size is 8’4”.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Long Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/36f80a0a-8902-4d69-85c6-dff1d67c05f0/IMG_1529.jpeg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Scout",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/1676001128309-97BYB953PDSE3BYVU6ZD/IMG_0028.jpeg",
+          "description": "The scout model is a glider design inspired by Skip Frye. It works well in a variety of conditions in waves 2 to 6 foot. It has a slight rolled entry to single concave in the center, blended to a double concave in front of the fin to vee out the tail. The edge in the tail helps give it some bite in the turns.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Dove",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ebcb9a8e797e80572eae659/642cf686-47fb-460e-a669-ed1bf1b20e6c/IMG_0862.jpeg",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
