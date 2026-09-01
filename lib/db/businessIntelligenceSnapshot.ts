@@ -9,7 +9,7 @@ import type {
   IntelligenceMonthlyHistoryRow,
   IntelligenceTopPath,
 } from "@/lib/types/businessIntelligence"
-import { marketplaceListingItemGmvUsd, marketplacePromoMarketingUsd } from "@/lib/seller-fees"
+import { marketplaceGmvExcludingShippingUsd, marketplaceListingItemGmvUsd, marketplacePromoMarketingUsd } from "@/lib/seller-fees"
 import { businessDayKey } from "@/lib/utils/business-timezone"
 import { businessMonthStartIso, businessYearMonthChoices } from "@/lib/utils/adminInsightsPeriod"
 import type { IntelligencePeriodResolved } from "@/lib/utils/businessIntelligencePeriod"
@@ -122,25 +122,26 @@ export async function fetchIntelligenceCommerce(
     const refunded = o.status === "refunded" || o.status === "refunding"
 
     if (confirmed && inCurrent) {
-      gmvCur += o.amount
+      const gmv = marketplaceGmvExcludingShippingUsd(o)
+      gmvCur += gmv
       listingItemGmvCur += marketplaceListingItemGmvUsd(o)
       feesCur += o.platform_fee
       promoCur += marketplacePromoMarketingUsd(o)
       ordersCur += 1
       const day = businessDayKey(o.created_at)
       const bucket = dailyMap.get(day) ?? { date: day, gmv: 0, fees: 0, orders: 0 }
-      bucket.gmv += o.amount
+      bucket.gmv += gmv
       bucket.fees += o.platform_fee
       bucket.orders += 1
       dailyMap.set(day, bucket)
       if (o.listing_id) {
         const l = listingAgg.get(o.listing_id) ?? { gmv: 0, orders: 0 }
-        l.gmv += o.amount
+        l.gmv += gmv
         l.orders += 1
         listingAgg.set(o.listing_id, l)
       }
     } else if (confirmed && inPrevious) {
-      gmvPrev += o.amount
+      gmvPrev += marketplaceGmvExcludingShippingUsd(o)
       feesPrev += o.platform_fee
       promoPrev += marketplacePromoMarketingUsd(o)
       ordersPrev += 1
@@ -329,7 +330,7 @@ export async function fetchIntelligenceMonthlyHistory(
   const [ordersRes, tippedGms, usersRes, listingsRes] = await Promise.all([
     db
       .from("orders")
-      .select("amount, platform_fee, promo_discount_usd, created_at, status")
+      .select("amount, shipping_amount, platform_fee, promo_discount_usd, created_at, status")
       .eq("is_admin_test", false)
       .eq("status", "confirmed")
       .gte("created_at", sinceIso)
@@ -368,7 +369,10 @@ export async function fetchIntelligenceMonthlyHistory(
     const ym = businessDayKey(createdAt).slice(0, 7)
     const b = bucket.get(ym)
     if (!b) continue
-    b.gmv += num(r.amount)
+    b.gmv += marketplaceGmvExcludingShippingUsd({
+      amount: num(r.amount),
+      shipping_amount: num(r.shipping_amount),
+    })
     b.platformRevenue += num(r.platform_fee)
     b.marketingExpense += marketplacePromoMarketingUsd({
       promo_discount_usd: num(r.promo_discount_usd),

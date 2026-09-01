@@ -40,6 +40,7 @@ import {
   buildAdminRevenuePaceInsight,
 } from '@/lib/utils/adminRevenueMonthly'
 import {
+  marketplaceGmvExcludingShippingUsd,
   marketplaceListingItemGmvUsd,
   marketplacePromoMarketingUsd,
 } from '@/lib/seller-fees'
@@ -74,11 +75,10 @@ export type {
  * `is_admin_test = false` filtering used by `adminPlatformFees.ts`.
  *
  * Money is treated as USD (no `currency` column on `orders`/`listings`).
- * "GMV with shipping" is buyer-paid order totals = sum of `orders.amount`
- * (item + shipping, net of Reswell promo), plus listing prices of off-platform
- * mark-as-sold sales with a succeeded seller tip. "GMV without shipping"
- * subtracts `orders.shipping_amount` (tipped mark-sold uses list price). Take
- * rate uses listing item GMV from confirmed checkout only (seller earnings +
+ * GMV is buyer-paid merchandise = `orders.amount` minus `orders.shipping_amount`
+ * (net of Reswell promo), plus listing prices of off-platform mark-as-sold
+ * sales with a succeeded seller tip. Shipping collected from buyers is not GMV.
+ * Take rate uses listing item GMV from confirmed checkout only (seller earnings +
  * platform fee) — the 7% fee base — so promo codes and off-platform tips do
  * not dilute the rate.
  * Promo discounts are reported as marketing expense. "Sale time" is
@@ -109,11 +109,6 @@ function num(value: unknown): number {
   if (value == null) return 0
   const n = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(n) ? n : 0
-}
-
-/** Buyer-paid GMV minus shipping — same promo treatment as `orders.amount`. */
-function buyerPaidGmvExcludingShipping(order: Pick<OrderRow, 'amount' | 'shipping_amount'>): number {
-  return Math.max(0, Math.round((order.amount - order.shipping_amount) * 100) / 100)
 }
 
 function trend(current: number, previous: number): TrendMetric {
@@ -361,8 +356,6 @@ export async function loadAdminBusinessInsights(
     // Partition by window + status.
     let gmvCur = 0
     let gmvPrev = 0
-    let gmvWithoutShippingCur = 0
-    let gmvWithoutShippingPrev = 0
     let listingItemGmvCur = 0
     let feesCur = 0
     let feesPrev = 0
@@ -372,12 +365,9 @@ export async function loadAdminBusinessInsights(
     let ordersPrev = 0
     let refundedCur = 0
 
-    const dailyMap = new Map<
-      string,
-      { gmv: number; gmvWithoutShipping: number; fees: number; orders: number }
-    >()
+    const dailyMap = new Map<string, { gmv: number; fees: number; orders: number }>()
     for (const key of buildBusinessDayKeysForPeriod(periodStartMs, periodEndMs)) {
-      dailyMap.set(key, { gmv: 0, gmvWithoutShipping: 0, fees: 0, orders: 0 })
+      dailyMap.set(key, { gmv: 0, fees: 0, orders: 0 })
     }
 
     const sellerAgg = new Map<string, { gmv: number; orders: number }>()
@@ -392,8 +382,8 @@ export async function loadAdminBusinessInsights(
 
       if (confirmed) {
         if (inCurrent) {
-          gmvCur += o.amount
-          gmvWithoutShippingCur += buyerPaidGmvExcludingShipping(o)
+          const gmv = marketplaceGmvExcludingShippingUsd(o)
+          gmvCur += gmv
           listingItemGmvCur += marketplaceListingItemGmvUsd(o)
           feesCur += o.platform_fee
           promoCur += marketplacePromoMarketingUsd(o)
@@ -401,26 +391,24 @@ export async function loadAdminBusinessInsights(
 
           const bucket = dailyMap.get(businessDayKey(o.created_at))
           if (bucket) {
-            bucket.gmv += o.amount
-            bucket.gmvWithoutShipping += buyerPaidGmvExcludingShipping(o)
+            bucket.gmv += gmv
             bucket.fees += o.platform_fee
             bucket.orders += 1
           }
           if (o.seller_id) {
             const s = sellerAgg.get(o.seller_id) ?? { gmv: 0, orders: 0 }
-            s.gmv += o.amount
+            s.gmv += gmv
             s.orders += 1
             sellerAgg.set(o.seller_id, s)
           }
           if (o.listing_id) {
             const l = listingAgg.get(o.listing_id) ?? { gmv: 0, orders: 0 }
-            l.gmv += o.amount
+            l.gmv += gmv
             l.orders += 1
             listingAgg.set(o.listing_id, l)
           }
         } else if (inPrevious) {
-          gmvPrev += o.amount
-          gmvWithoutShippingPrev += buyerPaidGmvExcludingShipping(o)
+          gmvPrev += marketplaceGmvExcludingShippingUsd(o)
           feesPrev += o.platform_fee
           promoPrev += marketplacePromoMarketingUsd(o)
           ordersPrev += 1
@@ -439,11 +427,9 @@ export async function loadAdminBusinessInsights(
       const inPrevious = ts >= prevStartMs && ts < prevEndMs
       if (inCurrent) {
         gmvCur += tip.listingPriceUsd
-        gmvWithoutShippingCur += tip.listingPriceUsd
         const bucket = dailyMap.get(businessDayKey(tip.succeededAt))
         if (bucket) {
           bucket.gmv += tip.listingPriceUsd
-          bucket.gmvWithoutShipping += tip.listingPriceUsd
         }
         const s = sellerAgg.get(tip.sellerUserId) ?? { gmv: 0, orders: 0 }
         s.gmv += tip.listingPriceUsd
@@ -455,7 +441,6 @@ export async function loadAdminBusinessInsights(
         listingAgg.set(tip.listingId, l)
       } else if (inPrevious) {
         gmvPrev += tip.listingPriceUsd
-        gmvWithoutShippingPrev += tip.listingPriceUsd
       }
     }
 
@@ -463,7 +448,6 @@ export async function loadAdminBusinessInsights(
       ([date, v]) => ({
         date,
         gmv: v.gmv,
-        gmvWithoutShipping: v.gmvWithoutShipping,
         fees: v.fees,
         orders: v.orders,
       }),
@@ -577,7 +561,6 @@ export async function loadAdminBusinessInsights(
         periodDays: period.periodDays,
         revenue: {
           gmv: trend(gmvCur, gmvPrev),
-          gmvWithoutShipping: trend(gmvWithoutShippingCur, gmvWithoutShippingPrev),
           platformRevenue: trend(feesCur, feesPrev),
           marketingExpense: trend(promoCur, promoPrev),
           orders: trend(ordersCur, ordersPrev),
@@ -650,16 +633,12 @@ export async function loadAdminRevenueTrend(
       return { ok: false, error: 'Could not load marketplace revenue trend.' }
     }
 
-    const dailyMap = new Map<
-      string,
-      { gmv: number; gmvWithoutShipping: number; fees: number; orders: number }
-    >()
+    const dailyMap = new Map<string, { gmv: number; fees: number; orders: number }>()
     for (const key of buildBusinessDayKeysForPeriod(period.periodStartMs, period.periodEndMs)) {
-      dailyMap.set(key, { gmv: 0, gmvWithoutShipping: 0, fees: 0, orders: 0 })
+      dailyMap.set(key, { gmv: 0, fees: 0, orders: 0 })
     }
 
     let totalGmv = 0
-    let totalGmvWithoutShipping = 0
     let totalOrders = 0
 
     for (const row of orderRows ?? []) {
@@ -676,13 +655,11 @@ export async function loadAdminRevenueTrend(
 
       const bucket = dailyMap.get(businessDayKey(order.created_at))
       if (!bucket) continue
-      const withoutShipping = buyerPaidGmvExcludingShipping(order)
-      bucket.gmv += order.amount
-      bucket.gmvWithoutShipping += withoutShipping
+      const gmv = marketplaceGmvExcludingShippingUsd(order)
+      bucket.gmv += gmv
       bucket.fees += order.platform_fee
       bucket.orders += 1
-      totalGmv += order.amount
-      totalGmvWithoutShipping += withoutShipping
+      totalGmv += gmv
       totalOrders += 1
     }
 
@@ -692,16 +669,13 @@ export async function loadAdminRevenueTrend(
       const bucket = dailyMap.get(businessDayKey(tip.succeededAt))
       if (!bucket) continue
       bucket.gmv += tip.listingPriceUsd
-      bucket.gmvWithoutShipping += tip.listingPriceUsd
       totalGmv += tip.listingPriceUsd
-      totalGmvWithoutShipping += tip.listingPriceUsd
     }
 
     const daily: AdminInsightsDailyPoint[] = Array.from(dailyMap.entries()).map(
       ([date, v]) => ({
         date,
         gmv: v.gmv,
-        gmvWithoutShipping: v.gmvWithoutShipping,
         fees: v.fees,
         orders: v.orders,
       }),
@@ -728,7 +702,6 @@ export async function loadAdminRevenueTrend(
         daily,
         monthly,
         totalGmv,
-        totalGmvWithoutShipping,
         totalOrders,
         insight,
       },
@@ -886,7 +859,7 @@ export async function loadAdminMomentumMatrix(): Promise<
     const [ordersRes, tippedGms, usersRes, listingsRes, searchResult] = await Promise.all([
       db
         .from('orders')
-        .select('amount, platform_fee, status, created_at')
+        .select('amount, shipping_amount, platform_fee, status, created_at')
         .eq('is_admin_test', false)
         .gte('created_at', sinceIso)
         .order('created_at', { ascending: false })
@@ -921,7 +894,13 @@ export async function loadAdminMomentumMatrix(): Promise<
         continue
       const ageMs = now - new Date(createdAt).getTime()
       orderEvents.push({ ageMs, weight: 1 })
-      gmvEvents.push({ ageMs, weight: num(r.amount) })
+      gmvEvents.push({
+        ageMs,
+        weight: marketplaceGmvExcludingShippingUsd({
+          amount: num(r.amount),
+          shipping_amount: num(r.shipping_amount),
+        }),
+      })
       revenueEvents.push({ ageMs, weight: num(r.platform_fee) })
     }
 
@@ -937,7 +916,7 @@ export async function loadAdminMomentumMatrix(): Promise<
       })
 
     const metrics: MomentumMetric[] = [
-      momentumMetric('gmv', 'GMV', 'Gross merchandise sales', 'usd', gmvEvents),
+      momentumMetric('gmv', 'GMV', 'Merchandise sales excluding shipping', 'usd', gmvEvents),
       momentumMetric(
         'platformRevenue',
         'Reswell revenue',
@@ -1017,7 +996,6 @@ export async function loadAdminMonthlyRevenueBreakdown(
       string,
       {
         gmv: number
-        gmvWithoutShipping: number
         platformRevenue: number
         marketingExpense: number
         orders: number
@@ -1026,7 +1004,6 @@ export async function loadAdminMonthlyRevenueBreakdown(
     for (const ym of months) {
       bucket.set(ym, {
         gmv: 0,
-        gmvWithoutShipping: 0,
         platformRevenue: 0,
         marketingExpense: 0,
         orders: 0,
@@ -1043,8 +1020,7 @@ export async function loadAdminMonthlyRevenueBreakdown(
       const ym = businessDayKey(createdAt).slice(0, 7)
       const b = bucket.get(ym)
       if (!b) continue
-      b.gmv += amount
-      b.gmvWithoutShipping += buyerPaidGmvExcludingShipping({
+      b.gmv += marketplaceGmvExcludingShippingUsd({
         amount,
         shipping_amount: shippingAmount,
       })
@@ -1060,13 +1036,11 @@ export async function loadAdminMonthlyRevenueBreakdown(
       const b = bucket.get(ym)
       if (!b) continue
       b.gmv += tip.listingPriceUsd
-      b.gmvWithoutShipping += tip.listingPriceUsd
     }
 
     const data: AdminMonthlyRevenueRow[] = months.map((yearMonth) => {
       const v = bucket.get(yearMonth) ?? {
         gmv: 0,
-        gmvWithoutShipping: 0,
         platformRevenue: 0,
         marketingExpense: 0,
         orders: 0,
@@ -1074,7 +1048,6 @@ export async function loadAdminMonthlyRevenueBreakdown(
       return {
         yearMonth,
         gmv: v.gmv,
-        gmvWithoutShipping: v.gmvWithoutShipping,
         platformRevenue: v.platformRevenue,
         marketingExpense: v.marketingExpense,
         orders: v.orders,

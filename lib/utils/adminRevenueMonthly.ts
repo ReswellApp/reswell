@@ -45,7 +45,6 @@ export function buildAdminRevenueMonthlyPoints(
     string,
     {
       gmv: number
-      gmvWithoutShipping: number
       fees: number
       orders: number
       mtdGmv: number
@@ -57,14 +56,12 @@ export function buildAdminRevenueMonthlyPoints(
     const yearMonth = point.date.slice(0, 7)
     const bucket = buckets.get(yearMonth) ?? {
       gmv: 0,
-      gmvWithoutShipping: 0,
       fees: 0,
       orders: 0,
       mtdGmv: 0,
       mtdOrders: 0,
     }
     bucket.gmv += point.gmv
-    bucket.gmvWithoutShipping += point.gmvWithoutShipping
     bucket.fees += point.fees
     bucket.orders += point.orders
     if (Number(point.date.slice(8, 10)) <= currentDay) {
@@ -91,7 +88,6 @@ export function buildAdminRevenueMonthlyPoints(
     const compareOrders = isPartial ? previous?.mtdOrders : previous?.orders
     const previousYm = index > 0 ? yearMonths[index - 1] : null
     const gmv = bucket?.gmv ?? 0
-    const gmvWithoutShipping = bucket?.gmvWithoutShipping ?? 0
     const orders = bucket?.orders ?? 0
     const monthDays = daysInYearMonth(yearMonth)
     const projectedGmv =
@@ -103,7 +99,6 @@ export function buildAdminRevenueMonthlyPoints(
       yearMonth,
       label: isPartial ? `${monthShort(yearMonth)} (MTD)` : monthShort(yearMonth),
       gmv,
-      gmvWithoutShipping,
       fees: bucket?.fees ?? 0,
       orders,
       gmvDeltaPct: compareGmv == null ? null : deltaPct(gmv, compareGmv),

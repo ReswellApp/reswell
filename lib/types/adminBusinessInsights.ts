@@ -14,10 +14,8 @@ export type TrendMetric = {
 
 export type AdminInsightsDailyPoint = {
   date: string
-  /** Buyer-paid totals including shipping (net of promo). */
+  /** Buyer-paid merchandise GMV, excluding shipping (net of promo). */
   gmv: number
-  /** Buyer-paid item totals excluding shipping (net of promo). */
-  gmvWithoutShipping: number
   fees: number
   orders: number
 }
@@ -26,7 +24,6 @@ export type AdminRevenueMonthlyPoint = {
   yearMonth: string
   label: string
   gmv: number
-  gmvWithoutShipping: number
   fees: number
   orders: number
   gmvDeltaPct: number | null
@@ -69,10 +66,8 @@ export type AdminInsightsOrderPreview = {
 
 export type AdminMonthlyRevenueRow = {
   yearMonth: string
-  /** Buyer-paid totals including shipping. */
+  /** Buyer-paid merchandise GMV, excluding shipping. */
   gmv: number
-  /** Buyer-paid item totals excluding shipping. */
-  gmvWithoutShipping: number
   platformRevenue: number
   /** Reswell-funded promo discounts (marketing expense). */
   marketingExpense: number
@@ -86,10 +81,8 @@ export type AdminBusinessInsights = {
   selectedYearMonth: string | null
   periodDays: number
   revenue: {
-    /** Buyer-paid order totals (item + shipping, net of promo). */
+    /** Buyer-paid merchandise GMV, excluding shipping (net of promo). */
     gmv: TrendMetric
-    /** Buyer-paid item totals only (excludes shipping, still net of promo). */
-    gmvWithoutShipping: TrendMetric
     platformRevenue: TrendMetric
     /** Reswell-funded promo discounts (newsletter + admin-issued codes). */
     marketingExpense: TrendMetric
@@ -155,7 +148,6 @@ export type AdminRevenueTrend = {
   daily: AdminInsightsDailyPoint[]
   monthly: AdminRevenueMonthlyPoint[]
   totalGmv: number
-  totalGmvWithoutShipping: number
   totalOrders: number
   /** Forward-looking pace line for monthly views. */
   insight: string | null

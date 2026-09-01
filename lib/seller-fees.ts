@@ -90,6 +90,20 @@ function moneyOrZero(value: number | string | null | undefined): number {
 }
 
 /**
+ * Admin / reporting GMV: buyer-paid merchandise, excluding shipping.
+ * `orders.amount` already nets promo; shipping is collected separately.
+ */
+export function marketplaceGmvExcludingShippingUsd(order: {
+  amount?: number | string | null
+  shipping_amount?: number | string | null
+}): number {
+  return Math.max(
+    0,
+    Math.round((moneyOrZero(order.amount) - moneyOrZero(order.shipping_amount)) * 100) / 100,
+  )
+}
+
+/**
  * Listing item GMV used for take-rate math — the 7% marketplace fee base.
  *
  * Prefer `seller_earnings + platform_fee` (full listing price). That amount is

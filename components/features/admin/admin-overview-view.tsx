@@ -20,7 +20,6 @@ import {
   TrendingDown,
   TrendingUp,
   Trophy,
-  Truck,
   UserPlus,
   Users,
 } from 'lucide-react'
@@ -681,20 +680,12 @@ export function AdminOverviewView({
           {/* Financial KPIs */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             <KpiCard
-              icon={Truck}
-              accent="emerald"
-              label="GMV with shipping"
-              value={compactUsd(insights.revenue.gmv.current)}
-              delta={insights.revenue.gmv}
-              footnote={`${compareFootnote} · ${compactUsd(insights.revenue.gmv.previous)}`}
-            />
-            <KpiCard
               icon={DollarSign}
               accent="emerald"
-              label="GMV without shipping"
-              value={compactUsd(insights.revenue.gmvWithoutShipping.current)}
-              delta={insights.revenue.gmvWithoutShipping}
-              footnote={`${compareFootnote} · ${compactUsd(insights.revenue.gmvWithoutShipping.previous)}`}
+              label="GMV"
+              value={compactUsd(insights.revenue.gmv.current)}
+              delta={insights.revenue.gmv}
+              footnote={`${compareFootnote} · ${compactUsd(insights.revenue.gmv.previous)} · shipping excluded`}
             />
             <KpiCard
               icon={Coins}
@@ -747,7 +738,6 @@ export function AdminOverviewView({
                 : `Daily GMV and platform fees over the last ${insights.periodDays} days (${BUSINESS_TIMEZONE_LABEL})`
             }
             totalGmv={insights.revenue.gmv.current}
-            totalGmvWithoutShipping={insights.revenue.gmvWithoutShipping.current}
             totalOrders={insights.revenue.orders.current}
           />
 
@@ -768,6 +758,7 @@ export function AdminOverviewView({
                 <p className="mt-1.5 text-xl font-bold tabular-nums text-foreground">
                   {compactUsd(platformFees.totalSaleVolume)}
                 </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">Excludes shipping</p>
               </div>
               <div className="bg-card p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

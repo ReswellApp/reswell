@@ -87,7 +87,7 @@ export async function generateBusinessIntelligenceBriefing(
 Your job: read the numeric snapshot and write a briefing that helps founders run the business. Ground every claim in the provided numbers. Never invent metrics, URLs, brands, or dollar amounts that are not in the snapshot. If a series is thin, say so and lower projection confidence.
 
 Definitions:
-- GMV / GMS = buyer-paid confirmed order totals (item + shipping, net of promo) plus listing prices of off-platform mark-as-sold sales with a succeeded seller tip, USD.
+- GMV / GMS = buyer-paid merchandise on confirmed orders (item price net of promo, excluding shipping) plus listing prices of off-platform mark-as-sold sales with a succeeded seller tip, USD. Shipping collected from buyers is not GMV.
 - Platform revenue = Reswell marketplace take (7% of listing item price). Promo codes do not reduce this take.
 - Take rate = platform_fee ÷ listing item GMV (seller earnings + platform fee). Target 7%.
 - Marketing expense = Reswell-funded promo discounts (newsletter + admin-issued codes). Counted as marketing, not as a take-rate reduction.
