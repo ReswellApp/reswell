@@ -3,11 +3,10 @@ import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 import { SellerProfileView } from "@/components/sellers/seller-profile-view"
-import type { SellerProfileListing } from "@/components/sellers/seller-profile-listings-panel"
 import { deriveSellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
-import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { fetchSellerProfileListings } from "@/lib/db/sellerProfileListings"
 import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
 import { marketplaceReviewPhotoRefs, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
 
@@ -180,31 +179,12 @@ export default async function SellerProfilePage({
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: viewerProfile } = user
-    ? await supabase.from("profiles").select("is_admin, is_employee").eq("id", user.id).maybeSingle()
-    : { data: null }
-
-  const canSeeHiddenListings =
-    user?.id === id ||
-    viewerProfile?.is_admin === true ||
-    viewerProfile?.is_employee === true
-
-  let listingsQuery = supabase
-    .from("listings")
-    .select(
-      `
-      *,
-      listing_images (url, is_primary),
-      categories (name, slug)
-    `,
-    )
-    .eq("user_id", id)
-    .in("section", PEER_LISTING_SECTIONS_FILTER)
-  if (!canSeeHiddenListings) {
-    // Sold history stays public on the profile even after seller archive/cleanup.
-    listingsQuery = listingsQuery.or("hidden_from_site.eq.false,status.eq.sold")
-  }
-  const { data: listings } = await listingsQuery.order("created_at", { ascending: false })
+  const {
+    currentListings,
+    pastListings,
+    tileMetaSource,
+    listingIds,
+  } = await fetchSellerProfileListings(supabase, id)
 
   const reviewsSelectWithMeta =
     "id, rating, comment, created_at, metadata, reviewer:profiles!reviews_reviewer_id_fkey ( display_name ), listing:listings!reviews_listing_id_fkey ( user_id )"
@@ -257,12 +237,12 @@ export default async function SellerProfilePage({
   const reviewCount = allReviews.length
 
   let favoritedIds: string[] = []
-  if (user && listings && listings.length > 0) {
+  if (user && listingIds.length > 0) {
     const { data: favs } = await supabase
       .from("favorites")
       .select("listing_id")
       .eq("user_id", user.id)
-      .in("listing_id", listings.map((l) => l.id))
+      .in("listing_id", listingIds)
     favoritedIds = (favs ?? []).map((f) => f.listing_id)
   }
 
@@ -288,55 +268,11 @@ export default async function SellerProfilePage({
     followingCount = count ?? 0
   }
 
-  const allListings = listings || []
-
-  // Exclude vacation / site-hidden from shop inventory (owners still see them in My Listings).
-  const inCurrentInventory = (l: (typeof allListings)[number]) =>
-    !l.archived_at &&
-    !l.hidden_from_site &&
-    (l.status === "active" || l.status === "pending_sale")
-
-  const currentListings = allListings.filter(inCurrentInventory)
-
-  const pastListings = allListings.filter((l) => {
-    if (inCurrentInventory(l)) return false
-    if (l.status === "removed" || l.status === "draft") return false
-    if (l.status === "sold") return true
-    if (l.hidden_from_site) return false
-    return true
-  })
-
-  const tileMeta = deriveSellerDirectoryTileMeta(
-    allListings.map((listing) => ({
-      city: listing.city ?? null,
-      state: listing.state ?? null,
-      shipping_available: listing.shipping_available ?? null,
-    })),
-  )
+  const tileMeta = deriveSellerDirectoryTileMeta(tileMetaSource)
 
   const isShop = shop.is_shop
   const displayName = isShop ? shop.shop_name || shop.display_name : shop.display_name
   const soldCount = shop.sales_count ?? 0
-
-  function mapListing(listing: (typeof allListings)[number]): SellerProfileListing {
-    return {
-      id: listing.id,
-      slug: listing.slug,
-      user_id: listing.user_id,
-      title: listing.title,
-      price: listing.price,
-      compare_at_price: (listing as { compare_at_price?: number | string | null }).compare_at_price ?? null,
-      status: listing.status ?? "active",
-      section: listing.section,
-      local_pickup: listing.local_pickup,
-      shipping_available: listing.shipping_available,
-      condition: listing.condition,
-      created_at: listing.created_at,
-      listing_images: listing.listing_images,
-      categories: listing.categories,
-      board_type: listing.board_type,
-    }
-  }
 
   function mapReview(
     review: ReviewRow,
@@ -367,8 +303,8 @@ export default async function SellerProfilePage({
       isFollowing={isFollowing}
       isOwnProfile={isOwnProfile}
       isLoggedIn={!!user}
-      currentListings={currentListings.map(mapListing)}
-      pastListings={pastListings.map(mapListing)}
+      currentListings={currentListings}
+      pastListings={pastListings}
       favoritedIds={favoritedIds}
       viewerId={user?.id ?? null}
       tileMeta={tileMeta}

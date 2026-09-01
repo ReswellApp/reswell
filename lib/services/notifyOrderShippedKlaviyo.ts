@@ -3,8 +3,8 @@ import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { getSellerEmailForKlaviyo } from "@/lib/klaviyo/seller-sale-event-helpers"
 import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
 import { trackKlaviyoSellerOrderShipped } from "@/lib/klaviyo/track-seller-order-shipped"
+import { findSentKlaviyoUniqueIds } from "@/lib/db/klaviyoEventLog"
 import { resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
-import { createServiceRoleClient } from "@/lib/supabase/server"
 
 type OrderShippedNotifyRow = {
   id: string
@@ -29,26 +29,12 @@ function listingTitleFromEmbed(
 async function shippedKlaviyoEventsAlreadySent(
   orderId: string,
 ): Promise<{ buyer: boolean; seller: boolean }> {
-  try {
-    const svc = createServiceRoleClient()
-    const { data, error } = await svc
-      .from("klaviyo_event_log")
-      .select("unique_id")
-      .eq("status", "sent")
-      .in("unique_id", [`order-shipped-${orderId}`, `seller-order-shipped-${orderId}`])
-
-    if (error) {
-      console.error("[notifyOrderShippedKlaviyo] event log read:", error.message)
-      return { buyer: false, seller: false }
-    }
-
-    const ids = new Set((data ?? []).map((row) => row.unique_id))
-    return {
-      buyer: ids.has(`order-shipped-${orderId}`),
-      seller: ids.has(`seller-order-shipped-${orderId}`),
-    }
-  } catch {
-    return { buyer: false, seller: false }
+  const buyerId = `order-shipped-${orderId}`
+  const sellerId = `seller-order-shipped-${orderId}`
+  const ids = await findSentKlaviyoUniqueIds([buyerId, sellerId])
+  return {
+    buyer: ids.has(buyerId),
+    seller: ids.has(sellerId),
   }
 }
 

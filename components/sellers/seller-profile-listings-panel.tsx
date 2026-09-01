@@ -45,7 +45,11 @@ export type SellerProfileListing = {
   shipping_available?: boolean | null
   condition?: string | null
   created_at?: string | null
-  listing_images?: { url: string; is_primary?: boolean | null }[] | null
+  listing_images?: {
+    url: string
+    thumbnail_url?: string | null
+    is_primary?: boolean | null
+  }[] | null
   categories?: { name?: string | null; slug?: string | null } | null
   board_type?: string | null
 }
