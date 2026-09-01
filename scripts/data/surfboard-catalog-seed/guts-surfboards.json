@@ -1,0 +1,73 @@
+{
+  "generated_for": "Guts Surfboards official model catalog",
+  "source": "https://gutssurfboards.com",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "guts-surfboards",
+      "name": "Guts Surfboards",
+      "website_url": "https://gutssurfboards.com",
+      "location_label": "Bishopston, Gower, Wales",
+      "founder_name": "Chris 'Guts' Griffiths",
+      "lead_shaper_name": "Chris 'Guts' Griffiths",
+      "short_description": "Gower, Wales surfboards hand-shaped by two-time European professional surfing champion Chris 'Guts' Griffiths.",
+      "logo_url": "https://gutssurfboards.com/cdn/shop/files/guts_logo-1_5297cf8d-1181-4015-b3c3-2b73acbd7331.jpg?v=1771672475",
+      "models": [
+        {
+          "name": "Elfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/Elfish_board.avif?v=1771668832",
+          "description": "A classic old skool fish. Short fat and flat, with a beak nose and front loaded volume. The Elfish is a classic old skool fish. It's the perfect summer groveller but surprisingly fun in a bit more juice too.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mule",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_8c7f805f270645958555d229fb912d15_ee74044e-2d34-4ecf-ac66-84bf1c9cdfa9.avif?v=1771629674",
+          "description": "The Mule is one of the most versatile hybrid shortboards on the market. A diamond tail shortboard with a full template, single concave bottom, relaxed entry rocker and quad fin setup it is equally at home in 2ft slop down your local beach break as it is in 6ft barrels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "UFO",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_44045768a78a4c28b3d992bf63901483.avif?v=1771629194",
+          "description": "Crazy new school shape from outer space. The U.F.O. is a next generation hybrid board with total performance capabilities. The extra wide nose and tail dimensions maximises this board's planing area while keeping the overall length down.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro Performer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_01f32370a1924fcea00be64edeb5ba11.avif?v=1771670449",
+          "description": "The Retro Performer is a classic old style mal, with 50-50 rails, lower rocker and 60's style template. The perfect board for traditional logging.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pro Nose",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_6a10dffb636b4e9496c0751dcc27471d.avif?v=1771670236",
+          "description": "If you are looking for a board that will enhance your small wave and noseriding skills then this is the board for you. Just like the Pro model, the Pro Nose has its roots firmly planted in ultimate performance.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pro model",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/Screenshot_2025-02-13_124959.avif?v=1771669831",
+          "description": "This board is a true thoroughbred with over 40 national and international competition wins under its belt. The Pro model has been developed over the last 5 years as an all round performance machine.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Evil Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/Evil_Twin_Boards.avif?v=1771678369",
+          "description": "The Evil Twin is our best selling mid length twin fin model. It's a high performance board with exceptional paddling and wave catching properties combined with ultra manoeuvrable performance.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "White Walker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/White_Walker_Boards.avif?v=1771668571",
+          "description": "The White Walker is our most versatile mid length and biggest selling model board. The diamond tailed quad fin is a top performer in waves from 2ft to 10ft.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mullet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_8c7f805f270645958555d229fb912d15.avif?v=1771629491",
+          "description": "The Mullet is a wide tailed high volume board that you would ride in the same conditions as a fish. The advantages over the fish is that with a straighter tail profile you can generate more drive and also have less drifting.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
