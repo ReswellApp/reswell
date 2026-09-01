@@ -1,0 +1,47 @@
+{
+  "generated_for": "Buried Surf official named surfboard catalog",
+  "source": "https://buriedsurf.com/shapes",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "buried-surfboards",
+      "name": "Buried Surf",
+      "website_url": "https://buriedsurf.com",
+      "location_label": "Northeast England",
+      "short_description": "Hand-shaped surfboards built in Northeast England for cold-water reefs from Tynemouth to Scarborough.",
+      "logo_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/Copy%20of%20buried%20(3).png/:/rs=w:400,h:100,cg:true,m/qt=q:95",
+      "models": [
+        {
+          "name": "Dreadnought",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/1000052259.jpg/:/rs=w:600,cg:true,m",
+          "description": "Cold water step up for gnarly barrels.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Strafe",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/PXL_20251004_144044449.PORTRAIT.ORIGINAL~2.jpg/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:600,cg:true",
+          "description": "All rounder for techy barrels with a turn at the end.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Riven",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/PXL_20250529_184430480.RAW-01.COVER.jpg/:/rs=w:600,cg:true,m",
+          "description": "Performance step down with mega drive and flickability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Revol",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/blob-9c31de8.png/:/cr=t:0%25,l:0.18%25,w:99.64%25,h:100%25/rs=w:600,h:800,cg:true",
+          "description": "Mid length for shortboarders. Lightweight and rippable.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Catalyst twin",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/PXL_20250820_105825238.PORTRAIT.ORIGINAL.jpg/:/cr=t:0%25,l:0.18%25,w:99.64%25,h:100%25/rs=w:600,h:800,cg:true",
+          "description": "Performance mid twin.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
