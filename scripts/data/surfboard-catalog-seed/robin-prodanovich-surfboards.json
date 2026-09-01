@@ -1,0 +1,132 @@
+{
+  "generated_for": "Robin Prodanovich Surfboards official named standup catalog",
+  "source": "https://www.rpsurfboards.com/shapes.html",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "robin-prodanovich-surfboards",
+      "name": "Robin Prodanovich Surfboards",
+      "website_url": "https://www.rpsurfboards.com",
+      "location_label": "San Diego, California",
+      "founder_name": "Robin Prodanovich",
+      "lead_shaper_name": "Robin Prodanovich",
+      "short_description": "Hand-shaped custom surfboards by Robin Prodanovich in San Diego \u2014 shortboards, eggs, longboards, and alternative fishes.",
+      "models": [
+        {
+          "name": "The Mach 3",
+          "image_url": "https://www.rpsurfboards.com/boards/sbtop_sm.jpg",
+          "description": "The Mach 3 is a low volume, sensitive, high performance shortboard. A combination of low rail volume, single concave bottom and thoughtfully place rocker makes for a fast dynamic board that does what you want it to do.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The QuadDriver",
+          "image_url": "https://www.rpsurfboards.com/boards/quaddriver_sm.jpg",
+          "description": "The Quad Driver is a quad specific design that develops lots of horsepower. Utilizing multiple concaves and fin combinations, this board bites deeply into the water when you want it to and flies like its on rails. This design is quick, maneuverable and fun to ride. If you are more of a front foot surfer, this design will work great for you.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The ESB",
+          "image_url": "https://www.rpsurfboards.com/boards/esb_sm.jpg",
+          "description": "The ESB is aimed at the surfer who wants to experience the thrill of riding a shortboard for the first time. This design combines the proportions, rocker and overall feel of a performance shortboard but adds a little more volume and forgiveness to make your first shortboard experience a good one. For those surfers with a higher ability level, order this board at least 2\" shorter than your regular shortboard. The P5 option is only available with the double wing swallow shape.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Spurt",
+          "image_url": "https://www.rpsurfboards.com/boards/spurt_sm.jpg",
+          "description": "The Spurt is a design that is just plain fun to ride. It is ridden short, wide, with volume and is extremely fast and stable for those small to medium size surf days when speed and maneuverability are a must. The P5 option allows for a 3 fin or quad fin set up giving you two boards in one.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Switchback",
+          "image_url": "https://www.rpsurfboards.com/boards/switchback_sm.jpg",
+          "description": "The Switchback is a design that fits right in between the Mach 3 and the Pudge and is well suited for waves with a little more punch. It is ridden a little longer than a Pudge but narrower; with less volume in the rails, nose and tail, but maintaining center thickness for flotation and paddle power. With the nose, tail and center width reduced, this board is sensitive and switches from rail to rail with little effort. By combining all of the above with a single concave, a variety of tail shapes, and the P-5 option, the Switchback is a board that fills that quiver gap between skinny and fat.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The GAS",
+          "image_url": "https://www.rpsurfboards.com/boards/gas_sm.jpg",
+          "description": "This model combines the soul of a longboard with the feisty spirit of a shortboard, making for a board that glides easily into waves yet has the rail to rail quickness and agility of a shortboard. The design incorporates beveled nose rails to lift the rail line through the nose area to minimize the wide nose catching during turns, a flat section through the middle, into a double concave \"V\" extending through the fin area and off the tail. Entry rocker is low to medium as is the tail rocker, making for a board that catches waves easily, trims, has drive, and is very stable. So if you want to increase your wave count and retain maneuverability, I suggest you step on the GAS!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Egg",
+          "image_url": "https://www.rpsurfboards.com/boards/egg_sm.jpg",
+          "description": "The Egg is a board that originated many years ago from the shaping room of San Diego surfer/shaper icon, Skip Frye. Over time, this design has morphed into a fun, full bodied board that is excellent for the entry level surfer, as well as a board that can be ridden as a mini longboard by more advanced surfers in small surf conditions. With relaxed nose and tail rockers, a wide nose and center and an easy to control tail width, this design has a smooth and stable ride.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Handyman",
+          "image_url": "https://www.rpsurfboards.com/boards/handyman_sm.jpg",
+          "description": "This design, as the name implies, does it all. There is no job too big or too small for this board if it's the only board you brought with you to the beach. The fullness of the nose and center width, combined with a slightly pulled in tail, allows this board to work well in a variety of surf conditions. If you are looking for a one board quiver to help you have fun no matter where you surf, the Handyman will get the job done.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Seeker",
+          "image_url": "https://www.rpsurfboards.com/boards/seeker_sm.jpg",
+          "description": "This longboard design is a blend of the Performance model and the Noserider, making the Seeker a great all around board that is loaded with versatility and function, and can be set up as a 2+1 or a single fin. The semi wide nose has concave with a beveled rail which lifts the rail line in the nose area and helps to minimize catching on the wave face. A medium width tail combined with an appropriate center width, allows for a nice continuous curve nose to tail, minimizing that parallel look, and maximizing the sweet spot. The mid portion of the board is flat with \"v\" running through the tail area which adds some nice rail curve to help the board arc through turns. If you're seeking everyday longboard fun, the Seeker3 or Seeker1 is your choice!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Noserider",
+          "image_url": "https://www.rpsurfboards.com/boards/nr_sm.jpg",
+          "description": "As the name implies, this board is for hanging around the nose, not the dinner table. The wide, concave nose provides lift and stability while the relatively narrow tail brings curve to the plan line for excellent maneuverability and responsiveness. The bottom contour is flat to \"v\" with low rocker both nose and tail making for great paddling and glide in even the smallest waves. For a more dynamic feel, ride this board thin and feel the spring and flex as you move down the line.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Performance",
+          "image_url": "https://www.rpsurfboards.com/boards/perf_sm.jpg",
+          "description": "If you want a longboard design with less emphasis on noseriding and more on overall performance, then the Performance Wing Swallow Tail might be what you're looking for. The design includes a medium width nose, plenty of center width, and a very controllable tail made possible by an \"up\" wing, stinger type plan line, and swallow tail. The bottom curve focuses on medium nose and tail rocker with a double concave starting just ahead of the side fins and fades into a soft \"v\" off the tail. This design can have a fin configuration of a 2+1, tri fin, or the P-5 option allowing quad performance. This is definitely not like the board your dad rode!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Mo Glide",
+          "image_url": "https://www.rpsurfboards.com/boards/moglide_sm.jpg",
+          "description": "This model is big on float and fun. It has a full nose, lots of center width, and a wide tail that stays on top of the water and gives plenty of room for your rear foot. Thick, full, and stable best describes this glider, which allows for ease of paddling and a high wave count. If you are looking for more of an \"old school\" approach to riding waves and want a cure for the small wave blues, this model is just what the doctor ordered.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Snub",
+          "image_url": "https://www.rpsurfboards.com/boards/snub_sm.jpg",
+          "description": "As the name implies, the Snub is a very short, wide, fat, round design, that has fun written all over its wide body. Designed for those really small, soft and gutless surf sessions where the Pudge is not quite enough board, the Fish is too straight and stiff, and your arms are too short to go around your Egg or longboard on this particular day. With gobs of planning surface, a relaxed rocker nose to tail, a bottom beveled nose rail, wide point ahead of center, and double concave to \"V\" off the tail, this board catches waves easily, carries speed, and has excellent maneuverability, even in the weakest of surf conditions. Your other boards standing in your garage rack will definitely be feeling \"Snubbed\" during the summer wave season!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "70's Twin",
+          "image_url": "https://www.rpsurfboards.com/boards/twinny_sm.jpg",
+          "description": "As the name implies, this is an original twin fin design which includes a \"v\" bottom, hooked wings and glassed on fins. This outline shape is patterned after the high performance twin fin designs that were ridden by MR back in the day, but includes some of my own tweaks and upgrades to usher the design into the current millennium. This is a fast, loose performance board that benefits from front foot pressure and a little extra rail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Pudge",
+          "image_url": "https://www.rpsurfboards.com/boards/pudge_sm.jpg",
+          "description": "The Pudge is exactly what it sounds like; full and round. This design is ridden very short, wide and thick but with a very high performance bottom curve and contours. The tail is round, the rails are full and the nose has a beak. This board is willing to ride any wave you paddle it into and never complain.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The ZipStik",
+          "image_url": "https://www.rpsurfboards.com/boards/zipquad_sm.jpg",
+          "description": "The ZipStik is a high performance design with a wider tail and center width and narrower nose making for a very fast and maneuverable board. But don't let the fullness of this design fool you, this board is all about versatility and excels in a variety of conditions. This design works well with the P5 option which allows the board to be ridden as either a 3 fin or a quad.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Fish",
+          "image_url": "https://www.rpsurfboards.com/boards/fish_sm.jpg",
+          "description": "The Fish is the original twin fin, spawned in the waters of San Diego and refined in the waves of Sunset Cliffs. With a wide nose, tail and center width, the Fish design skates on top of the water allowing down-the-line speed and carving cutbacks. The wide base glassed on wood keel fins and flat rockers give the Fish drive and stability. Try one and you might get hooked.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Tripper",
+          "image_url": "https://www.rpsurfboards.com/boards/tripper_sm.jpg",
+          "description": "At first glance, this board looks like it belongs in a different era with its fuller nose and curvy outline shape. But don't be fooled, this design is the real deal and will provide you with lots of fun and a high wave count. The slightly ahead of center wide point allows for excellent, all around performance, as does the balanced plan shape. Ride it as a quad, tri fin or, dig out your paisley trunks and hippie beads, and ride it as a single fin!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Brillo",
+          "image_url": "https://www.rpsurfboards.com/boards/brillo_sm.jpg",
+          "description": "The Brillo is a full bodied board for the surfer that wants lots of volume in a small package. With a full nose, ample center width and a wide tail, this design allows a heavier surfer to ride a shorter than usual board. A combination of a lifted rail line, plenty of \"v\" in the bottom and three different cut wing tail shapes, gives this wide design an easy transition through turns and a smooth and predictable ride. Consider this board design if you want to transition down in size from a longboard without giving up all of your paddle power. For added versatility try the P-5 option.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
