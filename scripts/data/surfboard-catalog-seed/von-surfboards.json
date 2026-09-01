@@ -1,0 +1,132 @@
+{
+  "generated_for": "Von Surfboards official named surfboard catalog",
+  "source": "https://vonboards.com/boards/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "von-surfboards",
+      "name": "Von Surfboards",
+      "website_url": "https://vonboards.com",
+      "location_label": "Dunsborough, Western Australia",
+      "lead_shaper_name": "Ryan",
+      "short_description": "Western Australian surfboard shaper building performance shortboards, twins, and alternate craft from Dunsborough.",
+      "logo_url": "https://vonboards.com/wp-content/uploads/2022/10/Von-D-Logo.png",
+      "models": [
+        {
+          "name": "Nucleus",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fun-Nucleus.png",
+          "description": "Exciting, unparalleled groveller, developed to offer zestful surfing in small-sized conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "RAD(Fun).og",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fun-Radog.png",
+          "description": "Fun, compact board primed to get you fired up about surfing on the days that are less-than-epic.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Rehab",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fun-Rehab.png",
+          "description": "Fast, free, and fun. A channel-bottom twin that blends classic curves with modern performance.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Lamb",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Performance-Lamb.png",
+          "description": "The must-have, tuned-up, everyday forgiving shortboard for small to medium-sized conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Marcela",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Performance-Marcela.png",
+          "description": "Born free and built to fly. Flattest high-performance shortboard tuned for speed, lift, and release in weaker waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "2020",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Performance-2020.png",
+          "description": "Elite high-performance shortboard for sub-par conditions seeking a fast and free feeling under foot.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Porto",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Performance-Porto.png",
+          "description": "Perfect board to transition to when the waves get solid.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "RadStep",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-Radstep.png",
+          "description": "High-volume, reliable step-up with foam forward for paddle and speed that carries.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Anchovy",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-Anchovy.png",
+          "description": "Reliable board in hollower, more powerful types of waves for a wide range of surfers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "JMO2",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-JMO2.png",
+          "description": "When the waves are pumping and heavy, maximise paddling power with extra volume under your chest.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "HOOF",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-Hoof.png",
+          "description": "For those waves you do not paddle into — refined for tow-in and serious water.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "LIVE",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-JMO2-Live.png",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wlt Twn",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/05/WLT-TWN.png",
+          "description": "Perfect for the enlightened shortboarder or alternate craft aficionado with user friendly turn and paddle ease.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mnspn",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fun-MNSPN.png",
+          "description": "Maximising fun in tiny surf. Flowing effortlessly over the flats and carrying speed into tight carves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "JSYM",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-JSYM.png",
+          "description": "A fully symmetrical spin on one of the most talked-about designs. Compact, fast, and highly responsive.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "VSLC",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-VSLC.png",
+          "description": "Fast, skatey, and responsive swallow-tailed hybrid built to inspire pure stoke.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "PNSPN",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-PNSPN.png",
+          "description": "An instant classic mid-length inspired by mid-lengths that came before, refined with modern contours.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "LNGSPN",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-LNGSPN.png",
+          "description": "High-performance and hyper-fun, based on the PNSPN rocker and outline stretched for more paddle power.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Farrely",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-Farrely.png",
+          "description": "Modern take on the classic winged swallow by Midget Farrelly.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
