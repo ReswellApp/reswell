@@ -1,0 +1,48 @@
+{
+  "generated_for": "MAS Surfboards official named standup catalog",
+  "source": "https://www.massurfboards.com/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mas-surfboards",
+      "name": "MAS Surfboards",
+      "website_url": "https://www.massurfboards.com/",
+      "location_label": "Punta de Mita, Nayarit, Mexico",
+      "founder_name": "Miguel Sinclair",
+      "lead_shaper_name": "Miguel Sinclair",
+      "short_description": "Handcrafted traditional longboards, mid-lengths, fishes, and hybrids by Miguel Sinclair in Punta de Mita, Nayarit, Mexico.",
+      "models": [
+        {
+          "name": "El Catrin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/610fe290753f7556897d1b5a/b9648234-a9b5-495b-a1a5-87a83fc1f8db/elcatrin.jpg",
+          "description": "Our modern take on a classic pig-style log, El Catrin strikes the perfect balance between insane noserides and responsive turns. The single concave on the nose helps generate speed to get you through those tricky sections, while the slight roll on the tail locks you in for long noserides. The pinched rails give the otherwise traditional log a more modern feel, while allowing for those smooth, carving turns. This board is great for medium to advanced surfers, and ideal for waves of 2-6ft.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "La Dama",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/610fe290753f7556897d1b5a/86b8fcfb-9bac-4a61-a0ba-5113d6b53eab/ladama4.jpg",
+          "description": "Inspired by traditional nose riders, La Dama is a classic longboard. A single concave on the nose helps water flow through the center of the board, while the wider nose gives you extra stability for amazing nose rides. A narrower tail makes the board go from rail to rail much easier, translating to better turning maneuverability. This is a great board for surfers of all levels, and ideal for waves of 1-5ft.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "El Sol",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/610fe290753f7556897d1b5a/9ba51916-f565-4d14-bf3e-f7425400d1c7/mid3.jpg",
+          "description": "The perfect midlength for all conditions. Inspired by classic midlengths, El Sol has the perfect combo of a wide nose and a sleek pintail. The volume makes it easy to catch waves, while the pinched rails allow this board to still be incredibly maneuverable. Get it as a twin fin, single fin, or 2+1. Perfect for waves from 3-10ft, and great for beginner/intermediate to advanced surfers.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "El Pescado",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/610fe290753f7556897d1b5a/093d3ec0-702c-45a1-ad10-6a668a18a256/fish4.jpg",
+          "description": "A sleek and clean design, our fish model is minimal and comes with no-nonsense. A single concave and wide tail makes the board lively and responsive. The nose is more pulled in than your traditional fish, allowing for easier maneuverability. Available as a twin fin or a quad. Great for waves from 3-6ft, for intermediate to advanced surfers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "La Luna",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/610fe290753f7556897d1b5a/7a05c3fd-d609-4f5a-928a-454552a2d131/luna2.jpg",
+          "description": "A great all around hybrid for performance surfing, drawn out turns, and quick releases off the top. Comes with plenty of volume for easier paddling and wave catching, but with all the perks of your traditional shortboard. Get it with a twin, thruster, or quad set up. Made for intermediate to advanced surfers, for 4-8ft waves.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
