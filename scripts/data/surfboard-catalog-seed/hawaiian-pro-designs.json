@@ -1,0 +1,232 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "hawaiian-pro-designs",
+      "name": "Hawaiian Pro Designs",
+      "website_url": "https://hawaiianprodesigns.com",
+      "location_label": "Hawaii",
+      "founder_name": "Donald Takayama",
+      "lead_shaper_name": "Donald Takayama",
+      "short_description": "Donald Takayama Hawaiian Pro Designs \u2014 classic Hawaiian longboard and progressive shapes.",
+      "models": [
+        {
+          "name": "Long Scorpion",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i5a82e196801af242/version/1766368435/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Summer",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=1920x10000:format=jpg/path/s5fe9262bdb7f5eec/image/i9de12809cba0ad9d/version/1731092437/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Double Ender 2.0",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=320x10000:format=jpg/path/s5fe9262bdb7f5eec/image/ic99e0aafd83a071f/version/1674711009/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Model-T",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i041fb102f3e25084/version/1674684610/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Terramar",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/id7810629c83628e4/version/1674799328/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Double Ender",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ia27db4d2b48bc838/version/1674753767/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DT2X",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i68de56dfb8db93e3/version/1674676162/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "NR2",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i444bb861df03ff0a/version/1674799454/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Animal",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/idee1c205c08a0338/version/1768357799/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DD",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i34851929e4275d73/version/1674788600/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Howard Special",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=png/path/s5fe9262bdb7f5eec/image/i50b909cf6373dbc9/version/1675057058/image.png",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "BW model",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i1a68d1ee79270efa/version/1674797798/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tommy Witt",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i8236ecb0412cba35/version/1674686725/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DT-1",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ia3cb7c612d7619fb/version/1674713946/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DT-2",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i5c6b5332ec3a0f20/version/1674685240/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DT-3",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ia50f5c622622d93d/version/1674789476/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DT-4",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/iedf080bd936b3f57/version/1675019115/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "In The Pink",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/iadbd34fb4a3736a5/version/1674685156/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Opihi",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i7f4fe0bc5fb4c413/version/1674712919/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Beach Break",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ifecccaf47efc9f9f/version/1674787157/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Prince K\u016bhi\u014d",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i4c835d10a66f73cb/version/1674714277/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noah.Comp",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=png/path/s5fe9262bdb7f5eec/image/i74a7b0591a51f957/version/1498861827/image.png",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noah Ka Oi",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ib23657019f8fcadb/version/1469925503/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Iwa",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=320x10000:format=jpg/path/s5fe9262bdb7f5eec/image/ic99e0aafd83a071f/version/1674711009/image.jpg",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Howard Special Mini",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=png/path/s5fe9262bdb7f5eec/image/if28e187a499be50f/version/1674701594/image.png",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stone Steps",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=1920x10000:format=jpg/path/s5fe9262bdb7f5eec/image/i85e3444b07339be0/version/1711688376/image.jpg",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stone Steps 2",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i6a17bde95dfb3400/version/1675019715/image.jpg",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "NR3",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i63bbe56037783e40/version/1469946546/image.jpg",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Scorpion",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/icb156aba5651f318/version/1674701311/image.jpg",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flo Egg",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ib60dce6e336265bb/version/1675019333/image.jpg",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Scorpion II",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/i5c2152d4357dc50f/version/1503179561/image.jpg",
+          "description": null,
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Humu Fish",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ia677b5ee28c9d4f9/version/1674789560/image.jpg",
+          "description": null,
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The 60's Donald Takayama Model",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/if842736851a6eddc/version/1674685298/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Noserider",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/id75194be64db714b/version/1674788370/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pig",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ieb479ba067726787/version/1674787942/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Stepdeck",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ib960c674d1007d72/version/1674678053/image.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
