@@ -1,0 +1,106 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "robert-august-surfboards",
+      "name": "Robert August Surfboards",
+      "website_url": "https://robertaugust.com/",
+      "location_label": "Huntington Beach, California",
+      "founder_name": "Robert August",
+      "lead_shaper_name": "Robert August",
+      "short_description": "Huntington Beach surfboards handcrafted in Orange County, California since 1974 by Endless Summer surfer Robert August.",
+      "models": [
+        {
+          "name": "What I Ride",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/files/2stxforsite.top.jpg?v=1752778078",
+          "description": "Robert's favorite board, the What I Ride, is a board that maximizes your fun regardless of the conditions. It comes with 60/40 rails that make it responsive and fast yet forgiving. Along with the rail design it's signature tear drop concave under the nose, greatly enhances your nose riding. The combination of these features makes this our most versatile (and popular) board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "What I Ride Mini Noserider",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/WIR_mini.pinline1.jpg?v=1675059199",
+          "description": "Same great template as the What I Ride longboard, pared down for an easy to manage mid range board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "WIR Round Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/Yel.Stp.WIR.RT.1.sized.jpg?v=1594938553",
+          "description": "Just like the well proven What I Ride Model but with a round tail for increased hold and control.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wingnut I Pro Model",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/WingnutIprotopbot1.jpg?v=1595625713",
+          "description": "Just like the board Wingnut rode in The Endless Summer II, the Wingnut I Pro Model has a pulled in tail with softer rails, which result in ultra-smooth turns and cutbacks, along with improved control and stability. The wide point sits further up on the board giving the nose more surface area for nose riding, even with the pointed nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wingnut II",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/Untitled-1.jpg?v=1595629636",
+          "description": "The Wingnut II Model takes the best qualities of the original Wingnut I Pro Model and combines them with features from the Mark Martinson Model. The tail is even more pulled in than the Wingnut I and the rails are knifier, more like the Martinson. This board is super fast and responsive and has amazing rail hold that makes it a great nose rider in the pocket.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wingnut Mini",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/wingnutminitopbot.jpg?v=1595635319",
+          "description": "The Wingnut Mini is a shrunken down version of the Wingnut II longboard. Super fast down the line and goes well in waves anywhere from knee high to over head. Great for turning and high line trimming but you can still sneak a cheater five in too.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Saber",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/Sabertopbot.jpg?v=1595633633",
+          "description": "Our answer to high performance longboarding, the Saber comes with low-egg rails that taper back to an edge at the diamond-tail. A slight rail-to-rail concave under the nose, with an overall flat bottom give this model some great turning capability to go along with solid nose riding. Works great in small to large waves and is super beach break friendly with a bit more rocker.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Retro Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/Retrotopbot.jpg?v=1595631854",
+          "description": "The RA Retro Model embodies our version of old school log riding. Perfect for your SanO days, cruising and nose riding. Resin work with deck and tail patches give that old school look, weight and feel. Layered wood tail block and T-Band (3) Stringer configuration is standard for this classic shape.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Seed",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/Seedgreentopbot.jpg?v=1595637247",
+          "description": "When we introduced the Seed model in 2014, it quickly became one of our favorite and most popular boards. It worked extremely well in clean punchy conditions as well as mushier days and it filled a perfect spot in our board lineup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Predator Stepdeck",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/image_95ee4ebe-26bb-46b7-82a7-fb4056134fe5.jpg?v=1591316972",
+          "description": "The Mark Martinson Step Deck aka The Predator is everything great about the regular Martinson model but with added features. The nose on the Step Deck is thinned out making it lighter and giving it more flex. This feature enhances noseriding and turning ability significantly. This is a super versatile board in various conditions. It's got a wide nose with a flat planing surface underneath.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Martinson",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/Martinsontopbot.jpg?v=1595632914",
+          "description": "Proven design concepts from the classic nose riding models of the 60s blended with current surfboard design and production methodologies. The wide nose utilizing a flat planning surface underneath provides for the longest, tightest nose rides possible. Modern tail-rocker, light weight, and a custom single fin allow this model to rip in any conditions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "FunDip",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/SHRTBD.FUNDIP.GRN.GRY.2.jpg?v=1689018649",
+          "description": "A perfect groveler board. It's got plenty of foam for easy paddling and tons of speed down the line. Even with the step up in foam from your standard short board, you can still lay down a solid cutback or off the lip on this board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Grom Dip",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/GromDipFrontBack.jpg?v=1592874610",
+          "description": "A downsized version of our Fun Dip Model. A true Signature creation from the August boys. Great paddling shortboard or beginner board for your Grom. Built short and wide for either a beginner needing great stability, or a seasoned grom, utilizing that same width for speed and flow. Super light, single to double concave bottom.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/RetroFishfront2.jpg?v=1594936335",
+          "description": "An updated version of an old school design from the late 70s. Features nicely shaped downward rails and a perfect hint of rocker from nose to tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Endless Summer Replica",
+          "image_url": "https://cdn.shopify.com/s/files/1/1016/5197/products/1963.replica.2.jpg?v=1571439436",
+          "description": "The Endless Summer 1963 Replica Model. Just like the board Robert rode around the world in Bruce Brown's The Endless Summer. Each limited edition surfboard features solid white resin opaque, glassed on 1963 style D fin, and a classic 60s glass job, including a 3/4 inch redwood stringer and multi-layered wood tail block.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
