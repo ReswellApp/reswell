@@ -1,0 +1,66 @@
+{
+  "generated_for": "Skinner Surfboards official named standup catalog",
+  "source": "https://www.skinnersurfboards.com/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "skinner-surfboards",
+      "name": "Skinner Surfboards",
+      "website_url": "https://www.skinnersurfboards.com/",
+      "location_label": "Fort Lauderdale, Florida",
+      "founder_name": "Randy Skinner",
+      "lead_shaper_name": "Randy Skinner",
+      "short_description": "Custom surfboards by Randy Skinner in Fort Lauderdale, Florida.",
+      "models": [
+        {
+          "name": "The Animal",
+          "image_url": "https://static.wixstatic.com/media/175f35_76eba7617f2141769f507daf6c11e805~mv2.jpg",
+          "description": "The Animal is a ultra groveler designed to make surfing on days that you normally might not even paddle out fun. We've been watching the evolution of the softboard and how people choose to ride them in sub par conditions to have fun. They are incredibly floaty and pick up waves super easy, which we like. We wanted to take that idea and build a board that can capitalize on these ideas but add some more performance into the board. Behold The Animal. It's loaded with float, think lots of liters which makes catching waves a breeze.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Crown Jewel",
+          "image_url": "https://static.wixstatic.com/media/175f35_ba7b7eeb05a4492cab5fffc9562f250a~mv2_d_3840_1660_s_2.jpg",
+          "description": "There is a lot of history in this outline. We take the original Lis fish outline and modernize the rocker, bottom contours and weight. Blending the old and the new we've come up with something outstanding. The Crown Jewel excels in small surf, designed to fly when the waves are sub par. The bottom features a medium single concave through the middle blending in to a healthy double concave vee through the fins and out the back. The nose is slightly beaked with a subtle kick in the rocker. The tail block is nice and wide and will provide instant speed as soon as you drop in.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Flat Diamond",
+          "image_url": "https://static.wixstatic.com/media/175f35_c74b8fe0e459488da6860df4412d558a~mv2_d_1800_1487_s_2.jpg",
+          "description": "Our new double bump / wing flat diamond tail is designed to keep the speed up through carves, while being able to go vertical in the pocket too. Order 2 inches shorter than your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Loose Cannon",
+          "image_url": "https://static.wixstatic.com/media/175f35_61c66fc2538844a180ea5d1ba40f13e5~mv2.jpg",
+          "description": "The Loose Cannon is a very versatile fish shape has performed well under multiple fin configurations. It works incredible as a twin +1 or with a 5 fin set up as well. We always include the mini trailer on the twins to add versatility to the board. The Loose Cannon's outline has a fuller nose than the OG fish and a more pulled in tail with a wing. It's meant to be ridden 4 - 6 inches shorter than your shortboard. We've built them with swallow tails and have made some with thumb tails as well.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Mullet Run 2.0",
+          "image_url": "https://static.wixstatic.com/media/175f35_79e6fdc2c9a74053ba70b9613e723685~mv2.jpg",
+          "description": "We've added a double bump to the tail and fine tuned the rocker to take this board to level 2.0. The Mullet Run is closer to a performance shortboard than you think. This board is designed to blend the performance of a short board with a little grovel thrown in. The double bump / wing reduces the tail width and gives a pivot point in the outline. This will help the board release if pushed real hard. The fuller nose helps the board become a wave catching machine and the single concave combined with the low rocker make the board feel like it has afterburners. We've carried the concave through the front fins leading to a light vee off the back of the tail to help you really bury the rail on hard turns.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "OG Twin Fish",
+          "image_url": "https://static.wixstatic.com/media/175f35_b7f51c2ebc7642d4ac3791cdebd98ad1~mv2.jpg",
+          "description": "The Skinner OG Fish is a design we have been working on for 20 years. It is designed to make the most of weak, mushy waves and to make knee to waist high days feel like chest to head high days. This design is mostly ridden as a twin fin but we have built some as quads too. We usually add the box for the 3rd fin, even though the front fins are set as twins. Most people use a small keel in the 3rd box for a little more grip when the waves get some juice. The bottom contour features a single concave thru the middle of the board which blends in to a double concave vee thru the fin area. The Vee is Key, keeping vee in tail will make this fish be able to hold a rail through turns and make your cutbacks smooth and flowing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Rain Maker",
+          "image_url": "https://static.wixstatic.com/media/175f35_f03184154d434ec4b701ff71be100f0c~mv2.png",
+          "description": "Introducing the Rain Maker, our high-performance shortboard model tailored for aggressive and radical surfing. Engineered with a moderate entry rocker that seamlessly transitions into a smooth single concave, flowing into a double concave between the fins with a slight vee off the tail. The smooth, flowing rockers, coupled with a subtle kick in the tail rocker, ensure exceptional responsiveness in the water. This versatile board is easily adaptable to various wave styles, thanks to its adjustable design. Wider tails and mellow bottom contours facilitate rapid speed generation, particularly in mushy surf conditions. Typically favored by above-average surfers. The Rain Maker is available with a squash, swallow, round, and round pin tails.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Vibe",
+          "image_url": "https://static.wixstatic.com/media/175f35_01c9384a33294a91a3aa4c7c93342dd5~mv2.jpg",
+          "description": "Crafted by Randy Skinner, the Vibe captures the essence of high-performance speed and fluidity found in the Rain Maker, while enhancing accessibility for a wider range of surfers and conditions. Featuring moderate entry rocker and amplified double concave, the Vibe delivers enhanced agility, effortless rail-to-rail transitions, and superior carving capabilities in critical sections. Described by our team as exceptionally swift, responsive, and fast underfoot. The Vibe's slightly fuller rails and little thicker tail block ensure effortless paddling, smooth easy takeoffs, and rapid acceleration. For those seeking the peak of cutting-edge shortboard performance in a user-friendly package, the Vibe stands as the ultimate choice.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
