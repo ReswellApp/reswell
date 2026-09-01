@@ -1,0 +1,90 @@
+{
+  "generated_for": "Simon Jones Designs official named standup catalog",
+  "source": "https://simonjonesdesigns.com/collections/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "simon-jones-designs",
+      "name": "Simon Jones Designs",
+      "website_url": "https://simonjonesdesigns.com",
+      "location_label": "Byron Bay, New South Wales, Australia",
+      "founder_name": "Simon Jones",
+      "lead_shaper_name": "Simon Jones",
+      "short_description": "Family-run Byron Bay label handcrafting stock and custom shortboards and mid-lengths since 1983.",
+      "models": [
+        {
+          "name": "2-Track",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/2-Track_Deck.png?v=1775781224",
+          "description": "The 2-Track is closely related to the Tracks Twinny, with low nose entry rocker and an overall foil and outline tuned for power and hold. A shortboard built for confident rail work in quality waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Au Go Go",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/211780834569d8.png?v=1776144462",
+          "description": "The Au Go Go started as a step-up Tracks Twinny and was later renamed before its Stab Electric Acid Test appearance. A high-performance twin for surfers who want extra drive in solid surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Calypte",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/101845718269d8.png?v=1776144958",
+          "description": "The Calypte is a high-performance twin built for speed, control, and progression. With a refined outline, subtle wing, and double stringer construction, it handles everything from fast reef waves to everyday conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dylan",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Dylan_Deck.png?v=1775781221",
+          "description": "The Dylan is a twin-fin longboard built for glide, paddle power, and speed across all conditions. With a fast outline and added tail rocker, it trims easily yet still turns and connects sections when needed.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fiji",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Fiji_triplestringer_Deck.png?v=1775706285",
+          "description": "The Fiji is Simon Jones Designs' most ridden model — a versatile all-rounder defined by its triple stringer and four deep channels. Built for powerful waves but adaptable across a wide size range.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Keel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Keel_Deck.png?v=1775781225",
+          "description": "The classic Keel is a cruisey twin rooted in 1960s San Diego design. With a wide outline, even foam, and swallow tail hold, it offers smooth speed, flow, and projection through long, drawn-out turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "LBOH",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/LBOH_Deck.png?v=1775782140",
+          "description": "The Little Board of Happiness is a compact small-wave twin built for speed, pocket surfing, and tight sections. With plenty of foam and a signature moon tail, it feels fast, stable, and surprisingly holdy for its size.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Little Wing",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Little_Wing_Deck.png?v=1775781223",
+          "description": "The Little Wing is a lively twin with low entry rocker, early glide, and a winged tail for tight, controlled turns. Fast and responsive, it can be ridden short for performance or longer for smooth, cruisey flow.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Massive",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Massive_Deck.png?v=1775781223",
+          "description": "The Massive was designed for small-day cruising and wide-line paddling on bigger swells. With low entry rocker, deep channels, and plenty of foam, it trims easily, holds strong when it counts, and carries speed across a wide range of conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Remote Location",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Remote_Location_Deck.png?v=1775781227",
+          "description": "The Remote Location is a down-the-line step-up built for serious surf. With a refined plan shape, controlled rocker, and unique nose concave, it offers hold, confidence, and flow in hollow, powerful waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Tracks Twinny",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Tracks_Twinny_Deck.png?v=1775781224",
+          "description": "The baseboard from which all Simon Jones twinnies evolved. Born from a 5'8\" swallow-tail single fin made for a Tracks Magazine board test, the Tracks Twinny delivers balanced twin feel with speed, flow, and everyday versatility.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Twin_Pin_Double_Stringer_f81b9b37-c599-4f4e-9e84-67f783378bf2.png?v=1776064070",
+          "description": "The Twin Pin is a versatile all-round twin built for speed, flow, and everyday conditions. With simple contours and a forgiving outline, it blends the drive of the Fiji with added looseness and adaptability in smaller or imperfect waves.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
