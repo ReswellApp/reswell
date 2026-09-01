@@ -14,6 +14,10 @@ export function IntelligenceCharts({
   monthly: AdminMonthlyRevenueRow[]
 }) {
   const totalGmv = daily.reduce((sum, row) => sum + row.gmv, 0)
+  const totalGmvWithoutShipping = daily.reduce(
+    (sum, row) => sum + row.gmvWithoutShipping,
+    0,
+  )
   const totalOrders = daily.reduce((sum, row) => sum + row.orders, 0)
   const hasSales = monthly.some((row) => row.orders > 0)
 
@@ -23,12 +27,15 @@ export function IntelligenceCharts({
         data={daily}
         chartSubtitle={`Daily GMV and platform fees · ${periodLabel} (${BUSINESS_TIMEZONE_LABEL})`}
         totalGmv={totalGmv}
+        totalGmvWithoutShipping={totalGmvWithoutShipping}
         totalOrders={totalOrders}
       />
       <div className="rounded-2xl border border-border bg-card">
         <div className="border-b border-border px-5 py-4">
           <h3 className="font-headline text-base font-semibold">Month over month</h3>
-          <p className="text-xs text-muted-foreground">Confirmed GMV, 7% take, and promo marketing</p>
+          <p className="text-xs text-muted-foreground">
+            Confirmed GMV ({BUSINESS_TIMEZONE_LABEL}), 7% take, and promo marketing
+          </p>
         </div>
         {!hasSales ? (
           <p className="px-5 py-8 text-center text-sm text-muted-foreground">
@@ -36,11 +43,12 @@ export function IntelligenceCharts({
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-sm">
+            <table className="w-full min-w-[620px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   <th className="px-5 py-3">Month</th>
-                  <th className="px-5 py-3 text-right">GMV</th>
+                  <th className="px-5 py-3 text-right">GMV w/ ship</th>
+                  <th className="px-5 py-3 text-right">GMV no ship</th>
                   <th className="px-5 py-3 text-right">Revenue</th>
                   <th className="px-5 py-3 text-right">Promo</th>
                   <th className="px-5 py-3 text-right">Orders</th>
@@ -56,6 +64,9 @@ export function IntelligenceCharts({
                     <tr key={row.yearMonth} className="border-b border-border/60 last:border-0">
                       <td className="px-5 py-2.5 font-medium">{formatMonthKey(row.yearMonth)}</td>
                       <td className="px-5 py-2.5 text-right tabular-nums">{compactUsd(row.gmv)}</td>
+                      <td className="px-5 py-2.5 text-right tabular-nums">
+                        {compactUsd(row.gmvWithoutShipping)}
+                      </td>
                       <td className="px-5 py-2.5 text-right tabular-nums">
                         {compactUsd(row.platformRevenue)}
                       </td>

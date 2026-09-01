@@ -16,7 +16,7 @@ import {
 import {
   ADMIN_INSIGHTS_MONTH_PICKER_COUNT,
   ADMIN_INSIGHTS_PERIOD_DAYS,
-  utcYearMonthChoices,
+  businessYearMonthChoices,
   type AdminHomeRevenueRange,
 } from '@/lib/utils/adminInsightsPeriod'
 import { formatMonthKey } from '@/lib/pnl-calc'
@@ -25,7 +25,7 @@ const ROLLING_30 = '30d'
 const ROLLING_90 = '90d'
 const RANGE_YTD = 'ytd'
 
-const MONTH_CHOICES = utcYearMonthChoices(ADMIN_INSIGHTS_MONTH_PICKER_COUNT)
+const MONTH_CHOICES = businessYearMonthChoices(ADMIN_INSIGHTS_MONTH_PICKER_COUNT)
 
 export interface AdminHomeRevenueFilterProps {
   selectedYearMonth: string | null

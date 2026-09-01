@@ -14,7 +14,10 @@ export type TrendMetric = {
 
 export type AdminInsightsDailyPoint = {
   date: string
+  /** Buyer-paid totals including shipping (net of promo). */
   gmv: number
+  /** Buyer-paid item totals excluding shipping (net of promo). */
+  gmvWithoutShipping: number
   fees: number
   orders: number
 }
@@ -23,6 +26,7 @@ export type AdminRevenueMonthlyPoint = {
   yearMonth: string
   label: string
   gmv: number
+  gmvWithoutShipping: number
   fees: number
   orders: number
   gmvDeltaPct: number | null
@@ -65,7 +69,10 @@ export type AdminInsightsOrderPreview = {
 
 export type AdminMonthlyRevenueRow = {
   yearMonth: string
+  /** Buyer-paid totals including shipping. */
   gmv: number
+  /** Buyer-paid item totals excluding shipping. */
+  gmvWithoutShipping: number
   platformRevenue: number
   /** Reswell-funded promo discounts (marketing expense). */
   marketingExpense: number
@@ -126,12 +133,12 @@ export type AdminBusinessInsights = {
 }
 
 export type LoadAdminBusinessInsightsOptions = {
-  /** `YYYY-MM` calendar month (UTC). Omit for the rolling window. */
+  /** `YYYY-MM` Pacific calendar month. Omit for the rolling window. */
   yearMonth?: string | null
 }
 
 export type LoadAdminRevenueTrendOptions = {
-  /** `YYYY-MM` calendar month (UTC). Omit for a rolling window. */
+  /** `YYYY-MM` Pacific calendar month. Omit for a rolling window. */
   yearMonth?: string | null
   /** Home chart range. Ignored when `yearMonth` is set. */
   range?: '30d' | '90d' | 'ytd'
@@ -148,6 +155,7 @@ export type AdminRevenueTrend = {
   daily: AdminInsightsDailyPoint[]
   monthly: AdminRevenueMonthlyPoint[]
   totalGmv: number
+  totalGmvWithoutShipping: number
   totalOrders: number
   /** Forward-looking pace line for monthly views. */
   insight: string | null

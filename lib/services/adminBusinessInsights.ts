@@ -32,8 +32,8 @@ import type {
 import {
   resolveAdminHomeRevenuePeriod,
   resolveAdminInsightsPeriod,
-  utcMonthStartIso,
-  utcYearMonthChoices,
+  businessMonthStartIso,
+  businessYearMonthChoices,
 } from '@/lib/utils/adminInsightsPeriod'
 import {
   buildAdminRevenueMonthlyPoints,
@@ -372,9 +372,12 @@ export async function loadAdminBusinessInsights(
     let ordersPrev = 0
     let refundedCur = 0
 
-    const dailyMap = new Map<string, { gmv: number; fees: number; orders: number }>()
+    const dailyMap = new Map<
+      string,
+      { gmv: number; gmvWithoutShipping: number; fees: number; orders: number }
+    >()
     for (const key of buildBusinessDayKeys(periodStartMs, periodEndMs)) {
-      dailyMap.set(key, { gmv: 0, fees: 0, orders: 0 })
+      dailyMap.set(key, { gmv: 0, gmvWithoutShipping: 0, fees: 0, orders: 0 })
     }
 
     const sellerAgg = new Map<string, { gmv: number; orders: number }>()
@@ -399,6 +402,7 @@ export async function loadAdminBusinessInsights(
           const bucket = dailyMap.get(businessDayKey(o.created_at))
           if (bucket) {
             bucket.gmv += o.amount
+            bucket.gmvWithoutShipping += buyerPaidGmvExcludingShipping(o)
             bucket.fees += o.platform_fee
             bucket.orders += 1
           }
@@ -439,6 +443,7 @@ export async function loadAdminBusinessInsights(
         const bucket = dailyMap.get(businessDayKey(tip.succeededAt))
         if (bucket) {
           bucket.gmv += tip.listingPriceUsd
+          bucket.gmvWithoutShipping += tip.listingPriceUsd
         }
         const s = sellerAgg.get(tip.sellerUserId) ?? { gmv: 0, orders: 0 }
         s.gmv += tip.listingPriceUsd
@@ -455,7 +460,13 @@ export async function loadAdminBusinessInsights(
     }
 
     const daily: AdminInsightsDailyPoint[] = Array.from(dailyMap.entries()).map(
-      ([date, v]) => ({ date, gmv: v.gmv, fees: v.fees, orders: v.orders }),
+      ([date, v]) => ({
+        date,
+        gmv: v.gmv,
+        gmvWithoutShipping: v.gmvWithoutShipping,
+        fees: v.fees,
+        orders: v.orders,
+      }),
     )
 
     const takeRatePct = listingItemGmvCur > 0 ? (feesCur / listingItemGmvCur) * 100 : null
@@ -626,7 +637,7 @@ export async function loadAdminRevenueTrend(
     const [{ data: orderRows, error }, tippedGms] = await Promise.all([
       db
         .from('orders')
-        .select('id, amount, platform_fee, status, created_at')
+        .select('id, amount, shipping_amount, platform_fee, status, created_at')
         .eq('is_admin_test', false)
         .gte('created_at', periodStartIso)
         .lt('created_at', periodEndIso)
@@ -639,18 +650,23 @@ export async function loadAdminRevenueTrend(
       return { ok: false, error: 'Could not load marketplace revenue trend.' }
     }
 
-    const dailyMap = new Map<string, { gmv: number; fees: number; orders: number }>()
+    const dailyMap = new Map<
+      string,
+      { gmv: number; gmvWithoutShipping: number; fees: number; orders: number }
+    >()
     for (const key of buildBusinessDayKeys(period.periodStartMs, period.periodEndMs)) {
-      dailyMap.set(key, { gmv: 0, fees: 0, orders: 0 })
+      dailyMap.set(key, { gmv: 0, gmvWithoutShipping: 0, fees: 0, orders: 0 })
     }
 
     let totalGmv = 0
+    let totalGmvWithoutShipping = 0
     let totalOrders = 0
 
     for (const row of orderRows ?? []) {
       const r = row as Record<string, unknown>
       const order = {
         amount: num(r.amount),
+        shipping_amount: num(r.shipping_amount),
         platform_fee: num(r.platform_fee),
         status: String(r.status ?? ''),
         created_at: String(r.created_at ?? ''),
@@ -660,10 +676,13 @@ export async function loadAdminRevenueTrend(
 
       const bucket = dailyMap.get(businessDayKey(order.created_at))
       if (!bucket) continue
+      const withoutShipping = buyerPaidGmvExcludingShipping(order)
       bucket.gmv += order.amount
+      bucket.gmvWithoutShipping += withoutShipping
       bucket.fees += order.platform_fee
       bucket.orders += 1
       totalGmv += order.amount
+      totalGmvWithoutShipping += withoutShipping
       totalOrders += 1
     }
 
@@ -673,11 +692,19 @@ export async function loadAdminRevenueTrend(
       const bucket = dailyMap.get(businessDayKey(tip.succeededAt))
       if (!bucket) continue
       bucket.gmv += tip.listingPriceUsd
+      bucket.gmvWithoutShipping += tip.listingPriceUsd
       totalGmv += tip.listingPriceUsd
+      totalGmvWithoutShipping += tip.listingPriceUsd
     }
 
     const daily: AdminInsightsDailyPoint[] = Array.from(dailyMap.entries()).map(
-      ([date, v]) => ({ date, gmv: v.gmv, fees: v.fees, orders: v.orders }),
+      ([date, v]) => ({
+        date,
+        gmv: v.gmv,
+        gmvWithoutShipping: v.gmvWithoutShipping,
+        fees: v.fees,
+        orders: v.orders,
+      }),
     )
     const aggregation =
       (range === '90d' || range === 'ytd') && !options?.yearMonth ? 'month' : 'day'
@@ -701,6 +728,7 @@ export async function loadAdminRevenueTrend(
         daily,
         monthly,
         totalGmv,
+        totalGmvWithoutShipping,
         totalOrders,
         insight,
       },
@@ -954,7 +982,7 @@ export async function loadAdminMomentumMatrix(): Promise<
 
 const MONTHLY_BREAKDOWN_DEFAULT_MONTHS = 12
 
-/** Confirmed-order GMV and platform fees grouped by UTC calendar month. */
+/** Confirmed-order GMV and platform fees grouped by Pacific calendar month. */
 export async function loadAdminMonthlyRevenueBreakdown(
   monthCount = MONTHLY_BREAKDOWN_DEFAULT_MONTHS,
 ): Promise<
@@ -962,9 +990,9 @@ export async function loadAdminMonthlyRevenueBreakdown(
 > {
   try {
     const db = createServiceRoleClient()
-    const months = utcYearMonthChoices(monthCount)
+    const months = businessYearMonthChoices(monthCount)
     const earliestYm = months[months.length - 1]
-    const sinceIso = earliestYm ? utcMonthStartIso(earliestYm) : null
+    const sinceIso = earliestYm ? businessMonthStartIso(earliestYm) : null
     if (!sinceIso) {
       return { ok: true, data: [] }
     }
@@ -972,7 +1000,7 @@ export async function loadAdminMonthlyRevenueBreakdown(
     const [{ data: orderRows, error }, tippedGms] = await Promise.all([
       db
         .from('orders')
-        .select('amount, platform_fee, promo_discount_usd, created_at, status')
+        .select('amount, shipping_amount, platform_fee, promo_discount_usd, created_at, status')
         .eq('is_admin_test', false)
         .eq('status', 'confirmed')
         .gte('created_at', sinceIso)
@@ -987,22 +1015,39 @@ export async function loadAdminMonthlyRevenueBreakdown(
 
     const bucket = new Map<
       string,
-      { gmv: number; platformRevenue: number; marketingExpense: number; orders: number }
+      {
+        gmv: number
+        gmvWithoutShipping: number
+        platformRevenue: number
+        marketingExpense: number
+        orders: number
+      }
     >()
     for (const ym of months) {
-      bucket.set(ym, { gmv: 0, platformRevenue: 0, marketingExpense: 0, orders: 0 })
+      bucket.set(ym, {
+        gmv: 0,
+        gmvWithoutShipping: 0,
+        platformRevenue: 0,
+        marketingExpense: 0,
+        orders: 0,
+      })
     }
 
     for (const row of orderRows ?? []) {
       const r = row as Record<string, unknown>
       const amount = num(r.amount)
+      const shippingAmount = num(r.shipping_amount)
       const createdAt = String(r.created_at ?? '')
       const status = String(r.status ?? '')
       if (isHiddenFromAdminOverviewReport({ amount, created_at: createdAt, status })) continue
-      const ym = createdAt.slice(0, 7)
+      const ym = businessDayKey(createdAt).slice(0, 7)
       const b = bucket.get(ym)
       if (!b) continue
       b.gmv += amount
+      b.gmvWithoutShipping += buyerPaidGmvExcludingShipping({
+        amount,
+        shipping_amount: shippingAmount,
+      })
       b.platformRevenue += num(r.platform_fee)
       b.marketingExpense += marketplacePromoMarketingUsd({
         promo_discount_usd: num(r.promo_discount_usd),
@@ -1011,18 +1056,25 @@ export async function loadAdminMonthlyRevenueBreakdown(
     }
 
     for (const tip of tippedGms) {
-      const ym = tip.succeededAt.slice(0, 7)
+      const ym = businessDayKey(tip.succeededAt).slice(0, 7)
       const b = bucket.get(ym)
       if (!b) continue
       b.gmv += tip.listingPriceUsd
+      b.gmvWithoutShipping += tip.listingPriceUsd
     }
 
     const data: AdminMonthlyRevenueRow[] = months.map((yearMonth) => {
-      const v =
-        bucket.get(yearMonth) ?? { gmv: 0, platformRevenue: 0, marketingExpense: 0, orders: 0 }
+      const v = bucket.get(yearMonth) ?? {
+        gmv: 0,
+        gmvWithoutShipping: 0,
+        platformRevenue: 0,
+        marketingExpense: 0,
+        orders: 0,
+      }
       return {
         yearMonth,
         gmv: v.gmv,
+        gmvWithoutShipping: v.gmvWithoutShipping,
         platformRevenue: v.platformRevenue,
         marketingExpense: v.marketingExpense,
         orders: v.orders,

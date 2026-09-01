@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
-import { businessDayKeyFromMs, businessDayStartMs } from '@/lib/utils/business-timezone'
+import {
+  BUSINESS_TIMEZONE,
+  businessDayKeyFromMs,
+  businessDayStartMs,
+} from '@/lib/utils/business-timezone'
 
 /** Rolling comparison window for the admin overview BI dashboard. */
 export const ADMIN_INSIGHTS_PERIOD_DAYS = 30
@@ -46,10 +50,6 @@ export type AdminInsightsPeriodResolved =
       fetchSinceIso: string
     }
 
-function utcMonthStartMs(year: number, monthIndex0: number): number {
-  return Date.UTC(year, monthIndex0, 1)
-}
-
 function parseYearMonth(yearMonth: string): { year: number; month: number } | null {
   const parsed = adminInsightsYearMonthSchema.safeParse(yearMonth)
   if (!parsed.success) return null
@@ -57,22 +57,22 @@ function parseYearMonth(yearMonth: string): { year: number; month: number } | nu
   return { year: Number(y), month: Number(m) }
 }
 
-/** UTC calendar months newest-first, e.g. `2026-06`, `2026-05`, … */
-export function utcYearMonthChoices(count: number): string[] {
+/**
+ * Pacific calendar months newest-first, e.g. `2026-08`, `2026-07`, …
+ * Matches daily chart buckets so evening PT days don’t jump months early.
+ */
+export function businessYearMonthChoices(count: number): string[] {
   const months: string[] = []
-  const now = new Date()
-  let y = now.getUTCFullYear()
-  let mo = now.getUTCMonth() + 1
+  let ym = businessDayKeyFromMs(Date.now()).slice(0, 7)
   for (let i = 0; i < count; i++) {
-    months.push(`${y}-${String(mo).padStart(2, '0')}`)
-    mo -= 1
-    if (mo < 1) {
-      mo = 12
-      y -= 1
-    }
+    months.push(ym)
+    ym = shiftYearMonth(ym, -1)
   }
   return months
 }
+
+/** @deprecated Use `businessYearMonthChoices` — months are Pacific, not UTC. */
+export const utcYearMonthChoices = businessYearMonthChoices
 
 export function shiftYearMonth(yearMonth: string, deltaMonths: number): string {
   const parts = parseYearMonth(yearMonth)
@@ -84,10 +84,12 @@ export function shiftYearMonth(yearMonth: string, deltaMonths: number): string {
 export function formatAdminInsightsMonthLabel(yearMonth: string): string {
   const parts = parseYearMonth(yearMonth)
   if (!parts) return yearMonth
-  return new Date(Date.UTC(parts.year, parts.month - 1, 1)).toLocaleDateString('en-US', {
+  const ym = `${parts.year}-${String(parts.month).padStart(2, '0')}`
+  const anchor = businessDayStartMs(`${ym}-01`) + 12 * 60 * 60 * 1000
+  return new Date(anchor).toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
-    timeZone: 'UTC',
+    timeZone: BUSINESS_TIMEZONE,
   })
 }
 
@@ -144,30 +146,18 @@ export function resolveAdminInsightsPeriod(
   if (yearMonthInput) {
     const parts = parseYearMonth(yearMonthInput)
     if (parts) {
-      const { year, month } = parts
-      const monthIndex0 = month - 1
-      const periodStartMs = utcMonthStartMs(year, monthIndex0)
-      const monthEndMs = utcMonthStartMs(
-        monthIndex0 === 11 ? year + 1 : year,
-        monthIndex0 === 11 ? 0 : monthIndex0 + 1,
-      )
+      const ym = `${parts.year}-${String(parts.month).padStart(2, '0')}`
+      const nextYm = shiftYearMonth(ym, 1)
+      const prevYm = shiftYearMonth(ym, -1)
+      const periodStartMs = businessDayStartMs(`${ym}-01`)
+      const monthEndMs = businessDayStartMs(`${nextYm}-01`)
       const periodEndMs = Math.min(now, monthEndMs)
       const daysInMonth = Math.max(
         1,
         Math.round((monthEndMs - periodStartMs) / dayMs),
       )
-
-      let prevYear = year
-      let prevMonthIndex0 = monthIndex0 - 1
-      if (prevMonthIndex0 < 0) {
-        prevMonthIndex0 = 11
-        prevYear -= 1
-      }
-      const prevStartMs = utcMonthStartMs(prevYear, prevMonthIndex0)
-      const prevEndMs = utcMonthStartMs(year, monthIndex0)
-
-      const ym = `${year}-${String(month).padStart(2, '0')}`
-      const prevYm = `${prevYear}-${String(prevMonthIndex0 + 1).padStart(2, '0')}`
+      const prevStartMs = businessDayStartMs(`${prevYm}-01`)
+      const prevEndMs = periodStartMs
 
       return {
         mode: 'month',
@@ -217,8 +207,13 @@ export function resolveAdminInsightsPeriod(
   }
 }
 
-export function utcMonthStartIso(yearMonth: string): string | null {
+/** Instant when a Pacific calendar month begins (`YYYY-MM`). */
+export function businessMonthStartIso(yearMonth: string): string | null {
   const parts = parseYearMonth(yearMonth)
   if (!parts) return null
-  return new Date(utcMonthStartMs(parts.year, parts.month - 1)).toISOString()
+  const ym = `${parts.year}-${String(parts.month).padStart(2, '0')}`
+  return new Date(businessDayStartMs(`${ym}-01`)).toISOString()
 }
+
+/** @deprecated Use `businessMonthStartIso` — months are Pacific, not UTC. */
+export const utcMonthStartIso = businessMonthStartIso

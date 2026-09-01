@@ -122,6 +122,7 @@ export function AdminHomeDashboard({
               chartSubtitle={revenueChartSubtitle(revenueTrend)}
               insight={revenueTrend.insight}
               totalGmv={revenueTrend.totalGmv}
+              totalGmvWithoutShipping={revenueTrend.totalGmvWithoutShipping}
               totalOrders={revenueTrend.totalOrders}
               periodFilter={
                 <Suspense fallback={null}>

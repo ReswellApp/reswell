@@ -13,13 +13,13 @@ import {
 import {
   ADMIN_INSIGHTS_MONTH_PICKER_COUNT,
   ADMIN_INSIGHTS_PERIOD_DAYS,
-  utcYearMonthChoices,
+  businessYearMonthChoices,
 } from '@/lib/utils/adminInsightsPeriod'
 import { formatMonthKey } from '@/lib/pnl-calc'
 
 const ROLLING_VALUE = 'rolling'
 
-const MONTH_CHOICES = utcYearMonthChoices(ADMIN_INSIGHTS_MONTH_PICKER_COUNT)
+const MONTH_CHOICES = businessYearMonthChoices(ADMIN_INSIGHTS_MONTH_PICKER_COUNT)
 
 export interface AdminOverviewPeriodFilterProps {
   selectedYearMonth: string | null

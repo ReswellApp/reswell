@@ -12,13 +12,13 @@ import {
 } from '@/components/ui/select'
 import {
   ADMIN_INSIGHTS_MONTH_PICKER_COUNT,
-  utcYearMonthChoices,
+  businessYearMonthChoices,
 } from '@/lib/utils/adminInsightsPeriod'
 import { formatMonthKey } from '@/lib/pnl-calc'
 
 const ALL_TIME_VALUE = 'all'
 
-const MONTH_CHOICES = utcYearMonthChoices(ADMIN_INSIGHTS_MONTH_PICKER_COUNT)
+const MONTH_CHOICES = businessYearMonthChoices(ADMIN_INSIGHTS_MONTH_PICKER_COUNT)
 
 export interface PnlPeriodFilterProps {
   selectedYearMonth: string | null

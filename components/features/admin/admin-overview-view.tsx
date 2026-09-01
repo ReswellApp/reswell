@@ -747,6 +747,7 @@ export function AdminOverviewView({
                 : `Daily GMV and platform fees over the last ${insights.periodDays} days (${BUSINESS_TIMEZONE_LABEL})`
             }
             totalGmv={insights.revenue.gmv.current}
+            totalGmvWithoutShipping={insights.revenue.gmvWithoutShipping.current}
             totalOrders={insights.revenue.orders.current}
           />
 
