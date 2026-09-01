@@ -43,7 +43,7 @@ import {
   marketplaceListingItemGmvUsd,
   marketplacePromoMarketingUsd,
 } from '@/lib/seller-fees'
-import { buildBusinessDayKeys, businessDayKey } from '@/lib/utils/business-timezone'
+import { buildBusinessDayKeysForPeriod, businessDayKey } from '@/lib/utils/business-timezone'
 
 export { ADMIN_INSIGHTS_PERIOD_DAYS } from '@/lib/utils/adminInsightsPeriod'
 export type {
@@ -376,7 +376,7 @@ export async function loadAdminBusinessInsights(
       string,
       { gmv: number; gmvWithoutShipping: number; fees: number; orders: number }
     >()
-    for (const key of buildBusinessDayKeys(periodStartMs, periodEndMs)) {
+    for (const key of buildBusinessDayKeysForPeriod(periodStartMs, periodEndMs)) {
       dailyMap.set(key, { gmv: 0, gmvWithoutShipping: 0, fees: 0, orders: 0 })
     }
 
@@ -654,7 +654,7 @@ export async function loadAdminRevenueTrend(
       string,
       { gmv: number; gmvWithoutShipping: number; fees: number; orders: number }
     >()
-    for (const key of buildBusinessDayKeys(period.periodStartMs, period.periodEndMs)) {
+    for (const key of buildBusinessDayKeysForPeriod(period.periodStartMs, period.periodEndMs)) {
       dailyMap.set(key, { gmv: 0, gmvWithoutShipping: 0, fees: 0, orders: 0 })
     }
 

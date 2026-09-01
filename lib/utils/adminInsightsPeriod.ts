@@ -139,8 +139,9 @@ export function resolveAdminHomeRevenuePeriod(
 export function resolveAdminInsightsPeriod(
   yearMonthInput?: string | null,
   rollingDays: number = ADMIN_INSIGHTS_PERIOD_DAYS,
+  nowMs: number = Date.now(),
 ): AdminInsightsPeriodResolved {
-  const now = Date.now()
+  const now = nowMs
   const dayMs = 24 * 60 * 60 * 1000
 
   if (yearMonthInput) {

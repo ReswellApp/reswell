@@ -661,7 +661,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   This order ships as separate packages — print and attach each label to the matching board.
                 </p>
-                {(shipments.length > 0
+                {shipments.length > 0
                   ? shipments.map((shipment, index) => {
                       const label = labelByShipmentId.get(shipment.id) ?? marketplaceLabels[index] ?? null
                       if (!label) return null

@@ -11,6 +11,7 @@ import type {
 } from "@/lib/types/businessIntelligence"
 import { marketplaceListingItemGmvUsd, marketplacePromoMarketingUsd } from "@/lib/seller-fees"
 import { businessDayKey } from "@/lib/utils/business-timezone"
+import { businessMonthStartIso, businessYearMonthChoices } from "@/lib/utils/adminInsightsPeriod"
 import type { IntelligencePeriodResolved } from "@/lib/utils/businessIntelligencePeriod"
 import { intelligenceTrend } from "@/lib/utils/intelligence-trend"
 
@@ -319,21 +320,11 @@ export async function fetchIntelligenceMonthlyHistory(
   db: SupabaseClient,
   monthCount = 12,
 ): Promise<IntelligenceMonthlyHistoryRow[]> {
-  const now = new Date()
-  const months: string[] = []
-  let y = now.getUTCFullYear()
-  let mo = now.getUTCMonth() + 1
-  for (let i = 0; i < monthCount; i++) {
-    months.push(`${y}-${String(mo).padStart(2, "0")}`)
-    mo -= 1
-    if (mo < 1) {
-      mo = 12
-      y -= 1
-    }
-  }
+  const months = businessYearMonthChoices(monthCount)
   const earliest = months[months.length - 1]
   if (!earliest) return []
-  const sinceIso = `${earliest}-01T00:00:00.000Z`
+  const sinceIso = businessMonthStartIso(earliest)
+  if (!sinceIso) return []
 
   const [ordersRes, tippedGms, usersRes, listingsRes] = await Promise.all([
     db
@@ -374,7 +365,7 @@ export async function fetchIntelligenceMonthlyHistory(
     ) {
       continue
     }
-    const ym = createdAt.slice(0, 7)
+    const ym = businessDayKey(createdAt).slice(0, 7)
     const b = bucket.get(ym)
     if (!b) continue
     b.gmv += num(r.amount)
@@ -385,18 +376,18 @@ export async function fetchIntelligenceMonthlyHistory(
     b.orders += 1
   }
   for (const tip of tippedGms) {
-    const ym = tip.succeededAt.slice(0, 7)
+    const ym = businessDayKey(tip.succeededAt).slice(0, 7)
     const b = bucket.get(ym)
     if (!b) continue
     b.gmv += tip.listingPriceUsd
   }
   for (const row of usersRes.data ?? []) {
-    const ym = String((row as { created_at?: string }).created_at ?? "").slice(0, 7)
+    const ym = businessDayKey(String((row as { created_at?: string }).created_at ?? "")).slice(0, 7)
     const b = bucket.get(ym)
     if (b) b.users += 1
   }
   for (const row of listingsRes.data ?? []) {
-    const ym = String((row as { created_at?: string }).created_at ?? "").slice(0, 7)
+    const ym = businessDayKey(String((row as { created_at?: string }).created_at ?? "")).slice(0, 7)
     const b = bucket.get(ym)
     if (b) b.listings += 1
   }

@@ -26,7 +26,7 @@ export function businessDayStartMs(dateKey: string): number {
   const [year, month, day] = dateKey.split('-').map(Number)
   let lo = Date.UTC(year, month - 1, day - 1, 8, 0, 0)
   let hi = Date.UTC(year, month - 1, day + 1, 8, 0, 0)
-  while (hi - lo > 60_000) {
+  while (hi - lo > 1) {
     const mid = Math.floor((lo + hi) / 2)
     if (businessDayKeyFromMs(mid) < dateKey) lo = mid
     else hi = mid
@@ -50,6 +50,18 @@ export function addBusinessDays(dateKey: string, days: number): string {
         : businessDayKeyFromMs(businessDayStartMs(key) - 12 * 60 * 60 * 1000)
   }
   return key
+}
+
+/**
+ * Business-calendar days in `[fromMs, toMsExclusive)`.
+ * Use this for admin period windows whose `periodEndMs` is exclusive.
+ */
+export function buildBusinessDayKeysForPeriod(
+  fromMs: number,
+  toMsExclusive: number,
+): string[] {
+  if (toMsExclusive <= fromMs) return []
+  return buildBusinessDayKeys(fromMs, toMsExclusive - 1)
 }
 
 /** Inclusive range of business-calendar days from `fromMs` through `toMs`. */
