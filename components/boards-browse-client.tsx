@@ -332,7 +332,7 @@ export function BoardsBrowseClient({
 
         {/* Results column — strips (top listings / shops / sellers) live here so
             opening the sidebar narrows them with the board grid. */}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-x-clip">
           {afterHeader}
 
           <div

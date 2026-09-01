@@ -22,6 +22,7 @@ export function CityTopSellersRow({
       showDivider={showDivider}
     >
       <HomeListingScrollRow
+        inset
         uniformCardHeights
         tileWrapClassName={cityEntityTileWrapClass}
         rowGapClassName="gap-2 sm:gap-2.5"

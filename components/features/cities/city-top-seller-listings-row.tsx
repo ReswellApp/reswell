@@ -61,6 +61,7 @@ export function CityTopSellerListingsRow({
       emphasis
     >
       <HomeListingScrollRow
+        inset
         uniformCardHeights
         tileWrapClassName={cityTopListingTileWrapClass}
         rowGapClassName="gap-2 sm:gap-2.5"
