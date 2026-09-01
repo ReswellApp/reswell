@@ -1,0 +1,108 @@
+{
+  "generated_for": "Along Surfboards official named standup catalog",
+  "source": "https://www.along.fm/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "along-surfboards",
+      "name": "Along Surfboards",
+      "website_url": "https://www.along.fm",
+      "location_label": "Encinitas, California",
+      "founder_name": "David Lopez",
+      "lead_shaper_name": "David Lopez",
+      "short_description": "Handcrafted eco-conscious surfboards shaped by David Lopez in Encinitas, San Diego \u2014 custom fishes, thrusters, mid-lengths, and logs.",
+      "models": [
+        {
+          "name": "Arrow Head",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/4ac7eb54-9f5d-4894-85a6-1aaa90bd24db/AlongSurfboard-ArrowHead.jpg?format=1500w",
+          "description": "Handcrafted custom Arrow Head surfboard shaped by David Lopez in San Diego, California. Featuring a fish tail, flat deck, and wings, this high-performance hybrid blends speed, control, and versatility for a variety of wave conditions. Made with sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish & Chips",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1561683436412-45M3E1M4SD1N7YWHAWT8/AlongSurfboard-Fish%26Chips.jpg?format=1500w",
+          "description": "The Fish & Chips surfboard blends classic style and performance, offering speed, maneuverability, and flow in small to medium waves. Optional gloss deck and sanded finish bottom. Handcrafted custom surfboard shaped by David Lopez in San Diego, California \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "HP2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1563493272132-FUQW2O8MZSEVBVWY17S1/image-asset.jpeg?format=1500w",
+          "description": "This high-performance custom surfboard, ranging from 5'4\" to 6'4\", is designed for speed, agility, and precision in critical wave sections. Handcrafted by David Lopez in San Diego, California, using sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jane Meets Tarzan",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1562966622262-A7TZCGBHC2BL5OMJAZO3/AlongSurfboard-janemeettarzan.jpg?format=1500w",
+          "description": "The Jane Meets Tarzan surfboard blends classic flow with modern performance. Its rounded nose and tail enhance paddle power, control, and smooth turns. Handcrafted custom surfboard by David Lopez in San Diego, California \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Jane Meets Tarzan V2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1563490318442-LHD4H35YIBRHHE6T449Y/AlongSurfboard-JaneV2.jpg?format=1500w",
+          "description": "The Jane Meets Tarzan surfboard blends performance and flow in a versatile design shaped by David Lopez in San Diego, California. With a rounded nose for easy paddling and a smooth, forgiving tail for controlled turns, it performs beautifully across a variety of wave conditions. Made with sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Jungle Boogie",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1604603045287-X67G5H35YMU3URNPO82G/AlongSurfboard-JungleBoogie.jpg?format=1500w",
+          "description": "Handcrafted custom Jungle Boogie surfboard shaped by David Lopez in San Diego, California. A stretched fish design blending classic speed and flow with added versatility for a wide range of surf conditions. Made with sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Phantom",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1563473109540-5V6CHAP4A6X3LU2X8XYV/AlongSurfboard-Phantom.jpg?format=1500w",
+          "description": "Handcrafted custom Phantom surfboard shaped by David Lopez in San Diego, California. A biscuit-style thruster with a soft double concave and compact, high-volume design \u2014 built for easy wave-catching and playful performance in small to medium surf. Made with sustainable materials and traditional techniques. Build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Runway",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/ca9ed67a-ad3f-4f0d-b5c8-8fbb4c3b8337/AlongSurfboards-Runway-Log-Y1.jpg?format=1500w",
+          "description": "Handcrafted custom longboard surfboard shaped by David Lopez in San Diego, California. The Runway shape embodies traditional logging style with smooth rides and graceful turns. Its 50/50 rails provide a forgiving, buttery feel for stability, flow, and classic nose rides \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Runway Epoxy Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/408c76fc-96f7-430f-9523-5f75b99b71f1/8Y5A8426.jpg?format=1500w",
+          "description": "The Runway surfboard is a modern take on classic logging, handcrafted in epoxy foam by David Lopez in San Diego, California. Designed for smooth rides and graceful turns, it features 50/50 rails for a buttery glide, stability, and timeless nose rides. Made with sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Runway Gloss Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/ca9ed67a-ad3f-4f0d-b5c8-8fbb4c3b8337/AlongSurfboards-Runway-Log-Y1.jpg?format=1500w",
+          "description": "The Runway surfboard channels classic log style with 50/50 rails for buttery flow, smooth rides, and timeless nose rides. Handcrafted custom surfboard by David Lopez in San Diego, California \u2014 available with an optional gloss finish. Along \u2013 Blend with Nature. Build your dream ride.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Runway R-Tail",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/b587bf72-f8a2-431c-a0b7-266a7262a742/AlongSurfboard-Runway-R-Tail-1.jpg?format=1500w",
+          "description": "Handcrafted custom longboard surfboard shaped by David Lopez in San Diego, California. The Runway model embodies classic logging style with 50/50 rails for smooth rides, stability, and graceful nose rides. Made with sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sugar Man",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1604605494643-3L93O2LCILRPBNR3WL7M/AlongSurfboard-SugarMan.jpg?format=1500w",
+          "description": "Handcrafted custom Sugar Man surfboard shaped by David Lopez in San Diego, California. Featuring a classic twin-fin setup with modern design elements, this board delivers a fast, responsive ride across a wide range of conditions. Made with sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Big Black Board",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1563480358787-7X7BD6M9OM5N5QQHGGG1/AlongSurfboard-Bigblackboard.jpg?format=1500w",
+          "description": "Handcrafted custom longboard surfboard shaped by David Lopez in San Diego, California. This classic single-fin design (8'8\"\u20139'6\") delivers timeless glide, stability, and smooth performance \u2014 made with sustainable materials and traditional techniques. Build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Galleta",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1562970052289-JJXENUDQ2L6I9U0ELTK2/AlongSurfboard-TheGalleta.jpg?format=1500w",
+          "description": "Handcrafted custom Galleta surfboard shaped by David Lopez in San Diego, California. Featuring a rounded tail and compact, high-volume design, it delivers exceptional paddle power, stability, and ease catching waves in small to medium surf. Made with sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Tropic Thunder",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cca0d9d3560c309a389b0c6/1562971121001-L44RBDZTXNFPZJ13BFNL/AlongSurfboard-TropicThunder-2.jpg?format=1500w",
+          "description": "Handcrafted custom mid-length single-fin surfboard shaped by David Lopez in San Diego, California. Ranging from 7'0\" to 7'6\", this sleek, performance-focused design delivers smooth flow, control, and effortless glide. Made with sustainable materials and traditional techniques \u2014 build your dream ride. Along \u2013 Blend with Nature.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
