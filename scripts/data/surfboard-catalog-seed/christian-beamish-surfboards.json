@@ -1,0 +1,60 @@
+{
+  "generated_for": "Christian Beamish official named standup catalog",
+  "source": "https://christianbeamish.com/surfboards-california-1",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "christian-beamish-surfboards",
+      "name": "Christian Beamish",
+      "website_url": "https://christianbeamish.com/surfboards-california-1",
+      "location_label": "Carpinteria, California",
+      "founder_name": "Christian Beamish",
+      "lead_shaper_name": "Christian Beamish",
+      "short_description": "Christian Beamish is a Carpinteria based shaper, sailor, and writer whose deeply considered hand shaped boards and remarkable life story make him one of the most genuinely compelling figures in California surf culture.",
+      "models": [
+        {
+          "name": "Twinzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1783536198379-Q8FYA3QYZLF73FVYSOT9/Twinzer.jpg",
+          "description": "The Twinzer is a lightning-fast skateboard of a design. Combining elements of a fish and more high-performance boards, the Twinzer gets on plane quickly and rips through turns. The combination of a full-but-speedy outline, and bottom contours that include slight double concaves and what I think of as the originator Will Jobson's \"vector channel\" running out the angular tail block, makes for dynamic bursts of speed. The main twin fins, paired with the smaller canard fins set forward with a ¼\" overlap, is a powerful combination of speed and hold, which explains some surfers' near-complete devotion to the concept.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sexy Iggy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1783536619900-PRFUULUXEVRS84OQY5MT/Sexy+Iggy.jpeg",
+          "description": "A pulled-in mid-length design, the Sexy Iggy is lean and mean like its namesake, Iggy Pop. Inspired by a board Australian shaper Josh Keogh shaped that paddles well and really drives down the line, the \"Iggy\" is for clean, pared-down surfing: wave riding brought to its essence. Primarily designed as a single fin, the board can also run as a 2 + 1. With a continuous rocker, the board turns well and the bottom contours include slight reverse vee (a light vee panel in the nose section) running to a slight concave ahead of the fin(s), and light vee out the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Malibu Vector",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1783537811244-BO1ZIYEBMLWER3KT037S/Malibu+Vector+2.jpg",
+          "description": "With the projecting, \"directional\" turns of a fish and great paddling speed, the Malibu Vector turns mushy surf into a fun skatepark scenario. The Malibu Vector comes out of an 8'8\" I call \"Malibu Sam,\" which (in a very general sense) combines the nose and forward section of Joe Quigg's early 1950s \"Malibu Chip\" with a wide tail block and vee reminiscent of the McTavish/Nat Young \"Magic Sam\" circa '66 - '67. I thought of a 6'9\" version as if it was cut-out from the 8\"8\", and the board I shaped reminds me of Dave Parmenter's \"Stub Vector\" design—hence the name \"Malibu Vector.\" The fin array is tight cluster set forward, and the longer boards have slightly more pulled-in dimensions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "RAB82",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1783538178983-4BX1J7G516QKW6YK0SPV/088136010012.webp",
+          "description": "The RAB82 is a three-fin surfboard that hasn't forgotten its single fin roots. Roughly based on the type of Thruster Rabbit would have had in his quiver just after the transition to three-fin surfboards in 1981, the RAB82 is for high-performance, old-school inspired surfing. With a thicker rail foil than a contemporary shortboard, the RAB82 gives solid paddle power and lays down clean lines. A RAB80 is a six-channel single fin version.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MLBB",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1783541768792-AP16DBDE60TM4FI3NUH0/Surfboards+California+MLBB.jpg",
+          "description": "I developed a mid-length channel bottom, the \"Mid-Length for Black Belt\" which provides the sensation of \"lifting drive\" even in smaller, slopey-faced waves. The MLBB checked all the boxes on the initial surfs at small-but-clean California Street in Ventura, the channels engaging through the bottom turn and giving that extra \"scoot.\" It's a fuller outline with a Makaha-style nose, and increased tail rocker to paddle-in with confidence and come off the cornice without getting hung up. The overall feeling is of a board that just wants bigger and meaner surf, but that also maximizes small waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Kingfisher",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1625692909458-D8U1G6UN27B9NREY33KT/Yellow_mega_top.jpg",
+          "description": "A classic \"longfish\" design, the Kingfisher provides drive and projection in small waves and bigger surf. I designed a set of Surfboards California keels for the Kingfisher that True Ames Fins manufactures. These keels have a longer base than a twin and are more upright than a traditional keel, giving the boards more pivot through turns than classic fish keels. The Kingfisher design grew out of a 1957 Pat Curren Gun Outline I utilized for Mavericks Guns. I retained the classic fuller nose (which I think of as a \"Makaha\" nose) with a long, tapering outline and a swallow tail for a \"double pintail\" effect.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gliders & Guns",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1625622681475-DGRYK51S5LBW5VHHJ1KN/Beamish_gun.jpg",
+          "description": null,
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
