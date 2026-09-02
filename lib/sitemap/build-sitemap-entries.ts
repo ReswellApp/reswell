@@ -17,6 +17,7 @@ import { getCachedTopCitiesDirectory } from "@/lib/cache/top-cities-directory"
 import { cityLandingHref } from "@/lib/city-landing-path"
 import { CITY_SURF_SHOPS, surfShopHref } from "@/lib/city-landing-surf-shops"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { careerRoleHref, careerRoles } from "@/lib/careers"
 import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
@@ -213,8 +214,16 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: e.path === "/priceguide" ? 0.7 : 0.55,
   }))
 
+  const careerRolePages: SitemapUrlEntry[] = careerRoles.map((role) => ({
+    url: `${BASE}${careerRoleHref(role)}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.3,
+  }))
+
   const merged = [
     ...staticPages,
+    ...careerRolePages,
     ...boardFilterPages(now),
     ...brandPages,
     ...cityPages,

@@ -108,6 +108,18 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       "/about",
       "/what-is-reswell",
     ]),
+    publicImage("careers/headline-barrel.jpg", "Careers — headline atmosphere", "marketing", [
+      "/careers",
+    ]),
+    publicImage("careers/role-packed.jpg", "Careers — packed board", "marketing", [
+      "/careers/surfboard-buyer-operations-associate",
+    ]),
+    publicImage("careers/role-shop.jpg", "Careers — boxed boards at the shop", "marketing", [
+      "/careers/surfboard-buyer-operations-associate",
+    ]),
+    publicImage("careers/role-break.jpg", "Careers — board between sessions", "marketing", [
+      "/careers/surfboard-buyer-operations-associate",
+    ]),
     publicImage("about/our-story-beach-film.jpg", "About — Our story photo", "about", [
       "/about",
       "/what-is-reswell",

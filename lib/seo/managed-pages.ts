@@ -149,7 +149,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("careers", "core", "Careers", {
     title: "Careers at Reswell | Surf Marketplace Jobs",
     description:
-      "Work on the peer-to-peer marketplace for surfers. See open roles at Reswell, based in Santa Barbara.",
+      "Open roles at Reswell in Santa Barbara. Buy, prep, and ship used surfboards with a small team.",
     path: "/careers",
   }),
 
