@@ -1,0 +1,55 @@
+{
+  "generated_for": "Mana Surfboards official named standup catalog",
+  "source": "https://manasurfboards.com/collections/all (Shopify surfboard lineup only — excludes merch and custom-order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mana-surfboards",
+      "name": "Mana Surfboards",
+      "website_url": "https://manasurfboards.com",
+      "location_label": "Central Coast, New South Wales, Australia",
+      "founder_name": "Dan McManus",
+      "lead_shaper_name": "Dan McManus",
+      "short_description": "Performance custom surfboards by Central Coast shaper Dan McManus — high-performance shortboards, grovelers, mid-length trackers, and heavy-water guns.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-09-02-25eb3a3b0836fc9c1a82.png",
+      "models": [
+        {
+          "name": "Apex Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/apex_step-up-main.jpg?v=1680083902",
+          "description": "When conditions are solid and firing. Subtle single concave from the nose to the centre of the board, to a slight double concave just forward of the fins to tail exit. The Apex has an exaggerated nose to tail curve to compensate of hollow waves with lower rails than the M1 range for bite in the steepest of sections. Comes standard as a round pin or baby swallow. Ride the Apex the same width as your M1V4, with 1/8″ more thickness to accommodate the lower rail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Foot Soldier",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/FS_main.jpg?v=1680085979",
+          "description": "The ultimate workhorse in our range. A daily driver originally taken from the curve and outline of the M1 series and relaxed to suit a broader range of waves and surfing ability. We lowered the overall nose and tail rocker to accommodate a more ‘groveller’ curve but still left enough for it to be very responsive and easy to surf in the pocket. The bottom remains as a single concave from nose to tail as standard to create lift, speed and drive, with a widened tail pod incorporating an exaggerated hip to rounded square tail for smooth rail transition through turns. We have had huge success also in a RT option. This boards fits directly between the SABRE and the MDM1. Ridden 2″ shorter, a 1/4″ thicker, 1/4″ wider and 1-1.5L more than your standard HP shortboard, this board is considered as step-down for advanced surfers or an everyday driver for the average Joe. Exceptionally fun and forgiving in any wave from 2-6ft, we recommend it in Element+ Stringered EPS/Epoxy, Raven Light Stringer-less EPS/Epoxy and standard PU. A personal, team and customer favourite.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "M1V5",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/M1V4.jpg?v=1680079703",
+          "description": "The fith version of our OG performance shortboard is our best yet. Influenced by the early to mid 00’s golden era of Australian performance designs (length, curve & concave) and mixed with contemporary widths and volume. Designed for 2-6ft fun to good waves, the M1V5 revolves around maximum performance, but with added forgiveness and fine tuning for it to be surfed in a wide variety of conditions. We needed the new M1V4 to provide spark for explosive manoeuvres in everyday waves, while being predictable and reliable in pumping surf from our backyard beach breaks and slabs, to destinations like the Gold Coast points and small reef passes overseas. Fast and alive with a single concave from nose to tail, moderate continuous rocker throughout the board and hip-squash creates a board that is incredibly fast and reactive underfoot. What I and our team are on if there’s fun to good waves. Speed, drive and release. The latest V5 version has seen the overall rocker slightly lowered and nose widened to the same width as the Foot Soldier at 12″ down from the nose. This has improved speed, sensitivity and flow immensely in all conditions. We recommend riding the M1V5 1-2″ longer than you are tall and your standard HP shortboard width, thickness and volume.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mammoth Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/mana-mammoth-gun.jpg?v=1679116117",
+          "description": "For the biggest days at home and abroad, the Mammoth is designed to chip in early in and knife into huge beach breaks, deep water bombies and open heavy water reefs such as Cloudbreak, Pipe and G-Land. Built beak-nosed and bevelled-railed, this board allows for maximum rail thickness with the minimal rail height. The deck is slightly concaved, allowing greater sensitivity when setting your line or in the tube. The outline is slightly wider through the nose than standard guns to aid in stability and ease when paddling into critically large waves. The bottom features a slight single entry concave, to deep double concave from the centre of the board through the front two quads into a pronounced vee mid fin cluster of the rear quads to the tail exit. From extensive R&D in serious conditions, we’ve found this bottom allows for high speeds to be harnessed and for the board to hold in the most critical of positions. Standard as a quad fin and round pin, also available through custom as a baby swallow, this board will prepare you for whatever you’re willing to have the ocean through at you. Built in sizes from 6’10″-10″5″.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Sabre",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/sabre_main.jpg?v=1680428992",
+          "description": "Short, thick and wide stubby designed to still be surfed like a regular performance shortboard for 1-3ft poor to average waves. Deep single concave to vee in the last 6 inches of the tail. Low entry rocker to get into waves easily and moderate tail rocker for projection off the lip and quick directional changes. Comes standard as a hip- diamond swallow tail. Thruster set up but loves to be ridden as a twin, 2+1 or quad. Another super addictive groveller designed to have fun in the worst waves. Ride the Sabre 3-4″ shorter and 3L more than your Foot Soldier.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Ventura",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/ventra-master.jpg?v=1679914954",
+          "description": "Our mid length/tracker for 2-10ft clean waves. Many of our people have simultaneously replaced a tiny grovel and big wave board with this. Standard as a twin but can be custom built as a single or 2 + 1. Traditional tracker outline with modern performance rails and bottom contours. Moderate entry rocker with a lower tail rocker to allow for wave catchability, speed and the ability to surf in critical sections of the wave. Subtle vee concave on the entry to spiral vee throughout the entire board, creating speed, drive and perfect hold in any fin configuration on any size wave. Comes standard as a pintail, with tail and channel custom options available. Ride the Ventura 10-12″ longer than your height.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
