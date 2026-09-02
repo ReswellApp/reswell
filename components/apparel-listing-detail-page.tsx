@@ -66,7 +66,10 @@ import {
   HomePeerListingScrollTile,
   HomeListingScrollRow,
 } from "@/components/features/home"
-import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import {
+  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
+  hydrateHomePeerListingRows,
+} from "@/lib/db/home-peer-listing-feed"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -168,7 +171,7 @@ export async function ApparelListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerApparel = sellerApparelRes.data
+  const sellerApparel = hydrateHomePeerListingRows((sellerApparelRes.data ?? []) as Record<string, unknown>[])
 
   const sellerApparelIds = (sellerApparel ?? []).map((f) => f.id)
 

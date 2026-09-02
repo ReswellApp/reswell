@@ -5,7 +5,11 @@ import {
 } from "@/lib/home-hero-slide-urls"
 import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
 import type { HomeTrendingBrandRow } from "@/lib/db/home-trending-brands"
-import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  listingHeroSlideSrc,
+  listingImagesFromPrimaryFields,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import type { HomePeerScrollListing } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrendingBrands"
 import {
@@ -61,7 +65,8 @@ const featuredNewSelect = `
   title,
   price,
   compare_at_price,
-  listing_images (url, thumbnail_url, sort_order, is_primary),
+  primary_image_url,
+  primary_thumbnail_url,
   stock_quantity,
   categories (name)
 `
@@ -143,7 +148,7 @@ export type HomeRecentlyListedGridCatalog = {
 
 function buildHeroSlideUrls(
   curatedHeroUrls: string[],
-  heroListingCandidates: { listing_images: unknown }[] | null,
+  heroListingCandidates: { primary_image_url?: string | null }[] | null,
 ): string[] {
   const heroSlideUrls: string[] = []
   const heroSeen = new Set<string>()
@@ -157,7 +162,8 @@ function buildHeroSlideUrls(
     }
   } else {
     for (const row of heroListingCandidates ?? []) {
-      const src = listingHeroSlideSrc(row.listing_images as ListingImageForCard[] | null)
+      const images = listingImagesFromPrimaryFields(row.primary_image_url, null)
+      const src = listingHeroSlideSrc(images as ListingImageForCard[] | null)
       if (!src) continue
       const key = normalizeHeroSlideUrl(src)
       if (!key || heroSeen.has(key)) continue
@@ -204,10 +210,10 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
 
   const useCuratedHeroOnly = curatedHeroUrls.length > 0
   const heroListingsRes = useCuratedHeroOnly
-    ? { data: null as { listing_images: unknown }[] | null }
+    ? { data: null as { primary_image_url?: string | null }[] | null }
     : await supabase
         .from("listings")
-        .select("listing_images (url, is_primary)")
+        .select("primary_image_url")
         .eq("status", "active")
         .eq("section", "surfboards")
         .eq("hidden_from_site", false)
@@ -221,13 +227,24 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
         const qty = Number((l as { stock_quantity?: number }).stock_quantity) || 0
         const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
         const catRow = Array.isArray(cat) ? cat[0] : cat
+        const row = l as {
+          id: string
+          slug: string
+          title: string
+          price: number
+          primary_image_url?: string | null
+          primary_thumbnail_url?: string | null
+        }
         return {
           listing: {
-            id: l.id,
-            slug: l.slug,
-            title: l.title,
-            price: Number(l.price),
-            listing_images: l.listing_images,
+            id: row.id,
+            slug: row.slug,
+            title: row.title,
+            price: Number(row.price),
+            listing_images: listingImagesFromPrimaryFields(
+              row.primary_image_url,
+              row.primary_thumbnail_url,
+            ),
           },
           stockQuantity: qty,
           categoryName: catRow?.name ?? null,

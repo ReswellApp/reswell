@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SellerProfileListing } from "@/components/sellers/seller-profile-listings-panel"
+import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
 /**
@@ -23,7 +24,8 @@ const SELLER_PROFILE_LISTING_SELECT = `
   city,
   state,
   board_type,
-  listing_images (url, thumbnail_url, is_primary),
+  primary_image_url,
+  primary_thumbnail_url,
   categories (name, slug)
 `
 
@@ -49,7 +51,8 @@ type SellerProfileListingRow = {
   city?: string | null
   state?: string | null
   board_type?: string | null
-  listing_images?: { url: string; thumbnail_url?: string | null; is_primary?: boolean | null }[] | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
   categories?: { name?: string | null; slug?: string | null } | { name?: string | null; slug?: string | null }[] | null
 }
 
@@ -88,7 +91,10 @@ function mapListing(row: SellerProfileListingRow): SellerProfileListing {
     shipping_available: row.shipping_available,
     condition: row.condition,
     created_at: row.created_at,
-    listing_images: row.listing_images,
+    listing_images: listingImagesFromPrimaryFields(
+      row.primary_image_url,
+      row.primary_thumbnail_url,
+    ),
     categories: normalizeCategories(row.categories),
     board_type: row.board_type,
   }

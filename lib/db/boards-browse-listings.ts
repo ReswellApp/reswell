@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { PostgrestClientOptions, PostgrestFilterBuilder } from "@supabase/postgrest-js"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  hydrateCardListingImages,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import {
   boardTypeForDbFromBrowseParam,
   BOARDS_BROWSE_DEFAULT_SORT,
@@ -61,6 +64,8 @@ export type BoardBrowseListingRow = {
   longitude?: number | null
   local_pickup?: boolean | null
   shipping_available?: boolean | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
   listing_images?: ListingImageForCard[] | null
   categories?: { name?: string | null } | null | { name?: string | null }[] | null
   board_type?: string | null
@@ -68,9 +73,12 @@ export type BoardBrowseListingRow = {
   suppressed_on_boards_browse?: boolean | null
 }
 
+/**
+ * Card cover comes from denormalized primary_* columns (no listing_images join).
+ * `*` still used for browse filters; nest removed to cut PostgREST lateral cost.
+ */
 export const SURFBOARD_BROWSE_LISTING_SELECT = `
   *,
-  listing_images (url, thumbnail_url, is_primary),
   categories (name),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, shop_verified)
 `
@@ -238,7 +246,9 @@ async function hydrateSurfboardBrowseRowsByIds(
     return []
   }
 
-  return sortRecordsByIdOrder((data ?? []) as unknown as BoardBrowseListingRow[], ids)
+  return hydrateCardListingImages(
+    sortRecordsByIdOrder((data ?? []) as unknown as BoardBrowseListingRow[], ids),
+  )
 }
 
 /** Paginated unfiltered browse: admin pins first, then 24h seeded random order. */
@@ -656,13 +666,12 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
 
   type Row = BoardBrowseListingRow & { _distance: number }
 
-  let rows: Row[] = (rawBoards || []).map((b) => {
-    const row = b as BoardBrowseListingRow
-    return {
+  let rows: Row[] = hydrateCardListingImages((rawBoards || []) as BoardBrowseListingRow[]).map(
+    (row) => ({
       ...row,
       _distance: haversineMi(params.anchorLat, params.anchorLng, row.latitude, row.longitude),
-    }
-  })
+    }),
+  )
   rows = rows.filter((b) => b._distance <= params.radiusCapMi)
   rows.sort((a, b) => a._distance - b._distance)
   const totalPages =
@@ -795,7 +804,7 @@ export async function fetchBoardsBrowseCategoryTypePage(
   }
 
   return {
-    boards: (rawBoards ?? []) as BoardBrowseListingRow[],
+    boards: hydrateCardListingImages((rawBoards ?? []) as BoardBrowseListingRow[]),
     totalPages: Math.ceil((count || 0) / limit),
   }
 }

@@ -76,7 +76,10 @@ import { ListingPdpRecentSections } from "@/components/features/listings/listing
 import { fetchSignedInPdpRecentlyViewedSurfboards } from "@/lib/services/pdp-recent-strip-listings"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
-import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import {
+  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
+  hydrateHomePeerListingRows,
+} from "@/lib/db/home-peer-listing-feed"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -182,7 +185,7 @@ export async function SurfboardListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerBoards = sellerBoardsRes.data
+  const sellerBoards = hydrateHomePeerListingRows((sellerBoardsRes.data ?? []) as Record<string, unknown>[])
 
   const sellerBoardIds = (sellerBoards ?? []).map((b) => b.id)
   const similarBoardIds = similarBoardsRaw.map((r) => String(r.id))

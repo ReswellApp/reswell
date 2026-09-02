@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import {
   searchBoardsBrowse,
@@ -41,7 +42,9 @@ export async function hydrateBoardsBrowseByIds(
 
   if (error || !data) return []
 
-  return sortRecordsByIdOrder(data as unknown as BoardBrowseListingRow[], ids)
+  return hydrateCardListingImages(
+    sortRecordsByIdOrder(data as unknown as BoardBrowseListingRow[], ids),
+  )
 }
 
 /** Shared filter/context inputs for an Elasticsearch browse page. */

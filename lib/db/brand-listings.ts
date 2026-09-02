@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
+import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
 import { brandTextAliasesForSearch } from "@/lib/utils/marketplace-brand-synonyms"
 import { brandLegacyRecallTokens } from "@/lib/utils/marketplace-brand-query"
 import { fetchRecentlySoldListingsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
@@ -27,7 +28,8 @@ const BRAND_MARKETPLACE_LISTING_SELECT = `
   updated_at,
   hidden_from_site,
   archived_at,
-  listing_images (url, is_primary),
+  primary_image_url,
+  primary_thumbnail_url,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
@@ -87,6 +89,8 @@ interface BrandMarketplaceListingRow {
   board_type?: string | null
   dimensions?: string | null
   updated_at?: string | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
   listing_images?: RecentListing["listing_images"]
   profiles?: RecentListing["profiles"]
   categories?: RecentListing["categories"]
@@ -111,7 +115,9 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
     board_type: row.board_type,
     board_length: boardLength,
     updated_at: row.updated_at ?? null,
-    listing_images: row.listing_images,
+    listing_images:
+      row.listing_images ??
+      listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url),
     profiles: row.profiles,
     categories: row.categories,
   }

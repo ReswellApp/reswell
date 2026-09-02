@@ -81,6 +81,49 @@ export function listingCardImageSrc(
   return listingTileImageSrcFromRow(primary)
 }
 
+/**
+ * Build a one-element `listing_images` array from denormalized cover columns on
+ * `listings`. Used by card/browse selects that skip the listing_images join.
+ */
+export function listingImagesFromPrimaryFields(
+  primaryImageUrl: string | null | undefined,
+  primaryThumbnailUrl: string | null | undefined,
+): ListingImageForCard[] | null {
+  const url = typeof primaryImageUrl === "string" ? primaryImageUrl.trim() : ""
+  if (!url) return null
+  const thumb =
+    typeof primaryThumbnailUrl === "string" && primaryThumbnailUrl.trim()
+      ? primaryThumbnailUrl.trim()
+      : null
+  return [{ url, thumbnail_url: thumb, is_primary: true }]
+}
+
+/** Prefer nested images when present; otherwise use denormalized primary columns. */
+export function coalesceListingImagesForCard(row: {
+  listing_images?: ListingImageForCard[] | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
+}): ListingImageForCard[] | null {
+  if (Array.isArray(row.listing_images) && row.listing_images.length > 0) {
+    return row.listing_images
+  }
+  return listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url)
+}
+
+/** Attach `listing_images` for card UIs after a denorm-only select. */
+export function hydrateCardListingImages<
+  T extends {
+    listing_images?: ListingImageForCard[] | null
+    primary_image_url?: string | null
+    primary_thumbnail_url?: string | null
+  },
+>(rows: T[]): Array<T & { listing_images: ListingImageForCard[] | null }> {
+  return rows.map((row) => ({
+    ...row,
+    listing_images: coalesceListingImagesForCard(row),
+  }))
+}
+
 /** All listing photos for carousel tiles: primary first, then remaining images in original order. */
 export function listingTileCarouselImageUrls(
   images: ListingImageForCard[] | null | undefined,
