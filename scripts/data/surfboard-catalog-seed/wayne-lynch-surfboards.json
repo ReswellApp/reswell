@@ -1,0 +1,49 @@
+{
+  "generated_for": "Wayne Lynch Surfboards official named standup catalog",
+  "source": "https://www.waynelynchsurfboards.com/collections/board-designs (Shopify board-design lineup only \u2014 excludes in-stock one-offs, fins, merch, and gift cards)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "wayne-lynch-surfboards",
+      "name": "Wayne Lynch Surfboards",
+      "website_url": "https://www.waynelynchsurfboards.com",
+      "location_label": "Fairhaven, Victoria, Australia",
+      "founder_name": "Wayne Lynch",
+      "lead_shaper_name": "Wayne Lynch",
+      "short_description": "Hand-shaped Victorian surf craft from Australian surfing legend Wayne Lynch \u2014 Evo, Hybrid, Performance, Single Fin, and Unison Longboard designs refined over five decades.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-08-23-643348d986f4b1823546.svg",
+      "models": [
+        {
+          "name": "Evo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/IMG-5730.jpg",
+          "description": "The Evo Design is a refinement of one of the very first boards I did back in 1968 whilst working in John Arnold\u2019s Surf Shop in South Australia where I first began seriously shaping. When I was very young, there was a board called a Teardrop. One of my friends had one. That board had a specific design. It had a very wide tail combined with a tapering plan-shape right to the nose which was pointy and if you had grabbed it by the nose, held it up, it looked like a drop of water. At the time I was riding early balsa wood, thick railed, heavy longboard that had nothing refined about it. Whenever I swapped boards with my friend, I was amazed by how free it was and how different it felt to my board. Another influence which really got me thinking about design was Bob Mctavish with his plastic machine. Bob had shaped me one and I loved it. It didn\u2019t have an extreme vee on that board like most of the others he was shaping at the time. It was quite a subtle shape. I really loved that board. One of the first boards I shaped was off the plastic machine that was only 7\u2019 and that was in spring of 67\u2019. It was quite a radical design and had quite a ridiculous amount of vee. The idea of doing 360 degree turns and barrel rolls in mind, it ended up being too extreme. After that board, I began to make boards with more subtle elements. The vee got trimmed right back down so the boards were much more reliable and really felt fantastic for that period. I wanted to create a board that I didn't have to use the whole rail to turn. I wanted to be able to plant my back foot and push the board so that I only use a little part of the rail or a certain part of the rail. This in turn,would allow me to come off the bottom and go up the face instead of traversing horizontally along the wave, which was pretty much the standard way of surfing back then. Hence the Evo was born. I\u2019d shaped 2 Evo designs before the one that appeared on the Evolution poster of the film by the same name. Everything I've done with these boards is a refinement of that basic idea. The rockers are different but the plan-shape on the 7\u201910 for example is the exact template I had back then. The current Evo design has a modern bottom contour of single to double concave, with fin options for a single, 2+1 or in the smaller versions, thruster setup. With flow and speed in mind for the longer and performance in the shorter, the Evo will provide a powerful rail engaging style of surfing that I\u2019ve enjoyed and been addicted to for over 50 years. Wayne.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/F013BBA2-26D7-4FA9-99C4-7EE1E01BE436.jpg",
+          "description": "The Hybrid. A concept that has been derived by blending specific elements of my two favourite boards, the \u2018Performance\u2019 and the \u2018Evo\u2019. Aesthetically pleasing softer curves through the plan shape, not to pointy-not to round, combined with the lower entry rocker of the Evo and the bottom shape of the Performance, the Hybrid is to date, the most versatile board in my quiver. Suited to a variety of different waves, from your average mushy beach break to long peeling point break walls and steep hollow reef breaks. Available from 6'0 to 9'2 as a Single, 2+1, thruster or quad fin configerations.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/FullSizeRender_d025c6f6-50f6-4fce-813d-a3fe94d9e79f.jpg",
+          "description": "With around 40 years of research and design, the Performance board is my absolute go to board for the best, hollowest and most powerful waves, in which, I\u2019ve spent majority of my time surfing down south on the rugged Victorian coastline. Built for waves of consequence, I\u2019ve surfed these boards in Indonesia, Hawaii, and Fiji as part of the development process. The design is really quite simplistic. The bottom shape being single to double concave to double concave Vee to Vee off the tail, all very subtle as to me it\u2019s all about blend. As the boards get longer and for larger waves, I reduce the surface area in the back quarter, increasing the Vee through the tail taking away to double concave Vee. This is because I want the board to be able to sink into the wave so I can physically push the board, because at high speed it\u2019s about grip, not lift. I add a little more entry rocker which lets me stay in the steep part of the wave, I don\u2019t need to drive out onto the face to do a cutback, it lets me go straight to the top in critical sections, the way in which I really like to surf. I have a slightly lower rail shape towards the front, as being \u201cold school\u201d I like to move forward on my board when tube riding, a technique developed over years of riding single fins. By lowering the rail gives the board more feeling forward of centre, so I can apply pressure and change line as I\u2019m moving through the tube. Simplicity is the key to the performance design creating a reliable, trustworthy board for quality waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/IMG-4340.jpg",
+          "description": "The Single Fin. Reno Abellira had shaped a few boards for the Lorne surf shop when he was in Vic for the 1977 bells contest. I walked into the shop some time after and saw the 6\u201911 swallowtail sitting in the racks and immediately bought it. The Reno was one of my all time favourite boards, but had some aspects I wanted to adjust, especially the nose rocker as it was just a bit too flat. Furthering that, I\u2019ve refined and changed that board over many years by increasing the entry rocker, adding a modern bottom and rails whilst trying to maintain the original plan shape. Typically, surfboards are an ever developing process. I\u2019ve always described shaping as part art, part craft and part science. The Single Fin is made for quality hollow waves. Sizes ranging from 6\u20191 through to 7'10. Pintail, baby swallow tail or double flyer swallow tail variations with 2+1 or Single fin configiration.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Unison Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/IMG-5724.jpg",
+          "description": "The Unison Longboard I\u2019ve been asked many times over the years if I\u2019ll ever make a mal. After spending most of my life trying to get off them, I\u2019ve realised now that\u2019s it\u2019s quite a fun and interesting thing for me to do, revisiting that way of surfing again. This design is a modern refined take on the involvement era mal\u2019s we used to ride in the mid sixties. Blended concave through the nose leading to subtle roll though the tail, wide point back, 50/50 rails. It\u2019s responsive off the tail, maintains speed when in trim and really stable on the nose creating a simultaneous flow between the rider, the board and the wave. I\u2019ve really enjoyed creating this board, and now on the small days, I\u2019m still able to get in the water. W",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
