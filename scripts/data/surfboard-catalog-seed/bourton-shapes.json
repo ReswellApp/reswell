@@ -1,0 +1,66 @@
+{
+  "generated_for": "Bourton Shapes official named standup catalog",
+  "source": "https://www.bourtonshapes.com (WordPress model pages — excludes Pipedream factory retro line, fins, merch, and one-off prototypes)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "bourton-shapes",
+      "name": "Bourton Shapes",
+      "website_url": "https://www.bourtonshapes.com",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Murray Bourton",
+      "lead_shaper_name": "Murray Bourton",
+      "short_description": "Gold Coast performance surfboards from Murray Bourton — high-performance thrusters, hybrids, and progressive designs shaped since the Pipedream era.",
+      "models": [
+        {
+          "name": "THE BOTTOM FEEDER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/BottomFeeder-Back.jpg",
+          "description": "Murray Bourton thruster designed for scraps and everyday waves — one of Bourton Shapes' most successful boards, praised for paddle power, fin setup versatility, and all-around performance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "THE STUB FEEDER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2014/11/SAM_08891.jpg",
+          "description": "Stubbier evolution of the Bottom Feeder thruster line — tuned for responsive shortboard performance outside the scraps it was originally named for.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "THE THOROUGHLY MODERN BAT",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2015/12/FIBat.jpg",
+          "description": "Updated Baby Bat hybrid drawing on late-forties Mini Simmons roots — a modern bat template that still feels lively and forgiving underfoot.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The KNOB",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/02/knob.jpg",
+          "description": "Experimental Bourton Shapes design from Murray Bourton's winter design sessions — a distinctive shortboard concept built when the factory slows down.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "HardNFast",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/03/TBBanner2.jpg",
+          "description": "High-tech, high-performance shortboard developed with Murray Bourton and team riders — built for speed and strength using advanced construction and materials.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "THE EPS DIXI SPOON",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/05/IMG_0318.jpg",
+          "description": "EPS hybrid that rides like a performance shortboard despite its spoon-influenced outline — the Dixi Spoon blends hybrid looks with shortboard agility.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Modern Slick",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/07/Slick.jpg",
+          "description": "Stalwart tri-fin thruster in Murray Bourton's range for over half a decade — updated with extra volume as competitors trend wider and more liter-forward.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "THE SNUB FEEDER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/09/Snub637x365.jpg",
+          "description": "Snub-nosed feeder design from Murray Bourton — a pivot in Bourton Shapes' small-wave hybrid thinking inspired by classic and modern performance references.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
