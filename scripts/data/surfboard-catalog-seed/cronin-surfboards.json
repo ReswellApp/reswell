@@ -1,0 +1,93 @@
+{
+  "generated_for": "Cronin Surfboards official named standup catalog",
+  "source": "https://croninsurfboards.com/collections/all-models",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cronin-surfboards",
+      "name": "Cronin Surfboards",
+      "website_url": "https://croninsurfboards.com",
+      "location_label": "New Smyrna Beach, Florida",
+      "founder_name": "Craig Cronin",
+      "lead_shaper_name": "Craig Cronin",
+      "short_description": "East Coast shortboards, grovelers, hybrids, and logs from Craig Cronin in New Smyrna Beach — named models shaped for Florida beach breaks.",
+      "models": [
+        {
+          "name": "Arrow",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-4c08f1615b83a180796d.webp",
+          "description": "The \"Arrow\" has a single wing that allows for more control and bite at higher speeds and transition through turns. This weapon gives you a wider range of performance. Concave - Single"
+        },
+        {
+          "name": "Bow",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-7c61ce1825b478ea53d7.webp",
+          "description": "“The Bow” is a wave catching machine. Whether you’re a veteran, beginner, or a long boarder wanting to turn tighter, this model is the answer. Concave - Double"
+        },
+        {
+          "name": "Club",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-ab20e8333069c8114759.webp",
+          "description": "“The Club” is one of our best small wave weapons. The full nose places volume forward to allow maximum planing and paddling. Foiled nose and tail, deep double concaves, and a pulled in swallow tail allows maximum speed and performance in small conditions. Order this model 6-8 inches shorter and 1-2 inches wider than your normal shortboard. Concave - Deep Double"
+        },
+        {
+          "name": "DR",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Flail",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-e0bbacde4aad8371cd4e.webp",
+          "description": "“The Flail” is everything you want in a short board. The forgiving outline and rail, with single and double concave bottoms will deliver high performance control without the “chippy\" feel of the Mace model. This is a “Go To” model for the everyday and traveling surfer. Concave - Single"
+        },
+        {
+          "name": "High Five",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-d3814745366aa96417a0.webp",
+          "description": "The High Five is a great all around hybrid for beginner and intermediate surfers. The round tail also makes this board super fluid and turn exceptionally well. Concave - Rolled Bottom to Vee"
+        },
+        {
+          "name": "Holdmein",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-12eaf0be78fe309df6cb.webp",
+          "description": "“The HoldMein” is a model developed with team rider Brent Meinhold. It is a blend between the “Mace” and “Sling”. Single concave for maximum speed in all conditions. Order this board 2″ shorter and 1/2″ wider than your standard shortboard. Concave - Single"
+        },
+        {
+          "name": "Lance",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-957e3635cb3ead3a7d74.webp",
+          "description": "“The Lance” is geared for super small gutless surf. With flat rockers, a wide outline, and boxy rails, the volume of foam is balanced well throughout the entire board. You will experience effortless paddling and maximum wave count in the smallest conditions. It comes standard as a quad, but can easily be made as a 5 fin. Lance Concave - Single to Double Lazy & Pro Lance Concave - Single"
+        },
+        {
+          "name": "Long Bow",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-cdee72a2a7d2da6371ec.webp",
+          "description": "“The Long Bow” is all about glide. Flatter rocker and a wider outline gives a classic feel for the true nose rider. Concave - Nose"
+        },
+        {
+          "name": "Long Sword",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-0b9eae44025a6266d6b4.webp",
+          "description": "“The Long Sword” is geared for the modern long boarder. More rocker, flatter deck, and thinner rails allow for tighter turns and maneuvers in critical sections. Concave - Nose & Double"
+        },
+        {
+          "name": "Mace",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-28b6fab21d0f3e6acac5.webp",
+          "description": "“The Mace” is our pro model. It is geared to maximum performance surfing. The rocker, rails, and bottom concave will give you the means to push your surfing to the next level. Concave - Deep Single"
+        },
+        {
+          "name": "Sling",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-3d026e68c6c1907b1a98.webp",
+          "description": "“The Sling” is our version of a small wave short board. Lower rockers, wider outline, and single to double concave bottom will turn a day of 1ft. mush into something worth surfing. Its keeps the feel of a shortboard without having to ride a fish. When ordering this board, think 3-4 inches shorter than your standard shortboard. Concave - Single to Double"
+        },
+        {
+          "name": "Sling Shot",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-02a149fcdcb70f950f11.webp",
+          "description": "The “Sling Shot” is a shorter and wider version of the “HoldMein”. The wide point has been pushed forward with a lower rocker, allowing this board to be ridden shorter to rip 1 foot mush. Simply put…..stubby shortboard. Concave - Single"
+        },
+        {
+          "name": "Spear",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-833aed0df839157b355c.webp",
+          "description": "“The Spear” has forward nose volume, single to double concaves, with a pulled in thumb tail. This board works well in small and larger waves. This is a great all around board to add to you quiver. Concave - Single to Double"
+        },
+        {
+          "name": "Tomahawk",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-b3f2fa9479777aa2da93.webp",
+          "description": "“The Tomahawk” is modified version of the Arrow with a double bump squash. The double wing allows for more control and bite at higher speeds and transition through turns. This weapon gives you a wider range of performance. Concave - Single"
+        }
+      ]
+    }
+  ]
+}
