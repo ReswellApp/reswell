@@ -1938,7 +1938,6 @@ function SellPageContentInner({
     () => flagsFromBoardFulfillment(formData.boardFulfillment),
     [formData.boardFulfillment],
   )
-  const allowPrivilegedShippingUi = actorIsAdmin === true || Boolean(impersonation)
   const reswellShippingSelected =
     deliveryFlags.shipping_available && formData.boardShippingCostMode === "reswell"
   const freeShippingSelected =
@@ -1987,33 +1986,16 @@ function SellPageContentInner({
     [],
   )
 
-  /** Sellers stay Reswell-only; admins may keep free/flat. */
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (!deliveryFlags.shipping_available) return
-    if (formData.boardShippingCostMode === "reswell") return
-    setFormData((fd) =>
-      fd.boardShippingCostMode === "reswell"
-        ? fd
-        : { ...fd, boardShippingCostMode: "reswell" as BoardShippingCostMode },
-    )
-  }, [actorIsAdmin, deliveryFlags.shipping_available, formData.boardShippingCostMode])
-
   /**
    * Board `/sell` Reswell shipping always uses seller-entered package L×W×H + weight.
-   * No pack-band autofill from board dimensions.
+   * No pack-band autofill from board dimensions. Free/flat skip package fields.
    */
   useEffect(() => {
-    if (actorIsAdmin === null && !impersonation) return
-
     setFormData((fd) => {
       const shippingOn = flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available
       if (!shippingOn) return fd
 
-      if (
-        allowPrivilegedShippingUi &&
-        (fd.boardShippingCostMode === "free" || fd.boardShippingCostMode === "flat")
-      ) {
+      if (fd.boardShippingCostMode === "free" || fd.boardShippingCostMode === "flat") {
         return fd
       }
 
@@ -2035,13 +2017,7 @@ function SellPageContentInner({
         surfboardShippingPackBandCeilingConfirmed: false,
       }
     })
-  }, [
-    actorIsAdmin,
-    impersonation,
-    allowPrivilegedShippingUi,
-    deliveryFlags.shipping_available,
-    formData.boardShippingCostMode,
-  ])
+  }, [deliveryFlags.shipping_available, formData.boardShippingCostMode])
 
   /**
    * `/sell?new=1` — blank form and local snapshot.
@@ -3026,9 +3002,6 @@ function SellPageContentInner({
         requestAnimationFrame(() => resolve())
       })
 
-      const allowPrivilegedShipping =
-        submitActorIsAdmin || Boolean(listingImpersonation)
-
       // Ensure Reswell board shipping always persists as seller-entered carton dims.
       let submitFormForSave = submitForm
       if (
@@ -3053,7 +3026,6 @@ function SellPageContentInner({
           imageCount: images.length,
           imagesUploadReady,
           adminImpersonationEdit: adminImpersonationEditListing,
-          allowPrivilegedShippingModes: allowPrivilegedShipping,
         },
       )
       if (validationMessage) {
@@ -3088,7 +3060,7 @@ function SellPageContentInner({
 
       const fulfillmentFlags = resolveListingFulfillmentFlagsForSellSubmit(fd)
       const shippingCostMode = fulfillmentFlags.shipping_available
-        ? normalizeSellShippingCostMode(fd.boardShippingCostMode, allowPrivilegedShipping)
+        ? normalizeSellShippingCostMode(fd.boardShippingCostMode)
         : null
       const shippingPriceForPersist = !fulfillmentFlags.shipping_available
         ? null
@@ -3100,7 +3072,6 @@ function SellPageContentInner({
           : 0
 
       if (
-        allowPrivilegedShipping &&
         fulfillmentFlags.shipping_available &&
         shippingCostMode === "flat" &&
         (fd.boardShippingPrice === "" || Number(fd.boardShippingPrice) < 0)
@@ -4746,129 +4717,112 @@ function SellPageContentInner({
                             </div>
                           </div>
                           </div>
-                          {allowPrivilegedShippingUi ? (
-                            <>
-                              <div
-                                className={cn(
-                                  "rounded-lg border p-3 transition-colors sm:rounded-xl sm:p-5",
-                                  freeShippingSelected
-                                    ? "border-foreground bg-background shadow-sm"
-                                    : "border-border",
-                                )}
-                              >
-                                <div className="flex items-start gap-2.5 sm:gap-3">
-                                  <Checkbox
-                                    id="sell-delivery-shipping-free"
-                                    checked={freeShippingSelected}
-                                    onCheckedChange={(v) => {
-                                      applyBoardShippingOffer(v === true, "free")
-                                    }}
-                                    className="mt-0.5"
-                                  />
-                                  <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
-                                    <Label
-                                      htmlFor="sell-delivery-shipping-free"
-                                      className="flex cursor-pointer flex-wrap items-center gap-1.5 text-xs font-semibold leading-snug sm:gap-2 sm:text-sm"
-                                    >
-                                      <span>Offer free shipping</span>
-                                      <Badge
-                                        variant="secondary"
-                                        className="h-auto px-1.5 py-0 text-[9px] uppercase sm:px-2 sm:py-0.5 sm:text-[10px]"
-                                      >
-                                        Admin
-                                      </Badge>
-                                    </Label>
-                                    <SmoothCollapse open={freeShippingSelected} className="duration-200">
-                                      <p className="pt-0.5 text-xs leading-snug text-muted-foreground sm:pt-1 sm:text-sm sm:leading-relaxed">
-                                        Buyer pays $0 for shipping at checkout. You arrange
-                                        fulfillment with any carrier — not through Reswell UPS
-                                        labels.
-                                      </p>
-                                    </SmoothCollapse>
-                                  </div>
-                                </div>
+                          <div
+                            className={cn(
+                              "rounded-lg border p-3 transition-colors sm:rounded-xl sm:p-5",
+                              freeShippingSelected
+                                ? "border-foreground bg-background shadow-sm"
+                                : "border-border",
+                            )}
+                          >
+                            <div className="flex items-start gap-2.5 sm:gap-3">
+                              <Checkbox
+                                id="sell-delivery-shipping-free"
+                                checked={freeShippingSelected}
+                                onCheckedChange={(v) => {
+                                  applyBoardShippingOffer(v === true, "free")
+                                }}
+                                className="mt-0.5"
+                              />
+                              <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
+                                <Label
+                                  htmlFor="sell-delivery-shipping-free"
+                                  className="cursor-pointer text-xs font-semibold leading-snug sm:text-sm"
+                                >
+                                  Offer free shipping
+                                </Label>
+                                <SmoothCollapse open={freeShippingSelected} className="duration-200">
+                                  <p className="pt-0.5 text-xs leading-snug text-muted-foreground sm:pt-1 sm:text-sm sm:leading-relaxed">
+                                    Buyer pays $0 for shipping at checkout. After the sale, buy a
+                                    Reswell shipping label or add your own tracking.
+                                  </p>
+                                </SmoothCollapse>
                               </div>
-                              <div
-                                className={cn(
-                                  "rounded-lg border p-3 transition-colors sm:rounded-xl sm:p-5",
-                                  flatShippingSelected
-                                    ? "border-foreground bg-background shadow-sm"
-                                    : "border-border",
-                                )}
-                              >
-                                <div className="flex items-start gap-2.5 sm:gap-3">
-                                  <Checkbox
-                                    id="sell-delivery-shipping-flat"
-                                    checked={flatShippingSelected}
-                                    onCheckedChange={(v) => {
-                                      applyBoardShippingOffer(v === true, "flat")
-                                    }}
-                                    className="mt-0.5"
-                                  />
-                                  <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
-                                    <Label
-                                      htmlFor="sell-delivery-shipping-flat"
-                                      className="flex cursor-pointer flex-wrap items-center gap-1.5 text-xs font-semibold leading-snug sm:gap-2 sm:text-sm"
-                                    >
-                                      <span>Set a flat shipping rate</span>
-                                      <Badge
-                                        variant="secondary"
-                                        className="h-auto px-1.5 py-0 text-[9px] uppercase sm:px-2 sm:py-0.5 sm:text-[10px]"
+                            </div>
+                          </div>
+                          <div
+                            className={cn(
+                              "rounded-lg border p-3 transition-colors sm:rounded-xl sm:p-5",
+                              flatShippingSelected
+                                ? "border-foreground bg-background shadow-sm"
+                                : "border-border",
+                            )}
+                          >
+                            <div className="flex items-start gap-2.5 sm:gap-3">
+                              <Checkbox
+                                id="sell-delivery-shipping-flat"
+                                checked={flatShippingSelected}
+                                onCheckedChange={(v) => {
+                                  applyBoardShippingOffer(v === true, "flat")
+                                }}
+                                className="mt-0.5"
+                              />
+                              <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
+                                <Label
+                                  htmlFor="sell-delivery-shipping-flat"
+                                  className="cursor-pointer text-xs font-semibold leading-snug sm:text-sm"
+                                >
+                                  Set a flat shipping rate
+                                </Label>
+                                <SmoothCollapse open={flatShippingSelected} className="duration-200">
+                                  <div className="space-y-3 pt-1 sm:pt-2">
+                                    <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
+                                      One dollar amount buyers in the Continental U.S. pay at
+                                      checkout. After the sale, buy a Reswell shipping label or add
+                                      your own tracking.
+                                    </p>
+                                    <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
+                                      <Label
+                                        htmlFor="sell-surfboard-shipping-price"
+                                        className="text-sm font-semibold text-foreground"
                                       >
-                                        Admin
-                                      </Badge>
-                                    </Label>
-                                    <SmoothCollapse open={flatShippingSelected} className="duration-200">
-                                      <div className="space-y-3 pt-1 sm:pt-2">
-                                        <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
-                                          One dollar amount buyers in the Continental U.S. pay at
-                                          checkout. You arrange fulfillment with any carrier — not
-                                          through Reswell UPS labels.
-                                        </p>
-                                        <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
-                                          <Label
-                                            htmlFor="sell-surfboard-shipping-price"
-                                            className="text-sm font-semibold text-foreground"
-                                          >
-                                            Shipping price{" "}
-                                            <SellRequiredMark
-                                              complete={flatShippingRateComplete(
-                                                formData.boardShippingPrice,
-                                              )}
-                                            />
-                                          </Label>
-                                          <div className="relative max-w-md">
-                                            <span
-                                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
-                                              aria-hidden
-                                            >
-                                              $
-                                            </span>
-                                            <Input
-                                              id="sell-surfboard-shipping-price"
-                                              type="number"
-                                              inputMode="decimal"
-                                              min="0"
-                                              step="0.01"
-                                              placeholder="0.00"
-                                              value={formData.boardShippingPrice}
-                                              onChange={(e) =>
-                                                setFormData({
-                                                  ...formData,
-                                                  boardShippingPrice: e.target.value,
-                                                })
-                                              }
-                                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
-                                            />
-                                          </div>
-                                        </div>
+                                        Shipping price{" "}
+                                        <SellRequiredMark
+                                          complete={flatShippingRateComplete(
+                                            formData.boardShippingPrice,
+                                          )}
+                                        />
+                                      </Label>
+                                      <div className="relative max-w-md">
+                                        <span
+                                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
+                                          aria-hidden
+                                        >
+                                          $
+                                        </span>
+                                        <Input
+                                          id="sell-surfboard-shipping-price"
+                                          type="number"
+                                          inputMode="decimal"
+                                          min="0"
+                                          step="0.01"
+                                          placeholder="0.00"
+                                          value={formData.boardShippingPrice}
+                                          onChange={(e) =>
+                                            setFormData({
+                                              ...formData,
+                                              boardShippingPrice: e.target.value,
+                                            })
+                                          }
+                                          className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
+                                        />
                                       </div>
-                                    </SmoothCollapse>
+                                    </div>
                                   </div>
-                                </div>
+                                </SmoothCollapse>
                               </div>
-                            </>
-                          ) : null}
+                            </div>
+                          </div>
                           <div
                             className={cn(
                               "flex items-start gap-2.5 rounded-lg border p-3 sm:gap-3 sm:rounded-xl sm:p-5",

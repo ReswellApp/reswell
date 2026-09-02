@@ -476,11 +476,6 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
     }
   }, [])
 
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (form.shippingMode !== "free" && form.shippingMode !== "flat") return
-    setField("shippingMode", "reswell")
-  }, [actorIsAdmin, form.shippingMode, setField])
 
 
   const updateSlot = useCallback((clientId: string, patch: Partial<PhotoSlot>) => {
@@ -1296,7 +1291,6 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                         idPrefix="sell-leashes"
                         value={form.shippingMode}
                         onChange={(mode) => setField("shippingMode", mode)}
-                        allowPrivilegedModes={actorIsAdmin === true}
                         flatRateSlot={
                         <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
                           <Label htmlFor="leash-shipping-price" className="text-sm font-semibold text-foreground">

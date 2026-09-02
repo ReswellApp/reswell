@@ -8,7 +8,6 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { LEASHES_SECTION } from "@/lib/leash-listing-config"
 import { buildLeashListingPersistFields } from "@/lib/leash-listing-persist-fields"
@@ -120,9 +119,8 @@ export async function updateLeashListing(
     throw new Error("Sold listings cannot be edited")
   }
 
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
   const updateFields = buildLeashListingPersistFields(input, {
-    allowPrivilegedShippingModes,
+    allowPrivilegedShippingModes: true,
   })
   const { data: updated, error: updateError } = await supabase
     .from("listings")
@@ -161,9 +159,8 @@ export async function createLeashListing(
   input: CreateLeashListingInput,
 ): Promise<CreateLeashListingResult> {
   const slug = await generateUniqueListingSlug(supabase, input.title)
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
   const persistFields = buildLeashListingPersistFields(input, {
-    allowPrivilegedShippingModes,
+    allowPrivilegedShippingModes: true,
   })
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
 

@@ -20,7 +20,6 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import type { SellDraftSummary } from "@/lib/services/listingDraftAutosave"
-import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import {
   normalizeSellShippingCostMode,
   type ListingPersistShippingOptions,
@@ -171,8 +170,7 @@ export async function upsertFinListingDraft(
   userId: string,
   input: FinListingDraftAutosaveInput,
 ): Promise<{ id: string }> {
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
-  const row = buildFinListingDraftRow(input, { allowPrivilegedShippingModes })
+  const row = buildFinListingDraftRow(input, { allowPrivilegedShippingModes: true })
   const listingId = input.listingId?.trim() || null
 
   if (listingId) {

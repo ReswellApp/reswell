@@ -496,11 +496,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     }
   }, [])
 
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (form.shippingMode !== "free" && form.shippingMode !== "flat") return
-    setField("shippingMode", "reswell")
-  }, [actorIsAdmin, form.shippingMode, setField])
 
 
   const sellSectionCompletion = useMemo(
@@ -1051,7 +1046,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                       idPrefix="sell-wetsuits"
                       value={form.shippingMode}
                       onChange={(mode) => setField("shippingMode", mode)}
-                      allowPrivilegedModes={actorIsAdmin === true}
                       flatRateSlot={
                         <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
                           <Label htmlFor="wetsuit-shipping-price" className="text-sm font-semibold text-foreground">

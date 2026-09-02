@@ -99,14 +99,13 @@ export function validateSellListingForm(
     /** Admin editing another user's listing via impersonation — allow legacy rows that predate newer required fields. */
     adminImpersonationEdit?: boolean
     /**
-     * When true, Reswell UPS DIM failures tell the admin to pick free/flat instead of
-     * blocking all shipping. Free/flat themselves never run UPS checks.
+     * @deprecated Free/flat are available to all sellers. Kept for call-site compat; ignored.
+     * Reswell UPS DIM failures always suggest free/flat as an alternative.
      */
     allowPrivilegedShippingModes?: boolean
   },
 ): string | null {
   const relaxed = opts.adminImpersonationEdit === true
-  const allowPrivilegedShipping = opts.allowPrivilegedShippingModes === true
 
   if (!form.title?.trim()) {
     return "Please enter a listing title."
@@ -260,9 +259,7 @@ export function validateSellListingForm(
         weightLb: totalOz / 16,
       })
       if (!limitCheck.ok) {
-        return allowPrivilegedShipping
-          ? `${limitCheck.error} Or select Free / Flat-rate shipping.`
-          : limitCheck.error
+        return `${limitCheck.error} Or select Free / Flat-rate shipping.`
       }
     }
   }

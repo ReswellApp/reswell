@@ -690,11 +690,6 @@ export default function SellFinsFlow({
     }
   }, [])
 
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (form.shippingMode !== "free" && form.shippingMode !== "flat") return
-    setField("shippingMode", "reswell")
-  }, [actorIsAdmin, form.shippingMode, setField])
 
 
   const enterFormStep = useCallback(() => {
@@ -1389,7 +1384,6 @@ export default function SellFinsFlow({
                       idPrefix="sell-fins"
                       value={form.shippingMode}
                       onChange={(mode) => setField("shippingMode", mode)}
-                      allowPrivilegedModes={actorIsAdmin === true}
                       reswellDetails={{
                         originCity: form.locationCity,
                         originState: form.locationState,
