@@ -1,0 +1,43 @@
+{
+  "generated_for": "Gash Surfboards official named standup catalog",
+  "source": "https://gashfactory.com/collections/surfboards (Shopify surfboard collection only — excludes apparel and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "gash-surfboards",
+      "name": "Gash Surfboards",
+      "website_url": "https://gashfactory.com",
+      "location_label": "Fingal Head, New South Wales, Australia",
+      "founder_name": "Greg Brown",
+      "lead_shaper_name": "Greg Brown",
+      "short_description": "Australian custom surfboards from Greg Brown — Torquay-born Gash templates now built out of Fingal Head, from twins and keels to step-ups.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-09-01-f339a7cae82140800f24.webp",
+      "models": [
+        {
+          "name": "Custom Shorty",
+          "image_url": "https://cdn.shopify.com/s/files/1/1921/3937/files/GASH24_Surfboards_Square_gashedup10603_1.jpg",
+          "description": "Board Featured: This board is at five ten, rounded square with a bone tint and custom GASH x Soar Red glass on fins. Planshape: Narrower nose with plenty of outline curve, slight hips coming into the tail brings width in under your backfoot. The tailpad is not particularly wide. Fins: Thruster. Can be a Quad, but NOT 5 fins. Tail: Squash, Swallow, Rounded Pin. Size: Five Seven to Six Four. Colour: Available tints in DeWALT yellow, Institution Orange, Butthole Purple, GASH red, Black, Bone.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Custom Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1921/3937/files/GASH24_Surfboards_Square_gashedup105991.jpg",
+          "description": "Board Featured: Five Six, Soar x GASH black glass ons with a DeWALT yellow lapped resin tint. Planshape: Not bulbous in front 1/3 like typical twin. More even nose entry with outline running a little paralleled into rear 1/3. Rolled deck for thickness through stringer, allowing slightly dropped rails with more sensitivity. Fins: Twin only. Placement, tow & camber can vary to suit individual & wave range. Tail: Swallow. Tips narrowed to allow pivot from backfoot.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Custom Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/1921/3937/files/GASH24_Surfboards_Square_GASH_CORE_RH85261.jpg",
+          "description": "Board featured: Six Nine, bone tint, custom GASH x Soar red glass on fins. Planshape: Narrow nose, curvacious through middle and slightly straighter into rear third. Refined tail like a blade for extra bite. Thickness pushes forward of centre for extra paddle power but fine nose tip. Fins: Thruster only. Tail: Swallow, Rounded Pin, Semi Pin, Narrow Wing, Mellow SC and Flat at tip. Size: Six three to Six nine.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Custom Twin Keel",
+          "image_url": "https://cdn.shopify.com/s/files/1/1921/3937/files/GASH25_gashedup106111.jpg",
+          "description": "Board Featured: Six Ten, Soar x GASH black glass on Keels with a Butthole Purple lapped resin tint. Planshape: Mid length Keel, deep swallow. Fins: Black Soar Bolt ons, available with futures. Tail: Swallow. Tips narrowed to allow pivot from backfoot. Rarely a rounded pin.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
