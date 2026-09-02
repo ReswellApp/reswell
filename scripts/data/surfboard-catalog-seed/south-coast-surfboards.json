@@ -1,0 +1,144 @@
+{
+  "generated_for": "South Coast Surfboards official named standup catalog",
+  "source": "https://www.southcoastsurfboards.com (Shopify factory-stock + longs/mids/smalls collections)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "south-coast-surfboards",
+      "name": "South Coast Surfboards",
+      "website_url": "https://www.southcoastsurfboards.com",
+      "location_label": "Torquay, Victoria, Australia",
+      "founder_name": "Ian Chisholm",
+      "lead_shaper_name": "Ian Chisholm",
+      "short_description": "Family-owned Torquay factory shaping and glassing traditional longboards, mid-lengths, and small-wave boards by hand since 1995.",
+      "logo_url": "https://www.southcoastsurfboards.com/cdn/shop/files/IMG_0650_dc9c7de1-d8c6-41c3-b7b3-bb18020a2bd3.jpg",
+      "models": [
+        {
+          "name": "Alter EGO",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-b1e6939720c2d6f4e93b.webp",
+          "description": "6’2 by 20 3/4 by 2 5/8 glassed in 6 bottom 6 and 4 deck sanded finish performance weight . Performer twin is the fin of choice"
+        },
+        {
+          "name": "Aus Slasher",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-0245873c807f3f97ea5e.webp",
+          "description": "9'6 x 23 x3 Fin included. The Australian Slasher is the best all round classic longboard. Inspired by the young Australian surfers, designers and shapers of the late 60's, where Ian Chisholm takes a lot of his inspiration. The Aus Slasher is an involvement style board, that allows you to whip, trim, turn and perch. Ian has been shaping and producing the Slasher for 20 years."
+        },
+        {
+          "name": "Colonel",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-6a2cf82ca52180d32fe1.webp",
+          "description": "9’6 by 23 by 3 laminated in 6 bottom double 6 deck 70L recommended fin THE COMMANDER"
+        },
+        {
+          "name": "Cooked EGG",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-44ab6fdcda7a6a7177cb.webp",
+          "description": "7’6 by 22 by 2 3/4 51 litres laminated 6 bottom and 6/4 deck recommendedl fin the 2 plus 1 Seaswords"
+        },
+        {
+          "name": "GULL Glider",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-b3fa876a6c218c29c6e5.webp",
+          "description": "11, by 23 3/4 by 3 1/4 glassed in double 6 with fabric inlay .recommended fin 9” pivot flex"
+        },
+        {
+          "name": "Guru",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-2546bff7d21063e54081.webp",
+          "description": "9'6 by 23 by 3 @65l laminated in volan double 6 deck built by Chizza start to finish recommended fin the 10\" pivot flex"
+        },
+        {
+          "name": "Lickety Split",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-7649200cf43e9418540c.webp",
+          "description": "9'1 by 22 1/2 by 2 3/4 Lickety Split"
+        },
+        {
+          "name": "Low Pro",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-3acf66bdba82f14bca87.webp",
+          "description": "The newest collaboration between Ian Chisholm & CJ Nelson. 9’4 x 23 x 3 | Size Range 9’0 to 10ft | | Fin Options - Single Fin, glass on or Fin Box |"
+        },
+        {
+          "name": "Mullet",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-a788a13c88a9daf16644.webp",
+          "description": "An 80s-inspired shortboard combining the volume of an 80s thruster with the loose, fast feel of a 70s twin. The winged swallow and twin-fin setup reduce drag, generating speed and freeing up turns, while the wing provides control through tighter arcs. Paired with our modern twin-fin template, it’s a versatile alternative to the traditional thruster, performing across a wide range of conditions. 6’10 by 21 1/2 by 2 5/8 full polish colour work and pin lining by Chizza glassed in 6 ounce bottom and 6 and 4 ounce deck . Fin choice THE TWIN"
+        },
+        {
+          "name": "NOVA MOON",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-071ae02d8bdaf3c6c850.webp",
+          "description": "10’ by 23 3/4 by 3 1/8 glassed in volan double stringer glass on fin excellent condition"
+        },
+        {
+          "name": "NOVA Stella",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-c7460188c5a9dacbe7d6.webp",
+          "description": "9’6 by 23 by 3 laminated 6 bottom double 6 deck suggested fin options THE COMMANDER THE CALI CLASSIC THE BEN CONSIDINE"
+        },
+        {
+          "name": "OG67",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-60ccde7dd2aa889368f5.webp",
+          "description": "9’ 4 x 23 x 3 Fin included. With a 67 involvement style rocker & outline. It has a heavily blended concave from the mid point. A slightly rolled bottom, with foiled out rails that are tucked so it performs and drives like a modern longboard. It’s essentially a board for performance logging enthusiasts, who still want to shred without glass on edge."
+        },
+        {
+          "name": "OZ Noserider",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-7cc7e7bd82e8470e880f.webp",
+          "description": "9’4 by 23 byb2 7/8 handmade tie dye by Chizza with inks glassed in 6 ounce bottom and double 6 deck . Recommended fin 10” pivot flex"
+        },
+        {
+          "name": "Retro Slide",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-cf37c003ea86c2e61da0.webp",
+          "description": "6’2 by 21 by 2 1/2 retro slide glassed on keels with custom pinlining and high gloss polish"
+        },
+        {
+          "name": "Signature PRO",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-8dd695b03cbe66e9d2f6.webp",
+          "description": "9’8 by 23 by 3 signature pro glassed in volan"
+        },
+        {
+          "name": "Slasher LO PRO",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-62815287dfaaebf59706.webp",
+          "description": "9’3 by 23 by 3 glassed in 6 ounce bottom and double 6 ounce deck . Recommended fin 10” pivot flex 70 litres"
+        },
+        {
+          "name": "Slot Machine",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-58e06f86d03fb4be9a84.webp",
+          "description": "7’4 x 21 3/4 x 2 3/4 Fins included. The most common question asked is what the best surfboard to own if you could only have one? The Slot Machine. It paddles like a longboard, surfs like a shortboard. The ultimate mid length that will perform anywhere. This board will handle 2ft-6ft beachies or Indo reef breaks. A great travel option for your next surf trip and a must in a quiver. Works as a single, thruster or quad."
+        },
+        {
+          "name": "SMTH Shape",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-fbed312b01531246611c.webp",
+          "description": "6’1 by 18 5/8 by 2 11/16 never surfed made for my son who grew to much before we could get it in the water no fins"
+        },
+        {
+          "name": "Stepflow",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-73409efc5ccbb65d31c6.webp",
+          "description": "9’9 23 3/4 by 3 3/8 stepflow glassed in volan with multi foam density stringers either side cedar 1/8 full high gloss polish one off"
+        },
+        {
+          "name": "Stretch Twinzer FISH",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-cedd6462f76ae5ab5a87.webp",
+          "description": "8’6 by 23 by 3 laminated in 6 ounce bottom and 6 and 4 deck"
+        },
+        {
+          "name": "Thunderbolt",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-5ea62575d46422914b55.webp",
+          "description": "9’1 by 22 1/2 by 2 3/4 eps thunderbolt construction ar18 in excellent condition rare only 20 ever made wont be produced again"
+        },
+        {
+          "name": "Triumph",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-f3ce5f375b845b43e94d.webp",
+          "description": "6’10 by 21 1/4 by 2 5/8 laminated in 6 ounce bottom and 6 and 4 ounce deck .Recommended fins the TWIN"
+        },
+        {
+          "name": "Twinzer FISH",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-c8939b00dcb6bec743fa.webp",
+          "description": "6’4 by 21 1/2 by 2 3/4 glassed in 6 bottom and 6/4 deck"
+        },
+        {
+          "name": "Virtuoso",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-6403751a324722ffb828.webp",
+          "description": "9’4 by 23 by 3 glassed in 6 ounce bottom double 6 deck . This one has a slight blemish in the tail on the deck due to foam inconsistency purely cosmetic so discounted by $200"
+        },
+        {
+          "name": "Wing Swallow Retro Slide",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-91dc6ddab7b2fc54d030.webp",
+          "description": "5’6 x 20 1/2 x 2 3/8 Fins included. This board is so fun in small waves & really excels in punchy beaches. Perfect for fast down the line surfing flowing into long arching turns."
+        }
+      ]
+    }
+  ]
+}
