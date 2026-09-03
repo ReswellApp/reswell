@@ -1,0 +1,42 @@
+{
+  "generated_for": "Deepest Reaches official named standup catalog",
+  "source": "https://deepestreaches.com/boards (official model lineup — excludes merch and apparel)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "deepest-reaches-surfboards",
+      "name": "Deepest Reaches",
+      "website_url": "https://deepestreaches.com/",
+      "location_label": "Irvine, California",
+      "founder_name": "Kyle Albers",
+      "lead_shaper_name": "Kyle Albers",
+      "short_description": "Deepest Reaches is Kyle Albers' Irvine based label making some of the most uniquely conceived and wildly versatile alternative surfboards in California, with his iconic Mega Fish leading the charge.",
+      "models": [
+        {
+          "name": "Mega Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/550a3ab2e4b0df4682a69c68/dd93ac61-dcb0-45fa-a4c9-11c457a0920b/Megafish.png",
+          "description": "Very versatile design for effortless speed, paddle power, and easy turning. Can be ridden in tiny to large surf. Proportioned as a midlength or glider. Turn from the tail, trim in the middle.\n\nFeatures:\nLow rocker\nTucked rails\nTri-plane bottom (double concave with vee off rails)\n\nSize range: 6'0 - 12'0",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/550a3ab2e4b0df4682a69c68/7816a1b1-6bca-4617-867e-4ff4a0bd62a0/Fish.png",
+          "description": "The same bottom, rails, and rocker as the Mega Fish but in classic fish proportions (short/wide). Very fast and rippable.\n\nSize range: 5'0 - 6'6",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pizzabox",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/550a3ab2e4b0df4682a69c68/871b74c5-b972-4a89-b93d-1fad03cfa632/Pizzabox.jpg",
+          "description": "Shorter and wider than a fish with the same tri-plane bottom for extreme planing speed and looseness.\n\nSize range: 5'0 - 6'0",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Kozmk Krzr",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/550a3ab2e4b0df4682a69c68/1587171996206-1MNCBRYK1QEARPT1NS9Z/Screen+Shot+2020-04-17+at+6.05.35+PM.png",
+          "description": "Single fin for most waves. Winged pintail, flat deck, tucked under edge, spiral vee bottom. Flex fin.\n\nFeatures:\nTucked rails",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
