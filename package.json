@@ -11,7 +11,8 @@
     "test": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test lib/**/*.test.ts",
     "postinstall": "patch-package",
     "env:pull": "vercel env pull .env.local --yes && vercel env pull .env.production.local --environment=production --yes && node scripts/sync-search-console-env.mjs",
-    "logs:scan": "node --experimental-strip-types scripts/scan-vercel-logs.mjs"
+    "audit": "node scripts/scan-vercel-logs.mjs --report",
+    "logs:scan": "node scripts/scan-vercel-logs.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
