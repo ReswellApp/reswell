@@ -1,0 +1,295 @@
+{
+  "generated_for": "Sauritch Surfboards official named standup catalog",
+  "source": "https://sauritchsurfboards.com/surfboards.html (official model pages only \u2014 excludes fins, merch, ding repair, and custom order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "sauritch-surfboards",
+      "name": "Sauritch Surfboards",
+      "website_url": "https://sauritchsurfboards.com",
+      "location_label": "Encinitas, California",
+      "founder_name": "Greg Sauritch",
+      "lead_shaper_name": "Greg Sauritch",
+      "short_description": "Hand-shaped polyurethane and epoxy surfboards from Greg Sauritch in Encinitas \u2014 shortboards, fishes, mid-lengths, guns, and longboards built for San Diego waves.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-08-24-fcf829055b18b0b3fafb.png",
+      "models": [
+        {
+          "name": "Long Fish",
+          "image_url": "https://www.sauritchsurfboards.com/images/Scott fish deck lg shadow-Photoroom.jpg",
+          "description": "The Sauritch Long Fish will aid in catching more waves, when the surf is smaller and when crowds are dense. Instead of hopping on a longboard, you can take out the Long Fish and still manage to gain speed, while making sharper turns, than a longer surfboard. For those who love the feel of a twin fin and its speed, it's a fun choice for many conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Pintail",
+          "image_url": "https://www.sauritchsurfboards.com/images/6-8  twin on board new.png",
+          "description": "For those of you that are craving that loose feeling of a twin fin in your quiver, the Twin Pintail will work in all conditions, with great holding power, due to its narrow, pulled in tail. This model works well in hollow conditions and comes with a mild, single to double concave bottom and slight \"V\" in the back end of the tail. The rails are fuller, which helps to get into the wave quicker. The tail is thinned out, to help bury the rail, during hard bottom turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Accelerator",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/shortboards/accelerator-large.jpg",
+          "description": "This is your high performance surfboard for those rare & powerful winter days, that require a little more length. Add this surfboard to your travel quiver or bring it along when Blacks is firing. Equipped with a thin rail for sensitivity and a pulled-in tail, give this surfboard extra holding power after steep,critical take-offs. Order the Sauritch Accelerator as a tri fin and add about 2\" to 4\" to your standard shortboard. Try this model as an epoxy surfboard and it will really fly!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "After Burner",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/fish/after-burner-large.jpg",
+          "description": "A fun summer fish surfboard for small to medium surf. Works well as a tri fin, twin with small trailing fin or as a quad. This is a more high performance fish, when compared to the Sauritch Speed Quad, due to its narrower overall outline. Works in snappier summer conditions and comes with a single concave, blending into a double concave between the fins. This model is really fast down-the-line, especially when ordered as an epoxy surfboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blunt Nose",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/new-models/blunt-nose-small.png",
+          "description": "The Blunt nose has parallel rails, which enables you to ride this board shorter than a standard, narrow nosed surfboard. It catches waves easily, making for a great wave count at all breaks. You can ride this board with any fin setup that you have on your favorite board.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Booster",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/alternative-surfboards/booster-large.jpg",
+          "description": "The Booster has a wide diamond tail, which is perfect for boosting airs and driving hard off the bottom. This surfboard is loose and fast with an incredible amount of maneuverability. It comes with a slight single concave that blends into deeper double concaves and a small amount of \"V\" in the tail. This surfboard has good rail to rail smoothness and pivots sharply off the tail. The Sauritch Booster is a great summer surfboard and is really light and fast as an epoxy.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Cal Cruiser 2",
+          "image_url": "https://www.sauritchsurfboards.com/images/Cal Cruiser 2 lg.png",
+          "description": "The California Cruiser 2, is similar to the original California Cruiser, with the exception of a slightly narrower nose, along with more nose and tail rockers, making this model more performance- oriented. The California Cruiser 2 can be ordered as a 2+1, tri fin, 5 fin, quad or a twin fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "California Cruiser",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/hybrids-mid-lengths-eggs/Cruiser(ora)bottomclear copy.png",
+          "description": "The California Cruiser is a great mid length surfboard, for catching plenty of waves and long rides, during crowded conditions. It's a fluid, wave riding machine, that paddles well, while maintaining maneuverability and stability. The California Cruiser is usually ridden between 6'-10\" and 7'-6\", but can be ordered as short as 6'-4\". With a wider nose , for paddling ease, the tail is pulled in like a shortboard, giving it holding power in steeper conditions. This board can work as your all around board, because it can adapt to almost any wave type.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "CRT",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/shortboards/beau:orange CRT shadow large.png",
+          "description": "The CRT is a really good surfboard for any quiver. When the surf is good and powerful, the roundtail is a perfect board for holding in on critical, tight bottom turns. The narrowness of the tail, in the last 12\" of the surfboard, keeps the fins firmly in place during the turn. This board is suited for hollower beach breaks or any solid surf, wherever it can be found.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "CRT2",
+          "image_url": "https://www.sauritchsurfboards.com/images/CRT 2 clear view.png",
+          "description": "The CRT 2 is a wider outlined round tail, which works really well in waves from 3 feet to overhead. This surfboard is very fluid in its turning, especially during cutbacks. It has a wide outline, giving it real paddle power, something that's needed in crowded situations. Fluid and loose, the CRT 2 can be ridden as a tri fin or with a 5 fin set up, making it adapt to any conditions that may arise. The CRT 2 loves reef breaks, but is suited for any break that has a wave. The CRT is narrower and more high performance than the CRT 2.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Droplet",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/hybrids-mid-lengths-eggs/droplet-large.jpg",
+          "description": "The Droplet thrives in small, mushy surf, but can also be ridden in many other conditions. The bottom has a slight single concave that blends into a double concave with \"V\" in the last 1/3 of the surfboard. There is a good amount of overall volume, to keep this board moving through the flat sections of the wave and to make catching waves almost effortless. Order the Droplet with 5 fin boxes and experiment in different conditions. Ride this surfboard a few inches shorter than your height or become a real wave dominator and order it as tall as your height!!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fisheye",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/fish/Rocket fish large.png",
+          "description": "The Fisheye surfboard is a fun summer fish for small to medium surf. This surfboard works best as a twin fin, but can easily adapt to any fin combo. The Fisheye is a lot of fun in very small surf, but can adapt to medium sized waves. It has constant curve and pulls way in, at the tail, for tighter, snappier turning. The bottom design is a single concave, with a double concave between the fins. This model is very fast and pivoty and holds in well off the bottom. Perfect for San Diego surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://www.sauritchsurfboards.com/images/asauritch-surfboard-gun 2.png",
+          "description": "This surfboard is the \"big daddy\" of the Sauritch Gun series and is meant for maxed-out surf, such as Maverick's or Jaws. This is the final step toward big wave riding. Usually ridden from 8'-0\" to 10'-6\"+. Try one on for size! There are several models in the Sauritch Surfboards gun series.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "High Performance",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/longboards/high-performance-large.jpg",
+          "description": "The High Performance longboard is usually ordered narrower than a standard nose rider and has quite a bit more rocker, for maneuverability. This surfboard comes with very tapered rails for sensitivity during turns and comes standard with a large fin box and 2 sidebites, available in either FCS or Future fin systems. This is a great longboard for tighter and more aggressive turning and can be ordered as an epoxy surfboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/hybrids-mid-lengths-eggs/hybrid-large.jpg",
+          "description": "The Sauritch Hybrid is simply a narrower version of the Speed Egg, with a more pulled-in outline. The narrower nose is easier to penetrate the lip, which can be a big drawback of wider noses. This surfboard can catch a lot of waves easily and works well in most conditions. Ride this surfboard as a tri fin or as a 5 fin combo. The Hybrid can be really fun to ride in San Diego as an epoxy surfboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Launcher",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/shortboards/Bump squash best shadow.png",
+          "description": "The Launcher model has a slight hip above the fins, giving it plenty of drive and the ability to launch airs with ease. The Sauritch Launcher is a loose board, that is maneuverable and handles well in small to slightly overhead surf. It is a great high performance surfboard designed as a tri fin, but can be ridden as a quad. Many customers have commented on it's overall performance as an XTR epoxy surfboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mahi Mahi",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/fish/mahi-mahi-large.jpg",
+          "description": "The Mahi Mahi is a fish surfboard that works well in a wide range of surfing conditions. The Mahi Mahi has a wider outline, giving it the ability to get into waves early and fly down-the-line with plenty of speed. This fish has double concaves running between the fins with a slight \"V\" coming off the tail, making it turn rail to rail with ease. Try this board as a tri fin or as a quad. If you are looking for lightness and quick turning, make this an epoxy surfboard. This is another fish surfboard for surfing in San Diego.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Meddler",
+          "image_url": "https://www.sauritchsurfboards.com/images/Egglet.png",
+          "description": "The Meddler is a condensed version of the Speed Egg, with a full outline and a lot of surface area for great paddling power. The medium, overall rocker, allows for easy gliding and speed, especially during mushy, summer conditions. The Meddler can be ordered as a tri fin, a five fin, a quad or with a 2+1 combo.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Microwave",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/hybrids-mid-lengths-eggs/microwave-large.png",
+          "description": "The Microwave is a remake of a popular shape ridden in the 1980's. The wider outline of this surfboard helps you to paddle very well, which adds up to a higher wave count during your session. With the increasing volume of bodies in the water, it has become a challenge to catch a lot of waves, no matter where you are surfing. This is why the Microwave has been added to the Sauritch Surfboards play list. This model has a very curvy outline, which makes for plenty of maneuverability and speed. The Microwave is similar to the Sauritch Roundy model, but has an added set of wings, which pull in the tail, for more holding power during bottom turns. The bottom comes with a slight single to double concave, with a little \"v\" off the tail, giving the surfboard a smooth rail to rail transition. Try the Microwave with a 5 fin set up and feel the difference between a tri fin as opposed to a quad.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Egg",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/hybrids-mid-lengths-eggs/mini-egg-large.jpg",
+          "description": "The Mini Egg is a great surfboard for catching plenty of waves and speeding down the line. This model is really fun and maneuverable and works well at reef breaks. The Mini Egg works best in small to medium surf. The rails are very soft for easy rail to rail transitioning. If you like easy turning and glide, this is the perfect surfboard for you. It's also available as an epoxy surfboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Gun",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/guns/mini-gun-large.jpg",
+          "description": "The Mini Gun is a board up to 7'-4\" that makes a great travel board for those days when the shortboard isn't long enough to handle late drops in pounding surf. This model has the perfect amount of rocker to keep the board turning easily, while maintaining its ability to hold well in the pocket.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mini Longboard",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/longboards/mini-longboard-large.jpg",
+          "description": "This is a good surfboard for someone dropping down in size from a longboard. It is simply a shorter version of a standard longboard, but turns much easier. The Sauritch Mini Longboard is very maneuverable and has great wave-catching ability. This is actually a good surfboard for a smaller person that has a hard time lugging around a 9 foot longboard!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Simmons",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/fish/sauritch_mini-simmons_big copy.jpg",
+          "description": "The Mini Simmons, by Sauritch Surfboards, is a fun surfboard for smaller conditions that is really quick down the line. Sauritch makes a replica of the original Simmons, but also has a modified version that comes with more modern features, such as a triple concave, quad or five fin configuration or any other custom feature desired by the customer. We will make it the way you want!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Modern Retro Fish",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/fish/Modern retro fish.png",
+          "description": "The Modern Retro Fish has a slightly narrower nose than a standard retro fish, bringing the wide point down a tad and riding a little bit more like a high performance shortboard. It has constant curve in the outline, making it really maneuverable and easy to turn.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Nose Rider",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/longboards/nose-rider-large.jpg",
+          "description": "Perfect longboard for cruising at your favorite break. Take a walk up to the nose and hang out there for awhile. The nose rider comes with a medium to full rail and a concave under the nose. This surfboard works best in small to medium size surf and comes standard with a large fin box and 2 sidebites in Future or FCS.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Performer",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/shortboards/performer-large.jpg",
+          "description": "This model has a relatively narrow outline, which is well suited for fast beach breaks or hollow reefs. Thinner rails, a deep single concave and a good amount of flip in the tail, gives this surfboard sensitivity and control during high speed turns. The Performer turns tightly in the pocket, due to its pulled in tail. This surfboard works best as a tri fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pocket Rocket",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/alternative-surfboards/pocket-rocket-large.jpg",
+          "description": "The Pocket Rocket catches plenty of waves, due to it's wider outline, yet still performs well in hollower surf. The tail is pulled in by using double wings, which allows the tail to keep from spinning out during more powerful bottom turns. A triple concave comes standard on the bottom, with deeper concaves running in between the fins. This surfboard is very smooth turning and works well in small to overhead surf. Although designed as a tri fin, this model can be ordered as a 5 fin convertible. Order this surfboard 3\" to 4\" shorter than your standard shortboard. You can also try this model as an epoxy surfboard.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Popular",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/shortboards/popular-large.jpg",
+          "description": "This surfboard is a wider version of the Sauritch Performer model. The wider outline provides ease of paddling for bigger surfers that need that extra edge in catching waves in crowded line-ups. The Popular can be ridden in just about any conditions that mother nature offers and is the perfect surfboard for the surfer that can't afford a quiver and just needs a good, dependable board. This model is very maneuverable, while maintaining stability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Reef Cruiser",
+          "image_url": "https://www.sauritchsurfboards.com/images/Nic",
+          "description": "This is an updated version of the Reef Cruiser, which comes with a wider nose, adding more paddle power, as well as more stability. This mid length/semi-gun, is a typical California round tail and is perfect for the surfer that is looking for stability and long radius turns. This is a great surfboard for reef breaks or as an all around step up, for catching waves with size, up and down the coast of California and a good travel board for most mid-sized surf. Take this board to any continent with security. The Reef Cruiser is curvier and more maneuverable than the Sauritch Tube Seeker.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://www.sauritchsurfboards.com/images/retrofish lg.jpg",
+          "description": "The Retro Fish is a keel fin fish that is very common in the water today. These keel fin fish are a great surfboard for cruising around in small to medium sized surf. The width in the nose helps to catch waves that nobody else on a standard shortboard can catch!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Wide",
+          "image_url": "https://www.sauritchsurfboards.com/images/retro wide 22 3_4.jpg",
+          "description": "The Sauritch Retro Wide fish is a wider, curvier board, for surfers that want to have fun, while the ocean is crowded and filled with longboards. The bottom is fairly flat toward the nose, then goes into a double concave between the fins and off the tail, with a slight V in the last 6\" of the tail. The added width can aid in catching more waves, with less effort than the standard retro fish. It's the perfect solution for older surfers, as well as those who don't get the opportunity to surf as much as they once did, before a family came into their lives. Ride the Sauritch Retro wide as a twin fin or as a quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Roundy",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/alternative-surfboards/roundy2-large.jpg",
+          "description": "The Roundy is a fun surfboard that can be ridden from 2 feet to overhead waves. It has the ability to perform smooth cutbacks and cruises through slower sections, due to its overall outline. With a wider nose and slightly pulled in tail, the Roundy catches waves easily and holds in very well on hollower waves. If you are looking for strength and lightness, you can always order your surfboard with XTR epoxy foam and epoxy resin.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Roundy Fish",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/alternative-surfboards/roundy-large.jpg",
+          "description": "The Roundy surfboard is perfect for anyone who has experienced the pain from banging their foot on the tip of a typical fish tail. The Roundy solves that problem with it smooth round tail. This surfboard cuts back smoother than a fish tail, while still providing plenty of drive off the bottom. It works well as a tri fin, but can be ordered with 5 fin boxes for multiple fin configurations. This is similar to a biscuit and is a board that anyone can ride and have a lot of fun.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Speed Egg",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/hybrids-mid-lengths-eggs/speed-egg-large.jpg",
+          "description": "This model is for the surfer wanting to transition from a longboard, while still maintaining the stability of a longboard. This surfboard catches plenty of waves and keeps you cruising through the smaller, summer surf, as well as surfing in bigger surf. The Speed Egg turns more like a shortboard, but paddles more like a longboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Speed Quad",
+          "image_url": "https://www.sauritchsurfboards.com/images/DWSdeck big.png",
+          "description": "Here is your perfect surfboard for smaller, mushier surf. This is perfect for the summer blues or if it's barely rideable. That thin, chippy board isn't cutting it in the summer slop, but you don't want to commit to a longboard. It's quick and maneuverable. Ride the Speed Quad about 4\" smaller than your standard shortboard. Try it as an epoxy and really fly.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stabilizer",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/shortboards/stabilizer-large.png",
+          "description": "The Stabilizer, by Sauritch Surfboards, is an all around, rounded pintail design, perfect for smooth, fluid surfing and easy cutbacks. This surfboard is wider than a standard shortboard and is very versatile for all conditions. The outline is fuller and the widepoint is above center, for easy paddling and stability. This is a great travel board, that you can always rely on, no matter where you are surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stubby 2",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/shortboards/stubby2-large.jpg",
+          "description": "The Stubby 2 is just a shorter and wider version of the Stubby. This surfboard has a wider overall outline for the surfer that wants to compete in an ocean filled with longer surfboards. The Stubby 2 is a great shortboard for the person that doesn't surf as much as they used to and still wants to surf top to bottom. A single concave flowing into a deep, double concave allows for a great amount of speed right from the start, while the slight \"V\" gives it rail to rail turning capabilities. The perfect combo of tail rocker and \"V\" makes for ease in turning, while the wider tail gives this surfboard plenty of drive off the bottom. The Stubby 2 can be ridden in waves from 2 feet, up to overhead surf, with total confidence.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stubby",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/shortboards/stubby-large.jpg",
+          "description": "The Stubby is just a shorter and wider version of the Performer. This surfboard has a wider overall outline for slower and mushier surf. A single concave flowing into a deep, double concave allows for a great amount of speed right from the start, while the slight \"V\" gives it rail to rail turning capabilities. The perfect combo of tail rocker and \"V\" makes for ease in turning, while the wider tail gives this surfboard plenty of drive off the bottom. The Stubby is also perfect for boosting airs and performs well as a contest board in smaller conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Swish",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/fish/swish-large.jpg",
+          "description": "The Swish surfboard has a wider outline than a standard shortboard. This model works very well in smaller, mushier surf and can be used as a good contest board for those typical, smaller contest conditions. The Swish loves to be ridden in summer surf or any day that lacks any power. The flatter overall rocker and wide tail, give you the speed through the flat spots, while your narrower board tends to bog down. The single wing swallow is wide at the 12\" mark for drive, then pulls in for good holding power in hollower sections of the wave. The bottom comes with a single concave, blending into a double concave with \"V\" toward the tail. It can be ordered as a 5 fin, which can be surfed as a tri fin or a quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tadpole",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/fish/tadpole-large.jpg",
+          "description": "The Tadpole Fish is a narrower version of the Fisheye and gets the job done in small to medium surf and can go beyond, when you push its limits. With a curvy outline and small stature, this surfboard is not only loose, but able to hold in well, during tight bottom turns. The Sauritch Tadpole model works best as a twin fin, but can be used with different fin combos and can also be ordered, using epoxy construction as well as polyurethane. The Tadpole fish works well in San Diego, as well as it does in any other break.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Thug",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/alternative-surfboards/thug-large.jpg",
+          "description": "A small wave surfboard by nature, the Thug is short, curvy and has a flatter overall rocker for speed in mushy or slower surfing conditions. It works well as a tri fin or as a quad. The Thug is ready for busting airs and is a great summer alternative for average conditions and is a very functional surfboard for reef breaks and beach breaks in the San Diego area. The low amount of nose and tail rocker make this surfboard fast and able to defy mushy conditions.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Tongue Depressor",
+          "image_url": "https://www.sauritchsurfboards.com/images/Tongue d.png",
+          "description": "The Tongue Depressor is a new surfboard by Sauritch Surfboards, that was created for very small summer waves and as a surfboard that can take the place of a longboard. You can still get up to the nose on this board, due to the overall nose width. This model works really well as a quad, but can be ordered as a 5 fin. The rocker is very flat for planing speed and is pretty flat on the bottom in the forward section, blending into a deeper double concave between the fins with a small amount of \"V\" in the last 12\" of the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tube Seeker",
+          "image_url": "https://www.sauritchsurfboards.com/images/Gun.png",
+          "description": "This semi-gun surfboard is a must for the hard-core surfer that searches for big barrels all over the globe. Having a narrower outline makes this surfboard fast down an open face, as well as speeding through an upcoming tube. The pulled-in tail facilitates great holding power during the most critical turns. Added lift in the tail area creates ease in turning and eliminates that stiff feeling felt in some guns.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Ultra Performer",
+          "image_url": "https://www.sauritchsurfboards.com/images/Hi perfom  copy 2.png",
+          "description": "The Ultra Performer was designed for riding very hollow waves, where making really tight turns at high speeds, is a requirement. The addition of more nose and tail rocker and thinner, more sensitive rails, enables this surfboard to perform best in hollow conditions. This model comes standard with a squash tail, but can be ordered with any other desired tail shape. Try it as a tri fin or a 5 fin, for more versatility.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Water Moccasin",
+          "image_url": "https://www.sauritchsurfboards.com/images/surfboards/alternative-surfboards/water-moccasin-large.jpg",
+          "description": "The Water Mocassin is a new wide model, in the Sauritch Surfboards line of shortboards. Not only does this surfboard paddle very well, but it's incredibly fast and climbs from top to bottom really quickly. The bottom starts out as a single concave and blends into a double concave with a slight \"V\" out the tail. This is a very loose and fast surfboard!",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Wish Fish",
+          "image_url": "https://www.sauritchsurfboards.com/images/Hyper fish.png",
+          "description": "The Wish Fish, is a high performance, very maneuverable and responsive surfboard for riding good waves in small to larger conditions. It is suited for all surfers and can be ridden in different wave types and excels in beachbreaks around the globe. The single to double concaves, make it really fast down-the-line, as well as driving off the bottom. Order as a tri fin or with 5 boxes, for extra fin configurations.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
