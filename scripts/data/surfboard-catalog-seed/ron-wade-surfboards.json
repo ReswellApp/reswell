@@ -1,0 +1,48 @@
+{
+  "generated_for": "Ron Wade Surfboards official named standup catalog",
+  "source": "https://www.ronwadesurfboards.com.au/products.json (Shopify stock boards only — excludes sold one-offs and dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ron-wade-surfboards",
+      "name": "Ron Wade Surfboards",
+      "website_url": "https://www.ronwadesurfboards.com.au/",
+      "location_label": "Mona Vale, New South Wales, Australia",
+      "founder_name": "Ron Wade",
+      "lead_shaper_name": "Ron Wade",
+      "short_description": "Australian-made shortboards, mid-lengths, and longboards from Ron Wade in Mona Vale — Blackfeather, F1-11, and classic logs.",
+      "models": [
+        {
+          "name": "Blackfeather",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/RW-blackfeather-01.png?v=1757570477",
+          "description": "Our Black Feather model is available as a Thruster whilst the 5 fin configuration can also be used as a Quad. Slight concaves running from just in front of the fins helps loosen the tail and acceleration out of a turn. This board is suitable for small to medium size waves. Fins included.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "F1-11",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/board2.png?v=1756277915",
+          "description": "This F1-11 model has the Five fin configuration, so you can use it as a Thruster or Quad or use the 5 Fins for larger surf conditions. We have put dual concaves from in front of the fins to loosen the tail making it a very versatile board. The board has a very high polish finish which is very labour intensive. Shaped and designed by Ron.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "F1-11 Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/RW-Twin-101_3bd4c132-ed56-45a5-813e-794c0463bd24.png?v=1757573549",
+          "description": "Sky blue deck and Mid blue bottom, with dual pin lines around the deck. Highly polished, very labour intensive. A great board for surfing waves between 3ft to around 6 ft. Shaped and designed by Ron.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/LongboardwithColouredDesignonthedeck.png?v=1757567812",
+          "description": "Slight scoop in the nose feeding back into dual concaves through the tail area. This will loosen the tail up making it highly maneuverable board. Shaped and designed by Ron.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mid-Length",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/MidBluewithahighlypolishedfinish.png?v=1757567857",
+          "description": "3 stage bottom, medium tail lift with dual concaves running through to the tail. Thruster fin set up. Glossed with a high polished finish. Shaped and designed by Ron.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
