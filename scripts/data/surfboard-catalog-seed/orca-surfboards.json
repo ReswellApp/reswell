@@ -1,0 +1,52 @@
+{
+  "generated_for": "ORCA Surfboards official named standup catalog",
+  "source": "https://orcasurfboards.com/products.json (Shopify board products only — excludes apparel and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "orca-surfboards",
+      "name": "ORCA Surfboards",
+      "website_url": "https://orcasurfboards.com",
+      "location_label": "Oceanside, California",
+      "short_description": "Handcrafted surfboards built in Oceanside, California, focused on performance and sustainability.",
+      "models": [
+        {
+          "name": "Kniv",
+          "image_url": "https://cdn.shopify.com/s/files/1/0623/1018/7158/files/1599364f-6a8b-4a15-8262-c0391bb25e81.png?v=1782878939",
+          "description": "High-performance shortboard for medium to large waves, engineered for speed, control, and confidence in critical conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Chubbie Stubbie",
+          "image_url": "https://cdn.shopify.com/s/files/1/0623/1018/7158/files/032a2821-212e-49e9-915a-040db20e0411.png?v=1782793823",
+          "description": "Versatile funboard built for effortless wave-catching and smooth, flowing performance with a 2+1 fin setup and squash tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tombstone",
+          "image_url": "https://cdn.shopify.com/s/files/1/0623/1018/7158/files/Tombstonestripped.png?v=1782788766",
+          "description": "High-performance shortboard for small to medium waves, designed for speed, responsiveness, and control with a wider diamond tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Pickled Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0623/1018/7158/files/GPT_FISH_sURFBOARD.png?v=1782700002",
+          "description": "High-performance take on a retro keel fish for aggressive surfing in larger waves while keeping a skatey feel in smaller mushier waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blue Twin'd Tuna",
+          "image_url": "https://cdn.shopify.com/s/files/1/0623/1018/7158/files/GPT_image_surfboard.png?v=1782700486",
+          "description": "High-performance stringerless EPS/epoxy shortboard for medium to large waves where down-the-line speed is crucial, ideally set up as a twin fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Traveler",
+          "image_url": "https://cdn.shopify.com/s/files/1/0623/1018/7158/files/Funboard_gtp.png?v=1782699350",
+          "description": "Mid-length funboard for slower, mushier summer days with a 2+1 fin setup in EPS or PU/epoxy construction.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
