@@ -34,6 +34,13 @@
  *     --seed scripts/data/surfboard-catalog-seed/small-fin-brands.json \
  *     --backfill /dev/null \
  *     --category fins
+ *
+ * Daily small USA + Australia surfboard makers:
+ *   python3 scripts/scrape-small-surf-brands-usa-aus.py
+ *   python3 scripts/build-small-usa-aus-seed.py
+ *   npx tsx scripts/import-core-shapers-catalog.ts \
+ *     --seed scripts/data/surfboard-catalog-seed/small-usa-aus-shapers-2026-08-19.json \
+ *     --backfill /dev/null
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
