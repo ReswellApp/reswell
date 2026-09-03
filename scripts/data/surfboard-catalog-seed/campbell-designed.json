@@ -1,0 +1,79 @@
+{
+  "generated_for": "Campbell Designed official named standup catalog",
+  "source": "https://www.campbelldesigned.com/collections/all (Shopify Exo Flex surfboard lineup only — excludes gift cards and apparel)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "campbell-designed",
+      "name": "Campbell Designed",
+      "website_url": "https://www.campbelldesigned.com",
+      "location_label": "Noosa, Queensland, Australia",
+      "founder_name": "Stuart Campbell",
+      "lead_shaper_name": "Stuart Campbell",
+      "short_description": "Noosa father-and-son label from Stuart and Ryan Campbell — performance shortboards, fishes, and mid-lengths built with patented Exo Flex construction.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-09-02-6ee0162ed9b2ca62b55a.webp",
+      "models": [
+        {
+          "name": "Campbelltoe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/CAMPBELLTOE5_11TOP.jpg?v=1680044443",
+          "description": "The “CAMPBELLTOE” is a high performance slight step-up shortboard for the days when the surf is pumping. More subtle concaves and vee, narrower planshape, extra rocker and surfed as a narrow round tail providing great hold and speed in bigger conditions.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Chunky Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/CHUNKYTOETOP.jpg?v=1680044674",
+          "description": "\"CHUNKY TOE\" was developed based off our \"THE TOE\" board file but designed to be surfed a little shorter with an ever so slightly flatter rocker, more area under the chest, deeper concaves and vee in the tail to create a lively board capable of fast on rail performance in everyday to below average conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hip//Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/HIPTOE5_9TOP.jpg?v=1680044816",
+          "description": "\"HIP//TOE\" is a versatile, performance shortboard that was particularly designed around smallish beach break conditions. Lowered rocker for speed this board also features a little added tail kick behind the fins and a corresponding hip in the planshape for tight surfing in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Little Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/LITTLETOE5_3TOP.jpg?v=1680044961",
+          "description": "\"LITTLE TOE\" is a performance grommet board and is a scaled down version of our highly popular \"THE TOE\" model. Featuring soft forgiving rails towards the front of the board and the same concave, vee, concave bottom contours as our other models.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Middle Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/MIDDLETOETOP.jpg?v=1680045157",
+          "description": "The quest for an easy to surf, fast paddling, maneuverable longer board that would increase your wave count lead to the development of the \"MIDDLE TOE\". A longer rail line, low rocker, area pin tail, twin keels and a set of channels to increase drive giving a silky smooth ride to a versatile board in the 6'6\" - 7'6\" range.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Missletoe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/files/MISSILETOE6.0TOP.jpg?v=1699592873",
+          "description": "The “MISSLETOE” fits neatly between our “THE TOE” and “CAMPBELLTOE” models and just loves above average to good conditions. Slightly narrower, with a little more rocker than “THE TOE” a nice pulled in round tail providing excellent hold in hollower steep faced conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sacrifishal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/SACRIFISHAL5_6TOP.jpg?v=1680045357",
+          "description": "A performance keel inspired fish the \"SACRIFISHAL\" is a hybrid combining down the line speed with maneuverability in the pocket. Low rocker and soft central concave work to outrun long sections while the concave tail vee and flyer facilitate tight pocket surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/THETOE5_10TOP.jpg?v=1680045511",
+          "description": "\"THE TOE\" was designed and refined as a performance shortboard aimed at everyday conditions. With a medium rocker, our proven concave, vee, concave bottom contours producing lift and speed, while allowing lightning fast rail to rail transitions and tight in the pocket surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin Cam",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/files/TWIN-FRONT.jpg?v=1759723041",
+          "description": "A performance fish the \"TWIN CAM\" is a modern version of the popular old 70's style keel fish. Combining low rocker, a central concave giving it plenty of down the line speed & drive to outrun long sections, a pulled in fish tail along with the fins set back around the 8inch mark.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wingman",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/files/WINGMAN6_4TOP_f9000c44-1d35-4ec9-a005-658f93794039.jpg?v=1699592371",
+          "description": "A little old school but with a total modern twist, the “WINGMAN” incorporates some features from the past blended with the new to create an easy surfing performance oriented twin fin. The wide point forward of halfway and extra volume under the chest provide incredible paddle speed.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
