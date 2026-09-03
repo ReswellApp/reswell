@@ -1,0 +1,85 @@
+{
+  "generated_for": "Softlite Surfboards official named standup catalog",
+  "source": "https://www.softlite.com.au (Shopify softboard lineup only — excludes fins, leashes, apparel, gift cards, and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "softlite-surfboards",
+      "name": "Softlite Surfboards",
+      "website_url": "https://www.softlite.com.au",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": null,
+      "lead_shaper_name": null,
+      "short_description": "Australian soft-top surfboards built for progression and everyday fun — Chop Stick, Pop Stick, Koolite, and the Slider range.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/softlite-surfboards.png",
+      "models": [
+        {
+          "name": "Chop Stick",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/Chopstick_Ice_Deck_233c63cd-56a9-4c87-a047-46d9a0f7ae27.png",
+          "description": "6'6\" X 21 1/4\" X 3 1/8\" ( 50L) We would recommend this for beginner riders weighing 45-65kg, although if you are an experienced surfer of any weight, you'd be able to use this to get your wave count up on the smaller days. Having one of these in your quiver is a surefire way to ensure there is no waves too small or too crowded, so you'll be surfing more than ever! For more info on sizes, check out our Size Recommendations page. *Soft Fins Set Included *Please note: Leash is not included *Fin box",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Koolite",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/Koolite-Teal-Front.png",
+          "description": "Softlite Koolite – The Ultimate Soft Top Mini Mal for Learning to Surf! The Koolite uses a classic mal shape, but we've given it a few tweaks to make it the easiest board possible to learn to surf on! Shape-wise, it features a slightly wider tail, which greatly aids stability, particularly in smaller waves. We've also given it a bit of extra width and thickness to increase overall volume, ensuring it paddles fast (helps you get into waves easier) and is nice and stable once up and riding Constru",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Koolite Max",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/KooliteMax_Mineral_1.png",
+          "description": "The Koolite Max – A wider, thicker version of the Koolite to make the early stages of learning as easy as possible! The Koolite uses a classic mal shape, but we've given it a few tweaks to make it the easiest board possible to learn to surf on! Shape-wise, it features a slightly wider tail, which greatly aids stability, particularly in smaller waves. We've also given it a bit of extra width and thickness to increase overall volume ensuring it paddles fast (helps you get into waves easier) and is",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pop Stick",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/8746.webp",
+          "description": "Pop Stick 6'6\" Softboard 6'6\" X 20 2/3\" X 2 3/4\" 44L Core: 100% Waterproof Moulded EPS Core Deck: 10lb PE Deck Slick: Xtra Duralinx Slick Reinforcements: Double Moulded Stringer system Features: Edge Trim System, Exoskeletal Strength Membrane, Leash Plug Fins: Thruster Fin Set Up with Bones and Shanks Fin System. Fins Included with Every Board The 6'6\" Pop Stick boasts an updated shape for the 2019 Season. It is the ideal board for someone who is looking to step down from a Mini Mal and start do",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pop Stick Hybrid",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/93_96a4bbfb-a8ec-4a80-b2de-7d619f7a5699.png",
+          "description": "The Pop Stick Hybrid has been designed for an intermediate rider looking to take the next step in progression, or a more experienced rider looking to squeeze the most out of the smaller summer days, without sacrificing performance. It features a small wave shortboard template combined with our hybrid construction style. Key Features HYBRID CONSTRUCTION - a Stringered EPS Core, wrapped in Fibreglass Cloth, Bamboo Deck Reinforcement & Epoxy Resin, which is then encapsulated by a traditional Softbo",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pop Stick x NOTNOTCAMSCOTT",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/Softlite_CS66_1080x_1056x1056_063eb711-c3db-4a92-aeec-4a1023927004.webp",
+          "description": "Whilst Notnotcamscott doesn’t love being the focus of digital content, he does love free surfboards . . . So when Softlite asked him to help a design a new sled, the finless frother and artist dished up some extra ironic epicness. Softlite & Cam Scott came up a limited edition bunch of sleds from 6'0 through to 8'0 with Notnotcamscott approved Street Mods. Pop Stick 6'6\" Softboard 6'6\" X 20 2/3\" X 2 3/4\" 44L Core: 100% Waterproof Moulded EPS Core Deck: 10lb PE Deck Slick: Xtra Duralinx Slick Rei",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shred Head",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/Softlite_ShredHEad_Blue_Deck_74dfe03d-a12b-4c2e-ba9d-80051cb91b41.png",
+          "description": "Dimensions: 6'6 X 21 1/4\" X 3\" (52L) Suggested Sizing: The 6'6 Model is best suited for beginner riders weighing up to 65kg. For smaller riders (up to 35kg), we have a 5'6 Shred Head Model available or for riders up to 50kg we have the 6'0 Shred Head Model. The Shred Head has been designed specifically for groms learning how to surf! Key Features: Traditional Softboard Construction - A Soft, safe and forgiving construction using lightweight EPS Core encapsulated by PE Deckskin & HD Slick. This p",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Slider",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/Slider_Sand.png",
+          "description": "Softlite Slider – The ultimate all-rounder, classic construction softboard that a variety of skill levels can ride . Thr Slider has been designed for beginner surfers who are confident & looking to progress quickly, or the more experienced rider who just wants a versatile mid-length style softboard. Featuring more of a Fun Board style template, this shape provides a touch less surface area than traditional Mini Mals making the Slider a little more maneuverable and more suitable for progression. ",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Slider Lux",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/SliderLux_Blue_1.png",
+          "description": "Softlite Slider Lux – Premium Performance Meets Everyday Versatility The Slider Lux is our premium all-rounder softboard — designed for surfers chasing the perfect blend of performance, durability, and versatility. The Chop Stick had refined rails and plenty of planing area, but with the Slider Lux we’ve taken it further — sharpening the nose and removing excess material to deliver more speed, better control, and a more performance-driven feel. While the Funboard-style template makes it forgivin",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Test Tube",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/60.png",
+          "description": "Dimensions - 7'6\" X 21 5/8\" X 3\" (57L) Best Suited for: Beginner Riders up to 80kg Intermediate-Advanced Riders of all sizes Overview: This Test Tube is a little different from the 7'0 & 8'0 Models as it uses our Pop Stick 7'6 Template. This board is narrower, with a slightly more pulled-in nose and tail tail for increased maneuverability. While it's still very generous in volume, this is more of a mid-length style template (As opposed to a Minimal), so you can squeeze a little bit more performa",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Vader",
+          "image_url": "https://cdn.shopify.com/s/files/1/1500/4270/files/Vader-Khaki-Deck_42274e2c-500a-4a5d-a08f-69fb3e2660d9.png",
+          "description": "The Vader is based more on a Retro Style Mid Length Template. This shape is super versatile and we feel it lends itself perfectly to the Hybrid Softboard construction style used on this model. It is ideal for surfers of most levels, and is suitable to use in a variety of wave conditions (either big or small). The template is user friendly enough to provide some extra paddle power, stability and drive, allowing you to squeeze a bit of juice out of the smaller, weaker days. In saying that, the lon",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
