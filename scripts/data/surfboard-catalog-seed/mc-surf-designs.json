@@ -1,0 +1,88 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mc-surf-designs",
+      "name": "MC Surf Designs",
+      "website_url": "https://www.mcsurf.com.au/",
+      "location_label": "Byron Bay, New South Wales, Australia",
+      "founder_name": "Michael Cundith",
+      "lead_shaper_name": "Michael Cundith",
+      "short_description": "Byron Bay surfboards owned and run by shaper Michael Cundith and Toshie. MC has been making surfboards since 1963 in California and 1970 in Australia.",
+      "models": [
+        {
+          "name": "Ripper",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/ripper_contrust_cut_edited-1.jpg",
+          "description": "The RIPPER series are a fresh mix of all-round high performance short boards. Produced from 50 years of shaping evolution, refinement and knowledge. The Ripper is versatile and has its rider's boxes ticked; from small beaches, grinding point breaks and stand up barrels. If you could take one board on a trip the Ripper would be it. A pulled in nose and tail with the wide point in front of the centre allows for full pressure turns. Single shallow concave bottom tapering deep towards the tail. Ripper 1 has a medium bottom curve; Ripper 2 has slightly more bottom curve. Available as a thruster, 4 fin and as a 5 fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Full Throttle",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/full-throttle-230.jpg",
+          "description": "New addition to the signature series. Full Throttle combines different aspects of the Willsy Fish and the Hot Rod: the same bottom as the Willsy Fish and the pulled in nose of the Hot Rod. This model is overall narrower than the Willsy Fish. Danny Wills: after thousands of surfboards, the Full Throttle is the fastest surfboard I have ever ridden. Michael Cundith: it is neither shortboard or hybrid but something in between. It combines elements from the speed of the fish and the performance of the Hot Rod. Fin set up: thruster, quad, and tri/quad.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hot Rod",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/hot-rod-230.jpg",
+          "description": "The Hot Rod is a pro-performance short board. It's the first of the Signature Series, collaborated over 4 years of testing with shaper Michael Cundith and team riders. The Hot Rod is one of few models to have been surfed at every contest for years on The Dream Tour or WCT. Features: shallow single concave; low/soft grading to high planing rails; constant curve in the outline, providing exceptional manoeuvrability. The Hot Rod performs and delivers in most conditions, draw huge arcs and stick tightly in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Lip Hit",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/lip-hit-230.jpg",
+          "description": "The Lip Hit is in concept a thick short board, able to paddle very easily, allowing the surfer to stay out for longer. Features: a trim spot under the front foot enabling the rider to glide over flat sections; wide point above centre; choice of single or single to double concave, vee optional; low, soft rail; tail kick starting between feet grading to the tail; even distribution of deck volume. Despite the extra volume, on the wave the Lip Hit is able to perform just as good as a normal short board. Shaper's comment: good drive, a trim spot underfoot and generous tail kick to stay tight and critical in the pocket.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Speed Fish",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/speed-fish-230.jpg",
+          "description": "The Speed Fish is a unique combination of the Twin Fin, the 7-T (seventy) single fin board with the benefits of modern design under the hood. Combine these together and we have a nice easy paddler with good trim, plenty of speed and easy turns. A very user friendly design that can rifle down the line but is manoeuvrable. Features: single to double concave and a slight vee or single concave; front foot trim spot; low soft rails; swallow tail; retro inspired outline, wide point forward. Comes as FCS tri/twin, glass on fins, twin fins, MC Twin Keel fins, or box setup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dart Fish",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/dart-fish-230.jpg",
+          "description": "The Dart Fish is for those who want a great traditional feel without compromising modern performance. This fusion gives the rider much more freedom and a very unique blend of design in a board easy to paddle and to catch waves. Features: single to double concave and vee; deep swallow tail; straighter rocker; foiled deck to rails; four or five fin setup. Dart Fish comes with MC Original Keel Twin Fins, a unique revised twin fin design providing great drive and manoeuvrability. Size steps increase from Dart, King, Groper and Whale. The Dart Fish can be ordered any size.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stubbie",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/stubbie_deck_original_cut.jpg",
+          "description": "The modern short board owes a lot to shapes like the Stubbie. The MC and Greenough Stubbie is a retro short board created in 1962 in Southern California. Born originally as a balsa wood kneeboard by George Greenough, a young MC saw its potential and hopped right on it as a standup, making it one of the world's first short boards. Features: concave tri-plane hull; original retro outline; mid/low soft rails; slight vee gradually increasing toward the tail. Performs in single, MC Keel twin, thruster, quad, and tri/quad setups. Expect effortless speed, trim and acceleration.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Islander",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/islander_230.jpg",
+          "description": "The Islander has a bit of retro design fused into the mix. It is a great all-round capstone of your quiver and is currently the most popular board in the MC collection. The idea is to build a board its rider can take out for a dawn surf at the local, hop on a plane and charge on straight to a hollow tropical reef break. Features: wide point 2\" in front of centre; a trim spot below the front foot; generous tail kick; low, soft rail; single concave. Made from 6ft up to 8ft in length or even longer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "7-T",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/seventy-230.jpg",
+          "description": "MC: The 7-T is a design that embodies my philosophy of when someone is recreating any past technology, make it feel like the past added with the tweaks of modern performance. Old look, modern infused performance, the 7-T is a retro single fin with an up to date bottom curve allowing for better trim and critical turns. It has great speed generation and can hold much more than the old boards did. Features: slight single to double concave, vee bottom gradient starting at front foot; or concave bottom; flat trim rocker with a bit of tail curve. Available as a single, tri or thruster.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "High Performance Malibu",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/high-performance-malibu230.jpg",
+          "description": "MC: This is my favourite all round longboard. It turns incredibly and nose riding this Mal is a long boarder's dream. Its a great contest performer and has traveled under the arms of surfers world wide. The double concave tail vee is designed to give its rider optimum speed, confidence in the pocket and the ability to draw out huge rail turns. Moving up to the middle section is a trim spot, complimenting a concave under the nose improving nose riding handling. The design can also handle much bigger waves. Big waves, small waves, turning, nose riding, trimming, single fin, three fin, beginner or professional.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/Danny-Wills-Gun-230.jpg",
+          "description": "The Gun is an offshoot design of the Hot Rod amongst the team rider Pro Series. Features differing from the Hot Rod: slight concave progressing into a light V in the tail; slim outline; extra nose and tail lift; low/high planing rails like the Hot Rod but with a bit more volume; or comes as single concave. The MC Gun was made to conquer large waves. It has proven its worth at Teahupoo, Waimea, Pipe and other big wave spots on tour. Exceptionally fast, with powerfully holding drive and loose off the top. Popular sizes 6'3\" to 7'6\".",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Little Bullet",
+          "image_url": "https://www.mcsurf.com.au/template_images/new_site_boards/little_bullet.jpg",
+          "description": "The Little Bullet is a great go to board if you are after something really fast, but still hold solid lines and is versatile in the pocket. I love to ride it as a quad, it's a little more erratic but faster between turns. Even in bigger waves I've been surprised by it (I'm 6ft1 and ride a 5'10'' Bullet). It really loves being set on a rail and projects nicely out of turns. It's a board that will really liven up your surfing. Shaped by Michael Cundith.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
