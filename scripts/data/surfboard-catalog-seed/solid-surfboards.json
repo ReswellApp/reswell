@@ -1,0 +1,152 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "solid-surfboards",
+      "name": "Solid Surfboards",
+      "website_url": "https://solidsurf.co/product-category/surfboard-models/",
+      "location_label": "San Diego, California",
+      "short_description": "San Diego custom surfboards — performance shortboards, grovelers, midlengths, and longboards built to order.",
+      "models": [
+        {
+          "name": "Bean",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_0439.png",
+          "description": "Da Bean. A beautiful blend of elements designed to smooth out and dignify your style. Wide point forward, volume forward, easy entry rocker for graceful entry into the deepest of drops. Pulled in pin tail to hold a hard line and draw clean arcing turns.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Bento Box",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9070.png",
+          "description": "Our small wave special Cult Classic and fan favorite “The Bento Box” is our mini simmons with a high performance twist. This board features attributes from other models such as the concave deck, deep single through the tail and aft placed fins.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Butter Biscuit",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/ButterBiscuitTOP.png",
+          "description": "This concave deck magic board is a more performance oriented spin off of our Cinnabun Model. We pulled in the tail quite a bit to help it hold in steer conditions and maneuver a bit crisper as your good wave shortboard would.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cafe Racer",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9231.png",
+          "description": "This latest rendition of our performance squash tail offerings is based off of some slightly 80’s style inspired designs. We’ve added a bit more volume thru the chest and mid section (while keeping the rails low enough) and added a subtle hip bringing the outline in through the tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cinnabun",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/CinnabunTOP.png",
+          "description": "Requested by one of our top east coast retailers, Cinnamon Rainbows in New Hampshire. They were looking for something floaty, fast and loose to grovel through summer on the east coast. This board features a concave deck as well as a double throughout most of the bottom.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Lunch Break",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/LunchBreakTOP.png",
+          "description": "So the waves suck, you have nothing to do, your boss gave you an hour off, or you got off early, its hot, and you need to get in the water. This board is your new friend. Super full volume through the front 3/4 of the board allowing you to literally paddle into and plane through the mushiest of sections.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Meatfish",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_4609-copy.png",
+          "description": "Surely not the most attractive name.. But this thing is a beauty. Makes the best of the worse conditions with tons of volume and float through the chest while offering our “double diamond moon” tail for instant manueverability.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stub Squash",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_5212.png",
+          "description": "Performance Shortboard meets Bento Box. A mix of all we do — concave deck & down rails, offer stability, easy paddling, and a lower center of gravity offering control over a slightly wider board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Shuttle",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2024/05/510SOLIDShuttle14370Tr.png",
+          "description": "The Shuttle is our lastest of the groveler lineup offering all of the performance aspects of your favorite shortboard just a bit wider making it surf faster in weaker surf.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "LHP",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/LHP2TOP.png",
+          "description": "Designed by our longest standing team rider, Lee Mierowitz. The LHP is our premiere high performance longboard. If you arent scared of charging significant surf on a longboard, this thing will serve you well.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "LOG",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9979.png",
+          "description": "A Classic California Nose Rider. If you are looking for a board that does one thing well, and that is nose ride, this is it. Blunt full nose, flat rocker, and a bit of kick in the tail keeps you locked in with ease as you perch your way to the beach with this dream machine.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pinner",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9963.png",
+          "description": "A unique blend of old school feel with a touch of surprising performance. A pretty sensitive and engaging shape with a streamlined outline offering a bit more range than our LOG model.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Duck Sauce",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9181.png",
+          "description": "This is an offshoot of our 10 year best selling shortboard model the Sasquash. We kept the same amount of overall rocker, but made is slightly more gradual, giving the appearance of less rocker.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jet-I",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9170-3.png",
+          "description": "The force is with you with this blade. Gradual rocker and slightly fuller nose outline and foil allows for easy paddling and no resistance flying down the line and up into manuevers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sasquash",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9176-copy.png",
+          "description": "This board packs a punch. It’s our compact squash tail and it rips like a high performance squash tail thruster in knee high surf. With a fuller rail, drawn out volume, wider and thicker tail, as a 5’7 this board has as much volume as your 6’2 chip.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Go2",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9219-1.png",
+          "description": "This is our Go-2 Model. Designed by team rider and sales manager Blake Ferraro to excel in and amplify a wide range of conditions. Board features a balanced outline, round radius narrower squash tail for smooth but quick maneuvers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bachelor",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9743.png",
+          "description": "This board is our single fin shortboard concept. We took the classic aspects of a retro single fin, vee out the back, forward volume and blended it with a modernized fuller but performance rail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Jig",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_0424.png",
+          "description": "A shockingly versatile option for a midlength. Most of us are getting older (unless you are Bengi Button) and just want to catch more waves inbetween our increasing list of responsibilities. But — who wants to sacrifice performance?",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "EZ Street",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9789.png",
+          "description": "Kindof like a blown up, prettier version of our Discus and Frisbee models. We drastically pinned out the tail, blunted the nose and lowered the rocker giving it more of a old school longboard front and and a performance egg / fun gun back end.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Frisbee",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9934.png",
+          "description": "Our best selling “fun board”.. excuse me “Mid Length” for the last decade and a half. Looking for something super easy and fun. Great paddler, full stable rails, plenty of rocker to keep you from eating sh*t on late takeoffs?",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pescador",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9817.png",
+          "description": "A close derivative of our best selling mid-length the Diamong Jig — taken to the fish level. We kept the same great elements of gradual smooth rocker, slight vee out the tail and the classic retro swallow tail offers new pivot points as compared to the Diamond Jig feel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rising Sun",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_5271-copy.png",
+          "description": "Bringing back the stinger single fins with a vengeance. Shaped for fun a few years ago to see how it went and we were shocked at how versatile this thing was. From mushy, meager beach breaks, to pumping desert point and blacks — this thing delivers.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Throwback",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_0387.png",
+          "description": "The Throwback Model is our modern interpretation of the classic Retro Twin Fin Fish developed in the 70s. We’ve been refining this model for over 15 years and it is designed to cater to a wide variety of surfers and conditions.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
