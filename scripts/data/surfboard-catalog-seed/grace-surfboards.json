@@ -1,0 +1,60 @@
+{
+  "generated_for": "Grace Surfboards official named standup catalog",
+  "source": "https://gracesurfboards.com/products.json (Shopify surfboard products only — excludes apparel and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "grace-surfboards",
+      "name": "Grace Surfboards",
+      "website_url": "https://gracesurfboards.com",
+      "location_label": "Torquay, Victoria, Australia",
+      "founder_name": "Phil Grace",
+      "lead_shaper_name": "Phil Grace",
+      "short_description": "Hand-built surfboards by Phil Grace on the Mornington Peninsula — classic longboards and performance shapes refined in Australian and Basque point waves.",
+      "models": [
+        {
+          "name": "Silver Fox",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/PurpleHaze.jpg?v=1754271346",
+          "description": "An evolution of the legendary Silver Fox template — vintage soul with modern performance, built for effortless glide and smooth single-fin arcs with Gracey's signature rolled V and rail work.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/SingleFin.jpg?v=1754270103",
+          "description": "A throwback single-fin with the wide point pushed forward, subtle double concave for speed, and Gracey's signature fin — old soul with modern spark for style-first surfing.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Glider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Glider.jpg?v=1754267751",
+          "description": "Phil Grace's ode to graceful lines and long journeys — a paddle machine for effortless trim from small surf to head-high, with rolled V bottom and soft downturned rails.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Demibu",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Demibu.jpg?v=1745930002",
+          "description": "The original all-rounder by Phil Grace — smooth transitions, fast rail-to-rail response, and total control from playful beach breaks to punchier surf, available as thruster or twin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "All Rounder",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/All_Rounder.png?v=1772537209",
+          "description": "A versatile longboard with 3x single plus side-bite fin boxes — balanced glide and control for everyday logging across a wide range of conditions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Nose Rider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Noserider.jpg?v=1754288252",
+          "description": "Refined on Torquay and Basque Country point waves — a classic noserider with generous nose, deep spoon concave, and rail-setting performance for graceful walks to the tip.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Heritage",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Heritage_Surfboard.png?v=1772536871",
+          "description": "A tribute to longboarding's golden era with retro hip, rolled V bottom, and soft downturned rails — built for soulful trimming, graceful footwork, and laid-back single-fin style.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
