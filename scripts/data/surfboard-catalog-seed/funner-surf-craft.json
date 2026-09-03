@@ -1,0 +1,63 @@
+{
+  "generated_for": "FUNNER Surf Craft official Shopify surfboard catalog",
+  "source": "https://funner.surf/products.json (Surfboard product_type only — excludes apparel, fins, and lumber)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "funner-surf-craft",
+      "name": "FUNNER Surf Craft",
+      "website_url": "https://funner.surf",
+      "location_label": "Eugene, Oregon",
+      "founder_name": "Eddie Rosenberg",
+      "lead_shaper_name": "Eddie Rosenberg",
+      "short_description": "Oregon-made sustainable surf craft from founder and shaper Eddie Rosenberg — recycled and renewable materials, cork decks, and paulownia wood builds designed to last.",
+      "models": [
+        {
+          "name": "The Hooligan",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/Hooligan7_0top.jpg?v=1788465655",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Vector",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/Vector7_0_Top.jpg?v=1788461679",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Nozomi",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/Nozomi7_8_Top.jpg?v=1788457909",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Clovis Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/IMG_0890.jpg?v=1780333902",
+          "description": "An alternative shortboard experience. The The Clovis Twin rips at warp speed. Super fast. Super responsive. The most high-performance surf craft in our lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Missing Link",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/MissingLink8_0_top.jpg?v=1788462111",
+          "description": "A perfectly attainable wave riding experience. The Missing Link is a wave catching machine. Its unrivaled paddle power and stability get you popping up early and easy. The most foundational surf craft in our lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Forager Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/MidTwinWildIris_9676a8ce-95d8-4abc-8af3-e0b9ff9cb0c9.png?v=1739906583",
+          "description": "A fully charged wave riding experience. The Forager Twin is your best bud when the surf is pumping. A delight of epic proportions feasting on speedy carves in shoulder-overhead surf. The most powerful surf craft in our lineup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Morchella",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/IMG_0874.heic?v=1780023765",
+          "description": "An alternative shortboard experience. The Mini SIMMS quickly gathers speed and is super responsive, thriving in the fast lane and snapping turns off the lip. The most playful surf craft in our lineup.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Tamago",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/EggGoldenEagle.png?v=1739906551",
+          "description": "A super friendly wave riding experience. The EGG hooks it up with easy paddling and predictable takeoffs, then cruises down the line connecting buttery smooth turns. The most balanced surf craft in our lineup.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
