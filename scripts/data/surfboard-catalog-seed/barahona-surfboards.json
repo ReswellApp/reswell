@@ -1,0 +1,120 @@
+{
+  "generated_for": "Barahona Surfboards official model catalog",
+  "source": "https://www.barahonasurf.com/shop-surfboards?category=All+Surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "barahona-surfboards",
+      "name": "Barahona Surfboards",
+      "website_url": "https://www.barahonasurf.com",
+      "location_label": "Hermosa Beach, California",
+      "founder_name": "Jose Barahona",
+      "lead_shaper_name": "Jose Barahona",
+      "short_description": "Hand-shaped South Bay longboards, mid-lengths, and shortboards from Jose Barahona in Hermosa Beach.",
+      "models": [
+        {
+          "name": "The Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562535901179-OKUTPPXCKSUGOPHH6JXP/Log_front_3%25252B.jpg",
+          "description": "Team Rider Christian Stutzman's original design. The Log has substantial nose rocker to lock you into hard-to-make sections, kicked tail rocker for power turns, and minimal pulled-back concave to lift you into noseriding heaven.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Beauty",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562686638387-J16UMX6PML4CFIB29BC8/Beauty_front_1%2B.jpg",
+          "description": "Traditional influence for smooth, easy logging. Here, you’ll find 10 oz Volan, a substantial nose, and pulled back concave for extra lift to allow maximum noseriding potential. The Beauty also features low rocker for speed and pinched 50/50 rails - all for boosting hang-time capability in critical sections.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Hippie",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1514574898023-28TYUIY819IM3KFS9VQ5/jj_wessels_model_j.png",
+          "description": "The Hippie is a unique old school singlefin longboard with a full template low rocker design and 50/50 rails with up rails the last 1/3 of the tail. 18 ½ inch nose and 15 ½ tail. Glassed all 8oz. No frills, no flash - just a solid noserider with fast turning capabilities.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1513645333475-TALIGL0RXB8VYKXDR5MF/Image+12-18-17+at+2.14+PM+%281%29.jpg",
+          "description": "This is the glider built for our South Bay surfers, but excels in different conditions — great for point and beach breaks, but handles the sloppy stuff. Old school pin, 50/50 rails, and a rolled bottom for superior speed and trim. The perfect board for those looking to cruise.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Schaefer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1513645317274-PNN1YCSZV6EOA35CJOQK/Image+12-18-17+at+2.14+PM.jpg",
+          "description": "The go-to board for team rider Dave Schaefer. The Schaefer is a high-performance noserider, providing maneuverability of a shorter board along with slight kick in the nose for increased noseriding stability and tip time. The Schaefer is a great choice for those who are looking for a powerful, whippy longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Bullet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562686810461-SARJHBTCS7SL7ZTY8GSR/Bullet_Front%2B.jpg",
+          "description": "Our answer to those of you looking for a high-performance longboard to add to your quiver. The pulled in nose and tail on this board gives the Bullet its legitimacy - it will fly down the line and allow you to crank out any and all turns you desire. Still proficient on the nose, but with an emphasis on maneuverability — the perfect board for those looking for the paddle power and feel of a longboard but the capability of a shortboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Piglet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562687769239-12AM3HZS8RH9ZFV4LRDN/Piglet_front_1%2B.jpg",
+          "description": "The Piglet is a midlength board designed to excel in speed, trim, and flow. Perfect for those who want the feeling and flow of a singlefin without the weight and bulk of a longboard, the Piglet has its wide point set back to allow it to generate more speed and trim from the bottom half of the board as well as a slight vee in the tail to allow for more responsive turns. Its length and shape give surfers the opportunity to move up and down the board, and it’s narrow enough to be quick and responsive. Being proficient in all types of conditions—from ankle-high to overhead waves—the Piglet will make sure that you never leave the beach without a smile on your face.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Bonzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562686733803-SZ8E8P72V56HN0FFJV74/Bonzer_Front%2B.jpg",
+          "description": "Bonzers were one of the first models of shortboards to be surfed. With our version of the bonzer we've kept that old school feel, while improving on the design to make it meet the needs of modern surfers. This model is unique to most other shortboards with a feel and glide of a singlefin board, plus drive and hold of a thruster or quad. Deep double channels on the bottom of the in addition to bonzer fins help this board to fly down the line and hold its rail even in the toughest conditions. Longer than your average shortboard, excels in bigger surf, and has the ability to work well even in small conditions. If you want a shorboard with an old school flair but that can still crank out big rail carves, then our Bonzer model is for you.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Guppy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562687004834-6SETALIEW5T3AQQME8K6/Guppy_front_3%2B.jpg",
+          "description": "A traditional down-turned nose Twin Keel fin fish with a modern touch. The bottom is a flat panel vee with a slight double concave between the wood glass-on fins. These bottom contours give the board easy rail to rail transitions with glide and speed coming out of turns. Perfect for anyone who loves speed — great for momentum in smaller, slower, sloppy surf conditions, but still able to take on waves that are well overhead, making this a great all-around board and a must-have fish for all surfers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Easy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562686961827-GV66O1AV5F9HYKV72CSI/Easy_Front_1+copy%2B.jpg",
+          "description": "The Easy is our best-selling \"everything\" board by far due to its versatility. This model can work well in ankle high slop to well overhead plus and is suitable for any level of surfer. A great board for beginners or those just adding to their quiver, The Easy truly is an easy board to master, and can make even bad days fun again.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Fish-O",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1580257703256-HC25EA5E3DT8QI4HIYFW/IMG_1241.png",
+          "description": "It’s fast, it’s loose, it’s high-performance, and it’s old-school — it’s the Fish-O. The Fish-O is our answer to a high-performance fish with an old-school feel. Taking inspiration from twin-keel fishes of the past, we’ve kept the same basic outline with modern rails and a unique center channel to make the board extra responsive and performance-oriented. The innovative square/swallow tail hybrid offers the speed and flow of a swallowtail with extra volume to allow for maximum spray and momentum through turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Session",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562686157750-L6QV81TUPTSU95TUQ4I0/Session.jpg",
+          "description": "The Session is your old-school single fin shortboard. No fancy bells and whistles, just early 70s influence and smooth gliding.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Nugget",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1513638755753-SR8DW19DOP4ENBZBTYFQ/nugget.jpg",
+          "description": "The nugget is the perfect summertime board - essentially a squashed down 5 fin version of the Easy with plenty of paddle power and versatility for all types of breaks. Stripped down, no gloss, all 4oz glass and 5 future boxes veers it away from the Easy as the bottom contours are more like a shortboard - single to double concave.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Psycho",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562687259736-K2X4IRCBQ42GJO5GU4DL/psycho_front_1%2B.jpg",
+          "description": "The Psycho is our big-wave step-up model and was designed with Jeff Phillips. It features a pulled in tail and narrow nose and is longer than most standard shortboards, and has extra thickness to make sure you have the paddle power to catch all the waves you can. The original Psycho comes standard with a five-fin setup, making it a very versatile board for all conditions. While this board shines in bigger surf, it also makes for a great board for those who just want a little extra floatation and paddle power for smaller days.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Tiburon",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1513645348558-0USLPMXH9GU8MIDS9U5H/Image+12-18-17+at+2.13+PM+%281%29.jpg",
+          "description": "The Tiburon is a bigger, thicker than average high-performance shortboard, but with the same basic outline. Having a both pulled in nose and tail, this board is perfect for those looking for a step-up for bigger days or for the individual looking for a boost in paddle power for their shortboard. With 5 fin boxes, you can ride it as a quad or a thruster, making it an excellent choice for someone who wants to gain the most versatility from a shortboard.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Sunday Special",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562687091165-JBZ94612VCL69VBTRT3R/SUNDAY_FRONT_1%2B.jpg",
+          "description": "The Sunday Special is a board for those who want a shortboard feel, but prefer a little more foam under their feet. It has a squaretail shortboard template, but is a little longer, wider, and thicker than your average high performance shortboard, making it a perfect board for smaller days and days where you want to beat the crowd.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Porto",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5759b8fb20c64730ca99910f/1562687167400-VEUVRE0TOXJK8DQWOTLX/Porto_front_1%2B.jpg",
+          "description": "The Porto is a go-to board for any shortboard enthusiast. Featuring a pulled-in rounded pintail and a narrow nose, this board is sure to meet all of your high-performance needs, while excelling in hollow conditions and barrels. A five-fin setup makes this board have the ability to work in all kinds of conditions. This board has the ability to be stable and have drive in the barrel, while still allowing for huge turns and maneuvers.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}

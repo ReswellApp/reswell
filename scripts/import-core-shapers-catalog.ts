@@ -22,6 +22,11 @@
  *     --seed scripts/data/surfboard-catalog-seed/core-shapers-25-more.json \
  *     --backfill /dev/null
  *
+ * Add Barahona Surfboards official models:
+ *   npx tsx scripts/import-core-shapers-catalog.ts \
+ *     --seed scripts/data/surfboard-catalog-seed/barahona-surfboards.json \
+ *     --backfill /dev/null
+ *
  * Fill major brand model/image gaps:
  *   python3 scripts/scrape-major-brand-catalog-gaps.py
  *   npx tsx scripts/import-core-shapers-catalog.ts \
