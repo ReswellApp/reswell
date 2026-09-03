@@ -1,0 +1,46 @@
+{
+  "generated_for": "Buried Surf official named standup catalog",
+  "source": "https://buriedsurf.com/shapes (GoDaddy site model lineup — excludes custom deposits and one-off stock)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "buried-surfboards",
+      "name": "Buried Surf",
+      "website_url": "https://buriedsurf.com",
+      "location_label": "Northeast England",
+      "short_description": "Hand-shaped surfboards built in Northeast England for cold-water reefs from Tynemouth to Scarborough.",
+      "models": [
+        {
+          "name": "Dreadnought",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/1000052259.jpg",
+          "description": "Cold water step up for gnarly barrels.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Strafe",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/PXL_20251004_144044449.PORTRAIT.ORIGINAL~2.jpg",
+          "description": "All rounder for techy barrels with a turn at the end.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Riven",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/PXL_20250529_184430480.RAW-01.COVER.jpg",
+          "description": "Performance step down with mega drive and flickability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Revol",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/blob-9c31de8.png",
+          "description": "Mid length for shortboarders. Lightweight and rippable.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Catalyst twin",
+          "image_url": "https://img1.wsimg.com/isteam/ip/19a6b658-9f2b-4f19-b937-7445949af8ac/PXL_20250820_105825238.PORTRAIT.ORIGINAL.jpg",
+          "description": "Performance mid twin.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
