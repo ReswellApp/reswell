@@ -1,0 +1,48 @@
+{
+  "generated_for": "Sine Surf official named standup catalog",
+  "source": "https://sinesurf.com/products.json (Shopify hollow-wooden surfboard models only — excludes timber supplies, repair kits, and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "sine-surf",
+      "name": "Sine Surf",
+      "website_url": "https://sinesurf.com/",
+      "location_label": "Westleigh, New South Wales, Australia",
+      "founder_name": "Emile Theau",
+      "lead_shaper_name": "Emile Theau",
+      "short_description": "High-performance hollow wooden surfboards by Emile Theau, made from plantation paulownia in Sydney, Australia.",
+      "models": [
+        {
+          "name": "Garnet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1055063.jpg?v=1711354473",
+          "description": "A performance twin pin designed for speed, flow, and manoeuvrability — loose on pivots but able to hold in steep sections and drive through cutbacks. Paddles and floats like a midlength while holding and turning like a shortboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "ButterCup",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1055046.jpg?v=1711347993",
+          "description": "A performance groveller built to make small, weaker surf more fun. Volume is packed into a compact outline for easy paddling and glide, with modern rails and contours for sharp cutbacks and whips.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Daywalker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1044602.jpg?v=1711356089",
+          "description": "A modern noserider longboard shaped by Emile Theau with guidance from Steve O'Donnell and feedback from top Australian log riders. Blends traditional log trim with added performance for nose walks and controlled tail turns.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Strider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1055095.jpg?v=1711347419",
+          "description": "A performance midlength combining a timeless egg outline with modern midlength features. High volume with a flatter rocker for speed and wave count, tuned for drawn-out arcs and tight pocket turns.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SunSpear",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1055087.jpg?v=1711347531",
+          "description": "A modern fish blending 1970s fish templates with performance shortboard traits. Compact volume for easy paddling, flat rocker for speed, and rails that pivot freely yet hold on steep faces.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
