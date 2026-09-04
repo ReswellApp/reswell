@@ -1,0 +1,101 @@
+{
+  "generated_for": "Murdey Surfboards official named standup catalog",
+  "source": "https://www.murdeysurfboards.com/models-copy-2 (Squarespace MODELS page — excludes shop dimension SKUs, used boards, and custom orders)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "murdey-surfboards",
+      "name": "Murdey Surfboards",
+      "website_url": "https://www.murdeysurfboards.com/",
+      "location_label": "Pacific Northwest, Oregon",
+      "short_description": "Hand-shaped surfboards from the Pacific Northwest — shortboards, fishes, mid-lengths, and classic longboard templates.",
+      "models": [
+        {
+          "name": "What",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701114907280-JIS44YDRSPAPQZL2VZCA/short_lam_0000_what.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stumpy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701114907360-UM8XH6BIQCEJ402ZZT6Z/short_lam_0001_Stumpy.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Skipper Stone",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701114908092-715VICKJ3UGXMROODLD0/short_lam_0002_SkipperStone.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Modfish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701114908234-XUQRRZQ75OTWH56PBQNK/short_lam_0003_modfish.png",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Larold",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701114908878-R3Q6PAPB6RDWRB4IS3J5/short_lam_0004_Larold.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701114908999-NI3QEVVW8T43ZCSLLPXA/short_lam_0005_fish.png",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Crescent Wrench",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701302953695-V0G5IFM4XVIBDI13E199/cwrenchthumb.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Skullet & Sword",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701118602509-QBN8YFVVOQYB0OF8PHOS/skullet.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701116963045-SWW4ZBS4DJC5DT89OWNL/C_Egg_0000_MiniLog.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Happy Family",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701116964202-P995K7QYJKINTFHQXB8U/C_Egg_0003_HappyFam.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "High Bred",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701116963950-6LHZLBAZOFWXFPXF34EF/C_Egg_0002_hibred2.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Checkered Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701116964847-9Y1HRU78P0L10UMHA6F1/C_Egg_0004_Layer-1.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Horse Blinders",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701116963330-YTRP9P40DZME6GOUTIGP/C_Egg_0001_horseblinders2.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Viper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701117932440-WB9A42PNTNDTRF6ZFAH2/bells_0000_viper.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701117932439-5S1X0MXS2T6NOOVXVVAT/bells_0001_pig.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lil Buddy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701117933432-4AW8001AB2ZJTWYXAM5N/bells_0002_LIlBuddy.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bells and Whistles",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1701117933571-8K87ZAN5PEHDR56J9MJC/bells_0003_Layer-1.png",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
