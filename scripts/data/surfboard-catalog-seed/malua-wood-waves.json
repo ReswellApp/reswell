@@ -1,0 +1,66 @@
+{
+  "generated_for": "Malua Wood & Waves official named hollow wooden surfboard catalog",
+  "source": "https://www.malua.pt/wooden-surfboards (Wix model pages only — excludes workshops, woodworks, and custom-only orders)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "malua-wood-waves",
+      "name": "Malua Wood & Waves",
+      "website_url": "https://www.malua.pt/",
+      "location_label": "Ericeira, Portugal",
+      "founder_name": "Leandro",
+      "lead_shaper_name": "Leandro",
+      "short_description": "Hollow wooden surfboards handcrafted in Ericeira, Portugal. Malua shapes sustainable paulownia boards to last a lifetime, carrying the natural grain of the wood.",
+      "models": [
+        {
+          "name": "Twin 70's",
+          "image_url": "https://static.wixstatic.com/media/4c0511_83c357ee639544f9854a2b616844d742~mv2.png/v1/crop/x_195,y_236,w_917,h_1122/fill/w_490,h_600,al_c,q_85,usm_0.66_1.00_0.01/4c0511_83c357ee639544f9854a2b616844d742~mv2.png",
+          "description": "Inspired by the very first twin fin models from the early 70's, this surfboard carries a classic essence. This is a versatile model designed to provide speed and drive to ride hollow and fast waves. Also, this model performs well in small and groove waves. It's an excellent choice for surfers seeking style and fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Modern Fish",
+          "image_url": "https://static.wixstatic.com/media/4c0511_5a9e5de0116e4d02b6d6800b2fc85be9~mv2.png/v1/crop/x_145,y_177,w_1014,h_1242/fill/w_491,h_601,al_c,q_85,usm_0.66_1.00_0.01/4c0511_5a9e5de0116e4d02b6d6800b2fc85be9~mv2.png",
+          "description": "Past and future in one board, the Modern Fish combines timeless elements with modern innovations for a very fun ride in any wave condition. These fish outlines feature a narrower nose and the iconic winged swallow tail. The classic design and the Vee concave will deliver speed, drive, and control.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wave Taker",
+          "image_url": "https://static.wixstatic.com/media/4c0511_c23994bbd3684ac4857dd8e8c4468f9c~mv2.png/v1/fill/w_1302,h_704,al_c,q_90,usm_0.66_1.00_0.01/4c0511_c23994bbd3684ac4857dd8e8c4468f9c~mv2.png",
+          "description": "Wave taker is our performance model that truly epitomizes the concept of a \"one board quiver\". A highly versatile all-rounder shortboard designed to surf a huge range of waves. The minimalist short-round outline combined with generous surface area contributes to flows on smaller waves. On the other hand, the narrow rounded tail and reduced nose area enable impressive speed and maneuverability in bigger and hollow waves, making it an incredibly responsive board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Single",
+          "image_url": "https://static.wixstatic.com/media/4c0511_73b48e478c9e4fc6b461f978b96d60d1~mv2.png/v1/fill/w_1302,h_680,al_c,q_90,usm_0.66_1.00_0.01/The%20Single.png",
+          "description": "With clean lines, our short single-fin reflects the original design from the 70's. The outline features a fuller template and a winged round pin tail that deliver versatility to this model, offering exceptional ease paddle, maneuverability and control on both small, soft waves and large, powerful ones. It is great choice for surfers who want to experience the best of both worlds.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid",
+          "image_url": "https://static.wixstatic.com/media/4c0511_50cbe2cc66ed4f9b870d825a7c38665d~mv2.png/v1/crop/x_126,y_155,w_1047,h_1286/fill/w_489,h_600,al_c,q_85,usm_0.66_1.00_0.01/4c0511_50cbe2cc66ed4f9b870d825a7c38665d~mv2.png",
+          "description": "Our mid-length surfboard is a perfect fusion of modern and classic designs. This all-arounder surfboard glides over flatter, smaller waves, and excels in shoulder-high to nearly double overhead conditions. The clean outline combination of a low entry rocker, double barrel concave, and refined rail make this board very fast and precise, allowing the surfer not only to perform in the wave pocket but also to flow and carve nicely. This board offers pure fun and enjoyment to all levels - from beginners to advanced riders.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Bolt",
+          "image_url": "https://static.wixstatic.com/media/4c0511_4467295ef8af46e3b3c10349d799a193~mv2.png/v1/crop/x_77,y_94,w_762,h_932/fill/w_491,h_600,al_c,q_85,usm_0.66_1.00_0.01/4c0511_4467295ef8af46e3b3c10349d799a193~mv2.png",
+          "description": "Inspired by the iconic Gerry Lopez's most famous surfboard, The Bolt exemplifies the perfect balance of performance and style. Its smooth, curved outline and slight rocker provide outstanding maneuverability that allows surfers to effortlessly glide across waves with precision and control. Ideal to charge bigger days.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Log Performer",
+          "image_url": "https://static.wixstatic.com/media/4c0511_69e02eb19dc94b55a9536dfc6efbefe3~mv2.png/v1/crop/x_155,y_189,w_996,h_1217/fill/w_982,h_1200,al_c,q_90,usm_0.66_1.00_0.01/4c0511_69e02eb19dc94b55a9536dfc6efbefe3~mv2.png",
+          "description": "The name speaks for itself. Our performance longboard is crafted with meticulous attention to detail, boasting a smooth entry concave that transitions into a double to make maneuvers and turns easier. In addition, the continuous outline, low rails, and tight pin tail result in a fast longboard with lots of drive and control. Ideal board to ride on classic, average, and big waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://static.wixstatic.com/media/4c0511_742f3ac35e4a4e0e9ce65808b90b618c~mv2.png/v1/crop/x_122,y_149,w_1059,h_1294/fill/w_958,h_1170,al_c,q_90,usm_0.66_1.00_0.01/4c0511_742f3ac35e4a4e0e9ce65808b90b618c~mv2.png",
+          "description": "All about style, our nose-rider is fully inspired by the 60's longboards that embody the essence of classic wave-riding. The generous length and classic outline with a low wide point provide exceptional stability and smooth gliding on the waves, making it ideal for riding the nose for extended periods.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
