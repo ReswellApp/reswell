@@ -1,0 +1,54 @@
+{
+  "generated_for": "Hamanda Shapes official named standup catalog",
+  "source": "https://www.hamandashapes.com/copy-of-taupin (Wix model pages — excludes custom orders and stock dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "hamanda-shapes",
+      "name": "Hamanda Shapes",
+      "website_url": "https://www.hamandashapes.com/",
+      "location_label": "Lisbon, Portugal",
+      "founder_name": "Antonio Mello",
+      "lead_shaper_name": "Antonio Mello",
+      "short_description": "Hand-shaped surfboards by Antonio Mello in Lisbon — classic longboards, single fins, performance twins, and modern shortboards.",
+      "models": [
+        {
+          "name": "Taupin",
+          "image_url": "https://static.wixstatic.com/media/3b0880_bbf9ed8a05f34d28a77420fdfa925e0c~mv2.png/v1/fill/w_974,h_1272,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/taupin%20hamanda%20model.png",
+          "description": "Taupin is our pin tail Longboard built for smooth lines and clean exits. The tapered tail adds hold and control on steeper sections, allowing for graceful surfing with precision and flow. While it may not lock in on the nose like a square tail, this tail offers a more fluid, connected feel, ideal for surfers who enjoy noseriding with movement, classic footwork with smooth rail transitions. It's a board that invites style over speed. Shaped to move with grace, and crafted to last. 9'0\" - 10'0\"",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lastdance",
+          "image_url": "https://static.wixstatic.com/media/3b0880_1ddac91720954894a2fac8eb9992ceb2~mv2.png/v1/fill/w_988,h_1310,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/3b0880_1ddac91720954894a2fac8eb9992ceb2~mv2.png",
+          "description": "Lastdance is our ode to elegance on water. With its parallel lines, low rocker, and refined rails, this board is made to flow. It's about drawing long, graceful lines and embracing the art of simplicity. Perfect for clean waves and mellow days, Lastdance blends classic function with a minimalist aesthetic. Every curve is shaped with intention, every detail speaks of timeless style. 9'0\" - 10'0\"",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tau",
+          "image_url": "https://static.wixstatic.com/media/3b0880_bbf647af7ea44987bb7b9b1e7a93c7ae~mv2.png/v1/fill/w_982,h_1308,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/IMG_6686_HEIC.png",
+          "description": "Tau is a noserider with a fuller outline, squash tail, and deep nose concave, this board is built to lift and hold delivering long, stable noserides with effortless glide. The subtle, blended rocker keeps it flowing, while a slight tail kick helps anchor the board in the pocket, offering added control during noserides and smooth transitions when stepping back. The squash tail adds lift and hold, ideal for clean, peeling waves and classic lines. Designed for graceful footwork, and that magic moment on the tip. 9'0\" - 10'0\"",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pecá",
+          "image_url": "https://static.wixstatic.com/media/3b0880_23b0b3b292074e7fac65d9330a1efa4a~mv2.png/v1/fill/w_900,h_1200,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/3b0880_23b0b3b292074e7fac65d9330a1efa4a~mv2.png",
+          "description": "Pecá is our modern interpretation of the classic single fin. With a generous outline and a wide tail, this board offers exceptional glide and stability, making it ideal for drawn-out turns and a relaxed surfing style. Unlike traditional single fins, Pecá features its widest point at the center of the board. This balanced distribution enhances maneuverability, allowing for more responsive turns without compromising the board's inherent flow and stability. Despite its width, it remains surprisingly agile, thanks to the bevels along the rails. For additional control, Pecá offers the option to add stabilizer fins. 7'0\"-9'0\"",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hawk3",
+          "image_url": "https://static.wixstatic.com/media/3b0880_b4be7d6e4c47409ab63a4cb99299f018~mv2.png/v1/fill/w_976,h_1300,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/IMG_5885_HEIC.png",
+          "description": "Hawk3 is a modern shortboard designed for speed, responsiveness, and control. With a refined outline, moderate rocker, and a single to subtle double concave, it delivers explosive performance across various conditions. The rounded nose enhances paddling efficiency and wave-catching ability, providing a smoother and early entry into waves. The squash tail keeps the board loose and lively, while the thruster setup offers the perfect balance between drive through turns and freedom on the lip. Fast down the line, sharp in the pocket, and reliable under pressure. We recommend selecting a length approximately 3 inches shorter than your traditional shortboard. 5'0\" - 6'5\"",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Indie2",
+          "image_url": "https://static.wixstatic.com/media/3b0880_27783edbdf6b46f7a9b81e23b4edee3a~mv2.jpg/v1/fill/w_980,h_1306,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/IMG_6216_JPG.jpg",
+          "description": "Indie2 is a performance twin fin crafted for surfers seeking speed and agility. With a streamlined outline and a uniquely contoured tail, this board offers a lively and responsive ride, making it ideal for drawing smooth lines and sharp turns. The twin fin setup reduces drag, allowing for faster acceleration and a looser feel, encouraging a more fluid and expressive surfing style. The distinctive tail design, which narrows swiftly to enhance hold and control, allows the board to grip the wave face more effectively, minimizing unwanted sliding and providing a more connected feel during turns. Designed to perform in a variety of conditions. 5'0\" - 7'0\"",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
