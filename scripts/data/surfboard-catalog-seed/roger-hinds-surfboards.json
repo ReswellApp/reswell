@@ -1,0 +1,162 @@
+{
+  "generated_for": "Roger Hinds Surfboards official named standup catalog",
+  "source": "https://www.rogerhindssurfboards.com (shortboards, mid-lengths, longboards, and variables pages \u2014 excludes custom deposits and dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "roger-hinds-surfboards",
+      "name": "Roger Hinds",
+      "website_url": "https://www.rogerhindssurfboards.com",
+      "location_label": "San Clemente, California",
+      "founder_name": "Roger Hinds",
+      "lead_shaper_name": "Roger Hinds",
+      "short_description": "Hand-shaped surfboards by Roger Hinds in San Clemente \u2014 classic longboards, variable-length designs, and performance shapes since the 1960s.",
+      "models": [
+        {
+          "name": "The King Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1612678542056-X4JGCAZDGD1AAJQ7YKZV/Roger-Hinds-Surfboards-Kingfish-Model.jpg",
+          "description": "When the fish came out of San Diego and other twin fin designs started popping up, there were specific outlines that were surfacing on the North Shore that were ideal for the conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Assassin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1622008680344-8SA6KVKQ9AZLX9U5HZ9I/Roger-Hinds-Surfboards_Assassin-Design_2021.png",
+          "description": "The assassin was a board I originally shaped in 1971, it was inspired by what some of the Australians road in the 1970 world contest in Victoria Australia. The board had a displacement hull bottom, the new version can be built either with the displacement hull or a contemporary bottom. The original was 6\u20198, 22 inches wide 3 inches thick.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Aussie V",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/37f680f3-770c-45f1-8388-4eaad094c03d/Roger-HInds-Surfboards_Aussie-V.jpg",
+          "description": "The Aussie V was the start of my career in the late 60\u2019s. I would strip down long boards and shape them into what was to become the transition era style board. This board has a displacement hull bottom with a steep V in the tail. The board rides fast and smooth.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Red Baron",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1670824767308-VUDQM2SE00TEUHPSDY5D/Roger-Hinds-Surfboards-Red-Baron-Paisley.jpg",
+          "description": "The lineup can sometimes be a warzone. So when you\u2019re in need of some dominance in the dogfight for waves then The Red Baron model is the weapon of choice.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Renaissance",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/298c48ce-df3a-4c3a-96fb-656fb5f52a7d/Roger-Hinds-Surfboards-The-Renaissance-Model-2022.png",
+          "description": "\u201cRenaissance\u201d is a French word for \u201crebirth\u201d, or a new interest in something that has not been popular for a long time. Reaching back through the natural progression of his surfboard designs from his early years to the present, Roger has brought the best elements of each era forward with the Renaissance Model.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Tunnel Hustler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/18988479-748b-4fe3-9da2-4d8e5c11c239/Roger-Hinds-Surfboards-Tunnel-Hustler-2022.png",
+          "description": "The Tunnel Hustler is my high-performance longboard that has a long history of successful results in Longboard contests on the mainland and in Hawaii. I first started building the Tunnel Hustler for the Russ K Makaha and Blue Hawaii team riders in the 90s for the waves at Sunset, Makaha, and even Pipeline. Back on the mainland the Tunnel Hustler was a standout at Malibu and California point breaks, as well as beachbreaks like Oceanside and Huntington Beach. Since then, the shape has been refined",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "1958 Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/382d754a-143b-4f4e-90bb-7cc4c3cb4a72/Roger-Hinds-Surfboards-1958-Pig-2022.png",
+          "description": "The 1958 Pig is really where it all started. This is the first shape that made surfing accessible to everyone in the late 50\u2019s and really blossomed in the early to mid 60\u2019s. Referred to as the \u201cpig\u201d, due to its overall curved outline and wide hips in the tail, the pig evolved at the same time as polyester foam and enabled the youth along the California coastline to flock to the beaches and give surfing a try.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Paul Strauch PS.65",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/b16bd521-352b-4799-9c86-2c83067cb4c3/Roger-Hinds-Surfboards-PS65-2022.png",
+          "description": "For the 1965 world contest in Peru, George Downing made Paul two boards, a big wave board and a small wave board for the competition. Paul came in 3rd in the big wave event and first in the small wave event. The small wave board was the inspiration behind the PS '65, a collaborative effort between Paul Strauch and Roger Hinds. The original Downing classic shape has been kept in tact as a classic small wave long board and modernized in the bottom rocker, nose, tail and rails allowing for effortle",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The 4 Doors Ultra Glide",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/fe760598-ff82-4b44-ad4a-675003e43a52/Roger-Hinds-Surfboards-Ultra-Glide-Stained-Glass-2025.png",
+          "description": "Surfing the Ultra Glide is a unique surfing experience that alternates between \u201csmooth operator\u201d and \u201cslide the glide\u201d sensations. Effortless turns, instantaneous speed, the Ultra Glide will pick up anything and extend everything. Talk about having fun. You\u2019ll be smiling from ear to ear from the unique characteristics of this flowing pintail outline designed to maximize the glider experience.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Malolo Flyer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1618290204838-GVZKF79W6IYE8BFI8QWA/Roger-Hinds-Surfboards-Malolo-Flyer-2021.png",
+          "description": "The new Malolo Flyer Model, translated from Hawaiian meaning \u201cFlying Fish,\u201d and known to quickly accelerate and literally lift off and fly with the use of large dorsal fins, is the basis for the inspiration and collaboration with Roger regarding the design elements comprising the narrow nose, rocker, and wide tail section incorporating extremely sharp, right angle rails. Extremely easy to change direction, trim, nose ride, and increase personal confidence and enjoyment.- Aloha, Paul Strauch, Jr.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Pig Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1617688811862-UHCBWFYF91OQWIYX939F/Roger-Hinds-Surfboards-Pig-Pin-2021.png",
+          "description": "The Pig Pin is the natural evolution forward from the 1958 Pig. Similar in outline to the \u201858 Pig, with the wide hips and similar nose, the Pig Pin features a pintail as opposed to a square tail and is offered with two different rail configurations. The pintail design allows for some edge in the tail which speeds up and cleans up its turning ability and down the line projection to get around sections and improve cutbacks. The standard 50/50 rail gives the board the traditional feel of the time p",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Dream Step Deck",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1489357654782-XLQ0U3FFJGG8NT65UOSE/roger+hinds+surfboards+the+dream+step+deck+.jpg",
+          "description": "This surfboard was the model for the Ultimate Craftsman Project and was inspired by a 1967 Skip Frye shape. I wanted it to be really pinched all the way through the board, something different than any board you'd come across in a surf shop. The base model comes with a single stringer but can be custom ordered with special wood glue ups, pinlines, deck patches, and more.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Classic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1617688888718-IEKKVE9QZW8HL9EIR4XQ/Roger-Hinds-Surfboards-Classic-2021.png",
+          "description": "This is a perfectly constructed 1966-1967 noserider. With three stringers, a custom tailblock and unparalleled 50/50 rails, this masterpiece sings with style and defines the exact classic and genuine longboard that's been cruising San-O and Malibu for decades.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Genesis",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/e6ee050a-ee5b-4815-aa6f-85768d671616/Roger-Hinds-Surfboards-Genesis-Red-Bolt-Rail-2025.png",
+          "description": "In the summer of 1973, after a couple of winters living on the North Shore, I wanted to experience a surf town and simply hang out. I surfed spots like Ala Moana rock pile, among others. My board was a 6'10\" Lightning Bolt, 20 inches wide, with a single fin and swallow tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "California Gold",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/4297a36c-602f-4d08-9132-9e371c855b01/Roger+Hinds+Surfboards+California+Gold+Red+Abstract+2025.png",
+          "description": "\u201cCalifornia Gold\u201d \u2026 the \u201cGolden State\u201d \u2026 the \u201cGolden Hour\u201d \u2026 phrases that bring to mind perfect clean California surf. Whether it is long spiraling point waves, punchy peaky beachbreaks, nook and cranny reefs or easy carefree wide open Summertime spots, the new \u201cCalifornia Gold\u201d Model has got you covered.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Dream Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/90ab55ad-e691-42cc-b84a-fad37d6cd8ab/Roger-Hinds-Surfboards-Dream-Fish-Cream-2025.png",
+          "description": "As the name implies, the Dream Fish is a Fish that performs beyond expectations. The curve of the outline allows you to get more vertical than the traditional Fish, while the width in the tail gets you through the flatter or slower sections. Expect fast, loose, carving possibilities that are only limited by your imagination, the \u201cDream Fish\u201d is a perfect choice for versatility and overall performance surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Master",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/3c2e2d52-873a-4d00-b239-52e54d508e1b/Roger-Hinds-Surfboards-Red-Blue-Master-2026.png",
+          "description": "\u201cSurfing is life. A simple saying\u2026 one we take for granted when we start our surfing journey, but one that rings truer the longer we partake in our passion. Surfing truly is life.\u201d",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The MIND\u2019S EYE",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/aed06fc4-a5f3-4e8d-91d8-7a76910f94b3/Roger-Hinds-Surfboards-The-Minds-Eye-012523.jpg",
+          "description": "The Mind\u2019s Eye is Roger\u2019s latest entry into the popular Midlength or Midrange category. Designed to let you go wherever your mind takes you without having to think about anything else, the Mind\u2019s Eye lets you run free.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Nomad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/e2bd52bf-f84a-467d-88b3-9c1167988a28/Roger-Hinds-Surfboards_Nomad-Design_2021.png",
+          "description": "The Nomad has a shortboard high performance rocker combined with a larger planning surface and a thinner overall foil, which creates a more responsive, versatile surfboard. The added fullness and width of the outline allows you catch waves like a longboard, turn like a shortboard and surf fast and loose, it puts the fun back in surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Nomad Twin Fin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/f1811dd1-1992-485b-b21e-17bdeba78f9f/Roger-Hinds-Surfboards-Nomad-Twin-2022.png",
+          "description": "An exciting revision on Roger\u2019s original Nomad, the Nomad Twin Fin has become the workhorse for the Summer of 2022. A no-nonsense electrifying speed demon that will race down the line and turn and adjust with absurd quickness. The Nomad Twin Fin surfs like no other twin fin you\u2019ve ever ridden.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Bandit",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1615764212730-6J097NGJZIPCZB70IKG0/Roger-Hinds-Surfboards_Bandit-Design_2021.png",
+          "description": "The Bandit was an original template from 1972 which would have been a twin fin. At that time I was using the Guidance Fin System, the fins that you push in and pop back to put the holding clip in place. I decided to bring this back in late summer 2017.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Tamago",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/7a6902b6-aa8f-45f5-8cf7-53a7f75d476d/Roger-Hinds-Surfboards-Blue-Tamago-2026.png",
+          "description": "The \u201cTamago\u201d, or Egg shaped midlength, allows for both casual cruising and performance surfing depending on the surfer and the conditions. A \u201cuser-friendly\u201d surfboard and wave magnet that handles a multitude of conditions with ease and makes surfing fun again.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Thing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1612985269817-PYJB21E4N7XD7RRDTEA8/Roger-Hinds-Surfboards_Thing+2.png",
+          "description": "Part fish, part hybrid, and part performance make The Thing the ultimate one board quiver. Whether groveling in slop or surfing the best waves you've had in a while, The Thing will have you maxing out your wave count without sacrificing performance. Great for surfers coming down from fun boards and longer hybrids, or those just searching for a board that will make your surfing sessions more enjoyable. If you're looking for a versatile, easy to surf yet responsive surfboard, The Thing is a must h",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Tracker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1ef79583-737f-49bb-ac47-502ac702902c/roger-hinds-surfboards_tracker_gold-tb.jpg",
+          "description": "The Tracker, and it's non displacement hull, was built for a surfer whose emphasis is good style in good surf. The Tracker wants you to paddle out at Rincon, J Bay or Hanalei, take off deep and go hard off the bottom projecting all your speed down the line and carve a big powerful turn to set it all up again. If down the line high speed fun is what you are after check out The Tracker.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
