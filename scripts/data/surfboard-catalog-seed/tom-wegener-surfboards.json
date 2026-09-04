@@ -1,0 +1,66 @@
+{
+  "generated_for": "Tom Wegener Surfboards official named standup catalog",
+  "source": "https://tomwegenersurfboards.com/models (Drupal named production models — excludes bellyboards, bodyboards, and hand planes)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "tom-wegener-surfboards",
+      "name": "Tom Wegener Surfboards",
+      "website_url": "https://tomwegenersurfboards.com",
+      "location_label": "Noosa, Queensland, Australia",
+      "founder_name": "Tom Wegener",
+      "lead_shaper_name": "Tom Wegener",
+      "short_description": "Master shaper Tom Wegener — cork-core wood and performance surfboards from Noosa, from alaias and noseriders to the Model A learner shape.",
+      "models": [
+        {
+          "name": "Noserider",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/corky%20noserider%20at%20NL",
+          "description": "For a long time the goal for noseriders has been to adjust the rocker while on the nose. While hanging five or ten, you flatten the rocker, or even get reverse rocker, adding another level of speed and control. This was the idea behind the stringerless boards of the late 1960s. The feel was good but the materials were not right. The glassed, stringerless boards broke and",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "12' Sunday Glider",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/12%20water%203",
+          "description": "I have really spent a lot of time on 12 plus surfboards. This is going to sound silly, but I see the 12 footer as the very short end of the spectrum of longboards. Longboards are from 12 to 20 feet long. This is where my shapes are different from others. The aquadynamics come from a different paradigm. I pull the centre of",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Model A",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/heywood%20model%20A",
+          "description": "The Model A is the best Surfboard for learning how to surf. It is geared for catching waves easily and early, and then having control through the drop. This is the critical moment for the beginner to mid-level surfer - where it is make or break; “Am I going to keep surfing or is it too difficult?” The Model A makes the answer “surf” as the surfer glides toward the shoulder and",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Finless Corkys",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/Gus%20in%20pocket%201",
+          "description": "I use the analogy of driving a car to demonstrate the difference between finned and finless surfing. With a finned board all four wheels of the car are secure on the road when turning. With finless the four wheels are sliding as you drift around every corner and then accelerate out of the turn with a spring as the tires grab the road – or as the rails reengage with the wave.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Toothpick",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/toothpick%204",
+          "description": "If I could have only two surfboards, one would be an alaia and one would be a toothpick. The toothpick glides across a swell better than any other board I have known. The finess and elegance of sliding into a swell",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ancient Hawaiian Olo",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/Olo%20on%20beach",
+          "description": "This wave lives large in my memory. Forever is a moment and a moment is forever. It took nearly a year of determined effor to learn how to surf this board and it was a life highlight to get this wave in front of the lens of the great Nathan Oldfield. This segment is in his movie, Seaworthy The Olo surfboard was reserved for the ancient Hawaiian royal class. Surfing as the",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Albacore",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/albacore%202",
+          "description": "I designed the Albacore in 2009 and now I am expanding on this design with the corky method. I have surfed wood surfboards for a long time. In 1981-82 I was riding three balsa longboards and I loved their glide and liveliness. Though they were heavy on land, they were quick and light in the water. By 2003 I was making elegant hollow wood surfboards that had the same feel as the balsa years before.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Alaia",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/Chris%20del%20Moro%20alaia",
+          "description": "The Alaia is a thin wood surfboard used by the ancient Hawaiians. Although it was their most popular surfboard for hundreds of years, it virtually disappeared from history for the entire 20th century (1900 -2005). Because the surfboard is very thin, never more than one inch or 24mm thick, it is difficult to paddle and without fins it was thought that it could not angle across a wave. I went to visit the ancient surfboards in the Bishop Museum in April 2004 and I was astonished by the perfection of the shapes.",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
