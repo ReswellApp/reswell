@@ -1,0 +1,67 @@
+{
+  "generated_for": "Diogo Appleton Surfboards official named standup catalog",
+  "source": "https://www.diogoappletonsurfboards.com/surfboards-1 (Squarespace model pages \u2014 excludes fins and custom order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "diogo-appleton-surfboards",
+      "name": "Diogo Appleton Surfboards",
+      "website_url": "https://www.diogoappletonsurfboards.com/",
+      "location_label": "Lisbon, Portugal",
+      "founder_name": "Diogo Appleton",
+      "lead_shaper_name": "Diogo Appleton",
+      "short_description": "Hand-shaped surfboards by Diogo Appleton in Lisbon \u2014 high-performance shortboards, twin pins, keel fishes, and long gliders.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/ca135b26-35ca-411f-9137-4136d71edce0/Asset+1%404x.png",
+      "models": [
+        {
+          "name": "Spitball",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/b0a1c34a-ece5-48f1-91dc-40ab344d525c/IMG_0009.jpg",
+          "description": "Coming from the high performance shortboard background definitely helped me to turn this board into a Thruster. Listening to my own needs is crucial in every model I build. I guess this is why the Spitball design represents everything that I am crazy about on a surfboard. It features a high-performance curve very well hidden due to its template. The round nose area also forgives most of my mistakes and gives me that extra push we all need to catch waves. This model definitely draws some beautiful lines along with some of the best trims a surfboard can generate. It does not matter if you surf every day or not; this board will make you feel you did not skip a day of surfing in the last month. If I had to pick one board to travel around the world, this would probably be it ( considering the size and my competitor\u2019s background ) You can ride this model at least three or four inches shorter comparing to your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lucid Wing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/0141e317-2efb-4ec9-8d3b-5a9f0efde460/IMG_0005.jpg",
+          "description": "The idea behind this design is to stretch the classic fish outline, adjust its width and extend the rail line, aiming for more performance while trying to keep the essentials characteristics of a fish featuring a beak nose and a flat deck. The wings help break up the outline\u00b4s width, creating a narrower tail that allows for tighter and more responsive turns. The rocker configuration mirrors a Twin Pin setup, integrating an aggressive tail rocker optimized for performance. Like the Twin Pin, as the board length increases, the fin size should be adjusted accordingly. It feels right to ride large upright fins on boards up to around 6'0\", as they complement the tail rocker and fin position (this applies to every level and skill). Then, switch to medium-sized upright fins as the length increases. A longer board provides more float, which influences fin choice.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/84a93a14-a235-4894-8066-8e54060c5876/IMG_2950.jpg",
+          "description": "Arguably one of the most iconic designs in recent years, the Twin Pin honors the Twin Fin era without any help of a third fin. The Pin tail helps to control the board, as do the channels (optional). This board features a beak nose, a high performance tail rocker, modern bottom contours and enough nose lift for more critical surf. You can surf it from 2ft up to 6ft. This model offers versatility through various fin size options. Like the Lucid Wing, as the board length increases, the fin size should be adjusted accordingly. It feels right to ride large upright fins on boards up to around 6'0\", as they complement the tail rocker and fin position (this applies to every level and skill). Then, switch to medium-sized upright fins as the length increases. A longer board provides more float, which influences fin choice.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/69edba3c-8905-4b5e-9dc0-3be08f565911/IMG_0058.jpg",
+          "description": "The Fish is well known for its speed and ability to cross flat and fat sections. One of this design\u2019s most recognizable characteristics is the effortless ability to generate speed. Water flows fast and freely between the fins and at the end of the tail. At the same time, the straight curve through the outline improves the hold on the wave, creating less drag and generating more speed through critical sections. By concentrating generous volume within a compact design, this board facilitates efficient paddling and sustained flotation. The beak nose and flat deck are designed to optimize foam distribution and improve stability. The traditional and original keel fin completes and sparkles the ultimate ride of a classic fish. With a base twice the size of a regular fin, the template and curve of the fins are all about stability and control. Adding to this performance characteristics, the fins are single foiled and super flexible, enabling quick and responsive turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Current Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/d3222834-f372-4691-9911-47ea7099cf2b/Rhythm_Maldives_DSC08139.jpg",
+          "description": "Almost over a decade of riding keel fishes, it was time to refine the concept by replacing the tradicional glass on keels with upright fins to explore how that subtle change could transform the board\u2019s feel and performance. The process started by pulling in the tail to remove some surface area behind the back foot, tightening the control for the new fin configuration. With upright fins, the board comes more alive, sharper and more eager to climb the face. After taking this board on my trip to the Maldives in August 2025, I finally realized I had found exactly what I was looking for. Don\u2019t get me wrong, keel fishes will always be a classic and a favorite to ride. This updated version, however, is designed to extract more juice from the timeless design.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Point Shooter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/322d05d4-8037-43f6-adc2-475a727c0b45/IMG_0054.jpg",
+          "description": "Inspired by the prestigious era in which longboards became shorter, this design aims to reflect the trim and speed uncovered during this revolution. Focusing in the present and yet drawing from the past, the Point Shooter is a true mid-length designed for effortless trim, especially on point breaks. A single concave runs through the bottom, balanced with low tail rocker and just the right amount of nose lift. What truly sets this design apart are the beveled rails, which play a key role in how the board performs and feels, smoothing out every rail-to-rail transition. This board shines in summer conditions or between winter swells, and it's well-suited for surfers of all levels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/5a1e87b2-682d-4d59-ade4-c2a548ce535b/IMG_0061.jpg",
+          "description": "Most of the small days we surf on a short board lead to frustration. So, watching people riding longboards in Australia really captured my attention. While I was struggling on my small board, they were having the time of their lives. I knew I had to do something about it. Unfortunately, where I live there\u2019s not much information or knowledge about traditional longboarding. This meant that I had to do my homework while I was in Australia. I started riding longboards every day, trying to understand the concept behind such a big board. It didn\u2019t take long to get addicted to the feeling. Not having to work my body to get to where I wanted to go on a wave was a blessing. Longboarding not only changed the curse of my surfing path but also improved the energy and perspective you can adapt on a smaller board. The insight of a bigger board applied on a smaller board was unreal. Traditional and Classic longboards are a very unique piece of craft, with 50/50 rails, no edge, a belly bottom and a concave on the nose. My style of shaping them is a bit more refined and foiled.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a4ebc66692ebe8bbdd4b598/79d36dcc-4cc6-46c6-bce2-f2c1d88686f8/IMG_0056.jpg",
+          "description": "Longer boards always intrigued me, you can be the furthest from the lineup and still be the first to catch a wave. These boards are built for clean lines and long walls. They shine in lined-up point breaks or soft rolling beach breaks where you can truly let them run. Designed for trim and projection rather than sharp turns, gliders reward a relaxed approach, letting the board's length and weight do all the work. Starting at an imposing 10 feet, this board turns even the smallest days into sessions worth paddling out for, because there\u2019s always a wave to surf. 10\u00b42 x 23 1/2 x 3 1/4",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
