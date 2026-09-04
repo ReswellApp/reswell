@@ -1,0 +1,60 @@
+{
+  "generated_for": "Grant Noble Surfboards official named shape catalog",
+  "source": "https://www.grantnoblesurfboards.com/models (Squarespace shape pages only — excludes used boards, custom deposits, and shop merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "grant-noble-surfboards",
+      "name": "Grant Noble Surfboards",
+      "website_url": "https://www.grantnoblesurfboards.com",
+      "location_label": "Costa Mesa, California",
+      "founder_name": "Grant Noble",
+      "lead_shaper_name": "Grant Noble",
+      "short_description": "Hand-shaped surfboards from Grant Noble in Costa Mesa — fish, hybrids, and longboards blending California and Australian design influences.",
+      "models": [
+        {
+          "name": "betTa",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65988017c4dda07c74076bbb/e172c6f1-3c19-4e73-9230-219ea9ef066d/the+BETA-3.jpg",
+          "description": "Starting with a more traditional fish design, the outline was narrowed down and rocker was added. The BETTA's unique combination of design features has created a board that gives surfers the ability to draw truly unique lines on a variety of waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Combination",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65988017c4dda07c74076bbb/8b4a636c-28c8-4b64-bab2-e554c9521de7/033924_Grant+Noble+First+Batch+of+Boards_-38.jpg",
+          "description": "Crafted to be versatile enough to handle a variety of wave conditions, from punchy beach breaks to softer, peeling points. The combination of a slightly rolled bottom with ample nose concave offers a nice balance of agility and stability, allowing for easy turns off the tail while still maintaining control and stability when riding the nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Homesick",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65988017c4dda07c74076bbb/c195a461-199d-4ee3-ace3-3c592bf20a43/the+Homesick-2.jpg",
+          "description": "This versatile shape is your go-to option for tackling a wide range of conditions, from playful beach breaks to peeling point breaks. A balanced design offers a perfect blend of stability and maneuverability. Whether you're longing for the familiar waves of your home break or on the move exploring new waves, The Home Sick is going to provide you with that comfort to always feel at home in the water.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sangria",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65988017c4dda07c74076bbb/689e2ef1-f13d-4028-8a77-ebb376188729/the+Sangria-1.jpg",
+          "description": "The deep concave that is carried through the front third of the board is a design feature that allows for maximum time on the nose in softer conditions. The Sangria is the perfect board for summer days at San Onofre and Malibu and for the surfer looking for their first longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Snub",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65988017c4dda07c74076bbb/664b7097-3a9c-493c-a35d-1ca4744f38b3/the+SNUB-1.jpg",
+          "description": "The Snub is an alteration of the lis fish & a simmons. Wider entry allows for more paddle power up front and the rear has the same characteristics as a fish to keep the board feeling fast and loose. Rocker has a flip for steeper waves but also won't catch in the slow sloppy stuff.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "UFO",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65988017c4dda07c74076bbb/50a1be84-e66b-4291-ade8-cdb421deb7f6/the+UFO-2.jpg",
+          "description": "With speed in mind the UFO can handle a wide range of conditions from bumpy shore breaks, to open face point breaks, and beach break barrels. The UFO is the board that lives in the back of the truck year round in case the surf is fun. Available in both a squash and swallow tail. Fin options: twin, tri, or quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wilbur",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65988017c4dda07c74076bbb/47438bd6-0582-44fc-9ad3-ea1341cfc800/the+Wilbur-2.jpg",
+          "description": "Drawing influence from the late 1960s 'Hot Generation' of surfboard and surfing innovation that was happening in both California and Australia during this time. These boards are characterized by its rolled bottom with thinner rails and a slight concave. When turns are just as important as in the pocket nose riding and you're in clean, slightly punchier conditions these are the boards for you.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
