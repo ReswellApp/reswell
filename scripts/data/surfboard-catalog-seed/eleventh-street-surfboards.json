@@ -1,0 +1,54 @@
+{
+  "generated_for": "11th Street Surfboards official named standup catalog",
+  "source": "https://11thstreetsurfboards.com/surfboards (official model lineup — excludes merch, custom deposits, and retailer dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "eleventh-street-surfboards",
+      "name": "11th Street Surfboards",
+      "website_url": "https://11thstreetsurfboards.com",
+      "location_label": "St. Augustine, Florida",
+      "founder_name": "Phil Dompe",
+      "lead_shaper_name": "Phil Dompe",
+      "short_description": "Family-run epoxy surfboards from Phil Dompe in St. Augustine — performance shortboards, step-downs, twins, and fish shapes built for East Coast and travel conditions.",
+      "models": [
+        {
+          "name": "Puffin",
+          "image_url": "https://d13u9j8agx9kjs.cloudfront.net/7420_11street/Surfboards/Puffin/puffin-1.png",
+          "description": "The Puffin is a fast, drivey performance fish that excels from knee-high slop to head-high groundswell. Its pulled nose allows for vertical surfing, while the wide swallow tail straightens the rear outline for more down-the-line speed. A slight single concave under the front foot generates instant speed, flowing into a deep double concave between the fins for control at high velocities. Designed as a tri-fin, it can also be custom-ordered as a quad—perfect for those who love extra drive with a wide swallow. In most East Coast conditions, the Puffin might just make you forget your shortboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "TFO",
+          "image_url": "https://d13u9j8agx9kjs.cloudfront.net/7420_11street/Surfboards/TFO/tfo-1.png",
+          "description": "The TFO was designed to catch smaller waves like the Thief while riding like a performance board. Blending classic twin-fin feel with modern contours, it works in a wide range of conditions. Its curvy outline, winged tail, low entry rocker, and single-to-double concave create a fast, maneuverable ride from knee to head-high waves. Designed as a 2+1, though some riders prefer it as a tri-fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Secret Weapon",
+          "image_url": "https://d13u9j8agx9kjs.cloudfront.net/7420_11street/Surfboards/Secret%20Weapon/sw11.png",
+          "description": "The Secret Weapon evolved from years of shaping for myself and working with local surfers on a one-board, performance-focused step-down. Short with a straight outline and full rails, it features forward concave, a kicked tail block, and low nose rocker—giving fish-like drive while excelling in the pocket. It earned its name by performing in nearly every condition. Recommended 2–3” shorter than your GO2.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "2Cents",
+          "image_url": "https://d13u9j8agx9kjs.cloudfront.net/7420_11street/Surfboards/2cents/2cents-1.png",
+          "description": "The 2Cents is a high-performance step-down shortboard built for everyday surfing. Shorter and wider than a typical shortboard, it shares the GO2’s bottom contours and tail curve, making it versatile on beach and reef breaks. Low entry rocker and deep concave provide instant speed, while the aggressive tail rocker allows tight turns. Fast, fun, and forgiving—ride 1–2” shorter than your high-performance board. Team favorite.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "GO2",
+          "image_url": "https://d13u9j8agx9kjs.cloudfront.net/7420_11street/Surfboards/GO2/GO2-1.png",
+          "description": "After years of R&D in Central America, Bali, and US hurricane swells, the GO2 is an easy-to-ride shortboard built for a wide range of conditions. Moderate entry rocker with light single-to-double concave through the fins and a smooth exit rocker offers balanced, forgiving performance in 2–5 ft waves. Medium rails keep it user-friendly, and while any tail works, Gabe prefers a hip squash. Available in standard or slightly shorter “squashed” dimensions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Two Step",
+          "image_url": "https://d13u9j8agx9kjs.cloudfront.net/7420_11street/Surfboards/2step/2Step-1.png",
+          "description": "A step-up version of the GO2, featuring an elongated outline with more nose rocker and reduced rail volume for added sensitivity in steep surf. Lower tail rocker and shallower concave provide paddle power and control in critical waves. Think 2000s throwback—ride it year-round or save it for trips. Order 1–4” longer and slightly thicker than your GO2.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
