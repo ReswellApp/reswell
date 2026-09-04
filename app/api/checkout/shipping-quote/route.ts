@@ -23,6 +23,7 @@ import {
 import {
   findPeerCheckoutRateOption,
   findPeerCheckoutRateOptionByServiceCode,
+  peerCheckoutSharedSection,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import {
   checkoutOffersShippingPackagingChoice,
@@ -53,6 +54,7 @@ function buildQuoteResponse(input: {
       displayName: string
       totalAmount: number
       deliveryDays: number | null
+      estimatedDeliveryDate: string | null
     }>
   }
 }) {

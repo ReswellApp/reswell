@@ -240,7 +240,6 @@ export async function searchSellerIdsFromElasticsearch(
   if (!q) return []
 
   try {
-    await ensureSellersIndex()
     const w = escapeElasticsearchWildcard(q.toLowerCase())
 
     const should: object[] = [
@@ -275,6 +274,7 @@ export async function searchSellerIdsFromElasticsearch(
       index: ELASTICSEARCH_SELLERS_INDEX,
       size: limit,
       _source: false,
+      track_total_hits: false,
       query: {
         bool: {
           should,

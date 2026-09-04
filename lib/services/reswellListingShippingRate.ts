@@ -15,6 +15,7 @@ import {
 import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
+  normalizeCarrierEstimatedDeliveryIso,
   peerCheckoutSectionRestrictsUspsServices,
   peerCheckoutShippingServiceError,
   type PeerCheckoutShippingRateOption,
@@ -57,6 +58,7 @@ export type ReswellListingRateRow = {
   serviceName: string
   serviceCode: string | null
   deliveryDays: number | null
+  estimatedDeliveryDate: string | null
   attributes: string[]
 }
 
@@ -211,6 +213,23 @@ export function buyerProfileAddressToShipTo(
   }
 }
 
+function parseCarrierDeliveryDays(r: Record<string, unknown>): number | null {
+  const candidates: unknown[] = [r.delivery_days, r.carrier_delivery_days]
+  for (const value of candidates) {
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+      return Math.round(value)
+    }
+    if (typeof value === "string") {
+      const match = value.trim().match(/^(\d+)/)
+      if (match) {
+        const n = Number.parseInt(match[1]!, 10)
+        if (Number.isFinite(n) && n > 0) return n
+      }
+    }
+  }
+  return null
+}
+
 function rowFromRate(r: Record<string, unknown>): ReswellListingRateRow {
   const { total, currency } = rateMoneyTotal(r)
   const rateId = typeof r.rate_id === "string" && r.rate_id.trim() ? r.rate_id.trim() : null
@@ -219,6 +238,8 @@ function rowFromRate(r: Record<string, unknown>): ReswellListingRateRow {
     : []
   const carrierCode = typeof r.carrier_code === "string" && r.carrier_code.trim() ? r.carrier_code.trim() : null
   const serviceCode = typeof r.service_code === "string" && r.service_code.trim() ? r.service_code.trim() : null
+  const estimatedRaw =
+    typeof r.estimated_delivery_date === "string" ? r.estimated_delivery_date : null
   return {
     rate_id: rateId,
     totalAmount: total,
@@ -227,10 +248,8 @@ function rowFromRate(r: Record<string, unknown>): ReswellListingRateRow {
     carrierCode,
     serviceName: String(r.service_type ?? r.service_code ?? "Service"),
     serviceCode,
-    deliveryDays:
-      typeof r.delivery_days === "number" && Number.isFinite(r.delivery_days)
-        ? r.delivery_days
-        : null,
+    deliveryDays: parseCarrierDeliveryDays(r),
+    estimatedDeliveryDate: normalizeCarrierEstimatedDeliveryIso(estimatedRaw),
     attributes: attrs,
   }
 }
@@ -256,9 +275,9 @@ export async function getCheapestReswellRateForListing(input: {
   diagnosticTag?: string
   /** Listing section — restricts USPS services for fins and magazines at checkout. */
   section?: string | null
-  /** Buyer-selected ShipEngine rate id from checkout (fins). Ephemeral — prefer {@link selectedServiceCode}. */
+  /** Buyer-selected ShipEngine rate id from checkout. Ephemeral — prefer {@link selectedServiceCode}. */
   selectedRateId?: string | null
-  /** Stable USPS service bucket for fins checkout (e.g. `usps_priority_mail`). */
+  /** Stable service bucket (e.g. `usps_priority_mail` or `ups_ground`). */
   selectedServiceCode?: string | null
   /**
    * Ship-from contact name on carrier labels (printed under “Seller” / shipper on the label).

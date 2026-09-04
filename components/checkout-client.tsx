@@ -31,8 +31,11 @@ import {
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import {
   peerCheckoutOffersShippingRateChoice,
+  peerCheckoutRateChoiceIntro,
+  peerCheckoutSharedSection,
   type PeerCheckoutShippingRateOption,
 } from "@/lib/shipping/peer-checkout-usps-services"
+import { LocalDateOnly } from "@/components/ui/local-datetime"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -62,6 +65,23 @@ interface CheckoutClientProps {
   suggestedFulfillment?: "pickup" | "shipping" | null
   /** Listing ids whose displayed price is the accepted offer amount. */
   acceptedOfferListingIds?: string[]
+}
+
+function CheckoutShippingArrival({ rate }: { rate: PeerCheckoutShippingRateOption }) {
+  const daysLabel =
+    rate.deliveryDays != null
+      ? `${rate.deliveryDays} business day${rate.deliveryDays === 1 ? "" : "s"}`
+      : null
+  if (rate.estimatedDeliveryDate) {
+    return (
+      <>
+        Arrives <LocalDateOnly iso={rate.estimatedDeliveryDate} dateStyle="medium" />
+        {daysLabel ? ` · ${daysLabel}` : ""}
+      </>
+    )
+  }
+  if (daysLabel) return <>Arrives in {daysLabel}</>
+  return <>Transit time confirmed after you place the order</>
 }
 
 export function CheckoutClient({
@@ -180,11 +200,23 @@ export function CheckoutClient({
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
 
+  const rateChoiceSection = useMemo(
+    () => peerCheckoutSharedSection(listings.map((l) => l.section)),
+    [listings],
+  )
+
   const offersShippingRateChoice = useMemo(() => {
-    if (isBundle || !needsShipping) return false
-    if (effectiveBoardShippingMode(primaryListing) !== "reswell") return false
-    return peerCheckoutOffersShippingRateChoice(primaryListing.section)
-  }, [isBundle, needsShipping, primaryListing])
+    if (!needsShipping) return false
+    if (offersPackagingChoice && effectivePackagingMode === "separate") return false
+    if (!listings.every((l) => effectiveBoardShippingMode(l) === "reswell")) return false
+    return peerCheckoutOffersShippingRateChoice(rateChoiceSection)
+  }, [
+    effectivePackagingMode,
+    listings,
+    needsShipping,
+    offersPackagingChoice,
+    rateChoiceSection,
+  ])
 
   const isMagazineReswellCheckout = useMemo(() => {
     if (isBundle || !needsShipping) return false
@@ -708,7 +740,7 @@ export function CheckoutClient({
                 ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
                   <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-[13px] leading-relaxed text-neutral-600">
-                      Choose USPS shipping. The amount you select is included in your total.
+                      {peerCheckoutRateChoiceIntro(rateChoiceSection)}
                     </p>
                     <RadioGroup
                       value={
@@ -733,9 +765,7 @@ export function CheckoutClient({
                           <span className="min-w-0 flex-1">
                             <span className="block text-[14px] font-medium text-foreground">{rate.displayName}</span>
                             <span className="mt-0.5 block text-[12px] text-neutral-500">
-                              {rate.deliveryDays != null
-                                ? `About ${rate.deliveryDays} business day${rate.deliveryDays === 1 ? "" : "s"}`
-                                : "Estimated transit time from USPS"}
+                              <CheckoutShippingArrival rate={rate} />
                             </span>
                           </span>
                           <span className="shrink-0 text-[14px] font-semibold tabular-nums text-foreground">

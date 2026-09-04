@@ -49,9 +49,12 @@ const MARKETPLACE_SURFACE_FILTER = {
   },
 }
 
+let searchAnalyticsIndexReady = false
+
 export async function ensureSearchAnalyticsIndex(): Promise<boolean> {
   const es = getElasticsearchClient()
   if (!es) return false
+  if (searchAnalyticsIndexReady) return true
 
   try {
     const exists = await es.indices.exists({ index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX })
@@ -73,6 +76,7 @@ export async function ensureSearchAnalyticsIndex(): Promise<boolean> {
         // Field may already exist.
       }
     }
+    searchAnalyticsIndexReady = true
     return true
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -92,8 +96,7 @@ export async function indexSearchAnalyticsDocument(doc: SearchAnalyticsDoc): Pro
     await es.index({
       index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
       document: doc,
-      // Make events visible to aggregations immediately (low volume; avoids “refresh and still empty”).
-      refresh: true,
+      refresh: false,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

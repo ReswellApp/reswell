@@ -1,6 +1,6 @@
 /**
  * Elasticsearch reindex from Supabase (listings, brands, fin catalog,
- * sellers, forum threads). Admin Tools runs a full rebuild; the hourly cron
+ * sellers, forum threads). Admin Tools runs a full rebuild; the twice-daily cron
  * passes `catchUpSince` for recent listings/sellers/threads only.
  */
 
@@ -69,8 +69,12 @@ export type ElasticsearchReindexResult =
 
 const PAGE_SIZE = 200
 
-/** Hourly cron lookback: covers a missed run plus same-day live-sync gaps. */
-export const ELASTICSEARCH_CATCH_UP_LOOKBACK_MS = 26 * 60 * 60 * 1000
+/**
+ * Twice-daily cron lookback. Live sync + the listings webhook keep the index
+ * current; this only covers a missed run. A 26h hourly window was rewriting
+ * the same docs ~26× (Elastic Serverless ingest VCUs).
+ */
+export const ELASTICSEARCH_CATCH_UP_LOOKBACK_MS = 14 * 60 * 60 * 1000
 
 export type ElasticsearchReindexOptions = {
   /**

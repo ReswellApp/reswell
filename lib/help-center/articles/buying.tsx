@@ -35,9 +35,11 @@ export const buyingHelpArticles: HelpArticle[] = [
           <>
             <p>
               Start on {helpLink("/boards", "Surfboards")} or browse other categories like fins and
-              wetsuits. Use search and filters to narrow by brand, size, and price. Tap any active
-              listing to see photos, details, condition notes, and how the seller can get the item to
-              you.
+              wetsuits. Use search and filters to narrow by brand, size, and price. Looking for a
+              specific board that is not listed yet? Save it on{" "}
+              {helpLink("/board-finder", "Board Finder")} and we will email you when a match is listed.
+              Tap any active listing to see photos, details, condition notes, and how the seller can
+              get the item to you.
             </p>
             <p>
               See something you like? Tap the heart to save it to {helpLink("/favorites", "Favorites")}{" "}

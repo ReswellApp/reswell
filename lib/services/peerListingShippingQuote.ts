@@ -8,7 +8,10 @@ import {
   getCheapestReswellRateForListings,
   type ReswellRateableListing,
 } from "@/lib/services/reswellListingShippingRate"
-import type { PeerCheckoutShippingRateOption } from "@/lib/shipping/peer-checkout-usps-services"
+import {
+  peerCheckoutSharedSection,
+  type PeerCheckoutShippingRateOption,
+} from "@/lib/shipping/peer-checkout-usps-services"
 
 /**
  * Supabase `listings` select fragment for peer surfboard checkout + ShipEngine.
@@ -175,7 +178,7 @@ export async function computePeerBundleShippingUsd(input: {
     shipTo: shipTo.address,
     diagnosticTag: input.diagnosticTag ?? "checkout-bundle",
     sellerShipFromName: input.sellerShipFromName,
-    section: input.listings[0]?.section ?? null,
+    section: peerCheckoutSharedSection(input.listings.map((l) => l.section)),
     selectedRateId: input.selectedRateId,
     selectedServiceCode: input.selectedServiceCode,
   })

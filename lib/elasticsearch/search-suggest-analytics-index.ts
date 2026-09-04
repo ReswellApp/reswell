@@ -48,9 +48,12 @@ export type SearchSuggestPickDoc = {
   listing_id: string | null
 }
 
+let searchSuggestAnalyticsIndexReady = false
+
 export async function ensureSearchSuggestAnalyticsIndex(): Promise<boolean> {
   const es = getElasticsearchClient()
   if (!es) return false
+  if (searchSuggestAnalyticsIndexReady) return true
 
   try {
     const exists = await es.indices.exists({ index: ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX })
@@ -69,6 +72,7 @@ export async function ensureSearchSuggestAnalyticsIndex(): Promise<boolean> {
         // Index may already include the field or mapping update unsupported — safe to ignore.
       }
     }
+    searchSuggestAnalyticsIndexReady = true
     return true
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -88,7 +92,7 @@ export async function indexSearchSuggestPickDocument(doc: SearchSuggestPickDoc):
     await es.index({
       index: ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX,
       document: doc,
-      refresh: true,
+      refresh: false,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

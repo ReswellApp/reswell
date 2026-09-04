@@ -121,6 +121,8 @@ export async function recordSearchSuggestPickEvent(
   if (!isElasticsearchConfigured()) return
   const q = payload.queryPrefix.trim()
   if (!q) return
+  // Hover dwell fires per row while typing — skip ES ingest (Serverless VCU).
+  if ((payload.interaction ?? "pick") === "hover") return
 
   const doc: SearchSuggestPickDoc = {
     occurred_at: new Date().toISOString(),

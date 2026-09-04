@@ -31,7 +31,7 @@ type BrandsDirectorySearchProps = {
 
 /**
  * Brand-directory typeahead: uses the same `searchBrandsCatalogSuggest` pipeline as nav/sell
- * (Elasticsearch when configured). Logs to `reswell_search_analytics` with `search_surface: brand_directory`.
+ * (Elasticsearch when configured). Logs brand-directory analytics on commit (select / submit), not per keystroke.
  */
 export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySearchProps) {
   const router = useRouter()
@@ -51,6 +51,10 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
   const [suggestLoading, setSuggestLoading] = React.useState(false)
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const suggestGen = React.useRef(0)
+  const lastSuggestMetaRef = React.useRef<{
+    backend: "elasticsearch" | "supabase"
+    count: number
+  } | null>(null)
 
   const q = value.trim()
   const browseList = React.useMemo(() => browseBrands(brands), [brands])
@@ -92,11 +96,7 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
           const { rows, meta } = await searchBrandsCatalogSuggest(q)
           if (gen !== suggestGen.current) return
           setSuggestedRows(rows)
-          void recordBrandDirectorySearchAnalytics({
-            queryRaw: q,
-            resultCount: rows.length,
-            backend: meta.backend,
-          })
+          lastSuggestMetaRef.current = { backend: meta.backend, count: rows.length }
         } finally {
           if (gen === suggestGen.current) setSuggestLoading(false)
         }
@@ -145,7 +145,19 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  function logCommittedBrandDirectorySearch(queryRaw: string) {
+    const t = queryRaw.trim()
+    if (!t) return
+    const meta = lastSuggestMetaRef.current
+    void recordBrandDirectorySearchAnalytics({
+      queryRaw: t,
+      resultCount: meta?.count ?? 0,
+      backend: meta?.backend ?? "supabase",
+    })
+  }
+
   function goToBrand(slug: string) {
+    logCommittedBrandDirectorySearch(value)
     router.push(`${BRANDS_BASE}/${encodeURIComponent(slug)}`)
     setOpen(false)
     setValue("")
@@ -154,6 +166,7 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
   function searchMarketplaceForQuery(query: string) {
     const t = query.trim()
     if (!t) return
+    logCommittedBrandDirectorySearch(t)
     router.push(`/search?q=${encodeURIComponent(t)}`)
     setOpen(false)
     setValue("")

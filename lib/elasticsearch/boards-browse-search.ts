@@ -14,7 +14,6 @@ import {
   buildListingsRankBoostShouldClauses,
   buildListingsSearchQueryBody,
   buildListingsTypoFallbackQueryBody,
-  ensureListingsIndex,
   listingBrandIdFilterClause,
 } from "./listings-index"
 import {
@@ -537,8 +536,6 @@ export async function searchBoardsBrowse(
   const es = getElasticsearchClient()
   if (!es) return null
 
-  await ensureListingsIndex()
-
   const filter = buildListingsFilters(params)
   const mustNot: object[] = []
   const exclude = params.excludeIds?.filter(Boolean) ?? []
@@ -566,7 +563,7 @@ export async function searchBoardsBrowse(
     from,
     size,
     _source: false,
-    track_total_hits: true,
+    track_total_hits: 10_000,
     query: keywordQuery as estypes.QueryDslQueryContainer,
     sort,
   })
@@ -591,7 +588,7 @@ export async function searchBoardsBrowse(
     from,
     size,
     _source: false,
-    track_total_hits: true,
+    track_total_hits: 10_000,
     query: typoQuery as estypes.QueryDslQueryContainer,
     sort,
   })
@@ -704,8 +701,6 @@ export async function boardsBrowseFacetCountsFromEs(
 ): Promise<BoardsBrowseFacetCounts | null> {
   const es = getElasticsearchClient()
   if (!es) return null
-
-  await ensureListingsIndex()
 
   const selectionClauses = facetSelectionClauses(sel)
   const aggs: Record<string, estypes.AggregationsAggregationContainer> = {}

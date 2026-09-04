@@ -293,6 +293,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Explore surf sellers on Reswell — support fellow surfers and find shops near you or who ship to your area.",
     path: "/sellers",
   }),
+  page("board-finder", "marketplace", "Board Finder", {
+    title: "Board Finder — save searches & get alerts | Reswell",
+    description:
+      "Find the surfboard you want. Save up to five searches — brand, model, size, price, and more — and get emailed when a matching board is listed on Reswell.",
+    path: "/board-finder",
+    keywords: [
+      "surfboard finder",
+      "surfboard alerts",
+      "saved board search",
+      "used surfboard wanted",
+    ],
+  }),
   page("priceguide", "marketplace", "Price Guide", {
     title: "Surfboard & surf gear price guide — Reswell",
     description:

@@ -9,8 +9,8 @@ import {
 export const maxDuration = 300
 
 /**
- * Hourly catch-up reindex of listings, sellers, and forum threads that changed
- * in the last 26 hours. Full catalog rebuilds stay on admin `/api/search/reindex`.
+ * Twice-daily catch-up reindex of listings, sellers, and forum threads that
+ * changed in the last 14 hours. Full catalog rebuilds stay on admin `/api/search/reindex`.
  *
  * GET /api/cron/elasticsearch-reindex
  * Protected with CRON_SECRET when set. Scheduled in vercel.json (`15 * * * *`).

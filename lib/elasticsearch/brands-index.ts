@@ -52,9 +52,12 @@ const INDEX_MAPPINGS = {
   },
 }
 
+let brandsIndexReady = false
+
 export async function ensureBrandsIndex(): Promise<void> {
   const es = getElasticsearchClient()
   if (!es) return
+  if (brandsIndexReady) return
 
   try {
     const exists = await es.indices.exists({ index: ELASTICSEARCH_BRANDS_INDEX })
@@ -65,6 +68,7 @@ export async function ensureBrandsIndex(): Promise<void> {
         mappings: INDEX_MAPPINGS,
       })
     }
+    brandsIndexReady = true
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[elasticsearch] ensureBrandsIndex failed:", msg, e)
@@ -153,7 +157,6 @@ export async function searchBrandIdsFromElasticsearch(
   if (!q) return []
 
   try {
-    await ensureBrandsIndex()
     const w = escapeElasticsearchWildcard(q.toLowerCase())
     const usePrefixOnly = q.length < 4
 
@@ -204,6 +207,7 @@ export async function searchBrandIdsFromElasticsearch(
       index: ELASTICSEARCH_BRANDS_INDEX,
       size: limit,
       _source: false,
+      track_total_hits: false,
       query: {
         bool: {
           should,

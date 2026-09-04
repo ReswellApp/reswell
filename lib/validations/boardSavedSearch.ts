@@ -74,7 +74,7 @@ export type CreateBoardSavedSearchActionInput = z.infer<
 >
 
 /** Max saved searches per account across all marketplace sections. */
-export const BOARD_SAVED_SEARCHES_MAX = 3
+export const BOARD_SAVED_SEARCHES_MAX = 5
 
 export const deleteBoardSavedSearchActionSchema = z.object({
   id: z.string().trim().uuid(),

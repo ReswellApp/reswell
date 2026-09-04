@@ -728,8 +728,6 @@ export async function searchListingIdsFromElasticsearch(
   if (!es) return []
 
   try {
-    await ensureListingsIndex()
-
     const sections = options?.sections ?? ["surfboards"]
 
     const filter: object[] = [
@@ -786,6 +784,7 @@ export async function searchListingIdsFromElasticsearch(
           index: ELASTICSEARCH_LISTINGS_INDEX,
           size: limit,
           _source: false,
+          track_total_hits: false,
           query: queryBody,
           sort: [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }],
         })
@@ -793,6 +792,7 @@ export async function searchListingIdsFromElasticsearch(
           index: ELASTICSEARCH_LISTINGS_INDEX,
           size: limit,
           _source: false,
+          track_total_hits: false,
           query: { bool: { filter } },
           sort: [{ created_at: { order: "desc" } }],
         })

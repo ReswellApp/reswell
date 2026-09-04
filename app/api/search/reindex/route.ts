@@ -10,7 +10,7 @@ import { reindexElasticsearchFromSupabase } from "@/lib/services/elasticsearchRe
  * - Authorization: Bearer <SEARCH_REINDEX_SECRET> (for CI/scripts)
  * - Valid admin session (cookie) — no secret needed; use admin UI
  *
- * Hourly catch-up (recent listings/sellers/threads only):
+ * Twice-daily catch-up (recent listings/sellers/threads only):
  * `GET /api/cron/elasticsearch-reindex` (CRON_SECRET).
  */
 export async function POST(request: NextRequest) {

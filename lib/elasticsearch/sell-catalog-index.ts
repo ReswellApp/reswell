@@ -372,6 +372,7 @@ export async function searchSellCatalogHitsFromElasticsearch(
       index: ELASTICSEARCH_SELL_CATALOG_INDEX,
       size: limit,
       _source: ["kind", "entity_id"],
+      track_total_hits: false,
       query: {
         bool: {
           filter,

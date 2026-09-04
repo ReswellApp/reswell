@@ -183,12 +183,11 @@ export async function searchForumThreadIdsFromElasticsearch(
   if (!q) return []
 
   try {
-    await ensureForumThreadsIndex()
-
     const res = await es.search({
       index: ELASTICSEARCH_FORUM_THREADS_INDEX,
       size: limit,
       _source: false,
+      track_total_hits: false,
       query: {
         multi_match: {
           query: q,

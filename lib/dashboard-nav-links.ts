@@ -4,6 +4,7 @@ import {
   Banknote,
   Handshake,
   BadgeDollarSign,
+  Bell,
   Heart,
   Package,
   ShoppingBag,
@@ -43,6 +44,7 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
   { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
+  { name: "Board Finder", href: "/board-finder", icon: Bell },
   { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
   { name: "Following", href: "/dashboard/following", icon: Users },
 ]
