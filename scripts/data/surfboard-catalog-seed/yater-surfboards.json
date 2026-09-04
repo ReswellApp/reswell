@@ -1,0 +1,60 @@
+{
+  "generated_for": "Yater Surfboards official named board catalog",
+  "source": "https://www.yatersurfboards.com/boards (Squarespace production models only — excludes used/collectible inventory)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "yater-surfboards",
+      "name": "Yater Surfboards",
+      "website_url": "https://www.yatersurfboards.com",
+      "location_label": "Santa Barbara, California",
+      "founder_name": "Reynolds Yater",
+      "lead_shaper_name": "Reynolds Yater",
+      "short_description": "Santa Barbara surfboard shop since 1959 — home of the Yater Spoon and classic California longboard design.",
+      "models": [
+        {
+          "name": "SHORT BOARD",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5b1618cf5cfd79664728baf1/1528180620052-Q0RIWK12IRSCTMF835H5/3.jpg",
+          "description": "Wider and thicker. Tri-fin or twin-fin. Medium range: 7' - 7'6\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SPOON",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5b1618cf5cfd79664728baf1/1528181570576-5BFLSUTRVTX4VFINK7JP/2.jpg",
+          "description": "Spoon longboard — clear tints. 8'6\" to 10'.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "BABY SPOON",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5b1618cf5cfd79664728baf1/1528181500605-AE2KFZSXGWZ95TOFR71X/1.jpg",
+          "description": "Baby Spoon longboard — clear tints. 7'6\" to 8'.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic SPOON",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5b1618cf5cfd79664728baf1/1528181680068-ZZE7TP160IEQ19AWHGPC/5.jpg",
+          "description": "Full dress, classic look. Wood fin. Clear tints. 9' - 9'3\" - 9'6\" - 9'10\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "FUN SHAPE",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5b1618cf5cfd79664728baf1/1528181085912-SDTP792SERNIIRI9L2TV/4.jpg",
+          "description": "Full plan shape. Easy rider. Tri-fin or twin-fin. 7'4\" - 8'.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HP LONGBOARD",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5b1618cf5cfd79664728baf1/1528181155960-ING1R3UASIDJFAX3837K/6.jpg",
+          "description": "Contemporary down rail shape. Fast, quick turning. Single, 2+1, twin fin. 8'6\" - 10'.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP SPEED LONGBOARD",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5b1618cf5cfd79664728baf1/1528181277708-J8ZOGPKWXDRK69BTEF0B/7.jpg",
+          "description": "Contemporary down rail shape. Steep down-the-line shape. Single, 2+1, twin fin. 8'6\" - 9'6\".",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
