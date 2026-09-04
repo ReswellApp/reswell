@@ -1,0 +1,49 @@
+{
+  "generated_for": "Shortie Surfboards official named standup catalog",
+  "source": "https://www.shortiesurfboards.com/surfboard-models (Squarespace surfboard models only — excludes Custom deposits and clothing)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "shortie-surfboards",
+      "name": "Shortie Surfboards",
+      "website_url": "https://www.shortiesurfboards.com",
+      "location_label": "Redhead, New South Wales, Australia",
+      "founder_name": "Sam Ayton",
+      "lead_shaper_name": "Sam Ayton",
+      "short_description": "Hand-shaped custom surfboards from Sam Ayton (Shortie) in Redhead, NSW — high-performance shortboards, retro twins, and mid-length fun shapes.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-08-25-4cb28aafeb0c6a93132e.webp",
+      "models": [
+        {
+          "name": "717",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/69c0e2823d16373084c9b460/79e826b5-56bc-496e-9c15-71facc830e4b/717-1.jpg",
+          "description": "The 717 Model is a very versatile step-up for waves between 4-8 feet. It has foam pushed forward for ease of paddling and a lower rail for extra bite in the tube. It has a continuous rocker with a tad extra nose lift to accomodate for those steeper waves and to help avoid nose-diving. With a single to double concave, this board also performs really well on the open face. I recommend riding this 4\" longer than your normal shortboard and about an 1/8\" narrower. The quad setup feels amazing in this board! However, it can be ridden as a quad or a thruster.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Crazy Swayze",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/69c0e2823d16373084c9b460/6cc91eb5-3d54-43a8-9c60-00f5f82688dd/crazyswayze-front.jpg",
+          "description": "The Crazy Swayze is your ideal board for all conditions. It has a low entry/exit rocker and a deep single concave to create lift and speed. Combined with a double concave out the tail for maximum manoeuvrability, it makes it feel as if the board is doing all the work for you. The outline is pushed slightly forward of centre for ease of paddling. The rails are straightened off the tail to create some serious drive through turns. I recommend riding this board about an inch longer than your own height.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twinkle Toes 2.0",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/69c0e2823d16373084c9b460/169073d3-b204-4a94-9153-57652c0093a3/tan%2Bwhite-front.jpg",
+          "description": "The Twinkle Toes 2.0 is my modern spin on the retro twin fin, with extreme fun in mind. This board has become even more refined than the original version. It has a vee in the nose and under the chest to make paddling a breeze. Then, it flows from a single concave into a double, that ultimately vees out of the swallow tail. This board can be ridden as a straight twin or with a stabiliser fin. I recommend riding this board the same length as you are tall.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Micro Mid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/69c0e2823d16373084c9b460/ac161a60-43cc-4f21-92a4-8640d0a2d28b/micromid-front.jpg",
+          "description": "The micro mid is the ultimate fun board, taking the shape of a mid-length, but subtracting the length while still holding plenty of volume. The wide point on this is pushed 2 1/2\" North of the centre, making the nose nice and wide while the tail is pulled into a pin. It surfs like a shortboard, but paddles as if it had 100 litres. To add to this, it has a vee bottom running from the nose to tail and double concave out the back, so turning is made easy! I recommend riding this board about 3\"-5\" longer than your short board. It can be ridden as a straight twin fin or has the option for a stabiliser fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HP Camel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/69c0e2823d16373084c9b460/c5d74fb0-45f1-4535-b82e-9336b1ea896d/hpcamel-front.jpg",
+          "description": "This is your high performance work horse. Though it may appear to have a similar outline to the crazy Swayze, it has a little extra rocker in the nose and a late flow in the tail. With a lower rail and a single to double concave, this board transitions from rail to rail with ease. I'd recommend riding this board the same size as your standard Shortie shortboard!",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
