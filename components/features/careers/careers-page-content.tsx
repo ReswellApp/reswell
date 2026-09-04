@@ -20,7 +20,8 @@ export function CareersPageContent() {
           alt=""
           fill
           priority
-          quality={95}
+          fetchPriority="high"
+          unoptimized
           sizes="100vw"
           className="object-cover object-center"
           placeholder="blur"
@@ -41,9 +42,10 @@ export function CareersPageContent() {
       <section className="border-b border-border/70 bg-background">
         <div className="container mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
           <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-            We&apos;re a small Santa Barbara team putting used boards back in the water. If you
-            know boards, like talking to people, and would rather be in a shop or on the road than
-            at a desk, look through the openings.
+            Small crew in Santa Barbara. We buy boards that have been sitting around and get them
+            ridden again. If you know a good one when you see it, don&apos;t mind talking to
+            strangers, and would rather be in a shop or driving around than at a desk — the
+            openings are below.
           </p>
         </div>
       </section>

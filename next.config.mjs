@@ -156,6 +156,13 @@ const nextConfig = {
       '/images/brand/apparel-browse-atmosphere.jpg',
     ]
 
+    const careersAtmosphereImages = [
+      '/images/careers/headline-barrel.jpg',
+      '/images/careers/role-packed.jpg',
+      '/images/careers/role-shop.jpg',
+      '/images/careers/role-break.jpg',
+    ]
+
     return [
       {
         source: '/images/home/hero-backdrop-mesa-v2.jpg',
@@ -166,6 +173,10 @@ const nextConfig = {
         headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
       },
       ...categoryBrowseAtmosphereImages.map((source) => ({
+        source,
+        headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
+      })),
+      ...careersAtmosphereImages.map((source) => ({
         source,
         headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
       })),

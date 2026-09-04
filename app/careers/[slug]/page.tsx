@@ -39,7 +39,8 @@ export default async function CareerRolePage({ params }: PageProps) {
           alt=""
           fill
           priority
-          quality={95}
+          fetchPriority="high"
+          unoptimized
           sizes="100vw"
           className="object-cover object-center"
           placeholder="blur"
