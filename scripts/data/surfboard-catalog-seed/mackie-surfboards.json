@@ -1,0 +1,48 @@
+{
+  "generated_for": "Mackie Surfboards official named shape catalog",
+  "source": "https://mackiesurfboards.com.au/ (WordPress shape pages only — excludes fins, gallery, and second-hand listings)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mackie-surfboards",
+      "name": "Mackie Surfboards",
+      "website_url": "https://mackiesurfboards.com.au/",
+      "location_label": "Ulladulla, NSW South Coast, Australia",
+      "founder_name": "Michael Mackie",
+      "lead_shaper_name": "Michael Mackie",
+      "short_description": "Handcrafted surfboards from Mick Mackie on the NSW South Coast — sidecut fish, twins, and classic single-fin pins shaped with decades of experience since the 1980s.",
+      "models": [
+        {
+          "name": "Side Cut",
+          "image_url": "https://mackiesurfboards.com.au/wp-content/uploads/2021/03/Mackie_Designs_SideCut.jpg",
+          "description": "My Sidecut Design has been developed over the last 20 odd years or so and allows you to follow the natural arc of the turn with added bite and hold. This happens by having more rail in the water as the sidecut engages, allowing the outline to fully slice through the turn and feel resistance free.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Smooth Glide",
+          "image_url": "https://mackiesurfboards.com.au/wp-content/uploads/2021/03/Mackie_Designs_SmoothGlide.jpg",
+          "description": "The Smooth Glide encompasses a few different styles of shape ranging from full pintails to softer rounded pins to round squares, even swallowtails and diamond tails. These boards are not limited to a single fin setup but can be ridden as a tri fin or single fin depending on your needs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Single Fin Pin",
+          "image_url": "https://mackiesurfboards.com.au/wp-content/uploads/2021/03/Mackie_Designs_SingleFin.jpg",
+          "description": "The classic single is derived from an outline I was able to collect from a 70's single fin shaped by Paul Winter of Wintersun Designs in Pambula. This shape was pretty well your classic Michael Peterson outline of the period when MP was living in the area.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Twin Fin",
+          "image_url": "https://mackiesurfboards.com.au/wp-content/uploads/2021/03/Mackie_Designs_TwinFin.jpg",
+          "description": "My twin fin shape is similar to the original twins that were ridden around 1979-1981. They feature classic vee bottoms for rail to rail surfing and come in either a thick or thin foil profile depending on your needs. These are super lively boards with plenty of speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Winged Pin Twin",
+          "image_url": "https://mackiesurfboards.com.au/wp-content/uploads/2021/03/Mackie_Designs_WingedPin.jpg",
+          "description": "These clean outlined boards are a variation on the classic 70's single fin shape but with the added hold and instant speed that twin fins create. Thicknesses are customized to suit and bottom shapes are the basic proven formula of slight nose vee flowing into flat through the tail.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
