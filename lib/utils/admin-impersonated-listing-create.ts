@@ -1,3 +1,4 @@
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { retryOnceOnSellSubmitAbort } from "@/lib/sell-flow/sell-submit-error"
 
 export type ImpersonatedListingImagePayload = {
@@ -130,7 +131,7 @@ export function listingImagesToImpersonatedPayload(
 ): ImpersonatedListingImagePayload[] {
   return images.map((img, index) => ({
     url: img.url,
-    thumbnail_url: img.thumbnailUrl ?? null,
+    thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
     is_primary: index === 0,
     sort_order: index,
   }))

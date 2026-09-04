@@ -14,6 +14,7 @@ import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFi
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
 import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { mirrorExternalListingImagesToStorage } from "@/lib/services/importListingImages"
 import { slugify } from "@/lib/slugify"
 import type { z } from "zod"
@@ -66,10 +67,13 @@ export async function publishImportListing(opts: {
     imageUrls: input.importedImageUrls,
   })
 
-  const images = [...mirrored, ...input.uploadedImages.map((img) => ({
-    url: img.url,
-    thumbnail_url: img.thumbnail_url?.trim() || img.url,
-  }))]
+  const images = [
+    ...mirrored,
+    ...input.uploadedImages.map((img) => ({
+      url: img.url,
+      thumbnail_url: persistableListingThumbnailUrl(img.thumbnail_url, img.url),
+    })),
+  ]
 
   if (images.length === 0) {
     return {

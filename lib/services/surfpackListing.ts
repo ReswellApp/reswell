@@ -8,6 +8,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { SURFPACKS_SECTION } from "@/lib/surfpack-listing-config"
 import { buildSurfpackListingPersistFields } from "@/lib/surfpack-listing-persist-fields"
@@ -66,10 +67,7 @@ export async function syncSurfpackListingImages(
       const u = img.url.trim()
       if (u) {
         rowUpdate.url = u
-        rowUpdate.thumbnail_url =
-          typeof img.thumbnailUrl === "string" && img.thumbnailUrl.trim()
-            ? img.thumbnailUrl.trim()
-            : null
+        rowUpdate.thumbnail_url = persistableListingThumbnailUrl(img.thumbnailUrl, img.url)
       }
       await supabase
         .from("listing_images")
@@ -80,10 +78,7 @@ export async function syncSurfpackListingImages(
       await supabase.from("listing_images").insert({
         listing_id: listingId,
         url: img.url.trim(),
-        thumbnail_url:
-          typeof img.thumbnailUrl === "string" && img.thumbnailUrl.trim()
-            ? img.thumbnailUrl.trim()
-            : null,
+        thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
         is_primary: img.isPrimary,
         sort_order: img.sortOrder,
       })
@@ -184,7 +179,7 @@ export async function createSurfpackListing(
   const imageRows = input.images.map((img, index) => ({
     listing_id: listingId,
     url: img.url,
-    thumbnail_url: img.thumbnailUrl ?? null,
+    thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
     is_primary: img.isPrimary ?? index === 0,
     sort_order: img.sortOrder ?? index,
   }))

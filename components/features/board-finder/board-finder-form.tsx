@@ -1,7 +1,6 @@
-import { Bell, ChevronDown, Loader2 } from "lucide-react"
+import { ChevronDown, Loader2 } from "lucide-react"
 
 import { BoardsBrowseCatalogBrandModel } from "@/components/boards-browse-catalog-brand-model"
-import { BoardFinderChip } from "@/components/features/board-finder/board-finder-chip"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -27,11 +26,9 @@ import { cn } from "@/lib/utils"
 
 const ANY = "any"
 
-const fieldLabel = "text-xs font-semibold uppercase tracking-wide text-[#5574AD]"
-const selectTrigger =
-  "h-11 rounded-full border-border bg-white text-[#001A4A] shadow-sm focus:ring-[#5574AD]/20"
-const priceInput =
-  "h-11 rounded-full border-border bg-white text-[#001A4A] shadow-sm focus-visible:ring-[#5574AD]/20"
+const fieldLabel = "text-sm font-medium text-[#001A4A]"
+const selectTrigger = "h-11 rounded-md border-border bg-background text-[#001A4A]"
+const priceInput = "h-11 rounded-md border-border bg-background text-[#001A4A]"
 
 export function BoardFinderForm({
   brand,
@@ -101,7 +98,7 @@ export function BoardFinderForm({
   onSave: () => void
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <BoardsBrowseCatalogBrandModel
         brandText={brand}
         catalogBrandId={catalogBrandId}
@@ -113,50 +110,62 @@ export function BoardFinderForm({
         onCatalogModelPicked={onCatalogModelPicked}
       />
 
-      <fieldset>
-        <legend className={fieldLabel}>Size</legend>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {LENGTH_BUCKETS.map((bucket) => (
-            <BoardFinderChip
-              key={bucket.value}
-              selected={length === bucket.value}
-              onSelect={() => onLengthChange(length === bucket.value ? ANY : bucket.value)}
-            >
-              {bucket.label}
-            </BoardFinderChip>
-          ))}
-        </div>
-      </fieldset>
+      <div className="space-y-1.5">
+        <Label htmlFor="board-finder-length" className={fieldLabel}>
+          Size
+        </Label>
+        <Select value={length} onValueChange={onLengthChange}>
+          <SelectTrigger id="board-finder-length" className={selectTrigger}>
+            <SelectValue placeholder="Any size" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ANY}>Any size</SelectItem>
+            {LENGTH_BUCKETS.map((bucket) => (
+              <SelectItem key={bucket.value} value={bucket.value}>
+                {bucket.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <fieldset>
-        <legend className={fieldLabel}>Style</legend>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {BOARD_STYLE_OPTIONS.map((opt) => (
-            <BoardFinderChip
-              key={opt.value}
-              selected={style === opt.value}
-              onSelect={() => onStyleChange(style === opt.value ? ANY : opt.value)}
-            >
-              {opt.label}
-            </BoardFinderChip>
-          ))}
-        </div>
-      </fieldset>
+      <div className="space-y-1.5">
+        <Label htmlFor="board-finder-style" className={fieldLabel}>
+          Style
+        </Label>
+        <Select value={style} onValueChange={onStyleChange}>
+          <SelectTrigger id="board-finder-style" className={selectTrigger}>
+            <SelectValue placeholder="Any style" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ANY}>Any style</SelectItem>
+            {BOARD_STYLE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <fieldset>
-        <legend className={fieldLabel}>Condition</legend>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {CONDITION_OPTIONS.map((opt) => (
-            <BoardFinderChip
-              key={opt.value}
-              selected={condition === opt.value}
-              onSelect={() => onConditionChange(condition === opt.value ? ANY : opt.value)}
-            >
-              {opt.label}
-            </BoardFinderChip>
-          ))}
-        </div>
-      </fieldset>
+      <div className="space-y-1.5">
+        <Label htmlFor="board-finder-condition" className={fieldLabel}>
+          Condition
+        </Label>
+        <Select value={condition} onValueChange={onConditionChange}>
+          <SelectTrigger id="board-finder-condition" className={selectTrigger}>
+            <SelectValue placeholder="Any condition" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ANY}>Any condition</SelectItem>
+            {CONDITION_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
@@ -179,7 +188,7 @@ export function BoardFinderForm({
           <Input
             id="board-finder-max-price"
             inputMode="numeric"
-            placeholder="No cap"
+            placeholder="No max"
             value={maxPrice}
             onChange={(e) => onMaxPriceChange(e.target.value.replace(/[^\d]/g, ""))}
             className={priceInput}
@@ -189,10 +198,10 @@ export function BoardFinderForm({
 
       <button
         type="button"
-        className="inline-flex items-center gap-1 text-xs font-semibold text-[#5574AD] hover:text-[#001A4A]"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-[#001A4A]"
         onClick={onToggleMore}
       >
-        Volume, glass, fins
+        Volume, construction, fins
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showMore && "rotate-180")} />
       </button>
 
@@ -255,7 +264,7 @@ export function BoardFinderForm({
         </div>
       ) : null}
 
-      <div className="flex items-start gap-3 rounded-2xl bg-[#F4F7FB] px-4 py-3">
+      <div className="flex items-start gap-3 pt-1">
         <Checkbox
           id="board-finder-email"
           checked={emailOptIn}
@@ -263,25 +272,20 @@ export function BoardFinderForm({
           className="mt-0.5 data-[state=checked]:border-[#001A4A] data-[state=checked]:bg-[#001A4A]"
           disabled={atSavedLimit}
         />
-        <div>
-          <Label
-            htmlFor="board-finder-email"
-            className={cn(
-              "text-sm font-semibold text-[#001A4A]",
-              atSavedLimit ? "cursor-not-allowed text-[#5c6b89]" : "cursor-pointer",
-            )}
-          >
-            Ping me when it lists
-          </Label>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-[#5c6b89]">
-            Nationwide email to your account. We’ll only write when something matches.
-          </p>
-        </div>
+        <Label
+          htmlFor="board-finder-email"
+          className={cn(
+            "text-sm leading-snug text-[#001A4A]",
+            atSavedLimit ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer",
+          )}
+        >
+          Email me when a match lists
+        </Label>
       </div>
 
       <Button
         type="button"
-        className="h-12 w-full rounded-full bg-[#001A4A] text-base font-semibold text-white hover:bg-[#001A4A]/90"
+        className="h-11 w-full rounded-md bg-[#001A4A] text-sm font-semibold text-white hover:bg-[#001A4A]/90"
         disabled={pending || (isSignedIn && atSavedLimit)}
         onClick={onSave}
       >
@@ -291,14 +295,13 @@ export function BoardFinderForm({
             Saving…
           </>
         ) : !isSignedIn ? (
-          "Sign in to start watching"
+          "Sign in to save"
         ) : atSavedLimit ? (
-          `${BOARD_SAVED_SEARCHES_MAX} watches — clear one`
+          `${BOARD_SAVED_SEARCHES_MAX} searches — remove one`
+        ) : canSave ? (
+          "Save alert"
         ) : (
-          <>
-            <Bell className="mr-2 h-4 w-4" aria-hidden />
-            {canSave ? "Watch this board" : "Add a detail first"}
-          </>
+          "Add a filter first"
         )}
       </Button>
     </div>

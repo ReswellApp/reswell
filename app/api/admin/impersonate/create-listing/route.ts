@@ -15,6 +15,7 @@ import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-lis
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 
 export async function POST(request: NextRequest) {
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
     ).map((row, index: number) => ({
       listing_id: listing.id,
       url: row.url,
-      thumbnail_url: row.thumbnail_url ?? null,
+      thumbnail_url: persistableListingThumbnailUrl(row.thumbnail_url, row.url),
       is_primary: index === 0,
       sort_order: index,
     }))

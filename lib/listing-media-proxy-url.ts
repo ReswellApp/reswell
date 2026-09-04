@@ -181,6 +181,11 @@ export function listingFullImageUrlFromRef(url: string | null | undefined): stri
   return t
 }
 
+export {
+  listingDerivedThumbUrlFromFullUrl,
+  persistableListingThumbnailUrl,
+} from "@/lib/listing-thumb-url"
+
 /** Absolute `https://reswell.app/media/listings/...` for OG tags, catalog feeds, and crawlers. */
 export function absoluteProxiedListingMediaUrl(url: string | null | undefined): string | undefined {
   const proxied = proxiedListingImageSrc(url)

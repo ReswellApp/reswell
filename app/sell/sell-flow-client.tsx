@@ -98,7 +98,7 @@ import {
 } from "@/lib/listing-image-pipeline"
 import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { persistableListingThumbnailUrl, proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   buildSellListingDraft,
   clearGuestSellListingDraft,
@@ -2734,7 +2734,7 @@ function SellPageContentInner({
   function listingImagesPayloadForApi(): { url: string; thumbnail_url: string | null }[] {
     return images.map((im) => ({
       url: im.url!,
-      thumbnail_url: im.thumbnailUrl ?? null,
+      thumbnail_url: persistableListingThumbnailUrl(im.thumbnailUrl, im.url),
     }))
   }
 

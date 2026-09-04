@@ -8,6 +8,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import {
   syncListingImages,
@@ -131,7 +132,7 @@ export async function createWetsuitListing(
   const imageRows = input.images.map((img, index) => ({
     listing_id: listingId,
     url: img.url,
-    thumbnail_url: img.thumbnailUrl ?? null,
+    thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
     is_primary: img.isPrimary ?? index === 0,
     sort_order: img.sortOrder ?? index,
   }))
