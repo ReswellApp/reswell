@@ -1,0 +1,79 @@
+{
+  "generated_for": "Crowd Control Surfboards official named standup catalog",
+  "source": "https://www.crowdcontrolsurf.com/surfboards (first-party named model pages only — excludes merch, hot sauce, themed corporate boards, and the Big Log page that reuses the Classic Longboard product photo)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "crowd-control-surfboards",
+      "name": "Crowd Control Surfboards",
+      "website_url": "https://www.crowdcontrolsurf.com",
+      "location_label": "Riviera Beach, Florida",
+      "founder_name": "Brett Prinz",
+      "lead_shaper_name": "Brett Prinz",
+      "short_description": "Hand-shaped custom surfboards by Brett Prinz in Riviera Beach, Florida — performance shortboards, fishes, mid-length cruisers, and step-ups built under one roof.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/crowd-control-surfboards.png",
+      "models": [
+        {
+          "name": "Big Twin Pin",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/Big+twin+pin.jpg",
+          "description": "This board had a bunch of different evolution factors for a bigger wave twin fin. Originally designed for Orlando De Sola of El Salvador surfing many world-class point breaks, this board has been tested for a number of years and the refined fin placement, foil and thickness provide a smooth ride for Twin surfing fun! The wider nose outline and pulled in pin tail, make it fast and maneuverable. This is a great big guy twin-fin short Board. We actually do offer a longboard box and it’s pretty epic as a 2+ 1 or just a single fin as well.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "CC Combo",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/combo.jpg",
+          "description": "This board is basically a mix of funshape and a longboard. Pretty standard rocker, rail and concave design, works with any style tail and fin configuration. This is a great shape for those days when it's just too slow for a shorty and you're just not into longboarding.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Classic Longboard",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/Classic_Longboard.jpg",
+          "description": "This board has been refined over the years to be closer to a performance longboard with standard longboard characteristics. It’s got a lot of influence from the masters of longboard shaping with a spoon out nose, slight belly through the middle and vee out the tail! It comes standard as a single fin square tail but works great as a round/pin with a 2+ one or a quad set up. This LB is a bit chipped out in the nose, tail and rails with lower volume. You can throw it around and actually get some great maneuvers in.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Flatbed",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/flatbed.jpg",
+          "description": "Mid length/fun-shape usually 6’6”-7’6” chipped out nose, tail and rails, reverse entry rocker (nose has less rocker than tail) designed as a Twin fin works well as thruster, single or 2+1. We have 3 bottom contours: 1) flat to double concave thru middle to quad-cave a bit of v out tail (recommend). 2) standard flat to single throughout 3) single to double through the tail. Twin fins are set back and located similar to fish approximately 8-10” from tail. The foil is evenly distributed and is an easy paddler and catches waves effortlessly. This board excels when there’s a fat tide or a mellow swell; it can also be used to dominate a lot of breaks when it’s soft or mushy. This glider/cruiser will definitely bring your wave count up.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Funhouse",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/funhouse.jpg",
+          "description": "This is our fun-shape/mid length, full outline nose, pulled in tail full rails. This cruiser generally ridden as a 2+1 or single fin. Standard low entry rocker, standard tail rocker and subtle contours on the bottom with vee in nose to single through the middle and a little spiral vee out the back! This is a perfect example that foam is your friend — get that wave count up and start having fun again.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Kandui Step-Up",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/kandui+step-up.jpg",
+          "description": "The name should say it all! This Board is great for those bigger stronger swells and real surf trip applications! The standard to lifted nose rocker and a little flip in the tail, a bit more volume, deep single throughout with a rounded pin and slightly harder rails will get you confidently into some steep drops and with a little extra foam through the stringer, you’re gonna be able to paddle some strong currents, long points and get in early.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "OG Pier Spear",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/pier+spear+%281%29.jpg",
+          "description": "This is Crowd Control surfboards Performance shortboard. With close to 30 years of tweaking, we finally found the perfect balance to suit a wide variety of advanced surfers! The Stock dimensions are set up for just about anybody who rides short boards. We also really like to offer riders specific dims on this model. The board comes standard as a round squash, but you could use any favorite tail configuration.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pan Fish",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/IMG_2686.jpg",
+          "description": "Stringerless epoxy construction with Kevlar and carbon reinforcements is preferred but can also be made as a standard poly board with stringer. Sized 5’2”-6’6”.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rasta Rocket",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/rasta-rocket.jpg",
+          "description": "The Rasta rocket designed specifically for Icah Wilmot, multiple time Jamaican national champion. This board is a performance board leaning slightly towards the groveler. It’s got a bit of foam on the front foot area and a tad bit wider than you normally ride a performance board. This board is great for all types of freestyle surfing. A slightly lower entry rocker, wider nose outline, thicker foil and a full performance bottom (single to double concave) make this board a pretty epic shape for all around surfing.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Superman Fish",
+          "image_url": "https://irp.cdn-website.com/53a6fbbe/dms3rep/multi/superman+catri+fish.jpg",
+          "description": "After spending several years hanging out with Captain Dick Catri listening to stories and talking constantly about Surfboard design, he let me borrow one of his 1970 fish Boards the first day I used it. I was pretty amazed on how well it caught waves, paddled, and turned. It’s a slightly narrower mid-fish nose wider tail block outline with fins pushed way back. Proven to be a great riding 70s fish over the years. We’ve tweaked it a bit leaving the same bottom contours and outline, but brought the rails up-to-date, tweaked the foil and offered it with multiple Fin placement options: the original twin fin, quad or the 2+ one. Really epic big guy fish.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
