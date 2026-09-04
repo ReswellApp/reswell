@@ -1,0 +1,84 @@
+{
+  "generated_for": "Webber Surfboards official named standup model catalog",
+  "source": "https://webbersurfboards.com/products.json (Shopify surfboard models only \u2014 excludes decals and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "webber-surfboards",
+      "name": "Webber Surfboards",
+      "website_url": "https://webbersurfboards.com",
+      "location_label": "Australia",
+      "founder_name": "Greg Webber",
+      "lead_shaper_name": "Greg Webber",
+      "short_description": "Greg Webber designs \u2014 performance shortboards and versatile Australian templates.",
+      "models": [
+        {
+          "name": "The After Burner",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/fcs2-pu_top_portrait.png?v=1676264693",
+          "description": "The Afterburner is without doubt the most successful model I\u2019ve ever designed and was distributed globally by three different groups, being Surftech, Global Surf Industries and Salomon. The reason for the success was that it was one of the first true all-rounders to appear in reaction to the very refined shortboards of the early 90\u2019s. Average to competent surfers were struggling on the under volumed style of craft that was the main board type available in the majority of surf shops. Today\u2019s Afterburner is an evolution of the original which had a single concave to double concave in the tail. The new version has the double concave between the feet providing all flow of the original but with an even broader sweet spot and a touch more grip for when the waves get bigger. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Catfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/fcs2-pu_top_portrait_35eb98e2-80cc-49fa-ab8e-5e454b568d66.png?v=1676268171",
+          "description": "The Catfish is my lowest rockered surfboard in the range and is designed for instant glide and speed, but it still has the capacity to come off the top and break track due to a moderate tail rocker. The slightly pulled in tail in combination with the moderate tail rocker allows you to stand in the middle of the board to do just about everything. It has a slight single concave which generates lots of lift in small waves so that a lack of energy from the ocean isn\u2019t an issue at all. Can use twin quad or tri-fin setup. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Creature",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/futures-pu_top_portrait.png?v=1676268243",
+          "description": "The creature is one of those rare models that puts as much focus on the shape of the deck as it does with the shape of the bottom. Both sides are double concaves. The double concave on the bottom goes from rail to stringer and is sharp at the spine. A balance between lift and grip. The double concave on the deck is rolled at the centre along the stringer line. The objective is to decrease the thickness of foam right where the surfers heels and toes sit on the board. And this is achieved by having both deck and bottom concaves coincide to accentuate the drop in thickness that happens as a result of any double concave. Of course when you do it on both sides then you are doubling the degree to which you are taking foam out of the board right where your heels and toes are pushing during turns. The result is a feeling of being closer to the wave face, but with an additional benefit of the back foot wrapping over the centre spine in a similar way that the arch bar on a deck grip fits into the arch of the foot. The advantage of making this shape in the surfboard itself is that as you move your back foot forward a touch, for driving turns, you don\u2019t step off the arch bar. The curves only gradually decreases towards the nose. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Dart",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/files/pu-fcs2_top_portrait_c8cd96b1-f7df-469d-9181-cc8f0d763aaa.png?v=1697608359",
+          "description": "The Dart is a low entry, moderately tail rockered single concave with instant spark off the mark. It has flow and speed throughout all turns so that you don\u2019t have to pump to get it flying along or between dead sections in the wave. With a mild stinger and a tiny bit of tail flip it still comes off the top with great response. Two of the first Dart customs I made attracted the best comment a shaper could hope to hear \u201cit\u2019s the fastest board I've ever ridden!\u201d",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Diamond",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/pu-fcs2_top_portrait.png?v=1676268269",
+          "description": "The diamond model combines more performance than most surfers would expect from a board that is also so easy to ride. The starting point is volume. Without the volume and some moderate rocker, you cannot catch waves to the degree that most older or less fit surfers would like. So we must start with that. Then my design thinking was all about increasing responsiveness and grip at the same time as giving paddle power. This is achieved by using a rolled V at the stringer, with double concave either side. The rolled V gives a super smooth transition from rail to rail which then requires almost no thinking on all wave types. Because the concaves are now narrower than usual double concaves that go all the way to the stringer, (the centre roll takes up a third of the boards width) then the concaved surface near the rail edge is at a higher angle to the wave face and so the grip is increased significantly. As a result the two opposite ends of design functionality, being user friendliness and high performance, are boosted at the same time. There is no trade off. The plan shape is a full clean round nose with a wide square tail with fins reasonably far forward so you can stand in the middle of the board and do everything you could want. Important thing to remember is that despite the high volume these boards can be pushed hard on the rail and so there is no comparison to a more neutral \u2018soft railed\u2019 mid-size board that does not have this degree of performance within it. And to top it off, the rails are low but soft and so this enhances the responsiveness and speed. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Diamond Electra",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/fcs2-5-fin_top_portrait.png?v=1676268290",
+          "description": "The Diamond Electra is quite obviously a blend of both designs. The front three quarters is diamond, which gives all the flow and drive and ease of use of the diamond, but with the tail quarter of the board being based on the Electra to give the release. It has more tail flip than the diamond, which start to curl away at the stinger at about 17 inches up from the tail. This allows for an easier break of track which can be very useful for hitting the whitewash after a cutback or during rebounds off close-outs. The narrowing after the stinger squeezes the fins together, which helps them to function as a unit. In essence, it is a slightly amped up version of the diamond which is aimed at surfers who want the volume, but are still pretty capable of doing some solid turns. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Electra",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/eps-fcs2_top_portrait.png?v=1676268388",
+          "description": "The Electra is effectively the Formula One of performance short boards. The concave is at its deepest right between the feet to maximise lift and in so doing decrease the need for foot movement. The stinger is well forward of the old fashioned \u2018flyers\u2019 and the subsequent decrease in width below the stingers then squeezes the fins closer together so that they act as a unit. The fins are moved forward to again allow a \u2018glue footed\u2019 stance on the board. The tail rocker curves away more than most modern shortboards whereas the entry rocker is quite moderate so that drive and planing speed is retained right between your feet. There is a slight double concave on the deck which then decreases the thickness of surfboard foam between the surfers heels and toes and the water surface below. As a result of the stinger the planshape is more parallel immediately forward which adds grip while the shortened concave adds lift. Lift without grip is skittery so this is why we have straightened the planshape exactly in this area. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Flyer Pin Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/fcs2-pu_top_portrait_14da2b33-6eeb-4470-97d9-2baa9298821e.png?v=1676268403",
+          "description": "This design is a pure high-performance twin fin in terms of rocker and concaves but in combination with a 70\u2019s style flyer pin-tail planshape. The flyer and pintail both reduce the tail area which is highly suited to twin fin surfing, despite the fact that many twin fins are made with big wide fishtails that are difficult to control and fit into the wave face. The double concave provides significant grip, which is always a benefit with the twin fin concept. Plan shapes are close to a normal performance shortboard with only a moderate increase in nose area to create a slightly more parallel plan shape between the feet. Can be used as a dedicated twin or with the addition of a tail fin plug for a flexing keel or small stabiliser fin. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/fcs2-pvc-twin_top_portrait.png?v=1676268423",
+          "description": "The Pin rides the way it looks, all about drive and flow but with the option to use as a single, twin, tri or quad. the idea being to create a 70\u2019s oriented planshape with a high performance double concave bottom shape while retaining all of those elements that the aesthetic\u2019s would indicate. Each version would be ordered specifically as either a pure single, a single with side bites, a true twin fin or a five fin combo that allows for quad tri and twin options. The true twin option on the Pin model would have the fin positions further back than the front fins on the quad. However it would still work nicely as a twin with the front fin position of the quad if the twin fins being used had enough area and depth. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Silk",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/pu-fcs2_top_portrait_45de407b-d193-474f-8a45-ccaf4835ef44.png?v=1676268441",
+          "description": "The silk model has the lowest entry rocker of all of my shortboard designs. It\u2019s a single concave of moderate depth with the concave depth decreasing to the nose and tail but not quite going to flat, as is the case with the Electra. This longer concave broadens the sweet spot and make the board a little more predictable. The lower entry provides initial speed from take off and also gives the board consistent speed through all turns. The tail rocker is not radical but it is substantial. This makes the board release well from rail turns that would otherwise feel a bit locked in if the nose and tail rockers were both on the low side. Designed as a round tail but square tails and swallows are ok too. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Syrena",
+          "image_url": "https://cdn.shopify.com/s/files/1/0689/2060/7008/products/fcs2-pvc_top_portrait.png?v=1676268457",
+          "description": "The Syrena model has a similar entry rocker to the Catfish, but with a wider swallowtail and stinger, in combination with a double concave between the feet. The two concaves are separated by a rolled V at the stringer. This roll gives a degree of forgiveness at the initial stage of the turn, and also between turns, but then the more that pressure is applied to the rail, the more the side concaves grip into the wave face to give great acceleration. The low entry rocker allows the board to travel out into the flat of the wave face which then gives you more wave face to attack, which makes such wild manoeuvres as carve 360s possible. The concaves fade out at the tail which gives an added level of release off the back out of turns. The planshape has moderate width so that proper rail surfing is still possible along with the responsiveness of the tail rocker and stinger. Can be used as twin quad or tri-fin combination. (All surfboards are only purchasable as custom orders and has to be ordered via the custom order page)",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
