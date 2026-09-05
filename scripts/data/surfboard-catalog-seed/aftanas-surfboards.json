@@ -1,0 +1,90 @@
+{
+  "generated_for": "Aftanas Surfboards official named standup catalog",
+  "source": "https://aftanas.ca (Shopify products — excludes accessories, fin bags, custom deposits, and one-off demo boards)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "aftanas-surfboards",
+      "name": "Aftanas Surfboards",
+      "website_url": "https://aftanas.ca/",
+      "location_label": "Tofino, British Columbia, Canada",
+      "founder_name": "Stefan Aftanas",
+      "lead_shaper_name": "Stefan Aftanas",
+      "short_description": "Canadian surfboard manufacturer in Tofino — CNC-assisted shaping and in-house glassing with a lineup of longboards, hybrids, and high-performance shortboards tuned for West Coast waves.",
+      "models": [
+        {
+          "name": "The Blender",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/blender.png?v=1525184578",
+          "description": "I was originally going to call the Blender The E.D.L, The Every Day Longboard. It was designed for those that choose to longboard year round and in all conditions. It is a blend of performance longboard and a full on nose rider. It can be surfed from the tail, has a reasonable mid trim platform and a generous spoon in the nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Even",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/even.png?v=1525184540",
+          "description": "Since 2014 I have been on a mission to make a nose rider that makes nose riding easy. Something more stable than the traditional log that tends to roll around under your feet and can feel slow. Through removing some belly and straightening the bottom curves from centre through to the nose, cross stepping smoothly is easier, mid trim is faster and overall stoke factor stays high.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bob",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/bob.png?v=1525184487",
+          "description": "Bob is a machine for crushing mush, with flair. Low entry rocker gets you in early, a speed pedal under your front foot gets you moving quick and a curvy last 6\" allows you to surf more vertically than you would expect from similar boards.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Koifish",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/koifish.png?v=1525184454",
+          "description": "The Koi Fish could be called the Speed Fish. It is all about making waves in surf that would be sectioning out if you weren't going so fast. If you like to high line through speedy sections or float over the crumbling ones, then you are on the right track with the Koi Fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Druther",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/The_Druther.png?v=1525184419",
+          "description": "The Druther is simply a matter of personal choice. It turns its back on what it should be and lets you slide along without judgement or care. Flat entry rocker gets you in quick and early. With one good pump you are on the move, then it's all about what you want to do next.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stuhb",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/stuhb.png?v=1525184117",
+          "description": "A longboard outline shortened to 5'8 — all fun up front and business at the back. A nice full nose makes getting in early a breeze, while the relatively narrow tail gives it a good range. Concave under your front foot keeps you moving down the line quick.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Slim Jim",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/slim-jim.png?v=1525211335",
+          "description": "The Slim Jim is a user friendly and versatile design. It makes a great entry level surfboard, a sleek mid-size for those that might normally shortboard, and a great alternative to a longboard for bigger surf. Low entry curves with moderate concaves and tail rocker designed for surfing off the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spork",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/spork.png?v=1525183963",
+          "description": "The Spork is a mush crusher with a real need for speed. Fish-like rocker with a shortboard outline and a much wider tail. Heavy single concave melds into a light double under your back foot. A good paddler and an easy wave catcher even in softer surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Option",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/option.png?v=1525183924",
+          "description": "The Option is somewhere to go when you have outgrown a Sled and are working your way towards The Project. With more volume per inch than the Project and a flatter, more forgiving rocker template, speed comes easier and hitting your volume takes less length.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Project",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/project.png?v=1525183889",
+          "description": "The Project is a culmination of everything I have learned from every shredder I have worked with. A fast, ultra high performance shortboard that will allow you to surf as vertically and as hard as you possibly can.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Analog",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/analog.png?v=1525565321",
+          "description": "The perfect blend of fish speed and shortboard control with a serious range sums up the Analog perfectly. A board that works well from hip to well overhead — as close as it gets to a one-board quiver.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Sled",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/sled-square.png?v=1525183732",
+          "description": "Your best bet for a daily driver in the most commonly occurring surf on the West Coast. The outline remains on the full side without losing its shortboard status. Single concaves with the slightest double concave between the fins dominates the bottom contours.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
