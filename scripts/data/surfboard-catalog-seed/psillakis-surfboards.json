@@ -1,0 +1,253 @@
+{
+  "generated_for": "Psillakis Surfboards official named standup catalog",
+  "source": "https://www.psillakissurfboards.com.au/products.json (Shopify named models only — no merch, fins, leashes, or custom deposits; SUP not sold)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "psillakis-surfboards",
+      "name": "Psillakis Surfboards",
+      "website_url": "https://www.psillakissurfboards.com.au/",
+      "location_label": "Brookvale, New South Wales, Australia",
+      "founder_name": "Mike Psillakis",
+      "lead_shaper_name": "Mike Psillakis",
+      "short_description": "Hand-shaped custom surfboards by Mike Psillakis in Brookvale, Sydney — performance shortboards, hybrids, twins, and guns from a shaper mentored by Simon Anderson since 1989.",
+            "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/psillakis-surfboards.png",
+      "models": [
+        {
+          "name": "80s Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/80sTwinPsillakis1.jpg?v=1673138755",
+          "description": "The 80s Twin was the mainstay before the thruster was developed and then superseded the twin fin design. Now the twin fin has re-emerged with better fin positioning and rockers. This has brought some spice back into the design with great feedback. Order the 80s Twin 1 inch shorter than your current shortboard.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Bootboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/Psillakissurfboardsbootboard.jpg?v=1728801910",
+          "description": "Wide point set forward. Volume pushed towards the nose, relaxed entry rocker, with low rails, foiled tail with Vee double concave entry for breaking up the water into a slight single concave to Vee double concave tail for when the waves are ON.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "BumbleBee Round",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/BumbleBeeRoundMIkepsillakis1.jpg?v=1673138721",
+          "description": "The Bumblebee round is a natural progression from the original Bumblebee, to be surfed in a variety of conditions but with the demand of more volume and ease of paddle power.This model has an extra 3/4 inch in width and 1/8 thicker than the original Bumblebee swallow and the rails are mid to low/soft for rail engagement to accommodate for the wider template. The bottom contours have a rolled V entry into a very slight V double concave tail with a low rocker to suit a wide variety of conditions. Also available in EPS EPOXY 5'2-19\"1/4-2\"1/4 24.5 L5'3\"-19\"3/8-2\"5/16 25.7 L5'4\"-19\"1/2-2\"5/16 26.3 L5'5\"-19\"5/8-2\"3/8 27.6 L5'6\"-19\"3/4-2\"3/8 28.2 L5'7\"-19\"7/8-2\"7/16 29.6 L5'8\"-20\"-2\"7/16 30.2 L5'9\"20\"1/8-2\"1/2 31.7 L5'10\"-20\"1/4-2\"1/2 32.3 L5\"11\"-20\"3/8-2\"9/16 33.8 L6'0\"-20\"1/2-2\"9/16 34.5 L6'1\"-20\"5/8-2\"5/8 36.0 L6'2\"-20\"3/4-2\"5/8 36.8 L6'3\"-20\"7/8-2\"11/16 38.4 L6'4\"-21\"-2\"3/4 40.0 L6'5\"-21\"1/4-2\"3/4 41.0 L6'6\"-21\"1/2-2\"13/16 43.0 L6'7\"-21\"3/4-2\"7/8 45.1 L6'8\"-22\"-3\" 48.2 L6'9\"-22\"1/4-3\"1/16 50.3 L6'10\"-22\"1/2-3\"1/8 52.6 L-6'11\"-22\"3/4-3\"1/4 56.0 L-7'0\"-23\"-3\"1/2 60.9 L",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "BumbleBee Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/MikePsillakisbumblebeeswallow1.jpg?v=1673138992",
+          "description": "The BumbleBee is not a fish! It’s designed as an alternative board ridden in a variety of waves. The plan shape is unique with a snub nose, wide point forward of centre and a straighter curve in the planshape leading into the swallow. This board has been tested in average beach break surf to more serious waves like in Indo with amazing results. Originally designed as a quad, but can be ridden as a thruster given the 5 fin option.Best way to describe The BumbleBee is, if you had no choice but to take one board with you on a trip, this would be it.Ride this board shorter than your normal board. You’ll be surprised this board will paddle better than your short board! Also available in EPS EPOXY Stock Dimensions 5'6 x 19 x 2 5/165'8 x 19 1/4 x 2 3/8 5'10 x 19 1/2 x 2 3/8 5'11 x 19 5/8 x 2 7/16 6'0 x 19 3/4 x 2 1/2 6'2 x 20 x 2 9/16 6'4 x 20 1/4 x 2 5/8 6'6 x 20 1/2 x 2 5/8 6'8 x 20 3/4 x 2 3/47'0 x 21 x 2 7/8",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "BZGROM",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/PsillakissurfboardsGromboard.jpg?v=1681967094",
+          "description": "After working with Benny Zanatta for over 7 years now, it was time to send it with a BZ Grom model. All my grom models are based off Bennys design to bring out the best in any groms surfing. The Rocker is my MPB rocker, the most curviest rocker in my range. Deep single concave and a smooth planshape outline. This model is for the grom looking to progress in their surfing. Also available in EPS EPOXY Dims: 4'6\"-16\"3/8-1\"7/8 14L4'7\"-16\"1/2-1\"15/16 14.5L4'8-16\"5/8-1\"15/16 15L4'9\"-16\"3/4-1\"15/16 15.5L4'10\"-16\"7/8-2\" 16L4'11\"-17\"-2\" 17.5L5'0\"-17\"1/8-2\" 18L5'1\"-17\"1/4-2\"1/16 18.5L5'2\"-17\"3/8-2\"1/16 19L5'3\"-17\"1/2-2\"1/16 19.5L5'4\"-17\"5/8-2\"1/8 20.7L5'5\"-17\"3/4-2\"1/8 21.2L5'6\"-17\"7/8-2\"1/8 21.7L5\"7\"-18\"-2\"3/16 23L",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Channel Twin Rounded Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/psillakis4.jpg?v=1660388291",
+          "description": "The development of the Channel twin fin rounded pin has been a long way in the making. The contours and fin placements have been key for this design to be proven in a variety of conditions including serious reef breaks throughout Indonesia. The objective of this design was less drag in the absence of the third fin without the compromise of hold and drive. I encourage to order this board as your stepup size for increased rail drive. Stock Dimensions5'10\"-18\"1/2-2\"1/46'0\"-18\"3/4-2\"3/86'2\"-19\"-2\"1/26'4\"-19\"1/4-2\"9/166'6\"-19\"1/2-2\"5/86'8\"-19\"3/4-2\"3/46'10\"-20\"-2\"13/167'0\"-20\"1/4 - 2\"7/87'2\"-20\"1/2- 2\"15/167'4\"-21\"-3\" Dimensions can be customized to suit rider or wave conditions",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Contemporary Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/Psillakissemigun1.jpg?v=1673139214",
+          "description": "Classic contemporary gun for the seasoned surfer.Whether in Hawaii, Indonesia or at your home break and the swell is on. Some minor changes with a slightly wider outline for better paddling and maneuverability the contemporary gun is your timeless gun for waves in the range of double to triple overhead. Don't be caught under gunned.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Deep Ocean Guns",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/big-gun-2.jpg?v=1464312022",
+          "description": "This board is only for the experienced and not for the faint hearted.Featuring high volume for paddle power, with super foiled tail for control and sensitivity. A complexed Vee, concave bottom contours for control and speed in critical sections.Working with big wave surfers giving me constant feedback has resulted in a highly refined gun thatwill give you the confidence to take on any big wave zone that you can handle.Custom ordered to specific wave types",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Evil Eye",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/14689.png?v=1787525799",
+          "description": "The Evil Eye is probably the most accessible shortboard in the range.The Evil Eye has the wide point slightly forward with a slightly wider nose template. This enables you to order this model an inch shorter, or the same length as your current shortboard for added ease of flow and projection through turns.The Evil Eye has a slightly lower nose rocker. This gives The Evil Eye a larger sweet spot.So the end result is that you have a board that paddles into waves extremely well, carrys inertia through turns and stability on landings from airs or critical turns.Order the Evil Eye an inch shorter than your normal shortboard and 1/8th to 1/4 inch wider. 5'6 x 18 3/4 x 2 3/16 23.5L5'7 x 18 7/8 x 2 1/4 25.2L5'8 x 19 x 2 5/16 26.5L5'9 x 19 1/8 x 2 3/8 27.8L5'10 x 19 1/4 x 2 3/8 28.4L5'11 x 19 3/8 x 2 7/16 29.7L6'0 x 19 1/2 x 2 1/2 31.1L6'1 x 19 5/8 x 2 9/16 32.5L6'2 x 19 3/4 x 2 5/8 33.9L6'3 x 19 7/8 x 2 5/8 34.5L6'4 x 20 x 2 11/16 36L6'5 x 20\" 1/8 x 2 11/16 36.6L6'6 x 20 1/4 x 2 3/4 38.2L Also available in EPS EPOXY",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/PsillakissurfboardsFish1.jpg?v=1673138703",
+          "description": "Inspired by Steve Lis and Skip Frye fishes, this board is fast, smooth and holds its line through full rail turns. Rolled nose to concaved tail gives this board a great feel in all conditions. The fish board comes with a custom tint to your choice and with keel or quad fin set up. From 55″ to 70″ this board suits anyone looking to draw different lines on a wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fly Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/Psillakis_Surfboards_Fly_Fish.jpg?v=1726827043",
+          "description": "The Flyfish has maximum plan shape curve for assisted ease of turning and to fit in tighter areas of a wave face while the lower rocker for picking up speed and sustaining it through flatter sections. The tight swallow tail helps it hold in through fast turns. Also available in EPS EPOXY 5'6 x 18\"5/8 x 2\"1/45'8 x 18\"7/8 x 2\"5/165'10 x 19\"1/8 x 2\"7/165'11 x 19\"1/4 x 2\"1/26'0 x 19\"3/8 x 2\"1/26'1 x 19\"1/2 x 2\"9/166'2 x 19\"3/4 x 2\"5/86'3 x 19\"7/8 x 2\"11/166'4 x 20\" x 2\"3/46'6 x 20\"1/2 x 2\"13/166'8 x 20\"3/4 x 2\"7/86'10 x 21\" x 3\"",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flyer Twin Rounded Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/Doubleflyerrondedtwin1.jpg?v=1673138684",
+          "description": "Latest addition to the Psillakis surfboard collection is the Flyer twin rounded pin. Developed with a good friend Damian \"Taco\" Warr, this performance Twin fin is an all round design that replaces a conventional thruster for those wanting an alternative feel. The rocker has a slightly lower entry with a medium tail rocker. Single concave from nose to tail with low rails for sensitivity and control. Twin fins have less drag than thrusters, because there are only two fins. The key to the Twin fin is knowing where to place them on the board so you can achieve control and drive. Also available in EPS EPOXY",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "High Performance Midlength",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/MikePsillakisHPMidlength1.jpg?v=1673138668",
+          "description": "The High Performance midlength is a new addition to 2023. Without sacrificing too much paddle power, the high performance midlength has more rocker and lower rails. Making the midlength surf more top to bottom with a quicker response. Also available in EPS EPOXY",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Lazy Susan",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/PsillakissurfboardsLazySusan1.jpg?v=1677747132",
+          "description": "Features a clean classic outline, foiled down rails with a rolled Vee tri plan hull bottom. The Lazy Susan brings a smooth classic feel to your repertoire, without too much effort. To be ridden as a quad or single with side bites. Pull the Lazy Susan out when you're not feeling like riding your shortboard. Best in 3 to 6 feet.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid Length",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/Midlength.jpg?v=1673138649",
+          "description": "So you want to be a little more relaxed without losing performance. My midlengths are still built with performance in mind. The midlength has the length and wide to accommodate a more relaxed approach, but the abundance of outline curve and rocker helps this design fit into the \"curl\" of the wave better. Can also be customised to suit you local spot.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Ninja",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/Psillakisminininja.jpg?v=1679604506",
+          "description": "I wanted to create a shortboard that is progressive in below average conditions.The Mini Ninja has a low rocker (MPD rocker) for more drive and paddle power. It has a short board mid rail for quick response and hold in steep sections. Its kind of a fish in disguise, so you can cheat on this board. This board is fun but progressive. Also available in EPS EPOXY Stock Dimensions 5'6 x 19 1/4 x 2 1/45'8 x 19 1/2 x 2 5/165'10 x 19 3/4 x 2 3/85'11 x 19 7/8 x 2 3/86'0 x 20 x 2 1/26'2 x 20 1/8 x 2 9/16 6'4 x 20 1/2 x 2 5/86'6 x 20 5/8 x 2 3/4",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Miss Curvaceous",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/IMG_1825.jpg?v=1730008280",
+          "description": "The Miss Curvaceous is one of the most exciting boards I have designed. The first response from surfers is that this board has an “electric, sparky” feel, thanks to the deepish single concave leading into the fin area. This board is designed to be surfed tight in the pocket of the wave. Extremely high performance board, but very user friendly.The rails are forgiving and it has a slightly different balance in the plan shape giving it a freer nose feel. Slightly wider tail than the gypsy and hipster models to accommodate the extra tail rocker. This board has a unique rocker (MPB rocker) /concave combination which I believe will make this board one my best performance shortboards. Who should ride this board? If you are of average to advanced ability and are looking to take your surfing to the next level in waist to a little over head high waves. Also available in EPS EPOXY Stock Dimensions 5'8 x 18'1/2 x 3/16 24.1L 5'10 x 18'3/4 x 2'1/4 26L 5'11 x 187/8 x 2'5/16 27L 6'0 x 19 x 2'3/8 28.5L 6'1 x 19'1/8 x 2'7/16 29.6L 6'2 x 19'1/4 x 2'1/2 31.2L 6'3 x 19'3/8 x 2'9/16 32.8L 6'4 x 19'1/2 x 2'5/8 34L 6'6 x 19'5/8 x 2'11/16 36.2L",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mode",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/PsillakisModeRoundsquare1.jpg?v=1682132100",
+          "description": "The Mode is a progressive all round short board, and a work horse in most conditions. It has a very slight hip forward of the front fins combined with the proven MPA rocker, single to double concave and a V exit right off the tail. A solid sure feeling dependable board.Also comes as a slightly pulled in round tail which works well as a step up or when the waves get a bit more powerful. Ride The Mode as your “go to” all round short board from 2 to 6ft waves. Also available in EPS EPOXY Stock Dimensions for Mode, with Litres 5'6 x 17\"3/4 x 2\"1/8 21.5L 5'8 x 18\"1/8 x 2\"3/16 23.5L 5'10 x 18\"1/2x 2\"1/4 25.7L 5'11 x 18\"3/4x 2\"5/16 26.9L 6'0 x 18\"7/8 x 2\"3/8 28.4L 6'1 x 19\"1/8 x 2\"7/16 29.6L 6'2 x 19\"1/4 x 2\"7/16 30.4L 6'3 x 19\"3/8 x 2\"1/2 31.8L 6'4 x 19\"1/2 x 2\"9/16 33.9L 6'6 x 19\"3/4 x 2\"5/8 35.3L 6'8 x 19\"7/8 x2\"11/16 37.6L 6'10 x 20\" x 2\"3/4 39.3L",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Paradigm Wide",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/MikePsillakisParadigmWidejpg.jpg?v=1672728975",
+          "description": "The Paradigm wide has a slightly wider template for even more ease in every aspect of why the Paradigm was developed. Suited for the slightly bigger surfing frame in all round conditions. The Paradigm has a progressive shortboard rocker, foiled shortboard rails with a hybrid planshape for more of an easy feel with a touch more flow. For those who find it just a little hard to get into waves and hold speed through certain sections without the compromise of performance. Also available in EPS EPOXY Stock dimensions for Paradigm Wide, with litres: 5'6 x 19\"1/4x 2 1/4 26.1 L5'8 x 19\"3/4 x 2 3/8 29 L5'10 x 20\"1/8 x 2 1/2 32 L6'0 x 20\"1/2 x 2 5/8 35.2 L6'2 x 20\"7/8 x 2 3/4 38.5 L6'4 x 21\"1/4 x 2 7/8 42.5 L6'6 x 21\"5/8 x 3 46.2 L6'8 x 22\" x 3 48.3 L6'10 x 22\"3/8 x 3 1/8 52.2 L7'0 x 22\"3/4 x 3 1/4 56.6 L",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Poached Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/Psillakissurfboardspoachedeggmodel.jpg?v=1683933370",
+          "description": "This model was developed by a few coincidental requests. Design around a softboard that has been proven to perform well. I took it to another level with EPS EPOXY construction, and tweaked the rocker to my liking. The planshape is the same as original softboard with a massive hip in between the stance. Straight up simple Vee bottom with mid round rails.Getting fantastic feedback from this design as an easy forgiving board that throws a nice turn here and there. Get your poached egg 🥚 medium hard. Only available in EPS . Dimensions for the Poached Egg: 6'0\"-20\"1/2-2\"1/26'2\"-20\"3/4-2\"1/26'4\"-21\"-2\"9/166'6\"-21\"1/4-2\"9/166'8\"-21\"1/2-2\"5/86'10\"-21\"3/4-2\"11/167'0\"-22\"-2\"3/4",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Quad Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/Psillakissurfboardsquadfishmodel.jpg?v=1682658906",
+          "description": "The Quadfish is designed for fun in mind. I dare say it’s a souped up hybrid. It has a full forward nose plan shape with a clean broad tail. The bottom has a single into double concave and a “V” out through the tail making this board really fast and responsive to turn. Normally comes with my MPA/2 rocker, so its slightly flatter in the entry to skim over flat sections. A real exciting board for a progressive, creative surfer in small waves. Ride this board shorter than your normal board. Also available in EPS EPOXY Stock Dimensions 5'6 x 19'1/4 x 2'1/45'8 x 19'1/2 x 2'5/165'10 x 19'3/4 x 2'3/85'11 x 19'7/8 x 2'3/8 6'0 x 20' x 2'1/26'2 x 20'1/4 x 2'5/86'4 x 20'1/2 x 2'5/86'6 x 20'3/4 x 2'3/46'8 x 21' x 2'7/8",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quad Fish Flyer",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/QuadfishflyerPsillakissurfboards1.jpg?v=1673138540",
+          "description": "The Quadfish flyer is a wider outline than the original quadfish model.It's around 1 inch wider for extra planning area for those extremely lack luster days. You can ride this around an inch or two smaller than the original and comes as a 5 fin option.The flyer in the tail reduces area leading into the swallow which gives the board good rail to rail pivot in a wide template board and the bottom contours are V nose to single double concave centre and tail and the rocker is low for extra glide over the flats. If you're looking for some fun but still be able to jam a good turn here and there, the Quadfish flyer is a great option. Also available in EPS EPOXY Stock Dimensions -5'4\"-20\"-2\"1/4 26.3 L-5'5\"-20\"1/8-2\"5/16 27.6 L-5'6\"-20\"1/4-2\"3/8 28.9 L-5'7\"-20\"3/8-2\"7/16 30.3 L-5'8\"-20\"1/2-2\"1/2 31.8 L-5'9\"-20\"5/8-2\"9/16 33.3 L-5'10\"-20\"3/4-2\"5/8 34.8 L-5'11\"-20\"7/8-2\"11/16 36.3 L-6'0\"-21\"-2\"3/4 37.9 L-6'1-21\"1/8-2\"3/4 38.7 L-6'2\"-21\"1/4-2\"3/4 39.4 L-6'3\"-21\"3/8-2\"13/16 41.1 L-6'4\"-21\"1/2-2\"13/16 41.9 L-6'5\"-21\"5/8-2\"13/16 42.7 L-6'6\"-21\"3/4'-2\"7/8 44.5 L-6'7\"-21\"7/8-2\"7/8 45.3 L-6'8\"-22\"-2\"7/8 46.1 L-6'9\"-22\"1/8-2\"15/16 48.0 L-6'10\"-22\"1/4-2\"15/16 48.9 L-6'11\"-22\"3/8-3\" 50.8 L-7'0\"-22\"1/2-3\" 51.7 L",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Reef Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/Psillakisfish-2.jpg?v=1675754265",
+          "description": "The Reef Fish is designed as a all rounder twin fin fish. The longer, drawn out planshape gives this board plenty of hold as a twin fin in waves with more power. Low rails and a foiled tail also adds more control. Recommended to be ridden with a keel fin for maximum hold.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Smooth Operator",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/SmoothOperator1.jpg?v=1673138498",
+          "description": "The Smooth Operator is for the established surfer. The surfer wanting a board when the waves start to get a little more serious. A great step up if you're riding a wider high volume shortboard. With generous volume and a full outline, the Smooth Operator has shortboard qualities with extra volume for ultimate buoyancy and paddle power, With subtle “rolls” and “V” in the bottom, this high volume board is easy to maneuver. Also good to note that the V in the bottom and the rails can be enhanced to suit different weight ranges.Comes with my MPD rocker, being my lowest rocker for a all round feel. A gentleman's board for 2 to 8ft waves.Also available in EPS EPOXY Smooth Operator wide6'4 x 20 x 2 5/8 6'6x 20 1/4 x 2\"11/16 6'8 x 20 1/2 x 2 11/166'10 x 20 3/4 x 2 3/47'0 x 21 x 2 3/47'2 x 21 1/4 x 2 7/87'4 x 21 1/2 x 37'6 x 21 3/4 x 3 7'8 x 22 x 3 1/87'10 x 22 1/4 x 3 1/88'0 x 22 1/2 x 3 1/4Smooth Operator slim6'4 x 19 1/2 x 2 5/86'6 x 19 3/4 x 2 5/86'8 x 20 x 2 11/166'10 x 20 1/4 x 2 3/47'0 x 20 1/2x 2 3/47'2 x 20 3/4 x 2 7/87'4 x 21 x 37'6 x 21 1/4 x 3 7'8 x 21 1/2 x 3 1/87'10 x 22 3/4 x 3 1/88'0 x 22 x 3 1/4",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Soltero",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/single-2.jpg?v=1462579912",
+          "description": "A combination of clean full outline with low rocker and Subtle bottom contours, the Soltero single fin will handle a variety of conditions and can take off deep with plenty of trim and flow to get around any section with ease. The Soltero is for the surfer looking for the free glide feel that only a single fin provides.Rails tapered soft for extra bite.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Step Sister",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/Psillakissurfboardsstepsister.jpg?v=1676794137",
+          "description": "The Step Sister derived from the Miss Curvaceous model. It's a step down model for smaller waves. The same rocker as the Miss Curvaceous model. Lower entry with maximum tail rocker.The lower entry allows the board to skim over the flats and the extra tail rocker helps the board fit in the pocket well and turn on a tight radius. The Step Sister plan shape features a super wide tail block with a broad outline. The rails are generally full, but can customise to suit the individual. Also available in EPS EPOXY Stock Dimensions 5'6 x 18 7/8 x 2 3/16 23.8L 5'8 x 19 1/8 x 2 5/16 25.7L 5'10 x 19 3/8 x 2 3/8 28.3L 5'11 x 19 1/2 x 2 7/16 29.4L 6'0 x 19 5/8 x 2 1/2 31L 6'2 x 20 x 2 x 2 5/8 34L 6'4 x 20 1/4 x 2 11/16 36.4L 6'6 x 20 3/4 x 2 3/4 38.8L",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Step Ups",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/PsillakisStepUp11.jpg?v=1682132165",
+          "description": "For over head waves made for the surfer who wishes he had 2 inches on his normal board so he can surf the same in bigger waves. Simply said, this is a stretched out version of your short board. It allows you to surf bigger waves with the same maneuverability as you would in smaller waves. It has relaxed concaves and good tail release for control at high speeds. This is a great addition to your short board.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Butter Board",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/PsillakisButterboard-2.jpg?v=1675754246",
+          "description": "The Butter board has a throwback foil with high volume, tapered rails for ease and flow. Featuring a V rolled nose into a slight V double concave tail. This board is for the surfer who is all about flow and glide with smooth bold turns. Can be surfed in a variety of waves up to head high. Also a great progressive board for the novice, Smooth like butter.... Stock Dimensions 5'6\"-19\"-2\"1/45'8\"-19\"1/4-2\"5/165'10\"-19\"1/2-2\"3/86'0\"-19\"3/4-2\"71/66'2\"-20\"-2\"1/26'4\"-20\"1/4-2\"9/166'6\"-20\"1/2-2\"5/86'8\"-20\"3/4-2\"11/166'10\"-21\"-2\"3/47'0\"-21\"1/4-13/16",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Diamond",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/Psillakisdiamondmodel.jpg?v=1737267756",
+          "description": "Super short, super wide, super flat with a built in flyer diamond setup. The bottom features a slight single to “V” double concave for rail to rail ease for a wider than normal sled. Ride this board when the waves are void to use any other craft. This thing eats flat sections up, and punts as high as you can handle. It’s also great for nice small wave surfing for the more mature surfer. Also available in EPS EPOXY Stock Dimensions 5'4 x 18 3/4 x 2 1/85'5 x 18 7/8 x 2 3/165'6 x 19 x 2 1/45'8 x 19 1/4 x 2 3/85'10 x 19 1/2 x 2 7 1/66'0 x 19 3/4 x 2 1/26'2 x 20 x 2 9/166'4 x 20 1/2 x 2 5/86'6 x 20 3/4 x 2 11/16",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Galaga",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/GalagaPsillakisSurfboards.jpg?v=1769801937",
+          "description": "The 80s surfboard evolution saw the birth of the thruster. This bought in the no nose template and wide point behind centre. With flat decks, forward volumes and foiled tail still the norm of the era, wave catch abilities was no issue. Vee bottoms were the standard. This bought smooth rail to rail transition and a larger sweet spot. Tail rockers were generally flater at the time. This was great for a relaxed less effort for speed feel. The Galaga model brings back these design qualities but with slight modern refinements with rockers and volumes.Loud and proud sprays with checkers and bright colours are encouraged. Also available in EPS EPOXY",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Gargamel",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/gargamel1_262baaa3-dcd2-41a3-a581-ed3c3b88e7d9.jpg?v=1673249481",
+          "description": "Packing plenty of foam in this gun is what the Gargamel is about. Rolled entry with a tri plane hull with a deep Vee tail, making the Gargamel somewhat very nimble for a high volume gun. This model is made for those who want to move around in a double overhead lineup with ease, yet having enough performance for a quick responsive feel.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Gypsy",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/GypsyPsillakis1.jpg?v=1673138784",
+          "description": "The Gypsy model features a clean outline with no hips. The nose rocker is slightly lower with a moderate tail rocker. Single concave through the midpoint to a deeper double inside a single concave through the fin area.The rails are medium soft. These designs features allow the Gypsy to be surfed in a variety of conditions. The Gypsy feels at home on any beach, reef break in small to medium size surf. Also available in EPS EPOXY Stock Dimensions 5'6 x 18\"1/8 x 2\"3/16 22.9L 5'8 x 18\"1/2 x 2\" 1/4 24.7L 5'10 x 18\"7/8 x 2\"3/8 27.4L 5'11 x 19\" x 2\"7/16 28.7L 6'0 x 19\"1/8 x 2\"1/2 30L 6'1 x 19\"1/4 x 2\"1/2 30.6L 6'2 x 19\"3/8 x 2\"9/16 32L 6'3 x 19\"1/2 x 2\"5/8 33.5L 6'4 x 19\"5/8 x 2\"11/16 34.9L 6'5\"x19\"7/8x 2\"3/4 36.7L 6'6 x 20\" x 2\"3/4 37.4L 6'8 x 20\"1/4x2\"13/16 39.7 6'10 x 20\"1/2x 2'7/8 44.2L",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Hipster",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/Psillakissurfboardshipstermodel1.jpg?v=1680926283",
+          "description": "The Hipster model is named after the distinctive hip in the tail. Increased area in the plan shape leading into the hip, allows the rider to generate quicker planning speed, while the hip in the tail gives the board a pivotal feel.Great at turning in shorter distances for smaller waves. It has full rails with foiled nose and tail. Works best with my MPA rocker to enhance the hip. This board is a definite must have in the quiver. Also available in EPS EPOXY Stock Dimensions 5'6 x 18\" 1/2 x 2\"1/8 22.5L 5'8 x 18\" 3/4 x 2\" 3/16 24.4L 5'10 x 19\" x 2\"1/4 26.4L 5'11 x 19\" 1/8 x 2\"5/16 27.3L 6'0 x 19\" 1/4 x 2\"3/8 28.9L 6'1 x 19\" 3/8 x 2\"3/8 29.5L 6'2 x 19\" 1/2 x 2\"7/16 30.6L 6'3 x 19\" 3/4 x 2\"1/2 32.4L 6'4 x 19\" 7/8 x 2\"9/16 34.1L 6'6 x 20\" x 2\"5/8 35.8L 6'8 x 20\" 1/4 x 2\"11/16 38.3L 6'10 x 20\" 1/2 x 2\"3/4 40.3L",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Mercury",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/PsillakisSurfboardsMercury.jpg?v=1764416880",
+          "description": "The Mercury The Mercury is based off my brother's favourite board. It has moderate to high nose rocker with a slightly lower tail rocker. The bottom contours are single to double concave with a slight Vee off the tail. The Mercury has a slightly narrower Square tail. Mercury also liked a flatter deck with tapered low rails. The Mercury Model is to be surfed in the pocket of the wave with lots of back foot drive, vertically into the lip️ 5’8 18 1/4 2 3/16 24.3L 5’9 18 3/8 2 1/4 25.5L 5’10 18 5/8 2 5/16 26.9L 5’11 18 7/8 2 3/8 28.4L 6’0 19 1/8 2 7/16 29.9L 6’1 19 1/4 2 1/2 31.2L 6’2 19 1/2 9/16 32.8L 6’3 19 7/8 2 5/8 34.7L 6’4 20 1/8 2 3/4 37.3L 6’6 20 1/2 27/8 40.6L Also available in EPS EPOXY",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Paradigm",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/PsillakisParadigm1.jpg?v=1673138830",
+          "description": "The Paradigm is the perfect hybrid. It has a progressive shortboard rocker, foiled shortboard rails with a hybrid planshape being slightly wider in the width for more of an easy feel with a touch more flow. For those who find it just a little hard to get into waves and hold speed through certain sections without the compromise of performance. Also available in EPS EPOXY Stock Dimensions 5'6 x 19 x 2 1/45'8 x 19 1/4 x 2 5/16 5'10 x 19 1/2 x 2 3/8 6'0 x 19 3/4 x 2 7/166'2 x 20 x 2 1/26'4 x 20 1/4 x 2 5/86'6 x 20 1/2 x 2 3/46'8 x 20 3/4 x 2 13/166'10 x 21 x 2 7/87'0 x 21 1/2 x 2 15/16",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Squid",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/MikePsillakisTheSquid1.jpg?v=1673138850",
+          "description": "The Squid is for the surfer who thinks surfing should be all about having fun and drawing different lines. The Squid makes ordinary surf exciting and fun. The added width and volume of this board and the low rocker enables you to surf parts of the wave that you could only dream of. The concave, double concave “V” tail makes this board rail to rail with ease. High Rails for less drag and flow. Ride The Squid when the surf is weak or if you want to experience a different feel. Also available in EPS EPOXY Stock Dimensions 5'4 x 19 3/4 x 2 1/25'6 x 20 x 2 5/8 5'8 x 20 1/4 x 2 5/8 5'10 x 20 1/2 x 2 3/4 5'11 x 20 5/8 x 2 3/4 6'0 x 20 3/4 x 2 7/8 6'2 x 21 x 2 7/8 6'4 x 21 1/4 x 36'6 x 21 1/2 x 36'8 x 21 3/4 x 3",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Super Greek Freak",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/SuperGreekFreak_5ccd14f2-c940-4cf4-9ecf-c569c434312a.jpg?v=1763360439",
+          "description": "This Model was born from my brother Mercury's request for a high performance shortboard to have some 80s influence thrown in, with some ease and fun to it. Mercury's quote for the Super Greek Freak was, \"party at the front, business at the back\". Meaning that the nose to wide point is slightly wider for added stability. The nose rocker is lower for ease of paddle and glide onto waves. And the tail end has slightly more rocker for getting tight into the lip. The deck is flatter, bringing most of the volume out to the rail, with a steep tapered low crisp rail. This gives the board maximum buoyancy and hold at the tip of the rail. The nose has a slight beak for added forward volume which adds to more ease and glide. This board was designed to give maximum enjoyment without the sacrifice of performance. Design features · Low entry rocker for paddling and glide · Moderate tail rocker for added performance in the tail · Slightly wider template for ease and flow · Slight beak in nose for holding forward volume for ease and inertia through turns · Flat deck with steep tapered rail for maximum volume and hold at rail tip The Super Greek Freak. For when there's a party at the front and business at the back. 5'6 x 18 3/4 x 2 3/16 24.L 5'7 x 18 7/8 x 2 1/4 25.8L 5'8 x 19 x 2 5/16 27L 5'9 x 19 1/8 x 2 3/8 28.3L 5'10 x 19 1/4 x 2 3/8 28.5L 5'11 x 19 3/8 x 2 7/16 30.2L 6'0 x 19 1/2 x 2 1/2 31.6L 6'1 x 19 5/8 x 2 9/16 33L 6'2 x 19 3/4 x 2 5/8 34.4L 6'3 x 19 7/8 x 2 5/8 35L 6'4 x 20 x 2 11/16 36.5L 6'5 x 20\" 1/8 x 2 11/16 37.1L 6'6 x 20 1/4 x 2 3/4 38.7L Also available in EPS EPOXY",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The WPF",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/products/wpf1.jpg?v=1676196239",
+          "description": "The WPF (Wide Point Forward) modelCreated for timeless surfing.The wide point is pushed up from 5 to 6 inches forward of center to create a fuller nose shoulder for paddling ease and a straighter pulled in tail planshape. This makes for a large sweet spot, and can be surfed forward with ease. The rocker is low with a rolled entry to panel Vee tail A great all rounder that can be surfed well in over head conditions. This Model is suitable for a multiple of fin options. Thruster, Quad options, single fin or single fin plus side bites.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twinzer",
+          "image_url": "https://cdn.shopify.com/s/files/1/1182/3322/files/twinzer.webp?v=1773614859",
+          "description": "The Twinzer is My MR style twin fin board, with a stabiliser option in the rear, Still can be surfed fine as a twin fin. It features a low rocker with deep concaves making this board an extremely fast and desirable board in a variety of waves.Tapered rails for extra bite with a slight flyer in the tail. This board has a classic look with a progressive feel. This is one of my personal favorites. Stock Dimensions5'4 x 19 1/4 x 2 1/45'6 x 19 1/2 x 2 1/45'8 x 19 3/4 X 2 2 5/165'10 x 20 x 2 3/86'0 x 20 1/4 x 2 7/166'2 x 20 1/2 x 2 1/26'4 x 20 3/4 x 2 5/86'6 X 21 x 2 3/46'8 x 21 1/2 x 2 13/16",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
