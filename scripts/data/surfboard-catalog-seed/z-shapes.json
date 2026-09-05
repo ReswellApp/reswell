@@ -1,0 +1,72 @@
+{
+  "generated_for": "Z Shapes official named standup catalog",
+  "source": "https://zshapes.com.au (WordPress board model pages — excludes custom orders, accessories, and apparel)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "z-shapes",
+      "name": "Z Shapes",
+      "website_url": "https://zshapes.com.au",
+      "location_label": "Dunsborough, Western Australia",
+      "founder_name": "Zak Ogram",
+      "lead_shaper_name": "Zak Ogram",
+      "short_description": "High-performance shortboards, fishes, mids, and guns from Zak Ogram in Dunsborough — shaped for Margaret River and South West reef waves.",
+      "models": [
+        {
+          "name": "Asset",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/asset.png",
+          "description": "Easy to ride, reliable performer! Designed as a higher volume shortboard that's a great paddler and easy to ride no matter your skill level. Forgiving glide into waves, flows through open face turns and can handle some size. Mellow rocker, foam under the chest with outline curve around the front foot pulling into a round tail. Bottom contour is mellow concave with a touch of double concave through the fins.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Denzel",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/denzel.png",
+          "description": "Designed for when the waves are pumping and you want to unleash. Comfortable in the barrel, turns tight in the pocket and plenty of speed to go to the air. Even, curvy rocker with refined foil and outline. Bottom contour is a deep single concave focused between your feet.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Denzel Step Up",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/5-1.png",
+          "description": "Ultra high performance in solid surf! All the same features as the Denzel but geared up to perform in bigger waves. Comfortable in the barrel, turns tight in the pocket and plenty of speed to go to the air. Even, curvy rocker with refined foil and outline. Bottom contour is a deep single concave focused between your feet.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "GR Grom",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/gr-grom.png",
+          "description": "For all the young ones learning the ways! Designed to make surfing a whole lot of fun in the early years. Easy to catch plenty of waves and start flowing into turns. Mellow rocker with a fuller, forgiving outline. Bottom contour is mellow single concave to double concave through the fins.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/gun.png",
+          "description": "Get in early, hold the line! Designed to handle the power of the open water reef breaks here in the South West. Chase down (or dodge) the sets, get a clean glide in with control and lay on rail when you want. Fuller up front, sleeked out tail in both outline and foil. Bottom contour is double concave in Vee through the entry, neutral through the belly into Vee through the fins out the tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Kinetic",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/1-1.png",
+          "description": "Small wave speed, high performance bite! Designed to add serious spark to those smaller days. Quick and easy speed, flies over flat sections and can be jammed in the face, pocket and lip without skipping out. Low rocker, foam under chest with refined tail, wing and swallow tail for bite. Bottom contour is a pronounced spiral concave flowing from under the chest out through the tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mid",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/mid.png",
+          "description": "Designed for everyone to enjoy, a wave catching machine with surprising performance. Cruise the point breaks, a lazy session at Yallingup or catch your very first waves. Full mid style outline with generous volume throughout. Bottom contour is rolled hull up front into double in deep Vee through the tail third.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nectar",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/nectar.png",
+          "description": "Smooth and reliable, everyday high performer! Designed with every bit of my 15 years' experience as a go-to shortboard you can rely on every day. Right in the sweet spot of speed and manoeuvrability, leave it in the car and ride it everywhere. Medium rocker with some lift out the tail, balanced performance foil and outline. Bottom contour is a flowing single to double concave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Oishii Fish",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/8-1.png",
+          "description": "Modern twist on an old school favourite! Designed for pure fun, relax and enjoy the ride. Fly down the line and swoop through turns on flatter faced or smaller waves. Refined fish outline with low rocker, fuller flat deck for volume and a deep swallow tail quad fin combo. Bottom contour is flat up front with a soft double concave feeding the fins and decent Vee off the tail.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
