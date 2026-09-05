@@ -1,0 +1,78 @@
+{
+  "generated_for": "POG Surfboards official named standup catalog",
+  "source": "https://www.pogsurfboards.com (WordPress model galleries — No Brainers, Fish Shop, and Longboard pages; excludes merch, custom deposits, and dimension-specific one-offs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "pog-surfboards",
+      "name": "POG Surfboards",
+      "website_url": "https://www.pogsurfboards.com",
+      "location_label": "Sunshine Coast, Queensland, Australia",
+      "founder_name": "Paul O'Grady",
+      "lead_shaper_name": "Paul O'Grady",
+      "short_description": "Custom and off-the-rack boards from Paul O'Grady on the Sunshine Coast since 1981 — Flying Fish, Sick Squid, No Brainer, and classic mals.",
+      "models": [
+        {
+          "name": "No Brainer",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/51022-No-Brainer-single-concave-squash-tail-thruster-1.jpg",
+          "description": "A post-apocalyptic modern shortboard for those who just want to shred in and above the lip. The No Brainer is a high-performance comp-light model for advanced surfers in all kinds of waves. Speed is maximised by a single concave running from the front foot to the back fin, usually set up with a thruster/quad option.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flying Fish",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Flying-Fish-1.png",
+          "description": "A throwback to the late 70s and 80s with its distinctive semi-retro single-flyer swallowtail plan shape. With a little extra width and thickness, the Flying Fish will improve your wave count even on the smaller days. Designed with a single to double concave and a pulled-in tail, the Flying Fish thruster delivers powerful, top-to-bottom performance even on bigger days.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flying Fish Twin",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Flying-Fish-Twin-Top.jpg",
+          "description": "A single flyer swallow tail twin fin throw-back to the late 70s and early 80s with heavy influences of Mark Richards and Larry Bertlemann. The plan shape of the Twin version has been tweaked to produce a shorter tail behind the fins to deliver drive while maintaining the looseness and speed of the Twin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flying Fish Single",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Flying-Fish-Single-Profile.png",
+          "description": "Single flyer swallow tail with a pulled in nose and narrower tail — the Flying Fish as a dedicated single fin for longer lines and a more classic feel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sick Squid",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Sick-Squid-Top.jpg",
+          "description": "Another all-rounder with a fuller nose and outline than the Flying Fish, this one lends itself to the single board quiver as well. Extra girth for paddle power in fatter conditions, with the versatility of a quad/thruster setup across a very broad range of surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fryed Fish",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Fried-Fish-Profile.png",
+          "description": "A modernised Steve Lis or Skip Frye twin keel fish with a wide deep swallow tail. A full nose with extra volume and width and low rocker allows the Fryed Fish to catch waves like a Malibu and surf like a skateboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sprat",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Sprat-Top.png",
+          "description": "The Sprat is a single flyer swallow tail twinzer with a wider tail and a wide round nose. This board has a concave chined hull forward into a double concave through the fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Cuttle Fish",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Cuttle-Fish-Top.jpg",
+          "description": "The Cuttle Fish is a classic egg plan shape and a great all-rounder. Extremely versatile, it can be set up as a single, quad/thruster or even a twin. The simple plan shape is enhanced by a forward chined concave to double concave bottom.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Soul Fish",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Soul-Fish-Top.jpg",
+          "description": "The Soul Fish is not really a fish at all but a modernised single fin for the retro purist. Pulled-in nose and reduced tail area produce longer cleaner lines, complimented by a pin, rounded pin, or small swallow. A go-to for reef and solid point breaks.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mal",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Malibu-Longboard-Surfboard-Top.png",
+          "description": "Whether you prefer old-style logs with pinched rails or modern mals with noseriding rockers and concaves for manoeuvrability, POG custom mals are designed with the features you want on a classic longboard.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
