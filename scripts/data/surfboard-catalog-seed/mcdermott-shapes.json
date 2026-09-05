@@ -1,0 +1,84 @@
+{
+  "generated_for": "McDermott Shapes official named shape catalog",
+  "source": "https://www.mcdermottshapes.com/boards (Wix boards page — excludes Custom SUP and Technora construction notes)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mcdermott-shapes",
+      "name": "McDermott Shapes",
+      "website_url": "https://www.mcdermottshapes.com",
+      "location_label": "Scarborough, Maine",
+      "founder_name": "Andy McDermott",
+      "lead_shaper_name": "Andy McDermott",
+      "short_description": "Brother-run Maine custom shop building East Coast shortboards, fishes, and logs since 2004.",
+      "models": [
+        {
+          "name": "Rock Lobster",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_55d5cd87ad324675af2a67eeb45faf2a.jpg",
+          "description": "Our best seller, and a must have for the daily east-coast surfer. With a consistent rocker, concaved nose and flowing template this longboard is a magic carpet ride on almost any size day. Ride as a 2+1 or single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hippy Flip",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_b557b99a76af4429b655c71ebfb0fed5.jpg",
+          "description": "Designed with a slightly wider nose and a pulled in rounded pin tail, the board hides volume and allows the rider to get into waves earlier. Made from a stringerless EPS core with parabolic (and optional center) carbon reinforcement. This provides a consistent, fast spring back flex pattern, in a very light, strong and performance oriented shortboard. Pictured with a single fin box +2, but can also be set up as a bonzer, thruster setup, even a quad.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Annihilator",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_bc511e0524c847bfa2b89464960d2619~mv2_d_1944_2592_s_2.jpg",
+          "description": "Orginally known as the Annihil8tor for Greg @ Team Eight Snowboards, this is a geat shortboard for New England. Wide round template, hiding volume through the nose and midsection, and thinning through the tail to allow for great turns and release. Lower rocker with a single to double concave, with a subtle V out the tail. Best as either a thruster, quad or 5 fin set up.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The 007",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_344324f6ba7244ae92797d811082d53e.jpg",
+          "description": "High performance shortboard template, loves powerful waves. The 007 has full single concave through the tail. Available in thruster, quad or five fin set-up. 18 1/4\" – 19 1/2\" wide, 1 5/8\" - 2 1/2\" thick.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bushmaster",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_1181410ab64745858a1b2adce6690b39.jpg",
+          "description": "Dimensions are custom to fit the surfer but the bushmaster is a serious board built for serious waves. There is considerable foam throughout board to make for faster paddling, but has a thinned out tail allowing you to still turn and hold you in those critical sections. Double concave with a slight v out the tail, this board was designed to push the envelope.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Canadian Candy",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_7c68d904b96944288df3bedba9451f5f.jpg",
+          "description": "Great board for everyday surfing, this model has a round tail to keep your turns loose with a wider nose to make catching waves easier. Thick in the middle with thinned out rails and tail, this is a great board that you won't get sick of. Ideal size range 6'2\" - 7'6\" with any combo of fin set up: 2+1, thruster, quad, 5 fin, or single fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Stinger",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_3cac52607e204c9482aa1c4d9f62a59c.jpg",
+          "description": "Ben Ipa inspired this 7'4\" stinger works great as an everyday board. The hip in the mid-rail gives a great pivot point between the feet, for looser and juicier turns. The Stinger has a little more foam and a mid to low rocker profile which enables you to have more paddle power.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Space Invader",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_075a96c7440940ce97fc769e689526f8.jpg",
+          "description": "Classic noserider template. The Space Invader has mid-low rocker, just the right amount of nose concave, and a wider tail which gives stabilty to those willing to walk the plank.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "TSM",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_aa98901cef1f4d7dbbdc985433936a35.jpg",
+          "description": "Learned this template under the watchful eye of Andy's shaping mentor, Terry Senate of San Clemente, CA. Wide nose and round tail leaves a fuller template throughout the whole board. Shaped with a stringerless EPS blank, this board is extremely light. We glassed the TSM with single 6 and a carbon fiber vector net on the deck, a single 4 on the bottom, and reinforced the rails with carbon.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Problem Child",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_12c2241f4e684c8cbe899e7d8f341912.jpg",
+          "description": "This board is a 'mini step-up' board for New England. Slightly pulled in tail gives the board bite and drive through turns, this template loves big carving turns and sitting deep in the pocket. Single to double concave, with V out the tail, makes this board easy to move around.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Big Guy Fish",
+          "image_url": "https://static.wixstatic.com/media/ec05a3_139809cced6a4c5d84524f71361984e5.jpg",
+          "description": "This board was made for local surfing legend Wis Davies. Wis wanted a board that he could surf in almost any condition. Something with enough foam to surf on those smaller days, and with a thinned out tail and rails to not hinder on the bigger days. What we got was this board and it seems to be a winning combo.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
