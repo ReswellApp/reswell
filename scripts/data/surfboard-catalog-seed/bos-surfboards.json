@@ -1,0 +1,114 @@
+{
+  "generated_for": "BOS Surfboards official named standup catalog",
+  "source": "https://wearebos.com/collections (Shopify board model collections — excludes apparel, fins, tail pads, gift vouchers, custom deposits, and one-off rare stock)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "bos-surfboards",
+      "name": "BOS Surfboards",
+      "website_url": "https://wearebos.com/",
+      "location_label": "Newlyn, Cornwall, United Kingdom",
+      "founder_name": "Hugh Brockman",
+      "lead_shaper_name": "Hugh Brockman",
+      "short_description": "Cornwall surfboards handcrafted by Hugh Brockman at a factory just outside Newlyn — progressive fishes, twin pins, vee-bottom middies, and traditional logs.",
+      "models": [
+        {
+          "name": "Grim Ripper",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1170054_9ca2a402-358a-4f4a-b544-d5a1345a0cb4.png?v=1687417604",
+          "description": "A board for those that like a slightly more fun orientated shorter board without sacrificing a performance edge. The Grim Ripper is all business up front with a wider outline, late flip rocker, beak nose and foam under the chest, and party in the back with bonzer-inspired double concave to vee and a pulled-in fluted wing swallow or pounded pin tail. Favouring a wide range of surf conditions, it works as a thruster or twin with trailer fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sunfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1190906.png?v=1712261946",
+          "description": "Not just your traditional fish — the Sunfish brings low rocker and beveled front rails together with a heavily foiled, refined tail and varying bottom contours for a progressive fish made for ripping. Available as a keel fin with twinzer option or as a quad, with in-cut bump wing or straight-cut tail templates.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Trad Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/glider_3of10.png?v=1727467441",
+          "description": "Hugh Brockman's take on the traditional San Diego style fish pioneered by Steve Lis — wide swallow tail, low rocker, wide point forward, flat deck with down rails and a beak, finished with Geppy glassed-on fins. Generates effortless speed with a skatey feel off the back foot, best in good waves rather than everyday grovel surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Widowmaker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/products/L1140161.png?v=1656019233",
+          "description": "Inspired by Dave Parmenter's Widowmaker fin setup — a wide-point-forward single-fin type template modernised with interesting rocker lines, bottom contours and fin placements. Provides single-fin glide with the added snap and bite of side fins. Works from smallish waves to well overhead in shorter pocket-rocket lengths or as a high-performance midlength step-up.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/glider_1of7_a6f47fa2-e99b-4911-b453-e102d8a1d4f1.png?v=1722625967",
+          "description": "A highly refined, fast and fluid channel-bottom twin design that trims from the middle and turns hard off the tail. In shorter lengths it is a great shortboard alternative; in longer lengths a wonderful midlength. Evolved from the Widowmaker outline with a pulled-in nose and tail, slight vee in the nose, single concave and four channels through the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Double Pin Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/glider_1of8_6aefbbb5-e702-4a10-9b33-d3e5b7d77c5b.png?v=1727467255",
+          "description": "The Double Pin Twin is a twin pin with a double pin swallow tail for riders who want a more pivotal feel. Same channel-bottom twin-pin platform as the standard Twin Pin — fast, fluid and highly customisable from pocket-rocket tube riders to glidey midlengths.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Vee Bottom Middy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1160360.png?v=1690035180",
+          "description": "As the name suggests, the VBM has a vee bottom, medium rails and flat rocker — a logger's shortboard or a shortboarder's longboard. Wider nose with wide point slightly forward of centre and a pulled-in tail for control. A staple all-rounder mid-size board available from 6'2 to 9'6 in single fin, 2+1 or quad setups.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "TPH - Tri Plane Hull",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1180790.png?v=1705270325",
+          "description": "A continued evolution of the VBM template with a tri-plane hull bottom built for speed — vee on the rail lifting the rail line, concaves along the centreline and a VBM-derived outline with the wide point shifted forward. A pocket rocket that works especially well as a single fin or single fin with glassed-on bonzer side fins.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Switchblade",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/A022866-R1-04-32Acopy_8b151cf1-6059-4ca2-baa0-10f58dad7be5.jpg?v=1715517756",
+          "description": "BOS x Sam Crookshank signature progressive nose rider — roll bottom with inset scoop concave, thinned rails, wide point back from centre, flat entry rocker with a big tail kick and the fin box as far back as it can go. Locks in on the nose but stays buttery on rail, fitting between the Smooth Mover and Midnight Express.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Midnight Express",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/glider_2of8_8ca652d4-1e1b-4cbc-9fee-3a524d51a8df.png?v=1722623493",
+          "description": "BOS's go-to traditional single-fin log template with flat entry rocker, tail kick, narrow extended nose concave running into rolled vee. Fast through the middle, loose off the tail and holds tight on the nose. Built in Standard, Seahawk pintail and Sleeping Policeman double-step deck variants.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Smooth Mover SM1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1170334.png?v=1689631563",
+          "description": "Smooth Mover Stage 1 — the most progressive option in Hugh Brockman's Smooth Mover line. Part hull, part transitional-era throwback with a full vee bottom and highly refined log outline suited to beach-break logging and clean point breaks. Best for competent longboard riders who want a challenging but rewarding small-wave all-rounder.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Smooth Mover SM2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1170334.png?v=1689631563",
+          "description": "Smooth Mover Stage 2 — shares the SM1 outline and rocker but adds pronounced concave inside the rolled vee from nose to fin, with lifted nose rails and a slight hard edge out the tail. BOS's most popular progressive single-fin log for UK waves — holds on the nose and stays loose off the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Smooth Mover SM3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1170334.png?v=1689631563",
+          "description": "Smooth Mover Stage 3 — the team favourite, pushing the SM design further with the wide point moved back, more hip in the rear third, steady narrow nose concave inside the roll and panel vee around the fin. Nimble and responsive with easy nose rides and a concave deck for extra energy.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Mega",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/L1180999.png?v=1705271074",
+          "description": "Mini Mega fish Simmons style mini glider — a serious cross-country trimming board with streamlined outline, rocker and foil, blended vee and subtle concave for speed with forgiving front rails and a hard tail. Part of Hugh Brockman's MEGA glider family, offered as the shorter fish Simmons template.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "BOS x OS Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/BOSxOSlog.png?v=1769969132",
+          "description": "BOS x OS limited edition single-fin longboard — classic design with medium full rails for stability, nose concave for lift and nose-riding capability and tail rocker flick for easy turning. US Blanks core with bass stringer and wet-sanded gloss finish.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "BOS x OS Magic Carpet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0014/0204/4503/files/BOSxOSMC.png?v=1769967864",
+          "description": "BOS x OS limited edition one-board quiver — the Magic Carpet is designed for versatility and performance with a 2+1 fin setup (Futures sides with single fin box). Available in two sizes for surfers who want one board that covers a wide range of wave conditions.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
