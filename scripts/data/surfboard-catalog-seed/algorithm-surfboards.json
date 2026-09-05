@@ -1,0 +1,78 @@
+{
+  "generated_for": "Algorithm Surfboards official named standup catalog",
+  "source": "https://algorithmsurf.com/product-category/surfboards/ (WooCommerce surfboard products — excludes apparel, hats, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "algorithm-surfboards",
+      "name": "Algorithm Surfboards",
+      "website_url": "https://algorithmsurf.com",
+      "location_label": "Oceanside, California",
+      "founder_name": "Brian Brown",
+      "lead_shaper_name": "Brian Brown",
+      "short_description": "Oceanside custom boards programmed in Shape3D and hand-tuned by shaper Brian Brown.",
+      "models": [
+        {
+          "name": "2-Factor",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Board-prod-1200-2FA.png",
+          "description": "The 2xFactor – When one setup isn't enough and you need to break the code wide open.\n\nThis is a modern twin that doesn't just stop at two. With the option to run it as a twin, quad, or even a 2+1, this board gives you the freedom to rewrite the rules on how you want to draw your lines.\n\nHere's the program: A modern take on the classic tri‑plane hull — fast, frictionless speed down the line with that buttery rail‑to‑rail transition hull-heads obsess over. Add in a swallow tail and a stinger that tightens up the tail, and you've got a board that pivots on command without losing that skatey twin-fin release.\n\nThe 2xFactor thrives in clean open faces but still holds composure when things get punchy. It's the upgrade for surfers who want variety in their quiver — but in one single board.\n\nFeatures: \n\nTri-Plane Hull Bottom = Lift and effortless speed with smooth rail-to-rail flow\n\nSwallow Tail + Stinger Combo = Loose and skatey up front, locked-in drive off the tail\n\nMulti-Fin Compatibility (Twin / Quad / 2+1) = Maximum versatility for any wave or style\n\nModern Rocker Profile = Quick acceleration and control in steeper sections\n\nBalanced Volume Distribution = Easy paddling without sacrificing performance",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BackUp",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Board-prod-1200-BKUP.png",
+          "description": "The Backup – The ultimate hack for when the waves are behaving like a glitchy system error. Now, this ain't your average ride. It's designed for everyone, from the young rippers to the seasoned old heads who've been in the game for years.\n\nHere's the secret code: An overall wide outline, a nose and tail that mean business, and a rounded diamond tail that's as sharp as a 4K screen. But here's where the real magic happens – a single to subtle double concave with vee off the tail. It's the formula for success in the face of adversity, giving you the edge when the waves are playing hard to get. This board isn't just a great groveler it's a statement.\n\nSo, when the waves are trying to mess with your flow, grab this board. It's not about the perfect conditions; it's about the perfect board for the conditions.\n\nFeatures: \n\nFull Deck + Full Round Rails = Extra volume for paddling and flotation\n\nLower Overall Rocker = Early entry and overall speed\n\nSubtle Single to Double Concave Bottom = Increased speed and maneuverability\n\n5-Fin Setup = Versatility for multiple fin configurations",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Ben Gravy Barrel Cuda",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Ben-Board-prod-BC.png",
+          "description": "This high speed fish features a subtle single to double concave with vee running off a slightly deep wide swallow tail. That means it planes across flat faced, mediocre surf with ease as well as holding in steep beach break barrels. The Quad fin cluster increases hold and responsiveness in rounder waves, but allows for steady drive while dropping in on a vertical face. Be ready to get where you want to go on the face of a wave with a relatively flat deck blending into a full round rail. The Barrel Cuda is customized for Ben's style of surfing that allows him to seamlessly transfer from his go to softtop to his favorite hardboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Ben Gravy Semi Pro",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Ben-Board-prod-SP.png",
+          "description": "This super fast, forgiving, user friendly Stubby Shortboard features an overall low rocker and medium single into a deep double concave with a slight vee in the last few inches of the tail for both speed and control. A board that works for the average Joe as well as it works for the best surfer in the lineup, this is the perfect East Coast shortboard for anything from 2ft to 10ft. The Tri/Quad fin option makes it more versatile for someone wanting a shortboard feel that dominates in all conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ben Gravy The Menace",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Ben-Board-prod-TM.png",
+          "description": "The outline of this Mid Length has the wide point behind center for maneuverability, This focuses the curve between your feet and into the back third of the board where you turn from. The rounded squash tail creates a very smooth turning radius for a longer board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HD",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Board-prod-1200-HD.png",
+          "description": "The HD is a High-Performance masterpiece that caters to intermediate and advanced riders, each detail crafted to perfection.\n\nThe bottom is powered with a decent amount of single to subtle double concave that provides lift designed to elevate your ride.\n\nIt has a low to medium amount of tail rocker, this board isn't just about speed; it's about control, allowing you to accelerate with a calculated finesse that only the best in the game understand.\n\nThe added entry rocker is the secret code for transitioning in and out of turns like it's a carefully scripted plan, leaving nothing to chance. it's also got round, semi-full forgiving rails – the stability in the equation. Because in the world of surfing, stability is key.\n\nFeatures: \n\nFull Round Rails = Extra control\n\nMedium Rocker + Increased entry + lower exit rocker = Increased speed through turns\n\nDeep Single to Double Concave Bottom = Increased speed and maneuverability\n\n3-Fin Setup = Drive, release and sensitivity",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Midi",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Board-prod-1200-MIDI.png",
+          "description": "The Midi – When your shortboard isn't getting enough waves and you're not ready to give up performance.\n\nThis is a modern mid-length designed to bridge the gap between effortless wave catching and high-performance surfing. More paddle power, more speed, and more glide — without sacrificing the ability to push turns and draw clean lines.\n\nHere's the program: Added rail line and balanced volume get you into waves earlier and keep you moving through flat sections with ease. A refined outline and performance rocker profile maintain responsiveness under your feet, allowing the Midi to carry speed where shorter boards stall while still feeling lively when it's time to turn.\n\nThe Midi thrives in everyday conditions but has enough performance built in to handle quality surf when it shows up. It's the upgrade for surfers who want more waves, more speed, and more opportunities to surf at their best.\n\nFeatures: \n\nExtended Rail Line = Earlier entry and effortless speed generation\n\nPerformance Mid-Length Outline = Increased paddle power without sacrificing maneuverability\n\nRefined Rocker Profile = Speed through weaker sections with control in steeper waves\n\nBalanced Volume Distribution = Easy paddling with responsive performance\n\nVersatile Wave Range = Designed for everything from average days to surprisingly good ones",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Optimizer",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Board-prod-1200-OPT.png",
+          "description": "The true crossover board is High Performance with a little extra float and width and a full forgiving rail. This board is built to give you Speed even though some flatter sections and all the sensitivity of a High-Performance board.\n\nA medium continuous rocker with an increased entry rocker and slightly lower tail rocker for increased speed through turns and glide over flat sections.\n\nContest or not this is your key to any condition Good in bad waves and Good on the good ones too!\n\nFeatures: \n\nDomed Deck + Medium Round Rails = Extra thickness for paddling & still goes rail to rail\n\nMedium Continuous Rocker & Slightly Lower Tail Rocker = Increased speed through turns\n\nSingle to Double Concave Bottom = Increased speed and maneuverability\n\n3-Fin Setup = Drive, release and sensitivity",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pixel Pusher",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Board-prod-1200-PXLPSH.png",
+          "description": "The Pixel Pusher is the ultimate High-Performance Groveler for small to medium waves.\n\nThe wide point strategically sits slightly behind center, creating an elliptical curve, no hip, just smooth transitions. This board's got a continuous, low tip-to-tip rocker getting up to speed real quick, even in the most mediocre waves. While the round tail gives the hold you need in steeper sections.\n\nThe bottom has a single concave smoothly blending into a semi-deep double concave between the fins with a slight V running off the trail. It's all about precision, control, and maximizing your session.\n\nIt's loaded with 5-fin boxes because versatility is key.\n\nThis board isn't just a tool; it's a calculated move.\n\nFeatures: \n\nDomed Deck + Medium Round Rails = Extra thickness for paddling & still goes rail to rail\n\nLower Overall Rocker = Early entry and overall speed\n\nSubtle Single to Double Concave Bottom = Increased speed and maneuverability\n\n5-Fin Setup = Versatility for multiple fin configurations",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Upgrade",
+          "image_url": "https://algorithmsurf.com/wp-content/uploads/Algo-Board-prod-1200-UPG.png",
+          "description": "The Upgrade is the ultimate hardware for when the waves go viral.\n\nA full Flatish deck with down round rails, giving you that float to glide through those barrels like a boss. A subtle single to double concave, making sure you carve through the waves like a pro. The Medium rocker runs tip-to-tip ensuring a smooth ride through areas of consequence.\n\nBut that ain't all. \"The Upgrade\" comes equipped with a semi-widish outline in the front 2/3 of the board, giving you stability and control. And we didn't stop there – finished it off with a pulled-in round pin, 'cause precision is the name of the game.\n\nWhether you're hitting the local break or jetting off in search of slabs, \"The Upgrade\" will enhance your vision.\n\nFeatures: \n\nFull Deck + Low Round Rails = Extra thickness for paddling\n\nMedium Overall Rocker = Early entry and overall speed\n\nSubtle Single to Double Concave Bottom = Increased speed and maneuverability\n\n5-Fin Setup = Versatility to ride Tri or Quad fin configurations",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
