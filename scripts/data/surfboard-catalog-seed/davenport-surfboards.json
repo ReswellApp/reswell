@@ -1,0 +1,84 @@
+{
+  "generated_for": "Davenport Surfboards official named standup catalog",
+  "source": "https://www.davenportsurfboards.com/surfboards (Squarespace model pages — excludes apparel, totes, and custom deposit orders)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "davenport-surfboards",
+      "name": "Davenport Surfboards",
+      "website_url": "https://www.davenportsurfboards.com",
+      "location_label": "Hermosa Beach, California",
+      "founder_name": "Adam Davenport",
+      "lead_shaper_name": "Adam Davenport",
+      "short_description": "Custom foam-to-finish classic longboards by Adam Davenport in Hermosa Beach — mid-sixties noseriders, stepdecks, and California pintails shaped from US Blanks.",
+      "models": [
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1557674737727-W29BBVRIDDLBYC89ZMWT/web+Noserider.png",
+          "description": "Introducing the next iteration of the dedicated noserider model in the Davenport lineup. Based off of a mid-60s Rick Surfboards noserider, this board is designed to excel in small surf. The board features refined 50/50 rails and ample nose concave. We covered all the bases of replicating the original, including its signature tailblock.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Shellback",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1589584643497-DKNMI12JXZRHM178RR7X/Fine+Flow+Web+Images.jpg",
+          "description": "A combination of unlikely elements come together to create a versatile board that works in all types of surf for waves shoulder high and under. The Shellback is a wide parallel-railed pintail template combined with a flipped up nose and tail and a flat midsection. This model can be customized to come with or without concave.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Baja Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1589585427726-66RMQ6TT8RZTXT9L1MIO/Baja+Model+Web+Images.jpg",
+          "description": "Based off of a board found in a backyard deep in Baja and dialed in to excel in small point break peelers. The Baja Model is a dedicated noserider with refined 50/50 rails and generous nose concave and is a touch wider and flatter than the Noserider model.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Topanga Foil",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/e8aabd50-ef65-4d89-a575-b2ddf020b46d/Topanga+Foil+Web+Edited.png",
+          "description": "The Topanga Foil is a clean foiled wider template, with a lower rocker for point breaks and reef breaks. The clean foil and pinched rails allow it to scratch for smaller waves and trim high and tight in the pocket and on the face of the wave. The wider nose allows it to maintain more lift while hanging ten without concave.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "California Classic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1490842743307-1ET166LJXU55PF44MHTF/web-California+Classic.jpg",
+          "description": "A classic pintail with glide and superior noseriding capabilities. This board has low nose rocker for steering from the tip and a long drawn out middle with a kicked up tail for cutting back. The rails have a lip in the front to 50/50 pinched in the middle, with a turned up roll in the tail to help rotation, smooth out turns, and enhance glide.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Thing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1512024609044-VPBNFGJRVZ4UFYC2CKQC/Davenport-The+Thing.jpg",
+          "description": "A board like nothing in the lineup today. A wide-body pig templated for small wave noseriding. This board features a flat nose with a kicked tail. The nose has plenty of lip for lift, 50/50 pinched, and turned up V in the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "40-65",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1490826979483-E7EYLAEE699JVOPNERFC/4065.jpg",
+          "description": "If there was an El Camino of surfboards, this would be it. A solid classic with clean, semi-parallel template and a rolled bottom with some blended concave in the nose. The rocker is flat in the middle for speed, with kick in the tail for whippy turns and lift.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "El Cadejo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1490842521544-LQGCSRLHEMGB0JARB4OE/web-El+Cadejo.jpg",
+          "description": "The El Cadejo is simply the deadliest noserider in the lineup. A pure and classic noserider designed to whip turns, walk the board, and hang ten. It's that simple, it's that smooth.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Cub",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1490827476730-4U86TGF24DNK7IQZQZF0/image-asset.jpeg",
+          "description": "A semi-pig template that thrives deep in the pocket. Featuring a unique step-tail for responsive turns and unparalleled lift. The Cub is a great all-around option that blends speed, sharp turns, and noserides.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tatsuo Special",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1512243878847-KA2GSF9GR08VBO6W8EO2/web-Tatsuo+Special.jpg",
+          "description": "A stylish technical noserider for the surfer with refined taste. A mid-sixties rocker combined with a semi-pig template featuring a narrow nose for deep pocket noserides. The ample tail rocker allows for superb tail control and deep cutbacks.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Stepdeck",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58dbc9e6ebbd1a38a55619d9/1511723350553-WYHCKW62KWDEVK6P6QVJ/web-Stepdeck.jpg",
+          "description": "This model has all of the bells and whistles! A versatile mid-sixties styled board for easy turns and extended noserides. This model is designed for the advanced surfer who wants to hotdog with the best of them.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
