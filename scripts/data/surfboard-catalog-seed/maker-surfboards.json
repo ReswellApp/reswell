@@ -1,0 +1,77 @@
+{
+  "generated_for": "Maker Surfboards official named standup catalog",
+  "source": "https://www.makersurfboards.com/ (Squarespace model sections — excludes custom shortboards, fish custom orders, and surfboard blanks)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "maker-surfboards",
+      "name": "Maker Surfboards",
+      "website_url": "https://www.makersurfboards.com/",
+      "location_label": "Maui, Hawaii",
+      "founder_name": "Joey Mattos",
+      "lead_shaper_name": "Joey Mattos",
+      "short_description": "Family-built Maui surfboards shaped and glassed start-to-finish by Joey and Tiana Mattos — classic logs, performance longboards, and alternative shapes.",
+      "models": [
+        {
+          "name": "The Chariot",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/80e3d647-6149-46f3-b685-43e4e3fec68a/884A5526.jpg",
+          "description": "The Chariot is our most traditional longboard—built for smooth glide, easy paddling, and spending more time on the nose. Stable, predictable, and deeply rooted in classic single-fin design, it's made for surfers who want the pure feeling of traditional noseriding. A spooned-out concave through the front, mellow entry rocker, and a clean tail kick all work together to create effortless trim, stable tip time and smooth, flowing turns.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lala Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/94730994-02ec-43e6-8749-553930df0d67/IMG_1549.jpeg",
+          "description": "The Lala Log is our best all-around longboard. Blending classic single-fin lines with a touch of modern refinement, it's responsive off the tail, trims effortlessly through the middle, and is an incredibly fun noserider. It's built to handle just about any longboard wave—from ankle slappers to clean, head-high surf—and feels right at home wherever you paddle it out.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Eleanor",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/7f245a2d-2d61-4ac7-b74c-324857098ab3/IMG_2342.jpeg",
+          "description": "Eleanor is our refined take on a classic single fin. It blends timeless style with modern performance to create a board that feels lively, responsive, and spunky under your feet. You still get the trim, glide, and noseriding you'd expect from a traditional single fin, with a little extra drive when you step on the tail and beautifully controlled noserides in the pocket.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Darkhorse",
+          "description": "The Darkhorse is a pintail noserider — one of the most overlooked designs in classic surf culture. All the glide and flow of a traditional log, with added control and some of the smoothest turns you'll find on a longboard. A blended nose concave, clean rocker line, and subtle edge through the tail give the Dark Horse a lively, responsive feel without losing its classic soul.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Seeker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/388e3d7d-5a79-4d1e-9720-6daf9864d925/884A5701.jpg",
+          "description": "The Seeker is our modern performance single fin, built for surfers who want to bring speed, flow, and responsiveness to quality longboard waves. While its generous outline provides the glide, paddle power, and noseriding you'd expect from a classic single fin, its refined rocker, foil, and rails give it a lively, responsive feel that's meant to be surfed from the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "High Pro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/1591059712785-BAWPHEQO8875FHT29VZS/007A3234-5D9B-4B04-A5DD-5BEEBB6F3766_Original.jpg",
+          "description": "The High Pro is our take on a modern high-performance longboard made for absolute shredding. It's fast, responsive, and built to be surfed hard in waves with shape, size, and power. This board is all about speed and control through turns. It carries through sections with ease, stays nimble under your feet, and comes alive when you push it.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Whaler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/1507481634351-UKPL2BH9Q1G5UB1FGJK6/IMG_7012.jpg",
+          "description": "Fun little egg shape designed for smooth surfing. The key element to this design is its round thumb tail. This tail shape makes for very easy, light footed carves. Perfect for long waves and big open faces.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/1507913281600-WFISOYADWMA1AFZS6KFB/IMG_5434.jpg",
+          "description": "The Diamond is the board you grab when you want to step off the long board and ride something faster and looser. The mellow rocker makes for easy paddling and the pulled in swallow creates a very responsive tail for quick turns.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Soap on a Rope",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/1507913480324-62SJ1EB2NMHNHZWXV845/IMG_6543.JPG",
+          "description": "Designed for fast, out of control fun. Rocker is really flat with tons of thickness for crazy float and paddle power. We've opted for the quad trailers just for that extra hold when the waves call for it.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Baloo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59118a3ee58c62cd8c9d63e8/1576030917254-OI2D1DC00XLIBS738MGE/C58A7A48-E6F0-4B9B-BBD4-FD604647FDDB.jpeg",
+          "description": "Designed for fast, performance surfing in a wide range of wave sizes. If the wave isn't too steep, Baloo will handle waves from hip to well over head. Every design aspect is directed for speed and flow.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
