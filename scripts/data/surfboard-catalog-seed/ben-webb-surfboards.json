@@ -1,0 +1,78 @@
+{
+  "generated_for": "Ben Webb Surfboards official named standup catalog",
+  "source": "https://www.surfboardsbybenwebb.com/models (Wix board model pages only — excludes order forms, merch, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ben-webb-surfboards",
+      "name": "Ben Webb Surfboards",
+      "website_url": "https://www.surfboardsbybenwebb.com/",
+      "location_label": "South of the Gold Coast, Australia",
+      "founder_name": "Ben Webb",
+      "lead_shaper_name": "Ben Webb",
+      "short_description": "Hand-shaped surfboards crafted start to finish by Ben Webb south of the Gold Coast — twins, shortboards, mid-lengths, and classic logs inspired by his father Greg Webb's shaping lineage.",
+      "models": [
+        {
+          "name": "Twinblade",
+          "image_url": "https://static.wixstatic.com/media/844cd4_bdc0a06e50084eb8aabe13d89db021ae~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_bdc0a06e50084eb8aabe13d89db021ae~mv2.png",
+          "description": "This board came about from a need for a step down board in average conditions. I wanted something I could transition between comfortabley. The Twinblade has similar elements to a shortboard while also feeling more freed up. There's a controled release mixed surprisingly with hold and a tighter pivot. Its a mixture of board design I've never felt before. I surf this board from wasit to head high, but really can be surfed In bigger waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TwinSword",
+          "image_url": "https://static.wixstatic.com/media/844cd4_950ad360feec462285d000bc994b3c71~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_950ad360feec462285d000bc994b3c71~mv2.png",
+          "description": "Looking for a longer board with extra foam and not wanting to go down the mid length route. I started working on a longer Twinblade. closer to a gun / big guy board mixed with a twin fin configeration.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Butterknife",
+          "image_url": "https://static.wixstatic.com/media/844cd4_a7246c4732414c12a45f15586acf3790~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_a7246c4732414c12a45f15586acf3790~mv2.png",
+          "description": "This is a Chopped down shortboard alternative to the Vault when the waves are small. Wide point moves forward of center keeping lines drawn out. Matched with a low entry rocker into a staged flatter center and double concave through the tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Loafer",
+          "image_url": "https://static.wixstatic.com/media/844cd4_8361af6047164360a5bbd9f9a50c676e~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_8361af6047164360a5bbd9f9a50c676e~mv2.png",
+          "description": "Updated Loafer fish. Same low rocker, curved tail template without the keel fins now running a medium keel fin around 5.5\" fins positioned further back. Instead of the flat bottom to vee I've added slight concave through the tail for more release.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spearhead",
+          "image_url": "https://static.wixstatic.com/media/844cd4_f7ce2a99df324b20ad09c1b5dd09d30b~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_f7ce2a99df324b20ad09c1b5dd09d30b~mv2.png",
+          "description": "This is an alternative midlength design I use in softer waves and point breaks. Midlength / egg shape I run in a variation of lengths. For more performance it can be ordered shorter as say a 59 egg or 68 plus for more smooth down the line surfing. Thickness is made to order higher as an easy paddler.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SC.Box",
+          "image_url": "https://static.wixstatic.com/media/844cd4_70fb40e526e44dd98e69da106c1fe8dd~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_70fb40e526e44dd98e69da106c1fe8dd~mv2.png",
+          "description": "The SC.BOX came about from wanting a board I can really lean on and push hard off the tail. It's made for those open faced, carve-focused waves, but it also works great on most average days. The main idea is to draw out longer smoother lines with power. The extra foam creats momentum and using the bottom curves to keep drive and flow.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Percher",
+          "image_url": "https://static.wixstatic.com/media/844cd4_f8955fde60ea47c582b3fd7670d3f52a~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_f8955fde60ea47c582b3fd7670d3f52a~mv2.png",
+          "description": "Traditional 60s inspired log. This shape has been developed toward the classic style of pivot turns, hotdogging and noseriding. The Percher is a heavy log with a rolled deck into pinched 50/50 rails.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Vault",
+          "image_url": "https://static.wixstatic.com/media/844cd4_cef76d1006204c908b59ca5d5250feef~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_cef76d1006204c908b59ca5d5250feef~mv2.png",
+          "description": "This board is motivated by my old mans shapes and the surfing done around the late 90's early 2000s. Longer rail lines, carvey type surfing. I ride the Vault in medium size waves head high and up. Slightly narrower and lower on the foam than the average board, to be ordered 2 to 3 inches longer than your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SubVault",
+          "image_url": "https://static.wixstatic.com/media/844cd4_fb856c96336042c0a3d789cd26cf987e~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_fb856c96336042c0a3d789cd26cf987e~mv2.png",
+          "description": "Not wanting to effect the integrity of the Vault. I've designed a more all rounder version. For anyone asking to add more width and foam to the Vault, there's the SubVault. The board has some subtle changes to make it more user friendly in average conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Step Up Vault",
+          "image_url": "https://static.wixstatic.com/media/844cd4_1272b2448eec4484bb5e442e78602a00~mv2.png/v1/fill/w_800,h_1200,al_c,q_85,enc_avif,webp/844cd4_1272b2448eec4484bb5e442e78602a00~mv2.png",
+          "description": "The main change to the step up is more foam in the front half. The center point is also pushed forward creating a longer rail line in the back half. Rocker is also increased slightly and subtly vee added out the tail.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
