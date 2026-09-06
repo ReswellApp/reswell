@@ -1,0 +1,67 @@
+{
+  "generated_for": "Peterson Surfcraft official named standup catalog",
+  "source": "https://petersonsurfcraft.com/models (official Squarespace model pages — excludes custom board deposits, merch, and shop SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "peterson-surfcraft",
+      "name": "Peterson Surfcraft",
+      "website_url": "https://petersonsurfcraft.com",
+      "location_label": "East Coast, United States",
+      "founder_name": "Josh Peterson",
+      "lead_shaper_name": "Josh Peterson",
+      "short_description": "Hand-shaped surfboards by Josh Peterson, built start to finish — twins, fishes, eggs, step-ups, and logs with progressive glassing.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/peterson-surfcraft.png",
+      "models": [
+        {
+          "name": "Dreamboat",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ee2233ee05ff4374071e0f0/1614173673138-AYD7BLUO106UWJR5SFST/image00009.jpg",
+          "description": "The Dreamboat model has become a quick favorite for all who have ridden it. This board came to life after Josh experienced real waves in Hawaii. Upon arriving back to the East Coast (and ditching the step ups) he was looking for something to perform in East Coast punchy waves with a bit more liveliness. Offering speed to burn, with a narrower tail and overall plan shape, this model aims to provide a balance experience between control and speed. The Dreamboat has seen everything from overhead tubes to perfect points and doesn’t seem to mind any of it. Usually ridden as a straight twin fin, with the ideal range being between 5’2” and 6’2”.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fiend",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ee2233ee05ff4374071e0f0/1613574527737-BM0FX59L1SAMPWGKW8FS/IMG_2090.jpg",
+          "description": "The Fiend offers the trustworthiness most of us need while standing on the beach looking out to spitting tubes. Depending on what size waves you want it for, this board is to be ridden around the same height as your everyday shortboard. With the outline balanced slightly forward and a tight round pin, this model gives an ease of paddling while still providing lots of hold in the pocket. The goal with the Fiend is to guide you through the tube with ease and confidence. This model usually ranges from 5’6” to 6’6” depending on the rider and desired waves to be ridden.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Harmonia",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ee2233ee05ff4374071e0f0/699b43af-50a5-4750-acc6-a1f543d1cee6/AF429470-AAE2-4FDF-9797-C324BB2B909A.jpeg",
+          "description": "The Harmonia is a pretty neutral log that is suited for small to medium waves. With the widepoint slightly back and a narrower nose it is a little bit piggy but definitely not extreme. The bottom has a slight single concave that transitions to flat with rolled rails then to panel vee through the back third with a broomstick ish 50/50 rail that transitions to a slight tucked edge in the last few inches.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Modern Keel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ee2233ee05ff4374071e0f0/1614173500066-Y2MVVWCNS89JHTKZC7NH/IMG_6429.jpg",
+          "description": "The approach to this classic design is to keep the positive characteristics of a retro fish, while aiming to provide a more balanced experience. This model can offer a loose but drivey experience to the rider in a large variety of conditions. These boards take different lines and have speed to burn while maintaining the ability to hit whatever section comes your way. The best range for this fish is 5’0” to 6’0.”",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "PMA",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ee2233ee05ff4374071e0f0/1595987525609-QL9ASZI5KPQA7BPORSC7/Group%20Copy%2031.jpg",
+          "description": "This little twin fin was designed as an alternative to a traditional fish. Often times as surfers, we get in a rut with our equipment. The PMA was designed to break free from that rut and give the rider the opportunity to relax and let the board do the work, allowing different lines with effortless speed. With a more relaxed rocker in the front third, there is the ability to blow by flat or weird sections of the wave. The bottom contours are mellow and have a slight rolled entry that leads an early single to a spiral vee then back to flat after the fins. This board works surprisingly well in hollow waves, as well as the waves that you would expect a fish to work in. The goal of this board is really just one thing: to give a positive experience to all who ride it. Generally these are ridden a few inches longer than you would ride a full on keel fish in.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Paradox",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ee2233ee05ff4374071e0f0/545d942f-58e4-4546-beec-7f157239b211/064E407D-E855-4BB1-A0A0-9A61D7000EA7.jpeg",
+          "description": "The paradox is based off of a traditional egg. I’ve enjoyed doing them with a tri-plane with a slight single under the chest to a double concave within vee. It ends up feeling noticeably more lively than a lot of single fins that seem to have to go to the bottom of the wave to get to speed, these are designed in hopes of engaging your rail earlier like on a twin fin. Usually they are just single fins but they also feel really good with small bonzer runners.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Roach",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ee2233ee05ff4374071e0f0/1610383743913-E6PX5LK60H9QUCMXMP0Z/IMG_6025.jpg",
+          "description": "The Roach has egg roots with more progressive details. The bottom goes from roll to a double and then back to vee after the fins. It has a flatter entry rocker with a little more flick out of the tail. Even though it was initially intended for small waves, this model has been proven to handle itself in a variety of conditions. Normally this board is set up as a 2+1, but it works well as twin. From 6’4”- 8’0”.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Roach Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ee2233ee05ff4374071e0f0/1610384361335-2FB11SXO22NB0L4MP29U/IMG_5745.jpg",
+          "description": "The Roach Pin stems off the Roach, but has some subtle differences geared towards single fin surfing. Designed to smooth things out a bit, this model offers a very simple experience with the wave. The Roach Pin has a classic outline with a more modern foil and rocker, making it much more forgiving to surf than its ancestors. From 6’6” and up.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
