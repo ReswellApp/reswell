@@ -1,0 +1,78 @@
+{
+  "generated_for": "Michel Junod Surfboards official named standup catalog",
+  "source": "https://surfboardsbymicheljunod.com/collections/surfboards (Shopify collection pages — named production models only; excludes fins, apparel, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "michel-junod-surfboards",
+      "name": "Michel Junod Surfboards",
+      "website_url": "https://surfboardsbymicheljunod.com",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Michel Junod",
+      "lead_shaper_name": "Michel Junod",
+      "short_description": "Santa Cruz shaper known for single-fin logs, quad fishes, performance shortboards, and Thomas Campbell collabs.",
+      "models": [
+        {
+          "name": "Speed Seed",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNO_speedseed_blue_bottom_large.png?v=1475944444",
+          "description": "Here's a super-fun wider single fin round pin for easy take offs and speedy rides. With a \"beak\" nose and relaxed entry rocker along with slight V and double barrel concave tail, this board is in early and will fly around in average to hollow surf in the 2' to 8' range. This is the perfect short board to take on a road trip. This model comes with an 8\" MJ Flex Fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Carver",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_carver_orange_top_large.png?v=1475030392",
+          "description": "Like it's name, this model is for turning hard and going fast in head high surf. The outline is streamlined, yet has enough volume to get around easily in the line up and catch plenty of waves. The 2 + 1 fin set up gives plenty of drive off the bottom and down the line, yet has the \"easy off the top\" characteristics of a thruster to gain speed and maintain momentum for your next turn. It also has a wide size range to accommodate light surfers like myself, up to \"Big Boys\" over 200 lbs. If you like to turn and go fast, the Carver will make it happen for you. Slight V and double barrel concave in the tail and the MJ Flex Fin really makes this \"ride\" accelerate down the line. This model comes with a 7\" or 7.5\" MJ Flex center fin depending on board size, and Future boxes and side-bites.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Easy Rider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_9_4_easyrider_greenyellow_top_large.png?v=1482334100",
+          "description": "If you want just one long board in your quiver, this is the one. I designed the Easy Rider to work in most conditions from 2' to 8'. This is not a log, but a medium weight long board that catches waves easily, and has a little more kick in the nose for handling bigger waves. It features down rails in the tail with a slight V and double barrel concave, which provides for carving turns and acceleration down the line. With the MJ Flex Fin powering you out of turns you won't get left behind the section. The clean outline shape still has enough nose area for nose riding when the conditions are right. This model comes with the 9\" or 9.5\" MJ Flex Fin depending on the size of board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Smooth Slider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_nowski_blue_bottom_large.png?v=1475287221",
+          "description": "This is an all around Log that features both aspects of glide and maneuverability. It is a joint design effort by Thomas Campbell and Michel Junod. Many hours were spent in the shaping room and in the water to develop a lively, traditional longboard that puts a smile on your face. The outline is slightly on the \"Pig\" side of the spectrum with the wide point slightly behind center (thus the slight \"chips\" for turning and maneuverability). The nose is slightly narrower than a typical noserider, but still delivers a stable path for walking to the nose and good noseriding performance. The Smooth Slider comes with a 3/16\" Bass, 3/16\" Redwood T-band stringer and it's own 9.5\" Smooth Slider model fin, logo and sanded/gloss finish. Note: This model doesn't come with a leash attachment, but a leash cup can be installed upon request.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "345 Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_flyingfish_yellow_top_large.png?v=1482334017",
+          "description": "345 refers to the fin options on this smooth swallow tail fish. It has relaxed rocker entry and a slight \"beak\" nose for a little extra volume under your chest, making take offs a breeze. The 5 boxes make it easy to switch out fin set ups in varying conditions so that you can really find the boards full potential in a broad variety of conditions. If you can only take one board on a surf trip, this would be a great choice. This model comes with your choice of thruster or quad Future Fiberglass Fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Diamond Tail Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_diamondtailsinglefin__bottom_large.png?v=1475847162",
+          "description": "A modern twist on 70's single fins. Not a retro single fin. This design borrows from the 70's with a \"beak\" nose with slightly more volume in the chest area for easy paddling, but comes with modern tail rocker and double-barrel concave tail contours for added speed and maneuverability. This is the board I took to West Africa and rode in Thomas Campbell's movie \"The Present\". This model comes with an 8\" MJ Flex Fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Big Five Diamond",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_big5diamond_rootbeer_top_large.png?v=1475287636",
+          "description": "An extra full volume short board for the surfer who wants to increase wave count significantly, yet at the same time, surf aggressively (speed and maneuverability). This design is a hit with XL and XXL surfers who can't seem to find a short board that will float them well and catch waves. It comes with 5 future fin boxes so you can ride it as a quad or a thruster. This model has been selling like hot cakes! Average size surfers can go down in size and volume and still load up on your wave count (see dimension chart on this model). This model comes with Future Fiberglass Fins, either a thruster set or a quad set.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Junod Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_MID_sand_7_6_bottom_large.png?v=1482497926",
+          "description": "A mid range single fin design for glide and easy turning. Perfect for small to head high surf. This is not a hull design with soft rails, but a fast modern bottom with double-barrel concave and hard rails in the tail. Relaxed rocker makes for good paddling and easy take offs. Depending on size of board, this model comes with a 7.5\" or 8\" MJ Flex Fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Pintail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_LB_lightblue_9_4_top_large.png?v=1482368320",
+          "description": "This is the fastest long board model I make. It really comes alive in 4' to 10' waves. It has more rocker than my other long boards, and can handle steep drops and fast, hollow waves. Buckle up! Available in single fin or 2 + 1 set up. This model comes with the 9\" or 9.5\" MJ Flex Fin, or a 7\" MJ Flex Fin with Future boxes and side-bites for the 2 + 1 setup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The R.O.N.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_Ron2014_bluebrown_bottom_large.png?v=1475287453",
+          "description": "Designed as an all around log with an emphasis on walking to the nose and spending time there. The nose has a blended concave for subtle lift and control. Like all my logs, the RON is shaped from US Blanks Classic density foam for extra strength and weight, which provides a solid and stable feel of a 60's log. The fin box is 4\" from the tail, so that the fin can be placed back in the box for optimum nose riding performance. The 60/40 rails provide for easy turning and a smooth feeling when walking the board. This model comes with the 9.75\" MJ Pivot Fin from Rainbow fins. Note: This model doesn't come with a leash attachment, but a leash cup can be installed upon request",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
