@@ -1,0 +1,88 @@
+{
+  "generated_for": "Surfboards UK Ltd official named standup catalog",
+  "source": "https://www.surfboardsukltd.com/ (Wix homepage model gallery — 12 named production surfboards)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "surfboards-uk-ltd",
+      "name": "Surfboards UK Ltd",
+      "website_url": "https://www.surfboardsukltd.com/",
+      "location_label": "Kestle Mill, Newquay, Cornwall, United Kingdom",
+      "short_description": "Custom epoxy surfboards made in Newquay, Cornwall, with a named standup range and official dedicated model pages.",
+      "models": [
+        {
+          "name": "@Lukestonesurf Pro Model",
+          "image_url": "https://static.wixstatic.com/media/1461ed_0a69926bdcfc4740b3433a426f6251e9~mv2.png",
+          "description": "For the last year or so we've been working with luke to develop and tweak his very own model! Its basically a bit of cross between the aero, the spark and a few feedback tweaks form luke. This model is more of an all rounder! It goes well in everything and is basically a 1 board quiver for any advanced surfer! We've designed it to work at its best when its 3-4ft as this is lukes favourite size to surf!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Aero",
+          "image_url": "https://static.wixstatic.com/media/1461ed_bb810a50b7f34e879adcdee24b464b77~mv2.png",
+          "description": "The Aero is made for the everyday conditions we get here in the UK. This board is an excellent way to progress your surfing when the waves aren't the best and you want to make the most of what's out there. It's the board our team riders ride the most as 'it keeps them motivated to surf even when it looks awful'. The speed of this board is what sets itself apart from any board on the market, from the design to the construction this board will harness every bit of power out of any small/mushy wave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Barracuda",
+          "image_url": "https://static.wixstatic.com/media/1461ed_a058ba600a2b4a7788bd840edce2be50~mv2.jpg",
+          "description": "The Barracuda is designed to keep your wave count up and froth levels high. This is a great board to have in your quiver if you're looking for a bit more volume on the lazier days as it catches waves so easily and is also extremely fast. This board is also great if you're looking to drop down surfboard size as it holds a lot of volume for the size of it, you can get the shortboard feel with enough float to keep you catching waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Beluga",
+          "image_url": "https://static.wixstatic.com/media/1461ed_adea77ac4d274f1c94293e0f6218225e~mv2.png",
+          "description": "The Beluga has been designed to bridge the gap between our E board and our HPM! It is a fun beginner model perfect if you're trying to get on to green waves and start learning to turn or if you looking for something a bit more cruisy in comparison to our HPM.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blaze",
+          "image_url": "https://static.wixstatic.com/media/1461ed_b6f8fa89bbcf4107a43430207ee2397d~mv2.png",
+          "description": "The Blaze is the ultimate small wave summer board! It is the perfect board to progress your surfing when the waves start getting softer and smaller. With that in mind, it will still hold its own when things start to get chunky! It paddles, its responsive, its the ultimate cruiser!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "E board",
+          "image_url": "https://static.wixstatic.com/media/1461ed_f658531c82b84009b3337bcc8c579047~mv2.png",
+          "description": "The E board is made as a beginner surfboard or for someone who is looking for a cruisy ride on the green waves. It has been designed by surf instructors and tested by beginners and is one of our most positive testings. We have changed very little from the first model we made and is in constant use at surf schools and in our demo range.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "HPM",
+          "image_url": "https://static.wixstatic.com/media/1461ed_3c8210e91ef14c2da24faec94db543e0~mv2.png",
+          "description": "The HPM is designed to have some fun on the open-faced waves the perfect mini mal surfboard. Whether you're looking for something to have fun on those small days, Something easier to handle or To progress your level of surfing. The HPM achieves this with ease and is a must-have in everyone's quiver! It has been surfed by beginners all the way to advanced surfers and has been our most successful in the surf school scene. It's been hired out the most and the feedback has been extremely positive.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Orca",
+          "image_url": "https://static.wixstatic.com/media/1461ed_9247da1adb4341d08976c0ec926b1fb8~mv2.jpg",
+          "description": "The Orca has been designed to have as much volume as physically possible into a surfboard! A 6'2 orca has the same volume as our 7'6 HPM! Which is insane!! By doing this we have made the ultimate hybrid shortboard, that catches waves like a midlength but still surfs like a shortboard! A small wave killer or the ultimate first shortboard!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Preload",
+          "image_url": "https://static.wixstatic.com/media/1461ed_d08c8d7948ba478aa0930b88c22a9dd3~mv2.png",
+          "description": "The Preload is our most versatile surfboard in our range. It can accommodate a surfer progressing from whitewater to someone who's linking turns and smashing the lip. If there was one board you could take through the progression of surfing then this would be the one.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shark",
+          "image_url": "https://static.wixstatic.com/media/1461ed_ebb6a6d9c4e3451490f21c459b952543~mv2.png",
+          "description": "This surfboard is designed to hold a lot of volume giving you the same float as minimal, but with more of a shortboard feel. It is essentially a shortboard for those packing few extra kilos or A great progressor to help dropping down the sizes and increase your ability to turn.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spark",
+          "image_url": "https://static.wixstatic.com/media/1461ed_89abd581075d43e1898ec2e262e4f050~mv2.jpg",
+          "description": "The Spark is designed for those 'good' days and is our team riders choice whenever the waves are 3ft and above or when its steep and punchy.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Log",
+          "image_url": "https://static.wixstatic.com/media/1461ed_f485154fd205418498f97d36559f479f~mv2.png",
+          "description": "The Log has been designed as an all-round longboard, combining traditional longboarding with performance longboarding. Ideal for anyone looking to ride a longer board but still wanting some manoeuvrability to advance their surfing to the next level.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
