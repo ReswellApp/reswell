@@ -1,12 +1,10 @@
 import type { ReactNode } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { Award, Package } from "lucide-react"
+import { CategoryTopShopTileImage } from "@/components/features/browse/category-top-shop-tile-image"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { VerifiedBadge } from "@/components/verified-badge"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import type { CategoryTopShop } from "@/lib/types/category-top-shops"
-import { cn } from "@/lib/utils"
 
 function ShopBadgeIcon({
   label,
@@ -40,20 +38,7 @@ export function CategoryTopShopCard({ shop }: { shop: CategoryTopShop }) {
       >
         <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
           {shop.imageSrc ? (
-            <Image
-              src={shop.imageSrc}
-              alt=""
-              fill
-              draggable={false}
-              sizes="(max-width: 639px) 40svw, 176px"
-              className={cn(
-                "pointer-events-none",
-                shop.imageFit === "contain"
-                  ? "object-contain object-center p-3"
-                  : "object-cover object-center",
-              )}
-              unoptimized={listingImageShouldBypassOptimization(shop.imageSrc)}
-            />
+            <CategoryTopShopTileImage src={shop.imageSrc} imageFit={shop.imageFit} />
           ) : (
             <div
               className="flex h-full w-full items-center justify-center text-2xl font-semibold text-muted-foreground"

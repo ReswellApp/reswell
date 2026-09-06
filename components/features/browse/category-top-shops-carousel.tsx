@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Children, isValidElement, type ReactNode } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { CategoryTopShopsImageWarmProvider } from "@/components/features/browse/category-top-shops-image-warm"
 import {
   homeHorizontalScrollOuterClassName,
   homeHorizontalScrollPlDefault,
@@ -102,94 +103,96 @@ export function CategoryTopShopsCarousel({
   const hasOverflow = canPrev || canNext
 
   return (
-    <div className="relative min-w-0">
-      <div
-        ref={scrollRef}
-        className={cn(
-          homeHorizontalScrollOuterClassName,
-          homeHorizontalScrollPlDefault,
-          // Native momentum only — CSS `scroll-smooth` + snap made trackpad/touch hitch.
-          "scroll-auto select-none [-webkit-overflow-scrolling:touch]",
-        )}
-        tabIndex={0}
-        role="region"
-        aria-label={label}
-        onDragStart={(event) => {
-          event.preventDefault()
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowRight") {
+    <CategoryTopShopsImageWarmProvider scrollRef={scrollRef}>
+      <div className="relative min-w-0">
+        <div
+          ref={scrollRef}
+          className={cn(
+            homeHorizontalScrollOuterClassName,
+            homeHorizontalScrollPlDefault,
+            // Native momentum only — CSS `scroll-smooth` + snap made trackpad/touch hitch.
+            "scroll-auto select-none [-webkit-overflow-scrolling:touch]",
+          )}
+          tabIndex={0}
+          role="region"
+          aria-label={label}
+          onDragStart={(event) => {
             event.preventDefault()
-            scrollBy("next")
-          } else if (event.key === "ArrowLeft") {
-            event.preventDefault()
-            scrollBy("prev")
-          }
-        }}
-      >
-        <ul className="flex w-max list-none items-stretch gap-4 pr-4 sm:gap-5 sm:pr-6 lg:pr-8">
-          {tiles.map((child, index) => (
-            <li
-              key={isValidElement(child) && child.key != null ? child.key : index}
-              className={cn("shrink-0", TILE_WIDTH)}
-            >
-              {child}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {hasOverflow ? (
-        <nav
-          className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[1]"
-          aria-label={`Scroll ${label}`}
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowRight") {
+              event.preventDefault()
+              scrollBy("next")
+            } else if (event.key === "ArrowLeft") {
+              event.preventDefault()
+              scrollBy("prev")
+            }
+          }}
         >
-          <div
-            className={cn(
-              "absolute inset-y-0 left-0 flex w-8 items-center justify-center transition-opacity duration-150 sm:w-9",
-              canPrev ? "opacity-100" : "opacity-0",
-            )}
+          <ul className="flex w-max list-none items-stretch gap-4 pr-4 sm:gap-5 sm:pr-6 lg:pr-8">
+            {tiles.map((child, index) => (
+              <li
+                key={isValidElement(child) && child.key != null ? child.key : index}
+                className={cn("shrink-0", TILE_WIDTH)}
+              >
+                {child}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {hasOverflow ? (
+          <nav
+            className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[1]"
+            aria-label={`Scroll ${label}`}
           >
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
+            <div
               className={cn(
-                "h-8 w-8 shrink-0 rounded-full border-border/80 bg-background shadow-sm",
-                canPrev ? "pointer-events-auto" : "pointer-events-none",
+                "absolute inset-y-0 left-0 flex w-8 items-center justify-center transition-opacity duration-150 sm:w-9",
+                canPrev ? "opacity-100" : "opacity-0",
               )}
-              tabIndex={canPrev ? 0 : -1}
-              aria-hidden={!canPrev}
-              onClick={() => scrollBy("prev")}
-              aria-label="Previous shops"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </div>
-          <div
-            className={cn(
-              "absolute inset-y-0 right-0 flex w-8 items-center justify-center transition-opacity duration-150 sm:w-9",
-              canNext ? "opacity-100" : "opacity-0",
-            )}
-          >
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className={cn(
+                  "h-8 w-8 shrink-0 rounded-full border-border/80 bg-background shadow-sm",
+                  canPrev ? "pointer-events-auto" : "pointer-events-none",
+                )}
+                tabIndex={canPrev ? 0 : -1}
+                aria-hidden={!canPrev}
+                onClick={() => scrollBy("prev")}
+                aria-label="Previous shops"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+            <div
               className={cn(
-                "h-8 w-8 shrink-0 rounded-full border-border/80 bg-background shadow-sm",
-                canNext ? "pointer-events-auto" : "pointer-events-none",
+                "absolute inset-y-0 right-0 flex w-8 items-center justify-center transition-opacity duration-150 sm:w-9",
+                canNext ? "opacity-100" : "opacity-0",
               )}
-              tabIndex={canNext ? 0 : -1}
-              aria-hidden={!canNext}
-              onClick={() => scrollBy("next")}
-              aria-label="Next shops"
             >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </nav>
-      ) : null}
-    </div>
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className={cn(
+                  "h-8 w-8 shrink-0 rounded-full border-border/80 bg-background shadow-sm",
+                  canNext ? "pointer-events-auto" : "pointer-events-none",
+                )}
+                tabIndex={canNext ? 0 : -1}
+                aria-hidden={!canNext}
+                onClick={() => scrollBy("next")}
+                aria-label="Next shops"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </nav>
+        ) : null}
+      </div>
+    </CategoryTopShopsImageWarmProvider>
   )
 }
