@@ -1,0 +1,90 @@
+{
+  "generated_for": "Cord Surfboards official named standup catalog",
+  "source": "https://www.cordsurfboards.com/surfboards (Wix model lineup — excludes fins, apparel, merch, and other-shaper stock boards)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cord-surfboards",
+      "name": "Cord Surfboards",
+      "website_url": "https://www.cordsurfboards.com/",
+      "location_label": "St Agnes, Cornwall, United Kingdom",
+      "founder_name": "David Lascelles",
+      "lead_shaper_name": "Markie Lascelles",
+      "short_description": "Family-shaped custom surfboards founded in Caloundra, Australia in 1965 by David Lascelles and now built to order by head shaper Markie Lascelles in St Agnes, Cornwall.",
+      "models": [
+        {
+          "name": "Flying Vee",
+          "image_url": "https://static.wixstatic.com/media/5e4527_26edeca8ad8f42f891e22161fe938e8f~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_26edeca8ad8f42f891e22161fe938e8f~mv2.jpg",
+          "description": "Markie Lascelles' original swallow-tail twin fish. A wider plan shape and flatter rocker make it a strong paddler with acceleration and drive through the wide swallow tail. Deep spiral vee between the twin boxes gives rail-to-rail response in critical sections and on flatter faces — a small-wave summer cruiser that still flies in waves up to 6ft.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Humbucker",
+          "image_url": "https://static.wixstatic.com/media/5e4527_4596eca5bc9141b497a98dfe83450fd1~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_4596eca5bc9141b497a98dfe83450fd1~mv2.jpg",
+          "description": "A snub-nosed, high-volume twin-fin swallow named after the dual-coil guitar pickup for extra volume and bite. A beaked nose keeps foam under the chest, low rocker and a wider outline add paddle power, and a short split channel between the boxes lifts the tail through turns. Looks like a small-wave board but has become Markie's go-to in 6ft-plus barrels.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Kingswood",
+          "image_url": "https://static.wixstatic.com/media/5e4527_f41f160c1f4c423cb0dd8452e780a2c1~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_f41f160c1f4c423cb0dd8452e780a2c1~mv2.jpg",
+          "description": "Cord's old-faithful noserider, born from the long right-hand points of Noosa. Goes in anything above a ripple and is really fun in waves up to 3ft: take off, pick your line, walk to the nose and stay there.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Projector",
+          "image_url": "https://static.wixstatic.com/media/5e4527_fb5861f89ec04e72bb6bd9eba6d9ef76~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_fb5861f89ec04e72bb6bd9eba6d9ef76~mv2.jpg",
+          "description": "Cord's performance all-rounder mid-length. Testers felt it projected around sections. Volume for small or bigger waves, a pulled-in nose to duck dive, a drawn-out rail line and a relatively flat bottom contour for a fast, drivey 2+1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sawn-Off",
+          "image_url": "https://static.wixstatic.com/media/5e4527_e7d9db63a96f4089ae27f0af763d84d8~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_e7d9db63a96f4089ae27f0af763d84d8~mv2.jpg",
+          "description": "A longboard with a section cut out of the middle. Offers the longboard vibe but is easier to handle, turns more easily, and still noserides in the pocket thanks to a deep nose concave. Super fun in waves up to 4ft.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Step-Ark",
+          "image_url": "https://static.wixstatic.com/media/5e4527_0437e2506053484197eac5cc502c3bcb~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_0437e2506053484197eac5cc502c3bcb~mv2.jpg",
+          "description": "Step-up version of the channel-bottom twin-fin pintail Ark, made for bigger, hollower waves. Designed with Noah Lane, developed for Irish slabs, and proven up to 12ft.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Sunseeker",
+          "image_url": "https://static.wixstatic.com/media/5e4527_86082001d9c34d8f807dda37ade45c38~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_86082001d9c34d8f807dda37ade45c38~mv2.jpg",
+          "description": "Cord's go-to mid-length funboard, made for small summer days and tested in waves up to 6ft. Lots of volume and flat rocker for paddling, spiral vee for a smooth rail-to-rail feel, and a fuller outline with a slightly drawn-in nose and rounded pin tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Swordfish",
+          "image_url": "https://static.wixstatic.com/media/5e4527_fbff28e6fea24a25a1bba523537f71c2~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_fbff28e6fea24a25a1bba523537f71c2~mv2.jpg",
+          "description": "Cord's high-performance shortboard, developed with Noah Lane for a Maldives trip. A wider nose and forward wide point help paddle entry, while the drawn-in back half, square-cut swallow tail and fluted tail channels are built for tight turns, airs and barrels in waves up to 6ft.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Ark",
+          "image_url": "https://static.wixstatic.com/media/5e4527_26f47eec18ce4c169b510b9c933e1581~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_26f47eec18ce4c169b510b9c933e1581~mv2.jpg",
+          "description": "Cord's best-seller: a four-channel twin-fin pintail designed with Australian charger Noah Lane. Extra volume under the chest helps wave-catching, and the channel-bottom twin setup is made for speed and turning in 3–6ft waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Classic",
+          "image_url": "https://static.wixstatic.com/media/5e4527_1d830992c19d442d9c53d4e3fe8a4a8a~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/5e4527_1d830992c19d442d9c53d4e3fe8a4a8a~mv2.jpg",
+          "description": "Drawn from the original 1965 Cord factory template in Caloundra. Wide point set back, rolled belly vee toward the fin, old-style 50/50 rails, a narrower nose and a single nose concave for noseriding in the pocket in clean waves up to 4ft.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Otter",
+          "image_url": "https://static.wixstatic.com/media/471ee4_84aa24c0ed2c4912b5bf4a00b04b11d2~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/471ee4_84aa24c0ed2c4912b5bf4a00b04b11d2~mv2.jpg",
+          "description": "Swallow-tail sibling of the Ark. Head shaper Markie Lascelles pulled in the nose and tail of the Ark template for a more performance outline, kept a single concave running into four tail channels, and released it through a baby swallow. An all-round board from regular to well-overhead hollow waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Sailfish",
+          "image_url": "https://static.wixstatic.com/media/471ee4_d5cf674a223341b28d2f9736b65b535a~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_90/471ee4_d5cf674a223341b28d2f9736b65b535a~mv2.jpg",
+          "description": "A long fish designed for maximum speed and flow down the line, with the ability to hold a rail and turn on a dime.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
