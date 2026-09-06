@@ -1,0 +1,78 @@
+{
+  "generated_for": "Mesa Surfboards official named standup catalog",
+  "source": "https://mesasurfboards.com/boards/ (official model lineup — excludes in-stock dimension SKUs, merch, and custom order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mesa-surfboards",
+      "name": "Mesa Surfboards",
+      "website_url": "https://mesasurfboards.com/",
+      "location_label": "Santa Barbara, California",
+      "founder_name": "Cooper Boneck",
+      "lead_shaper_name": "Cooper Boneck",
+      "short_description": "Hand-shaped surfboards from Cooper Boneck on California's Central Coast — high-performance shortboards, fishes, mid-lengths, and guns shaped with a skate-influenced eye for functional, fun design.",
+      "models": [
+        {
+          "name": "Misfit",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/Misfit-main-scaled.jpg",
+          "description": "The Misfit is quickly becoming a very popular board of mine! I think largely due to the fact that it's got a lot of foam/volume packed into a shorter fishier template with a rocker and bottom contour that lends perfectly for a board that's super fun in your everyday waist to head high range. The misfit got its name because we were going for more of a small wave board originally, then proceeded to test it in almost strictly good bowly waves and realized that it was just a really fun all around board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SG",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/SG-picture.png",
+          "description": "Named after its test pilot Javi ..aka \"The Spanish Gringo.\" This boards got the spice and is definitely the most high performance Board in my line-up. It was designed and tested in vertical powerful surf for responsiveness and control in the pocket. In good waves this board will do what you want. Generally ridden about your same height or slightly longer to push it into a step up. Can be ordered as a squash or round pin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rat Racer",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/Rat-racer-main-2-scaled.jpg",
+          "description": "A fast drivey quad fin for sub par to good days in the waist to head high range. Fun in the pocket or hunting down an air section.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Riviera",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/f5292064-5911-48a2-b6dc-0be0811ca697-1440x1800-1-1229x1536.jpg",
+          "description": "The Riviera has been a very requested board of mine due to its ease of use for most skill levels yet very capable under the feet of people wanting to push it. The board works great in a wide variety of waves and conditions from waist high to well overhead. The Riviera has a simple yet versatile plan-shape which allows me to offer it in various versions with subtle tweaks to best suit the designs. Typical lengths are between 6'8 to 7'4 with widths between 20 5/8 to 21 1/2.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mesa Fish",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/Tuan-fish-main-photo-1-scaled.jpg",
+          "description": "The \"MESA Fish\" was made to be a short boarders fish. A super fun twin fin with plenty of drive for when the waves are lacking.. but make no mistake this board handles overhead and some juice all the same. Low entry rocker for paddle ease and a bit more rocker in the tail to allow for tighter turning radius and more hold. The familiar single to double concave and a little V out the tail makes this board really easy to transition to from your shortboard and back and keeps things lively.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Whip",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/WHIP-MAIN-edited.jpg",
+          "description": "The whip is my standard all around thruster for everyday conditions. It has a sneaky amount of foam throughout the board, med/full rails, single to double concave and mid range rocker that works well in a variety of conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Gun",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/minigun-1-1073x2048.jpg",
+          "description": "The mini Gun came into existence for a few of our favorite more open ocean waves where theres just to much water moving for your typical step up. A key attribute is the flat deck and stepped rails allowing a LOT more foam to be packed into this board while keeping the rails more sensitive still. An awesome combination of paddle power and maneuverability. Its got a gunny ish template but the Rocker, bottom contours and widepoint more centered helps this board stay loose playful and easy to turn.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/gun-1-1136x1536.jpg",
+          "description": "Custom orders and select only.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/nopserider-1054x2048.jpg",
+          "description": "My take on a traditional Log. Lower nose rocker Wide point back and some flip off the tail slight concave in the nose and a mellow roll all the way off the tail and typically no edge. But custom is always the name of the game and this design is so fun and easy to tweak for customer wants and needs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Asymetrical",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/asym-2-scaled.jpg",
+          "description": "Asymmetrical designs are some of my favorite to both ride and shape and are custom by request only.",
+          "board_category_slug": "asym"
+        }
+      ]
+    }
+  ]
+}
