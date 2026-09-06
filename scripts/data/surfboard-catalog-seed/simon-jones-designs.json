@@ -1,0 +1,90 @@
+{
+  "generated_for": "Simon Jones Designs official named standup catalog",
+  "source": "https://simonjonesdesigns.com/pages/surfboards (Shopify model pages and products.json — excludes fins, wax, board socks, gift cards, and custom order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "simon-jones-designs",
+      "name": "Simon Jones Designs",
+      "website_url": "https://simonjonesdesigns.com",
+      "location_label": "Byron Bay, New South Wales, Australia",
+      "founder_name": "Simon Jones",
+      "lead_shaper_name": "Simon Jones",
+      "short_description": "Family-run Byron Bay label handcrafting stock and custom shortboards and mid-lengths since 1983.",
+      "models": [
+        {
+          "name": "2-Track",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/2-Track_Deck.png?v=1775781224",
+          "description": "The 2 Track is very closely related to the “Tracks Twinny,” with its low nose entry rocker and overall foil and outline of the board. The 2 Track is characterised by a &quot;Beaked&quot; nose, which maximises an even distribution of foam throughout the board, creating a large sweet spot to surf the board from. It has a narrower nose when compared to the Tracks Twinny. Its swallow tail has been pulled in, giving it the ability to surf this board in critical or slabby waves. The board still retains the ability to be fun in everyday waves but likes being pushed, and will hold its own in solid surf, thanks to four deep channels in the tail area providing plenty of hold and drive. The 2 Track is best when ridden at or around your height and should feel intuitive to high-performance shortboard surfers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Au Go Go",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/211780834569d8.png?v=1776144462",
+          "description": "The Au Go Go is a very fitting board for all surfers who are looking for something for their everyday quiver. The board handles and performs like a shortboard of its length and generates its own glide speed and hold, thanks to its low entry and exit rocker, medium-low rails, and four deep channels. The Au Go Go will feel at home under the feet of surfers who are used to high-performance shortboards, with its narrower outline and drawn-in nose template. Built for solid waves (hence its prior name, the step-up), the Au Go Go will perform well in almost anything you throw at it. It has been extensively tested and ridden on points, reefs, many beachies, and slabbing reefs of WA. Often ridden at your height and longer, you will feel comfortable and at home on the Au Go Go.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Calypte",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/101845718269d8.png?v=1776144958",
+          "description": "The Calypte offers a lively and progressive  twin-fin experience with more of a focus on high-performance.  Inspired by Torren and Aiyana&#39;s Indonesian archipelago boat trip, the board addresses the need for a fresh surfing sensation, particularly in challenging waves at shallow reef-passes and atolls. Through multiple iterations, the design evolved to feature a rounded nose, consistent rail outline, and plan shape. The rail remains even along most of the board&#39;s length, with a subtle &quot;wing&quot; in the final quarter enhancing back foot manoeuvrability, giving the board heightened responsiveness and control in the pocket. The versatile rounded squash tail accommodates diverse wave conditions. Two rocker options are available: a pronounced version for sharp turns in faster waves (known as &quot;B&quot; rocker or boat rocker), and an &quot;A&quot; rocker (flatter nose entry) rocker for smoother rides in milder conditions. Notably, all Calypte boards boast a double stringer blank construction, offering flexibility and fortified fin boxes for enhanced durability.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dylan",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Dylan_Deck.png?v=1775781221",
+          "description": "Built for small days when ripples are simply the only thing on the shore, or sitting wide and as far out as you can on the biggest day of the year, the Dylan has you covered! Its fast outline, large keel twins, and beaked nose all pay homage to the rest of the SJD family, only in the larger size. Starting at 9’0”, the Dylan holds the foam and paddle power you expect in a longboard, with the added bonus of the twin option as well as a round tail or small diamond. With its overall flatter rocker, paddling into big or small waves can be achieved with ease. Its built-in tail rocker gives it the ability to get around sections and hunt for the wave face.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fiji",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Fiji_triplestringer_Deck.png?v=1775706285",
+          "description": "The Fiji is a versatile and all-round great board for the quiver. It has a very large size bracket from 5’6” right up to 8’0”. Characterised by its signature triple stringer blank and 4 deep channels, the Fiji can be bulked up or whittled down to suit any surfer, wave, or condition. The Fiji&#39;s origin story originates when Torren was planning a trip to, yep, you guessed it… Fiji! In the days leading up to his departure date, the swell map kept growing. The report went from a mellow 4-6ft Cloudbreak to 8-10 ft 17-second period ground swell. Sitting in the rafters of the factory was a solid Burford triple stringer blank with this swell written all over it. And thus, the Fiji was born. You can see the board on its inaugural trip to Cloudbreak in Torren Martyn&#39;s &#39;Sea Legs&#39;. Although being built to be surfed in waves of consequence and power, the Fiji will still perform well in smaller surf. Especially when ridden smaller, lighter, and rounder. The Fiji comes in many size options as discussed above but also in a single stringer option.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Keel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Keel_Deck.png?v=1775781225",
+          "description": "The classic Keel, everyone has either ridden, seen, or held one before! First originating in San Diego, CA in the mid-late 60s, surfer and designer Steve Lis brought kneeboard design of short, wide, and volume-full boards to the mainstream in a fun board for small rampy waves. Much like its name suggests, the keel is a parallel, cruisey keel-fin twin for long points or beach breaks. The keel has even foam throughout, giving the board a much larger feel than they often are. The swallow tail, when on rail, holds the board on the face as each swallow acts as a pin when going through turns. This angle allows the board to feel holdy and allows projection when getting around sections or laying down turns on the face.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "LBOH",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/LBOH_Deck.png?v=1775782140",
+          "description": "The Little Board Of Happiness, is your perfect small wave board. Originating from a trip Torren and Ishka took to Sumatra some years back, its small size lends itself to moped bike racks and equatorial heat when all you want to do is surf in the pocket and find small tube sections. Its signature moon tail allows the LBOH to feel holdy and solid when on rail, despite its small size. The Little Board Of Happiness holds plenty of foam under the chest for paddle power and an area to push against. The original LBOH was a powder blue 5’4” and ridden with medium upright twins.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Little Wing",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Little_Wing_Deck.png?v=1775781223",
+          "description": "The Little Wing is a lively and sprightly feeling surfboard. Its low entry rocker and even foam distribution allows it to gracefully fall into waves and have you up and gliding early. Ridden with small keels, the board has plenty of get up and go when pushed, whilst still feeling tight and pockety off the top. The Little Wing is characterised by its wing/flyer ⅓ up from the tail, which draws the tail area in, allowing the surfer to wrap tight turns in smaller surf. The Little Wing can be ridden very short, from 5’4” right up to 7’6”, giving it a large playing field when it comes to wave types and styles of surfing. If you are looking for a light cruisey mid-length that will glide on the micro days, we recommend the larger of the Little Wings. However, if you are looking for a high-performance, rippable twinfin for small fast days or larger days at hollow points, the smaller size breaks of the Little Wing will feel right at home.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Massive",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Massive_Deck.png?v=1775781223",
+          "description": "The Massive originated as a board for cruising on small days or paddling wide on the bigger ones. Its low nose entry, deep channels, and parallel outline allow it to fall at the speed of the wave and follow large arcs and curves of bigger faces. Ridden with large or small keels, the Massive has plenty of base to push against and project out with. The even distribution of foam under the surfer&#39;s feet allows the board to be ridden from almost any position. Standing on or over the first ⅓ of the board will allow you to trim over flat sections on small days or position yourself forward in tubing waves. The back to the middle of the board is where the speed generation and turning power come from. When your back foot is over the fins, you will feel solid and connected to the wave face, thanks to the four deep channels and keels. The Massive performs well in micro swells when all you can do is stand up tall and let the wave push you along, right up to the big days when foam and paddle power are your friends.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Remote Location",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Remote_Location_Deck.png?v=1775781227",
+          "description": "The Remote Location - Your Go-To Down-the-Line Step-Up Coined by STAB Mag as “a very unassuming Shippies board,” it can hold its own in serious surf. The RL board came about after an afternoon watching footage of long &#39;90s thrusters being ridden at small to average-sized Pipe. Think prime Andy Irons era and the Momentum Generation. The way those long, narrow boards were adapted to the hollow, cupped-out faces showcased some incredible surfing. Around this same time, I also happened to see Creed McTaggart riding what I believe was one of Gunther Rohn’s &#39;90s thrusters at home. The board then sat in my mind for some time until Torren and my son Dash were on Calypte. It was right around the time of Mikala Jones’ sad passing. Like Mikala, the boys were a long way from help if needed. My parental instincts kicked in, and I started to think of all the boards I had seen and heard of where the noses had their points removed for safety, without compromising performance. Probably the most striking design feature of the RL is the nose concave. This is in place to mitigate any catch points that may be created with the blunt nose. The plan shape is full of foam, with it pushed nose to tail and rail to rail. Its overall rocker is relaxed with a late nose acceleration to help with steep drops. The rails are low and boxy for hold but add resistance through turns. As for bottom contours, it&#39;s a single concave throughout, with the concave not reaching the tuck of the rail under the midpoint of the board, importantly creating hold and control.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Tracks Twinny",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Tracks_Twinny_Deck.png?v=1775781224",
+          "description": "This is the baseboard from where all our twinnies have evolved. First evolving from a 5’8” Swallow tail single fin, made for a Tracks Magazine ‘Board Test’ many moons ago, thus giving birth to what we now know to be the Tracks Twinny. The Tracks Twinny has a low rocker, subtle single concave under the front foot that leads to a double concave set in vee under the back foot. These contours give the board a lively and responsive feel in beachies and small clean point breaks. The foil of the shape is characterised by a &#39;beaked&#39; nose, which maximises an even distribution of foam throughout the board, creating a large sweet spot to surf the board from. This large sweet spot and even distribution of foam enable the board to enhance your unique surfing style. The Tracks Twinny will suit all levels of surfing and will perform well in substandard waves yet hold its own on more perfect days.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Twin_Pin_Double_Stringer_f81b9b37-c599-4f4e-9e84-67f783378bf2.png?v=1776064070",
+          "description": "The Twin Pin - Strong, light, and built for the pocket or rampy-faced waves. The Twin Pin is the board for those seeking a great all-rounder, especially in subpar conditions. The single-to-double concave is a familiar feeling for those used to generic shortboards and provides a lively and loose feeling that twins are known for. Designed off the back of the Fiji, only without channels and with a slightly altered outline, the added width and simple bottom contours work together to create a nice medium between the speed, drive, and flow of the Fiji, but with the added bonus of versatility in smaller waves, or waves with lump or chop on the face. After a few prototypes in many different shapes, we decided on this outline as it was the most forgiving and responsive of them all. The double stringers add strength while still accommodating for a flexy feeling when compared to triple stringer options. Sizing options are from 5’6” - 8’0” and glassed light up to 6’4” for a fast lively feeling. Heavier glassing options are recommended in the larger size breaks, as this gives the board a solid and secure feeling.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
