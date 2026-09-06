@@ -5,10 +5,9 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { ExternalLink, Loader2, MessageCircle } from "lucide-react"
 import type { AdminMarketplaceMessageListRow } from "@/lib/db/adminMarketplaceMessages"
-import { parseMarketplaceMessagePdfAttachment } from "@/lib/validations/marketplace-message-attachment"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { OpenMarketplacePdfButton } from "@/components/features/messages/open-marketplace-pdf-button"
+import { AdminMarketplaceMessageBody } from "@/components/features/admin/admin-marketplace-message-body"
 
 type AdminOrderMarketplaceMessagesPanelProps = {
   conversationId: string | null
@@ -119,46 +118,35 @@ export function AdminOrderMarketplaceMessagesPanel({
         ) : (
           <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
             {messages.map((message) => {
-              const pdfAttachment = parseMarketplaceMessagePdfAttachment(message.metadata)
-              const redundantCaption =
-                pdfAttachment && message.content.trim() === `Attachment: ${pdfAttachment.file_name}`
+              const isBuyer = message.sender_id === buyerId
+              const isSeller = message.sender_id === sellerId
+              const bubbleTone = isBuyer
+                ? "border-sky-500/25 bg-sky-500/[0.06]"
+                : isSeller
+                  ? "border-emerald-500/25 bg-emerald-500/[0.06]"
+                  : "border-amber-500/30 bg-amber-500/[0.08]"
 
               return (
                 <div
                   key={message.id}
-                  className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm"
+                  className={`rounded-xl border px-3 py-2.5 text-sm ${bubbleTone}`}
                 >
-                  <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/40 pb-1.5 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 pb-1.5 text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">
                       {senderLabel(message.sender_id, message.sender?.display_name)}
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        · {isBuyer ? "Buyer" : isSeller ? "Seller" : "Support"}
+                      </span>
                     </span>
                     <time dateTime={message.created_at}>
                       {format(new Date(message.created_at), "MMM d, yyyy h:mm a")}
                     </time>
                   </div>
-                  <div className="mt-2 space-y-2">
-                    {pdfAttachment ? (
-                      <OpenMarketplacePdfButton
-                        messageId={message.id}
-                        fileName={pdfAttachment.file_name}
-                      />
-                    ) : null}
-                    {!redundantCaption && message.content.trim() ? (
-                      <p className="whitespace-pre-wrap break-words text-foreground">
-                        {message.content}
-                      </p>
-                    ) : null}
-                    {message.metadata != null &&
-                    typeof message.metadata === "object" &&
-                    !pdfAttachment ? (
-                      <details className="text-xs text-muted-foreground">
-                        <summary className="cursor-pointer select-none">Structured metadata</summary>
-                        <pre className="mt-2 overflow-x-auto rounded-md border border-border/60 bg-background p-2 text-[11px] leading-relaxed">
-                          {JSON.stringify(message.metadata, null, 2)}
-                        </pre>
-                      </details>
-                    ) : null}
-                  </div>
+                  <AdminMarketplaceMessageBody
+                    messageId={message.id}
+                    metadata={message.metadata}
+                    content={message.content}
+                  />
                 </div>
               )
             })}

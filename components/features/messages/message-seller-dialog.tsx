@@ -15,6 +15,10 @@ import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/loca
 import { MessageMediaSendButton } from '@/components/features/messages/message-media-send-button'
 import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
 import {
+  MessageMediaImageLightbox,
+  type MessageMediaImageLightboxItem,
+} from '@/components/features/messages/message-media-image-lightbox'
+import {
   ensureMarketplaceListingConversation,
   sendConversationReply,
   sendMarketplaceListingMessage,
@@ -26,6 +30,7 @@ import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listin
 import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
 import { cn } from '@/lib/utils'
 import { isAbortError } from '@/lib/utils/is-abort-error'
+import { parseMarketplaceMessageImageAttachment } from '@/lib/validations/marketplace-message-attachment'
 
 interface MessageSellerDialogProps {
   listingId: string
@@ -87,6 +92,33 @@ export function MessageSellerDialog({
   const listingThumbSrc = useMemo(
     () => (listing ? listingTitleThumbnailSrc(listing.listing_images) : ''),
     [listing],
+  )
+
+  const dialogImageGallery = useMemo((): Array<MessageMediaImageLightboxItem & { messageId: string }> => {
+    const items: Array<MessageMediaImageLightboxItem & { messageId: string }> = []
+    for (const message of sentMessages) {
+      const imageAtt = parseMarketplaceMessageImageAttachment(message.mediaMetadata)
+      if (!imageAtt) continue
+      items.push({
+        messageId: message.id,
+        src: `/api/messages/${message.id}/attachment`,
+        title: imageAtt.file_name,
+      })
+    }
+    return items
+  }, [sentMessages])
+
+  const [dialogImageLightboxOpen, setDialogImageLightboxOpen] = useState(false)
+  const [dialogImageLightboxIndex, setDialogImageLightboxIndex] = useState(0)
+
+  const openDialogImage = useCallback(
+    (messageId: string) => {
+      const nextIndex = dialogImageGallery.findIndex((item) => item.messageId === messageId)
+      if (nextIndex < 0) return
+      setDialogImageLightboxIndex(nextIndex)
+      setDialogImageLightboxOpen(true)
+    },
+    [dialogImageGallery],
   )
 
   const loadListingPreview = useCallback(
@@ -249,6 +281,7 @@ export function MessageSellerDialog({
                         content={m.content}
                         isOwn
                         formattedTime={m.timeLabel}
+                        onOpenImage={openDialogImage}
                       />
                     ) : (
                       <>
@@ -355,6 +388,13 @@ export function MessageSellerDialog({
         </form>
         </DialogContent>
       </Dialog>
+      <MessageMediaImageLightbox
+        open={dialogImageLightboxOpen}
+        onOpenChange={setDialogImageLightboxOpen}
+        items={dialogImageGallery}
+        index={dialogImageLightboxIndex}
+        onIndexChange={setDialogImageLightboxIndex}
+      />
     </>
   )
 }

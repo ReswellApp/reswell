@@ -62,8 +62,15 @@ import { ReviewRequestMessageCard } from '@/components/features/messages/review-
 import { MessageLocationCard } from '@/components/features/messages/message-location-card'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
+import {
+  MessageMediaImageLightbox,
+  type MessageMediaImageLightboxItem,
+} from '@/components/features/messages/message-media-image-lightbox'
 import { MessageSellerOfferButton } from '@/components/features/messages/message-seller-offer-button'
-import { parseMarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
+import {
+  parseMarketplaceMessageAttachment,
+  parseMarketplaceMessageImageAttachment,
+} from '@/lib/validations/marketplace-message-attachment'
 import { isPeerListingSection } from '@/lib/peer-listing-sections'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
@@ -205,6 +212,33 @@ export function ConversationThreadClient({
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       ),
     [messages],
+  )
+
+  const threadImageGallery = useMemo((): Array<MessageMediaImageLightboxItem & { messageId: string }> => {
+    const items: Array<MessageMediaImageLightboxItem & { messageId: string }> = []
+    for (const message of orderedMessages) {
+      const imageAtt = parseMarketplaceMessageImageAttachment(message.metadata)
+      if (!imageAtt) continue
+      items.push({
+        messageId: message.id,
+        src: `/api/messages/${message.id}/attachment`,
+        title: imageAtt.file_name,
+      })
+    }
+    return items
+  }, [orderedMessages])
+
+  const [threadImageLightboxOpen, setThreadImageLightboxOpen] = useState(false)
+  const [threadImageLightboxIndex, setThreadImageLightboxIndex] = useState(0)
+
+  const openThreadImage = useCallback(
+    (messageId: string) => {
+      const nextIndex = threadImageGallery.findIndex((item) => item.messageId === messageId)
+      if (nextIndex < 0) return
+      setThreadImageLightboxIndex(nextIndex)
+      setThreadImageLightboxOpen(true)
+    },
+    [threadImageGallery],
   )
 
   const threadPrimaryListingId = useMemo(() => {
@@ -1005,6 +1039,7 @@ export function ConversationThreadClient({
                             content={message.content}
                             isOwn={isOwn}
                             formattedTime={formatMessageDate(message.created_at)}
+                            onOpenImage={openThreadImage}
                           />
                         </div>
                       )
@@ -1179,6 +1214,13 @@ export function ConversationThreadClient({
         </MessageThreadMobileComposerDock>
         </div>
       </div>
+      <MessageMediaImageLightbox
+        open={threadImageLightboxOpen}
+        onOpenChange={setThreadImageLightboxOpen}
+        items={threadImageGallery}
+        index={threadImageLightboxIndex}
+        onIndexChange={setThreadImageLightboxIndex}
+      />
     </main>
   )
 }
