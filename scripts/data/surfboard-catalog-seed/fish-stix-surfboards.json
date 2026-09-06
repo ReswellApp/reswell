@@ -1,0 +1,66 @@
+{
+  "generated_for": "Fish Stix (Marshall Madruga) official named standup catalog",
+  "source": "http://marshallmadruga.com/fishstix/surfboards.html (Marshall Madruga Fish Stix surfboard catalog — fishstixsurfboards.com no longer resolves; official catalog hosted on marshallmadruga.com)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "fish-stix-surfboards",
+      "name": "Fish Stix",
+      "website_url": "http://marshallmadruga.com/fishstix",
+      "location_label": "San Diego, California",
+      "founder_name": "Marshall Madruga",
+      "lead_shaper_name": "Marshall Madruga",
+      "short_description": "Marshall Madruga's Fish Stix line — limited-run art surfboards with real fish-print artwork on traditional fish and longboard outlines, shaped in San Diego.",
+      "models": [
+        {
+          "name": "Dorado",
+          "image_url": "http://marshallmadruga.com/fishstix/photos/surfboards/01.JPG",
+          "description": "8-foot fish surfboard with Dorado fish artwork from the Marshall Madruga Fish Stix catalog.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wahoo",
+          "image_url": "http://marshallmadruga.com/fishstix/photos/surfboards/02.JPG",
+          "description": "8-foot fish surfboard with Wahoo fish artwork from the Marshall Madruga Fish Stix catalog.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Redfish",
+          "image_url": "http://marshallmadruga.com/fishstix/photos/surfboards/03.JPG",
+          "description": "8-foot fish surfboard with Redfish artwork from the Marshall Madruga Fish Stix catalog.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Marlin",
+          "image_url": "http://marshallmadruga.com/fishstix/photos/surfboards/04.JPG",
+          "description": "8-foot fish surfboard with Marlin fish artwork from the Marshall Madruga Fish Stix catalog.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big Game",
+          "image_url": "http://marshallmadruga.com/fishstix/photos/surfboards/05.JPG",
+          "description": "9-foot surfboard with fabric inlay and Big Game fish artwork from the Marshall Madruga Fish Stix catalog.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Striped Bass",
+          "image_url": "http://marshallmadruga.com/fishstix/photos/surfboards/06.JPG",
+          "description": "9-foot surfboard with Striped Bass fish artwork from the Marshall Madruga Fish Stix catalog.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gulf",
+          "image_url": "http://marshallmadruga.com/fishstix/photos/surfboards/07.JPG",
+          "description": "9-foot surfboard with fabric inlay and Gulf fish artwork from the Marshall Madruga Fish Stix catalog.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Yellowfin Tuna",
+          "image_url": "http://marshallmadruga.com/fishstix/photos/surfboards/08.JPG",
+          "description": "6-foot 3-inch fish surfboard with Yellowfin Tuna fish artwork from the Marshall Madruga Fish Stix catalog.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
