@@ -260,7 +260,7 @@ const sections: FaqSection[] = [
       {
         question: "I have a problem with a purchase. What should I do?",
         answerPlain:
-          "Message the other person first. Most issues get sorted out with a quick conversation. If you still need help, open the purchase from Purchases and tap Refund help to file a claim, or Ask Reswell for a general question about the purchase. We aim to review claims within 3 business days.",
+          "Message the other person first. Most issues get sorted out with a quick conversation. If you still need help, open the purchase and tap Get help — you can start a Purchase Protection claim or ask a question about the order. We aim to review claims within 3 business days.",
         answer: (
           <>
             Message the other person first. Most issues get sorted out with a quick conversation.
@@ -268,9 +268,9 @@ const sections: FaqSection[] = [
             <Link href="/dashboard/purchases" className="text-primary underline">
               Purchases
             </Link>{" "}
-            and tap <strong className="text-foreground">Refund help</strong> to file a claim, or{" "}
-            <strong className="text-foreground">Ask Reswell</strong> for a general question about
-            the purchase. We aim to review claims within 3 business days.
+            and tap <strong className="text-foreground">Get help</strong> — you can start a Purchase
+            Protection claim or ask a question about the order. We aim to review claims within 3
+            business days.
           </>
         ),
       },

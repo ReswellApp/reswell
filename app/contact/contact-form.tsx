@@ -55,7 +55,7 @@ export function ContactForm() {
                     {" "}
                     Track this request anytime in{" "}
                     <Link
-                      href={`/dashboard/support/${ticketId}`}
+                      href={`/support/${ticketId}`}
                       className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
                     >
                       Dashboard → Support

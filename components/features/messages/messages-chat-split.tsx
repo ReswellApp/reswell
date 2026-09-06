@@ -3,13 +3,13 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { MessagesSupportDialog } from "@/components/features/messages/messages-support-dialog"
 import { MessagesInboxListPane } from "@/components/features/messages/messages-inbox-list-pane"
 import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inbox"
 import {
   dashboardPageSubtitleClass,
   dashboardPageTitleClass,
 } from "@/lib/utils/dashboard-display-styles"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface MessagesChatSplitProps {
@@ -42,21 +42,27 @@ export function MessagesChatSplit({
         <div>
           <h1 className={dashboardPageTitleClass}>Messages</h1>
           <p className={dashboardPageSubtitleClass}>
-            Marketplace chats with buyers and sellers. Support tickets live in{" "}
+            Marketplace chats with buyers and sellers. Help cases with Reswell live under{" "}
             <Link
               href="/dashboard/support"
               className="text-primary underline underline-offset-2"
             >
-              Support
+              Help
             </Link>
             , not here.
           </p>
         </div>
-        <MessagesSupportDialog
-          triggerMode="floating"
-          relatedConversationId={activeConversationId}
-          floatingTriggerClassName="shrink-0"
-        />
+        <Button asChild variant="outline" size="sm" className="gap-2 rounded-full shrink-0">
+          <Link
+            href={
+              activeConversationId
+                ? `/dashboard/support/new?conversationId=${encodeURIComponent(activeConversationId)}`
+                : "/dashboard/support/new"
+            }
+          >
+            Get help
+          </Link>
+        </Button>
       </header>
 
       <div

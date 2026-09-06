@@ -57,6 +57,12 @@ type PurchasedLabelPayload = {
   paperlessQrUrl?: string | null
   paperlessInstructions?: string | null
   paperlessHandoffCode?: string | null
+  insuranceProvider?: string | null
+  insuredValueAmount?: number | null
+  insuranceCostAmount?: number | null
+  insuranceClaimUrl?: string | null
+  shipengineLabelId?: string | null
+  shipengineShipmentId?: string | null
 }
 
 async function findWalletLabelPurchaseByOrder(
@@ -706,6 +712,12 @@ async function persistSellerPaidLabelAndTracking(params: {
         paperless_qr_url: params.purchased.paperlessQrUrl ?? null,
         paperless_instructions: params.purchased.paperlessInstructions ?? null,
         paperless_handoff_code: params.purchased.paperlessHandoffCode ?? null,
+        insurance_provider: params.purchased.insuranceProvider ?? null,
+        insured_value_amount: params.purchased.insuredValueAmount ?? null,
+        insurance_cost_amount: params.purchased.insuranceCostAmount ?? null,
+        insurance_claim_url: params.purchased.insuranceClaimUrl ?? null,
+        shipengine_label_id: params.purchased.shipengineLabelId ?? null,
+        shipengine_shipment_id: params.purchased.shipengineShipmentId ?? null,
       })
       .eq("id", params.claimId)
       .is("tracking_number", null)
@@ -736,6 +748,12 @@ async function persistSellerPaidLabelAndTracking(params: {
       paperless_qr_url: params.purchased.paperlessQrUrl ?? null,
       paperless_instructions: params.purchased.paperlessInstructions ?? null,
       paperless_handoff_code: params.purchased.paperlessHandoffCode ?? null,
+      insurance_provider: params.purchased.insuranceProvider ?? null,
+      insured_value_amount: params.purchased.insuredValueAmount ?? null,
+      insurance_cost_amount: params.purchased.insuranceCostAmount ?? null,
+      insurance_claim_url: params.purchased.insuranceClaimUrl ?? null,
+      shipengine_label_id: params.purchased.shipengineLabelId ?? null,
+      shipengine_shipment_id: params.purchased.shipengineShipmentId ?? null,
     })
 
     if (labelInsertErr) {

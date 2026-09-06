@@ -14,6 +14,7 @@
 
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
+import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 
 const MESSAGE_PROP_MAX = 4000
 
@@ -42,12 +43,8 @@ function trimMessage(text: string): string {
   return `${t.slice(0, MESSAGE_PROP_MAX)}…`
 }
 
-function supportTicketUrl(source: KlaviyoSupportTicketSource, ticketId: string): string {
-  // Order-support rows live outside `contact_messages` /dashboard/support.
-  if (source === "order_buyer_support" || source === "order_seller_support") {
-    return ""
-  }
-  return `${publicSiteOriginForEmail()}/dashboard/support/${ticketId}`
+function supportTicketUrl(_source: KlaviyoSupportTicketSource, ticketId: string): string {
+  return supportCaseResponseAbsoluteUrl(publicSiteOriginForEmail(), ticketId)
 }
 
 export async function trackKlaviyoSupportTicketCreated(

@@ -211,7 +211,7 @@ export async function POST(
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, order_num, buyer_id, listing_id, fulfillment_method, delivery_status, shipping_address, listings ( section )",
+      "id, order_num, buyer_id, listing_id, fulfillment_method, delivery_status, shipping_address, amount, shipping_amount, listings ( section )",
     )
     .eq("id", orderId)
     .eq("seller_id", user.id)
@@ -229,6 +229,8 @@ export async function POST(
     fulfillment_method: string | null
     delivery_status: string
     shipping_address: unknown
+    amount: number | string | null
+    shipping_amount: number | string | null
     listings: { section: string } | { section: string }[] | null
   }
 
@@ -293,11 +295,19 @@ export async function POST(
       weightLb: body.parcel.weight_lb,
     }
 
+    const orderTotal = Number(o.amount ?? 0)
+    const shippingAmt = Number(o.shipping_amount ?? 0)
+    const insuredValueUsd =
+      Number.isFinite(orderTotal) && orderTotal > 0
+        ? Math.max(0.01, Math.round((orderTotal - (Number.isFinite(shippingAmt) ? shippingAmt : 0)) * 100) / 100)
+        : null
+
     const ratesResult = await fetchRatesForSurfboardOrder({
       shipFrom: resolved.from,
       shipTo: resolved.to,
       parcel,
       listingSection: listing.section,
+      insuredValueUsd,
     })
 
     if (!ratesResult.ok) {

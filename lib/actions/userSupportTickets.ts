@@ -19,6 +19,7 @@ export async function sendUserSupportTicketReplyAction(raw: unknown) {
 
   revalidatePath("/dashboard/support")
   if (ticketId) {
+    revalidatePath(`/support/${ticketId}`)
     revalidatePath(`/dashboard/support/${ticketId}`)
   }
 

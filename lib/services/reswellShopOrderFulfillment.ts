@@ -233,6 +233,12 @@ export async function fulfillReswellShopOrder(
       paperlessQrUrl: purchased.result.paperlessQrUrl,
       paperlessInstructions: purchased.result.paperlessInstructions,
       paperlessHandoffCode: purchased.result.paperlessHandoffCode,
+      insuranceProvider: purchased.result.insuranceProvider,
+      insuredValueAmount: purchased.result.insuredValueAmount,
+      insuranceCostAmount: purchased.result.insuranceCostAmount,
+      insuranceClaimUrl: purchased.result.insuranceClaimUrl,
+      shipengineLabelId: purchased.result.shipengineLabelId,
+      shipengineShipmentId: purchased.result.shipengineShipmentId,
     })
     if (!attached.ok) {
       return { ok: false, error: attached.error, status: 500 }

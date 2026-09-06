@@ -1,5 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { listConversationIdsLinkedToSupportTickets } from "@/lib/db/contactMessages"
+import { listConversationIdsLinkedToOrderSupport } from "@/lib/db/order-support"
 import { loadMessagesInboxForUser, type MessagesInboxPayload } from "@/lib/db/messagesInbox"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import {
@@ -25,11 +26,14 @@ export async function retainMarketplaceInboxConversations(
   if (supportLikeIds.length === 0) return conversations
 
   const supabase = createServiceRoleClient()
-  const ticketedIds = await listConversationIdsLinkedToSupportTickets(supabase, supportLikeIds)
+  const [ticketedIds, orderTicketedIds] = await Promise.all([
+    listConversationIdsLinkedToSupportTickets(supabase, supportLikeIds),
+    listConversationIdsLinkedToOrderSupport(supabase, supportLikeIds),
+  ])
 
   return conversations.filter((c) => {
     if (!isSupportInboxConversation(c, supportUserId)) return true
-    return !ticketedIds.has(c.id)
+    return !ticketedIds.has(c.id) && !orderTicketedIds.has(c.id)
   })
 }
 

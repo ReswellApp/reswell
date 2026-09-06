@@ -57,15 +57,18 @@ export default function ContactPage() {
         <div className="container mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-16 md:py-20 lg:grid-cols-2 lg:gap-14 lg:px-8">
           <div>
             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              Support
+              Help
             </p>
             <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
               Get in touch
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Whether it&apos;s about an order, your account, or something that just doesn&apos;t
-              feel right, we&apos;re on it. Email us or send a message from this page. Both land
-              with the same team.
+              Signed in? Use{" "}
+              <Link href="/dashboard/support/new" className="text-primary underline underline-offset-2">
+                Get help
+              </Link>{" "}
+              for the fastest path — pick what you need and track your case. Or email us / send a
+              message from this page; both land with the same team.
             </p>
           </div>
           <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/70 shadow-sm">

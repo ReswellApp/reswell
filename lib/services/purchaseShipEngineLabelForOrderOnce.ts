@@ -18,6 +18,15 @@ import { TOGETHER_PACKAGE_KEY } from "@/lib/shipping/packaging-mode"
 
 export type { PurchasedShipEngineLabelResult }
 
+const EMPTY_LABEL_INSURANCE = {
+  insuranceProvider: null,
+  insuredValueAmount: null,
+  insuranceCostAmount: null,
+  insuranceClaimUrl: null,
+  shipengineLabelId: null,
+  shipengineShipmentId: null,
+} as const
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -189,6 +198,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
         paperlessQrUrl: null,
         paperlessInstructions: null,
         paperlessHandoffCode: null,
+        ...EMPTY_LABEL_INSURANCE,
       },
     }
   }
@@ -211,6 +221,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
         paperlessQrUrl: null,
         paperlessInstructions: null,
         paperlessHandoffCode: null,
+        ...EMPTY_LABEL_INSURANCE,
       },
     }
   }
@@ -254,6 +265,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
           paperlessQrUrl: null,
           paperlessInstructions: null,
           paperlessHandoffCode: null,
+          ...EMPTY_LABEL_INSURANCE,
         },
       }
     }
@@ -310,6 +322,7 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
         paperlessQrUrl: null,
         paperlessInstructions: null,
         paperlessHandoffCode: null,
+        ...EMPTY_LABEL_INSURANCE,
       },
     }
   }

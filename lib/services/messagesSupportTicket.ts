@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { userParticipatesInConversation, ensureConversationBetweenBuyerAndSeller } from "@/lib/db/conversations"
 import {
   submitMessagesSupportTicketSchema,
@@ -6,10 +6,27 @@ import {
 } from "@/lib/validations/messagesSupportTicket"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import {
-  formatSupportTicketOpeningMessage,
+  formatSupportCaseWelcomeMessage,
   insertMemberMessageInConversation,
+  insertSupportStaffThreadMessage,
 } from "@/lib/services/supportTicketThreadNotifications"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
+import { insertSupportCase, insertSupportCaseMessage } from "@/lib/db/supportCases"
+import type { SupportCaseKind } from "@/lib/types/supportCase"
+import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+
+function topicToKind(topic: string): SupportCaseKind {
+  switch (topic) {
+    case "account":
+      return "account"
+    case "payments":
+      return "payments"
+    case "safety":
+      return "safety"
+    default:
+      return "general"
+  }
+}
 
 export async function submitMessagesSupportTicketService(
   raw: unknown,
@@ -91,19 +108,50 @@ export async function submitMessagesSupportTicketService(
   const ticketId = row.id as string
 
   if (supportConversationId) {
-    const content = formatSupportTicketOpeningMessage({
-      ticketId,
-      topicLabel: subject,
-      body: parsed.data.details.trim(),
-    })
+    const details = parsed.data.details.trim()
     const posted = await insertMemberMessageInConversation(supabase, {
       conversationId: supportConversationId,
       senderId: user.id,
-      content,
+      content: details,
     })
     if (!posted) {
       console.error("submitMessagesSupportTicketService: failed to post opening thread message")
+    } else if (resolvedSupport.ok) {
+      const welcome = await insertSupportStaffThreadMessage({
+        conversationId: supportConversationId,
+        supportUserId: resolvedSupport.userId,
+        content: formatSupportCaseWelcomeMessage({
+          topicLabel: subject,
+          caseRef: formatSupportCaseReference(ticketId),
+        }),
+      })
+      if (!welcome.ok) {
+        console.error("submitMessagesSupportTicketService: welcome message insert failed")
+      }
     }
+  }
+
+  const service = createServiceRoleClient()
+  const kind = topicToKind(parsed.data.topic)
+  const dual = await insertSupportCase(service, {
+    kind,
+    subject,
+    preview: parsed.data.details.trim(),
+    requester_user_id: user.id,
+    requester_email: email,
+    requester_role: "member",
+    conversation_id: relatedId,
+    contact_message_id: ticketId,
+    source_channel: "help_hub",
+    priority: kind === "safety" ? "urgent" : "normal",
+  })
+  if (dual.data) {
+    await insertSupportCaseMessage(service, {
+      case_id: dual.data.id,
+      author_user_id: user.id,
+      author_role: "customer",
+      body: parsed.data.details.trim(),
+    })
   }
 
   await trackKlaviyoSupportTicketCreated({

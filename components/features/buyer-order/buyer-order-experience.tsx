@@ -8,16 +8,13 @@ import {
   CheckCircle2,
   ExternalLink,
   HelpCircle,
-  Loader2,
   MessageCircle,
   Package,
   RotateCcw,
   ScrollText,
   Shield,
   Truck,
-  XCircle,
 } from "lucide-react"
-import { toast } from "sonner"
 import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { deliveryStatusLabel } from "@/lib/order-status"
 import {
@@ -26,19 +23,10 @@ import {
   isEligibleForShippingDeadlineAutoCancel,
   SHIPPING_DEADLINE_DAYS,
 } from "@/lib/shipping-deadline"
+import { helpHubHref } from "@/lib/help/help-hub-intents"
 import { Button } from "@/components/ui/button"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
@@ -48,7 +36,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { Textarea } from "@/components/ui/textarea"
 import {
   ReviewSellerControls,
   type ExistingSellerReview,
@@ -265,15 +252,6 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
 
 export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
-  const [cancelOpen, setCancelOpen] = useState(false)
-  const [refundOpen, setRefundOpen] = useState(false)
-
-  const [helpBody, setHelpBody] = useState("")
-  const [cancelBody, setCancelBody] = useState("")
-  const [refundBody, setRefundBody] = useState("")
-  const [contactedSeller, setContactedSeller] = useState<string>("")
-  const [submitting, setSubmitting] = useState(false)
 
   const trackUrl = useMemo(() => {
     if (!props.trackingNumber?.trim()) return null
@@ -282,41 +260,11 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
 
   const journey = useMemo(() => buildJourney(props), [props])
 
-  const submit = async (
-    request_type: "help" | "cancel_order" | "refund_help",
-    body: string,
-    contacted?: boolean,
-  ) => {
-    setSubmitting(true)
-    try {
-      const payload: Record<string, unknown> = { request_type, body: body.trim() }
-      if (request_type === "refund_help" && typeof contacted === "boolean") {
-        payload.contacted_seller_first = contacted
-      }
-      const res = await fetch(`/api/orders/${encodeURIComponent(props.orderId)}/buyer-support`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      const data = (await res.json()) as { error?: string }
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not send request")
-        return
-      }
-      setHelpOpen(false)
-      setCancelOpen(false)
-      setRefundOpen(false)
-      setHelpBody("")
-      setCancelBody("")
-      setRefundBody("")
-      setContactedSeller("")
-    } catch {
-      toast.error("Something went wrong")
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const getHelpHref = helpHubHref({
+    intent: "order",
+    orderId: props.orderId,
+    role: "buyer",
+  })
 
   const isRefunded = props.status === "refunded"
   const isRefunding = props.status === "refunding"
@@ -556,31 +504,12 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
         </Button>
 
         {props.status === "confirmed" ? (
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-2 border-amber-500/30 text-amber-950 dark:text-amber-100"
-              onClick={() => setHelpOpen(true)}
-            >
+          <Button type="button" variant="outline" className="gap-2" asChild>
+            <Link href={getHelpHref}>
               <HelpCircle className="h-4 w-4" />
-              Ask Reswell
-            </Button>
-
-            {props.canRequestCancel && (
-              <Button type="button" variant="outline" className="gap-2" onClick={() => setCancelOpen(true)}>
-                <XCircle className="h-4 w-4" />
-                Request cancellation
-              </Button>
-            )}
-
-            {props.canRequestRefundHelp && (
-              <Button type="button" variant="outline" className="gap-2" onClick={() => setRefundOpen(true)}>
-                <Package className="h-4 w-4" />
-                Refund help
-              </Button>
-            )}
-          </>
+              Get help
+            </Link>
+          </Button>
         ) : null}
       </div>
 
@@ -632,136 +561,6 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
         </p>
       )}
 
-      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Ask Reswell a question</DialogTitle>
-            <DialogDescription>
-              Describe what you need. This goes to our support team (not the seller). We typically reply within
-              1–2 business days.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="help-body">Your message</Label>
-            <Textarea
-              id="help-body"
-              value={helpBody}
-              onChange={(e) => setHelpBody(e.target.value)}
-              rows={5}
-              placeholder="e.g. I need to change my shipping address before it ships…"
-            />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="ghost" onClick={() => setHelpOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={submitting || helpBody.trim().length < 10}
-              onClick={() => void submit("help", helpBody)}
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Request purchase cancellation</DialogTitle>
-            <DialogDescription>
-              Use this before the seller ships (or before pickup is completed). We&apos;ll review and contact
-              you — cancellation isn&apos;t guaranteed until confirmed.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="cancel-body">Why do you need to cancel?</Label>
-            <Textarea
-              id="cancel-body"
-              value={cancelBody}
-              onChange={(e) => setCancelBody(e.target.value)}
-              rows={5}
-              placeholder="Briefly explain your situation…"
-            />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="ghost" onClick={() => setCancelOpen(false)}>
-              Back
-            </Button>
-            <Button
-              type="button"
-              disabled={submitting || cancelBody.trim().length < 10}
-              onClick={() => void submit("cancel_order", cancelBody)}
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit request"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={refundOpen} onOpenChange={setRefundOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Refund help</DialogTitle>
-            <DialogDescription>
-              Tell us what went wrong. For many issues, messaging the seller is the fastest path — we ask so we
-              can route your case correctly.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Have you already messaged the seller about this?</Label>
-              <RadioGroup value={contactedSeller} onValueChange={setContactedSeller} className="flex gap-6">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="yes" id="refund-yes" />
-                  <Label htmlFor="refund-yes" className="font-normal">
-                    Yes
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no" id="refund-no" />
-                  <Label htmlFor="refund-no" className="font-normal">
-                    No
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="refund-body">What should we know?</Label>
-              <Textarea
-                id="refund-body"
-                value={refundBody}
-                onChange={(e) => setRefundBody(e.target.value)}
-                rows={5}
-                placeholder="Describe the issue, what you expected, and what happened…"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="ghost" onClick={() => setRefundOpen(false)}>
-              Back
-            </Button>
-            <Button
-              type="button"
-              disabled={
-                submitting ||
-                refundBody.trim().length < 10 ||
-                (contactedSeller !== "yes" && contactedSeller !== "no")
-              }
-              onClick={() =>
-                void submit(
-                  "refund_help",
-                  refundBody,
-                  contactedSeller === "yes" ? true : contactedSeller === "no" ? false : undefined,
-                )
-              }
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit to support"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

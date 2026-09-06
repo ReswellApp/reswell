@@ -22,6 +22,13 @@ export type OrderShippingLabelRow = {
   tracking_carrier: string | null
   shipengine_rate_id: string | null
   created_at: string
+  insurance_provider: string | null
+  insured_value_amount: number | null
+  insured_value_currency: string | null
+  insurance_cost_amount: number | null
+  insurance_claim_url: string | null
+  shipengine_label_id: string | null
+  shipengine_shipment_id: string | null
 } & OrderShippingLabelPaperlessFields
 
 /** All marketplace labels for an order (together = usually one; separate = one per line). */
@@ -32,18 +39,56 @@ export async function listOrderShippingLabelsForOrder(
   const { data, error } = await supabase
     .from("order_shipping_labels")
     .select(
-      "id, order_id, order_item_id, shipment_id, origin, label_pdf_url, label_storage_path, tracking_number, tracking_carrier, shipengine_rate_id, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code, created_at",
+      "id, order_id, order_item_id, shipment_id, origin, label_pdf_url, label_storage_path, tracking_number, tracking_carrier, shipengine_rate_id, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code, created_at, insurance_provider, insured_value_amount, insured_value_currency, insurance_cost_amount, insurance_claim_url, shipengine_label_id, shipengine_shipment_id",
     )
     .eq("order_id", orderId)
     .order("created_at", { ascending: true })
 
-  if (error || !data?.length) return []
+  if (error || !data?.length) {
+    // Soft-fail if insurance columns not migrated yet
+    if (error) {
+      const legacy = await supabase
+        .from("order_shipping_labels")
+        .select(
+          "id, order_id, order_item_id, shipment_id, origin, label_pdf_url, label_storage_path, tracking_number, tracking_carrier, shipengine_rate_id, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code, created_at",
+        )
+        .eq("order_id", orderId)
+        .order("created_at", { ascending: true })
+      if (legacy.error || !legacy.data?.length) return []
+      return legacy.data.map((row) => {
+        const r = row as OrderShippingLabelRow
+        return {
+          ...r,
+          order_item_id: r.order_item_id ?? null,
+          shipment_id: r.shipment_id ?? null,
+          insurance_provider: null,
+          insured_value_amount: null,
+          insured_value_currency: null,
+          insurance_cost_amount: null,
+          insurance_claim_url: null,
+          shipengine_label_id: null,
+          shipengine_shipment_id: null,
+          ...normalizePaperless(r),
+        }
+      })
+    }
+    return []
+  }
   return data.map((row) => {
     const r = row as OrderShippingLabelRow
     return {
       ...r,
       order_item_id: r.order_item_id ?? null,
       shipment_id: r.shipment_id ?? null,
+      insurance_provider: r.insurance_provider ?? null,
+      insured_value_amount:
+        r.insured_value_amount != null ? Number(r.insured_value_amount) : null,
+      insured_value_currency: r.insured_value_currency ?? null,
+      insurance_cost_amount:
+        r.insurance_cost_amount != null ? Number(r.insurance_cost_amount) : null,
+      insurance_claim_url: r.insurance_claim_url ?? null,
+      shipengine_label_id: r.shipengine_label_id ?? null,
+      shipengine_shipment_id: r.shipengine_shipment_id ?? null,
       ...normalizePaperless(r),
     }
   })
@@ -86,9 +131,16 @@ export async function insertOrderShippingLabel(
     paperless_qr_storage_path?: string | null
     paperless_instructions?: string | null
     paperless_handoff_code?: string | null
+    insurance_provider?: string | null
+    insured_value_amount?: number | null
+    insured_value_currency?: string | null
+    insurance_cost_amount?: number | null
+    insurance_claim_url?: string | null
+    shipengine_label_id?: string | null
+    shipengine_shipment_id?: string | null
   },
 ): Promise<{ error: Error | null }> {
-  const { error } = await supabase.from("order_shipping_labels").insert({
+  const payload: Record<string, unknown> = {
     order_id: row.order_id,
     origin: row.origin,
     order_item_id: row.order_item_id ?? null,
@@ -103,9 +155,54 @@ export async function insertOrderShippingLabel(
     paperless_qr_storage_path: row.paperless_qr_storage_path ?? null,
     paperless_instructions: row.paperless_instructions ?? null,
     paperless_handoff_code: row.paperless_handoff_code ?? null,
-  })
+  }
+  if (row.insurance_provider !== undefined) payload.insurance_provider = row.insurance_provider
+  if (row.insured_value_amount !== undefined) {
+    payload.insured_value_amount = row.insured_value_amount
+  }
+  if (row.insured_value_currency !== undefined) {
+    payload.insured_value_currency = row.insured_value_currency
+  }
+  if (row.insurance_cost_amount !== undefined) {
+    payload.insurance_cost_amount = row.insurance_cost_amount
+  }
+  if (row.insurance_claim_url !== undefined) {
+    payload.insurance_claim_url = row.insurance_claim_url
+  }
+  if (row.shipengine_label_id !== undefined) {
+    payload.shipengine_label_id = row.shipengine_label_id
+  }
+  if (row.shipengine_shipment_id !== undefined) {
+    payload.shipengine_shipment_id = row.shipengine_shipment_id
+  }
+
+  const { error } = await supabase.from("order_shipping_labels").insert(payload)
 
   if (!error) return { error: null }
+  // Soft-fail: retry without insurance columns if migration not applied
+  if (/insurance_|shipengine_label_id|shipengine_shipment_id/i.test(error.message)) {
+    const { error: legacyErr } = await supabase.from("order_shipping_labels").insert({
+      order_id: row.order_id,
+      origin: row.origin,
+      order_item_id: row.order_item_id ?? null,
+      shipment_id: row.shipment_id ?? null,
+      label_pdf_url: row.label_pdf_url ?? null,
+      label_storage_path: row.label_storage_path ?? null,
+      tracking_number: row.tracking_number ?? null,
+      tracking_carrier: row.tracking_carrier ?? null,
+      shipengine_rate_id: row.shipengine_rate_id ?? null,
+      stripe_payment_intent_id: row.stripe_payment_intent_id ?? null,
+      paperless_qr_url: row.paperless_qr_url ?? null,
+      paperless_qr_storage_path: row.paperless_qr_storage_path ?? null,
+      paperless_instructions: row.paperless_instructions ?? null,
+      paperless_handoff_code: row.paperless_handoff_code ?? null,
+    })
+    if (!legacyErr) return { error: null }
+    const parts = [legacyErr.message, legacyErr.hint, legacyErr.details, legacyErr.code].filter(
+      (s): s is string => typeof s === "string" && s.trim().length > 0,
+    )
+    return { error: new Error(parts.length ? parts.join(" — ") : "Insert failed") }
+  }
   const parts = [error.message, error.hint, error.details, error.code].filter(
     (s): s is string => typeof s === "string" && s.trim().length > 0,
   )

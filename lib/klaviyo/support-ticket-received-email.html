@@ -1,0 +1,136 @@
+<!--
+  Reswell · Klaviyo flow — Support request received
+  Paste into Flows → Email → Code / HTML (or Custom HTML block).
+
+  Trigger metric: Support Tickets
+  Trigger filter: reswell_metric_seed is not true (if you use bootstrap seeds)
+
+  Suggested subject: We got your message — Reswell Support
+  Suggested preview: Our team typically replies within 1–2 business days.
+
+  Event properties (from track-support-ticket.ts):
+  - {{ event.support_ticket_id }}
+  - {{ event.subject }}
+  - {{ event.message }}
+  - {{ event.ticket_url }}
+  - {{ event.order_ref }}
+  - {{ event.source }}
+
+  Tip: insert event fields via Preview → Event properties if typing {{ }} fails.
+  Leave Klaviyo’s unsubscribe / address footer in the template shell.
+  Do not use {% if %} / {% for %} — they often print as raw text in this workspace.
+-->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;background:#FFFFFF;">
+  <tr>
+    <td align="center" style="padding:28px 16px 40px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;max-width:560px;">
+
+        <!-- Logo -->
+        <tr>
+          <td align="center" style="padding:0 0 28px 0;">
+            <a href="https://www.reswell.app?utm_source=klaviyo&utm_medium=email&utm_campaign=support_tickets&utm_content=logo" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="140" height="35" style="display:block;width:140px;max-width:100%;height:auto;border:0;" />
+            </a>
+          </td>
+        </tr>
+
+        <!-- Header -->
+        <tr>
+          <td style="padding:0 0 8px 0;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748B;">
+            Reswell Support
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 16px 0;font-family:Arial, Helvetica, sans-serif;font-size:26px;font-weight:700;line-height:1.2;letter-spacing:-0.03em;color:#04070E;">
+            We got your message
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 24px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.55;color:#04070E;">
+            Hey {{ first_name|default:'there' }} — thanks for writing in. A real person on our team will review your request. We typically reply within 1–2 business days (sooner for safety and Purchase Protection claims).
+          </td>
+        </tr>
+
+        <!-- Case summary card -->
+        <tr>
+          <td style="padding:0 0 24px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border:1px solid #E2E8F0;border-radius:8px;">
+              <tr>
+                <td style="padding:20px 24px 8px 24px;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#355185;">
+                  Your request
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 24px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#64748B;width:40%;">
+                        Topic
+                      </td>
+                      <td align="right" style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;color:#04070E;">
+                        {{ event|lookup:'subject'|default:'Support request' }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#64748B;">
+                        Case ID
+                      </td>
+                      <td align="right" style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:700;color:#04070E;font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;">
+                        {{ event|lookup:'support_ticket_id' }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#64748B;">
+                        Order
+                      </td>
+                      <td align="right" style="padding:12px 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;color:#04070E;">
+                        {{ event|lookup:'order_ref'|default:'—' }}
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:8px 24px 20px 24px;">
+                  <p style="margin:16px 0 6px 0;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#64748B;">
+                    What you sent
+                  </p>
+                  <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:1.55;color:#04070E;white-space:pre-wrap;">{{ event|lookup:'message' }}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td align="center" style="padding:0 0 16px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td align="center" bgcolor="#5574AD" style="border-radius:8px;">
+                  <a href="{{ event|lookup:'ticket_url' }}" style="display:inline-block;padding:14px 28px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.02em;">
+                    View your case
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:0 0 28px 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:1.5;color:#64748B;">
+            Track updates and reply anytime under Help in your Reswell account.
+          </td>
+        </tr>
+
+        <!-- Fallback link -->
+        <tr>
+          <td style="padding:0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:1.5;color:#64748B;">
+            If the button doesn&rsquo;t work, open:<br />
+            <a href="{{ event|lookup:'ticket_url' }}" style="color:#5574AD;word-break:break-all;">{{ event|lookup:'ticket_url' }}</a>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

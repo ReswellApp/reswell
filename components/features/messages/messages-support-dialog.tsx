@@ -164,7 +164,7 @@ export function MessagesSupportDialog({
         )
         handleOpenChange(false)
         if (res.id) {
-          router.push(`/dashboard/support/${res.id}`)
+          router.push(`/support/${res.id}`)
         } else {
           router.push("/dashboard/support")
         }

@@ -63,6 +63,11 @@ import { MessageLocationCard } from '@/components/features/messages/message-loca
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
 import {
+  SupportCaseOpenedCard,
+  SupportCaseStatusCard,
+} from '@/components/features/support/support-case-system-card'
+import { parseSupportThreadSystemMessage } from '@/lib/messages/parse-support-thread-message'
+import {
   MessageMediaImageLightbox,
   type MessageMediaImageLightboxItem,
 } from '@/components/features/messages/message-media-image-lightbox'
@@ -167,6 +172,8 @@ export interface ConversationThreadClientProps {
   conversationId: string
   initialData: ConversationThreadData
   embedded?: boolean
+  /** Hide the marketplace thread header (use when a parent already provides chrome). */
+  hideHeader?: boolean
   backHref?: string
 }
 
@@ -174,6 +181,7 @@ export function ConversationThreadClient({
   conversationId: id,
   initialData,
   embedded = false,
+  hideHeader = false,
   backHref: backHrefProp,
 }: ConversationThreadClientProps) {
   const [conversation, setConversation] = useState<Conversation | null>(
@@ -656,6 +664,7 @@ export function ConversationThreadClient({
       if (parseMarketplaceMessageAttachment(m.metadata)) return false
       if (parseOfferNegotiationMessage(m.content)) return false
       if (m.content.trimStart().startsWith('Offer:') && !m.offer_id) return false
+      if (parseSupportThreadSystemMessage(m.content)) return false
       return true
     },
     [currentUserId, offersById],
@@ -708,6 +717,7 @@ export function ConversationThreadClient({
         )}
       >
         {/* Header */}
+        {!hideHeader ? (
         <header
           className={cn(
             "relative z-20 shrink-0 border-b border-border/60 bg-background py-2",
@@ -791,6 +801,7 @@ export function ConversationThreadClient({
             </div>
           </div>
         </header>
+        ) : null}
 
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {listingChromeLoading ? (
@@ -1095,6 +1106,28 @@ export function ConversationThreadClient({
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <OfferLegacyMirrorCard
                             content={message.content}
+                            createdAt={message.created_at}
+                          />
+                        </div>
+                      )
+                    }
+
+                    const supportSystem = parseSupportThreadSystemMessage(message.content)
+                    if (supportSystem?.kind === 'opened') {
+                      return (
+                        <div className={cn('flex w-full justify-center', cardMargin || 'mt-2.5')}>
+                          <SupportCaseOpenedCard
+                            parsed={supportSystem}
+                            createdAt={message.created_at}
+                          />
+                        </div>
+                      )
+                    }
+                    if (supportSystem?.kind === 'status') {
+                      return (
+                        <div className={cn('flex w-full justify-center', cardMargin || 'mt-2.5')}>
+                          <SupportCaseStatusCard
+                            parsed={supportSystem}
                             createdAt={message.created_at}
                           />
                         </div>

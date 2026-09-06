@@ -22,10 +22,11 @@ export const siteFooterNavLinks: {
     { name: "Blog", href: "/blog" },
   ],
   help: [
-    { name: "Why Reswell?", href: "/what-is-reswell" },
+    { name: "Help Center", href: "/help" },
     { name: "FAQs", href: "/faq" },
     { name: "Reswell Protection", href: "/protection-policy" },
-    { name: "Contact Support", href: "/contact" },
+    { name: "Get help", href: "/dashboard/support/new" },
+    { name: "Contact", href: "/contact" },
   ],
   careers: [
     { name: "Open roles", href: "/careers" },

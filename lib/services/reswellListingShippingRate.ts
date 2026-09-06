@@ -28,6 +28,10 @@ import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { formatShipEngineApiError } from "@/lib/shipengine/errors"
 import {
+  getShipEngineLabelInsuranceProvider,
+  isShipEngineLabelInsuranceEnabled,
+} from "@/lib/shipengine/insurance"
+import {
   buildShipmentBody,
   extractCarrierIdsFromCarriersResponse,
   extractRatesFromApiEnvelope,
@@ -46,6 +50,8 @@ export type ReswellRateableListing = ListingPackedParcelSource & {
   longitude?: number | string | null
   city?: string | null
   state?: string | null
+  /** Listing price used as ParcelGuard insured value when insurance is enabled. */
+  price?: number | string | null
 }
 
 export type ReswellListingRateRow = {
@@ -453,6 +459,14 @@ export async function getCheapestReswellRateForListings(input: {
     return { ok: false, error: "No shipping carriers are configured yet." }
   }
 
+  const insuredFromListings = input.listings.reduce((sum, listing) => {
+    const price = Number(listing.price ?? 0)
+    return sum + (Number.isFinite(price) && price > 0 ? price : 0)
+  }, 0)
+  const insuranceEnabled = isShipEngineLabelInsuranceEnabled()
+  const insuredAmount =
+    insuranceEnabled && insuredFromListings > 0 ? Math.round(insuredFromListings * 100) / 100 : null
+
   const payload: ReswellListingRateRequestPayload = {
     rate_options: { carrier_ids: carrierIds },
     shipment: buildShipmentBody(shipFrom.address, { ...input.shipTo, residential: "yes" }, {
@@ -464,6 +478,9 @@ export async function getCheapestReswellRateForListings(input: {
       dimUnit: "inch",
       packageCode: "package",
       validateAddress: "no_validation",
+      insuranceProvider: insuredAmount != null ? getShipEngineLabelInsuranceProvider() : null,
+      insuredValueAmount: insuredAmount,
+      insuredValueCurrency: "usd",
     }),
   }
 

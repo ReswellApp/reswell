@@ -2,6 +2,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import { isSupportInboxConversation } from "@/lib/utils/messages-inbox-grouping"
+import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 
 /**
  * If this conversation is a Reswell Support ticket thread (member buyer +
@@ -38,7 +39,7 @@ export async function resolveSupportRedirectForConversation(
 
   const ticket = await findMessagesSupportTicketMetaByConversationId(supabase, conversationId)
   if (ticket?.id) {
-    return `/dashboard/support/${ticket.id}`
+    return supportCaseResponseHref(ticket.id)
   }
 
   // No ticket linked — keep the thread on `/messages` so staff-outbound / orphaned

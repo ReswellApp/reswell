@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 
-/** Legacy path; order support is a tab on Support inbox. */
+/** Legacy path — order cases are filtered in the unified Case inbox. */
 export default function LegacyContactMessagesOrderSupportRedirect() {
-  redirect("/admin/contact-messages?tab=order-support")
+  redirect("/admin/contact-messages?type=order")
 }

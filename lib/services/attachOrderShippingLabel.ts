@@ -29,6 +29,13 @@ export async function attachOrderShippingLabel(params: {
   paperlessQrStoragePath?: string | null
   paperlessInstructions?: string | null
   paperlessHandoffCode?: string | null
+  insuranceProvider?: string | null
+  insuredValueAmount?: number | null
+  insuredValueCurrency?: string | null
+  insuranceCostAmount?: number | null
+  insuranceClaimUrl?: string | null
+  shipengineLabelId?: string | null
+  shipengineShipmentId?: string | null
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const track = normalizeTrackingNumberForCarrier(params.trackingNumber ?? "") || null
   const car = params.trackingCarrier?.trim() || null
@@ -48,6 +55,13 @@ export async function attachOrderShippingLabel(params: {
     paperless_qr_storage_path: params.paperlessQrStoragePath ?? null,
     paperless_instructions: params.paperlessInstructions ?? null,
     paperless_handoff_code: params.paperlessHandoffCode ?? null,
+    insurance_provider: params.insuranceProvider ?? null,
+    insured_value_amount: params.insuredValueAmount ?? null,
+    insured_value_currency: params.insuredValueCurrency ?? null,
+    insurance_cost_amount: params.insuranceCostAmount ?? null,
+    insurance_claim_url: params.insuranceClaimUrl ?? null,
+    shipengine_label_id: params.shipengineLabelId ?? null,
+    shipengine_shipment_id: params.shipengineShipmentId ?? null,
   })
 
   if (ins.error) {

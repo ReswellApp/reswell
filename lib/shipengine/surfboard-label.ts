@@ -4,6 +4,13 @@ import {
   formatShipEngineApiError,
   isLabelImagesNotSupportedError,
 } from "@/lib/shipengine/errors"
+import {
+  getShipEngineLabelInsuranceProvider,
+  isShipEngineLabelInsuranceEnabled,
+  pickInsuranceClaimUrl,
+  pickInsuranceCost,
+  pickShipEngineLabelIds,
+} from "@/lib/shipengine/insurance"
 import { curateLabelPurchaseRates } from "@/lib/shipping/label-purchase-rates"
 import {
   buildShipEngineRateShipment,
@@ -109,6 +116,8 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   adminCustomCarton?: boolean
   /** Listing section — Media Mail is only offered for magazines. */
   listingSection?: string | null
+  /** Declared value for ParcelGuard / carrier insurance when enabled. */
+  insuredValueUsd?: number | null
 }): Promise<
   | { ok: true; rates: ShipEngineRateOption[] }
   | { ok: false; error: string; status: number }
@@ -152,6 +161,15 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     }
   }
 
+  const insuranceEnabled = isShipEngineLabelInsuranceEnabled()
+  const insured =
+    insuranceEnabled &&
+    typeof params.insuredValueUsd === "number" &&
+    Number.isFinite(params.insuredValueUsd) &&
+    params.insuredValueUsd > 0
+      ? params.insuredValueUsd
+      : null
+
   const shipment = buildShipEngineRateShipment(params.shipFrom, { ...params.shipTo, residential: "yes" }, {
     weightValue: params.parcel.weightLb,
     weightUnit: "pound",
@@ -161,6 +179,9 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     dimUnit: "inch",
     packageCode: "package",
     validateAddress: "no_validation",
+    insuranceProvider: insured != null ? getShipEngineLabelInsuranceProvider() : null,
+    insuredValueAmount: insured,
+    insuredValueCurrency: "usd",
   })
 
   const body = {
@@ -261,6 +282,12 @@ export type PurchasedShipEngineLabelResult = {
   paperlessQrUrl: string | null
   paperlessInstructions: string | null
   paperlessHandoffCode: string | null
+  insuranceProvider: string | null
+  insuredValueAmount: number | null
+  insuranceCostAmount: number | null
+  insuranceClaimUrl: string | null
+  shipengineLabelId: string | null
+  shipengineShipmentId: string | null
 }
 
 /** ShipEngine returns the carrier charge as shipment_cost { amount, currency }. */
@@ -498,6 +525,13 @@ function interpretShipEngineLabelPurchaseResponse(
 
   const cost = pickLabelCost(label)
   const paperless = pickPaperlessDownload(label)
+  const insuranceCost = pickInsuranceCost(label)
+  const ids = pickShipEngineLabelIds(label)
+  const insuranceClaimUrl = pickInsuranceClaimUrl(label)
+  const insuranceProvider =
+    typeof label.insurance_provider === "string" && label.insurance_provider.trim()
+      ? label.insurance_provider.trim()
+      : null
 
   return {
     ok: true,
@@ -510,6 +544,12 @@ function interpretShipEngineLabelPurchaseResponse(
       paperlessQrUrl: paperless.qrUrl,
       paperlessInstructions: paperless.instructions,
       paperlessHandoffCode: paperless.handoffCode,
+      insuranceProvider,
+      insuredValueAmount: null,
+      insuranceCostAmount: insuranceCost.amount,
+      insuranceClaimUrl,
+      shipengineLabelId: ids.labelId,
+      shipengineShipmentId: ids.shipmentId,
     },
   }
 }
