@@ -1,0 +1,173 @@
+{
+  "generated_for": "Harbour Surfboards official named standup catalog",
+  "source": "https://www.harboursurfboards.com/thewholelineup (Squarespace lineup \u2014 longboards, mid-length, and fish/short models only; excludes fins, apparel, and custom order pages)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "harbour-surfboards",
+      "name": "Harbour Surfboards",
+      "website_url": "https://www.harboursurfboards.com",
+      "location_label": "Seal Beach, California",
+      "founder_name": "Rich Harbour",
+      "lead_shaper_name": "Rich Harbour",
+      "short_description": "Seal Beach institution \u2014 classic longboards and California outlines handcrafted since 1959.",
+      "models": [
+        {
+          "name": "Banana Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/cf17042d-628b-4c5c-9ba3-6340864f6eee/banana_top_2500px.png",
+          "description": "The quiver must have: designed for every session.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sano",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/9b6d69a9-b6c1-435c-a66f-7b66de851f76/sano_top_2500px_V2.png",
+          "description": "Catch more waves and ride the nose effortlessly with the ultimate stable wave magnet.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rapier",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/d684592c-7524-4cd5-b854-ebe44cb69b51/rapier_top_2500px.png",
+          "description": "Smooth Turns. Maximum Drive.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Ray",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/c273e86d-5f6d-4429-b7d6-88df1c5ddcf2/theray_top_2500px.png",
+          "description": "Classic Soul. Modern Speed.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mod 65",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/ce4dd16d-97c3-42d9-8315-1834794ffd42/mod65_top_2500px.png",
+          "description": "Cruise, turn, trim, the Mod 65 is your performance nose rider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/55f14874-b31d-4e83-94af-49c912de3846/noserider_blue_top_2500px.png",
+          "description": "The ultimate everyday fun board, built for effortless nose riding and easy turning.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Nineteen",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/385fd874-3946-4ab5-bb61-497641576fa6/19_orange_top_2500px.png",
+          "description": "Built wide and stable for effortless gliding and classic nose riding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cheater 60",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/4b1b48b7-424b-46e3-81f4-6528a42d4913/Cheater_orange_top_2500px.png",
+          "description": "A modernized vintage classic built with a flex step-deck for effortless noseriding and smooth turns.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Evolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/ec01b80c-b1d3-490e-82ea-6a60fb6f9d78/evolver_blue_top_2500px.png",
+          "description": "Designed with the wide point behind center this one catches waves effortlessly, turns on a dime, and noserides like a dream.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Merlin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/4ced4b3a-f551-41da-b1ac-ff4a6836840a/merlin_top_2500px.png",
+          "description": "Pure wizardry on the water\u2014easy paddling, effortless noseriding, and buttery smooth turns all packed into one board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Plantain",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/29c38b15-2403-4016-81fe-559b90ea9a56/plantain_top_2500px.png",
+          "description": "High Performance boards target advanced surfers looking for maximum maneuverability with a aggressive style. These shapes are thinned out compared to Cruiser boards for increased sensitivity. All feature nose channels and are glassed with 6 oz. and 4 oz. layers on the deck, and a 6 oz. layer on the bottom. The boards are equipped with a 7-inch HP center fin and Futures side bites, except for the HP1 which uses the Harbour HP fin.&nbsp;",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/7afd8d7e-dafe-4aea-82ef-d640e0bd5788/HP1_top_2500px.png",
+          "description": "A high-performance single fin: zero drag, maximum speed",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "H3",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/c50a3e57-de16-4df0-a8bc-2da7e78d0fa9/H3_stripe_top_2500px.png",
+          "description": "Our slightly wider high performance 2+1",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Diamond Tail",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/d310768b-ca2e-479b-8f7e-eee1fe06c1b9/diamondtail_bluerail_top_2500px_v2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Turbo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/37b04c21-0227-4b57-b49e-e4a303b6be84/Turbo_top_2500px.png",
+          "description": "a smooth squash tail designed for power surfing.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Special Design Revolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/61479e95-4405-4d53-ae4c-8dc6a7249852/60s_Revolver_top_2500px.png",
+          "description": "The iconic late-60s template reborn with high-performance features",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Special Design Rapier",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/7a459210-8750-4594-bba0-91b261ddf62d/60s_Rapier_sd_top_2500px.png",
+          "description": "The late-60s template re-imagined with a high-performance pintail and modern speed contours",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "TS Shape",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/e03b9854-980b-4b3c-a444-e170e726af9f/TSshape_top_2500px.png",
+          "description": "An iconic 1964 California point-break legend",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "66 Banana",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/1bf8401b-f658-417b-8c90-d3d3e137956e/66banana_blackstripe_top_2500px.png",
+          "description": "A 1966 time machine built for ultimate vintage glide, proper technique, and earning your time on the nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mid Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/6757c65d-33c8-4f9f-b55a-0a4e9952dd6e/midrange_top_2500px.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spherical Revolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/2f812158-ff41-4c0a-bedf-bc8f793a62b6/sphericalrevolver_bswirl_top_2500px.png",
+          "description": "A fast, stable mid-length that brings maximum maneuverability and a loose shortboard feel to your everyday sessions",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super Revolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/db1cf10a-04e7-459d-b912-607d2e7f11af/superrev_top_2500px.png",
+          "description": "The Spherical Revolver shape, cranked up for a high-performance ride that feels completely alive.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Redux",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/54d69450-7125-4269-8263-31778608c728/redux_top_2500px.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/aef8ef8d-8e1f-43fe-b619-ab6504384ff4/Fish_top_2500px.png",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sausage",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/1474059559533-GHKQL3TVWD1IA4R12RZ8/sausage_top_230pxw.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Reflector - Stamps x Harbour",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/89b09961-e492-47fe-a7fa-9d0008f2031a/reflector_top_2500px.png",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stingray - Stamps x Harbour",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/c2b1a615-ccac-40cd-be58-a96bf192e64c/stingray_top_2500px.png",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
