@@ -1,0 +1,78 @@
+{
+  "generated_for": "Ben Kelly Surfboards official named standup catalog",
+  "source": "https://www.benkellysurfboards.com/surfboards (Squarespace model pages — excludes custom deposits, merch, and build-your-own custom shape)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ben-kelly-surfboards",
+      "name": "Ben Kelly Surfboards",
+      "website_url": "https://www.benkellysurfboards.com",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Ben Kelly",
+      "lead_shaper_name": "Ben Kelly",
+      "short_description": "Handcrafted performance and custom surfboards by Ben Kelly in Santa Cruz — shortboards, grovelers, fish, hybrids, and longboards shaped locally with Paradise Fiberglass.",
+      "models": [
+        {
+          "name": "GROM beta",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1572193067912-ZIIZX8YSGP6N0UGNWBDT/GROM+beta+FRONT.jpg",
+          "description": "Developed with Cole Renfrew, the GROM beta is a grom-sized version of The Beta performance shortboard model — super versatile for performance surfing in the pocket and above the lip. Type: High Performance Shortboard. Sizes: 4'8–5'4. Best for: 2–6ft punchy beach break / reef / points.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The beta",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538676951261-A6VSQUSYBH1C56XCM4G1/BKS+Beta+vertical+front.jpg",
+          "description": "Developed with team rider Luke Bender, The Beta is the most performance oriented model in the BKS quiver — ultra responsive and rips in the pocket when waves are pumping. Type: High Performance Shortboard. Sizes: 5'6–6'10. Best for: 4–10ft+ punchy beach break / reef.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dream Sled",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538677069424-Y02LWYUH6I3REOFXGEIP/BKS+Dream+Sled+vertical+front.jpg",
+          "description": "A blend between the high performance Beta and the grovely Weasel — an even keeled all-around shortboard that handles punchy beach break and longer drawn out point sections. Type: Performance Shortboard. Sizes: 5'6–6'10. Best for: 2–7ft beach / reef / point.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Weasel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538678030659-5F3KUMMUZ9QMLEXHF7WU/BKS+The+Weasel+vertical+front.jpg",
+          "description": "Developed in Santa Cruz with Kyle Pitchford — an all-around grovely shortboard that sneaks you into waves without sacrificing high performance feel. Fast, loose, and it grovels. Type: Performance Groveler. Sizes: 5'1–6'5. Best for: 2–6ft everything.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Signature Series",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538678162232-L5ETSX8GH4IYC49NTJ2F/BKS+Signature+Series+vertical+front.jpg",
+          "description": "The most versatile board in the BKS quiver — a retro styled shortboard that brings flow, speed, and response into one balanced shape for travel or when you are not sure what to ride. Type: Retro Groveler. Sizes: 5'0–7'0. Best for: everything — one board quiver.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pool Party",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1550867023543-WKKBBYAB6JAN9PV49PN3/IMG_4033.jpg",
+          "description": "Skatey and loose — a squashed down stubby potato chip loaded for fun when the waves tend smaller. Type: Mini Groveler / Summer Board. Sizes: 5'0–6'2. Best for: 1–4ft+ wonky beach break or fun point break.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Classic Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538692835775-3KBPIMEPWFZJNI7MC59Z/BKS+Classic+Fish+vertical+front.jpg",
+          "description": "A retro Classic Fish with wide swallow tail, lots of volume, and a convex tail out the swallow for responsive rail-to-rail performance unlike typical fish shapes. Type: Fish / Retro. Sizes: 5'0–6'6. Best for: 2–6ft+ points, reefs, and mellow rollers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Tiny Dancer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538693049734-8L6NMRCJ5ZRXT5QE1SNU/IMG_1953.jpg",
+          "description": "Inspired by Robbie Sweetman and Nick Buller — an alternative hybrid that paddles like a longboard yet maneuvers like a fish. Ideal for transitioning from longboard to shortboard or as a cruiser without hauling a full log. Type: Hybrid. Sizes: 6'6–7'9. Best for: 1–6ft+ points, reefs, and rollers.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "California Cruzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538693127940-1Z8LVB51MFLPSOGSBLTN/BKS+California+Cruzer+vertical+front.jpg",
+          "description": "Made to cruise Pleasure Point — paddles like a dream with stability and maneuverability in one beautiful longboard. Type: Longboard. Sizes: 8'6–10'0. Best for: 2–6ft point break and rollers.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Steamboat",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538693255808-AD1T7UKWX5WIZKETIYA4/BKS+Steamboat+vertical+front.jpg",
+          "description": "Designed for supreme stability and noseriding — an old-school classic with wide hips and a fat square tail for trimming and nose-riding in gutless rollers. Type: Longboard. Sizes: 9'0–10'6. Best for: 0–4ft ripples, dribblers, and gutless rollers.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
