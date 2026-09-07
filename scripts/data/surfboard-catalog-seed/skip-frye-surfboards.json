@@ -1,0 +1,39 @@
+{
+  "generated_for": "Skip Frye Surfboards official named standup catalog",
+  "source": "https://skipfryesurf.com/bio.php and https://skipfryesurf.com/photos.php (official biography and photo captions only — excludes fins, apparel, and authorized-retailer listings)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "skip-frye-surfboards",
+      "name": "Skip Frye",
+      "website_url": "https://skipfryesurf.com/",
+      "location_label": "San Diego, California",
+      "founder_name": "Skip Frye",
+      "lead_shaper_name": "Skip Frye",
+      "short_description": "Skip Frye is a San Diego surfer, board shaper, and surf culture icon who has been riding and crafting waves since 1958.",
+      "models": [
+        {
+          "name": "The Egg",
+          "description": "Skip kept refining the designs and ended up sawing the tail off of one of his V-bottoms and made it into a round tail. That action ultimately led Skip to design a board he called the Egg, one of the shapes for which he is best known.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Baby Gun",
+          "description": "After seeing the short Australian boards that the Australians were riding, Skip began experimenting with designs such as the V-bottom and Baby Gun upon his return. In The Encyclopedia of Surfing, Skip is credited with being the first West Coast shaper to build the new Australian-invented vee-bottom design.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Eagle",
+          "description": "When longer surfboard blanks became available from Clark Foam in the late 1980s and early 1990s, Skip began shaping boards that were 11 and 12 feet long. He loved the smooth glide from the increased planing surface and developed templates for a variety of shapes, including the Eagle and Fish Simmons.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fish Simmons",
+          "image_url": "https://skipfryesurf.com/images/photos/fish.jpg",
+          "description": "When longer surfboard blanks became available from Clark Foam in the late 1980s and early 1990s, Skip began shaping boards that were 11 and 12 feet long. He loved the smooth glide from the increased planing surface and developed templates for a variety of shapes, including the Eagle and Fish Simmons, and continued to work on new fin configurations for the big boards.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
