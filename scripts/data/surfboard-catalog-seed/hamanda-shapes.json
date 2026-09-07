@@ -1,6 +1,6 @@
 {
   "generated_for": "Hamanda Shapes official named standup catalog",
-  "source": "https://www.hamandashapes.com/copy-of-taupin (Wix model pages — excludes custom orders and stock dimension SKUs)",
+  "source": "https://www.hamandashapes.com/ (Wix model pages — excludes custom orders and stock dimension SKUs)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -47,6 +47,16 @@
           "image_url": "https://static.wixstatic.com/media/3b0880_27783edbdf6b46f7a9b81e23b4edee3a~mv2.jpg/v1/fill/w_980,h_1306,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/IMG_6216_JPG.jpg",
           "description": "Indie2 is a performance twin fin crafted for surfers seeking speed and agility. With a streamlined outline and a uniquely contoured tail, this board offers a lively and responsive ride, making it ideal for drawing smooth lines and sharp turns. The twin fin setup reduces drag, allowing for faster acceleration and a looser feel, encouraging a more fluid and expressive surfing style. The distinctive tail design, which narrows swiftly to enhance hold and control, allows the board to grip the wave face more effectively, minimizing unwanted sliding and providing a more connected feel during turns. Designed to perform in a variety of conditions. 5'0\" - 7'0\"",
           "board_category_slug": "fish"
+        },
+        {
+          "name": "FOSCA2",
+          "image_url": "https://static.wixstatic.com/media/3b0880_b76ce3ee791c4059846920663820ede2~mv2.gif",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "PA2",
+          "image_url": "https://static.wixstatic.com/media/3b0880_69f446dd60f14b59b873d9abd0f55f74~mv2.gif",
+          "board_category_slug": "other"
         }
       ]
     }
