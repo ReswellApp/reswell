@@ -2,6 +2,7 @@ import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQu
 import type { CheckoutListing } from "@/components/checkout-types"
 
 type ShippingModeListing = {
+  section?: string | null
   board_shipping_cost_mode?: string | null
   shipping_price?: string | number | null
   shipping_package_tier?: string | null
@@ -40,6 +41,7 @@ export function computeStaticPeerShippingQuoteUsd(
 
 export function listingHasShippingModeFields(listing: CheckoutListing): ShippingModeListing {
   return {
+    section: listing.section,
     board_shipping_cost_mode: listing.board_shipping_cost_mode,
     shipping_price: listing.shipping_price,
     shipping_package_tier: listing.shipping_package_tier,

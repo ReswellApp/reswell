@@ -15,6 +15,7 @@ import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { toast } from "sonner"
 import {
@@ -64,6 +65,7 @@ export function ListingDetailPeerPurchaseActions({
   const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const authModal = useOptionalAuthModal()
+  const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
   const here = pathname || "/"
@@ -109,7 +111,7 @@ export function ListingDetailPeerPurchaseActions({
         eventId: r.metaEventId,
       })
       setCartAdded(true)
-      window.dispatchEvent(new CustomEvent("cartUpdated"))
+      reportAddedToCart(r)
       window.setTimeout(() => setCartAdded(false), 2000)
     } finally {
       setLoading(false)
@@ -149,8 +151,8 @@ export function ListingDetailPeerPurchaseActions({
       Number.isFinite(agreedCheckoutItemUsd) ? (
         <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-[13px] leading-snug text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
           You accepted <span className="font-semibold tabular-nums">${agreedCheckoutItemUsd.toFixed(2)}</span> for
-          this {peerListingItemNounForm(section).singular}. Buy now charges that price and uses the delivery method
-          from your offer.
+          this {peerListingItemNounForm(section).singular}. Buy now charges that price. You can still choose local
+          pickup or shipping at checkout if this listing offers both.
         </p>
       ) : null}
       {!purchaseBlocked ? (

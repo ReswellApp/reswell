@@ -5,6 +5,8 @@ import {
   completeMarketplaceOrderFromPaymentIntent,
   retrieveSucceededPaymentIntent,
 } from "@/lib/stripe-complete-order"
+import { getPostHogServerClient } from "@/lib/posthog-server"
+import { isSellerSaleTipPaymentIntent } from "@/lib/stripe/seller-sale-tip-intent"
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
@@ -23,6 +25,9 @@ export async function POST(request: NextRequest) {
   }
 
   const pi = retrieved.paymentIntent
+  if (isSellerSaleTipPaymentIntent(pi)) {
+    return NextResponse.json({ error: "Invalid payment" }, { status: 400 })
+  }
 
   const supabase = await createClient()
   const {
@@ -58,6 +63,24 @@ export async function POST(request: NextRequest) {
       piId: pi.id,
     })
     return NextResponse.json({ error: result.error }, { status: result.status })
+  }
+
+  if (!result.alreadyProcessed) {
+    const posthog = getPostHogServerClient()
+    if (posthog) {
+      posthog.capture({
+        distinctId: user.id,
+        event: 'order_finalized',
+        properties: {
+          order_id: result.orderId,
+          payment_intent_id: pi.id,
+          amount_total: pi.amount / 100,
+          currency: pi.currency,
+          seller_id: pi.metadata.seller_id ?? undefined,
+        },
+      })
+      await posthog.flush()
+    }
   }
 
   return NextResponse.json({

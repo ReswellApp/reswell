@@ -1,0 +1,90 @@
+{
+  "generated_for": "Creative Army Surfboards official named standup catalog",
+  "source": "https://www.creativearmy.com.au/surfboards-noosa/, /alternative/, and /she-surfboards/ (Josh Constable lineup — excludes archive boards, merchandise, and Ocean & Earth collab)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "creative-army-surfboards",
+      "name": "Creative Army Surfboards",
+      "website_url": "https://www.creativearmy.com.au/",
+      "location_label": "Noosaville, Queensland, Australia",
+      "founder_name": "Josh Constable",
+      "lead_shaper_name": "Josh Constable",
+      "short_description": "Handmade surfboards by Josh Constable in Noosaville, Noosa, Australia. Traditional templates shaped for the modern surfer.",
+      "models": [
+        {
+          "name": "Cruz",
+          "image_url": "https://www.creativearmy.com.au/assets/images/cruz/cruz-01.jpg",
+          "description": "If you are looking for that one board quiver this is it! It will bring the stoke back to any session whether it be 1ft point peelers or overhead beachies. It has the best of both worlds: performance and noseriding. Made with a perfect fuller nose with plenty of concave to encourage cross stepping and tip time with style. It has just the perfect rocker making any take off a breeze no matter how steep the wave. The rail outline runs parallel in the front half of the board giving you plenty of paddle power and stability while gliding and trimming thru any sections of the wave. The nice tucked edge in the tail allows for explosive turns. Sizes: 9'1\" to 10'1\". Square tail, modern rocker, single fin. Wave size: flat to overhead.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Jive",
+          "image_url": "https://www.creativearmy.com.au/assets/images/jive/jive-01.jpg",
+          "description": "If you could only have one board this would be the one. The Jive is a sleek-lined trimming machine and by all accounts should be considered a responsive longboard. The most versatile board in the range and the most user friendly accommodating to a wide range of demographics. It paddles like a machine and flows through those dead sections with minimal effort due to its extended mid-section. The slight increase in tail curve gives opportunity for tighter arcs when jamming hard off your back foot and the subtle rolled vee through the back half makes for silky smooth rail-to-rail transitions. From flat to double overhead, this is one of the funnest longboards you will ever ride. Sizes: 9'1\" to 10'1\". Round tail, modern rocker, single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://www.creativearmy.com.au/assets/images/glider/glider-1.jpg",
+          "description": "When you think Glider, you think stand tall and do nothing at all. This is a speedy board to out trim and paddle everyone in the line-up from flat to head high due to its extended flat section and extra-large size. However, don't be fooled by its size it is still an agile front rower due to the rolled vee bottom that can still turn and the bonus concave in the nose allows for some serious nose time when the section appears. This is a graceful giant that will turn heads with its ability to trim, turn and noseride. Sizes: 10' to 12'. Round tail, modern rocker, single fin. Wave size: flat to head high.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Barber",
+          "image_url": "https://www.creativearmy.com.au/assets/images/barber/barber-01.jpg",
+          "description": "The Barber is a classic noserider with a modern spin. When you hear people talk levitation, this board levitates on the nose. It has a decent amount of concave in the nose and a slight flip in the tail, to allow for lifted and extended nose rides. The flat panel on the bottom makes it glide and slide through the waves effortlessly. The slight vee in the back half and rounded square tail makes it hold forward projection and is easily piloted through hard directional pivots off the tail. Go-to longboard in flat to head high conditions. Sizes: 9'1\" to 10'1\". Square tail, traditional rocker, single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Seahorse",
+          "image_url": "https://www.creativearmy.com.au/assets/images/seahorse/seahorse-01.jpg",
+          "description": "The Seahorse is a stylish old skool, single fin longboard. This board is about forgetting about today's crazy surfboard designs and getting back to the simpler times and shapes. Focusing on simplicity and smooth, classic rhythmic lines. It has a full template, low rocker and soft rails. Made for endless nose rides and fluid turns. Its low rocker will get you through those hard to make sections and soft rails are easily re-set to get in the sweet spot. It works well in small to mid-size waves in clean faces. Sizes: 9'1\" to 10'1\". Square tail, traditional rocker, single fin. Wave size: flat to head high.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Huevo",
+          "image_url": "https://www.creativearmy.com.au/assets/images/huevo/huevo-01.jpg",
+          "description": "The Huevo is a hybrid board inspired by the classic egg style boards referred to as a mid-length. The 2 + 1 set up gives you the freedom to ride it as a single fin or put the side bites in for a little extra squirt out of your turns. Its fuller outline with the wide point slightly forward of centre means you can trim and glide forward on the board which adds to the great paddle power and to the stability and flow. A slight lift in the nose makes those late take offs easier and the slight lift in the tail makes for a nice drive through your turns. It will glide and flow in smaller waves but will deliver arching speed turns in head to double over head surf. Sizes: 6'4\" to 8'8\". Round tail, traditional modern rocker, 2+1. Wave size: chest to double overhead.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flying Fish",
+          "image_url": "https://www.creativearmy.com.au/assets/images/flying-fish/flying-fish-01.jpg",
+          "description": "This board was built to suit that surfer that feels the need for speed. Its mid rocker is focused around speed but its single concave that turns into a vee past the fins maintains control for the surfer from rail to rail. It can be surfed in small little dribblers, barrels, and big open faces and even likes to take to the air. Yet, remarkably it is friendly for all levels of surfing. Sizes: 5' to 7'6\". Swallow tail, modern traditional rocker, quad. Wave size: waist to double overhead.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Taco",
+          "image_url": "https://www.creativearmy.com.au/assets/images/taco/taco-01.jpg",
+          "description": "This mini simmons inspired board is for anyone that wants to get out there and just have fun. It is fast, loose, and makes your turns smooth and silky. Its quad fins are set close to the rear of the board and are iconic of its style and era with a modern flair. It is amazingly easy to paddle and excels in surf ankle to head high. Most people can ride this board 5\" - 8\" shorter than they expect. Sizes: 4'5\" to 6'. Diamond to swallow tail, traditional rocker, quad.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Illa",
+          "image_url": "https://www.creativearmy.com.au/assets/images/she-surfboards/illa/illa-01.webp",
+          "description": "The Illa is a beautiful classic style single fin log that loves peeling waves. It was made with the sole purpose of nose riding and flowing graceful surfing. If you surf knee to chest high waves you will fall in love with this board. Its flat panel thru the mid-section glides on waves with ease and makes paddling a dream. Concave in the nose and delicate flip in the tail gives you a little bit of extra lift to extend your nose rides. The rolled vee through the tail, paired with an adjusted fin template, makes turning a seamless, fluid experience. Sizes: 9'1\" to 10'1\". Square tail, traditional rocker, single fin. Wave size: flat to overhead.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sar Bear",
+          "image_url": "https://www.creativearmy.com.au/assets/images/she-surfboards/sar-bear/sar-bear-01.webp",
+          "description": "If versatility is what you're after, the Sar Bear will quickly become your best friend. Designed to handle everything from knee-high waves to overhead swells. The Sar Bear features an extended flatter mid-section, making it the best paddler among its peers and increasing your wave count significantly. Its slightly pulled-in nose prevents unwanted chop from affecting your ride, especially during late take-offs. The subtle nose concave offers exceptional stability for nose riding. Its vee bottom and adjusted fin placement makes it flow and transition smoothly from rail to rail. Sizes: 9'1\" to 10'1\". Round tail, modern rocker, single fin. Wave size: flat to overhead.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "KK",
+          "image_url": "https://www.creativearmy.com.au/assets/images/she-surfboards/kk/kk-01.webp",
+          "description": "The KK is a mid-length beauty that is crafted with the modern female surfer in mind, blending effortless handling with exceptional performance. The KK's manageable length makes it easy to handle and manoeuvre, whether you're carving through small, gentle swells or charging bigger, more powerful waves. With its extra volume around your chest, it gives you that longboard glide and stability when paddling into waves that most shorter boards lack. Its sleek design and pulled-in tail allow for fluid, stylish turns. Sizes: 6'4\" to 8'. Round tail, traditional modern rocker, single fin. Wave size: waist to double overhead.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hanja",
+          "image_url": "https://www.creativearmy.com.au/assets/images/she-surfboards/hanja/hanja-01.webp",
+          "description": "The Hanja is a really special twin fin shortboard. What truly sets the Hanja apart is its twin fin setup, which delivers exceptional speed and responsiveness. With its single concave thru the mid-section allowing water to channel under the board then flow into a double concave between the fins to enhance performance. All the while working with the swallow tail to help it excel in providing smooth, responsive turns. Sizes: 5' to 6'8\". Swallow tail, modern traditional rocker, twin. Wave size: waist to double overhead.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

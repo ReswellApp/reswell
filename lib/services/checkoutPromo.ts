@@ -59,10 +59,22 @@ export async function validateCheckoutPromoForCheckout(params: {
     return { ok: false, error: "Promo codes are temporarily unavailable." }
   }
 
-  const [{ row: adminRow }, { row: newsletterRow }] = await Promise.all([
+  const [adminLookup, newsletterLookup] = await Promise.all([
     fetchAdminIssuedPromoByCode(supabase, normalized),
     fetchNewsletterPromoByCode(supabase, normalized),
   ])
+
+  if (adminLookup.error || newsletterLookup.error) {
+    console.error("[checkout-promo] lookup failed:", {
+      code: normalized,
+      adminError: adminLookup.error,
+      newsletterError: newsletterLookup.error,
+    })
+    return { ok: false, error: "Could not verify promo code." }
+  }
+
+  const adminRow = adminLookup.row
+  const newsletterRow = newsletterLookup.row
 
   if (adminRow) {
     const adminResult = await validateAdminIssuedPromoForCheckout({

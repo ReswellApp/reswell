@@ -225,12 +225,13 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Tap <strong>End listing</strong> on any active or draft listing. You can:
+              Tap <strong>End listing</strong> on any active listing. You can:
             </p>
             <BulletList
               items={[
+                <><strong>Vacation mode</strong> to hide a live listing until you go live again.</>,
                 <><strong>Archive listing</strong> to take it off the public site. Archived listings stay in your account for 30 days.</>,
-                <><strong>Delete listing</strong> to remove it immediately, when allowed. If the listing is tied to an order, archiving may be required instead.</>,
+                <><strong>Delete listing</strong> to remove it immediately, only when the listing is not tied to an order or payment. Listings with sale history show Archive instead.</>,
               ]}
             />
             <p>
@@ -717,7 +718,7 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Buyers can request help through <strong>Refund help</strong> on their purchase page for
+              Buyers can request help through <strong>Get help</strong> on their purchase page for
               covered problems: item not received, not as described, or transit damage. Reswell
               typically reviews claims within <strong>3 business days</strong>.
             </p>
@@ -797,8 +798,8 @@ export const sellingHelpArticles: HelpArticle[] = [
                 title: "Open the sale page",
                 body: (
                   <>
-                    Go to {helpLink("/dashboard/sales", "Sales")}, open the order, and look for{" "}
-                    <strong>Ask Reswell for a refund or cancellation</strong>.
+                    Go to {helpLink("/dashboard/sales", "Sales")}, open the order, and tap{" "}
+                    <strong>Get help with this sale</strong>.
                   </>
                 ),
               },
@@ -806,9 +807,9 @@ export const sellingHelpArticles: HelpArticle[] = [
                 title: "Submit a support request",
                 body: (
                   <>
-                    Choose <strong>Ask Reswell to cancel the order</strong> or{" "}
-                    <strong>Ask Reswell to issue a refund</strong>. Include a clear explanation (at
-                    least 10 characters). Our team will guide next steps.
+                    Choose cancel or another sale issue, then include a clear explanation (at least 10
+                    characters). Our team will guide next steps. Track the case under{" "}
+                    {helpLink("/dashboard/support", "Support")}.
                   </>
                 ),
               },

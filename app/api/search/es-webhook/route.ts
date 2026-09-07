@@ -15,13 +15,38 @@ import {
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 
-type WebhookRecord = { id?: string; user_id?: string; thread_id?: string }
+type WebhookRecord = {
+  id?: string
+  user_id?: string
+  thread_id?: string
+  [key: string]: unknown
+}
 
 type WebhookBody = {
   type?: string
   table?: string
   record?: WebhookRecord
   old_record?: WebhookRecord
+}
+
+/** View counters and timestamps are not in the listings search doc. */
+const LISTING_WEBHOOK_IGNORE_KEYS = new Set([
+  "views",
+  "updated_at",
+  "created_at",
+])
+
+function listingUpdateAffectsSearchIndex(
+  record: WebhookRecord | undefined,
+  oldRecord: WebhookRecord | undefined,
+): boolean {
+  if (!record || !oldRecord) return true
+  const keys = new Set([...Object.keys(record), ...Object.keys(oldRecord)])
+  for (const key of keys) {
+    if (LISTING_WEBHOOK_IGNORE_KEYS.has(key)) continue
+    if (JSON.stringify(record[key]) !== JSON.stringify(oldRecord[key])) return true
+  }
+  return false
 }
 
 /**
@@ -86,6 +111,12 @@ export async function POST(request: NextRequest) {
         const id = body.record?.id
         if (!id) {
           return NextResponse.json({ ok: true, ignored: true })
+        }
+        if (
+          body.type === "UPDATE" &&
+          !listingUpdateAffectsSearchIndex(body.record, body.old_record)
+        ) {
+          return NextResponse.json({ ok: true, skipped: true, reason: "non_search_fields" })
         }
         await syncListingToIndex(supabase, id)
         if (ownerId) {

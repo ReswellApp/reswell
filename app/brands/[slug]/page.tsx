@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const fallbackTitle = `${brand.name} · Surf brand — Reswell`
   const fallbackDescription =
     brand.short_description?.trim() ||
-    `Explore ${brand.name} on Reswell — models, stories, and where to find their boards.`
+    `Used ${brand.name} on Reswell — current listings and recently sold gear.`
   const seo = await resolveDynamicSeo(
     "type:brand",
     { name: brand.name, tagline: brand.short_description?.trim() || undefined },

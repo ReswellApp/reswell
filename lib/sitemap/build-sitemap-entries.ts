@@ -11,8 +11,13 @@ import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
 import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
 import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
 import { fetchPublishedBlogPostSitemapEntries } from "@/lib/db/sitemap-blog-posts-published"
+import { fetchPriceGuideSitemapPaths } from "@/lib/db/sitemap-price-guide"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { getCachedTopCitiesDirectory } from "@/lib/cache/top-cities-directory"
+import { cityLandingHref } from "@/lib/city-landing-path"
+import { CITY_SURF_SHOPS, surfShopHref } from "@/lib/city-landing-surf-shops"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { careerRoleHref, careerRoles } from "@/lib/careers"
 import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
@@ -101,12 +106,15 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const now = new Date()
   const supabase = await supabaseForSitemapPublicRead()
 
-  const [brandRows, sellerEntries, forumEntries, blogEntries] = await Promise.all([
-    fetchBrandSlugRowsForSitemap(supabase),
-    fetchSellerProfileSitemapEntries(supabase),
-    fetchForumThreadSitemapEntries(supabase),
-    fetchPublishedBlogPostSitemapEntries(supabase),
-  ])
+  const [brandRows, sellerEntries, forumEntries, blogEntries, priceGuidePaths, cityDirectory] =
+    await Promise.all([
+      fetchBrandSlugRowsForSitemap(supabase),
+      fetchSellerProfileSitemapEntries(supabase),
+      fetchForumThreadSitemapEntries(supabase),
+      fetchPublishedBlogPostSitemapEntries(supabase),
+      fetchPriceGuideSitemapPaths(supabase),
+      getCachedTopCitiesDirectory(),
+    ])
 
   const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
@@ -119,7 +127,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/apparel`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/accessories`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/magazines`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
-    { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     {
       url: `${BASE}/what-is-reswell`,
       lastModified: now,
@@ -135,9 +142,19 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/threads/reviews`, lastModified: now, changeFrequency: "daily", priority: 0.45 },
     { url: `${BASE}/jamboards`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
+    { url: `${BASE}/cities/top`, lastModified: now, changeFrequency: "daily", priority: 0.55 },
+    { url: `${BASE}/surf-shops`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE}/priceguide`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
+    { url: `${BASE}/board-finder`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${BASE}/giveaways`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
+    { url: `${BASE}/we-buy`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE}/public-api`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${BASE}/llms.txt`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
+    { url: `${BASE}/openapi.json`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
+    { url: `${BASE}/careers`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
     { url: `${BASE}/shipping`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     {
       url: `${BASE}/shipping-estimator`,
@@ -154,6 +171,20 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     lastModified: now,
     changeFrequency: "weekly",
     priority: 0.55,
+  }))
+
+  const cityPages: SitemapUrlEntry[] = cityDirectory.cities.map((city) => ({
+    url: `${BASE}${cityLandingHref(city.slug)}`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.6,
+  }))
+
+  const surfShopPages: SitemapUrlEntry[] = CITY_SURF_SHOPS.map((shop) => ({
+    url: `${BASE}${surfShopHref(shop.slug)}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.5,
   }))
 
   const sellerPages: SitemapUrlEntry[] = sellerEntries.map((e) => ({
@@ -177,13 +208,31 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: 0.4,
   }))
 
+  const priceGuidePages: SitemapUrlEntry[] = priceGuidePaths.map((e) => ({
+    url: `${BASE}${e.path}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: e.path === "/priceguide" ? 0.7 : 0.55,
+  }))
+
+  const careerRolePages: SitemapUrlEntry[] = careerRoles.map((role) => ({
+    url: `${BASE}${careerRoleHref(role)}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.3,
+  }))
+
   const merged = [
     ...staticPages,
+    ...careerRolePages,
     ...boardFilterPages(now),
     ...brandPages,
+    ...cityPages,
+    ...surfShopPages,
     ...sellerPages,
     ...forumPages,
     ...blogPages,
+    ...priceGuidePages,
   ]
 
   // Drop any managed page the admin flipped to no-index in the SEO panel.

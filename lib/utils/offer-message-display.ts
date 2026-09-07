@@ -34,7 +34,7 @@ export function offerFulfillmentLabel(
     if (shippingAmount != null && shippingAmount > 0) {
       return `Shipping (+$${shippingAmount.toFixed(2)})`
     }
-    return "Shipping (Reswell rate at checkout)"
+    return "Shipping calculated at checkout"
   }
   return undefined
 }

@@ -45,13 +45,17 @@ export async function POST(
       sellerEmail: user.email,
       channel: parsed.data.channel,
       detail: parsed.data.detail,
+      reswellHelpedFindBuyer: parsed.data.reswellHelpedFindBuyer,
     })
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status })
     }
 
-    return NextResponse.json({ data: { ok: true } }, { status: 200 })
+    return NextResponse.json(
+      { data: { ok: true, priceUsd: result.priceUsd } },
+      { status: 200 },
+    )
   } catch (e) {
     const message = e instanceof Error ? e.message : "Request failed"
     return NextResponse.json({ error: message }, { status: 500 })

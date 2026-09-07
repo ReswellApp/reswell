@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import {
-  backfillMarketplaceLabelFromShipEngine,
-  resolveOrderShippingLabelPdf,
-} from "@/lib/services/resolveOrderShippingLabelPdf"
+import { loadShippingLabelPdfBytes } from "@/lib/services/resolveOrderShippingLabelPdf"
+import { listOrderShippingLabelsForOrder } from "@/lib/db/orderShippingLabels"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const LABEL_BUCKET = "order-shipping-labels"
 
 function contentDispositionHeader(fileName: string, inline: boolean): string {
   const fallback = "shipping-label.pdf"
@@ -21,6 +18,7 @@ function contentDispositionHeader(fileName: string, inline: boolean): string {
  * GET /api/orders/:id/shipping-label/download
  *
  * Seller-only download/view for a prepared Reswell or admin shipping label PDF.
+ * Optional `label_id` selects a specific marketplace label when the order has multiple packages.
  */
 export async function GET(
   request: NextRequest,
@@ -51,74 +49,43 @@ export async function GET(
   }
 
   const serviceSupabase = createServiceRoleClient()
-  const label = await resolveOrderShippingLabelPdf(serviceSupabase, {
-    orderId,
-    trackingNumber:
-      typeof order.tracking_number === "string" ? order.tracking_number : null,
-  })
-  if (!label) {
-    return NextResponse.json({ error: "No shipping label for this order" }, { status: 404 })
+  const labelIdParam = request.nextUrl.searchParams.get("label_id")?.trim() || null
+  let trackingForLoad =
+    typeof order.tracking_number === "string" ? order.tracking_number : null
+  let labelId: string | null = null
+
+  if (labelIdParam && UUID_RE.test(labelIdParam)) {
+    const labels = await listOrderShippingLabelsForOrder(serviceSupabase, orderId)
+    const match = labels.find((l) => l.id === labelIdParam)
+    if (!match) {
+      return NextResponse.json({ error: "No shipping label for this order" }, { status: 404 })
+    }
+    trackingForLoad = match.tracking_number
+    labelId = match.id
   }
 
-  if (label.shipEngineLabel) {
-    await backfillMarketplaceLabelFromShipEngine({
-      supabase: serviceSupabase,
-      orderId,
-      label: label.shipEngineLabel,
-    })
+  const loaded = await loadShippingLabelPdfBytes(serviceSupabase, {
+    orderId,
+    trackingNumber: trackingForLoad,
+    labelId,
+  })
+  if (!loaded.ok) {
+    if (loaded.reason === "not_found") {
+      return NextResponse.json({ error: "No shipping label for this order" }, { status: 404 })
+    }
+    return NextResponse.json(
+      { error: "Could not load label PDF" },
+      { status: loaded.reason === "fetch" ? 502 : 500 },
+    )
   }
 
   const inline = request.nextUrl.searchParams.get("inline") === "1"
   const fileName = `shipping-label-${formatOrderNumForCustomer(order.order_num, order.id)}.pdf`
 
-  if (label.label_storage_path?.trim()) {
-    const sr = createServiceRoleClient()
-    const { data: blob, error: dlErr } = await sr.storage
-      .from(LABEL_BUCKET)
-      .download(label.label_storage_path.trim())
-
-    if (dlErr || !blob) {
-      console.error("[shipping-label download] storage:", dlErr)
-      return NextResponse.json({ error: "Could not load label PDF" }, { status: 500 })
-    }
-
-    const buf = await blob.arrayBuffer()
-    return new NextResponse(buf, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": contentDispositionHeader(fileName, inline),
-        "Cache-Control": "private, no-store",
-      },
-    })
-  }
-
-  const pdfUrl = label.label_pdf_url?.trim()
-  if (!pdfUrl) {
-    return NextResponse.json({ error: "No shipping label for this order" }, { status: 404 })
-  }
-
-  let pdfRes: Response
-  try {
-    pdfRes = await fetch(pdfUrl, {
-      redirect: "follow",
-      signal: AbortSignal.timeout(60_000),
-      headers: { Accept: "application/pdf,*/*" },
-    })
-  } catch (e) {
-    console.error("[shipping-label download] fetch pdf:", e)
-    return NextResponse.json({ error: "Could not load label PDF" }, { status: 502 })
-  }
-
-  if (!pdfRes.ok) {
-    return NextResponse.json({ error: "Could not load label PDF" }, { status: 502 })
-  }
-
-  const buf = await pdfRes.arrayBuffer()
-  return new NextResponse(buf, {
+  return new NextResponse(Buffer.from(loaded.bytes), {
     status: 200,
     headers: {
-      "Content-Type": pdfRes.headers.get("content-type") ?? "application/pdf",
+      "Content-Type": loaded.contentType,
       "Content-Disposition": contentDispositionHeader(fileName, inline),
       "Cache-Control": "private, no-store",
     },

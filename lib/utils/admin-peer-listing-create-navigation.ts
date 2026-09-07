@@ -3,12 +3,15 @@ import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listi
 import type { ImpersonationData } from "@/lib/impersonation"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import {
   createImpersonatedListingViaApi,
   listingImagesToImpersonatedPayload,
+  listingVideosToImpersonatedPayload,
 } from "@/lib/utils/admin-impersonated-listing-create"
 
 type RouterLike = {
@@ -25,7 +28,6 @@ function peerListingDetailPath(listingId: string, slug: string): string {
 }
 
 async function navigateToPublishedListing(
-  router: RouterLike,
   listingId: string,
   slug: string,
 ): Promise<void> {
@@ -34,8 +36,7 @@ async function navigateToPublishedListing(
       console.warn("[sell] listing-detail cache revalidation:", err)
     }
   })
-  router.push(peerListingDetailPath(listingId, slug))
-  router.refresh?.()
+  navigateAfterListingSave(peerListingDetailPath(listingId, slug))
 }
 
 /** Shared create + bulk redirect for peer `/sell/*` flows. */
@@ -43,6 +44,14 @@ export async function finalizePeerListingCreate(params: {
   listingImpersonation: ImpersonationData | null
   listingFields: Record<string, unknown>
   images: { url: string; thumbnailUrl?: string | null }[]
+  videos?: Array<{
+    url: string
+    thumbnailUrl?: string | null
+    contentType?: string | null
+    durationSeconds?: number | null
+    byteSize?: number | null
+    sortOrder?: number
+  }>
   title: string
   section: PeerListingSection
   bulkSlotId: string | null
@@ -50,6 +59,8 @@ export async function finalizePeerListingCreate(params: {
   directCreate: () => Promise<DirectCreateResult>
   successToast: string
   setSubmitting: (value: boolean) => void
+  /** Runs after a successful create, before navigation (e.g. clear local draft stash). */
+  onCreateSuccess?: (created: { listingId: string; slug: string }) => void | Promise<void>
   /** When set, publish outcome funnel events include elapsed time from this timestamp. */
   publishStartedAt?: number
 }): Promise<void> {
@@ -60,6 +71,7 @@ export async function finalizePeerListingCreate(params: {
     const impResult = await createImpersonatedListingViaApi({
       listing: params.listingFields,
       images: listingImagesToImpersonatedPayload(params.images),
+      videos: listingVideosToImpersonatedPayload(params.videos ?? []),
     })
     if (!impResult.ok) {
       const message = sellActionErrorMessage(impResult.error)
@@ -80,6 +92,7 @@ export async function finalizePeerListingCreate(params: {
       durationMs: funnelDurationMs(),
     })
     toast.success(params.successToast)
+    await params.onCreateSuccess?.({ listingId: impResult.listingId, slug: impResult.slug })
     if (
       resolveAdminBulkListingAfterCreate(params.router, {
         bulkSlotId: params.bulkSlotId,
@@ -92,7 +105,7 @@ export async function finalizePeerListingCreate(params: {
     ) {
       return
     }
-    await navigateToPublishedListing(params.router, impResult.listingId, impResult.slug)
+    await navigateToPublishedListing(impResult.listingId, impResult.slug)
     return
   }
 
@@ -117,6 +130,7 @@ export async function finalizePeerListingCreate(params: {
     durationMs: funnelDurationMs(),
   })
   toast.success(params.successToast)
+  await params.onCreateSuccess?.({ listingId: result.listingId, slug: result.slug })
   if (
     resolveAdminBulkListingAfterCreate(params.router, {
       bulkSlotId: params.bulkSlotId,
@@ -129,5 +143,11 @@ export async function finalizePeerListingCreate(params: {
   ) {
     return
   }
-  await navigateToPublishedListing(params.router, result.listingId, result.slug)
+  // Seller's own fresh publish — hand off the PDP "listing is live" celebration.
+  setJustPublishedListingMarker({
+    listingId: result.listingId,
+    slug: result.slug,
+    section: params.section,
+  })
+  await navigateToPublishedListing(result.listingId, result.slug)
 }

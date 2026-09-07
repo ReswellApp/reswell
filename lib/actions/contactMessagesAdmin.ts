@@ -13,6 +13,8 @@ function revalidateSupportTicketPaths(ticketId?: string) {
   revalidatePath("/dashboard/support")
   if (ticketId) {
     revalidatePath(`/admin/contact-messages/${ticketId}`)
+    revalidatePath(`/admin/support/${ticketId}`)
+    revalidatePath(`/support/${ticketId}`)
     revalidatePath(`/dashboard/support/${ticketId}`)
   }
 }

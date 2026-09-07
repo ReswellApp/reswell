@@ -23,14 +23,16 @@ export type KlaviyoMarkedAsSoldPayload = {
   section: string
   slug?: string | null
   photoUrl?: string | null
-  channel: SoldOffPlatformChannel
+  channel?: SoldOffPlatformChannel | null
   channelDetail?: string | null
+  reswellHelpedFindBuyer?: boolean | null
 }
 
 function resolveSaleChannelLabel(
-  channel: SoldOffPlatformChannel,
+  channel?: SoldOffPlatformChannel | null,
   detail?: string | null,
 ): string {
+  if (!channel) return "Unspecified"
   if (channel === "elsewhere") {
     const trimmed = typeof detail === "string" ? detail.trim() : ""
     return trimmed || SOLD_OFF_PLATFORM_CHANNEL_LABELS.elsewhere
@@ -72,10 +74,14 @@ export async function trackKlaviyoMarkedAsSold(
       listing_url: listingUrl,
       photo_url: payload.photoUrl ? absoluteKlaviyoListingPhotoUrl(payload.photoUrl) : "",
       sold_off_platform: true,
-      sale_channel: payload.channel,
+      sale_channel: payload.channel ?? "unspecified",
       sale_channel_label: saleChannelLabel,
       sale_channel_detail:
         payload.channel === "elsewhere" ? (payload.channelDetail?.trim() ?? "") : "",
+      reswell_helped_find_buyer:
+        typeof payload.reswellHelpedFindBuyer === "boolean"
+          ? payload.reswellHelpedFindBuyer
+          : "",
     },
   })
 }

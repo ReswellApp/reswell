@@ -1,0 +1,43 @@
+{
+  "generated_for": "Chowder Surfboard Co. official named standup catalog",
+  "source": "https://www.chowdersurfco.com/surfboards (Squarespace surfboard lineup only — excludes in-stock one-offs, merch, and ding repair)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "chowder-surfboard-co",
+      "name": "Chowder Surfboard Co.",
+      "website_url": "https://www.chowdersurfco.com",
+      "location_label": "Portland, Oregon",
+      "founder_name": "Ryan Brooks",
+      "lead_shaper_name": "Ryan Brooks",
+      "short_description": "Hand-shaped Pacific Northwest surfboards from Ryan Brooks in Portland — fishes, fun shapes, alternative craft, and longboards.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-08-24-442b75fdb68c4feccc70.webp",
+      "models": [
+        {
+          "name": "The Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58fad03229687f66cf21df7a/1609548599663-KKBCT95CS1NOIL60MJEJ/fish-only-small.png",
+          "description": "One of the most versatile and user friendly crafts in the water, the fish is a timeless shape that will never go out of style. Perfect for a wide variety of waves, but really excels on long, walled up waves where you can take full advantage of the built in speed of this shape. Traditionally a twin fin setup, however works well as a quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fun Shape",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58fad03229687f66cf21df7a/1609549002468-K7DU983QE50CG237USD5/fun-only-small.png",
+          "description": "Fun shapes are just that; fun! Whether they are closer to a shortboard or longboard, fun shapes come all shapes and sizes with one thing in common; they are user-friendly and a blast to ride. They catch waves and paddle easily, and allow you to maximize your time in the water.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Alternative",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58fad03229687f66cf21df7a/1609552516513-CT99SQ7OD4AKZP18J02B/alt-only-small.png",
+          "description": "Want to get weird? Experiment with your wave-riding style and craft with an alternative shape. Pushing the boundaries of what's considered acceptable, we love creating something different that you'll enjoy!",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58fad03229687f66cf21df7a/1609552793052-9JBLMPBQ294AS8NCPK6O/longboard-only-small.png",
+          "description": "A longboard is a must-have in any PNW surfer's quiver. Tons of glide, easy to paddle and catch waves with, and fun to noseride, our longboards are perfect for keeping your wave count and stoke levels high.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,9 @@
  *
  * Template variables: `pickup_instructions`, `sale_url`, `buyer_display_name`,
  * `{{ event.order_num }}`, `{{ event.Title }}`.
+ *
+ * **Klaviyo email:** paste HTML from `lib/klaviyo/seller-local-pickup-sale-received-email-liquid.ts`
+ * (no `{% %}` tags).
  */
 
 import { listingDetailHref } from "@/lib/listing-href"

@@ -31,12 +31,6 @@ function parseEditListingId(value: string | string[] | undefined): string | null
   return null
 }
 
-function parseStartStep(value: string | string[] | undefined): boolean {
-  if (value === "search") return true
-  if (Array.isArray(value)) return value.includes("search")
-  return false
-}
-
 function parseStartFresh(value: string | string[] | undefined): boolean {
   if (value === "1") return true
   if (Array.isArray(value)) return value.includes("1")
@@ -50,11 +44,10 @@ export default async function SellFinsPage({
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
-  const startAtSearch = parseStartStep(qs.step)
   const startFresh = parseStartFresh(qs.new)
   return (
     <Suspense fallback={null}>
-      <SellFinsFlow editListingId={editId} startAtSearch={startAtSearch} startFresh={startFresh} />
+      <SellFinsFlow editListingId={editId} startFresh={startFresh} />
     </Suspense>
   )
 }

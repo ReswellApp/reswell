@@ -1,9 +1,12 @@
+import { withGoogleShoppingTracking } from "@/lib/ads/tracking-urls"
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
 import {
   googleMerchantListingImageSourceUrl,
   googleMerchantListingImageUrl,
 } from "@/lib/google-merchant/product-image-link"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
+import { listingDirectPublicImageUrl } from "@/lib/listing-media-proxy-url"
+import { LISTING_VIDEO_MIN_DURATION_SECONDS } from "@/lib/listing-video-constants"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import {
@@ -12,6 +15,7 @@ import {
   getGoogleMerchantCustomLabel0ForSection,
   getGoogleMerchantEstimatedShippingUsdForSection,
   getGoogleMerchantFeedLabel,
+  getGoogleMerchantOutSurfingShopCustomLabel,
   getGoogleMerchantProductCategoryForSection,
   getGoogleMerchantUsTaxRate,
   isGoogleMerchantPeerSection,
@@ -26,6 +30,7 @@ export type GoogleMerchantListingImage = ListingImageForCard & {
 
 export type GoogleMerchantListingRow = {
   id: string
+  user_id?: string | null
   slug: string | null
   title: string
   description: string | null
@@ -46,11 +51,24 @@ export type GoogleMerchantListingRow = {
   fin_system?: string | null
   fin_size?: string | null
   wetsuit_size?: string | null
+  apparel_kind?: string | null
+  apparel_size?: string | null
   magazine_year?: number | null
   city?: string | null
   state?: string | null
   local_pickup?: boolean | null
   listing_images?: GoogleMerchantListingImage[] | null
+  listing_videos?: Array<{
+    url?: string | null
+    thumbnail_url?: string | null
+    sort_order?: number | null
+    duration_seconds?: number | null
+  }> | null
+}
+
+/** Optional sync context (seller → customLabel1). */
+export type GoogleMerchantProductInputContext = {
+  outSurfingShopUserId: string | null
 }
 
 type GoogleMerchantPrice = {
@@ -80,6 +98,7 @@ export type GoogleMerchantProductInputPayload = {
     link: string
     imageLink: string
     additionalImageLinks?: string[]
+    videoLinks?: string[]
     availability: "IN_STOCK" | "OUT_OF_STOCK"
     condition: GoogleMerchantCondition
     price: GoogleMerchantPrice
@@ -88,9 +107,25 @@ export type GoogleMerchantProductInputPayload = {
     identifierExists: boolean
     googleProductCategory: string
     customLabel0?: string
+    /** Seller shop filter for Google Ads — e.g. OutSurfing only. */
+    customLabel1?: string
     shipping?: GoogleMerchantShipping[]
     taxes?: GoogleMerchantTax[]
   }
+}
+
+/**
+ * `customLabel1` for a listing — OutSurfing when `user_id` matches, else omitted.
+ * Use in Google Ads: listing groups / asset groups → Custom label 1 = OutSurfing.
+ */
+export function getGoogleMerchantCustomLabel1ForListing(
+  listing: Pick<GoogleMerchantListingRow, "user_id">,
+  context: GoogleMerchantProductInputContext | undefined,
+): string | undefined {
+  const outSurfingId = context?.outSurfingShopUserId?.trim()
+  const ownerId = typeof listing.user_id === "string" ? listing.user_id.trim() : ""
+  if (!outSurfingId || !ownerId || ownerId !== outSurfingId) return undefined
+  return getGoogleMerchantOutSurfingShopCustomLabel()
 }
 
 const MAX_MPN_LENGTH = 70
@@ -156,6 +191,30 @@ function additionalImageLinks(
   return unique.slice(0, maxAdditional)
 }
 
+function listingVideoLinks(listing: GoogleMerchantListingRow): string[] | undefined {
+  const videos = listing.listing_videos ?? []
+  if (videos.length === 0) return undefined
+
+  const sorted = videos.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const links: string[] = []
+  for (const video of sorted) {
+    const duration = video.duration_seconds
+    if (
+      typeof duration === "number" &&
+      Number.isFinite(duration) &&
+      duration < LISTING_VIDEO_MIN_DURATION_SECONDS
+    ) {
+      continue
+    }
+    const raw = video.url?.trim()
+    if (!raw) continue
+    const link = listingDirectPublicImageUrl(raw) ?? absoluteImageUrl(raw)
+    if (link) links.push(link)
+  }
+  if (links.length === 0) return undefined
+  return links.slice(0, 10)
+}
+
 function listingBrand(listing: GoogleMerchantListingRow): string | null {
   const brand = listing.brand?.trim()
   return brand || null
@@ -191,6 +250,7 @@ function mapListingShippingAttributes(
   if (!listing.shipping_available) return undefined
 
   const mode = effectiveBoardShippingMode({
+    section: listing.section,
     board_shipping_cost_mode: listing.board_shipping_cost_mode,
     shipping_price: listing.shipping_price,
   })
@@ -260,6 +320,7 @@ export function isGoogleMerchantEligibleListing(listing: GoogleMerchantListingRo
 
 export function mapListingToProductInput(
   listing: GoogleMerchantListingRow,
+  context?: GoogleMerchantProductInputContext,
 ): GoogleMerchantProductInputPayload | null {
   if (!isGoogleMerchantEligibleListing(listing)) return null
 
@@ -267,13 +328,15 @@ export function mapListingToProductInput(
   const imageLink = absoluteImageLink(listing)
   if (!imageLink) return null
 
-  const link = googleMerchantProductLink(listing, origin)
+  const link = withGoogleShoppingTracking(googleMerchantProductLink(listing, origin), listing.id)
   const description = buildGoogleMerchantProductDescription(listing)
   const identifiers = productIdentifiers(listing)
   const shipping = mapListingShippingAttributes(listing)
   const taxes = mapListingTaxAttributes()
   const additionalImages = additionalImageLinks(listing, imageLink)
+  const videoLinks = listingVideoLinks(listing)
   const customLabel0 = getGoogleMerchantCustomLabel0ForSection(listing.section)
+  const customLabel1 = getGoogleMerchantCustomLabel1ForListing(listing, context)
 
   return {
     offerId: listing.id,
@@ -285,6 +348,7 @@ export function mapListingToProductInput(
       link,
       imageLink,
       ...(additionalImages ? { additionalImageLinks: additionalImages } : {}),
+      ...(videoLinks ? { videoLinks } : {}),
       availability: "IN_STOCK",
       condition: mapListingConditionToGoogleMerchant(listing.condition),
       price: {
@@ -296,6 +360,7 @@ export function mapListingToProductInput(
       identifierExists: identifiers.identifierExists,
       googleProductCategory: getGoogleMerchantProductCategoryForSection(listing.section),
       ...(customLabel0 ? { customLabel0 } : {}),
+      ...(customLabel1 ? { customLabel1 } : {}),
       ...(shipping ? { shipping } : {}),
       ...(taxes ? { taxes } : {}),
     },

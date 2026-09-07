@@ -26,6 +26,14 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/klaviyo-unfinished-listings",
+      "schedule": "40 * * * *"
+    },
+    {
+      "path": "/api/cron/klaviyo-giveaway-listing-reminders",
+      "schedule": "50 * * * *"
+    },
+    {
       "path": "/api/cron/seller-message-inactivity",
       "schedule": "0 7 * * *"
     },
@@ -42,12 +50,16 @@
       "schedule": "5 * * * *"
     },
     {
+      "path": "/api/cron/board-buy-sla",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/google-merchant-refresh",
       "schedule": "20 * * * *"
     },
     {
       "path": "/api/cron/elasticsearch-reindex",
-      "schedule": "15 * * * *"
+      "schedule": "20 4,16 * * *"
     },
     {
       "path": "/api/cron/sync-open-carrier-tracking",
@@ -70,6 +82,18 @@
       "schedule": "0 15 * * 1"
     },
     {
+      "path": "/api/cron/search-daily-report",
+      "schedule": "30 14 * * *"
+    },
+    {
+      "path": "/api/cron/search-period-report",
+      "schedule": "0 15 1 * *"
+    },
+    {
+      "path": "/api/cron/intelligence-report",
+      "schedule": "0 15 * * *"
+    },
+    {
       "path": "/api/cron/backfill-listing-brand-model",
       "schedule": "0 11 * * *"
     },
@@ -84,6 +108,10 @@
     {
       "path": "/api/cron/link-guest-contact-messages",
       "schedule": "25 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-shipengine-adjustments",
+      "schedule": "30 8 * * *"
     },
     {
       "path": "/api/cron/live-chat-escalate-unanswered",

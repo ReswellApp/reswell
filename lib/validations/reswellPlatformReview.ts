@@ -23,4 +23,19 @@ export const reswellPlatformReviewSchema = z.object({
     .max(5, "Maximum rating is 5 stars."),
 })
 
+export const soldFlowReswellReviewSchema = z.object({
+  rating: z
+    .number()
+    .int("Choose a whole star rating.")
+    .min(1, "Choose at least 1 star.")
+    .max(5, "Maximum rating is 5 stars."),
+  description: z
+    .string()
+    .trim()
+    .max(2000, "Review is too long.")
+    .optional()
+    .default(""),
+})
+
 export type ReswellPlatformReviewInput = z.infer<typeof reswellPlatformReviewSchema>
+export type SoldFlowReswellReviewInput = z.infer<typeof soldFlowReswellReviewSchema>

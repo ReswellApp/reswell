@@ -5,10 +5,15 @@ import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { ListYourSurfboardMarketplaceReviewsSection } from "@/components/features/marketing/list-your-surfboard-buyer-reviews-section"
 import type { MarketplaceShowcaseReviewRow } from "@/lib/db/marketplace-reviews-showcase"
 import { CategoryBrowseBreadcrumbs } from "@/components/category-browse-breadcrumbs"
+import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curator"
 
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
+import {
+  CategoryTopShopsSection,
+  CategoryTopShopsSectionSkeleton,
+} from "@/components/features/browse/category-top-shops-section"
 import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
 import { boardSavedSearchCriteriaFromFilters } from "@/lib/utils/board-saved-search-criteria"
 import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-browse-json-ld"
@@ -21,8 +26,8 @@ import {
   BOARDS_BROWSE_PAGE_SIZE,
   buildSurfboardBrowseBaseQuery,
   compareBoardBrowseRows,
-  compareBoardBrowseRowsTopPicks,
-  fetchBoardsBrowseTopPicksPage,
+  compareBoardBrowseRowsDailyRotate,
+  fetchBoardsBrowseDailyRotatePage,
   fetchNearestSurfboardsWithinRadius,
   isBoardsBrowseTopPicksSort,
   LOCATION_FALLBACK_RADIUS_MI,
@@ -31,10 +36,8 @@ import {
   type BoardBrowseListingRow,
   type SurfboardBrowseListingsQuery,
 } from "@/lib/db/boards-browse-listings"
-import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
 import {
   boardsBrowseBoardTypeLabel,
-  boardsBrowseHeroSubtext,
   BOARDS_BROWSE_DEFAULT_SORT,
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
@@ -52,27 +55,54 @@ import {
   mergeNlOverlayIntoFacets,
   resolveBoardsSearchQuery,
 } from "@/lib/services/searchBoards"
+import {
+  newSearchQualityEventId,
+  scheduleSearchQualityEventCapture,
+} from "@/lib/services/searchQuality"
 import { NaturalLanguageSearchHelper } from "@/components/features/search/natural-language-search-helper"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
 import { haversineMi } from "@/lib/db/boards-browse-listings"
+import { boardsBrowseDailyRotateSeed } from "@/lib/utils/boards-browse-daily-rotate"
 import { facetSelectionsFromBrowseParams } from "@/lib/boards-browse-facets"
 import {
   boardsBrowseEffectiveSort,
   boardsBrowseHasSidebarFilters,
 } from "@/lib/boards-browse-sidebar-filters"
+import { getOpenBoardsGiveaway } from "@/lib/giveaways/boards-enter-props"
+import type { BoardsGiveawayEnterProps } from "@/components/features/giveaways/boards-giveaway-enter-button"
+
+async function BoardsBrowseAdminCuratorGate() {
+  const { supabase, user } = await getCachedRequestSession()
+  if (!user) return null
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle()
+  return (
+    <BoardsBrowseAdminCurator
+      isAdmin={profile?.is_admin === true}
+      className="border-white/55 bg-white/95 text-[#001A4A] shadow-sm hover:bg-white"
+    />
+  )
+}
 
 async function BoardsBrowseFiltersSection({
   searchParams: searchParamsPromise,
   children,
   title,
   description,
+  headerAction,
+  giveawayEnter = null,
 }: {
   searchParams: Promise<BoardsBrowseSearchParams>
   children: ReactNode
   title?: string
   description?: string
+  headerAction?: ReactNode
+  giveawayEnter?: BoardsGiveawayEnterProps | null
 }) {
   const searchParams = await searchParamsPromise
   const facetCounts = await getBoardsBrowseFacetCountsMapCached(searchParams)
@@ -81,6 +111,8 @@ async function BoardsBrowseFiltersSection({
       counts={facetCounts}
       title={title}
       description={description}
+      headerAction={headerAction}
+      giveawayEnter={giveawayEnter}
     >
       {children}
     </BoardsBrowseClient>
@@ -102,10 +134,11 @@ async function BoardListings({
 
   const boardType = searchParams.type || "all"
   const condition = searchParams.condition || "all"
+  const query = searchParams.q || ""
+  const hasKeywordQuery = query.trim().length > 0
   const rawSort = searchParams.sort || BOARDS_BROWSE_DEFAULT_SORT
   const hasSidebarFilters = boardsBrowseHasSidebarFilters(searchParams)
-  const sort = boardsBrowseEffectiveSort(rawSort, hasSidebarFilters)
-  const query = searchParams.q || ""
+  const sort = boardsBrowseEffectiveSort(rawSort, hasSidebarFilters, hasKeywordQuery)
   const brand = searchParams.brand || ""
   const model = searchParams.model || ""
   const brandIdRaw = searchParams.brandId?.trim() ?? ""
@@ -144,7 +177,6 @@ async function BoardListings({
   let totalPages = 0
   let handledByEs = false
   const esEnabled = isBoardsBrowseEsEnabled()
-  const hasKeywordQuery = query.trim().length > 0
   const resolvedKeyword = hasKeywordQuery
     ? await resolveBoardsSearchQuery(supabase, {
         q: query,
@@ -217,6 +249,8 @@ async function BoardListings({
     }),
   ).toString()
 
+  const searchQualityEventId = hasKeywordQuery ? newSearchQualityEventId() : null
+
   const nlHint =
     hasKeywordQuery ? (
       <div className="mb-4">
@@ -225,6 +259,7 @@ async function BoardListings({
           searchParamsString={searchParamsString}
           initialAppliedLabels={nl?.appliedLabels}
           initialSummary={nl?.summary}
+          qualityEventId={searchQualityEventId}
         />
       </div>
     ) : null
@@ -302,24 +337,13 @@ async function BoardListings({
     boards = cachedCategoryPage.boards
     totalPages = cachedCategoryPage.totalPages
   } else if (isTopPicksSort && !filterByRadius && !isNearestSort) {
-    const topPicksPage = await fetchBoardsBrowseTopPicksPage(supabase, {
+    const rotatePage = await fetchBoardsBrowseDailyRotatePage(supabase, {
       boardType,
       condition,
-      query,
-      brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
-      model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
-      brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
-      brandModelId: brandModelIdForQuery,
-      dimensionFields,
-      facets,
-      minPrice,
-      maxPrice,
-      shippingAvailable,
-      locationTextFilter: location.trim() && !useGeocodedAnchor ? location : undefined,
       page,
     })
-    boards = topPicksPage.boards
-    totalPages = topPicksPage.totalPages
+    boards = rotatePage.boards
+    totalPages = rotatePage.totalPages
   } else {
     const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
 
@@ -381,9 +405,8 @@ async function BoardListings({
           return a._distance - b._distance
         })
       } else if (isTopPicksSort) {
-        const curatedIds = await listBoardsBrowseTopPickListingIdsOrdered(supabase)
-        const curationIndex = new Map(curatedIds.map((id, index) => [id, index]))
-        withDistance.sort((a, b) => compareBoardBrowseRowsTopPicks(a, b, curationIndex))
+        const rotateSeed = boardsBrowseDailyRotateSeed()
+        withDistance.sort((a, b) => compareBoardBrowseRowsDailyRotate(a, b, rotateSeed))
       } else {
         withDistance.sort((a, b) => compareBoardBrowseRows(a, b, sort))
       }
@@ -589,6 +612,26 @@ async function BoardListings({
     }
   }
 
+  if (searchQualityEventId && hasKeywordQuery) {
+    const rows = (boards ?? []) as BoardBrowseListingRow[]
+    scheduleSearchQualityEventCapture({
+      eventId: searchQualityEventId,
+      rawQuery: query,
+      searchSurface: "boards",
+      backend: handledByEs ? "elasticsearch" : "supabase",
+      listings: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        price: row.price,
+        board_type: row.board_type,
+        listing_images: row.listing_images,
+      })),
+      parsed: resolvedKeyword?.parsed ?? null,
+      extraStyles: nl?.styles ?? [],
+    })
+  }
+
   if (!boards || boards.length === 0) {
     const saveCriteria = boardSavedSearchCriteriaFromFilters({
       q: query,
@@ -676,6 +719,7 @@ function BoardListingsTileGrid({
             user_id: board.user_id,
             title: board.title,
             price: board.price,
+            compare_at_price: board.compare_at_price,
             status: board.status,
             section: "surfboards",
             local_pickup: board.local_pickup,
@@ -781,7 +825,10 @@ export async function BoardsBrowsePage(props: {
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
   const pageTitle = typeCrumb ?? surfboardsBrowseRootLabel
-  const pageDescription = boardsBrowseHeroSubtext(searchParams.type)
+  const openGiveaway = props.showListYourSurfboardCta ? null : getOpenBoardsGiveaway()
+  const giveawayEnter: BoardsGiveawayEnterProps | null = openGiveaway
+    ? { giveaway: openGiveaway }
+    : null
 
   return (
     <main className="flex-1">
@@ -819,7 +866,7 @@ export async function BoardsBrowsePage(props: {
       <section
         className={cn(
           "min-w-0 pb-4",
-          props.showListYourSurfboardCta ? "pt-8 sm:pt-10" : "bg-offwhite pt-4 sm:pt-5",
+          props.showListYourSurfboardCta ? "pt-8 sm:pt-10" : "bg-offwhite pt-2 sm:pt-5",
         )}
       >
         <div className="container mx-auto min-w-0">
@@ -832,7 +879,15 @@ export async function BoardsBrowsePage(props: {
             <BoardsBrowseFiltersSection
               searchParams={searchParamsPromise}
               title={props.showListYourSurfboardCta ? undefined : pageTitle}
-              description={props.showListYourSurfboardCta ? undefined : pageDescription}
+              description={undefined}
+              giveawayEnter={giveawayEnter}
+              headerAction={
+                props.showListYourSurfboardCta ? undefined : (
+                  <Suspense fallback={null}>
+                    <BoardsBrowseAdminCuratorGate />
+                  </Suspense>
+                )
+              }
             >
               <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
                 <BoardListings searchParams={searchParamsPromise} />
@@ -841,6 +896,10 @@ export async function BoardsBrowsePage(props: {
           </Suspense>
         </div>
       </section>
+
+      <Suspense fallback={<CategoryTopShopsSectionSkeleton />}>
+        <CategoryTopShopsSection section="surfboards" />
+      </Suspense>
     </main>
   )
 }

@@ -258,10 +258,20 @@ export type AdminOrdersDashboardQueues = {
   openLabels: AdminOrdersOpsLabelRow[]
 }
 
+export type AdminOpenFulfillmentFilter = "shipping" | "pickup"
+
+export type AdminOrdersOpenLists = {
+  shipping: AdminOrdersOpsOrderRow[]
+  pickup: AdminOrdersOpsOrderRow[]
+}
+
 export type AdminOrdersDashboardPayload = {
   stats: AdminOrdersDashboardStats
   queues: AdminOrdersDashboardQueues
+  openLists: AdminOrdersOpenLists
 }
+
+const OPEN_LIST_CAP = 200
 
 const OPS_QUEUE_LIMIT = 8
 
@@ -301,6 +311,34 @@ function awaitingShipmentShippingBase(supabase: SupabaseClient) {
   return openOrdersBase(supabase)
     .eq("fulfillment_method", "shipping")
     .eq("delivery_status", "pending")
+}
+
+export async function dbListOpenOrdersByMethod(
+  supabase: SupabaseClient,
+  method: AdminOpenFulfillmentFilter,
+): Promise<{ data: AdminOrdersOpsOrderRow[]; error: PostgrestError | null }> {
+  let query = supabase
+    .from("orders")
+    .select(OPS_ORDER_SELECT)
+    .eq("is_admin_test", false)
+    .eq("status", "confirmed")
+    .eq("fulfillment_method", method)
+    .order("created_at", { ascending: true })
+    .limit(OPEN_LIST_CAP)
+
+  query =
+    method === "shipping"
+      ? query.in("delivery_status", ["pending", "shipped"])
+      : query.neq("delivery_status", "picked_up")
+
+  const { data, error } = await query
+  if (error) {
+    return { data: [], error }
+  }
+  return {
+    data: await mapOpsOrderRows(supabase, (data ?? []) as OpsOrderRaw[]),
+    error: null,
+  }
 }
 
 type OpsOrderRaw = {
@@ -665,9 +703,11 @@ export async function dbGetAdminOrdersDashboardQueues(
 export async function dbGetAdminOrdersDashboard(
   supabase: SupabaseClient,
 ): Promise<{ data: AdminOrdersDashboardPayload | null; error: PostgrestError | null }> {
-  const [statsResult, queuesResult] = await Promise.all([
+  const [statsResult, queuesResult, shippingList, pickupList] = await Promise.all([
     dbGetAdminOrdersDashboardStats(supabase),
     dbGetAdminOrdersDashboardQueues(supabase),
+    dbListOpenOrdersByMethod(supabase, "shipping"),
+    dbListOpenOrdersByMethod(supabase, "pickup"),
   ])
 
   if (statsResult.error || !statsResult.data) {
@@ -676,11 +716,21 @@ export async function dbGetAdminOrdersDashboard(
   if (queuesResult.error) {
     return { data: null, error: queuesResult.error }
   }
+  if (shippingList.error) {
+    return { data: null, error: shippingList.error }
+  }
+  if (pickupList.error) {
+    return { data: null, error: pickupList.error }
+  }
 
   return {
     data: {
       stats: statsResult.data,
       queues: queuesResult.data,
+      openLists: {
+        shipping: shippingList.data,
+        pickup: pickupList.data,
+      },
     },
     error: null,
   }

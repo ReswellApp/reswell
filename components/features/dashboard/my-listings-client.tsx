@@ -19,6 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Archive,
+  ArrowLeft,
+  ArrowRight,
   Package,
   Eye,
   ShoppingCart,
@@ -34,12 +37,16 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
-import {
-  ListingVacationModeButton,
-  canUseListingVacationMode,
-} from "@/components/features/sell/listing-vacation-mode-button"
+import { RelistListingButton } from "@/components/features/listings/relist-listing-button"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
+import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
 import { SellerBanRestrictedPanel } from "@/components/features/sell/seller-ban-restricted-panel"
-import { peerListingEditHref } from "@/lib/peer-listing-sections"
+import {
+  isPeerListingSection,
+  PEER_LISTING_SECTION_LABELS,
+  peerListingEditHref,
+  sellerProfileSectionSortRank,
+} from "@/lib/peer-listing-sections"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
 import { cn } from "@/lib/utils"
@@ -52,12 +59,42 @@ import {
 
 type SortOption = "recent" | "oldest" | "price_desc" | "price_asc" | "views"
 type EngagementFilter = "all" | "in_carts" | "saved"
+type StatusFilter = "all" | "draft" | "active" | "sold"
+
+function listingTypeLabel(section: string): string {
+  if (isPeerListingSection(section)) return PEER_LISTING_SECTION_LABELS[section]
+  if (section === "used") return "Surfboard"
+  if (section === "new") return "Shop"
+  return capitalizeWords(section.replace(/[-_]/g, " "))
+}
+
+function emptyListingsMessage({
+  statusFilter,
+  sectionFilter,
+  engagementFilter,
+}: {
+  statusFilter: StatusFilter
+  sectionFilter: string
+  engagementFilter: EngagementFilter
+}): string {
+  if (statusFilter === "draft") return "No draft listings."
+  if (statusFilter === "active") return "No active listings."
+  if (statusFilter === "sold") return "No sold listings."
+  if (sectionFilter !== "all") {
+    return `No ${listingTypeLabel(sectionFilter).toLowerCase()} listings.`
+  }
+  if (engagementFilter === "in_carts") return "No listings are in anyone's cart right now."
+  if (engagementFilter === "saved") return "No listings have been saved yet."
+  return "No listings match your search."
+}
 
 interface MyListingsClientProps {
   listings: MyListingRow[]
   stats: MyListingsDashboardStats
+  sellerUserId: string
   fetchError?: string
   sellerBanned?: boolean
+  initialStatusFilter?: StatusFilter
 }
 
 function listingRowImageSrc(listing: MyListingRow): string | null {
@@ -96,6 +133,80 @@ function sortListings(listings: MyListingRow[], sort: SortOption): MyListingRow[
       return next.sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       )
+  }
+}
+
+function isDraftListing(listing: MyListingRow): boolean {
+  return listing.status === "draft"
+}
+
+function partitionVisibleListings({
+  listings,
+  searchQuery,
+  sort,
+  engagementFilter,
+  statusFilter,
+  sectionFilter,
+}: {
+  listings: MyListingRow[]
+  searchQuery: string
+  sort: SortOption
+  engagementFilter: EngagementFilter
+  statusFilter: StatusFilter
+  sectionFilter: string
+}): {
+  pinnedDraft: MyListingRow | null
+  visibleListings: MyListingRow[]
+  hiddenDraftCount: number
+} {
+  const q = searchQuery.trim().toLowerCase()
+  const filtered = listings.filter((listing) => {
+    if (engagementFilter === "in_carts" && listing.cartCount <= 0) return false
+    if (engagementFilter === "saved" && listing.favoriteCount <= 0) return false
+    if (statusFilter === "draft" && listing.status !== "draft") return false
+    if (statusFilter === "active" && listing.status !== "active") return false
+    if (statusFilter === "sold" && listing.status !== "sold") return false
+    if (sectionFilter !== "all" && listing.section !== sectionFilter) return false
+    if (!q) return true
+    const haystack = [
+      listing.title,
+      listing.brand,
+      listing.model,
+      listing.status,
+      listing.section,
+      listingTypeLabel(listing.section),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+    return haystack.includes(q)
+  })
+
+  const drafts = filtered.filter(isDraftListing)
+  const others = filtered.filter((listing) => !isDraftListing(listing))
+
+  if (statusFilter === "all" && q.length === 0) {
+    const newestDrafts = sortListings(drafts, "recent")
+    const pinnedDraft = newestDrafts[0] ?? null
+    return {
+      pinnedDraft,
+      visibleListings: sortListings(others, sort),
+      hiddenDraftCount: Math.max(0, newestDrafts.length - (pinnedDraft ? 1 : 0)),
+    }
+  }
+
+  if (statusFilter === "all") {
+    return {
+      pinnedDraft: null,
+      visibleListings: [...sortListings(drafts, "recent"), ...sortListings(others, sort)],
+      hiddenDraftCount: 0,
+    }
+  }
+
+  return {
+    pinnedDraft: null,
+    visibleListings: sortListings(filtered, sort),
+    hiddenDraftCount: 0,
   }
 }
 
@@ -174,17 +285,41 @@ function ListingEngagementBadge({
 export function MyListingsClient({
   listings,
   stats,
+  sellerUserId,
   fetchError,
   sellerBanned = false,
+  initialStatusFilter = "all",
 }: MyListingsClientProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [sort, setSort] = useState<SortOption>("recent")
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter)
+  const [sectionFilter, setSectionFilter] = useState("all")
   const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>("all")
   const [endListingId, setEndListingId] = useState<string | null>(null)
 
+  const listingTypeOptions = useMemo(() => {
+    const unique = new Set(
+      listings.map((listing) => listing.section).filter((section) => section.length > 0),
+    )
+    return [...unique].sort((a, b) => {
+      const rank = sellerProfileSectionSortRank(a) - sellerProfileSectionSortRank(b)
+      if (rank !== 0) return rank
+      return listingTypeLabel(a).localeCompare(listingTypeLabel(b))
+    })
+  }, [listings])
+
   function toggleEngagementFilter(next: Exclude<EngagementFilter, "all">) {
-    setEngagementFilter((current) => (current === next ? "all" : next))
+    if (engagementFilter === next) {
+      setEngagementFilter("all")
+      return
+    }
+
+    setSearchQuery("")
+    setSectionFilter("all")
+    setStatusFilter("active")
+    setEngagementFilter(next)
+    router.replace("/dashboard/listings")
   }
 
   async function handleDiscardDraft(id: string) {
@@ -202,29 +337,42 @@ export function MyListingsClient({
   const getListingHref = (section: string, id: string, slug?: string | null) =>
     listingDetailHref({ id, slug, section })
 
-  const visibleListings = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    const filtered = listings.filter((listing) => {
-      if (engagementFilter === "in_carts" && listing.cartCount <= 0) return false
-      if (engagementFilter === "saved" && listing.favoriteCount <= 0) return false
-      if (!q) return true
-      const haystack = [
-        listing.title,
-        listing.brand,
-        listing.model,
-        listing.status,
-        listing.section,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-      return haystack.includes(q)
-    })
-    return sortListings(filtered, sort)
-  }, [listings, searchQuery, sort, engagementFilter])
+  const { pinnedDraft, visibleListings, hiddenDraftCount } = useMemo(
+    () =>
+      partitionVisibleListings({
+        listings,
+        searchQuery,
+        sort,
+        engagementFilter,
+        statusFilter,
+        sectionFilter,
+      }),
+    [listings, searchQuery, sort, engagementFilter, statusFilter, sectionFilter],
+  )
+
+  function handleViewAllDrafts() {
+    setSearchQuery("")
+    setSectionFilter("all")
+    setEngagementFilter("all")
+    setStatusFilter("draft")
+  }
+
+  function handleBackFromDrafts() {
+    setStatusFilter("all")
+    router.replace("/dashboard/listings")
+  }
 
   const listingCountLabel =
-    visibleListings.length === 1 ? "1 listing" : `${visibleListings.length} listings`
+    statusFilter === "draft"
+      ? visibleListings.length === 1
+        ? "1 draft"
+        : `${visibleListings.length} drafts`
+      : visibleListings.length === 1
+        ? "1 listing"
+        : `${visibleListings.length} listings`
+  const endListing = endListingId
+    ? listings.find((listing) => listing.id === endListingId)
+    : undefined
 
   return (
     <div className="space-y-6">
@@ -233,12 +381,17 @@ export function MyListingsClient({
         description="Summary of your listing inventory and performance."
         actions={
           <>
-            <Link
-              href="/dashboard/listings/archived"
-              className="text-[14px] font-medium text-primary hover:underline sm:text-[15px]"
+            <Button
+              asChild
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-full"
             >
-              Archived listings
-            </Link>
+              <Link href="/dashboard/listings/archived" title="Archived listings">
+                <Archive className="h-4 w-4" aria-hidden />
+                <span className="sr-only">Archived listings</span>
+              </Link>
+            </Button>
             {!sellerBanned ? (
               <Button asChild size="sm" className="rounded-full">
                 <Link href="/sell?new=1">
@@ -272,7 +425,7 @@ export function MyListingsClient({
         />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative min-w-0 flex-1">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -287,18 +440,53 @@ export function MyListingsClient({
             aria-label="Search your listings"
           />
         </div>
-        <Select value={sort} onValueChange={(value) => setSort(value as SortOption)}>
-          <SelectTrigger className={dashboardFilterSelectClass} aria-label="Sort listings">
-            <SelectValue placeholder="Sort" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="recent">Sort: Most Recent</SelectItem>
-            <SelectItem value="oldest">Sort: Oldest First</SelectItem>
-            <SelectItem value="price_desc">Sort: Price High to Low</SelectItem>
-            <SelectItem value="price_asc">Sort: Price Low to High</SelectItem>
-            <SelectItem value="views">Sort: Most Views</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <Select value={sectionFilter} onValueChange={setSectionFilter}>
+            <SelectTrigger
+              className={cn(dashboardFilterSelectClass, "sm:w-[180px]")}
+              aria-label="Filter by listing type"
+            >
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Type: All</SelectItem>
+              {listingTypeOptions.map((section) => (
+                <SelectItem key={section} value={section}>
+                  Type: {listingTypeLabel(section)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+          >
+            <SelectTrigger
+              className={cn(dashboardFilterSelectClass, "sm:w-[180px]")}
+              aria-label="Filter by listing status"
+            >
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Status: All</SelectItem>
+              <SelectItem value="draft">Status: Drafts</SelectItem>
+              <SelectItem value="active">Status: Active</SelectItem>
+              <SelectItem value="sold">Status: Sold</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sort} onValueChange={(value) => setSort(value as SortOption)}>
+            <SelectTrigger className={dashboardFilterSelectClass} aria-label="Sort listings">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Sort: Most Recent</SelectItem>
+              <SelectItem value="oldest">Sort: Oldest First</SelectItem>
+              <SelectItem value="price_desc">Sort: Price High to Low</SelectItem>
+              <SelectItem value="price_asc">Sort: Price Low to High</SelectItem>
+              <SelectItem value="views">Sort: Most Views</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {fetchError && (
@@ -326,36 +514,80 @@ export function MyListingsClient({
           </CardContent>
         </Card>
       ) : (
-        <>
-          <p className="text-[13px] font-medium text-muted-foreground">{listingCountLabel}</p>
+        <div className="space-y-3">
+          {statusFilter === "draft" ? (
+            <button
+              type="button"
+              onClick={handleBackFromDrafts}
+              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" aria-hidden />
+              Back to listings
+            </button>
+          ) : null}
 
-          {visibleListings.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              {engagementFilter === "in_carts"
-                ? "No listings are in anyone's cart right now."
-                : engagementFilter === "saved"
-                  ? "No listings have been saved yet."
-                  : "No listings match your search."}
-            </p>
-          ) : (
-            <div className="divide-y divide-border/80">
-              {visibleListings.map((listing) => (
-                <ListingRow
-                  key={listing.id}
-                  listing={listing}
-                  getListingHref={getListingHref}
-                  onDiscardDraft={handleDiscardDraft}
-                  onEndListing={setEndListingId}
-                  onVacationChange={() => router.refresh()}
-                />
-              ))}
+          {pinnedDraft ? (
+            <div
+              className={cn(
+                visibleListings.length > 0 && "mb-1 border-b border-border/80 pb-1",
+              )}
+            >
+              <ListingRow
+                listing={pinnedDraft}
+                sellerUserId={sellerUserId}
+                sellerBanned={sellerBanned}
+                getListingHref={getListingHref}
+                onDiscardDraft={handleDiscardDraft}
+                onEndListing={setEndListingId}
+              />
+              {hiddenDraftCount > 0 ? (
+                <div className="flex justify-end py-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1 text-[13px] text-muted-foreground hover:text-foreground"
+                    onClick={handleViewAllDrafts}
+                  >
+                    View all {hiddenDraftCount + 1} drafts
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                  </Button>
+                </div>
+              ) : null}
             </div>
+          ) : null}
+
+          {visibleListings.length > 0 ? (
+            <>
+              <p className="text-[13px] font-medium text-muted-foreground">{listingCountLabel}</p>
+              <div className="divide-y divide-border/80">
+                {visibleListings.map((listing) => (
+                  <ListingRow
+                    key={listing.id}
+                    listing={listing}
+                    sellerUserId={sellerUserId}
+                    sellerBanned={sellerBanned}
+                    getListingHref={getListingHref}
+                    onDiscardDraft={handleDiscardDraft}
+                    onEndListing={setEndListingId}
+                  />
+                ))}
+              </div>
+            </>
+          ) : pinnedDraft ? null : (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {emptyListingsMessage({ statusFilter, sectionFilter, engagementFilter })}
+            </p>
           )}
-        </>
+        </div>
       )}
 
       <EndListingDialog
         listingId={endListingId}
+        listingPriceUsd={endListing?.price}
+        listingStatus={endListing?.status}
+        vacationMode={endListing?.hidden_from_site === true}
+        canDelete={endListing?.canDelete === true}
         open={!!endListingId}
         onOpenChange={(open) => {
           if (!open) setEndListingId(null)
@@ -367,22 +599,23 @@ export function MyListingsClient({
 
 function ListingRow({
   listing,
+  sellerUserId,
+  sellerBanned,
   getListingHref,
   onDiscardDraft,
   onEndListing,
-  onVacationChange,
 }: {
   listing: MyListingRow
+  sellerUserId: string
+  sellerBanned: boolean
   getListingHref: (section: string, id: string, slug?: string | null) => string
   onDiscardDraft: (id: string) => void
   onEndListing: (id: string) => void
-  onVacationChange: () => void
 }) {
   const imageSrc = listingRowImageSrc(listing)
   const isDraft = listing.status === "draft"
   const isSold = listing.status === "sold"
   const isDelinquent = listing.status === "delinquent"
-  const showVacation = !isDelinquent && canUseListingVacationMode(listing.status)
   const editHref = peerListingEditHref(listing.section, listing.id)
   const cardHref = isDraft ? editHref : getListingHref(listing.section, listing.id, listing.slug)
   const brandLine = listingBrandLine(listing)
@@ -390,6 +623,15 @@ function ListingRow({
   const listedDate = format(new Date(listing.created_at), "MMM d, yyyy")
   const canEnd = !isDraft && listing.status !== "sold"
   const showSavedBadge = listing.favoriteCount > 0
+  const showCartBadge = listing.cartCount > 0
+  const canOfferToCart =
+    !sellerBanned &&
+    !isDraft &&
+    !isSold &&
+    !isDelinquent &&
+    listing.hidden_from_site !== true &&
+    isPeerListingSection(listing.section) &&
+    listing.cartCount > 0
 
   return (
     <article className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center lg:gap-4 lg:py-4">
@@ -424,7 +666,12 @@ function ListingRow({
           {isDraft ? (
             <span className="font-medium text-muted-foreground">Draft</span>
           ) : (
-            `$${listing.price.toFixed(2)}`
+            <ListingPriceWithMarkdown
+              priceUsd={listing.price}
+              compareAtPriceUsd={listing.compare_at_price}
+              priceClassName="text-[15px] font-semibold text-primary tabular-nums"
+              compareClassName="text-sm font-medium text-muted-foreground line-through tabular-nums"
+            />
           )}
         </p>
         {detailLine ? (
@@ -432,6 +679,9 @@ function ListingRow({
         ) : null}
         <div className="mt-2 flex flex-wrap gap-2 md:hidden">
           <ListingEngagementBadge icon={Eye} label="Views" value={listing.views} />
+          {showCartBadge ? (
+            <ListingEngagementBadge icon={ShoppingCart} label="In carts" value={listing.cartCount} />
+          ) : null}
           {showSavedBadge ? (
             <ListingEngagementBadge icon={Heart} label="Saved" value={listing.favoriteCount} />
           ) : null}
@@ -442,7 +692,7 @@ function ListingRow({
           </p>
         ) : listing.hidden_from_site && !isDraft && !isSold ? (
           <p className="mt-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-            On vacation — hidden from site
+            On vacation — hidden from site. Use End to go live.
           </p>
         ) : null}
         {!isDraft && !isDelinquent && listing.status !== "active" && !isSold ? (
@@ -454,6 +704,9 @@ function ListingRow({
         <p className="text-[13px] text-muted-foreground">Listed: {listedDate}</p>
         <div className="flex w-full flex-col gap-2">
           <ListingEngagementBadge icon={Eye} label="Views" value={listing.views} />
+          {showCartBadge ? (
+            <ListingEngagementBadge icon={ShoppingCart} label="In carts" value={listing.cartCount} />
+          ) : null}
           {showSavedBadge ? (
             <ListingEngagementBadge icon={Heart} label="Saved" value={listing.favoriteCount} />
           ) : null}
@@ -484,11 +737,23 @@ function ListingRow({
             </Link>
           </Button>
         )}
-        {showVacation ? (
-          <ListingVacationModeButton
+        {isSold && !sellerBanned && listing.canRelist ? (
+          <RelistListingButton
             listingId={listing.id}
-            vacationMode={listing.hidden_from_site === true}
-            onVacationModeChange={() => onVacationChange()}
+            triggerClassName="min-w-[5.5rem] rounded-full bg-muted text-primary shadow-none hover:bg-muted/80"
+          />
+        ) : null}
+        {canOfferToCart ? (
+          <SellerOfferToCartHolders
+            listingId={listing.id}
+            sellerUserId={sellerUserId}
+            cartHolderCount={listing.cartCount}
+            listingTitle={listing.title}
+            listPrice={listing.price}
+            primaryImageUrl={imageSrc}
+            triggerSize="sm"
+            triggerLabel="Offer"
+            triggerClassName="min-w-[5.5rem] border-border/60 bg-muted text-primary shadow-none hover:bg-muted/80"
           />
         ) : null}
         {isDraft ? (

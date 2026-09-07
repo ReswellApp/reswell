@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Flag, Hourglass, Truck } from "lucide-react"
+import { Flag, Hourglass } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Accordion,
@@ -26,10 +26,10 @@ import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
+import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import { listingTileFavoriteButtonChromeClassName } from "@/components/favorite-button-card-overlay"
 import { cn } from "@/lib/utils"
 import {
   ListingSoldDetailNotice,
@@ -42,24 +42,39 @@ import {
   ListingBuyerProtectionTrustRibbon,
   ListingProtectionTrustRibbon,
 } from "@/components/features/listings/listing-about-seller-section"
+import { ListingFulfillmentAccordionItem } from "@/components/features/listings/listing-fulfillment-accordion-item"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
+import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
+import {
+  canShowPeerListingPurchaseActions,
+  isListingPurchasable,
+} from "@/lib/listing-public-visibility"
+import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
-import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
+import {
+  publicListingCompareAtPriceUsd,
+  publicListingListPriceUsd,
+} from "@/lib/utils/public-listing-price"
 import {
   HomePeerListingScrollTile,
   HomeListingScrollRow,
 } from "@/components/features/home"
-import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import {
+  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
+  hydrateHomePeerListingRows,
+} from "@/lib/db/home-peer-listing-feed"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
 } from "@/lib/cache/review-summaries"
+import { listSellerReviewPreviews } from "@/lib/db/order-reviews"
 import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswell-platform-rating-widget"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
@@ -87,7 +102,7 @@ export async function ApparelListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: apparelRaw } = await loadListingDetailPageContext({
+  const { supabase, user, listing: apparelRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -133,14 +148,7 @@ export async function ApparelListingDetailPage({
     [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getCachedSellerReviewSummary(sellerId),
-    supabase
-      .from("reviews")
-      .select(
-        "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name )",
-      )
-      .eq("reviewed_id", sellerId)
-      .order("created_at", { ascending: false })
-      .limit(8),
+    listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
     supabase
       .from("listings")
@@ -163,7 +171,7 @@ export async function ApparelListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerApparel = sellerApparelRes.data
+  const sellerApparel = hydrateHomePeerListingRows((sellerApparelRes.data ?? []) as Record<string, unknown>[])
 
   const sellerApparelIds = (sellerApparel ?? []).map((f) => f.id)
 
@@ -196,16 +204,37 @@ export async function ApparelListingDetailPage({
           (a.sort_order ?? 0) - (b.sort_order ?? 0),
       ) || []
 
+  const video = primaryListingVideo(
+    (
+      apparel as {
+        listing_videos?: Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          sort_order?: number | null
+        }>
+      }
+    ).listing_videos,
+  )
+
   const isOwnListing = user?.id === apparel.user_id
 
   const pickupOffered = apparel.local_pickup !== false
   const shippingOffered = !!apparel.shipping_available
 
-  const canPeerPurchase =
-    !isOwnListing &&
-    !isSold &&
-    (apparel.status === "active" || apparel.status === "pending_sale") &&
-    (pickupOffered || shippingOffered)
+  const purchaseVisibility = {
+    status: String(apparel.status ?? ""),
+    title: apparel.title as string | null | undefined,
+    hidden_from_site: apparel.hidden_from_site as boolean | null | undefined,
+    archived_at: apparel.archived_at as string | null | undefined,
+  }
+  const listingPurchasable = isListingPurchasable(purchaseVisibility)
+  const canPeerPurchase = canShowPeerListingPurchaseActions({
+    isOwnListing,
+    listing: purchaseVisibility,
+    fulfillmentAvailable: pickupOffered || shippingOffered,
+  })
 
   const freeBrandLabel = (apparel.brand as string | null)?.trim() ?? ""
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
@@ -220,6 +249,10 @@ export async function ApparelListingDetailPage({
   const listPriceNum =
     typeof apparel.price === "number" ? apparel.price : Number.parseFloat(String(apparel.price)) || 0
   const publicListPriceUsd = publicListingListPriceUsd(apparel.price)
+  const compareAtPriceUsd = publicListingCompareAtPriceUsd(
+    (apparel as { compare_at_price?: string | number | null }).compare_at_price,
+    listPriceNum,
+  )
   const buyerOffersOn = (apparel.buyer_offers_enabled as boolean | null) !== false
   const offerPct = effectiveMinimumOfferPct(apparel as { minimum_offer_pct?: number | null })
   const minOfferAmount = Math.round(listPriceNum * (offerPct / 100) * 100) / 100
@@ -232,8 +265,6 @@ export async function ApparelListingDetailPage({
     null
   const primaryImageUrl = primaryImageRaw ? proxiedListingImageSrc(primaryImageRaw) : null
 
-  const shippingFlatRate = Math.max(0, Number.parseFloat(String(apparel.shipping_price ?? 0)) || 0)
-
   const makeOfferConfig =
     canPeerPurchase && acceptOffers && listPriceNum > 0
       ? {
@@ -244,9 +275,8 @@ export async function ApparelListingDetailPage({
           primaryImageUrl,
           canPick: pickupOffered,
           canShip: shippingOffered,
-          shippingFlatRate,
-          shippingCostMode:
-            (apparel.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
+          shippingFlatRate: 0,
+          shippingCostMode: shippingOffered ? ("reswell" as const) : null,
         }
       : undefined
 
@@ -261,8 +291,7 @@ export async function ApparelListingDetailPage({
       ? `${apparel.city}, ${apparel.state}`
       : (apparel.profiles as { location?: string | null } | null)?.location?.trim() || null
 
-  const boardShippingCostMode =
-    (apparel.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null
+  const boardShippingCostMode = shippingOffered ? ("reswell" as const) : null
 
   const fulfillmentLabels = boardFulfillmentDetailLabels(
     apparel.local_pickup,
@@ -278,18 +307,10 @@ export async function ApparelListingDetailPage({
   if (!isSold) {
     if (!shippingOffered && pickupOffered) {
       shippingPriceCaption = "Local pickup · shipping not offered"
-    } else if (shippingOffered && boardShippingCostMode === "free") {
-      shippingPriceCaption = "Free shipping included"
-    } else if (shippingOffered && shippingFlatRate > 0) {
-      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
-    } else if (shippingOffered && boardShippingCostMode === "reswell") {
+    } else if (shippingOffered) {
       shippingPriceCaption = "Shipping rate calculated at checkout"
     }
   }
-
-  const mobileProductMetaItems = [
-    conditionWords ? `Used – ${conditionWords}` : null,
-  ].filter(Boolean) as string[]
 
   const listingViews = Number((apparel.views as number | null) ?? 0)
   let listedRelative: string | null = null
@@ -339,7 +360,7 @@ export async function ApparelListingDetailPage({
   )
 
   return (
-    <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
+    <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-2 sm:pb-24 sm:pt-3 lg:pt-8">
       <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
         <div className="mb-3 min-w-0 max-w-full pt-0.5 max-lg:mb-4 lg:mb-8">
           <Breadcrumb>
@@ -371,15 +392,16 @@ export async function ApparelListingDetailPage({
           </div>
         )}
 
-        <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:grid-rows-[auto_auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'_'similar_similar'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
+        <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-2 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:grid-rows-[auto_auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'_'similar_similar'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
           {/* Images */}
-          <div className="min-w-0 max-lg:order-1 lg:[grid-area:gallery] lg:order-none lg:w-full lg:max-w-[29rem] lg:justify-self-start xl:max-w-[32rem]">
+          <div className="min-w-0 max-lg:order-1 md:mx-auto md:max-w-[24rem] lg:[grid-area:gallery] lg:order-none lg:mx-0 lg:w-full lg:max-w-[26rem] lg:justify-self-start xl:max-w-[28rem]">
             {!(isSold && isOwnListing) && (
               <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
             )}
             <div className="relative isolate">
               <ImageGallery
                 images={images}
+                video={video}
                 title={listingTitle}
                 sold={isSold}
                 compactMobile
@@ -400,11 +422,8 @@ export async function ApparelListingDetailPage({
                           initialFavorited={isFavorited}
                           isLoggedIn={!!user}
                           refreshAfterToggle
-                          heartAccent="listingTile"
-                          className={cn(
-                            "h-11 w-11 min-h-11 min-w-11",
-                            listingTileFavoriteButtonChromeClassName,
-                          )}
+                          heartAccent="listingPdp"
+                          className="h-11 w-11 min-h-11 min-w-11"
                         />
                       </div>
                     ) : null}
@@ -419,46 +438,33 @@ export async function ApparelListingDetailPage({
 
           {/* Mobile price/actions block */}
           <div className="min-w-0 max-w-full max-lg:order-2 lg:hidden">
-            {isSold ? (
-              <p className="mt-2 font-headline text-3xl font-semibold tracking-tight text-[#163060] tabular-nums">
-                Sold for ${publicListPriceUsd.toFixed(2)}
-              </p>
-            ) : (
-              <div className="mt-2">
-                <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums sm:text-4xl">
-                  ${listPriceNum.toFixed(2)}
-                </p>
-                {buyerAgreedPriceUsd != null ? (
-                  <p className="mt-1.5 text-[15px] font-medium text-emerald-700 dark:text-emerald-400">
-                    Your accepted price: ${buyerAgreedPriceUsd.toFixed(2)} at checkout
-                  </p>
-                ) : null}
-              </div>
-            )}
-            <ListingDetailEngagementMetrics
+            <ListingMobileBuySummary
+              listingId={apparel.id}
+              isLoggedIn={!!user}
+              condition={apparel.condition as string | null}
+              priceUsd={isSold ? publicListPriceUsd : listPriceNum}
+              isSold={isSold}
+              shippingPriceCaption={shippingPriceCaption}
+              shippingOffered={shippingOffered}
+              pickupOffered={pickupOffered}
+              shippingCostMode={boardShippingCostMode}
+              shippingFlatRate={0}
+              locationLine={listingLocationLine}
+              showScarcity={canPeerPurchase && apparel.status === "active"}
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
-              isSold={isSold}
-              className="mt-2 lg:hidden"
-            />
-            {mobileProductMetaItems.length > 0 ? (
-              <div className="mt-3 space-y-2 border-y border-border/50 py-2.5 text-[14px]">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-foreground">
-                  {mobileProductMetaItems.map((item) => (
-                    <span key={item}>{item}</span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            {!isSold && !isOwnListing && apparel.status === "active" ? (
-              <p className="mt-3 flex items-center gap-1.5 text-[14px] text-foreground">
-                <Hourglass className="h-[14px] w-[14px] shrink-0 text-muted-foreground" aria-hidden />
-                <span className="font-medium">Only one available</span>
-              </p>
-            ) : null}
-            {canPeerPurchase ? (
-              <div className="mt-5">
+              offerToCart={
+                isOwnListing && user
+                  ? { listingId: apparel.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
+                  : null
+              }
+              createdAt={apparel.created_at}
+              showPurchaseProtection={canPeerPurchase}
+              agreedPriceUsd={buyerAgreedPriceUsd}
+                compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
+            >
+              {canPeerPurchase ? (
                 <ListingDetailPeerPurchaseActionsLoader
                   listingId={apparel.id}
                   checkoutListingParam={apparel.slug ?? apparel.id}
@@ -476,8 +482,8 @@ export async function ApparelListingDetailPage({
                     ) : undefined
                   }
                 />
-              </div>
-            ) : null}
+              ) : null}
+            </ListingMobileBuySummary>
             <div className="mt-5 border-t border-neutral-200/90 pt-5 dark:border-neutral-700/70 lg:hidden">
               {aboutSellerSection}
             </div>
@@ -507,10 +513,18 @@ export async function ApparelListingDetailPage({
                 <>
                   <div className="mt-4">
                     <p className="text-4xl font-bold tracking-tight text-foreground tabular-nums xl:text-[2.625rem] xl:leading-none">
-                      ${listPriceNum.toFixed(2)}
+                      <ListingPriceWithMarkdown
+                        priceUsd={isSold ? publicListPriceUsd : listPriceNum}
+                        compareAtPriceUsd={compareAtPriceUsd}
+                        priceClassName="text-4xl font-bold tracking-tight text-foreground tabular-nums xl:text-[2.625rem] xl:leading-none"
+                        compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums xl:text-2xl"
+                      />
                     </p>
                     {shippingPriceCaption ? (
                       <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
+                    ) : null}
+                    {listingPurchasable ? (
+                      <ListingKlarnaAsLowAs listingId={apparel.id} isLoggedIn={!!user} className="mt-2" />
                     ) : null}
                   </div>
                   {buyerAgreedPriceUsd != null ? (
@@ -520,7 +534,7 @@ export async function ApparelListingDetailPage({
                   ) : null}
                 </>
               )}
-              {!isSold && !isOwnListing && apparel.status === "active" ? (
+              {!isSold && !isOwnListing && listingPurchasable && apparel.status === "active" ? (
                 <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
                   <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
                   <span>
@@ -529,7 +543,7 @@ export async function ApparelListingDetailPage({
                   </span>
                 </p>
               ) : null}
-              {!isSold && !isOwnListing ? (
+              {canPeerPurchase ? (
                 <p className="mt-3 text-[14px] leading-snug text-muted-foreground">
                   Eligible checkout is covered by our{" "}
                   <Link href="/protection-policy" className="text-foreground underline decoration-dashed underline-offset-2 hover:no-underline">
@@ -574,6 +588,11 @@ export async function ApparelListingDetailPage({
                     watchers={listingWatchersCount}
                     cartHolderCount={cartHolderCount}
                     isSold={isSold}
+                    offerToCart={
+                      isOwnListing && user
+                        ? { listingId: apparel.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
+                        : null
+                    }
                     className="max-lg:hidden"
                   />
                 ) : null}
@@ -614,22 +633,25 @@ export async function ApparelListingDetailPage({
                 <ListingSoldOwnerNotice
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
+                  listingId={apparel.id as string}
+                  canRelist={canSellerRelist}
                 />
               </div>
             )}
 
-            {isOwnListing && !isSold ? (
+            {isOwnListing ? (
               <ListingOwnerManageActions
                 listingId={apparel.id}
                 section="apparel"
                 currentPriceUsd={listPriceNum}
+                  currentCompareAtPriceUsd={compareAtPriceUsd}
                 listingStatus={String(apparel.status ?? "")}
                 hiddenFromSite={apparel.hidden_from_site === true}
               />
             ) : null}
           </div>
 
-          <div className="col-span-full mt-8 min-w-0 max-w-full border-t border-neutral-200/90 pt-6 dark:border-neutral-700/70 max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:mt-0 lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
+          <div className="col-span-full min-w-0 max-w-full max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
             <Accordion type="multiple" defaultValue={["about", "specs", "shipping"]} className="w-full">
               <AccordionItem value="about" className="border-border/55">
                 <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline [&[data-state=open]>svg]:text-foreground">
@@ -671,36 +693,14 @@ export async function ApparelListingDetailPage({
                 </AccordionItem>
               ) : null}
 
-              <AccordionItem value="shipping" className="border-border/55">
-                <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
-                  Shipping &amp; pickup
-                </AccordionTrigger>
-                <AccordionContent className="pb-6 pt-0">
-                  <div className="space-y-3 text-[16px] leading-[1.65] text-foreground">
-                    <p className="font-medium">{listingLocationLine ?? "Location not specified"}</p>
-                    <p>
-                      {pickupOffered && shippingOffered &&
-                        "Pickup near this area, or the seller can ship to you at checkout."}
-                      {pickupOffered && !shippingOffered &&
-                        "Local pickup only — meet the seller near this area to inspect the apparel."}
-                      {!pickupOffered && shippingOffered &&
-                        "Shipped to you after checkout. Confirm your address with the seller in messages."}
-                    </p>
-                    {shippingOffered ? (
-                      <p className="inline-flex items-center gap-1.5 text-muted-foreground">
-                        <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        <span>
-                          {boardShippingCostMode === "free"
-                            ? "Free shipping"
-                            : shippingFlatRate > 0
-                              ? `Flat $${shippingFlatRate.toFixed(2)} shipping`
-                              : "Shipping calculated at checkout"}
-                        </span>
-                      </p>
-                    ) : null}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+              <ListingFulfillmentAccordionItem
+                pickupOffered={pickupOffered}
+                shippingOffered={shippingOffered}
+                locationLine={listingLocationLine}
+                itemNoun="apparel"
+                shippingCostMode={boardShippingCostMode}
+                shippingFlatRate={0}
+              />
 
               {!isOwnListing && !isSold ? (
                 <AccordionItem value="contact" className="border-border/55">

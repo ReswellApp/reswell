@@ -53,14 +53,15 @@ export function ContactForm() {
                 {ticketId ? (
                   <>
                     {" "}
-                    Track this request anytime in{" "}
+                    We’ll email this address with updates. If you have a Reswell account, sign in
+                    and open{" "}
                     <Link
-                      href={`/dashboard/support/${ticketId}`}
+                      href="/dashboard/support"
                       className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
                     >
-                      Dashboard → Support
-                    </Link>
-                    .
+                      Support
+                    </Link>{" "}
+                    to continue the conversation there.
                   </>
                 ) : null}{" "}
                 For quick answers, the{" "}

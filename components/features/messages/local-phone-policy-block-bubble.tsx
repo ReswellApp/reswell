@@ -1,8 +1,9 @@
 "use client"
 
-import { MessagesSupportDialog } from "@/components/features/messages/messages-support-dialog"
+import Link from "next/link"
 import { getMessagePolicyNotice } from "@/lib/messages/phone-policy-notice"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type Align = "thread" | "inline"
@@ -63,14 +64,22 @@ export function LocalPhonePolicyBlockBubble({
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <MessagesSupportDialog
-            relatedConversationId={relatedConversationId}
-            triggerMode="default"
-            triggerLabel="Get help"
+          <Button
+            asChild
             size="sm"
             variant="outline"
-            triggerClassName="h-8 border-amber-700/25 bg-background/80 text-[13px] text-foreground hover:bg-background dark:border-amber-400/25"
-          />
+            className="h-8 border-amber-700/25 bg-background/80 text-[13px] text-foreground hover:bg-background dark:border-amber-400/25"
+          >
+            <Link
+              href={
+                relatedConversationId
+                  ? `/dashboard/support/new?intent=safety&conversationId=${encodeURIComponent(relatedConversationId)}`
+                  : "/dashboard/support/new?intent=safety"
+              }
+            >
+              Get help
+            </Link>
+          </Button>
         </div>
 
         {formattedTime ? (

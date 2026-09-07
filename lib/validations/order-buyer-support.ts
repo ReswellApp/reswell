@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { supportCaseEvidenceListSchema } from "@/lib/validations/support-case-attachment"
 
 const bodyField = z
   .string()
@@ -20,6 +21,7 @@ export const orderBuyerSupportRequestSchema = z.discriminatedUnion("request_type
     contacted_seller_first: z.boolean({
       required_error: "Let us know whether you’ve already messaged the seller.",
     }),
+    evidence: supportCaseEvidenceListSchema.optional(),
   }),
 ])
 

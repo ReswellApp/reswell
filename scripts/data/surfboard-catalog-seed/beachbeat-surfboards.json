@@ -1,0 +1,84 @@
+{
+  "generated_for": "Beachbeat Surfboards official named standup catalog",
+  "source": "https://www.beachbeatsurfboards.co.uk/surfboards/ (WordPress model pages — excludes longboard range placeholder and non-board merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "beachbeat-surfboards",
+      "name": "Beachbeat Surfboards",
+      "website_url": "https://www.beachbeatsurfboards.co.uk/",
+      "location_label": "St Agnes, Cornwall, United Kingdom",
+      "founder_name": "Peter 'Chops' Lascelles",
+      "lead_shaper_name": "Marcus Lascelles",
+      "short_description": "Cornwall surfboards founded in the mid-1980s in St Agnes by Peter 'Chops' Lascelles, now headed by Marcus Lascelles.",
+      "models": [
+        {
+          "name": "Ageing Rocker",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beachbeat-mid-length-surfboards-surfing-longboard-big-guy-surfboard-beach-beat-.jpg",
+          "description": "The Ageing Rocker is designed for serious surfers that either need, or want, to step up from riding a shorter board or guys/girls stepping down from a longboard to get that shortboard feel without loosing too much length or thickness. Shaped with modern rails and bottom contours for good rail to rail performance. Tested and designed with longtime friend and Beach Beat rider Eric Davies. The Ageing Rocker is an easy swap from a longboard.. no loss of paddle power and it duck dives as well.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Fish",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beginner-surfboards-beachbeat-learner-surf-cheap-thruster-surfboard-.jpg",
+          "description": "The Big Fish is a great learner and intermediate surfboard. A wide and stable beginners board with much less volume in the nose than a mini mal. This will help beginners learn to duckdive and paddle through white water much easier than the full and rounded nose of a mini mal. Shaped with a swallow tail and easy to ride bottom contours it's a great alternative to a mini mal, especially for a slightly smaller/lighter rider.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Caramel Slice",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beachbeat-caramel-slice-surfboards-shortboard-performance-surfing.jpg",
+          "description": "A 5 fin performance shortboard and all rounder. The Beach Beat Caramel Slice has been designed and tested with the help of our team rider Josh Piper and has made it in to most of our team riders quiver. Shaped with a round thumb tail and subtle wing (almost hip) this model has a little less tail area. The rocker is centered and is drawn out through the tail. The Caramel Slice is shaped with a rolled and softer rail a single to double concave with vee out through the tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Disco",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beach-beat-disco-surfboard-performance-shortboard.jpg",
+          "description": "The Beach Beat Disco is a performance shortboard for modern high performance surfing and is a favourite with our team riders. The Disco excels in smaller weaker surf but holds and performs in bigger and better waves, as proven by Beach Beat team rider Marcus Lascelles at big barreling West Oz and Lakey Peak. The Disco shortboard is designed for modern performance surfing. Shaped with a low nose rocker and wider nose outline this model is easy to paddle and super fast straight from take off.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fat Boy Flyer",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beacbeat-surfboards-surfing-fat-boy-flyer-channel-bottom-1.jpg",
+          "description": "A very versatile mid range surfboard for anyone from beginners/intermediates to good level older/bigger surfers looking to avoid a longboard. The Fat Boy Flyer has proven performance in board sizes ranging from 6'6\" to 7'10\". Paddles like a mini mal yet it provides performance aspects of a shortboard. The low rocker and extra volume make the FatBoy Flyer easy to paddle, catch waves and surf, it is still a best seller after 20 years. The tail and back third of the Fat Boy Flyer is shaped for performance with 4 channels between the fins, a hip narrowing the tail area and a swallow tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flash Harry",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beachbeat-fash-harry-surfboards-small-wave-surfboard-groveller-five-fin-5fin-summer-board-surf-beach-beat-.jpg",
+          "description": "A short, wide and fast performance shortboard. The Flash Harry is an alternative performance shortboard. Progressive rocker with a single into double concave with extra V right on the tail, a positive skatey feel in small waves but holds in for bigger, better surf as well. The board is designed with a 5 fin set up and riding as a quad can help the extra wide tail hold in on the rail for great control. Ride it short and wide.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mig",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beachbeat-surfboards-mig-five-fin-shortboard-high-performance-surf-surfboard-.jpg",
+          "description": "A high performance all round short board with slightly more standard dimensions. The Mig is our performance shortboard designed to cross over easily from 3 to 4′ and fun to 6′ plus and pumping. It performs perfectly in smaller conditions, usually ridden as a thruster, but as a quad it has amazing hold and drive for throaty, hollow waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini-Mal",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/05/beachbeat-beginner-surfboard-learner-surfboards-cheap-mini-mal-mini-mal.jpg",
+          "description": "The perfect beginners surfboard. Wide planshape for excellent stability with a little extra thickness through the whole board, again for extra stability but also to make the board easier to paddle. Go no further, you have found your first surfboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Slipper",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beachbeat-surfboards-slipper-fun-board-surf-summer-surfboard-.jpg",
+          "description": "A fun little sawn off longboard shape with 2+1 fin set up. A wide rounded nose and full plan shape on a fun board from 6'6\" – 7'2\". This model is great for summer cruising and trimming small fun waves, a perfect model for getting you a high wave count in the Summer months (or any time it's small and fun). It's shaped with a squash tail, concave under the nose and vee though the belly and tail of the board, this allows for smooth rail to rail transitions and slick carves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Summer Toy 2",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beachbeat-surfboards-summer-toy-2-five-fin-performance-fish-surfboard-fcs-lost-rusty-al-merrick-.jpg",
+          "description": "The Summer Toy 2 is a tweaked 5 fin update on our very popular Summer Toy model. This performance 5 fin fish is shaped with a deep single concave under the chest into vee in front of and running through the fins. We have adjusted the apex of the rocker to be slightly further forward than the original and the rails hold a little more volume. The Summer Toy 2 also has a little more tail rocker than the original making it even more responsive off the bottom and through critical turns. More volume than the original Summer Toy. Should be ordered 3-4\" shorter than a standard shortboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Menace",
+          "image_url": "https://www.beachbeatsurfboards.co.uk/wp-content/uploads/2013/11/beachbeat-surfboards-menace-big-boy-round-tail-surfboard-five-fin5-shortboard-mid-range-.jpg",
+          "description": "The Menace is a high volume 5 fin shortboard. The thought behind this surfboard was.. shorter, fatter, wider using volume as your friend. The Beach Beat Menace is designed with a full and curvy outline holding its width until the wide round tail. It is shaped with a flatter deck allowing for full and boxy rails and good amounts of volume through the whole board. The low rocker, fuller rails and wider outline mean the board will paddle easily, glide across flatter sections and carve mushy waves with ease.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}

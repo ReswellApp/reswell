@@ -1,0 +1,37 @@
+{
+  "purpose": "Brands the small-shaper catalog automation must never pick or invent models for.",
+  "major_factory_or_global": [
+    "album-surf-1",
+    "arakawa-surfboards",
+    "ben-aipa",
+    "bing-surfboards",
+    "bob-mctavish",
+    "channel-islands-surfboards",
+    "christenson-surfboards",
+    "dhd-surfboards",
+    "firewire-surfboards",
+    "hayden-shapes",
+    "hobie-surfboards",
+    "js-surfboards",
+    "lib-tech-surfboards",
+    "lost-surfboards",
+    "lovemachine-surfboards",
+    "nsp-surfboards",
+    "pyzel-surfboards",
+    "ripcurl",
+    "rusty-surfboards",
+    "sharpeye-surfboards",
+    "softech-surfboards",
+    "thomas-surfboards",
+    "torq-surfboards",
+    "xo-coco-surfboards"
+  ],
+  "not_a_surfboard_shaper": [
+    "critical-slide-society",
+    "dafin",
+    "endorfins",
+    "fcs",
+    "futures-fins",
+    "salt-gypsy"
+  ]
+}

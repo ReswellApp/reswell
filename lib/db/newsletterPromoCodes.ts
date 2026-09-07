@@ -46,6 +46,34 @@ export async function fetchNewsletterPromoForEmail(
   return { row: (data as NewsletterPromoCodeRow | null) ?? null, error: null }
 }
 
+/** Replaces an unredeemed welcome code in place (old code string no longer validates). */
+export async function replaceUnredeemedNewsletterPromoCode(
+  supabase: SupabaseClient,
+  input: {
+    promoId: string
+    code: string
+    discountPercent: number
+    expiresAt: string
+  },
+): Promise<{ row: NewsletterPromoCodeRow | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from("newsletter_promo_codes")
+    .update({
+      code: input.code,
+      discount_percent: input.discountPercent,
+      expires_at: input.expiresAt,
+      reserved_payment_intent_id: null,
+      created_at: new Date().toISOString(),
+    })
+    .eq("id", input.promoId)
+    .is("redeemed_at", null)
+    .select(SELECT_COLS)
+    .maybeSingle()
+
+  if (error) return { row: null, error: error.message }
+  return { row: (data as NewsletterPromoCodeRow | null) ?? null, error: null }
+}
+
 export async function insertNewsletterPromoCode(
   supabase: SupabaseClient,
   input: {

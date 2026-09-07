@@ -28,14 +28,22 @@ function normalizeDemandQuery(raw: string): string {
 export async function aggregateDemandCaptureByQuery(
   service: SupabaseClient,
   fromIso: string,
+  toIso?: string,
+  byQueryLimit = 30,
 ): Promise<DemandCaptureAggregate> {
-  const { data, error } = await service
+  let q = service
     .from("board_listing_requests")
     .select("query, email, created_at")
     .gte("created_at", fromIso)
     .not("query", "is", null)
     .order("created_at", { ascending: false })
     .limit(FETCH_CAP)
+
+  if (toIso) {
+    q = q.lt("created_at", toIso)
+  }
+
+  const { data, error } = await q
 
   if (error) {
     console.error("aggregateDemandCaptureByQuery:", error.message)
@@ -81,7 +89,7 @@ export async function aggregateDemandCaptureByQuery(
       lastAt: v.lastAt,
     }))
     .sort((a, b) => b.count - a.count || b.people - a.people)
-    .slice(0, 30)
+    .slice(0, Math.min(Math.max(byQueryLimit, 1), 200))
 
   return { total, uniquePeople: allEmails.size, byQuery: list }
 }

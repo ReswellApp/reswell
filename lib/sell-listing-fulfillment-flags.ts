@@ -33,8 +33,9 @@ export type SellFulfillmentPersistInput = {
   /** Shortboard pack band (compact / medium). */
   surfboardShippingPackBand?: string
   /**
-   * Admin-only: quote/label from entered L×W×H/weight instead of a pack band carton.
+   * Quote/label from entered L×W×H/weight instead of a pack band carton.
    * Persists `shipping_package_band = null` with the custom packed dims.
+   * (Field name is historical — available to all sellers on `/sell`.)
    */
   adminCustomShippingCarton?: boolean
   reswellPackageLengthIn?: string
@@ -49,6 +50,12 @@ function normalizeBoardFulfillmentMode(m: unknown): BoardFulfillmentChoice {
     return m
   }
   return "pickup_only"
+}
+
+/** Values allowed by `listings_shipping_package_band_check` (compact / medium). */
+function shippingPackageBandForDb(bandId: string | null): string | null {
+  if (bandId === "shortboard_compact" || bandId === "shortboard_medium") return bandId
+  return null
 }
 
 
@@ -87,7 +94,7 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   }
 
   if (mode === "flat") {
-    /** Admin flat rate — dollar amount only; no BoardShipper tier tables. */
+    /** Flat rate — dollar amount only; no BoardShipper tier tables. */
     return {
       shipping_packed_length_in: null,
       shipping_packed_width_in: null,
@@ -106,11 +113,11 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
       shipping_packed_height_in: band.heightIn,
       shipping_packed_weight_oz: band.weightLb * 16,
       shipping_package_tier: tierId,
-      shipping_package_band: packBandId,
+      shipping_package_band: shippingPackageBandForDb(packBandId),
     }
   }
 
-  // Admin custom carton: persist exact entered outer box — no pack-band pad, no tier autofill.
+  // Custom carton: persist exact entered outer box — no pack-band pad, no tier autofill.
   if (adminCustomCarton) {
     const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
     const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
@@ -173,7 +180,9 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
     shipping_packed_height_in: H,
     shipping_packed_weight_oz: totalOz,
     shipping_package_tier: tierId,
-    shipping_package_band: parseSurfboardShippingPackBandId(fd.surfboardShippingPackBand),
+    shipping_package_band: shippingPackageBandForDb(
+      parseSurfboardShippingPackBandId(fd.surfboardShippingPackBand),
+    ),
   }
 }
 
@@ -249,7 +258,7 @@ export function reswellPackageFormFromDbRow(row: {
  */
 export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput): boolean {
   const mode = fd.boardShippingCostMode ?? "reswell"
-  // Admin flat/free do not use UPS pack bands — dollar amount (or $0) is enough.
+  // Flat/free do not use UPS pack bands — dollar amount (or $0) is enough.
   if (mode === "free") return true
   if (mode === "flat") {
     const raw = String(fd.boardShippingPrice ?? "").trim().replace(/,/g, "")
@@ -258,24 +267,7 @@ export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput)
     return Number.isFinite(n) && n >= 0
   }
 
-  // Reswell /sell: UPS shortboard pack bands, admin custom carton, or legacy mid/long parcel fields.
-  if (fd.adminCustomShippingCarton === true) {
-    const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
-    const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
-    const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)
-    if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
-    return isReswellPackedWeightComplete(fd.reswellPackageWeightLb, fd.reswellPackageWeightOz)
-  }
-  const tierId = parseSurfboardShippingTierId(fd.surfboardShippingTier)
-  if (!tierId) return false
-  if (tierId === "shortboard") {
-    return (
-      resolveSurfboardShippingPackBandId({
-        tierId,
-        bandId: fd.surfboardShippingPackBand,
-      }) != null
-    )
-  }
+  // Reswell /sell: seller-entered packed L×W×H + weight (pack bands are legacy-only).
   const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
   const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
   const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)

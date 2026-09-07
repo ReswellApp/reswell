@@ -1,0 +1,138 @@
+{
+  "generated_for": "Rozbern Surf official named standup catalog",
+  "source": "https://rozbernsurf.com/pages/board-models (Shopify model pages — excludes used boards, apparel, accessories, and dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "rozbern-surf",
+      "name": "Rozbern Surf",
+      "website_url": "https://rozbernsurf.com/",
+      "location_label": "Rhode Island",
+      "founder_name": "John Oppito",
+      "lead_shaper_name": "John Oppito",
+      "short_description": "Rhode Island surfboards shaped by John Oppito since 2005, built at Space Rock Glassing.",
+      "models": [
+        {
+          "name": "Agent",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/Agent.svg?v=1765213832",
+          "description": "The Agent is meant for high performance surfing in less than stellar conditions. We took the bottom rocker from the Co-Pilot and relaxed it just a touch for more drive and speed in gutless waves. We also slightly increased nose and tail widths and thicknesses for better float and paddle power in slower moving waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Co-Pilot",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/88A2EF1F-99F9-4BCE-A954-A5C41675DEDC_1_105_c.jpg",
+          "description": "The Co-Pilot is our mid-range shortboard in the high-performance lineup, striking a balance as a solid all-arounder. It sits between the grovel-friendly Agent and the Pilot, which thrives in proper, punchy waves. The Co-Pilot features a slightly wider, fuller outline and a more relaxed rocker, making it perfect for those fun, shreddable sessions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cutlass",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/cvrrent_andrew_09.10.21_kingfisher_collab-4.jpg",
+          "description": "Our most versatile mid-length, the Cutlass is a foiled and refined board that glides effortlessly off the mid section, but can load off the bottom and hold through turns. The wide point set slightly back creates a tighter arcing turn, especially with your back foot over the fins.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flume",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/IMG_7767.jpg",
+          "description": "Developed with Mike Gleason, the Flume is a fast and drivey board with lots of hold. Mike wanted the flow and speed of the S-Curve, but designed for steeper waves and more aggressive, vertical surfing. The Flume features the same flat deck and beveled rail, plus the same bottom contours and slot channel as the S-Curve.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HMB",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/Screen_Shot_2025-06-22_at_12.14.36_PM.png",
+          "description": "The HMB, short for Hold My Beer, has quickly become a favorite in the alternative performance category. With its speed and versatility, it is a go-to for a variety of conditions, from mushy points to bowly beach breaks. The HMB is fast, drivey, and forgiving, skating through flat sections with ease and holding a rail through tight arcing turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hound",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/surfing_-_1_of_1.jpg",
+          "description": "Originally designed in 2016 with Mark Gilmartin for classic NJ winter days, when the waves are steep and powerful, and your board needs to get you in but not be too long to fit in those curvy bowls.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Jibber Fish",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/Jibberfish.png",
+          "description": "Alternative performance redefined again, but with a fishy twist. Our classic small wave board, the Jibber OG, paired with a wide and fishy swallowtail and a subtle sidecut behind the bump to provide more release and pivot while maintaining hold on the face of the wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Kingfisher",
+          "image_url": "https://cdn.shopify.com/s/files/1/0693/0343/5437/files/IMG_1936.jpg?v=1784825854",
+          "description": "The Kingfisher is our channel-bottom twin pin, ideal for cruisy sessions across a variety of waves. The pulled-in tail combined with the channels deliver ample hold, perfectly balancing the loose flow and freedom of the twin-fin setup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mutt",
+          "image_url": "https://cdn.shopify.com/s/files/1/0693/0343/5437/files/IMG_1894.jpg?v=1784824693",
+          "description": "When the waves are powerful but a bit unpredictable, the Mutt is your reliable all-around step up. Built to hold well in big slopey walls, but still plenty of responsiveness for those tight, tricky double ups. Plenty of volume up front to navigate a hectic lineup and get you into waves early, but foiled and refined in the back half to provide hold and control.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "New Fish",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/New_Fish.svg?v=1765219557",
+          "description": "A classic California-style fish, refined with modern touches. The traditional, subtle bottom contours, a rolled entry feeding into a mellow tri-plane, offer forgiving entry, seamless rail-to-rail transitions, and impressive speed off the front foot.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Passport",
+          "image_url": "https://cdn.shopify.com/s/files/1/0693/0343/5437/files/IMG_1894.jpg?v=1784824693",
+          "description": "The Passport was created out of the need for a step-up to charge in powerful waves that require precise, shortboard-like control but with the extended rail line and extra foam to get in early and negotiate heavy water line-ups.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Pilot v.3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0693/0343/5437/files/IMG_1918.jpg?v=1785958721",
+          "description": "An update on our most responsive and refined high performance shortboard, meant to be surfed when the waves call for complete control, tight in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Piglette",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/Screen_Shot_2025-06-15_at_2.03.14_PM.png",
+          "description": "An old classic, refined for modern surfing. The Piglette retains the narrower nose and wide, curvy tail of its predecessors, enhanced with a modernized rocker, a smooth rolled bottom contour, and foiled rails for effortless rail-to-rail surfing and stability in the pocket.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Plank",
+          "image_url": "https://cdn.shopify.com/s/files/1/0693/0343/5437/files/IMG_2218.jpg?v=1786817208",
+          "description": "Our true noserider, the Plank boasts a wider, more parallel outline for exceptional hold in the pocket. The nose concave keeps you securely locked in up front, while the rolled back half ensures effortless rail-to-rail surfing. The relaxed rocker, paired with a touch of tail flip, enhances maneuverability without sacrificing glide.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "S-Curve",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/SCurve.svg?v=1765222075",
+          "description": "The most prominent feature of the S-Curve is its unique side cut in the back third of the outline. This subtle directional shift narrows the planing area under the back foot, promoting smoother rail-to-rail transitions and added hold and drive through turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Seed2",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/Screen_Shot_2025-06-21_at_5.41.07_PM.png",
+          "description": "New for 2025, the Seed2 is a tweak on an old favorite. Featuring the same versatility that made the OG Seed so popular, we ramped up the bottom contours, exaggerated the vee behind the fins, and added a wing to loosen it up even more.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Slab",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/slab_mock_copy.jpg",
+          "description": "The Slab is built specifically for waves that are wider than they are tall — those heavy, shallow slabs and wedging beach breaks where speed and positioning matter most. It packs maximum volume up front to help you get in early and drive under the lip.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "SV3",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/SV3_mock_copy.jpg",
+          "description": "New for 2026, the SV3 is an evolution of the popular Seed2. Building on the Seed2's versatile platform, we added a curvy swallow tail, narrowed the nose, and increased the overall rocker to create a super responsive and lively board. The result is a true high-performance twin that maintains the original Seed's magic while adding extra speed, tighter arcing turns, and the ability to make quick vertical direction changes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinsie",
+          "image_url": "https://rozbernsurf.com/cdn/shop/files/twinsie_mock_copy.jpg",
+          "description": "The Twinsie is a modern variation of the classic late '70s / early '80s performance twin fin. It captures the fast, loose, and playful feel of that era while incorporating modern refinements tailored for today's waves. With a relatively flat deck that flows into crisp, pinched rails, the Twinsie offers excellent sensitivity and responsiveness through turns without sacrificing speed or flow down the line.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wingman",
+          "image_url": "https://cdn.shopify.com/s/files/1/0693/0343/5437/files/IMG_1902.jpg?v=1784824145",
+          "description": "The Wingman is our choice for a blend between performance and twin fin surfing. Fitting nicely between the looseness and skatey feel of the HMB, and the drivey performance of our newest small wave shortboard, the Agent, the Wingman will be there for you in a variety of conditions.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}

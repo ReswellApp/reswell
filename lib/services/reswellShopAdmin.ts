@@ -8,6 +8,7 @@ import {
   reswellShopShippingPersistFields,
   type ReswellShopPackageInches,
 } from "@/lib/reswell-shop-shipping"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { resolveReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
 
 export type ReswellShopAdminProduct = {
@@ -183,6 +184,7 @@ export async function createReswellShopProduct(
       urls.map((url, index) => ({
         listing_id: listing.id,
         url,
+        thumbnail_url: persistableListingThumbnailUrl(null, url),
         is_primary: index === 0,
         sort_order: index,
       })),
@@ -246,6 +248,7 @@ export async function updateReswellShopProduct(
       urls.map((url, index) => ({
         listing_id: listingId,
         url,
+        thumbnail_url: persistableListingThumbnailUrl(null, url),
         is_primary: index === 0,
         sort_order: index,
       })),

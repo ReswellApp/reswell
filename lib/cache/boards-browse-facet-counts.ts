@@ -3,7 +3,10 @@ import {
   BOARDS_BROWSE_CACHE_TAG,
   BOARDS_BROWSE_REVALIDATE_SECONDS,
 } from "@/lib/cache/boards-browse-catalog"
-import { facetSelectionsFromBrowseParams } from "@/lib/boards-browse-facets"
+import {
+  facetSelectionsFromBrowseParams,
+  type BoardsBrowseFacetSelections,
+} from "@/lib/boards-browse-facets"
 import {
   fetchSurfboardFacetCountRows,
   type FacetCountContext,
@@ -16,8 +19,12 @@ import {
 import {
   computeBoardsBrowseFacetCounts,
   facetCountsByParamKey,
+  type BoardsBrowseFacetCounts,
 } from "@/lib/services/boardsBrowseFacetCounts"
-import { boardsBrowseFacetCountsFromEs } from "@/lib/elasticsearch/boards-browse-search"
+import {
+  boardsBrowseFacetCountsFromEs,
+  type BoardsBrowseEsContext,
+} from "@/lib/elasticsearch/boards-browse-search"
 import { isBoardsBrowseEsEnabled } from "@/lib/db/boards-browse-listings-es"
 import {
   mergeNlOverlayIntoFacets,
@@ -96,6 +103,25 @@ async function dbFacetCountsByParamKey(
   return facetCountsByParamKey(computeBoardsBrowseFacetCounts(rows, selections))
 }
 
+async function loadEsFacetCounts(
+  payloadJson: string,
+): Promise<BoardsBrowseFacetCounts | null> {
+  const parsed = JSON.parse(payloadJson) as {
+    ctx: BoardsBrowseEsContext
+    sel: BoardsBrowseFacetSelections
+  }
+  return boardsBrowseFacetCountsFromEs(parsed.ctx, parsed.sel)
+}
+
+const getCachedEsFacetCounts = unstable_cache(
+  loadEsFacetCounts,
+  ["boards-browse-es-facet-counts", "v1"],
+  {
+    revalidate: BOARDS_BROWSE_REVALIDATE_SECONDS,
+    tags: [BOARDS_BROWSE_CACHE_TAG],
+  },
+)
+
 /** Viewer-independent facet counts for the browse filter UI (cached by search context). */
 export async function getBoardsBrowseFacetCountsMapCached(
   searchParams: BoardsBrowseSearchParams,
@@ -121,27 +147,27 @@ export async function getBoardsBrowseFacetCountsMapCached(
         : null
 
       const nl = resolved?.nl ?? null
-      const esCounts = await boardsBrowseFacetCountsFromEs(
-        {
-          // Same as browse page: once resolve runs, do not fall back to raw `q`.
-          query: resolved ? resolved.context.query : ctx.query,
-          rankQuery: resolved?.context.rankQuery,
-          brand: resolved?.context.brand ?? ctx.brand,
-          model: resolved?.context.model ?? ctx.model,
-          brandId: resolved?.context.brandId ?? brandId,
-          brandModelId: resolved?.context.brandModelId ?? brandModelId,
-          brandModelIds: resolved?.context.brandModelIds,
-          expansions: resolved?.context.expansions,
-          lengthInches: resolved?.context.lengthInches,
-          minLengthInches: resolved?.context.minLengthInches,
-          maxLengthInches: resolved?.context.maxLengthInches,
-          tailShapes: resolved?.context.tailShapes,
-          minPrice: ctx.minPrice ?? nl?.minPrice,
-          maxPrice: ctx.maxPrice ?? nl?.maxPrice,
-          locationText: ctx.location?.trim() || nl?.locationText,
-          shippingAvailable: ctx.shippingAvailable ?? nl?.shippingAvailable,
-        },
-        mergeNlOverlayIntoFacets(selections, nl),
+      const esCtx: BoardsBrowseEsContext = {
+        // Same as browse page: once resolve runs, do not fall back to raw `q`.
+        query: resolved ? resolved.context.query : ctx.query,
+        rankQuery: resolved?.context.rankQuery,
+        brand: resolved?.context.brand ?? ctx.brand,
+        model: resolved?.context.model ?? ctx.model,
+        brandId: resolved?.context.brandId ?? brandId,
+        brandModelId: resolved?.context.brandModelId ?? brandModelId,
+        brandModelIds: resolved?.context.brandModelIds,
+        expansions: resolved?.context.expansions,
+        lengthInches: resolved?.context.lengthInches,
+        minLengthInches: resolved?.context.minLengthInches,
+        maxLengthInches: resolved?.context.maxLengthInches,
+        tailShapes: resolved?.context.tailShapes,
+        minPrice: ctx.minPrice ?? nl?.minPrice,
+        maxPrice: ctx.maxPrice ?? nl?.maxPrice,
+        locationText: ctx.location?.trim() || nl?.locationText,
+        shippingAvailable: ctx.shippingAvailable ?? nl?.shippingAvailable,
+      }
+      const esCounts = await getCachedEsFacetCounts(
+        JSON.stringify({ ctx: esCtx, sel: mergeNlOverlayIntoFacets(selections, nl) }),
       )
       // ES docs index resolved length/volume (listingRowToSearchDocFromRow), so all facet
       // counts — including range buckets — come from the same source as the search results.

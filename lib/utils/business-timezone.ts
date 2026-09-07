@@ -22,11 +22,11 @@ export function businessDayKey(iso: string): string {
 }
 
 /** Earliest millisecond that falls on `dateKey` in the business timezone. */
-function businessDayStartMs(dateKey: string): number {
+export function businessDayStartMs(dateKey: string): number {
   const [year, month, day] = dateKey.split('-').map(Number)
   let lo = Date.UTC(year, month - 1, day - 1, 8, 0, 0)
   let hi = Date.UTC(year, month - 1, day + 1, 8, 0, 0)
-  while (hi - lo > 60_000) {
+  while (hi - lo > 1) {
     const mid = Math.floor((lo + hi) / 2)
     if (businessDayKeyFromMs(mid) < dateKey) lo = mid
     else hi = mid
@@ -36,6 +36,32 @@ function businessDayStartMs(dateKey: string): number {
 
 function addOneBusinessDay(dateKey: string): string {
   return businessDayKeyFromMs(businessDayStartMs(dateKey) + 25 * 60 * 60 * 1000)
+}
+
+/** Shift a Pacific calendar day by `days` (negative goes backward). */
+export function addBusinessDays(dateKey: string, days: number): string {
+  if (days === 0) return dateKey
+  const step = days > 0 ? 1 : -1
+  let key = dateKey
+  for (let i = 0; i < Math.abs(days); i++) {
+    key =
+      step > 0
+        ? addOneBusinessDay(key)
+        : businessDayKeyFromMs(businessDayStartMs(key) - 12 * 60 * 60 * 1000)
+  }
+  return key
+}
+
+/**
+ * Business-calendar days in `[fromMs, toMsExclusive)`.
+ * Use this for admin period windows whose `periodEndMs` is exclusive.
+ */
+export function buildBusinessDayKeysForPeriod(
+  fromMs: number,
+  toMsExclusive: number,
+): string[] {
+  if (toMsExclusive <= fromMs) return []
+  return buildBusinessDayKeys(fromMs, toMsExclusive - 1)
 }
 
 /** Inclusive range of business-calendar days from `fromMs` through `toMs`. */

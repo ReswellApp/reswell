@@ -7,7 +7,6 @@ import { LocaleProvider } from '@/components/locale-provider'
 import { SiteChromeShell } from '@/components/site-chrome-shell'
 import { AbortErrorSuppressor } from '@/components/abort-error-suppressor'
 import { OpsErrorReporter } from '@/components/ops-error-reporter'
-import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { LiveChatWidgetLoader } from '@/components/features/live-chat/live-chat-widget-loader'
 import { DEFAULT_LOCALE } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
@@ -16,8 +15,11 @@ import { GoogleAnalyticsGtag } from '@/components/google-analytics-gtag'
 import { GoogleSignUpWelcomeRedirect } from '@/components/auth/google-sign-up-welcome-redirect'
 import { KlaviyoOnsite } from '@/components/klaviyo-onsite'
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
+import { PostHogIdentify } from '@/components/posthog-identify'
 import { MetaPixel } from '@/components/meta-pixel'
+import { OpenAiAdsPixel } from '@/components/openai-ads-pixel'
 import { MetaCapiParamBootstrap } from '@/components/meta/meta-capi-param-bootstrap'
+import { AdClickAttributionBootstrap } from '@/components/ads/ad-click-attribution-bootstrap'
 import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
 import { JsonLd } from '@/components/seo/json-ld'
 import { organizationSchema, webSiteSchema } from '@/lib/seo/structured-data'
@@ -84,20 +86,25 @@ export default function RootLayout({
         className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}
         suppressHydrationWarning
       >
+        <noscript>
+          <style>{`.fade-in-section,.fade-in-section.fade-in-pending{opacity:1!important;transform:none!important}`}</style>
+        </noscript>
         <JsonLd data={[organizationSchema(publicSiteOrigin()), webSiteSchema(publicSiteOrigin())]} />
         <AbortErrorSuppressor />
         <OpsErrorReporter />
         <GoogleAdsGtag />
         <GoogleAnalyticsGtag />
         <MetaPixel />
+        <OpenAiAdsPixel />
         <LocaleProvider>
           <Suspense fallback={null}>
+            <AdClickAttributionBootstrap />
             <MetaCapiParamBootstrap />
             <KlaviyoPageViewTracker />
+            <PostHogIdentify />
             <MetaPixelPageViewTracker />
             <GoogleSignUpWelcomeRedirect />
           </Suspense>
-          <PresenceHeartbeatLoader />
           <SiteChromeShell>{children}</SiteChromeShell>
           <LiveChatWidgetLoader />
           <Toaster />

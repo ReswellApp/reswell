@@ -17,7 +17,6 @@ import { toast } from "sonner"
 import { getAdminSession } from "@/app/actions/account"
 import type { AdminConversationHeaderRow } from "@/lib/db/adminConversations"
 import type { AdminMarketplaceMessageListRow } from "@/lib/db/adminMarketplaceMessages"
-import { parseMarketplaceMessagePdfAttachment } from "@/lib/validations/marketplace-message-attachment"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -31,7 +30,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { OpenMarketplacePdfButton } from "@/components/features/messages/open-marketplace-pdf-button"
+import { AdminMarketplaceMessageBody } from "@/components/features/admin/admin-marketplace-message-body"
 import {
   AdminSendUserMessageDialog,
   type AdminMessageParticipantOption,
@@ -42,15 +41,34 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
 
 type ThreadProps = {
   conversationId: string
 }
 
+type ThreadParty = "buyer" | "seller" | "support"
+
 function participantLabel(header: AdminConversationHeaderRow): string {
   const b = header.buyer?.display_name?.trim() || "Buyer"
   const s = header.seller?.display_name?.trim() || "Seller"
   return `${b} · ${s}`
+}
+
+function resolveThreadParty(
+  senderId: string,
+  header: AdminConversationHeaderRow | null,
+): ThreadParty {
+  if (!header) return "support"
+  if (senderId === header.buyer_id) return "buyer"
+  if (senderId === header.seller_id) return "seller"
+  return "support"
+}
+
+function partyRoleLabel(party: ThreadParty): string {
+  if (party === "buyer") return "Buyer"
+  if (party === "seller") return "Seller"
+  return "Support"
 }
 
 export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadProps) {
@@ -365,46 +383,81 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
           </Card>
         ) : (
           <Card>
-            <CardContent className="flex flex-col gap-3 p-4">
+            <CardContent className="flex flex-col gap-4 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden />
+                  Buyer (left)
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+                  Seller (right)
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden />
+                  Support
+                </span>
+              </div>
               {messages.map((m) => {
-                const pdfAtt = parseMarketplaceMessagePdfAttachment(m.metadata)
-                const redundantCaption =
-                  pdfAtt && m.content.trim() === `Attachment: ${pdfAtt.file_name}`
+                const party = resolveThreadParty(m.sender_id, header)
+                const align =
+                  party === "buyer" ? "items-start" : party === "seller" ? "items-end" : "items-center"
+                const bubbleTone =
+                  party === "buyer"
+                    ? "border-sky-500/25 bg-sky-500/[0.06]"
+                    : party === "seller"
+                      ? "border-emerald-500/25 bg-emerald-500/[0.06]"
+                      : "border-amber-500/30 bg-amber-500/[0.08]"
 
                 return (
-                  <div
-                    key={m.id}
-                    className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm"
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/40 pb-1.5 text-xs text-muted-foreground">
+                  <div key={m.id} className={cn("flex w-full flex-col gap-1.5", align)}>
+                    <div
+                      className={cn(
+                        "flex max-w-[min(100%,36rem)] flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted-foreground",
+                        party === "seller" && "flex-row-reverse text-right",
+                        party === "support" && "justify-center",
+                      )}
+                    >
                       <span className="font-medium text-foreground">
                         {m.sender?.display_name?.trim() || m.sender_id.slice(0, 8)}
                       </span>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <time dateTime={m.created_at}>
-                          {format(new Date(m.created_at), "MMM d, yyyy h:mm a")}
-                        </time>
-                        {canDeleteMessages ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                            aria-label="Delete message"
-                            onClick={() => setDeleteTarget(m)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                          </Button>
-                        ) : null}
-                      </div>
+                      <span
+                        className={cn(
+                          "rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                          party === "buyer" && "bg-sky-500/15 text-sky-800 dark:text-sky-200",
+                          party === "seller" && "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
+                          party === "support" && "bg-amber-500/15 text-amber-900 dark:text-amber-100",
+                        )}
+                      >
+                        {partyRoleLabel(party)}
+                      </span>
+                      <time dateTime={m.created_at}>
+                        {format(new Date(m.created_at), "MMM d, yyyy h:mm a")}
+                      </time>
+                      {canDeleteMessages ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                          aria-label="Delete message"
+                          onClick={() => setDeleteTarget(m)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                        </Button>
+                      ) : null}
                     </div>
-                    <div className="mt-2 space-y-2">
-                      {pdfAtt ? (
-                        <OpenMarketplacePdfButton messageId={m.id} fileName={pdfAtt.file_name} />
-                      ) : null}
-                      {!redundantCaption && m.content?.trim() ? (
-                        <p className="whitespace-pre-wrap break-words text-foreground">{m.content}</p>
-                      ) : null}
+                    <div
+                      className={cn(
+                        "max-w-[min(100%,36rem)] rounded-2xl border px-3.5 py-3",
+                        bubbleTone,
+                      )}
+                    >
+                      <AdminMarketplaceMessageBody
+                        messageId={m.id}
+                        metadata={m.metadata}
+                        content={m.content}
+                      />
                     </div>
                   </div>
                 )

@@ -5,12 +5,21 @@ import { createClient } from "@/lib/supabase/server"
 import { fetchBuyerOrderSuccessPayload } from "@/lib/order-success-payload"
 import { CheckoutOrderSuccess } from "@/components/checkout-order-success"
 import { CheckoutOrderSuccessPickup } from "@/components/checkout-order-success-pickup"
-import { GooglePurchaseConversionBeacon } from "@/components/google-ads/google-purchase-conversion-beacon"
 import { GooglePurchaseConversionScript } from "@/components/google-ads/google-purchase-conversion-script"
+import { StripPurchaseConversionParam } from "@/components/google-ads/strip-purchase-conversion-param"
 import { GooglePurchaseEventScript } from "@/components/google-analytics/google-purchase-event-script"
 import { MetaPurchaseEventScript } from "@/components/meta/meta-purchase-event-script"
+import { OpenAiAdsPurchaseEventScript } from "@/components/openai-ads/openai-purchase-event-script"
+import { getPostHogServerClient } from "@/lib/posthog-server"
+import {
+  buildOrderSuccessPath,
+  searchParamsReportPurchaseConversion,
+} from "@/lib/google-ads/purchase-success-path"
 
-type PageProps = { params: Promise<{ id: string }> }
+type PageProps = {
+  params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const { id } = await props.params
@@ -27,6 +36,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
  */
 export default async function PurchaseSuccessPage(props: PageProps) {
   const { id } = await props.params
+  const searchParams = await props.searchParams
   if (!id?.trim()) {
     notFound()
   }
@@ -36,8 +46,13 @@ export default async function PurchaseSuccessPage(props: PageProps) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const fromCheckout = searchParamsReportPurchaseConversion(searchParams)
+  const successPath = fromCheckout
+    ? buildOrderSuccessPath(id.trim(), { reportPurchase: true })
+    : buildOrderSuccessPath(id.trim())
+
   if (!user) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(`/successpage/${id.trim()}`)}`)
+    redirect(`/auth/login?redirect=${encodeURIComponent(successPath)}`)
   }
 
   const payload = await fetchBuyerOrderSuccessPayload(supabase, user.id, user.email, id)
@@ -45,10 +60,33 @@ export default async function PurchaseSuccessPage(props: PageProps) {
     notFound()
   }
 
-  const conversionTracking = (
+  const firePurchasePixels = fromCheckout && payload.reportAdPurchaseConversion
+
+  if (firePurchasePixels) {
+    const posthog = getPostHogServerClient()
+    if (posthog) {
+      posthog.capture({
+        distinctId: user.id,
+        event: "purchase_completed",
+        properties: {
+          order_id: payload.orderId,
+          total_amount: payload.total,
+          item_price: payload.itemPrice,
+          shipping_cost: payload.shippingCost,
+          fulfillment_method: payload.fulfillmentMethod,
+          item_count: payload.orderLines.length,
+          listing_ids: payload.orderLines.map((l) => l.listingId).filter(Boolean),
+          categories: [...new Set(payload.orderLines.map((l) => l.categoryLabel).filter(Boolean))],
+        },
+      })
+      await posthog.flush()
+    }
+  }
+
+  const conversionTracking = firePurchasePixels ? (
     <>
+      <StripPurchaseConversionParam />
       <GooglePurchaseConversionScript orderId={payload.orderId} value={payload.total} />
-      <GooglePurchaseConversionBeacon orderId={payload.orderId} value={payload.total} />
       <GooglePurchaseEventScript
         orderId={payload.orderId}
         value={payload.itemPrice}
@@ -68,8 +106,19 @@ export default async function PurchaseSuccessPage(props: PageProps) {
           .map((line) => line.listingId)
           .filter((id): id is string => Boolean(id))}
       />
+      <OpenAiAdsPurchaseEventScript
+        orderId={payload.orderId}
+        value={payload.total}
+        items={payload.orderLines.map((line) => ({
+          itemId: line.listingId,
+          itemName: line.title,
+          quantity: line.quantity,
+        }))}
+      />
     </>
-  )
+  ) : fromCheckout ? (
+    <StripPurchaseConversionParam />
+  ) : null
 
   if (payload.fulfillmentMethod === "pickup") {
     return (

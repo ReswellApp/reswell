@@ -25,8 +25,22 @@ function asRecord(v: unknown): Record<string, unknown> | null {
     : null
 }
 
-/** ShipEngine rejects empty `phone` on `ship_from` / `ship_to` when missing from our UI (rate quotes). */
-export const SHIPENGINE_PLACEHOLDER_US_PHONE = "5555555555"
+/**
+ * ShipEngine rejects empty `phone` on `ship_from` / `ship_to`.
+ * When the buyer or seller has no number on file, use this Reswell line so
+ * carriers can still reach someone about a delivery issue.
+ */
+export const SHIPENGINE_PLACEHOLDER_US_PHONE = "805-453-9406"
+
+/** Printed on purchased labels so drivers see home delivery, not a commercial stop. */
+export const RESIDENTIAL_DELIVERY_LABEL_MESSAGE = "RESIDENTIAL DELIVERY"
+
+export function residentialDeliveryLabelMessages(residential: "yes" | "no" | "unknown"): {
+  reference1: string
+} | undefined {
+  if (residential !== "yes") return undefined
+  return { reference1: RESIDENTIAL_DELIVERY_LABEL_MESSAGE }
+}
 
 export function addressToPayload(a: ShippingAddressInput, role: "from" | "to") {
   const country = normalizeCountryCodeForShipping(a.country_code)
@@ -58,6 +72,9 @@ export function buildShipmentBody(
     dimUnit: "inch" | "centimeter"
     packageCode: string
     validateAddress: "no_validation" | "validate_only" | "validate_and_clean"
+    insuranceProvider?: string | null
+    insuredValueAmount?: number | null
+    insuredValueCurrency?: string | null
   },
 ) {
   const pkg: Record<string, unknown> = {
@@ -72,12 +89,31 @@ export function buildShipmentBody(
       unit: opts.dimUnit,
     }
   }
-  return {
+  const labelMessages = residentialDeliveryLabelMessages(shipTo.residential)
+  if (labelMessages) {
+    pkg.label_messages = labelMessages
+  }
+  const insuredAmount =
+    typeof opts.insuredValueAmount === "number" && Number.isFinite(opts.insuredValueAmount)
+      ? opts.insuredValueAmount
+      : null
+  const insuranceProvider = opts.insuranceProvider?.trim() || null
+  if (insuranceProvider && insuranceProvider !== "none" && insuredAmount != null && insuredAmount > 0) {
+    pkg.insured_value = {
+      currency: (opts.insuredValueCurrency?.trim() || "usd").toLowerCase(),
+      amount: Math.round(insuredAmount * 100) / 100,
+    }
+  }
+  const shipment: Record<string, unknown> = {
     validate_address: opts.validateAddress,
     ship_from: addressToPayload(shipFrom, "from"),
     ship_to: addressToPayload(shipTo, "to"),
     packages: [pkg],
   }
+  if (insuranceProvider && insuranceProvider !== "none" && insuredAmount != null && insuredAmount > 0) {
+    shipment.insurance_provider = insuranceProvider
+  }
+  return shipment
 }
 
 export function extractRatesFromApiEnvelope(envelope: unknown): Record<string, unknown>[] {

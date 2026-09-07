@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
 
 export type BrandModelRow = {
   id: string
@@ -8,6 +9,8 @@ export type BrandModelRow = {
   description: string | null
   image_url: string | null
   product_category_slug: BrandProductCategorySlug
+  /** Surfboard shape key — prefills the /sell "Board shape / category" chips. */
+  board_category_slug: SurfboardSellCategoryKey | null
   created_at: string
   updated_at: string
 }
@@ -37,10 +40,35 @@ const LIST_SELECT = `
   description,
   image_url,
   product_category_slug,
+  board_category_slug,
   created_at,
   updated_at,
   brands:brand_id ( id, name, slug )
 `
+
+/** PostgREST returns at most ~1000 rows per request unless ranged. */
+const ADMIN_LIST_PAGE = 1000
+
+function mapBrandModelAdminRows(rows: RawBrandModelRow[]): BrandModelAdminRow[] {
+  const out: BrandModelAdminRow[] = []
+  for (const row of rows) {
+    const b = pickJoinedBrand(row.brands)
+    if (!b?.id) continue
+    out.push({
+      id: row.id,
+      brand_id: row.brand_id,
+      name: row.name,
+      description: row.description,
+      image_url: row.image_url ?? null,
+      product_category_slug: row.product_category_slug ?? "surfboards",
+      board_category_slug: row.board_category_slug ?? null,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      brand: { id: b.id, name: b.name, slug: b.slug },
+    })
+  }
+  return out
+}
 
 /** Public catalog rows for sell-flow model picker (`brand_models` only — not variants). */
 export async function listBrandModelsForPublicCatalogByBrandId(
@@ -248,36 +276,33 @@ export async function listBrandModelsForAdmin(
   supabase: SupabaseClient,
   brandId?: string,
 ): Promise<BrandModelAdminRow[]> {
-  let q = supabase.from("brand_models").select(LIST_SELECT).order("name", { ascending: true })
-
-  if (brandId) {
-    q = q.eq("brand_id", brandId)
-  }
-
-  const { data, error } = await q
-
-  if (error) {
-    console.error("listBrandModelsForAdmin:", error.message)
-    return []
-  }
-
-  const rows = (data ?? []) as RawBrandModelRow[]
   const out: BrandModelAdminRow[] = []
-  for (const row of rows) {
-    const b = pickJoinedBrand(row.brands)
-    if (!b?.id) continue
-    out.push({
-      id: row.id,
-      brand_id: row.brand_id,
-      name: row.name,
-      description: row.description,
-      image_url: row.image_url ?? null,
-      product_category_slug: row.product_category_slug ?? "surfboards",
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      brand: { id: b.id, name: b.name, slug: b.slug },
-    })
+  let from = 0
+
+  for (;;) {
+    let q = supabase
+      .from("brand_models")
+      .select(LIST_SELECT)
+      .order("name", { ascending: true })
+      .order("id", { ascending: true })
+
+    if (brandId) {
+      q = q.eq("brand_id", brandId)
+    }
+
+    const { data, error } = await q.range(from, from + ADMIN_LIST_PAGE - 1)
+
+    if (error) {
+      console.error("listBrandModelsForAdmin:", error.message)
+      break
+    }
+
+    const batch = (data ?? []) as RawBrandModelRow[]
+    out.push(...mapBrandModelAdminRows(batch))
+    if (batch.length < ADMIN_LIST_PAGE) break
+    from += ADMIN_LIST_PAGE
   }
+
   return out
 }
 
@@ -289,6 +314,7 @@ export async function insertBrandModel(
     description: string | null
     image_url: string | null
     product_category_slug?: BrandProductCategorySlug
+    board_category_slug?: SurfboardSellCategoryKey | null
   },
 ): Promise<{ ok: true; row: BrandModelRow } | { ok: false; error: string; code?: string }> {
   const now = new Date().toISOString()
@@ -300,10 +326,11 @@ export async function insertBrandModel(
       description: input.description?.trim() || null,
       image_url: input.image_url,
       product_category_slug: input.product_category_slug ?? "surfboards",
+      board_category_slug: input.board_category_slug ?? null,
       updated_at: now,
     })
     .select(
-      "id, brand_id, name, description, image_url, product_category_slug, created_at, updated_at",
+      "id, brand_id, name, description, image_url, product_category_slug, board_category_slug, created_at, updated_at",
     )
     .single()
 
@@ -329,6 +356,7 @@ export async function updateBrandModel(
     brand_id?: string
     image_url?: string | null
     product_category_slug?: BrandProductCategorySlug
+    board_category_slug?: SurfboardSellCategoryKey | null
   },
 ): Promise<{ ok: true } | { ok: false; error: string; code?: string }> {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
@@ -338,6 +366,9 @@ export async function updateBrandModel(
   if (patch.image_url !== undefined) updates.image_url = patch.image_url
   if (patch.product_category_slug !== undefined) {
     updates.product_category_slug = patch.product_category_slug
+  }
+  if (patch.board_category_slug !== undefined) {
+    updates.board_category_slug = patch.board_category_slug
   }
 
   const { error } = await supabase.from("brand_models").update(updates).eq("id", id)
@@ -369,4 +400,31 @@ export async function deleteBrandModel(
     return { ok: false, error: "Model not found" }
   }
   return { ok: true }
+}
+
+export async function searchBrandsByName(
+  supabase: SupabaseClient,
+  qRaw: string,
+  limit = 8,
+): Promise<{ id: string; name: string; slug: string }[]> {
+  const q = qRaw.trim()
+  if (q.length < 1) return []
+  const safe = escapeIlikeToken(q)
+  const pattern = q.length < 4 ? `${safe}%` : `%${safe}%`
+  const { data, error } = await supabase
+    .from("brands")
+    .select("id, name, slug")
+    .ilike("name", pattern)
+    .order("name", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("searchBrandsByName:", error.message)
+    return []
+  }
+  return ((data ?? []) as { id: string; name: string; slug: string }[]).map((row) => ({
+    id: row.id,
+    name: row.name.trim(),
+    slug: row.slug.trim(),
+  }))
 }

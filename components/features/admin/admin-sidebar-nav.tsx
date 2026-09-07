@@ -30,6 +30,14 @@ import {
   BellRing,
   Code,
   RotateCcw,
+  Sparkles,
+  FileText,
+  Brain,
+  Megaphone,
+  MapPin,
+  Ticket,
+  BookOpen,
+  Handshake,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -94,6 +102,22 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
       return <Wrench className={NAV_ICON_CLASS} aria-hidden />
     case 'dollarSign':
       return <DollarSign className={NAV_ICON_CLASS} aria-hidden />
+    case 'sparkles':
+      return <Sparkles className={NAV_ICON_CLASS} aria-hidden />
+    case 'fileText':
+      return <FileText className={NAV_ICON_CLASS} aria-hidden />
+    case 'brain':
+      return <Brain className={NAV_ICON_CLASS} aria-hidden />
+    case 'megaphone':
+      return <Megaphone className={NAV_ICON_CLASS} aria-hidden />
+    case 'mapPin':
+      return <MapPin className={NAV_ICON_CLASS} aria-hidden />
+    case 'ticket':
+      return <Ticket className={NAV_ICON_CLASS} aria-hidden />
+    case 'bookOpen':
+      return <BookOpen className={NAV_ICON_CLASS} aria-hidden />
+    case 'handshake':
+      return <Handshake className={NAV_ICON_CLASS} aria-hidden />
     case 'bellRing':
       return <BellRing className={NAV_ICON_CLASS} aria-hidden />
     case 'code':
@@ -107,10 +131,12 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
 
 function isNavActive(pathname: string, href: string): boolean {
   const norm = pathname.replace(/\/$/, '') || '/'
-  if (href === '/admin') {
-    return norm === '/admin'
+  const hrefPath = href.split('?')[0] || href
+  // Exact-only for roots that have sibling child routes (e.g. /admin/shop/orders).
+  if (hrefPath === '/admin/home' || hrefPath === '/admin/overview' || hrefPath === '/admin/shop') {
+    return norm === hrefPath
   }
-  return norm === href || norm.startsWith(`${href}/`)
+  return norm === hrefPath || norm.startsWith(`${hrefPath}/`)
 }
 
 interface AdminSidebarNavProps {
@@ -124,13 +150,12 @@ export function AdminSidebarNav({ groups, badgeCounts = {} }: AdminSidebarNavPro
   return (
     <div className="space-y-2" key={pathname}>
       {groups.map((group) => {
-        const isOpen = group.items.some((item) => isNavActive(pathname, item.href))
         const groupBadgeCount = sumAdminNavBadgeCounts(
           badgeCounts,
           group.items.map((item) => item.href),
         )
         return (
-          <Collapsible key={group.id} defaultOpen={isOpen}>
+          <Collapsible key={group.id} defaultOpen={false}>
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"

@@ -3,6 +3,7 @@
 import { browserCanDecodeImage } from "@/lib/listing-image-pipeline"
 import { runImageCpuTask } from "@/lib/client-image-cpu-queue"
 import { SERVER_IMAGE_CONVERT_MAX_BYTES } from "@/lib/utils/server-image-convert"
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
 export { SERVER_IMAGE_CONVERT_MAX_BYTES }
 
@@ -208,6 +209,7 @@ export async function ensureBrowserDecodableImageFile(file: File): Promise<File>
       // Desktop Chrome/Firefox HEIC: wasm convert, serialized so batch picks don't freeze the UI.
       return await runImageCpuTask(() => convertHeicClientSide(file))
     } catch (err) {
+      if (isStaleFileNotFoundError(err)) throw err
       if (file.size <= SERVER_IMAGE_CONVERT_MAX_BYTES) {
         try {
           return await convertViaServer(file)

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Smartphone } from "lucide-react"
+import { RESWELL_CONTACT_EMAIL, RESWELL_CONTACT_MAILTO } from "@/lib/constants/contact"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export async function generateMetadata() {
@@ -93,8 +94,8 @@ export default function MobileTermsOfServicePage() {
                 {SMS_HELP_NUMBER_DISPLAY}
               </a>{" "}
               or email{" "}
-              <a href="mailto:help@reswell.app" className="text-primary underline">
-                help@reswell.app
+              <a href={RESWELL_CONTACT_MAILTO} className="text-primary underline">
+                {RESWELL_CONTACT_EMAIL}
               </a>
               .
             </p>

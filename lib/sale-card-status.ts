@@ -7,6 +7,10 @@ import {
   orderStatusIsRefundInProgress,
   orderStatusLabel,
 } from "@/lib/order-status"
+import {
+  saleOpenFulfillmentLabel,
+  type SaleFulfillmentFilterInput,
+} from "@/lib/sale-fulfillment-filters"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import {
   carrierTrackingDetailIsActionable,
@@ -24,6 +28,17 @@ export const SHIPPING_LABEL_CREATED_STATUS = "Shipping label created" as const
 
 const FULFILLMENT_COMPLETE_BADGE_CLASS =
   "border-transparent bg-emerald-600 text-white hover:bg-emerald-600"
+
+const AWAITING_FULFILLMENT_BADGE_CLASS =
+  "border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100"
+
+function awaitingFulfillmentBadge(label: "Awaiting shipment" | "Awaiting pickup"): SaleCardStatusDisplay {
+  return {
+    label,
+    variant: "outline",
+    className: AWAITING_FULFILLMENT_BADGE_CLASS,
+  }
+}
 
 function fulfillmentCompleteBadgeDisplay(
   deliveryStatus: "delivered" | "picked_up",
@@ -76,6 +91,8 @@ export function resolveSaleCardStatusDisplay(params: {
   trackingDetail: OrderTrackingDetail | null
   hasPreparedShippingLabel?: boolean
   returnSummary?: OrderReturnSummaryForStatus | null
+  fulfillmentMethod?: string | null
+  hasShippingAddress?: boolean
 }): SaleCardStatusDisplay {
   const {
     orderStatus,
@@ -84,7 +101,17 @@ export function resolveSaleCardStatusDisplay(params: {
     trackingDetail,
     hasPreparedShippingLabel,
     returnSummary,
+    fulfillmentMethod,
+    hasShippingAddress,
   } = params
+
+  const fulfillmentInput: SaleFulfillmentFilterInput = {
+    fulfillmentMethod: fulfillmentMethod ?? null,
+    deliveryStatus,
+    orderStatus,
+    hasShippingAddress: Boolean(hasShippingAddress),
+    hasPreparedShippingLabel: Boolean(hasPreparedShippingLabel),
+  }
 
   if (orderStatusIsRefundInProgress(orderStatus)) {
     return {
@@ -134,6 +161,18 @@ export function resolveSaleCardStatusDisplay(params: {
 
   if (hasTracking && carrierTrackingDetailIsActionable(trackingDetail)) {
     return carrierBadgeDisplay(trackingDetail)
+  }
+
+  const hasFulfillmentContext = fulfillmentMethod != null || hasShippingAddress === true
+  if (hasFulfillmentContext) {
+    const awaitingLabel = saleOpenFulfillmentLabel(fulfillmentInput)
+    if (awaitingLabel) {
+      return awaitingFulfillmentBadge(awaitingLabel)
+    }
+  } else if (deliveryStatus === "pending") {
+    return awaitingFulfillmentBadge("Awaiting shipment")
+  } else if (deliveryStatus === "pickup_ready") {
+    return awaitingFulfillmentBadge("Awaiting pickup")
   }
 
   if (hasTracking && deliveryStatus === "pending" && hasPreparedShippingLabel) {

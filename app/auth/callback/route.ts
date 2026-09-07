@@ -22,6 +22,7 @@ import {
 } from "@/lib/google-ads/sign-up-success-path";
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created";
 import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent";
+import { captureServerEvent } from "@/lib/posthog-server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse, after } from "next/server";
@@ -71,6 +72,23 @@ function buildOAuthSuccessRedirect(
   if (isGoogleAuthUser(user)) {
     redirectPath = buildGoogleSignUpSuccessPath(next);
   }
+
+  after(async () => {
+    try {
+      const method = isGoogleAuthUser(user) ? "google" : "oauth_other"
+      if (isNewOAuthAccount(user)) {
+        await captureServerEvent(user.id, "user_signed_up", {
+          sign_up_method: method,
+        })
+      } else {
+        await captureServerEvent(user.id, "user_logged_in", {
+          login_method: method,
+        })
+      }
+    } catch (e) {
+      console.error("[auth/callback] PostHog OAuth capture failed:", e)
+    }
+  })
 
   if (isNewOAuthAccount(user)) {
     after(async () => {

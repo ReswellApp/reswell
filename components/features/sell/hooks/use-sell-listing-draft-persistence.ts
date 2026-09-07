@@ -14,7 +14,10 @@ import {
 import { listingPhotoSlotsFromDraftBlobs } from "@/lib/sell-flow/listing-photo-slot"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
-import { isPendingPublish, SELL_SUPPRESS_IDB_RESTORE_KEY } from "@/lib/sell-flow/session-keys"
+import {
+  isPendingPublishForDraftType,
+  SELL_SUPPRESS_IDB_RESTORE_KEY,
+} from "@/lib/sell-flow/session-keys"
 import { getImpersonation } from "@/lib/impersonation"
 
 export type UseSellListingDraftPersistenceOptions = {
@@ -66,6 +69,7 @@ export function useSellListingDraftPersistence({
 
   useEffect(() => {
     if (!startFresh) return
+    if (isPendingPublishForDraftType(listingType)) return
     void (async () => {
       const {
         data: { user },
@@ -97,12 +101,10 @@ export function useSellListingDraftPersistence({
           }
         })()
 
-      const pendingPublishResume = isPendingPublish(listingType === "fins" ? "fins" : "board")
+      const pendingPublishResume = isPendingPublishForDraftType(listingType)
 
       if (
-        pendingPublishResume &&
-        !wantsBlankListing &&
-        !suppressIdbForNewListing &&
+        (pendingPublishResume || (!wantsBlankListing && !suppressIdbForNewListing)) &&
         !getImpersonation()
       ) {
         const {

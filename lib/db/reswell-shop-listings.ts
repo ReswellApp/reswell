@@ -7,6 +7,7 @@ export type ReswellShopBrowseListing = {
   slug: string | null
   title: string
   price: number
+  compare_at_price?: number | null
   stock_quantity: number
   listing_images: ListingImageForCard[] | null
 }
@@ -25,6 +26,7 @@ export async function fetchReswellShopBrowseListings(
       slug,
       title,
       price,
+      compare_at_price,
       stock_quantity,
       listing_images ( url, thumbnail_url, is_primary )
     `,
@@ -47,6 +49,8 @@ export async function fetchReswellShopBrowseListings(
     slug: row.slug,
     title: String(row.title ?? ""),
     price: Number(row.price),
+    compare_at_price:
+      row.compare_at_price == null ? null : Number(row.compare_at_price),
     stock_quantity: Math.max(0, Math.floor(Number(row.stock_quantity) || 0)),
     listing_images: (row.listing_images as ListingImageForCard[] | null) ?? null,
   }))

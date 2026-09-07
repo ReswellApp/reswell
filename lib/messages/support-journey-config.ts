@@ -128,7 +128,7 @@ export const SUPPORT_JOURNEY_BY_TOPIC: Record<MessagesSupportTopic, SupportJourn
           id: "bs-ship-tracking",
           title: "Tracking or delivery problem",
           resolution:
-            "Open the order from Dashboard → Orders and check the tracking the seller added. Message the seller first; if the package is stuck or missing, use Refund help on the order or ask us from this chat.",
+            "Open the order from Dashboard → Orders and check the tracking the seller added. Message the seller first; if the package is stuck or missing, use Get help on the order to start a claim or ask us from Help.",
           helpHref: "/faq#buying",
           helpLinkLabel: "Buying help",
         }),
@@ -147,7 +147,7 @@ export const SUPPORT_JOURNEY_BY_TOPIC: Record<MessagesSupportTopic, SupportJourn
       title: "Order after checkout",
       hint: "Status, not as described",
       resolution:
-        "Paid orders appear under Orders (buyer) or Sales (seller). If something's wrong—damage, wrong item, no tracking—open the order and use Refund help or Ask Reswell. Most issues are fastest when buyer and seller talk first.",
+        "Paid orders appear under Orders (buyer) or Sales (seller). If something's wrong—damage, wrong item, no tracking—open the order and tap Get help. Most issues are fastest when buyer and seller talk first.",
       helpHref: "/protection-policy",
       helpLinkLabel: "Purchase Protection",
     }),

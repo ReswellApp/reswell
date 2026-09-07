@@ -4,6 +4,7 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
+import { fetchMyListingCartOfferProspects } from "@/lib/db/my-listings"
 import { DashboardOffersView } from "@/components/features/offers/dashboard-offers-view"
 import { parseOffersTab } from "@/lib/utils/offers-dashboard-display"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
@@ -40,10 +41,10 @@ async function MessagesOffersContent({
     redirect("/auth/login?redirect=/messages/offers")
   }
 
-  const { sent, received, sellersById, buyersById } = await fetchDashboardOffersPartitioned(
-    supabase,
-    user.id,
-  )
+  const [{ sent, received, sellersById, buyersById }, cartOfferProspects] = await Promise.all([
+    fetchDashboardOffersPartitioned(supabase, user.id),
+    fetchMyListingCartOfferProspects(supabase, user.id),
+  ])
 
   const offers = mergeOffers(sent, received)
   const listingIds = [...new Set(offers.map((o) => o.listing_id))]
@@ -73,6 +74,7 @@ async function MessagesOffersContent({
       sellersById={sellersById}
       buyersById={buyersById}
       minPctByListingId={minPctByListingId}
+      cartOfferProspects={cartOfferProspects}
       activeOnlyDefault
       basePath="/messages/offers"
     />

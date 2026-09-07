@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 
 function sessionKey(prefix: string, listingType: PeerListingSection): string {
@@ -60,7 +61,8 @@ export function useSellFunnelStepTracking(input: {
     const key = sessionKey("started", listingType)
     if (sessionStorage.getItem(key)) return
     sessionStorage.setItem(key, "1")
-    logSellFunnelEvent({ listingType, event: "flow_started" })
+    const entryPoint = resolveSellEntryPoint()
+    logSellFunnelEvent({ listingType, event: "flow_started", entryPoint })
   }, [enabled, listingType])
 
   useEffect(() => {

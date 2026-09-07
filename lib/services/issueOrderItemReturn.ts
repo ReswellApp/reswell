@@ -6,7 +6,6 @@ import {
   listOrderItemReturnsForOrder,
   type OrderItemReturnRow,
 } from "@/lib/db/orderItemReturns"
-import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
   listingUsesAdminCustomSurfboardCarton,
   type ListingPackedParcelSource,
@@ -61,38 +60,6 @@ type OrderRowForReturn = {
   status: string
   fulfillment_method: string | null
   shipping_address: unknown
-}
-
-async function resolveSellerAddress(
-  supabase: SupabaseClient,
-  sellerId: string,
-  sellerAddressId?: string | null,
-): Promise<{ ok: true; address: ProfileAddressRow } | { ok: false; error: string }> {
-  if (sellerAddressId) {
-    const { data, error } = await supabase
-      .from("addresses")
-      .select("*")
-      .eq("id", sellerAddressId)
-      .eq("profile_id", sellerId)
-      .maybeSingle()
-    if (error || !data) {
-      return { ok: false, error: "Seller address not found." }
-    }
-    return { ok: true, address: data as ProfileAddressRow }
-  }
-
-  const { data, error } = await supabase
-    .from("addresses")
-    .select("*")
-    .eq("profile_id", sellerId)
-    .order("is_default", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (error || !data) {
-    return { ok: false, error: "Seller has no ship-from address on file." }
-  }
-  return { ok: true, address: data as ProfileAddressRow }
 }
 
 export async function listReturnableOrderLines(
@@ -212,7 +179,6 @@ export async function quoteOrderItemReturnRates(params: {
   orderId: string
   orderItemId?: string | null
   listingId?: string | null
-  sellerAddressId?: string | null
   parcel?: {
     length_in: number
     width_in: number
@@ -255,15 +221,7 @@ export async function quoteOrderItemReturnRates(params: {
     return { ok: false, error: "This item already has an active return.", status: 409 }
   }
 
-  const addr = await resolveSellerAddress(
-    params.supabase,
-    order.seller_id,
-    params.sellerAddressId,
-  )
-  if (!addr.ok) return { ok: false, error: addr.error, status: 400 }
-
   const addresses = resolveAddressesForReturnLabel({
-    sellerAddress: addr.address,
     orderShippingJson: order.shipping_address,
   })
   if (!addresses.ok) return { ok: false, error: addresses.error, status: 400 }
@@ -271,6 +229,7 @@ export async function quoteOrderItemReturnRates(params: {
   let parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
   let tierId: SurfboardShippingTierId | null = null
   let adminCustomCarton = false
+  let listingSection: string | null = null
 
   if (params.parcel) {
     parcel = {
@@ -282,6 +241,7 @@ export async function quoteOrderItemReturnRates(params: {
   } else {
     const listing = await loadListingForParcel(params.supabase, line.listingId)
     if (!listing) return { ok: false, error: "Listing not found for parcel dimensions.", status: 404 }
+    listingSection = listing.section ?? null
     const resolved = resolveOrderLabelParcelFromListing(listing)
     if (!resolved.ok) return { ok: false, error: resolved.error, status: 400 }
     parcel = {
@@ -300,6 +260,7 @@ export async function quoteOrderItemReturnRates(params: {
     parcel,
     tierId,
     adminCustomCarton,
+    listingSection,
   })
   if (!ratesResult.ok) {
     return { ok: false, error: ratesResult.error, status: ratesResult.status }
@@ -392,7 +353,6 @@ export async function purchaseOrderItemReturnLabel(params: {
   adminProfileId: string
   orderItemId?: string | null
   listingId?: string | null
-  sellerAddressId?: string | null
   rateId: string
 }): Promise<
   | { ok: true; returnRow: OrderItemReturnRow; alreadyPurchased: boolean }
@@ -426,15 +386,8 @@ export async function purchaseOrderItemReturnLabel(params: {
     return eligible
   }
 
-  // Ensure seller destination still resolves (do not re-quote — rate_id is already chosen).
-  const addr = await resolveSellerAddress(
-    params.supabase,
-    eligible.order.seller_id,
-    params.sellerAddressId,
-  )
-  if (!addr.ok) return { ok: false, error: addr.error, status: 400 }
+  // Confirm buyer → Reswell still resolves (do not re-quote — rate_id is already chosen).
   const addresses = resolveAddressesForReturnLabel({
-    sellerAddress: addr.address,
     orderShippingJson: eligible.order.shipping_address,
   })
   if (!addresses.ok) return { ok: false, error: addresses.error, status: 400 }

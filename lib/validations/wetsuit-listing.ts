@@ -1,5 +1,9 @@
 import { z } from "zod"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
+import {
+  listingRemovedVideoIdsSchema,
+  listingVideosFieldSchema,
+} from "@/lib/validations/listing-video"
 import { WETSUIT_SIZE_OPTIONS } from "@/lib/wetsuit-listing-config"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -69,6 +73,7 @@ const wetsuitListingBaseSchema = z.object({
     .array(wetsuitListingImageSchema)
     .min(WETSUIT_LISTING_MIN_PHOTOS, "Add at least one photo")
     .max(WETSUIT_LISTING_MAX_PHOTOS),
+  videos: listingVideosFieldSchema,
 })
 
 function withWetsuitListingRefinements<T extends z.ZodType>(schema: T) {
@@ -114,6 +119,7 @@ function withWetsuitListingRefinements<T extends z.ZodType>(schema: T) {
 const wetsuitListingUpdateBaseSchema = wetsuitListingBaseSchema.extend({
   listingId: z.string().uuid(),
   removedImageIds: z.array(z.string().uuid()).optional().default([]),
+  removedVideoIds: listingRemovedVideoIdsSchema,
 })
 
 export const createWetsuitListingSchema = withWetsuitListingRefinements(wetsuitListingBaseSchema)

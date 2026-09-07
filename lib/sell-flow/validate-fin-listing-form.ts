@@ -43,6 +43,7 @@ export function validateFinListingForm(
   opts: {
     imageCount: number
     imagesUploadReady: boolean
+    videoUploadReady?: boolean
   },
 ): string | null {
   if (!form.title.trim()) {
@@ -57,6 +58,9 @@ export function validateFinListingForm(
   }
   if (!opts.imagesUploadReady) {
     return "Hang tight — your photos are still uploading."
+  }
+  if (opts.videoUploadReady === false) {
+    return "Hang tight — your video is still uploading."
   }
 
   if (!form.condition) {

@@ -41,6 +41,7 @@ interface NavMessagesDropdownProps {
   unreadMessages: number
   triggerClassName?: string
   iconClassName?: string
+  iconStrokeWidth?: number
   triggerIcon?: "message" | "bell"
 }
 
@@ -326,6 +327,7 @@ export function NavMessagesDropdown({
   unreadMessages,
   triggerClassName,
   iconClassName,
+  iconStrokeWidth,
   triggerIcon = "message",
 }: NavMessagesDropdownProps) {
   const router = useRouter()
@@ -436,7 +438,7 @@ export function NavMessagesDropdown({
       aria-expanded={open}
       onClick={isMobile ? () => handleOpenChange(true) : undefined}
     >
-      <TriggerIcon className={cn("h-6 w-6", iconClassName)} />
+      <TriggerIcon className={cn("h-6 w-6", iconClassName)} strokeWidth={iconStrokeWidth} />
       <NavUnreadCountBadge count={unreadMessages} overlay />
     </Button>
   )

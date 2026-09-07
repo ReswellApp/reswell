@@ -17,6 +17,7 @@ import {
   clearPendingPromoCode,
   getPendingPromoCode,
 } from "@/lib/promo-pending-storage"
+import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/normalize-newsletter-promo-code"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -30,8 +31,11 @@ import {
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import {
   peerCheckoutOffersShippingRateChoice,
+  peerCheckoutRateChoiceIntro,
+  peerCheckoutSharedSection,
   type PeerCheckoutShippingRateOption,
 } from "@/lib/shipping/peer-checkout-usps-services"
+import { LocalDateOnly } from "@/components/ui/local-datetime"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -39,6 +43,11 @@ import {
   peerCheckoutCopyFromSections,
   peerListingsItemNounForm,
 } from "@/lib/peer-listing-item-nouns"
+import {
+  checkoutOffersShippingPackagingChoice,
+  DEFAULT_SHIPPING_PACKAGING_MODE,
+  type ShippingPackagingMode,
+} from "@/lib/shipping/packaging-mode"
 
 export type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 
@@ -52,8 +61,27 @@ interface CheckoutClientProps {
   seller?: CheckoutSeller | null
   /** When paying an accepted offer, bypasses cart verification at payment. */
   offerId?: string | null
-  /** Delivery method agreed on the offer — locks checkout radios when set. */
-  lockedFulfillment?: "pickup" | "shipping" | null
+  /** Offer’s delivery method — preselects checkout radios. The buyer can still switch. */
+  suggestedFulfillment?: "pickup" | "shipping" | null
+  /** Listing ids whose displayed price is the accepted offer amount. */
+  acceptedOfferListingIds?: string[]
+}
+
+function CheckoutShippingArrival({ rate }: { rate: PeerCheckoutShippingRateOption }) {
+  const daysLabel =
+    rate.deliveryDays != null
+      ? `${rate.deliveryDays} business day${rate.deliveryDays === 1 ? "" : "s"}`
+      : null
+  if (rate.estimatedDeliveryDate) {
+    return (
+      <>
+        Arrives <LocalDateOnly iso={rate.estimatedDeliveryDate} dateStyle="medium" />
+        {daysLabel ? ` · ${daysLabel}` : ""}
+      </>
+    )
+  }
+  if (daysLabel) return <>Arrives in {daysLabel}</>
+  return <>Transit time confirmed after you place the order</>
 }
 
 export function CheckoutClient({
@@ -65,10 +93,11 @@ export function CheckoutClient({
   initialAddresses,
   seller,
   offerId = null,
-  lockedFulfillment = null,
+  suggestedFulfillment = null,
+  acceptedOfferListingIds,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
-  const offerFulfillmentLock = normalizeOfferFulfillment(lockedFulfillment)
+  const offerSuggestedFulfillment = normalizeOfferFulfillment(suggestedFulfillment)
   const listingSections = listings.map((l) => l.section)
   const copy =
     copyProp ?? peerCheckoutCopyFromSections(listingSections, listings.length)
@@ -97,8 +126,8 @@ export function CheckoutClient({
     : !!primaryListing.shipping_available
 
   const [method, setMethod] = useState<"pickup" | "shipping">(() => {
-    if (offerFulfillmentLock === "pickup" && canPick) return "pickup"
-    if (offerFulfillmentLock === "shipping" && canShip) return "shipping"
+    if (offerSuggestedFulfillment === "pickup" && canPick) return "pickup"
+    if (offerSuggestedFulfillment === "shipping" && canShip) return "shipping"
     if (canPick && !canShip) return "pickup"
     if (!canPick && canShip) return "shipping"
     return "pickup"
@@ -115,6 +144,15 @@ export function CheckoutClient({
       : undefined
 
   const needsShipping = impliedFulfillment === "shipping"
+
+  const offersPackagingChoice =
+    needsShipping && checkoutOffersShippingPackagingChoice(listings)
+  const [packagingMode, setPackagingMode] = useState<ShippingPackagingMode>(
+    DEFAULT_SHIPPING_PACKAGING_MODE,
+  )
+  const effectivePackagingMode: ShippingPackagingMode = offersPackagingChoice
+    ? packagingMode
+    : DEFAULT_SHIPPING_PACKAGING_MODE
 
   const resolved = useMemo(() => {
     if (isBundle) {
@@ -162,11 +200,23 @@ export function CheckoutClient({
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
 
+  const rateChoiceSection = useMemo(
+    () => peerCheckoutSharedSection(listings.map((l) => l.section)),
+    [listings],
+  )
+
   const offersShippingRateChoice = useMemo(() => {
-    if (isBundle || !needsShipping) return false
-    if (effectiveBoardShippingMode(primaryListing) !== "reswell") return false
-    return peerCheckoutOffersShippingRateChoice(primaryListing.section)
-  }, [isBundle, needsShipping, primaryListing])
+    if (!needsShipping) return false
+    if (offersPackagingChoice && effectivePackagingMode === "separate") return false
+    if (!listings.every((l) => effectiveBoardShippingMode(l) === "reswell")) return false
+    return peerCheckoutOffersShippingRateChoice(rateChoiceSection)
+  }, [
+    effectivePackagingMode,
+    listings,
+    needsShipping,
+    offersPackagingChoice,
+    rateChoiceSection,
+  ])
 
   const isMagazineReswellCheckout = useMemo(() => {
     if (isBundle || !needsShipping) return false
@@ -191,7 +241,7 @@ export function CheckoutClient({
     setShipQuoteToken(null)
     setSelectedShippingServiceCode(null)
     pendingPromoAutoApplyTried.current = false
-  }, [listingIdsKey, impliedFulfillment])
+  }, [listingIdsKey, impliedFulfillment, effectivePackagingMode])
 
   useEffect(() => {
     void prefetchStripeCheckout({ immediate: true })
@@ -244,6 +294,7 @@ export function CheckoutClient({
           body: JSON.stringify({
             listing_ids: listingIdsKey.split(","),
             address_id: purchaseDetails.shippingAddressId,
+            packaging_mode: effectivePackagingMode,
             ...(offerId ? { offer_id: offerId } : {}),
             ...(selectedShippingServiceCode
               ? { selected_service_code: selectedShippingServiceCode }
@@ -311,6 +362,7 @@ export function CheckoutClient({
     purchaseDetails.shippingAddressId,
     resolved,
     selectedShippingServiceCode,
+    effectivePackagingMode,
   ])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
@@ -319,9 +371,10 @@ export function CheckoutClient({
 
   const applyPromoCode = useCallback(
     async (rawCode: string) => {
-      const code = rawCode.trim()
+      const code = normalizeNewsletterPromoCodeInput(rawCode)
       if (!code) return
 
+      setPromoCodeInput(code)
       setPromoApplying(true)
       setPromoError(null)
 
@@ -495,10 +548,17 @@ export function CheckoutClient({
                 <span className="font-semibold text-foreground">{itemCountPhrase}</span> from one seller in a
                 single payment.{" "}
                 {needsShipping ? (
-                  <>
-                    Everything ships together in <span className="font-medium text-foreground">one box</span> — shipping
-                    is quoted once for the whole order.
-                  </>
+                  offersPackagingChoice ? (
+                    <>
+                      Choose whether boards ship in one box or each get their own shipping label below.
+                    </>
+                  ) : (
+                    <>
+                      Everything ships together in{" "}
+                      <span className="font-medium text-foreground">one box</span> — shipping is quoted once for
+                      the whole order.
+                    </>
+                  )
                 ) : (
                   <>
                     This combined checkout uses <span className="font-medium text-foreground">local pickup</span> —
@@ -508,32 +568,16 @@ export function CheckoutClient({
               </div>
             ) : null}
 
-            {offerFulfillmentLock && (canPick || canShip) ? (
-              <div className="mb-10 rounded-[8px] border border-[#5574AD]/25 bg-[#5574AD]/[0.06] px-4 py-3.5">
-                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Delivery method</h2>
-                <p className="mt-2 flex items-center gap-2 text-sm font-medium text-foreground">
-                  {offerFulfillmentLock === "pickup" ? (
-                    <>
-                      <MapPin className="h-4 w-4 shrink-0 text-neutral-600" aria-hidden />
-                      Local pickup
-                    </>
-                  ) : (
-                    <>
-                      <Truck className="h-4 w-4 shrink-0 text-neutral-600" aria-hidden />
-                      Pay for shipping
-                    </>
-                  )}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-neutral-600">
-                  Locked from your accepted offer
-                  {offerFulfillmentLock === "pickup"
-                    ? " — you’ll arrange pickup with the seller."
-                    : " — enter your address below for the shipping rate."}
-                </p>
-              </div>
-            ) : canPick && canShip ? (
+            {canPick && canShip ? (
               <div className="mb-10 space-y-3">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Delivery method</h2>
+                {offerSuggestedFulfillment ? (
+                  <p className="text-[13px] leading-relaxed text-neutral-600">
+                    This offer was for{" "}
+                    {offerSuggestedFulfillment === "pickup" ? "local pickup" : "shipping"}. You can
+                    still choose either delivery method below.
+                  </p>
+                ) : null}
                 <RadioGroup
                   value={method}
                   onValueChange={(v) => setMethod(v as "pickup" | "shipping")}
@@ -574,7 +618,9 @@ export function CheckoutClient({
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
                         {isBundle && !shipQuote
-                          ? `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
+                          ? offersPackagingChoice
+                            ? `Choose packaging below — rate is calculated for your address.`
+                            : `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
                           : shipQuote?.usedReswellQuote
                             ? displayTotals.shipping > 0
                               ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
@@ -582,6 +628,61 @@ export function CheckoutClient({
                             : displayTotals.shipping > 0
                               ? `Includes $${displayTotals.shipping.toFixed(2)} shipping (set by seller).`
                               : "Seller offers free shipping."}
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
+            ) : null}
+
+            {offersPackagingChoice ? (
+              <div className="mb-10 space-y-3">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Packaging</h2>
+                <p className="text-[13px] leading-relaxed text-neutral-600">
+                  Ship both boards in one box, or request a separate shipping label for each board.
+                </p>
+                <RadioGroup
+                  value={effectivePackagingMode}
+                  onValueChange={(v) => setPackagingMode(v as ShippingPackagingMode)}
+                  className="grid gap-3 sm:grid-cols-2"
+                >
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
+                      effectivePackagingMode === "together"
+                        ? "border-[#5574AD] bg-[#5574AD]/[0.04] shadow-[inset_0_0_0_1px_rgba(85,116,173,0.15)]"
+                        : "border-neutral-200 bg-white hover:border-neutral-300",
+                    )}
+                  >
+                    <RadioGroupItem
+                      value="together"
+                      id="packaging-together"
+                      className="mt-0.5 border-neutral-400 text-[#5574AD]"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-foreground">Ship together</span>
+                      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                        One box, one shipping label — usually the lower rate.
+                      </p>
+                    </div>
+                  </label>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-[8px] border p-4 transition-colors",
+                      effectivePackagingMode === "separate"
+                        ? "border-[#5574AD] bg-[#5574AD]/[0.04] shadow-[inset_0_0_0_1px_rgba(85,116,173,0.15)]"
+                        : "border-neutral-200 bg-white hover:border-neutral-300",
+                    )}
+                  >
+                    <RadioGroupItem
+                      value="separate"
+                      id="packaging-separate"
+                      className="mt-0.5 border-neutral-400 text-[#5574AD]"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-foreground">Ship separately</span>
+                      <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                        Each board gets its own box and shipping label.
                       </p>
                     </div>
                   </label>
@@ -639,7 +740,7 @@ export function CheckoutClient({
                 ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
                   <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-[13px] leading-relaxed text-neutral-600">
-                      Choose USPS shipping for your fins. The amount you select is included in your total.
+                      {peerCheckoutRateChoiceIntro(rateChoiceSection)}
                     </p>
                     <RadioGroup
                       value={
@@ -664,9 +765,7 @@ export function CheckoutClient({
                           <span className="min-w-0 flex-1">
                             <span className="block text-[14px] font-medium text-foreground">{rate.displayName}</span>
                             <span className="mt-0.5 block text-[12px] text-neutral-500">
-                              {rate.deliveryDays != null
-                                ? `About ${rate.deliveryDays} business day${rate.deliveryDays === 1 ? "" : "s"}`
-                                : "Estimated transit time from USPS"}
+                              <CheckoutShippingArrival rate={rate} />
                             </span>
                           </span>
                           <span className="shrink-0 text-[14px] font-semibold tabular-nums text-foreground">
@@ -709,9 +808,11 @@ export function CheckoutClient({
                   offerId={offerId}
                   promoCode={appliedPromo?.code ?? null}
                   shippingQuoteToken={shipQuoteToken}
+                  packagingMode={offersPackagingChoice ? effectivePackagingMode : null}
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter
+                  buyerEmail={buyerEmail ?? null}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">
                   Secure payment processed by{" "}
@@ -761,6 +862,9 @@ export function CheckoutClient({
           appliedPromo={appliedPromo}
           promoError={promoError}
           promoApplying={promoApplying}
+          acceptedOfferListingIds={
+            acceptedOfferListingIds ?? (offerId ? listings.map((listing) => listing.id) : [])
+          }
         />
       </div>
     </div>

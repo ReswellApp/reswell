@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { countCheckoutBlockedHiddenActiveListings } from '@/lib/db/adminHiddenListings'
+import { countSubmittedBoardBuys } from '@/lib/db/boardBuy'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 
 export type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
@@ -20,8 +21,22 @@ export async function fetchAdminNavBadgeCounts(
   supabase: SupabaseClient,
   options: { includeBrandRequests: boolean },
 ): Promise<AdminNavBadgeCounts> {
-  const [supportNewRes, liveChatOpenRes, fraudRes, opsOpenRes, brandPendingRes, labelFailuresRes, hiddenActiveRes] =
+  const [
+    supportNewRes,
+    orderSupportNewRes,
+    liveChatOpenRes,
+    fraudRes,
+    opsOpenRes,
+    brandPendingRes,
+    labelFailuresRes,
+    hiddenActiveRes,
+    buyQueue,
+  ] =
     await Promise.all([
+      supabase
+        .from('support_cases')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'submitted'),
       supabase
         .from('contact_messages')
         .select('*', { count: 'exact', head: true })
@@ -48,6 +63,7 @@ export async function fetchAdminNavBadgeCounts(
             .eq('status', 'open')
         : Promise.resolve({ count: 0 as number | null, error: null }),
       fetchHiddenActiveCheckoutBlockedCount(),
+      countSubmittedBoardBuys(supabase),
     ])
 
   const take = (res: { count: number | null; error: unknown }): number => {
@@ -56,11 +72,14 @@ export async function fetchAdminNavBadgeCounts(
   }
 
   const counts: AdminNavBadgeCounts = {
-    '/admin/contact-messages': take(supportNewRes),
+    '/admin/contact-messages': supportNewRes.error
+      ? take(orderSupportNewRes)
+      : take(supportNewRes),
     '/admin/live-chat': take(liveChatOpenRes),
     '/admin/fraud-messages': take(fraudRes),
     '/admin/ops': take(opsOpenRes),
     '/admin/listings/hidden': hiddenActiveRes,
+    '/admin/we-buy': buyQueue,
   }
 
   if (options.includeBrandRequests) {

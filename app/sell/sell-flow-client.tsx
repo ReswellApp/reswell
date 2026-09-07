@@ -1,7 +1,6 @@
 "use client"
 /** Sell flow: free-form listing title; brand line uses catalog (brands) + request CTA; no separate shaper field. */
 
-
 import React, {
   useState,
   useEffect,
@@ -12,7 +11,6 @@ import React, {
   useId,
 } from "react"
 import { createPortal } from "react-dom"
-import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -21,20 +19,12 @@ import { peerListingEditHref } from "@/lib/peer-listing-sections"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { SmoothCollapse } from "@/components/ui/smooth-collapse"
 import { Switch } from "@/components/ui/switch"
-import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -60,14 +50,17 @@ import {
 import {
   Loader2,
   X,
+  Check,
   ChevronRight,
   CheckCircle2,
   AlertCircle,
-  RefreshCw,
   Zap,
 } from "lucide-react"
-import { LocationPicker } from "@/components/location-picker"
+import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
 import { listingDetailHref } from "@/lib/listing-href"
+import type { ListingImageForCard } from "@/lib/listing-image-display"
+import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import {
   boardFulfillmentFromChecks,
   boardFulfillmentFromFlags,
@@ -83,9 +76,19 @@ import { slugify } from "@/lib/slugify"
 import {
   clearImpersonation,
   clearImpersonationStorageIfCookieMissing,
+  getActiveImpersonationClient,
   getImpersonation,
+  IMPERSONATION_CHANGED_EVENT,
   type ImpersonationData,
 } from "@/lib/impersonation"
+import { ImpersonationActingAsStrip } from "@/components/impersonation-banner"
+import { updateImpersonatedListingViaApi } from "@/lib/utils/admin-impersonated-listing-create"
+import {
+  adminIsEditingAnotherUsersListing,
+  ensureImpersonationForListingOwner,
+  syncClientImpersonationForListingOwner,
+} from "@/lib/utils/admin-impersonation-for-listing"
+import { isAdminListingEditEntry } from "@/lib/utils/admin-listing-edit-entry"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import {
@@ -95,7 +98,7 @@ import {
 } from "@/lib/listing-image-pipeline"
 import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { persistableListingThumbnailUrl, proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   buildSellListingDraft,
   clearGuestSellListingDraft,
@@ -111,6 +114,7 @@ import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-p
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
   isSellSubmitAbortError,
+  retryOnceOnSellSubmitAbort,
   sellActionErrorMessage,
   sellSubmitErrorMessage,
 } from "@/lib/sell-flow/sell-submit-error"
@@ -126,6 +130,7 @@ import {
 } from "@/components/request-brand-model-dialog"
 import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
+import { SellListingPublishedScreen } from "@/components/features/sell/sell-listing-published-screen"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import {
   sellFormSnapshotLooksFilled,
@@ -133,15 +138,18 @@ import {
 } from "@/components/features/sell/hooks/use-sell-server-draft"
 import { clearSellServerDraftListingId, getSellServerDraftListingId, replaceSellDraftEditUrl, setSellServerDraftListingId } from "@/lib/sell-draft-local-meta"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
-import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
-import { SurfboardPackSizeSimplePicker } from "@/components/features/sell/surfboard-pack-size-simple-picker"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
 import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
+import {
+  readSellSavedListingLocations,
+  rememberSellSavedListingLocation,
+  type SellSavedListingLocation,
+} from "@/lib/utils/sell-saved-listing-locations"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { listingPhotoSlotsForDraftPersist } from "@/lib/sell-flow/listing-photo-slot"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
@@ -153,16 +161,19 @@ import {
   type BoardShippingCostMode,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
-import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
+import {
+  LISTING_CONDITION_SELL_OPTIONS,
+  sellFormConditionValue,
+} from "@/lib/listing-labels"
 import {
   formatBoardLengthForTitle,
-  normalizeBoardLengthInput,
+  isBoardLengthEntryComplete,
+  isTapeStyleInchesEntryComplete,
   normalizeTapeStyleInchesInput,
-  normalizeVolumeLitersInput,
-  shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
 import {
   boardBrowseFacetFieldsForDb,
+  finsIncludedFormValue,
   finsSetupFieldForDb,
 } from "@/lib/listing-facet-write"
 import { singleFinSetupSlugForForm } from "@/lib/listing-fin-setup-tags"
@@ -172,43 +183,55 @@ import {
 } from "@/lib/listing-dimensions-storage"
 import {
   parseSurfboardShippingTierId,
-  surfboardShippingTierAutofillFromSelection,
   type SurfboardShippingTierId,
 } from "@/lib/surfboard-shipping-tiers"
 import {
-  matchSurfboardShippingPackBandFromParcel,
   parseSurfboardShippingPackBandId,
-  resolveSurfboardUpsShippingAvailability,
   surfboardShippingPackBandFixedParcel,
   type SurfboardShippingPackBandId,
 } from "@/lib/surfboard-shipping-pack-bands"
 import {
-  parseReswellParcelLengthRawToCarrierInches,
-  parseReswellParcelWidthHeightRawToCarrierInches,
-} from "@/lib/reswell-parcel-fields"
-import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
-import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
+import { SellBoardDimensionsPicker } from "@/components/features/sell/sell-board-dimensions-picker"
+import { SellBoardStockSizePicker } from "@/components/features/sell/sell-board-stock-size-picker"
+import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
+import type { SurfboardStockSizeOption } from "@/lib/types/board-stock-sizes"
+import {
+  SellBoardFacetFields,
+  SellFacetChipGroup,
+} from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
+import { resolveCompareAtPriceOnUpdate } from "@/lib/listing-compare-at-price"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
+import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
+import { syncListingDraftVideosClient } from "@/lib/sell-flow/sync-listing-draft-videos-client"
 import {
   SELL_COMPLETE_BADGE_CLASS,
   SELL_CONTROL_CLASS,
+  SELL_FORM_COLUMN_CLASS,
   SELL_PAGE_GROUND_CLASS,
+  SELL_PRIMARY_BUTTON_CLASS,
   SELL_SECTION_CARD_CLASS,
   SELL_SECTION_DESCRIPTION_CLASS,
 } from "@/components/features/sell/sell-form-surface"
+import { SellPhotoExamplesBanner } from "@/components/features/sell/sell-photo-examples-banner"
 import {
   SellSectionNav,
   SellSectionNavHorizontal,
   SELL_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
-import { BoardSellWizardFooter } from "@/components/features/sell/board-sell-wizard-footer"
-import { computeSellSectionCompletion } from "@/lib/sell-section-completion"
+import { SellSectionNavMobileProgress } from "@/components/features/sell/sell-section-nav-mobile-progress"
+import { BoardSellViewToolbar } from "@/components/features/sell/board-sell-view-toolbar"
+import {
+  computeSellSectionCompletion,
+  computeSellStepChecklist,
+} from "@/lib/sell-section-completion"
 import {
   boardCategoryMap,
   boardTypeFromCategoryId,
@@ -217,16 +240,29 @@ import {
 import {
   orderSurfboardSellCategoryOptions,
   staticSellBoardCategoryOptions,
-  SELL_BOARD_CATEGORY_UNSELECTED_LABEL,
-  SELL_BOARD_CATEGORY_UNSELECTED_VALUE,
   type SellCategoryOptionRow,
 } from "@/lib/surfboard-sell-categories"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import {
   SELL_SUPPRESS_IDB_RESTORE_KEY,
+  isPendingPublish,
   sellPendingPublishKey,
 } from "@/lib/sell-flow/session-keys"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
+import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
+import {
+  clearSellCatalogSearchAgain,
+  markSellCatalogSearchAgain,
+  peekSellCatalogHandoff,
+  sellListingCameFromCatalogSearch,
+  takeSellCatalogHandoff,
+} from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
+import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import {
   BOARD_SELL_SECTION_ID_BY_STEP,
   BOARD_SELL_STEP_BY_SECTION_ID,
@@ -238,6 +274,11 @@ import {
   readStoredBoardSellFlowStep,
   type BoardSellFlowStep,
 } from "@/lib/sell-flow/board-sell-flow-step"
+import {
+  persistBoardSellViewMode,
+  readStoredBoardSellViewMode,
+  type BoardSellViewMode,
+} from "@/lib/sell-flow/board-sell-view-mode"
 
 /** True once the seller has pinned the board (coordinates used for drafts + validation). */
 function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: number }): boolean {
@@ -292,28 +333,35 @@ function SellFormSection({
     <section
       id={sectionId}
       className={cn(
-        "space-y-4 lg:space-y-5",
-        sectionId && "scroll-mt-24",
+        "w-full space-y-4 sm:space-y-6",
+        sectionId && "scroll-mt-28",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground lg:text-xl">
+          <h2 className="text-[1.75rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.85rem] lg:text-3xl">
             {title}
           </h2>
           {description ? (
-            <p className={SELL_SECTION_DESCRIPTION_CLASS}>{description}</p>
+            <p
+              className={cn(
+                SELL_SECTION_DESCRIPTION_CLASS,
+                "text-[15px] sm:text-base lg:text-[17px]",
+              )}
+            >
+              {description}
+            </p>
           ) : null}
         </div>
         {complete ? (
-          <span className={cn("mt-0.5 shrink-0", SELL_COMPLETE_BADGE_CLASS)}>
+          <span className={cn("mt-1.5 hidden shrink-0 sm:inline-flex", SELL_COMPLETE_BADGE_CLASS)}>
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
             Done
           </span>
         ) : null}
       </div>
       <Card className={SELL_SECTION_CARD_CLASS}>
-        <CardContent className="p-6 lg:p-8 xl:p-10">{children}</CardContent>
+        <CardContent className="p-5 sm:p-9 lg:p-11">{children}</CardContent>
       </Card>
     </section>
   )
@@ -331,74 +379,15 @@ type PublishPreviewState = {
   coverUrl: string
   status: "publishing" | "live" | "error"
   detailHref?: string
+  listingId?: string | null
+  slug?: string | null
+  condition: string
+  boardType: string
+  shippingAvailable: boolean
+  localPickup: boolean
+  listingImages: ListingImageForCard[]
   errorMessage?: string
   failedStepLabel?: string
-}
-
-function SellFlowPublishingInterior({
-  preview,
-  uploadPhaseLabels,
-  submitStepIndex,
-  listingSubmitProgressValue,
-}: {
-  preview: PublishPreviewState
-  uploadPhaseLabels: string[]
-  submitStepIndex: number
-  listingSubmitProgressValue: number
-}) {
-  const thumb = proxiedListingImageSrc(preview.coverUrl) || "/placeholder.svg"
-  const stepLabel = uploadPhaseLabels[submitStepIndex] ?? "Working…"
-
-  return (
-    <div
-      className="relative w-full max-w-md animate-in fade-in zoom-in-95 motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:zoom-in-100 duration-300"
-      aria-busy="true"
-      aria-live="polite"
-      aria-label={`Publishing listing: ${preview.title}`}
-    >
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-md sm:p-7">
-        <div className="mb-6 space-y-2 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Publishing
-          </p>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
-            Finishing up your listing
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            You&apos;ll go to your live listing when everything is saved.
-          </p>
-        </div>
-
-        <div className="mb-6 flex gap-4">
-          <div className="relative h-[4.75rem] w-[4.75rem] shrink-0 overflow-hidden rounded-xl border border-border/80 bg-muted shadow-inner">
-            <Image
-              src={thumb}
-              alt=""
-              fill
-              className="object-cover object-center"
-              unoptimized
-            />
-          </div>
-          <div className="flex min-h-[4.75rem] min-w-0 flex-1 flex-col justify-center gap-2">
-            <p className="line-clamp-2 text-base font-semibold leading-snug text-foreground">
-              {preview.title}
-            </p>
-            <Skeleton className="h-3 w-[88%]" />
-            <Skeleton className="h-3 w-3/5" />
-            <p className="text-xs tabular-nums text-muted-foreground">${preview.price}</p>
-          </div>
-        </div>
-
-        <div className="space-y-3 rounded-xl bg-muted/30 p-4 ring-1 ring-border/50">
-          <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
-            <span>{stepLabel}</span>
-          </p>
-          <Progress value={listingSubmitProgressValue} className="h-1.5" />
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function SellPublishingGenericLoaderPortal() {
@@ -439,48 +428,6 @@ function SellPublishingGenericLoaderPortal() {
   )
 }
 
-/**
- * Full-viewport takeover (ported to document.body — `.page-enter` applies transform on ancestors,
- * which traps `position:fixed` so the footer stays visible underneath).
- */
-function SellFlowPublishingFullscreenPortal(props: {
-  preview: PublishPreviewState
-  uploadPhaseLabels: string[]
-  submitStepIndex: number
-  listingSubmitProgressValue: number
-}) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useLayoutEffect(() => {
-    if (!mounted) return
-    const prev = document.documentElement.style.overflow
-    document.documentElement.style.overflow = "hidden"
-    return () => {
-      document.documentElement.style.overflow = prev
-    }
-  }, [mounted])
-
-  if (!mounted || typeof document === "undefined") {
-    return null
-  }
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-y-auto overscroll-none bg-background p-6 sm:p-10 motion-safe:animate-in motion-safe:fade-in motion-reduce:animate-none motion-reduce:opacity-100 duration-200"
-      role="presentation"
-    >
-      <div className="flex min-h-0 w-full max-w-xl flex-1 flex-col justify-center py-8">
-        <SellFlowPublishingInterior {...props} />
-      </div>
-    </div>,
-    document.body,
-  )
-}
-
 type ListingPhotoSlot = {
   clientId: string
   /** Local preview (blob URL) until we can show uploaded thumb */
@@ -504,6 +451,16 @@ type ListingPhotoSlot = {
   dropSourceFileAfterUpload?: boolean
   /** Bumps when re-processing the same slot so stale async work does not apply. */
   prepareSeq?: number
+}
+
+function listingImagesForPublishPreview(images: ListingPhotoSlot[]): ListingImageForCard[] {
+  return images
+    .filter((im) => Boolean(im.url || im.thumbnailUrl || im.previewUrl))
+    .map((im, index) => ({
+      url: im.url || im.previewUrl || null,
+      thumbnail_url: im.thumbnailUrl || im.previewUrl || null,
+      is_primary: index === 0,
+    }))
 }
 
 const LISTING_PHOTO_FILE_EXT_RE = /\.(heic|heif|jpe?g|png|webp|gif|avif|tif?f)$/i
@@ -555,6 +512,10 @@ function sellFormStateFromIdbSnapshot(
     ...base,
     // Surfboard /sell is Reswell shipping only — coerce legacy free/flat drafts.
     boardShippingCostMode: "reswell" as BoardShippingCostMode,
+    // Always seller-entered package size (no pack-band autofill).
+    adminCustomShippingCarton: true,
+    surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+    surfboardShippingPackBandCeilingConfirmed: false,
     boardFins: singleFinSetupSlugForForm(snapshot.boardFins),
     boardFinSystem:
       typeof snapshot.boardFinSystem === "string" ? snapshot.boardFinSystem : base.boardFinSystem,
@@ -562,35 +523,10 @@ function sellFormStateFromIdbSnapshot(
       typeof snapshot.boardConstruction === "string"
         ? snapshot.boardConstruction
         : base.boardConstruction,
-  }
-}
-
-/**
- * Reswell /sell shipping is UPS-parcel only (shortboard pack bands under the UPS DIM cap).
- * Larger boards cannot enable shipping.
- */
-function resolveSellReswellShipping(input: {
-  boardLength: string
-  boardWidthInches: string
-}): {
-  tierId: SurfboardShippingTierId | ""
-  suggestedPackBandId: SurfboardShippingPackBandId | ""
-  shippingSupported: boolean
-} {
-  const avail = resolveSurfboardUpsShippingAvailability({
-    boardLength: input.boardLength,
-    boardWidthInches: input.boardWidthInches,
-  })
-  if (!avail.shippingSupported) {
-    return { tierId: "", suggestedPackBandId: "", shippingSupported: false }
-  }
-  if (!avail.suggestedPackBandId) {
-    return { tierId: "", suggestedPackBandId: "", shippingSupported: true }
-  }
-  return {
-    tierId: "shortboard",
-    suggestedPackBandId: avail.suggestedPackBandId,
-    shippingSupported: true,
+    boardFinsIncluded:
+      typeof snapshot.boardFinsIncluded === "string"
+        ? snapshot.boardFinsIncluded
+        : base.boardFinsIncluded,
   }
 }
 
@@ -627,22 +563,45 @@ async function persistSellListingDraftSnapshot(args: {
   formData: SellListingDraftFormSnapshot
   images: ListingPhotoSlot[]
   userId: string | null
+  includeInFlightPhotos?: boolean
 }): Promise<void> {
-  const built = await buildSellListingDraft(
-    args.listingType,
-    args.formData,
-    listingPhotoSlotsForDraftPersist(args.images),
-    null,
-    args.userId,
-    { allowGuest: !args.userId },
-  )
-  if (built) {
-    if (args.userId) await saveSellListingDraft(built)
-    else await saveGuestSellListingDraft(built)
-    return
+  try {
+    const built = await buildSellListingDraft(
+      args.listingType,
+      args.formData,
+      listingPhotoSlotsForDraftPersist(args.images, {
+        includeInFlight: args.includeInFlightPhotos,
+      }),
+      null,
+      args.userId,
+      { allowGuest: !args.userId },
+    )
+    if (built) {
+      if (args.userId) await saveSellListingDraft(built)
+      else await saveGuestSellListingDraft(built)
+      return
+    }
+    if (args.userId) await clearSellListingDraft(args.userId)
+    else await clearGuestSellListingDraft()
+  } catch (e) {
+    console.warn("[sell draft] persist failed", e)
   }
-  if (args.userId) await clearSellListingDraft(args.userId)
-  else await clearGuestSellListingDraft()
+}
+
+/** Mirrors the flat-rate rule in `deliverySectionComplete` (sell-section-completion). */
+function flatShippingRateComplete(raw: string): boolean {
+  const t = raw.trim().replace(/,/g, "")
+  if (!t) return false
+  const n = Number.parseFloat(t)
+  return Number.isFinite(n) && n >= 0
+}
+
+/** Mirrors the auto-drop floor rule in `pricePublishFieldsComplete` (sell-section-completion). */
+function priceDropFloorComplete(floorRaw: string, priceRaw: string): boolean {
+  const floor = Number.parseFloat(floorRaw.trim().replace(/,/g, ""))
+  if (!Number.isFinite(floor) || floor < 0.01 || floor > 999_999.99) return false
+  const price = Number.parseFloat(priceRaw.trim().replace(/,/g, ""))
+  return Number.isFinite(price) ? floor < price : true
 }
 
 function createInitialSellFormData() {
@@ -661,15 +620,18 @@ function createInitialSellFormData() {
     surfboardShippingTierCeilingConfirmed: false,
     surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
     surfboardShippingPackBandCeilingConfirmed: false,
-    /** Admin-only: quote from entered carton dims instead of Compact/Medium. */
-    adminCustomShippingCarton: false,
+    /** Board `/sell` Reswell shipping always uses seller-entered carton dims. */
+    adminCustomShippingCarton: true,
     reswellPackageLengthIn: "",
     reswellPackageWidthIn: "",
     reswellPackageHeightIn: "",
     reswellPackageWeightLb: "",
     reswellPackageWeightOz: "",
-    autoPriceDrop: false,
+            autoPriceDrop: false,
     autoPriceDropFloor: "",
+    showPriceMarkdown: false,
+    loadedPublishedPriceUsd: null as number | null,
+    loadedCompareAtPriceUsd: null as number | null,
     buyerOffers: true,
     boardType: "",
     boardLength: "",
@@ -680,6 +642,7 @@ function createInitialSellFormData() {
     boardTail: "",
     boardFinSystem: "",
     boardConstruction: "",
+    boardFinsIncluded: "",
     boardBrandId: "",
     boardBrandModelId: "",
     boardIndexBrandSlug: "",
@@ -735,72 +698,108 @@ type SellPageContentProps = {
   startFresh: boolean
   /** Soft draft open — updates local edit id + URL without an App Router navigation. */
   onSoftOpenDraft?: (draftId: string) => void
+  /** Server-resolved `profiles.is_admin` so privileged shipping cards paint immediately. */
+  initialActorIsAdmin?: boolean
 }
 
 function SellPageContentInner({
   editId,
   startFresh,
   onSoftOpenDraft,
+  initialActorIsAdmin,
 }: SellPageContentProps) {
   const listingPhotosInputId = useId()
+  const listingVideoInputId = useId()
   const router = useRouter()
   const sellSearchParams = useSearchParams()
   const bulkSlotId = sellSearchParams.get("bulk")?.trim() || null
   const wantsBlankListing = startFresh || sellSearchParams.get("new") === "1"
   const openSignIn = useSignInGate()
   const supabase = useMemo(() => createClient(), [])
+  const boardSellReturnPath = useCallback(
+    () =>
+      typeof window === "undefined"
+        ? "/sell/boards"
+        : `${window.location.pathname}${window.location.search}`,
+    [],
+  )
 
-  /** Strip `?new=1` from the URL after blank-listing setup; keep `type=surfboard` so /sell stays on the flow. */
+  /**
+   * “Search again” only after a /sell catalog pick. Capture `from=catalog`
+   * before `?new=1` is stripped so type-chooser / direct `/sell/boards` stays hidden.
+   */
+  const [cameFromCatalogSearch, setCameFromCatalogSearch] = useState(() =>
+    sellListingCameFromCatalogSearch(startFresh),
+  )
+
+  /** Strip `?new=1` from the URL after blank-listing setup; stay on `/sell/boards`. */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
-      try {
-        sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
-      } catch {
-        /* quota / private mode */
+      const fromCatalog =
+        new URLSearchParams(window.location.search).get("from") === "catalog"
+      if (fromCatalog) {
+        markSellCatalogSearchAgain()
+        setCameFromCatalogSearch(true)
+      } else {
+        clearSellCatalogSearchAgain()
+        setCameFromCatalogSearch(false)
       }
-      router.replace("/sell?type=surfboard", { scroll: false })
+      if (!isPendingPublish("board")) {
+        try {
+          sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
+        } catch {
+          /* quota / private mode */
+        }
+      }
+      router.replace("/sell/boards", { scroll: false })
     }
   }, [startFresh, router])
 
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
-  const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
+  const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(
+    typeof initialActorIsAdmin === "boolean" ? initialActorIsAdmin : null,
+  )
   useEffect(() => {
     clearImpersonationStorageIfCookieMissing()
-    setImpersonation(getImpersonation())
+    const sync = () => setImpersonation(getActiveImpersonationClient())
+    sync()
+    window.addEventListener(IMPERSONATION_CHANGED_EVENT, sync)
+    return () => window.removeEventListener(IMPERSONATION_CHANGED_EVENT, sync)
   }, [])
 
   const [loading, setLoading] = useState(false)
   const [publishValidationBanner, setPublishValidationBanner] = useState<string | null>(null)
-  const [submitStepIndex, setSubmitStepIndex] = useState(0)
+  const [, setSubmitStepIndex] = useState(0)
   const submitStepIndexRef = useRef(0)
   const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   /** Prevents concurrent publishes (double-tap / stacked submits before `loading` flips). */
   const publishInFlightRef = useRef(false)
-  const pendingPublishHandledRef = useRef(false)
-  /** Avoid stacking sign-in modals when several photos are added while signed out. */
-  const photoUploadSignInPromptedRef = useRef(false)
+  /** Skip Chrome's native leave-site prompt on intentional post-publish navigation. */
+  const allowDocumentUnloadRef = useRef(false)
   const uploadToastIdRef = useRef<string | number | null>(null)
   const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
-  const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
+  const [, setUploadPhaseLabels] = useState<string[]>(() => [
     ...LISTING_UPLOAD_STEP_LABELS,
   ])
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
-  const [flowStep, setFlowStep] = useState<BoardSellFlowStep>(() => {
-    if (editId) return "basics"
-    if (typeof window === "undefined") return "basics"
-    return readStoredBoardSellFlowStep() ?? "basics"
-  })
+  /** Stable SSR defaults — sessionStorage restored after mount to avoid hydration mismatch. */
+  const [flowStep, setFlowStep] = useState<BoardSellFlowStep>("product")
   const setBoardFlowStep = useCallback((step: BoardSellFlowStep) => {
     setFlowStep(step)
     persistBoardSellFlowStep(step)
   }, [])
+  const [viewMode, setViewModeState] = useState<BoardSellViewMode>("guided")
+  const setViewMode = useCallback((mode: BoardSellViewMode) => {
+    setViewModeState(mode)
+    persistBoardSellViewMode(mode)
+  }, [])
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
   /** Guests exit to browse; signed-in sellers to their listings hub (`/listings` → dashboard). */
-  const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
+  const sellListingsHubHref = "/sell"
   const listingIsDraft = editListingStatus === "draft"
   /**
    * Published (or non-draft) listing edit: stepper may reflect saved data without forcing
@@ -832,13 +831,31 @@ function SellPageContentInner({
   /** Server / soft draft opens start on the first wizard step. */
   useEffect(() => {
     if (!editId) return
-    setFlowStep("basics")
-    persistBoardSellFlowStep("basics")
+    setFlowStep("product")
+    persistBoardSellFlowStep("product")
   }, [editId])
+
+  /** Restore guided/advanced + step from session after mount (must not run during SSR). */
+  useEffect(() => {
+    if (editId) return
+    // New listings and catalog handoffs always open Guided from the first step.
+    if (startFresh || peekSellCatalogHandoff("surfboards")) {
+      setFlowStep("product")
+      persistBoardSellFlowStep("product")
+      setViewModeState("guided")
+      persistBoardSellViewMode("guided")
+      return
+    }
+    const storedStep = readStoredBoardSellFlowStep()
+    if (storedStep) setFlowStep(storedStep)
+    const storedMode = readStoredBoardSellViewMode()
+    if (storedMode) setViewModeState(storedMode)
+  }, [editId, startFresh])
 
   useEffect(() => {
     if (!loading) return
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowDocumentUnloadRef.current) return
       e.preventDefault()
       e.returnValue = ""
     }
@@ -859,9 +876,170 @@ function SellPageContentInner({
   useEffect(() => {
     removedImageIdsRef.current = removedImageIds
   }, [removedImageIds])
+
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: boardSellReturnPath,
+    openSignIn,
+    supabase,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    setVideo,
+    removedVideoIds,
+    setRemovedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
+  const formDataRef = useRef(formData)
+  useEffect(() => {
+    formDataRef.current = formData
+  }, [formData])
+
+  // One-shot brand/model prefill from the /sell cross-category catalog search wall.
+  // Applied only after draft hydration: the IDB draft restore replaces the whole
+  // form state async, so applying earlier would let a stale draft clobber the
+  // catalog selection the seller just made.
+  const catalogHandoffTakenRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] = useState<
+    (SellCatalogSelectionCardData & { brandId: string }) | null
+  >(null)
+  useEffect(() => {
+    if (!draftHydrated || catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    const handoff = takeSellCatalogHandoff("surfboards")
+    if (!handoff) return
+    markSellCatalogSearchAgain()
+    setCameFromCatalogSearch(true)
+    setViewModeState("guided")
+    persistBoardSellViewMode("guided")
+    if (handoff.selectionKind !== "variant") {
+      setCatalogSelectionCard({
+        brandId: handoff.brandId,
+        brandName: handoff.brandName,
+        modelName: handoff.selectionKind === "model" ? handoff.modelName : null,
+        categoryLabel: sellCatalogSearchCategoryLabel(handoff.category),
+        imageUrl: handoff.imageUrl,
+        imageIsLogo: handoff.imageIsLogo,
+      })
+    }
+    if (handoff.selectionKind === "brand") {
+      setFormData((f) => ({
+        ...f,
+        title: f.title.trim() ? f.title : handoff.suggestedTitle,
+        description:
+          f.description.trim() || !handoff.suggestedDescription
+            ? f.description
+            : handoff.suggestedDescription,
+        brand: handoff.brandName,
+        boardLinkedBrandName: handoff.brandName,
+        boardBrandId: handoff.brandId,
+        boardIndexBrandSlug: handoff.brandSlug,
+      }))
+      return
+    }
+    if (handoff.selectionKind === "model") {
+      // Catalog models tagged with a board shape auto-select the matching
+      // "Board shape / category" chip (chip values are the fixed category UUIDs).
+      // Do not prefill listing description from the catalog model write-up —
+      // sellers write that themselves.
+      const handoffBoardCategoryId = handoff.boardCategorySlug
+        ? boardCategoryMap[handoff.boardCategorySlug] ?? ""
+        : ""
+      setFormData((f) => ({
+        ...f,
+        title: f.title.trim() ? f.title : handoff.suggestedTitle,
+        brand: handoff.brandName,
+        boardLinkedBrandName: handoff.brandName,
+        boardBrandId: handoff.brandId,
+        boardIndexBrandSlug: handoff.brandSlug,
+        boardModelName: handoff.modelName,
+        boardBrandModelId: handoff.brandModelId,
+        ...(handoffBoardCategoryId && !f.category.trim()
+          ? {
+              category: handoffBoardCategoryId,
+              boardType: handoff.boardCategorySlug ?? f.boardType,
+            }
+          : {}),
+      }))
+    }
+  }, [editId, draftHydrated])
+
+  // Stock sizes for the linked catalog model: shown as a one-tap size wall in
+  // "Dimensions & details". Selecting one writes the same boardLength /
+  // boardWidthInches / boardThicknessInches / boardVolumeL fields the manual
+  // picker uses — storage and publish are unchanged.
+  const [modelStockSizes, setModelStockSizes] = useState<SurfboardStockSizeOption[]>([])
+  const [stockSizeMode, setStockSizeMode] = useState<"stock" | "custom">("stock")
+  const [selectedStockSizeId, setSelectedStockSizeId] = useState<string | null>(null)
+  const stockSizesModelId = formData.boardBrandModelId.trim()
+  useEffect(() => {
+    if (!stockSizesModelId) {
+      setModelStockSizes([])
+      setSelectedStockSizeId(null)
+      setStockSizeMode("stock")
+      return
+    }
+    const controller = new AbortController()
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/api/sell/board-model-stock-sizes?brand_model_id=${encodeURIComponent(stockSizesModelId)}`,
+          { signal: controller.signal },
+        )
+        if (!res.ok) return
+        const json = (await res.json().catch(() => null)) as {
+          data?: { sizes?: SurfboardStockSizeOption[] }
+        } | null
+        const sizes = json?.data?.sizes ?? []
+        setModelStockSizes(sizes)
+
+        // Reconcile with dims already in the form (draft restore / edit mode):
+        // matching dims select their stock card; non-matching dims mean the
+        // seller already entered a custom size, so keep the manual picker.
+        const fd = formDataRef.current
+        const match = sizes.find(
+          (s) =>
+            s.values.boardLength === fd.boardLength.trim() &&
+            s.values.boardWidthInches === fd.boardWidthInches.trim() &&
+            s.values.boardThicknessInches === fd.boardThicknessInches.trim(),
+        )
+        if (match) {
+          setSelectedStockSizeId(match.id)
+          setStockSizeMode("stock")
+        } else {
+          setSelectedStockSizeId(null)
+          const hasDims = [fd.boardLength, fd.boardWidthInches, fd.boardThicknessInches].some(
+            (v) => v.trim().length > 0,
+          )
+          setStockSizeMode(hasDims ? "custom" : "stock")
+        }
+      } catch {
+        /* aborted or offline — manual dimension picker still works */
+      }
+    })()
+    return () => controller.abort()
+  }, [stockSizesModelId])
+
+  const handleSelectStockSize = useCallback((size: SurfboardStockSizeOption) => {
+    setSelectedStockSizeId(size.id)
+    setStockSizeMode("stock")
+    setFormData((fd) => ({ ...fd, ...size.values }))
+  }, [])
+
+  const handleChooseCustomStockSize = useCallback(() => {
+    setStockSizeMode("custom")
+    setSelectedStockSizeId(null)
+  }, [])
 
   const openListingCatalogRequestFromBrand = useCallback(() => {
     setListingCatalogRequestVariant("full")
@@ -873,14 +1051,6 @@ function SellPageContentInner({
       bid ? { modelOnlyWithDirectoryBrandId: bid } : "full",
     )
   }, [formData.boardBrandId])
-
-  const boardDimLengthRef = useRef<HTMLInputElement>(null)
-  const boardDimWidthRef = useRef<HTMLInputElement>(null)
-  const boardDimThicknessRef = useRef<HTMLInputElement>(null)
-  const boardDimVolumeRef = useRef<HTMLInputElement>(null)
-  const prevBoardLengthRef = useRef<string | undefined>(undefined)
-  const prevBoardWidthRef = useRef<string | undefined>(undefined)
-  const prevBoardThicknessRef = useRef<string | undefined>(undefined)
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<SellCategoryOptionRow[]>([])
   const [sellCategoriesLoaded, setSellCategoriesLoaded] = useState(false)
@@ -903,6 +1073,10 @@ function SellPageContentInner({
     draftHydrated: false,
   })
   const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Quiet autosave indicator so sellers know they can safely leave and come back. */
+  const [draftAutosaveState, setDraftAutosaveState] = useState<
+    "idle" | "saving" | "saved"
+  >("idle")
   const draftImageSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   /** Slots from IndexedDB restore — optimized in useLayoutEffect after `optimizeAndUploadSlot` exists. */
@@ -955,7 +1129,9 @@ function SellPageContentInner({
       }
       draftPhotosPendingRef.current = null
       setFormData(createInitialSellFormData())
-      setBoardFlowStep("basics")
+      setBoardFlowStep("product")
+      setViewModeState("guided")
+      persistBoardSellViewMode("guided")
       clearPersistedBoardSellFlowStep()
       sellListingThumbLoadedSrcByClientId.clear()
       latestListingPhotoPrepareSeqRef.current.clear()
@@ -963,6 +1139,9 @@ function SellPageContentInner({
       setRemovedImageIds([])
       setPublishPreview(null)
       clearSellServerDraftListingId("surfboards")
+      clearSellCatalogSearchAgain()
+      setCameFromCatalogSearch(false)
+      setCatalogSelectionCard(null)
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -970,7 +1149,7 @@ function SellPageContentInner({
       await clearGuestSellListingDraft()
       toast.message("Starting a new listing — saved drafts stay in your dashboard.")
       if (editId) {
-        router.replace("/sell?type=surfboard&new=1", { scroll: false })
+        router.replace("/sell/boards?new=1", { scroll: false })
       }
     } finally {
       setStartNewListingBusy(false)
@@ -1013,6 +1192,7 @@ function SellPageContentInner({
       boardTail: formData.boardTail,
       boardFinSystem: formData.boardFinSystem,
       boardConstruction: formData.boardConstruction,
+      boardFinsIncluded: formData.boardFinsIncluded,
       boardBrandId: formData.boardBrandId,
       boardBrandModelId: formData.boardBrandModelId,
       boardModelName: formData.boardModelName,
@@ -1032,9 +1212,8 @@ function SellPageContentInner({
   )
 
   const hydrateBoardEdit = useCallback(
-    (listing: OwnedListingForEditRow, sessionUserId: string) => {
+    async (listing: OwnedListingForEditRow) => {
       clearImpersonationStorageIfCookieMissing()
-      const imp = getImpersonation()
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can’t be edited.")
@@ -1061,14 +1240,8 @@ function SellPageContentInner({
           replaceSellDraftEditUrl("surfboards", String(listing.id))
         }
       }
-      // Keep impersonation only when editing that seller’s listing (not your own).
-      const keepImpersonation =
-        imp != null &&
-        imp.userId === listing.user_id &&
-        sessionUserId !== listing.user_id
-      if (imp && !keepImpersonation) {
-        clearImpersonation()
-        setImpersonation(null)
+      if (isAdminListingEditEntry(sellSearchParams)) {
+        setImpersonation(await syncClientImpersonationForListingOwner(String(listing.user_id ?? "")))
       }
       const loadedFulfillment = boardFulfillmentFromFlags(
         listing.local_pickup,
@@ -1149,37 +1322,20 @@ function SellPageContentInner({
         loadedReswellPackage.reswellPackageHeightIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightLb.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightOz.trim() !== ""
-      const storedParcelInches = (() => {
-        if (!hasReswellPackageFromDb) return null
-        const L = parseReswellParcelLengthRawToCarrierInches(
-          loadedReswellPackage.reswellPackageLengthIn,
-        )
-        const W = parseReswellParcelWidthHeightRawToCarrierInches(
-          loadedReswellPackage.reswellPackageWidthIn,
-        )
-        const H = parseReswellParcelWidthHeightRawToCarrierInches(
-          loadedReswellPackage.reswellPackageHeightIn,
-        )
-        if (L == null || W == null || H == null) return null
-        return { lengthIn: L, widthIn: W, heightIn: H }
-      })()
-      const matchedStoredBand = storedParcelInches
-        ? matchSurfboardShippingPackBandFromParcel(storedParcelInches)
-        : null
-      // Null band + non-band carton dims → admin custom carton. Null band + Max dims (or empty) → legacy Max.
-      const loadedAdminCustomCarton =
-        loadedSurfboardShippingTier === "shortboard" &&
-        !explicitPackBand &&
-        Boolean(storedParcelInches) &&
-        !matchedStoredBand
-      const loadedSurfboardShippingPackBand: SurfboardShippingPackBandId | "" =
-        loadedSurfboardShippingTier !== "shortboard"
-          ? ""
-          : explicitPackBand
-            ? explicitPackBand
-            : loadedAdminCustomCarton
-              ? ""
-              : (matchedStoredBand ?? "shortboard_medium")
+      // Legacy pack-band listings: prefill the package fields from the fixed carton.
+      const packageFromLegacyBand =
+        !hasReswellPackageFromDb && explicitPackBand
+          ? (() => {
+              const band = surfboardShippingPackBandFixedParcel(explicitPackBand)
+              return {
+                reswellPackageLengthIn: String(band.lengthIn),
+                reswellPackageWidthIn: String(band.widthIn),
+                reswellPackageHeightIn: String(band.heightIn),
+                reswellPackageWeightLb: String(band.weightLb),
+                reswellPackageWeightOz: "",
+              }
+            })()
+          : null
       const parsedDims = surfboardSellFormDimensionsFromListingRow(
         listing as {
           dimensions?: string | null
@@ -1204,15 +1360,15 @@ function SellPageContentInner({
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
         boardShippingPrice,
-        surfboardShippingTier: loadedSurfboardShippingTier,
-        // Re-confirm ceiling on edit so sellers acknowledge the max-size policy.
-        surfboardShippingTierCeilingConfirmed: false,
-        surfboardShippingPackBand: loadedSurfboardShippingPackBand,
+        surfboardShippingTier: loadedSurfboardShippingTier || "shortboard",
+        surfboardShippingTierCeilingConfirmed: true,
+        surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
         surfboardShippingPackBandCeilingConfirmed: false,
-        adminCustomShippingCarton: loadedAdminCustomCarton,
+        // Board `/sell` always uses seller-entered package size for Reswell.
+        adminCustomShippingCarton: boardShippingCostMode === "reswell",
         ...(hasReswellPackageFromDb
           ? loadedReswellPackage
-          : {
+          : packageFromLegacyBand ?? {
               reswellPackageLengthIn: "",
               reswellPackageWidthIn: "",
               reswellPackageHeightIn: "",
@@ -1230,6 +1386,23 @@ function SellPageContentInner({
           if (f == null || f === "") return ""
           return String(f)
         })(),
+        showPriceMarkdown: (() => {
+          const compareAt = Number.parseFloat(
+            String((listing as { compare_at_price?: number | string | null }).compare_at_price ?? ""),
+          )
+          const price = Number.parseFloat(String(listing.price ?? ""))
+          return Number.isFinite(compareAt) && Number.isFinite(price) && compareAt > price
+        })(),
+        loadedPublishedPriceUsd: (() => {
+          const n = Number.parseFloat(String(listing.price ?? ""))
+          return Number.isFinite(n) ? Math.round(n * 100) / 100 : null
+        })(),
+        loadedCompareAtPriceUsd: (() => {
+          const n = Number.parseFloat(
+            String((listing as { compare_at_price?: number | string | null }).compare_at_price ?? ""),
+          )
+          return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null
+        })(),
         buyerOffers:
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
         boardType: listing.board_type ?? "",
@@ -1243,6 +1416,9 @@ function SellPageContentInner({
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardFinSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
         boardConstruction: (listing as { construction?: string | null }).construction ?? "",
+        boardFinsIncluded: finsIncludedFormValue(
+          (listing as { fins_included?: boolean | null }).fins_included,
+        ),
         boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
         boardBrandModelId: loadedBrandModelId,
         boardIndexBrandSlug: loadedCatalogBrandSlug || brandSlugFromCatalogModel,
@@ -1293,12 +1469,49 @@ function SellPageContentInner({
       latestListingPhotoPrepareSeqRef.current.clear()
       setImages(existingImages)
       setRemovedImageIds([])
+
+      const existingVideos = (
+        (
+          listing as {
+            listing_videos?: Array<{
+              id: string
+              url: string
+              thumbnail_url?: string | null
+              content_type?: string | null
+              duration_seconds?: number | null
+              byte_size?: number | null
+              sort_order?: number | null
+            }> | null
+          }
+        ).listing_videos ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       return { status: "ready" as const }
     },
-    [editId, router],
+    [editId, hydrateExistingVideo, router, sellSearchParams],
   )
 
-  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+  const { editLoading, showEditSkeleton, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
     editId: loadListingId,
     supabase,
     signInReturnPath: loadListingId ? `/sell?edit=${loadListingId}` : "/sell",
@@ -1330,12 +1543,16 @@ function SellPageContentInner({
     optimizingAny: images.some((im) => im.optimizePhase === "running"),
     extraDisabled: boardCategoryOptions.length === 0,
     onOpenDraft: onSoftOpenDraft,
+    // Guest cookie drafts — same as Quick. Avoids "Sign in to save a draft" nags.
+    allowUnsigned: !editId,
   })
 
   const {
     localServerDraftId,
     draftControls: boardDraftControls,
     showDraftControls: showBoardDraftControls,
+    draftSaveStatus: serverDraftSaveStatus,
+    persistServerDraftRef,
   } = serverDraft
   const effectiveEditId = editId ?? localServerDraftId
   const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
@@ -1347,6 +1564,142 @@ function SellPageContentInner({
     () => formatBoardLengthForTitle(formData.boardLength),
     [formData.boardLength],
   )
+
+  /**
+   * Saved listing areas (profile last-used + local recent). Applied as chips in
+   * LocationPicker; the newest pin can auto-fill a brand-new form once.
+   */
+  const [locationPrefillSuggested, setLocationPrefillSuggested] =
+    useState<LocationPrefillSuggested | null>(null)
+  const [savedListingLocations, setSavedListingLocations] = useState<
+    SellSavedListingLocation[]
+  >([])
+  const savedLocationAutoAppliedRef = useRef(false)
+  useEffect(() => {
+    if (editId) return
+    let cancelled = false
+    const localSaved = readSellSavedListingLocations()
+    if (localSaved.length > 0) {
+      setSavedListingLocations(localSaved)
+    }
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select(
+          "default_listing_city, default_listing_state, default_listing_lat, default_listing_lng, default_listing_display",
+        )
+        .eq("id", user.id)
+        .maybeSingle()
+      if (cancelled) return
+      const city = (profile?.default_listing_city ?? "").trim()
+      if (!city) return
+      const state = (profile?.default_listing_state ?? "").trim()
+      const display =
+        (profile?.default_listing_display ?? "").trim() ||
+        [city, state].filter(Boolean).join(", ")
+      const lat =
+        typeof profile?.default_listing_lat === "number" &&
+        Number.isFinite(profile.default_listing_lat)
+          ? profile.default_listing_lat
+          : null
+      const lng =
+        typeof profile?.default_listing_lng === "number" &&
+        Number.isFinite(profile.default_listing_lng)
+          ? profile.default_listing_lng
+          : null
+
+      setLocationPrefillSuggested({
+        city,
+        state,
+        displayLabel: display,
+      })
+
+      if (lat != null && lng != null && !(lat === 0 && lng === 0)) {
+        const profileLoc: SellSavedListingLocation = {
+          city,
+          state,
+          lat,
+          lng,
+          displayName: display,
+        }
+        const merged = rememberSellSavedListingLocation(profileLoc)
+        if (!cancelled) setSavedListingLocations(merged)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [editId, supabase])
+
+  /** One-time auto-apply of the newest saved pin on a brand-new listing (no draft location yet). */
+  useEffect(() => {
+    if (editId || !draftHydrated || savedLocationAutoAppliedRef.current) return
+    if (savedListingLocations.length === 0) return
+    if (sellFormHasCommittedMapPins(formData)) {
+      savedLocationAutoAppliedRef.current = true
+      return
+    }
+    const loc = savedListingLocations[0]
+    if (!loc) return
+    savedLocationAutoAppliedRef.current = true
+    setPickupShippingLocationUserCommits((c) => (c > 0 ? c : 1))
+    setFormData((f) => {
+      if (sellFormHasCommittedMapPins(f)) return f
+      return {
+        ...f,
+        locationLat: loc.lat,
+        locationLng: loc.lng,
+        locationCity: loc.city,
+        locationState: loc.state,
+        locationDisplay: loc.displayName,
+      }
+    })
+  }, [
+    editId,
+    draftHydrated,
+    savedListingLocations,
+    formData.locationLat,
+    formData.locationLng,
+    formData.locationCity,
+  ])
+
+  /**
+   * Auto-derived title: composes "6'0 Brand Model" from the catalog pick and
+   * keeps it in sync until the seller edits the title themselves. Cuts the
+   * most-skipped required field down to zero typing for catalog boards.
+   */
+  const lastAutoTitleRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (editId || !draftHydrated) return
+    const brand = formData.brand.trim()
+    const model = formData.boardModelName.trim()
+    if (!brand && !model) return
+    const lengthPart = isBoardLengthEntryComplete(formData.boardLength)
+      ? formatBoardLengthForTitle(formData.boardLength)
+      : ""
+    const suggestion = [lengthPart, brand, model].filter(Boolean).join(" ").trim()
+    if (!suggestion || suggestion.length > LISTING_TITLE_MAX_LENGTH) return
+    const current = formData.title
+    // Untouched = still exactly our last suggestion, or empty and never auto-filled.
+    // A seller who clears an auto title has opted out — don't fight the field.
+    const untouched =
+      current === lastAutoTitleRef.current ||
+      (current.trim() === "" && lastAutoTitleRef.current === null)
+    if (!untouched || current === suggestion) return
+    lastAutoTitleRef.current = suggestion
+    setFormData((f) => ({ ...f, title: suggestion }))
+  }, [
+    draftHydrated,
+    editId,
+    formData.brand,
+    formData.boardModelName,
+    formData.boardLength,
+    formData.title,
+  ])
 
   const sellValidationForm = useMemo(
     (): SellFormValidationInput => ({
@@ -1410,25 +1763,71 @@ function SellPageContentInner({
     (pickupShippingSectionEnteredOnce && pickupShippingLocationUserCommits > 0)
 
   const sellSectionCompletion = useMemo((): Record<string, boolean> => {
-    const deliveryDataComplete = sellSectionCompletionBase["sell-section-delivery"] === true
+    const deliveryDataComplete = sellSectionCompletionBase["sell-section-shipping"] === true
     return {
       ...sellSectionCompletionBase,
-      "sell-section-delivery": deliveryDataComplete && pickupShippingStepperUxSatisfied,
+      "sell-section-shipping": deliveryDataComplete && pickupShippingStepperUxSatisfied,
     }
   }, [pickupShippingStepperUxSatisfied, sellSectionCompletionBase])
 
   const activeSellSectionId = BOARD_SELL_SECTION_ID_BY_STEP[flowStep]
+
+  const sellStepChecklistBySection = useMemo(
+    () =>
+      computeSellStepChecklist(sellValidationForm, {
+        imageCount: images.length,
+        imagesUploadReady,
+      }),
+    [sellValidationForm, images.length, imagesUploadReady],
+  )
+  const shippingSetupIncomplete = useMemo(
+    () =>
+      (sellStepChecklistBySection["sell-section-shipping"] ?? []).some(
+        (item) => item.id === "shipping-setup" && !item.complete,
+      ),
+    [sellStepChecklistBySection],
+  )
+
+  /**
+   * Quick publish path: flip to pickup-only and clear the shipping config so
+   * the seller isn't blocked on package size. Shipping can be added anytime by
+   * editing the listing.
+   */
+  const handleSkipShippingForNow = useCallback(() => {
+    setFormData((fd) => ({
+      ...fd,
+      boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+      boardShippingCostMode: "reswell" as BoardShippingCostMode,
+      boardShippingPrice: "",
+      surfboardShippingTier: "" as SurfboardShippingTierId | "",
+      surfboardShippingTierCeilingConfirmed: false,
+      surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+      surfboardShippingPackBandCeilingConfirmed: false,
+      adminCustomShippingCarton: true,
+      reswellPackageLengthIn: "",
+      reswellPackageWidthIn: "",
+      reswellPackageHeightIn: "",
+      reswellPackageWeightLb: "",
+      reswellPackageWeightOz: "",
+    }))
+  }, [])
 
   const goToSellSection = useCallback(
     (sectionId: string) => {
       const step = BOARD_SELL_STEP_BY_SECTION_ID[sectionId]
       if (!step) return
       setBoardFlowStep(step)
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" })
+      if (typeof window === "undefined") return
+      if (viewMode === "advanced") {
+        const el = document.getElementById(sectionId)
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" })
+          return
+        }
       }
+      window.scrollTo({ top: 0, behavior: "smooth" })
     },
-    [setBoardFlowStep],
+    [setBoardFlowStep, viewMode],
   )
 
   const goToNextSellStep = useCallback(() => {
@@ -1477,14 +1876,14 @@ function SellPageContentInner({
   })
 
   useEffect(() => {
-    if (flowStep === "delivery") {
+    if (viewMode === "advanced" || flowStep === "shipping") {
       setPickupShippingSectionEnteredOnce(true)
     }
-  }, [flowStep])
+  }, [flowStep, viewMode])
 
   useEffect(() => {
     if (skipPickupShippingStepperInteractionUx || editLoading) return
-    if (flowStep !== "delivery") return
+    if (viewMode !== "advanced" && flowStep !== "shipping") return
 
     let cancelled = false
     let raf = 0
@@ -1493,7 +1892,7 @@ function SellPageContentInner({
 
     const attach = () => {
       if (cancelled) return
-      const el = document.getElementById("sell-section-delivery")
+      const el = document.getElementById("sell-section-shipping")
       if (!el) {
         attempts += 1
         if (attempts > 150) return
@@ -1529,7 +1928,7 @@ function SellPageContentInner({
       window.cancelAnimationFrame(raf)
       detach?.()
     }
-  }, [editLoading, flowStep, skipPickupShippingStepperInteractionUx])
+  }, [editLoading, flowStep, viewMode, skipPickupShippingStepperInteractionUx])
   const resolvedTitlePreview = useMemo(
     () => buildResolvedListingTitle(sellValidationForm),
     [sellValidationForm],
@@ -1539,245 +1938,86 @@ function SellPageContentInner({
     () => flagsFromBoardFulfillment(formData.boardFulfillment),
     [formData.boardFulfillment],
   )
+  const reswellShippingSelected =
+    deliveryFlags.shipping_available && formData.boardShippingCostMode === "reswell"
+  const freeShippingSelected =
+    deliveryFlags.shipping_available && formData.boardShippingCostMode === "free"
+  const flatShippingSelected =
+    deliveryFlags.shipping_available && formData.boardShippingCostMode === "flat"
 
-  const sellReswellShipping = useMemo(
-    () =>
-      resolveSellReswellShipping({
-        boardLength: formData.boardLength,
-        boardWidthInches: formData.boardWidthInches,
-      }),
-    [formData.boardLength, formData.boardWidthInches],
-  )
-
-  /** Reswell parcel fields follow the selected tier ceiling (or shortboard pack band). */
-  useEffect(() => {
-    if (!deliveryFlags.shipping_available || formData.boardShippingCostMode !== "reswell") {
-      return
-    }
-    // Admin custom carton — do not overwrite entered L×W×H/weight.
-    if (formData.adminCustomShippingCarton) return
-
-    const tierId = parseSurfboardShippingTierId(formData.surfboardShippingTier)
-    if (!tierId) return
-
-    const bandId =
-      tierId === "shortboard"
-        ? parseSurfboardShippingPackBandId(formData.surfboardShippingPackBand)
-        : null
-    const parcelFill = bandId
-      ? (() => {
-          const band = surfboardShippingPackBandFixedParcel(bandId)
-          return {
-            reswellPackageLengthIn: String(band.lengthIn),
-            reswellPackageWidthIn: String(band.widthIn),
-            reswellPackageHeightIn: String(band.heightIn),
-            reswellPackageWeightLb: String(band.weightLb),
-            reswellPackageWeightOz: "",
-          }
-        })()
-      : surfboardShippingTierAutofillFromSelection(tierId)
-
-    setFormData((fd) => {
-      if (!flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available) return fd
-      if (fd.boardShippingCostMode !== "reswell") return fd
-      if (fd.adminCustomShippingCarton) return fd
-      if (parseSurfboardShippingTierId(fd.surfboardShippingTier) !== tierId) return fd
-      if (
-        tierId === "shortboard" &&
-        parseSurfboardShippingPackBandId(fd.surfboardShippingPackBand) !== bandId
-      ) {
-        return fd
-      }
-      if (
-        fd.reswellPackageLengthIn === parcelFill.reswellPackageLengthIn &&
-        fd.reswellPackageWidthIn === parcelFill.reswellPackageWidthIn &&
-        fd.reswellPackageHeightIn === parcelFill.reswellPackageHeightIn &&
-        fd.reswellPackageWeightLb === parcelFill.reswellPackageWeightLb &&
-        fd.reswellPackageWeightOz === parcelFill.reswellPackageWeightOz
-      ) {
-        return fd
-      }
-      return {
-        ...fd,
-        reswellPackageLengthIn: parcelFill.reswellPackageLengthIn ?? "",
-        reswellPackageWidthIn: parcelFill.reswellPackageWidthIn ?? "",
-        reswellPackageHeightIn: parcelFill.reswellPackageHeightIn ?? "",
-        reswellPackageWeightLb: parcelFill.reswellPackageWeightLb ?? "",
-        reswellPackageWeightOz: parcelFill.reswellPackageWeightOz ?? "",
-      }
-    })
-  }, [
-    deliveryFlags.shipping_available,
-    formData.boardShippingCostMode,
-    formData.adminCustomShippingCarton,
-    formData.surfboardShippingTier,
-    formData.surfboardShippingPackBand,
-  ])
-
-  /** Sellers stay Reswell-only; admins may keep free/flat. */
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (!deliveryFlags.shipping_available) return
-    if (formData.boardShippingCostMode === "reswell") return
-    setFormData((fd) =>
-      fd.boardShippingCostMode === "reswell"
-        ? fd
-        : { ...fd, boardShippingCostMode: "reswell" as BoardShippingCostMode },
-    )
-  }, [actorIsAdmin, deliveryFlags.shipping_available, formData.boardShippingCostMode])
-
-  /**
-   * Auto-pick the smallest UPS-safe shortboard pack (Compact → Medium).
-   * Boards over the UPS DIM ceiling cannot use Reswell shipping — turn it off for sellers.
-   * Admins may keep flat/free shipping on oversize boards (past inventory, special cases).
-   *
-   * Wait until `actorIsAdmin` is known — otherwise free/flat gets wiped while the profile
-   * query is still in flight (common when editing your own admin listings).
-   */
-  useEffect(() => {
-    if (actorIsAdmin === null && !impersonation) return
-
-    const resolved = resolveSellReswellShipping({
-      boardLength: formData.boardLength,
-      boardWidthInches: formData.boardWidthInches,
-    })
-    const allowPrivilegedShippingUi =
-      actorIsAdmin === true || Boolean(impersonation)
-
-    setFormData((fd) => {
-      const shippingOn = flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available
-      const privilegedFlatOrFree =
-        allowPrivilegedShippingUi &&
-        (fd.boardShippingCostMode === "free" || fd.boardShippingCostMode === "flat")
-
-      if (!resolved.shippingSupported) {
-        // Admin flat/free on an oversize board — keep shipping; clear Reswell pack fields only.
-        if (privilegedFlatOrFree && shippingOn) {
-          if (
-            !fd.surfboardShippingTier &&
-            !fd.surfboardShippingPackBand &&
-            !fd.reswellPackageLengthIn &&
-            !fd.reswellPackageWidthIn &&
-            !fd.reswellPackageHeightIn &&
-            !fd.reswellPackageWeightLb &&
-            !fd.reswellPackageWeightOz
-          ) {
-            return fd
-          }
-          return {
-            ...fd,
-            surfboardShippingTier: "" as SurfboardShippingTierId | "",
-            surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
-            surfboardShippingTierCeilingConfirmed: false,
-            surfboardShippingPackBandCeilingConfirmed: false,
-            adminCustomShippingCarton: false,
-            reswellPackageLengthIn: "",
-            reswellPackageWidthIn: "",
-            reswellPackageHeightIn: "",
-            reswellPackageWeightLb: "",
-            reswellPackageWeightOz: "",
-          }
-        }
-
-        // Admin may still enable flat/free — don't yank shipping off while they pick a mode.
-        // Custom carton mode is also kept (admin enters UPS-safe dims manually).
-        if (allowPrivilegedShippingUi && shippingOn) {
-          if (fd.adminCustomShippingCarton && fd.boardShippingCostMode === "reswell") {
-            return fd
-          }
-          if (
-            !fd.surfboardShippingTier &&
-            !fd.surfboardShippingPackBand &&
-            fd.boardShippingCostMode !== "reswell"
-          ) {
-            return fd
-          }
-          return {
-            ...fd,
-            // Default oversize admin ship to flat so Save isn't blocked on Reswell UPS checks.
-            boardShippingCostMode:
-              fd.boardShippingCostMode === "free" || fd.boardShippingCostMode === "flat"
-                ? fd.boardShippingCostMode
-                : ("flat" as BoardShippingCostMode),
-            surfboardShippingTier: "" as SurfboardShippingTierId | "",
-            surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
-            surfboardShippingTierCeilingConfirmed: false,
-            surfboardShippingPackBandCeilingConfirmed: false,
-            adminCustomShippingCarton: false,
-            reswellPackageLengthIn: "",
-            reswellPackageWidthIn: "",
-            reswellPackageHeightIn: "",
-            reswellPackageWeightLb: "",
-            reswellPackageWeightOz: "",
-          }
-        }
-
-        if (!shippingOn && !fd.surfboardShippingTier && !fd.surfboardShippingPackBand) {
-          return fd
-        }
-        const pickupOnly = boardFulfillmentFromChecks(false, true)
+  const applyBoardShippingOffer = useCallback(
+    (enable: boolean, mode: BoardShippingCostMode) => {
+      setFormData((fd) => {
+        const cur = flagsFromBoardFulfillment(fd.boardFulfillment)
+        let ns = enable
+        let np = cur.local_pickup
+        if (!ns && !np) np = true
+        const nextMode = enable ? mode : ("reswell" as BoardShippingCostMode)
+        const clearReswellPack = !enable || nextMode === "free" || nextMode === "flat"
         return {
           ...fd,
-          boardFulfillment: shippingOn ? pickupOnly : fd.boardFulfillment,
-          boardShippingCostMode: "reswell" as BoardShippingCostMode,
-          surfboardShippingTier: "" as SurfboardShippingTierId | "",
-          surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
-          surfboardShippingTierCeilingConfirmed: false,
-          surfboardShippingPackBandCeilingConfirmed: false,
-          adminCustomShippingCarton: false,
-          reswellPackageLengthIn: "",
-          reswellPackageWidthIn: "",
-          reswellPackageHeightIn: "",
-          reswellPackageWeightLb: "",
-          reswellPackageWeightOz: "",
+          boardFulfillment: boardFulfillmentFromChecks(ns, np),
+          boardShippingCostMode: nextMode,
+          ...(nextMode !== "flat" ? { boardShippingPrice: "" } : {}),
+          ...(clearReswellPack
+            ? {
+                surfboardShippingTier: "" as SurfboardShippingTierId | "",
+                surfboardShippingTierCeilingConfirmed: false,
+                surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+                surfboardShippingPackBandCeilingConfirmed: false,
+                adminCustomShippingCarton: true,
+                reswellPackageLengthIn: "",
+                reswellPackageWidthIn: "",
+                reswellPackageHeightIn: "",
+                reswellPackageWeightLb: "",
+                reswellPackageWeightOz: "",
+              }
+            : {
+                adminCustomShippingCarton: true,
+                surfboardShippingTier: (fd.surfboardShippingTier ||
+                  "shortboard") as SurfboardShippingTierId,
+                surfboardShippingTierCeilingConfirmed: true,
+                surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+                surfboardShippingPackBandCeilingConfirmed: false,
+              }),
         }
-      }
+      })
+    },
+    [],
+  )
 
+  /**
+   * Board `/sell` Reswell shipping always uses seller-entered package L×W×H + weight.
+   * No pack-band autofill from board dimensions. Free/flat skip package fields.
+   */
+  useEffect(() => {
+    setFormData((fd) => {
+      const shippingOn = flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available
       if (!shippingOn) return fd
 
-      // Admin custom carton — leave pack band / dims alone.
-      if (allowPrivilegedShippingUi && fd.adminCustomShippingCarton) {
+      if (fd.boardShippingCostMode === "free" || fd.boardShippingCostMode === "flat") {
         return fd
       }
 
-      // Always pick the smallest UPS-safe pack that fits — sellers never choose.
-      const nextBand = resolved.suggestedPackBandId
-      const nextTier = nextBand ? ("shortboard" as const) : ("" as const)
-      const ceilingOk = Boolean(nextBand)
-
-      const keepPrivilegedMode = privilegedFlatOrFree
-
       if (
-        (keepPrivilegedMode || fd.boardShippingCostMode === "reswell") &&
-        fd.surfboardShippingTier === nextTier &&
-        fd.surfboardShippingPackBand === nextBand &&
-        fd.surfboardShippingTierCeilingConfirmed === ceilingOk &&
-        fd.surfboardShippingPackBandCeilingConfirmed === ceilingOk &&
-        fd.adminCustomShippingCarton === false
+        fd.boardShippingCostMode === "reswell" &&
+        fd.adminCustomShippingCarton === true &&
+        !fd.surfboardShippingPackBand
       ) {
         return fd
       }
 
       return {
         ...fd,
-        boardShippingCostMode: keepPrivilegedMode
-          ? fd.boardShippingCostMode
-          : ("reswell" as BoardShippingCostMode),
-        surfboardShippingTier: nextTier,
-        surfboardShippingPackBand: nextBand,
-        surfboardShippingTierCeilingConfirmed: ceilingOk,
-        surfboardShippingPackBandCeilingConfirmed: ceilingOk,
-        adminCustomShippingCarton: false,
+        boardShippingCostMode: "reswell" as BoardShippingCostMode,
+        adminCustomShippingCarton: true,
+        surfboardShippingTier: (fd.surfboardShippingTier || "shortboard") as SurfboardShippingTierId,
+        surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+        surfboardShippingTierCeilingConfirmed: true,
+        surfboardShippingPackBandCeilingConfirmed: false,
       }
     })
-  }, [
-    actorIsAdmin,
-    impersonation,
-    formData.boardLength,
-    formData.boardWidthInches,
-    formData.adminCustomShippingCarton,
-    deliveryFlags.shipping_available,
-  ])
+  }, [deliveryFlags.shipping_available, formData.boardShippingCostMode])
 
   /**
    * `/sell?new=1` — blank form and local snapshot.
@@ -1786,12 +2026,15 @@ function SellPageContentInner({
    */
   useEffect(() => {
     if (!startFresh) return
+    if (isPendingPublish("board")) return
     for (const im of imagesRef.current) {
       if (im.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(im.previewUrl)
     }
     draftPhotosPendingRef.current = null
     setFormData(createInitialSellFormData())
-    setBoardFlowStep("basics")
+    setBoardFlowStep("product")
+    setViewModeState("guided")
+    persistBoardSellViewMode("guided")
     clearPersistedBoardSellFlowStep()
     sellListingThumbLoadedSrcByClientId.clear()
     latestListingPhotoPrepareSeqRef.current.clear()
@@ -1844,9 +2087,10 @@ function SellPageContentInner({
           }
         })()
 
+      const pendingPublishResume = isPendingPublish("board")
+
       if (
-        !wantsBlankListing &&
-        !suppressIdbForNewListing &&
+        (pendingPublishResume || (!wantsBlankListing && !suppressIdbForNewListing)) &&
         !getImpersonation()
       ) {
         const {
@@ -1889,9 +2133,13 @@ function SellPageContentInner({
   }, [editId, startFresh, supabase])
 
   useEffect(() => {
-    const loadActorAdmin = async (userId: string | null) => {
+    const loadActorAdmin = async (
+      userId: string | null,
+      opts?: { keepExistingIfUnsigned?: boolean },
+    ) => {
       if (!userId) {
-        setActorIsAdmin(null)
+        if (opts?.keepExistingIfUnsigned) return
+        setActorIsAdmin(false)
         return
       }
       const { data: profile } = await supabase
@@ -1905,7 +2153,7 @@ function SellPageContentInner({
     void supabase.auth.getUser().then(({ data: { user } }) => {
       setSignedInUserId(user?.id ?? null)
       sellDraftUserIdRef.current = user?.id ?? null
-      void loadActorAdmin(user?.id ?? null)
+      void loadActorAdmin(user?.id ?? null, { keepExistingIfUnsigned: true })
     })
     const {
       data: { subscription },
@@ -1913,9 +2161,8 @@ function SellPageContentInner({
       const uid = session?.user?.id ?? null
       sellDraftUserIdRef.current = uid
       setSignedInUserId(uid)
-      void loadActorAdmin(uid)
+      void loadActorAdmin(uid, { keepExistingIfUnsigned: _event === "INITIAL_SESSION" })
       if (!uid) return
-      photoUploadSignInPromptedRef.current = false
       void migrateGuestSellListingDraftToUser(uid)
       for (const slot of imagesRef.current) {
         if (!slot.sourceFile) continue
@@ -1934,12 +2181,18 @@ function SellPageContentInner({
       void (async () => {
         const r = sellDraftLatestRef.current
         if (r.editId || !r.draftHydrated) return
-        await persistSellListingDraftSnapshot({
-          listingType: r.listingType,
-          formData: r.formData,
-          images: r.images,
-          userId: sellDraftUserIdRef.current,
-        })
+        setDraftAutosaveState("saving")
+        try {
+          await persistSellListingDraftSnapshot({
+            listingType: r.listingType,
+            formData: r.formData,
+            images: r.images,
+            userId: sellDraftUserIdRef.current,
+          })
+          setDraftAutosaveState("saved")
+        } catch {
+          setDraftAutosaveState("idle")
+        }
       })()
     }, 600)
     return () => {
@@ -2005,6 +2258,42 @@ function SellPageContentInner({
     }
   }, [treatAsDraftForSync, draftRowForImages, editLoading, images])
 
+  useEffect(() => {
+    if (!treatAsDraftForSync || !draftRowForImages || editLoading) return
+    if (!videoUploadReady || videoUploading) return
+    if (!readyVideo && removedVideoIds.length === 0) return
+    const timer = window.setTimeout(() => {
+      void syncListingDraftVideosClient(
+        supabase,
+        draftRowForImages,
+        video,
+        removedVideoIds,
+      )
+        .then(({ nextVideo }) => {
+          setVideo(nextVideo)
+          setRemovedVideoIds([])
+        })
+        .catch((e) => {
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[sell] draft listing_videos sync", e)
+          }
+        })
+    }, 1200)
+    return () => window.clearTimeout(timer)
+  }, [
+    treatAsDraftForSync,
+    draftRowForImages,
+    editLoading,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    removedVideoIds,
+    video,
+    setVideo,
+    setRemovedVideoIds,
+    supabase,
+  ])
+
   function listingPhotoPrepareSeqInSync(clientId: string, prepareSeq: number): boolean {
     return (latestListingPhotoPrepareSeqRef.current.get(clientId) ?? 0) === prepareSeq
   }
@@ -2057,30 +2346,31 @@ function SellPageContentInner({
       }
       if (!session?.access_token || !user) {
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-        const authMsg = "Sign in again to upload this photo."
-        logSellFunnelEvent({
-          listingType: "surfboards",
-          event: "upload_failed",
-          message: authMsg,
-        })
         setImages((prev) =>
           prev.map((s) =>
             s.clientId === clientId
               ? {
                   ...s,
                   optimizePhase: "done",
-                  uploadPhase: "error",
-                  errorMessage: authMsg,
+                  uploadPhase: "pending_auth",
+                  errorMessage: undefined,
                 }
               : s,
           ),
         )
-        if (!photoUploadSignInPromptedRef.current) {
-          photoUploadSignInPromptedRef.current = true
-          const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
-          toast.error(authMsg)
-          openSignIn(ret)
-        }
+        // Keep local previews for guests — auth is gated at Publish, not mid-upload.
+        void persistSellListingDraftSnapshot({
+          listingType: "board",
+          formData: {
+            ...formDataRef.current,
+            boardFlowStep: flowStep,
+          } as SellListingDraftFormSnapshot,
+          images: imagesRef.current,
+          userId: null,
+          includeInFlightPhotos: true,
+        }).catch(() => {
+          /* best-effort */
+        })
         return
       }
 
@@ -2161,60 +2451,15 @@ function SellPageContentInner({
     for (const s of q) void optimizeAndUploadSlot(s)
   }, [draftHydrated])
 
-  /** After guest Publish → sign-in, resume submit once photos finish uploading. */
-  useEffect(() => {
-    if (!draftHydrated || editId || pendingPublishHandledRef.current) return
-    let cancelled = false
-
-    void (async () => {
-      let pending = false
-      try {
-        pending = sessionStorage.getItem(SELL_PENDING_PUBLISH_KEY) === "1"
-      } catch {
-        /* ignore */
-      }
-      if (!pending) return
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user || cancelled) return
-
-      pendingPublishHandledRef.current = true
-      try {
-        sessionStorage.removeItem(SELL_PENDING_PUBLISH_KEY)
-      } catch {
-        /* ignore */
-      }
-
-      for (let i = 0; i < 120 && !cancelled; i++) {
-        const imgs = imagesRef.current
-        const workLeft = imgs.some(
-          (im) =>
-            im.sourceFile &&
-            (im.optimizePhase === "running" ||
-              im.uploadPhase === "uploading" ||
-              (im.optimizePhase === "done" &&
-                im.uploadPhase !== "done" &&
-                im.uploadPhase !== "error")),
-        )
-        if (!workLeft) break
-        await new Promise((resolve) => setTimeout(resolve, 500))
-      }
-
-      if (cancelled) return
-      window.requestAnimationFrame(() => {
-        formRef.current?.requestSubmit()
-      })
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [draftHydrated, editId, supabase])
+  usePendingPublishResume({
+    listingKind: "board",
+    draftHydrated,
+    formRef,
+    imagesRef,
+    editLoading,
+  })
 
   function retryListingPhotoUpload(clientId: string) {
-    photoUploadSignInPromptedRef.current = false
     const live = imagesRef.current.find((s) => s.clientId === clientId)
     if (!live) return
     const nextSeq = (live.prepareSeq ?? 0) + 1
@@ -2489,7 +2734,7 @@ function SellPageContentInner({
   function listingImagesPayloadForApi(): { url: string; thumbnail_url: string | null }[] {
     return images.map((im) => ({
       url: im.url!,
-      thumbnail_url: im.thumbnailUrl ?? null,
+      thumbnail_url: persistableListingThumbnailUrl(im.thumbnailUrl, im.url),
     }))
   }
 
@@ -2599,12 +2844,18 @@ function SellPageContentInner({
     if (tid != null) toast.dismiss(tid)
   }
 
+  const leaveSellDocument = useCallback((href: string) => {
+    allowDocumentUnloadRef.current = true
+    navigateAfterListingSave(href)
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (publishInFlightRef.current) {
       return
     }
     publishInFlightRef.current = true
+    allowDocumentUnloadRef.current = false
 
     const publishStartedAt = Date.now()
     logSellFunnelEvent({
@@ -2631,35 +2882,45 @@ function SellPageContentInner({
       const user = session?.user
       const accessToken = session?.access_token
       if (!user || !accessToken) {
-        await persistSellListingDraftSnapshot({
-          listingType: "board",
-          formData: formData as SellListingDraftFormSnapshot,
-          images,
-          userId: null,
+        await beginGuestListingPublishAuth({
+          kind: "board",
+          returnPath: "/sell/boards",
+          openSignIn,
+          persistDraft: () =>
+            persistSellListingDraftSnapshot({
+              listingType: "board",
+              formData: formData as SellListingDraftFormSnapshot,
+              images,
+              userId: null,
+              includeInFlightPhotos: true,
+            }),
         })
-        try {
-          sessionStorage.setItem(SELL_PENDING_PUBLISH_KEY, "1")
-        } catch {
-          /* quota / private mode */
-        }
-        const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
-        toast.message("Sign in to publish your listing")
-        openSignIn(ret)
         return
       }
 
+      // Sync readable cookie → localStorage; never wipe (cookie may be httpOnly).
       clearImpersonationStorageIfCookieMissing()
 
-      const { data: actorProfile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle()
-      const submitActorIsAdmin = actorProfile?.is_admin === true
-      setActorIsAdmin(submitActorIsAdmin)
+      let submitActorIsAdmin = actorIsAdmin === true || initialActorIsAdmin === true
+      try {
+        const { data: actorProfile, error: actorProfileError } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .maybeSingle()
+        if (!actorProfileError && actorProfile) {
+          submitActorIsAdmin = actorProfile.is_admin === true
+          setActorIsAdmin(submitActorIsAdmin)
+        }
+      } catch (profileError) {
+        // Token-refresh aborts must not drop admin impersonation mid-save.
+        if (!isSellSubmitAbortError(profileError) && process.env.NODE_ENV === "development") {
+          console.warn("[sell] is_admin lookup:", profileError)
+        }
+      }
 
-      /** Only admins may use impersonation listing APIs; server also requires the HTTP cookie + target id. */
-      let storedImpersonation = getImpersonation()
+      /** Cookie first, localStorage fallback — APIs still require the HTTP cookie. */
+      let storedImpersonation = getActiveImpersonationClient()
       if (storedImpersonation && !submitActorIsAdmin) {
         clearImpersonation()
         setImpersonation(null)
@@ -2683,13 +2944,11 @@ function SellPageContentInner({
       const listingImpersonation: ImpersonationData | null =
         submitActorIsAdmin && storedImpersonation ? storedImpersonation : null
 
-      const adminImpersonationEditListing = Boolean(
-        editId &&
-          editListingOwnerId &&
-          listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
-          user.id !== editListingOwnerId,
-      )
+      const adminImpersonationEditListing = adminIsEditingAnotherUsersListing({
+        actorIsAdmin: submitActorIsAdmin,
+        actorUserId: user.id,
+        listingOwnerId: editListingOwnerId,
+      })
 
       const submitForm = formData
 
@@ -2699,6 +2958,21 @@ function SellPageContentInner({
           !im.url?.trim() ||
           !im.thumbnailUrl?.trim(),
       )
+
+      if (!videoUploadReady || videoUploading) {
+        logSellFunnelEvent({
+          listingType: "surfboards",
+          event: "validation_failed",
+          message: "Video still uploading",
+        })
+        setPublishValidationBanner("Hang tight — your video is still uploading.")
+        window.requestAnimationFrame(() => {
+          document
+            .getElementById("sell-publish-validation-banner")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        })
+        return
+      }
 
       const sellerPurchaseRaw = submitForm.sellerPurchasePrice?.trim() ?? ""
       if (
@@ -2728,39 +3002,22 @@ function SellPageContentInner({
         requestAnimationFrame(() => resolve())
       })
 
-      const allowPrivilegedShipping =
-        submitActorIsAdmin || Boolean(listingImpersonation)
-      const upsShippingSupported = resolveSellReswellShipping({
-        boardLength: submitForm.boardLength,
-        boardWidthInches: submitForm.boardWidthInches,
-      }).shippingSupported
-
-      // Admin free/flat are separate from Reswell UPS — never validate UPS DIM for those modes.
-      // If Reswell isn't available (and admin isn't using a custom carton), coerce leftover
-      // "reswell" to flat before validate/save.
+      // Ensure Reswell board shipping always persists as seller-entered carton dims.
       let submitFormForSave = submitForm
       if (
-        allowPrivilegedShipping &&
         flagsFromBoardFulfillment(submitForm.boardFulfillment).shipping_available &&
-        !upsShippingSupported &&
-        !submitForm.adminCustomShippingCarton &&
         (submitForm.boardShippingCostMode === "reswell" || !submitForm.boardShippingCostMode)
       ) {
         submitFormForSave = {
           ...submitForm,
-          boardShippingCostMode: "flat" as BoardShippingCostMode,
-          surfboardShippingTier: "" as SurfboardShippingTierId | "",
+          boardShippingCostMode: "reswell" as BoardShippingCostMode,
+          adminCustomShippingCarton: true,
           surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
-          surfboardShippingTierCeilingConfirmed: false,
           surfboardShippingPackBandCeilingConfirmed: false,
-          adminCustomShippingCarton: false,
-          reswellPackageLengthIn: "",
-          reswellPackageWidthIn: "",
-          reswellPackageHeightIn: "",
-          reswellPackageWeightLb: "",
-          reswellPackageWeightOz: "",
+          surfboardShippingTier:
+            parseSurfboardShippingTierId(submitForm.surfboardShippingTier) ?? "shortboard",
+          surfboardShippingTierCeilingConfirmed: true,
         }
-        setFormData(submitFormForSave)
       }
 
       const validationMessage = validateSellListingForm(
@@ -2769,7 +3026,6 @@ function SellPageContentInner({
           imageCount: images.length,
           imagesUploadReady,
           adminImpersonationEdit: adminImpersonationEditListing,
-          allowPrivilegedShippingModes: allowPrivilegedShipping,
         },
       )
       if (validationMessage) {
@@ -2804,7 +3060,7 @@ function SellPageContentInner({
 
       const fulfillmentFlags = resolveListingFulfillmentFlagsForSellSubmit(fd)
       const shippingCostMode = fulfillmentFlags.shipping_available
-        ? normalizeSellShippingCostMode(fd.boardShippingCostMode, allowPrivilegedShipping)
+        ? normalizeSellShippingCostMode(fd.boardShippingCostMode)
         : null
       const shippingPriceForPersist = !fulfillmentFlags.shipping_available
         ? null
@@ -2816,7 +3072,6 @@ function SellPageContentInner({
           : 0
 
       if (
-        allowPrivilegedShipping &&
         fulfillmentFlags.shipping_available &&
         shippingCostMode === "flat" &&
         (fd.boardShippingPrice === "" || Number(fd.boardShippingPrice) < 0)
@@ -2849,6 +3104,9 @@ function SellPageContentInner({
         void saveDefaultListingLocationAction({
           city: boardLocationCity,
           state: (boardLocationState ?? "").trim() || undefined,
+          lat: boardLocationLat ?? undefined,
+          lng: boardLocationLng ?? undefined,
+          display: fd.locationDisplay.trim() || undefined,
         })
       }
 
@@ -2889,9 +3147,11 @@ function SellPageContentInner({
           images[0]?.previewUrl ||
           "/placeholder.svg",
         status: "publishing",
-      })
-      uploadToastIdRef.current = toast.loading("Your listing is being uploaded...", {
-        duration: 600_000,
+        condition: fd.condition,
+        boardType: fd.boardType,
+        shippingAvailable: fulfillmentFlags.shipping_available,
+        localPickup: fulfillmentFlags.local_pickup,
+        listingImages: listingImagesForPublishPreview(images),
       })
 
       let listingId: string | null = effectiveEditId
@@ -2915,11 +3175,11 @@ function SellPageContentInner({
         }
         const ownerEditsOwnListing =
           isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
-        const adminImpersonatesListingOwner =
-          !!editId &&
-          !!listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
-          user.id !== editListingOwnerId
+        const adminEditsOtherListing = adminIsEditingAnotherUsersListing({
+          actorIsAdmin: submitActorIsAdmin,
+          actorUserId: user.id,
+          listingOwnerId: editListingOwnerId,
+        })
 
         /** Persists surfboard dims on `listings.dimensions` (see migration `20260815120000_listings_dimensions_column.sql`). */
         const dimensionsStored = listingDimensionsColumnFromSurfboardSellForm(fd)
@@ -2929,6 +3189,7 @@ function SellPageContentInner({
           description: fd.description,
           price: parseFloat(fd.price),
           condition: fd.condition,
+          section: "surfboards" as const,
           category_id: fd.category,
           board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
           dimensions: dimensionsStored,
@@ -2952,6 +3213,12 @@ function SellPageContentInner({
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
+          compare_at_price: resolveCompareAtPriceOnUpdate({
+            currentPriceUsd: fd.loadedPublishedPriceUsd ?? parseFloat(fd.price),
+            nextPriceUsd: parseFloat(fd.price),
+            existingCompareAtUsd: fd.loadedCompareAtPriceUsd,
+            showPriceMarkdown: fd.showPriceMarkdown === true,
+          }),
         }
 
         if (ownerEditsOwnListing) {
@@ -2972,41 +3239,54 @@ function SellPageContentInner({
                 }
               : {}),
           }
-          let { data: updated, error: updateError } = await supabase
-            .from("listings")
-            .update(updatePayload)
-            .eq("id", effectiveEditId)
-            .eq("user_id", user.id)
-            .select("slug")
-            .single()
-          if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
-            if (process.env.NODE_ENV === "development") {
-              console.warn(
-                "[sell] DB rejected legacy listing dimension columns; saved without them. Ensure migrations are applied.",
-              )
-            }
-            const retry = await supabase
+          const persistOwnerListingUpdate = async () => {
+            let { data: updated, error: updateError } = await supabase
               .from("listings")
-              .update({
-                ...withoutListingDimensionDisplayDbFields(editListingFields as Record<string, unknown>),
-                updated_at: new Date().toISOString(),
-                ...(publishingFromDraftRow
-                  ? {
-                      status: "active" as const,
-                      hidden_from_site: false,
-                      site_visibility_reason: null,
-                      slug: publishSlug ?? undefined,
-                    }
-                  : {}),
-              })
+              .update(updatePayload)
               .eq("id", effectiveEditId)
               .eq("user_id", user.id)
               .select("slug")
               .single()
-            updated = retry.data
-            updateError = retry.error
+            if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
+              if (process.env.NODE_ENV === "development") {
+                console.warn(
+                  "[sell] DB rejected legacy listing dimension columns; saved without them. Ensure migrations are applied.",
+                )
+              }
+              const retry = await supabase
+                .from("listings")
+                .update({
+                  ...withoutListingDimensionDisplayDbFields(editListingFields as Record<string, unknown>),
+                  updated_at: new Date().toISOString(),
+                  ...(publishingFromDraftRow
+                    ? {
+                        status: "active" as const,
+                        hidden_from_site: false,
+                        site_visibility_reason: null,
+                        slug: publishSlug ?? undefined,
+                      }
+                    : {}),
+                })
+                .eq("id", effectiveEditId)
+                .eq("user_id", user.id)
+                .select("slug")
+                .single()
+              updated = retry.data
+              updateError = retry.error
+            }
+            if (updateError) {
+              // Keep the raw abort so retryOnceOnSellSubmitAbort can catch it.
+              if (isSellSubmitAbortError(updateError)) throw updateError
+              throw new Error(sellSubmitErrorMessage(updateError, "Failed to update listing"))
+            }
+            return updated
           }
-          if (updateError) throw new Error(sellSubmitErrorMessage(updateError, "Failed to update listing"))
+          const updated = await retryOnceOnSellSubmitAbort(persistOwnerListingUpdate, {
+            delayMs: 400,
+            onRetry: async () => {
+              await resolveClientSessionForMutation(supabase)
+            },
+          })
           listingSlug = updated?.slug ?? null
           listingId = effectiveEditId
           persistBoardCatalogSnapshot(effectiveEditId, user.id)
@@ -3016,7 +3296,12 @@ function SellPageContentInner({
             publishedDraftNeedsSideEffects = true
           }
           clearSellServerDraftListingId("surfboards")
-        } else if (adminImpersonatesListingOwner) {
+        } else if (adminEditsOtherListing) {
+          if (!editId || !editListingOwnerId) {
+            throw new Error("Listing is still loading. Try again in a moment.")
+          }
+          await ensureImpersonationForListingOwner(editListingOwnerId)
+          setImpersonation(getActiveImpersonationClient())
           usedImpersonationListingApi = true
           goSubmitStep(0)
           const imageOps: {
@@ -3053,25 +3338,21 @@ function SellPageContentInner({
           }
 
           goSubmitStep(1)
-          const res = await fetch("/api/admin/impersonate/update-listing", {
-            method: "PUT",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              listingId: editId,
-              listing: editListingFields,
-              removedImageIds,
-              images: imageOps,
-              catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
-              publishFromDraft: listingIsDraft,
-            }),
+          const updated = await updateImpersonatedListingViaApi({
+            listingId: editId,
+            listing: editListingFields,
+            removedImageIds,
+            images: imageOps,
+            removedVideoIds,
+            videos: readyVideo ? [readyVideo] : [],
+            catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
+            publishFromDraft: listingIsDraft,
           })
-          const data = await res.json()
-          if (!res.ok) {
-            throw new Error(sellActionErrorMessage(data.error || "Failed to update listing"))
+          if (!updated.ok) {
+            throw new Error(sellActionErrorMessage(updated.error || "Failed to update listing"))
           }
-          listingSlug = data.slug
-          if (data.published === true) {
+          listingSlug = updated.slug
+          if (updated.published === true) {
             setEditListingStatus("active")
           }
           goSubmitStep(2)
@@ -3118,6 +3399,7 @@ function SellPageContentInner({
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
+          compare_at_price: null,
         }
 
         if (listingImpersonation) {
@@ -3135,10 +3417,26 @@ function SellPageContentInner({
             body: JSON.stringify({
               listing: listingFields,
               images: imagePayload,
+              videos: readyVideo
+                ? [
+                    {
+                      url: readyVideo.url,
+                      thumbnail_url: readyVideo.thumbnailUrl,
+                      content_type: readyVideo.contentType,
+                      duration_seconds: readyVideo.durationSeconds,
+                      byte_size: readyVideo.byteSize,
+                      sort_order: readyVideo.sortOrder,
+                    },
+                  ]
+                : [],
               catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
             }),
           })
-          const data = await res.json()
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string
+            listing_id?: string
+            slug?: string
+          }
           if (!res.ok) {
             throw new Error(sellActionErrorMessage(data.error || "Failed to create listing"))
           }
@@ -3207,8 +3505,30 @@ function SellPageContentInner({
             listingId = null
             throw new Error(sellSubmitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
+          if (readyVideo) {
+            const { error: videoInsertError } = await supabase.from("listing_videos").insert({
+              listing_id: listingId,
+              url: readyVideo.url,
+              thumbnail_url: readyVideo.thumbnailUrl,
+              content_type: readyVideo.contentType,
+              duration_seconds: readyVideo.durationSeconds,
+              byte_size: readyVideo.byteSize,
+              sort_order: 0,
+            })
+            if (videoInsertError) {
+              await supabase
+                .from("listings")
+                .delete()
+                .eq("id", listing.id)
+                .eq("user_id", user.id)
+              listingId = null
+              throw new Error(
+                sellSubmitErrorMessage(videoInsertError, "Failed to save listing video"),
+              )
+            }
+          }
           requestKlaviyoListingCreated(String(listing.id))
-          void applyBoardListingPublishedSideEffectsAction(String(listing.id)).catch((err) => {
+          await applyBoardListingPublishedSideEffectsAction(String(listing.id)).catch((err) => {
             if (process.env.NODE_ENV === "development") {
               console.warn("[sell] publish side effects:", err)
             }
@@ -3229,7 +3549,7 @@ function SellPageContentInner({
       if (listingId) {
         if (!editId && !listingImpersonation) {
           if (publishedDraftNeedsSideEffects) {
-            void applyBoardListingPublishedSideEffectsAction(listingId).catch((err) => {
+            await applyBoardListingPublishedSideEffectsAction(listingId).catch((err) => {
               if (process.env.NODE_ENV === "development") {
                 console.warn("[sell] publish side effects:", err)
               }
@@ -3260,18 +3580,53 @@ function SellPageContentInner({
             listingId: listingId ?? undefined,
             durationMs: Date.now() - publishStartedAt,
           })
+          setJustPublishedListingMarker({
+            listingId,
+            slug: listingSlug ?? null,
+            section: "surfboards",
+          })
           retainPublishOverlayUntilNavigation = true
-          router.push(detailPath)
+          setPublishPreview((p) =>
+            p
+              ? {
+                  ...p,
+                  status: "live",
+                  listingId,
+                  slug: listingSlug,
+                  detailHref: detailPath,
+                  listingImages: listingImagesForPublishPreview(imagesRef.current),
+                }
+              : null,
+          )
+          setLoading(false)
           return
         }
         if (editId && !usedImpersonationListingApi) {
           const willSyncNewPhotos = images.some((im) => !im.id && im.url)
           if (willSyncNewPhotos) goSubmitStep(1)
-          await syncListingImages(listingId)
+          await retryOnceOnSellSubmitAbort(
+            async () => {
+              await syncListingImages(listingId)
+              const { nextVideo } = await syncListingDraftVideosClient(
+                supabase,
+                listingId,
+                video,
+                removedVideoIds,
+              )
+              setVideo(nextVideo)
+              setRemovedVideoIds([])
+            },
+            {
+              delayMs: 400,
+              onRetry: async () => {
+                await resolveClientSessionForMutation(supabase)
+              },
+            },
+          )
           goSubmitStep(2)
         }
         if (publishedDraftNeedsSideEffects) {
-          void applyBoardListingPublishedSideEffectsAction(listingId).catch((err) => {
+          await applyBoardListingPublishedSideEffectsAction(listingId).catch((err) => {
             if (process.env.NODE_ENV === "development") {
               console.warn("[sell] publish side effects:", err)
             }
@@ -3321,10 +3676,41 @@ function SellPageContentInner({
             defaultDetailPath: detailPath,
           })
         ) {
+          allowDocumentUnloadRef.current = true
+          setPublishPreview(null)
+          setLoading(false)
           return
         }
       }
-      router.push(detailPath)
+      // Fresh publish (new listing or draft going live) — never a plain edit.
+      if (listingId && (!editId || publishedDraftNeedsSideEffects)) {
+        setJustPublishedListingMarker({
+          listingId,
+          slug: listingSlug ?? null,
+          section: "surfboards",
+        })
+      }
+      if (listingImpersonation) {
+        leaveSellDocument(detailPath)
+        return
+      }
+      if (listingId) {
+        setPublishPreview((p) =>
+          p
+            ? {
+                ...p,
+                status: "live",
+                listingId,
+                slug: listingSlug,
+                detailHref: detailPath,
+                listingImages: listingImagesForPublishPreview(imagesRef.current),
+              }
+            : null,
+        )
+        setLoading(false)
+        return
+      }
+      leaveSellDocument(detailPath)
     } catch (error: unknown) {
       const aborted = isSellSubmitAbortError(error)
       const msg = sellSubmitErrorMessage(error, "Failed to create listing")
@@ -3368,16 +3754,12 @@ function SellPageContentInner({
     }
   }
 
-  const stepCount = Math.max(1, uploadPhaseLabels.length)
-  const listingSubmitProgressValue = Math.min(
-    100,
-    Math.round(((submitStepIndex + 1) / stepCount) * 100),
-  )
-
   const optimizingAny = images.some((im) => im.optimizePhase === "running")
 
-  /** Covers publish + rare early loading without preview; never while edit hydration is blocking. */
-  const fullscreenSellBlocking = loading && (!!publishPreview || !editLoading)
+  /** Covers publish gate (in-flight, live, or error) and rare early loading without preview. */
+  const fullscreenSellBlocking =
+    Boolean(publishPreview) || (loading && !editLoading)
+  const showBoardModeHeader = !editId && !editLoading && !getImpersonation()
 
   if (editLoadError) {
     return (
@@ -3395,19 +3777,62 @@ function SellPageContentInner({
         className={cn(
           "flex-1 w-full",
           SELL_PAGE_GROUND_CLASS,
-          !fullscreenSellBlocking && "pt-8 pb-16 md:pb-20 lg:pb-24",
+          !fullscreenSellBlocking && "pb-20 md:pb-20 lg:pb-24",
+          !fullscreenSellBlocking && !showBoardModeHeader && "pt-8",
         )}
       >
+        {impersonation && (!editId || isAdminListingEditEntry(sellSearchParams)) ? (
+          <ImpersonationActingAsStrip
+            target={impersonation}
+            onExit={() => {
+              void (async () => {
+                try {
+                  await fetch("/api/admin/impersonate", {
+                    method: "DELETE",
+                    credentials: "include",
+                  })
+                } finally {
+                  clearImpersonation()
+                  setImpersonation(null)
+                }
+              })()
+            }}
+          />
+        ) : null}
         <AdminBulkListingBanner section="surfboards" bulkSlotId={bulkSlotId} />
-        <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
-          {loading && publishPreview ? (
-            <SellFlowPublishingFullscreenPortal
-              preview={publishPreview}
-              uploadPhaseLabels={uploadPhaseLabels}
-              submitStepIndex={submitStepIndex}
-              listingSubmitProgressValue={listingSubmitProgressValue}
+        <div className="container relative mx-auto max-w-3xl min-h-[50vh] px-4 sm:px-6 lg:max-w-6xl">
+          {publishPreview ? (
+            <SellListingPublishedScreen
+              listing={{
+                id: publishPreview.listingId || "publishing",
+                slug: publishPreview.slug ?? null,
+                user_id: signedInUserId ?? "",
+                title: publishPreview.title,
+                price: publishPreview.price,
+                status: publishPreview.status === "live" ? "active" : "draft",
+                section: "surfboards",
+                local_pickup: publishPreview.localPickup,
+                shipping_available: publishPreview.shippingAvailable,
+                listing_images: publishPreview.listingImages,
+                board_type: publishPreview.boardType,
+                condition: publishPreview.condition,
+              }}
+              viewerUserId={signedInUserId}
+              status={publishPreview.status}
+              errorMessage={publishPreview.errorMessage}
+              failedStepLabel={publishPreview.failedStepLabel}
+              onViewLiveListing={() => {
+                if (publishPreview.detailHref) {
+                  leaveSellDocument(publishPreview.detailHref)
+                }
+              }}
+              onRetry={() => formRef.current?.requestSubmit()}
+              onDismissError={() => {
+                setPublishPreview(null)
+                setLoading(false)
+              }}
             />
-          ) : loading && !editLoading && !publishPreview ? (
+          ) : loading && !editLoading ? (
             <SellPublishingGenericLoaderPortal />
           ) : null}
           <div
@@ -3417,50 +3842,101 @@ function SellPageContentInner({
           <h1 className="sr-only">
             {editId ? "Edit listing" : "Create a Listing"}
           </h1>
-          <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <Breadcrumb>
-                <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/">Home</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href={sellListingsHubHref}>Listings</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="font-normal text-[#5c6b89]">
-                      {editId ? "Edit listing" : "Create a Listing"}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 shrink-0">
-                {(showBoardDraftControls ||
-                  (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (
-                    <div className="flex items-center gap-3">
-                      {boardDraftControls}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Exit listing form"
-                        asChild
-                      >
-                        <Link href={sellListingsHubHref}>
-                          <X className="h-4 w-4" aria-hidden />
-                        </Link>
-                      </Button>
+          {showBoardModeHeader ? (
+            <SellBoardModeHeader
+              leading={
+                <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
+                  Create a listing
+                </h1>
+              }
+              actions={
+                showBoardDraftControls ||
+                (!editLoading && (!editId || listingIsDraft) && !getImpersonation()) ? (
+                  <>
+                    {boardDraftControls}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                      aria-label="Exit listing form"
+                      asChild
+                    >
+                      <Link href={sellListingsHubHref}>
+                        <X className="h-4 w-4" aria-hidden />
+                      </Link>
+                    </Button>
+                  </>
+                ) : undefined
+              }
+              status={
+                !editId && serverDraftSaveStatus === "idle" && draftAutosaveState !== "idle" ? (
+                  <>
+                    {draftAutosaveState === "saved" ? (
+                      <Check className="h-3.5 w-3.5 text-listingHeart" aria-hidden />
+                    ) : null}
+                    <span>
+                      {draftAutosaveState === "saving"
+                        ? "Saving draft…"
+                        : "Draft saved on this device"}
+                    </span>
+                  </>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className={cn("mx-auto px-4 pt-10 sm:pt-12", SELL_FORM_COLUMN_CLASS)}>
+              <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+                <div className="min-w-0 flex-1">
+                  <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
+                    {editId ? "Edit listing" : "Create a listing"}
+                  </h1>
+                </div>
+                <div className="flex flex-col gap-1 shrink-0 sm:items-end">
+                  {(showBoardDraftControls ||
+                    (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (
+                      <div className="flex w-full items-center gap-3 sm:w-auto sm:justify-end">
+                        {boardDraftControls}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="ml-auto sm:ml-0"
+                          aria-label="Exit listing form"
+                          asChild
+                        >
+                          <Link href={sellListingsHubHref}>
+                            <X className="h-4 w-4" aria-hidden />
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+                  {!editId && serverDraftSaveStatus === "idle" ? (
+                    <div
+                      className="flex min-h-5 items-center gap-1.5 sm:justify-end"
+                      aria-live="polite"
+                    >
+                      {draftAutosaveState !== "idle" ? (
+                        <>
+                          {draftAutosaveState === "saved" ? (
+                            <Check
+                              className="h-3.5 w-3.5 text-listingHeart"
+                              aria-hidden
+                            />
+                          ) : null}
+                          <span className="text-xs text-muted-foreground">
+                            {draftAutosaveState === "saving"
+                              ? "Saving draft…"
+                              : "Draft saved on this device"}
+                          </span>
+                        </>
+                      ) : null}
                     </div>
-                  )}
+                  ) : null}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {!editLoading && publishValidationBanner ? (
             <Alert
@@ -3497,7 +3973,10 @@ function SellPageContentInner({
             </Alert>
           ) : null}
 
-          {!editLoading && getImpersonation() && listingIsDraft ? (
+          {!editLoading &&
+          isAdminListingEditEntry(sellSearchParams) &&
+          getImpersonation() &&
+          listingIsDraft ? (
             <Alert className="mb-6">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Seller draft</AlertTitle>
@@ -3508,7 +3987,7 @@ function SellPageContentInner({
             </Alert>
           ) : null}
 
-          {editLoading ? (
+          {showEditSkeleton ? (
             <div
               role="status"
               aria-label="Loading listing editor"
@@ -3517,53 +3996,86 @@ function SellPageContentInner({
               <SellFlowFormColumnSkeleton />
             </div>
           ) : (
-            <div className="flex w-full flex-col gap-8 lg:mx-auto lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14">
-              <div className="hidden shrink-0 lg:block lg:w-52 xl:w-56">
-                <SellSectionNav
+            <div
+              aria-busy={editLoading || undefined}
+              className={cn(
+                "flex w-full flex-col gap-10 transition-opacity lg:flex-row lg:items-stretch lg:gap-12 xl:gap-16",
+                editLoading && "pointer-events-none opacity-60",
+              )}
+            >
+              <aside className="hidden shrink-0 lg:block lg:w-56 xl:w-64">
+                <div className="sticky top-24">
+                  <SellSectionNav
+                    items={SELL_FORM_SECTION_NAV_ITEMS}
+                    sectionCompletion={sellSectionCompletion}
+                    activeSectionId={activeSellSectionId}
+                    onSelectSection={goToSellSection}
+                    className="static"
+                  />
+                </div>
+              </aside>
+              <div className={cn("min-w-0", SELL_FORM_COLUMN_CLASS)}>
+                <SellSectionNavMobileProgress
                   items={SELL_FORM_SECTION_NAV_ITEMS}
-                  sectionCompletion={sellSectionCompletion}
                   activeSectionId={activeSellSectionId}
-                  onSelectSection={goToSellSection}
+                  className={cn("mb-6 sm:hidden", viewMode === "advanced" && "hidden")}
                 />
-              </div>
-              <div className="min-w-0 w-full max-w-2xl lg:w-auto lg:max-w-3xl lg:shrink-0">
                 <SellSectionNavHorizontal
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
                   activeSectionId={activeSellSectionId}
                   onSelectSection={goToSellSection}
-                  className="mb-8 lg:hidden"
+                  className={cn(
+                    "mb-8 hidden sm:block lg:hidden",
+                    viewMode === "advanced" && "sm:hidden",
+                  )}
                 />
                 <form
               ref={formRef}
               onSubmit={(e) => {
-                if (flowStep !== "publish") {
+                if (viewMode === "guided" && flowStep !== "shipping") {
                   e.preventDefault()
                   goToNextSellStep()
                   return
                 }
                 void handleSubmit(e)
               }}
-              className="space-y-10 lg:space-y-12"
+              className="space-y-12 lg:space-y-14"
               aria-busy={loading}
             >
-                {flowStep === "basics" ? (
+                {viewMode === "advanced" || flowStep === "product" ? (
                 <SellFormSection
-                  sectionId="sell-section-basics"
-                  title="Brand, model & shape"
-                  description="Tell buyers what board you have — brand, model, shape, and condition."
-                  complete={sellSectionCompletion["sell-section-basics"] === true}
+                  sectionId="sell-section-product"
+                  title="Product Info"
+                  description="Brand, model, title, condition, and board details."
+                  complete={sellSectionCompletion["sell-section-product"] === true}
                 >
                     <div className="space-y-8">
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
-                          <div className="min-w-0 space-y-2">
-                            <div className="flex items-end justify-between gap-2">
-                              <Label htmlFor="listing-brand">Brand</Label>
-                            </div>
+                      {catalogSelectionCard &&
+                      formData.boardBrandId === catalogSelectionCard.brandId ? (
+                        <SellCatalogSelectionCard
+                          selection={catalogSelectionCard}
+                          onRemove={() => {
+                            setCatalogSelectionCard(null)
+                            setFormData((f) => ({
+                              ...f,
+                              boardBrandId: "",
+                              boardBrandModelId: "",
+                              boardIndexBrandSlug: "",
+                              boardIndexModelSlug: "",
+                              boardIndexLabel: "",
+                              boardLinkedBrandName: "",
+                            }))
+                          }}
+                        />
+                      ) : null}
+                      <div className="space-y-4">
+                          <div className="space-y-3">
+                          <div className="min-w-0 space-y-1.5">
+                            <Label htmlFor="listing-brand">Brand</Label>
                             <SurfboardTitleIndexInput
                               id="listing-brand"
-                              placeholder="e.g., Channel Islands"
+                              placeholder=""
                               value={formData.brand}
                               committedDirectoryBrandLabel={
                                 formData.boardBrandId
@@ -3611,46 +4123,26 @@ function SellPageContentInner({
                               }}
                               onRequestBrand={openListingCatalogRequestFromBrand}
                             />
-                            <div className="space-y-1.5">
-                              <button
-                                type="button"
-                                className="text-left text-xs text-primary hover:text-primary/90"
-                                onClick={openListingCatalogRequestFromBrand}
-                              >
-                                Brand not listed? Request we add it
-                              </button>
-                            </div>
                           </div>
 
-                          <div className="min-w-0 space-y-2">
-                            <SellBoardModelField
-                              directoryBrandId={formData.boardBrandId}
-                              linkedBrandDisplayName={
-                                formData.boardLinkedBrandName.trim() || formData.brand.trim()
-                              }
-                              modelName={formData.boardModelName}
-                              modelCatalogSlug={formData.boardIndexModelSlug}
-                              boardIndexBrandSlug={formData.boardIndexBrandSlug}
-                              onCatalogModelChange={(patch) =>
-                                setFormData((f) => ({
-                                  ...f,
-                                  ...patch,
-                                }))
-                              }
-                              disabled={editLoading}
-                              onRequestCatalogAdd={openListingCatalogRequestFromModel}
-                            />
-                            <div className="space-y-1.5">
-                              <button
-                                type="button"
-                                className="text-left text-xs text-primary hover:text-primary/90"
-                                onClick={openListingCatalogRequestFromModel}
-                              >
-                                Model not listed? Request we add it
-                              </button>
-                            </div>
+                          <SellBoardModelField
+                            directoryBrandId={formData.boardBrandId}
+                            linkedBrandDisplayName={
+                              formData.boardLinkedBrandName.trim() || formData.brand.trim()
+                            }
+                            modelName={formData.boardModelName}
+                            modelCatalogSlug={formData.boardIndexModelSlug}
+                            boardIndexBrandSlug={formData.boardIndexBrandSlug}
+                            onCatalogModelChange={(patch) =>
+                              setFormData((f) => ({
+                                ...f,
+                                ...patch,
+                              }))
+                            }
+                            disabled={editLoading}
+                            onRequestCatalogAdd={openListingCatalogRequestFromModel}
+                          />
                           </div>
-                        </div>
                         <RequestBrandModelDialog
                           open={listingCatalogRequestVariant !== null}
                           onOpenChange={(next) => {
@@ -3673,73 +4165,52 @@ function SellPageContentInner({
                             }))
                           }}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          {
-                            "Brand and model are saved on your listing and power search and filters. Requesting a missing brand or model still goes through the separate request queue for our catalog team."
+
+                      <Separator className="bg-border" />
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-end justify-between gap-2">
+                          <Label htmlFor="listing-title">
+                            Title{" "}
+                            <SellRequiredMark
+                              complete={
+                                Boolean(formData.title.trim()) &&
+                                resolvedTitlePreview.length <= LISTING_TITLE_MAX_LENGTH
+                              }
+                            />
+                          </Label>
+                          <span
+                            className={cn(
+                              "text-xs tabular-nums",
+                              resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
+                                ? "font-medium text-destructive"
+                                : "text-muted-foreground",
+                            )}
+                            aria-live="polite"
+                          >
+                            {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
+                          </span>
+                        </div>
+                        <Input
+                          id="listing-title"
+                          className={SELL_CONTROL_CLASS}
+                          value={formData.title}
+                          onChange={(e) =>
+                            setFormData((f) => ({ ...f, title: e.target.value }))
                           }
-                        </p>
+                          autoComplete="off"
+                          required
+                          maxLength={LISTING_TITLE_MAX_LENGTH}
+                        />
                       </div>
 
                       <Separator className="bg-border" />
 
-                      <div className="space-y-2">
-                        <Label>Board shape / category *</Label>
-                        <Select
-                          value={
-                            formData.category.trim()
-                              ? formData.category
-                              : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
-                          }
-                          disabled={editLoading}
-                          onValueChange={(value) => {
-                            if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                category: "",
-                                boardType: "",
-                              }))
-                              return
-                            }
-                            setFormData((prev) => ({
-                              ...prev,
-                              category: value,
-                              boardType: boardTypeFromCategoryId(value),
-                            }))
-                          }}
-                        >
-                          <SelectTrigger
-                            aria-label="Board shape or category"
-                            className={SELL_CONTROL_CLASS}
-                          >
-                            <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {!sellCategoriesLoaded ? (
-                              <SelectItem value="__loading__" disabled>
-                                Loading categories…
-                              </SelectItem>
-                            ) : boardCategoryOptions.length === 0 ? (
-                              <SelectItem value="__empty__" disabled>
-                                No board categories found — add rows with board = true in public.categories.
-                              </SelectItem>
-                            ) : (
-                              <>
-                                <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
-                                  {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
-                                </SelectItem>
-                                {boardCategoryOptions.map((cat) => (
-                                  <SelectItem key={cat.value} value={cat.value}>
-                                    {cat.label}
-                                  </SelectItem>
-                                ))}
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="max-w-md space-y-2">
-                        <Label htmlFor="sell-condition">Condition *</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sell-condition">
+                          Condition{" "}
+                          <SellRequiredMark complete={Boolean(formData.condition.trim())} />
+                        </Label>
                         <Select
                           value={formData.condition}
                           onValueChange={(value) => setFormData({ ...formData, condition: value })}
@@ -3756,719 +4227,187 @@ function SellPageContentInner({
                           </SelectContent>
                         </Select>
                       </div>
+                      </div>
+
+                      <Separator className="bg-border" />
+
+                      <div className="space-y-5">
+                      <div className="space-y-2">
+                        {!sellCategoriesLoaded ? (
+                          <>
+                            <Label className="text-sm font-medium text-foreground">
+                              Board shape / category{" "}
+                              <SellRequiredMark complete={Boolean(formData.category.trim())} />
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Loading categories…</p>
+                          </>
+                        ) : boardCategoryOptions.length === 0 ? (
+                          <>
+                            <Label className="text-sm font-medium text-foreground">
+                              Board shape / category{" "}
+                              <SellRequiredMark complete={Boolean(formData.category.trim())} />
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              No board categories found — add rows with board = true in public.categories.
+                            </p>
+                          </>
+                        ) : (
+                          <SellFacetChipGroup
+                            label={
+                              <>
+                                Board shape / category{" "}
+                                <SellRequiredMark
+                                  complete={Boolean(formData.category.trim())}
+                                />
+                              </>
+                            }
+                            value={formData.category}
+                            options={boardCategoryOptions}
+                            onValueChange={(value) => {
+                              if (!value) {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  category: "",
+                                  boardType: "",
+                                }))
+                                return
+                              }
+                              setFormData((prev) => ({
+                                ...prev,
+                                category: value,
+                                boardType: boardTypeFromCategoryId(value),
+                              }))
+                            }}
+                            disabled={editLoading}
+                          />
+                        )}
+                      </div>
+                    </div>
                     </div>
                 </SellFormSection>
                 ) : null}
 
-                {flowStep === "details" ? (
+                {viewMode === "advanced" || flowStep === "photos" ? (
                 <SellFormSection
-                  sectionId="sell-section-details"
-                  title="Dimensions & details"
-                  description="Add measurements, fin setup, construction, and a short description."
-                  complete={sellSectionCompletion["sell-section-details"] === true}
+                  sectionId="sell-section-photos"
+                  title="Photos & Description"
+                  description="Add photos, board size, and a short description."
+                  complete={sellSectionCompletion["sell-section-photos"] === true}
                 >
-                    <div className="space-y-8">
-                      <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        {/* Length */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Length
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center gap-0.5 rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimLengthRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="6'2"
-                                value={formData.boardLength}
-                                onChange={(e) => {
-                                  const next = normalizeBoardLengthInput(e.target.value)
-                                  prevBoardLengthRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardLength: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board length in feet and inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                                aria-describedby={
-                                  shouldShowLengthInchHint(formData.boardLength)
-                                    ? "sell-length-inches-hint-sr"
-                                    : undefined
-                                }
-                              />
-                              {shouldShowLengthInchHint(formData.boardLength) ? (
-                                <span id="sell-length-inches-hint-sr" className="sr-only">
-                                  {`Then type inches after the apostrophe (for example six foot two as 6'2).`}
-                                </span>
-                              ) : null}
-                            </div>
-                            {/* Reserve same width as &quot;in&quot; / &quot;L&quot; on other rows so the input matches on narrow screens */}
-                            <span
-                              className="inline-flex w-5 shrink-0 items-center justify-center text-xs tabular-nums text-transparent select-none"
-                              aria-hidden
-                            >
-                              in
-                            </span>
-                          </div>
-                        </div>
+                  <div className="space-y-8">
+                    <div className="space-y-1.5">
+                      <p className="text-[15px] font-semibold text-foreground">
+                        Upload photos of your board{" "}
+                        <span className="text-destructive" aria-hidden>
+                          *
+                        </span>
+                      </p>
+                      <p className="text-[15px] leading-relaxed text-muted-foreground">
+                        Clear, well-lit shots sell faster. Square photos work best — the first
+                        becomes your cover. Optional: add one short video beside your photos.
+                      </p>
+                    </div>
+                    <SellListingPhotoGrid
+                      images={images}
+                      maxPhotos={12}
+                      fileInputId={listingPhotosInputId}
+                      photosFileDragActive={photosFileDragActive}
+                      onImageInputChange={handleImageChange}
+                      onDragEnter={handlePhotosFileDragEnter}
+                      onDragLeave={handlePhotosFileDragLeave}
+                      onDragOver={handlePhotosFileDragOver}
+                      onDrop={handlePhotosFileDrop}
+                      onDragEnd={handlePhotosDragEnd}
+                      onRemove={handlePhotoTileRemove}
+                      onRetry={handlePhotoTileRetry}
+                      onRotate180={handlePhotoTileRotate}
+                      photoDragSensors={photoDragSensors}
+                      hideHeader
+                      belowGrid={<SellPhotoExamplesBanner />}
+                      video={video}
+                      videoFileInputId={listingVideoInputId}
+                      onVideoInputChange={handleVideoInputChange}
+                      onVideoRemove={handleVideoRemove}
+                      onVideoRetry={handleVideoRetry}
+                    />
 
-                        {/* Width */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Width
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimWidthRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="19 1/4"
-                                value={formData.boardWidthInches}
-                                onChange={(e) => {
-                                  const next = normalizeTapeStyleInchesInput(e.target.value)
-                                  prevBoardWidthRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardWidthInches: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board width in inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              in
-                            </span>
-                          </div>
-                        </div>
+                    <Separator className="bg-border" />
 
-                        {/* Thickness */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Thickness
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimThicknessRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="2 3/8"
-                                value={formData.boardThicknessInches}
-                                onChange={(e) => {
-                                  const next = normalizeTapeStyleInchesInput(e.target.value)
-                                  prevBoardThicknessRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardThicknessInches: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board thickness in inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              in
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Volume */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Volume</Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimVolumeRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="30.4"
-                                value={formData.boardVolumeL}
-                                onChange={(e) =>
-                                  setFormData((fd) => ({
-                                    ...fd,
-                                    boardVolumeL: normalizeVolumeLitersInput(e.target.value),
-                                  }))
-                                }
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board volume in liters"
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              L
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
+                    <div className="space-y-5">
+                      {modelStockSizes.length > 0 ? (
+                        <SellBoardStockSizePicker
+                          modelName={formData.boardModelName.trim() || null}
+                          sizes={modelStockSizes}
+                          selectedId={selectedStockSizeId}
+                          mode={stockSizeMode}
+                          onSelectSize={handleSelectStockSize}
+                          onChooseCustom={handleChooseCustomStockSize}
+                          required={deliveryFlags.shipping_available}
+                          complete={
+                            isBoardLengthEntryComplete(formData.boardLength) &&
+                            isTapeStyleInchesEntryComplete(formData.boardWidthInches) &&
+                            isTapeStyleInchesEntryComplete(formData.boardThicknessInches)
+                          }
+                          disabled={editLoading}
+                        />
+                      ) : null}
+                      {modelStockSizes.length === 0 || stockSizeMode === "custom" ? (
+                        <SellBoardDimensionsPicker
+                          values={{
+                            boardLength: formData.boardLength,
+                            boardWidthInches: formData.boardWidthInches,
+                            boardThicknessInches: formData.boardThicknessInches,
+                            boardVolumeL: formData.boardVolumeL,
+                          }}
+                          onChange={(patch) =>
+                            setFormData((fd) => ({ ...fd, ...patch }))
+                          }
+                          dimensionsRequired={deliveryFlags.shipping_available}
+                          disabled={editLoading}
+                        />
+                      ) : null}
                       <SellBoardFacetFields
                         boardFins={formData.boardFins}
                         boardFinSystem={formData.boardFinSystem}
                         boardConstruction={formData.boardConstruction}
-                        onBoardFinsChange={(value) =>
-                          setFormData((fd) => ({ ...fd, boardFins: value }))
+                        boardFinsIncluded={formData.boardFinsIncluded}
+                        onBoardFinsChange={(boardFins) =>
+                          setFormData((fd) => ({ ...fd, boardFins }))
                         }
-                        onBoardFinSystemChange={(value) =>
-                          setFormData((fd) => ({ ...fd, boardFinSystem: value }))
+                        onBoardFinSystemChange={(boardFinSystem) =>
+                          setFormData((fd) => ({ ...fd, boardFinSystem }))
                         }
-                        onBoardConstructionChange={(value) =>
-                          setFormData((fd) => ({ ...fd, boardConstruction: value }))
+                        onBoardConstructionChange={(boardConstruction) =>
+                          setFormData((fd) => ({ ...fd, boardConstruction }))
+                        }
+                        onBoardFinsIncludedChange={(boardFinsIncluded) =>
+                          setFormData((fd) => ({ ...fd, boardFinsIncluded }))
                         }
                         disabled={editLoading}
                       />
-
-                      <p className="text-xs text-muted-foreground pt-0.5">
-                        {deliveryFlags.shipping_available
-                          ? "Length, width, and thickness are required when you offer shipping so we can size the pack correctly. Volume is optional."
-                          : "Dimensions are optional for local pickup. When you fill them in, surfers can compare your board more confidently—often that helps listings move faster."}
-                      </p>
                     </div>
 
                     <Separator className="bg-border" />
 
-                    <div className="space-y-6">
-                <SellListingDescriptionField
-                  id="description"
-                  value={formData.description}
-                  onChange={(description) => setFormData({ ...formData, description })}
-                  placeholder="Describe your board…"
-                  maxLength={1000}
-                />
-                    </div>
-                    </div>
-                </SellFormSection>
-                ) : null}
-
-                {flowStep === "delivery" ? (
-                <SellFormSection
-                  sectionId="sell-section-delivery"
-                  title="Pickup & shipping"
-                  description="Pin where the board is and choose delivery options."
-                  complete={sellSectionCompletion["sell-section-delivery"] === true}
-                >
-                  <div className="space-y-8">
-                    <div className="space-y-6">
-                      <LocationPicker
-                        onLocationSelect={(loc) => {
-                          setPickupShippingLocationUserCommits((c) => c + 1)
-                          setFormData((f) => ({
-                            ...f,
-                            locationLat: loc.lat,
-                            locationLng: loc.lng,
-                            locationCity: loc.city,
-                            locationState: loc.state,
-                            locationDisplay: loc.displayName,
-                          }))
-                        }}
-                        onLocationClear={() => {
-                          setPickupShippingLocationUserCommits(0)
-                          setFormData((f) => ({
-                            ...f,
-                            locationLat: 0,
-                            locationLng: 0,
-                            locationCity: "",
-                            locationState: "",
-                            locationDisplay: "",
-                          }))
-                        }}
-                        initialLat={formData.locationLat || undefined}
-                        initialLng={formData.locationLng || undefined}
-                        initialCity={formData.locationCity}
-                        initialState={formData.locationState}
-                        initialDisplay={formData.locationDisplay}
-                      />
-
-                      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-4 shadow-sm">
-                        <div>
-                          <h3 className="text-sm font-semibold text-foreground">
-                            Delivery options{" "}
-                            <span className="text-destructive" aria-hidden="true">
-                              *
-                            </span>
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            You can select both options.
-                          </p>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="flex items-start gap-3">
-                            <Checkbox
-                              id="sell-delivery-shipping"
-                              checked={deliveryFlags.shipping_available}
-                              disabled={
-                                Boolean(formData.boardLength.trim()) &&
-                                !sellReswellShipping.shippingSupported &&
-                                actorIsAdmin === false &&
-                                !impersonation
-                              }
-                              onCheckedChange={(v) => {
-                                const want = v === true
-                                const allowPrivilegedShippingUi =
-                                  actorIsAdmin === true || Boolean(impersonation)
-                                // Only hard-block sellers (admin resolved false). While admin
-                                // status is loading (null), allow the toggle.
-                                if (
-                                  want &&
-                                  formData.boardLength.trim() &&
-                                  !sellReswellShipping.shippingSupported &&
-                                  actorIsAdmin === false &&
-                                  !impersonation
-                                ) {
-                                  return
-                                }
-                                const cur = flagsFromBoardFulfillment(formData.boardFulfillment)
-                                let ns = want
-                                let np = cur.local_pickup
-                                if (!ns && !np) np = true
-                                const oversizeAdminShip =
-                                  want &&
-                                  allowPrivilegedShippingUi &&
-                                  Boolean(formData.boardLength.trim()) &&
-                                  !sellReswellShipping.shippingSupported
-                                setFormData({
-                                  ...formData,
-                                  boardFulfillment: boardFulfillmentFromChecks(ns, np),
-                                  ...(want
-                                    ? {
-                                        // Oversize: default to flat (other carrier), not Reswell UPS.
-                                        boardShippingCostMode: oversizeAdminShip
-                                          ? ("flat" as BoardShippingCostMode)
-                                          : ("reswell" as BoardShippingCostMode),
-                                        ...(oversizeAdminShip
-                                          ? {
-                                              surfboardShippingTier: "" as SurfboardShippingTierId | "",
-                                              surfboardShippingTierCeilingConfirmed: false,
-                                              surfboardShippingPackBand:
-                                                "" as SurfboardShippingPackBandId | "",
-                                              surfboardShippingPackBandCeilingConfirmed: false,
-                                              adminCustomShippingCarton: false,
-                                              reswellPackageLengthIn: "",
-                                              reswellPackageWidthIn: "",
-                                              reswellPackageHeightIn: "",
-                                              reswellPackageWeightLb: "",
-                                              reswellPackageWeightOz: "",
-                                            }
-                                          : {}),
-                                      }
-                                    : {
-                                        boardShippingCostMode: "reswell" as BoardShippingCostMode,
-                                        boardShippingPrice: "",
-                                        surfboardShippingTier: "" as SurfboardShippingTierId | "",
-                                        surfboardShippingTierCeilingConfirmed: false,
-                                        surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
-                                        surfboardShippingPackBandCeilingConfirmed: false,
-                                        adminCustomShippingCarton: false,
-                                        reswellPackageLengthIn: "",
-                                        reswellPackageWidthIn: "",
-                                        reswellPackageHeightIn: "",
-                                        reswellPackageWeightLb: "",
-                                        reswellPackageWeightOz: "",
-                                      }),
-                                })
-                              }}
-                              className="mt-0.5"
-                            />
-                            <div className="min-w-0 flex-1 space-y-3">
-                              <div className="space-y-1">
-                                <Label
-                                  htmlFor="sell-delivery-shipping"
-                                  className={cn(
-                                    "text-sm font-medium leading-snug flex flex-wrap items-center gap-2",
-                                    formData.boardLength.trim() &&
-                                      !sellReswellShipping.shippingSupported &&
-                                      actorIsAdmin === false &&
-                                      !impersonation
-                                      ? "cursor-not-allowed text-muted-foreground"
-                                      : "cursor-pointer",
-                                  )}
-                                >
-                                  {actorIsAdmin === true || Boolean(impersonation) ? (
-                                    <span>Offer shipping to buyers</span>
-                                  ) : (
-                                    <span>
-                                      Reswell shipping{" "}
-                                      <span className="font-bold uppercase tracking-wide text-foreground">
-                                        (BUYER PAYS SHIPPING)
-                                      </span>
-                                    </span>
-                                  )}
-                                  {!(actorIsAdmin === true || Boolean(impersonation)) ? (
-                                    <Badge
-                                      variant="default"
-                                      className="border-0 bg-listingHeart text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto hover:bg-[#2a4170]"
-                                    >
-                                      Recommended to sell your board faster
-                                    </Badge>
-                                  ) : null}
-                                </Label>
-                                {deliveryFlags.shipping_available &&
-                                !(actorIsAdmin === true || Boolean(impersonation)) ? (
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Buyer pays for shipping at checkout. We handle the calculations
-                                    for you so you don&apos;t have to worry about shipping cost —
-                                    we&apos;ll email you the label after the sale.
-                                  </p>
-                                ) : null}
-                                {formData.boardLength.trim() &&
-                                !sellReswellShipping.shippingSupported &&
-                                actorIsAdmin === false &&
-                                !impersonation ? (
-                                  <p className="text-sm text-destructive leading-relaxed">
-                                    Reswell UPS shipping isn&apos;t available for this board — it
-                                    exceeds size limits. Use local pickup.
-                                  </p>
-                                ) : null}
-                                {deliveryFlags.shipping_available &&
-                                (actorIsAdmin === true || Boolean(impersonation)) ? (
-                                  <div className="space-y-2 pt-1">
-                                    <p className="text-sm text-muted-foreground leading-relaxed">
-                                      Choose how shipping is priced. Reswell uses UPS labels; free and
-                                      flat-rate are separate — you fulfill with any carrier.
-                                    </p>
-                                    <SellShippingCostModeRadios
-                                      idPrefix="sell-surfboard"
-                                      value={formData.boardShippingCostMode}
-                                      // Admins can always pick Reswell and enter a custom carton.
-                                      reswellAvailable
-                                      onChange={(mode) => {
-                                        const clearReswellPack =
-                                          mode === "free" || mode === "flat"
-                                        setFormData({
-                                          ...formData,
-                                          boardShippingCostMode: mode,
-                                          ...(mode !== "flat" ? { boardShippingPrice: "" } : {}),
-                                          ...(clearReswellPack
-                                            ? {
-                                                surfboardShippingTier:
-                                                  "" as SurfboardShippingTierId | "",
-                                                surfboardShippingTierCeilingConfirmed: false,
-                                                surfboardShippingPackBand:
-                                                  "" as SurfboardShippingPackBandId | "",
-                                                surfboardShippingPackBandCeilingConfirmed: false,
-                                                adminCustomShippingCarton: false,
-                                                reswellPackageLengthIn: "",
-                                                reswellPackageWidthIn: "",
-                                                reswellPackageHeightIn: "",
-                                                reswellPackageWeightLb: "",
-                                                reswellPackageWeightOz: "",
-                                              }
-                                            : {}),
-                                        })
-                                      }}
-                                      allowPrivilegedModes
-                                      flatRateSlot={
-                                        <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
-                                          <Label
-                                            htmlFor="sell-surfboard-shipping-price"
-                                            className="text-sm font-semibold text-foreground"
-                                          >
-                                            Flat shipping rate{" "}
-                                            <span className="text-destructive" aria-hidden>
-                                              *
-                                            </span>
-                                          </Label>
-                                          <div className="relative max-w-md">
-                                            <span
-                                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
-                                              aria-hidden
-                                            >
-                                              $
-                                            </span>
-                                            <Input
-                                              id="sell-surfboard-shipping-price"
-                                              type="number"
-                                              min="0"
-                                              step="0.01"
-                                              placeholder="0.00"
-                                              value={formData.boardShippingPrice}
-                                              onChange={(e) =>
-                                                setFormData({
-                                                  ...formData,
-                                                  boardShippingPrice: e.target.value,
-                                                })
-                                              }
-                                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
-                                            />
-                                          </div>
-                                        </div>
-                                      }
-                                    />
-                                    {formData.boardShippingCostMode === "reswell" ? (
-                                      <div className="space-y-3 rounded-lg border border-border bg-background p-4 sm:p-5">
-                                        <div className="space-y-1">
-                                          <p className="text-sm font-semibold text-foreground">
-                                            Carton size (admin)
-                                          </p>
-                                          <p className="text-sm text-muted-foreground leading-relaxed">
-                                            Use a standard pack size, or enter the exact box you&apos;ll
-                                            ship in.
-                                          </p>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            variant={
-                                              !formData.adminCustomShippingCarton
-                                                ? "default"
-                                                : "outline"
-                                            }
-                                            onClick={() => {
-                                              const nextBand: SurfboardShippingPackBandId =
-                                                parseSurfboardShippingPackBandId(
-                                                  formData.surfboardShippingPackBand,
-                                                ) ??
-                                                parseSurfboardShippingPackBandId(
-                                                  sellReswellShipping.suggestedPackBandId,
-                                                ) ??
-                                                "shortboard_compact"
-                                              const band =
-                                                surfboardShippingPackBandFixedParcel(nextBand)
-                                              setFormData({
-                                                ...formData,
-                                                adminCustomShippingCarton: false,
-                                                surfboardShippingTier: "shortboard",
-                                                surfboardShippingPackBand: nextBand,
-                                                surfboardShippingTierCeilingConfirmed: true,
-                                                surfboardShippingPackBandCeilingConfirmed: true,
-                                                reswellPackageLengthIn: String(band.lengthIn),
-                                                reswellPackageWidthIn: String(band.widthIn),
-                                                reswellPackageHeightIn: String(band.heightIn),
-                                                reswellPackageWeightLb: String(band.weightLb),
-                                                reswellPackageWeightOz: "",
-                                              })
-                                            }}
-                                          >
-                                            Pack size
-                                          </Button>
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            variant={
-                                              formData.adminCustomShippingCarton
-                                                ? "default"
-                                                : "outline"
-                                            }
-                                            onClick={() => {
-                                              setFormData({
-                                                ...formData,
-                                                adminCustomShippingCarton: true,
-                                                surfboardShippingTier: "shortboard",
-                                                surfboardShippingPackBand:
-                                                  "" as SurfboardShippingPackBandId | "",
-                                                surfboardShippingTierCeilingConfirmed: true,
-                                                surfboardShippingPackBandCeilingConfirmed: false,
-                                              })
-                                            }}
-                                          >
-                                            Custom carton
-                                          </Button>
-                                        </div>
-                                        {!formData.adminCustomShippingCarton ? (
-                                          <SurfboardPackSizeSimplePicker
-                                            value={formData.surfboardShippingPackBand}
-                                            recommendedBandId={
-                                              sellReswellShipping.suggestedPackBandId
-                                            }
-                                            boardLength={formData.boardLength}
-                                            boardWidthInches={formData.boardWidthInches}
-                                            onChange={(bandId) => {
-                                              const band =
-                                                surfboardShippingPackBandFixedParcel(bandId)
-                                              setFormData({
-                                                ...formData,
-                                                adminCustomShippingCarton: false,
-                                                surfboardShippingTier: "shortboard",
-                                                surfboardShippingPackBand: bandId,
-                                                surfboardShippingTierCeilingConfirmed: true,
-                                                surfboardShippingPackBandCeilingConfirmed: true,
-                                                reswellPackageLengthIn: String(band.lengthIn),
-                                                reswellPackageWidthIn: String(band.widthIn),
-                                                reswellPackageHeightIn: String(band.heightIn),
-                                                reswellPackageWeightLb: String(band.weightLb),
-                                                reswellPackageWeightOz: "",
-                                              })
-                                            }}
-                                          />
-                                        ) : (
-                                          <ReswellPackageDimensionsCard
-                                            showHeading
-                                            exactCartonMode
-                                            lengthPlaceholder="e.g. 72"
-                                            className="rounded-none border-0 bg-transparent p-0 shadow-none ring-0"
-                                            lengthIn={formData.reswellPackageLengthIn}
-                                            widthIn={formData.reswellPackageWidthIn}
-                                            heightIn={formData.reswellPackageHeightIn}
-                                            weightLb={formData.reswellPackageWeightLb}
-                                            weightOz={formData.reswellPackageWeightOz}
-                                            onLengthInChange={(v) =>
-                                              setFormData({
-                                                ...formData,
-                                                reswellPackageLengthIn: normalizeBoardLengthInput(v),
-                                              })
-                                            }
-                                            onWidthInChange={(v) =>
-                                              setFormData({
-                                                ...formData,
-                                                reswellPackageWidthIn:
-                                                  normalizeTapeStyleInchesInput(v),
-                                              })
-                                            }
-                                            onHeightInChange={(v) =>
-                                              setFormData({
-                                                ...formData,
-                                                reswellPackageHeightIn:
-                                                  normalizeTapeStyleInchesInput(v),
-                                              })
-                                            }
-                                            onWeightLbChange={(v) =>
-                                              setFormData({
-                                                ...formData,
-                                                reswellPackageWeightLb: v,
-                                              })
-                                            }
-                                            onWeightOzChange={(v) =>
-                                              setFormData({
-                                                ...formData,
-                                                reswellPackageWeightOz: v,
-                                              })
-                                            }
-                                          />
-                                        )}
-                                      </div>
-                                    ) : null}
-                                  </div>
-                                ) : null}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <Checkbox
-                              id="sell-delivery-pickup"
-                              checked={deliveryFlags.local_pickup}
-                              onCheckedChange={(v) => {
-                                const want = v === true
-                                const cur = flagsFromBoardFulfillment(formData.boardFulfillment)
-                                let ns = cur.shipping_available
-                                let np = want
-                                if (!ns && !np) ns = true
-                                // Too-large boards cannot use Reswell shipping — keep pickup on
-                                // for sellers only (admin free/flat uses another carrier).
-                                if (
-                                  !np &&
-                                  formData.boardLength.trim() &&
-                                  !sellReswellShipping.shippingSupported &&
-                                  actorIsAdmin === false &&
-                                  !impersonation
-                                ) {
-                                  np = true
-                                  ns = false
-                                }
-                                setFormData({
-                                  ...formData,
-                                  boardFulfillment: boardFulfillmentFromChecks(ns, np),
-                                })
-                              }}
-                              className="mt-0.5"
-                            />
-                            <Label
-                              htmlFor="sell-delivery-pickup"
-                              className="text-sm font-medium leading-snug cursor-pointer pt-0.5"
-                            >
-                              Local pickup
-                            </Label>
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-                </SellFormSection>
-                ) : null}
-
-                {flowStep === "publish" ? (
-                <SellFormSection
-                  sectionId="sell-section-publish"
-                  title={editId ? "Title, photos & price" : "Title, photos & publish"}
-                  description="Add a title and photos, set your price, then publish."
-                  complete={sellSectionCompletion["sell-section-publish"] === true}
-                >
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <div className="flex items-end justify-between gap-2">
-                      <Label htmlFor="listing-title">Title *</Label>
-                      <span
-                        className={cn(
-                          "text-xs tabular-nums",
-                          resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
-                            ? "font-medium text-destructive"
-                            : "text-muted-foreground",
-                        )}
-                        aria-live="polite"
-                      >
-                        {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
-                      </span>
-                    </div>
-                    <Input
-                      id="listing-title"
-                      className={SELL_CONTROL_CLASS}
-                      placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
-                      value={formData.title}
-                      onChange={(e) =>
-                        setFormData((f) => ({ ...f, title: e.target.value }))
-                      }
-                      autoComplete="off"
-                      required
-                      maxLength={LISTING_TITLE_MAX_LENGTH}
+                    <SellListingDescriptionField
+                      id="description"
+                      value={formData.description}
+                      onChange={(description) => setFormData({ ...formData, description })}
+                      placeholder="Describe your board…"
+                      maxLength={1000}
                     />
                   </div>
+                </SellFormSection>
+                ) : null}
 
-                  <Separator className="bg-border" />
-
+                {viewMode === "advanced" || flowStep === "pricing" ? (
+                <SellFormSection
+                  sectionId="sell-section-pricing"
+                  title="Pricing"
+                  description="Set your list price and optional offer settings."
+                  complete={sellSectionCompletion["sell-section-pricing"] === true}
+                >
+                <div className="space-y-10">
                   <SellPriceFields
                     listingPrice={formData.price}
                     onListingPriceChange={(value) =>
@@ -4477,6 +4416,13 @@ function SellPageContentInner({
                     sellerPurchasePrice={formData.sellerPurchasePrice}
                     onSellerPurchasePriceChange={(value) =>
                       setFormData({ ...formData, sellerPurchasePrice: value })
+                    }
+                    showPurchasePrice={false}
+                    publishedPriceUsd={formData.loadedPublishedPriceUsd}
+                    existingCompareAtPriceUsd={formData.loadedCompareAtPriceUsd}
+                    showPriceMarkdown={formData.showPriceMarkdown === true}
+                    onShowPriceMarkdownChange={(value) =>
+                      setFormData({ ...formData, showPriceMarkdown: value })
                     }
                     afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
@@ -4526,11 +4472,18 @@ function SellPageContentInner({
                           {formData.autoPriceDrop ? (
                             <div className="space-y-2 sm:pl-14">
                               <Label htmlFor="sell-auto-price-drop-floor">
-                                Lowest price after 2 weeks ($) *
+                                Lowest price after 2 weeks ($){" "}
+                                <SellRequiredMark
+                                  complete={priceDropFloorComplete(
+                                    formData.autoPriceDropFloor,
+                                    formData.price,
+                                  )}
+                                />
                               </Label>
                               <Input
                                 id="sell-auto-price-drop-floor"
                                 type="number"
+                                inputMode="decimal"
                                 min="0.01"
                                 step="0.01"
                                 placeholder="0.00"
@@ -4581,127 +4534,373 @@ function SellPageContentInner({
 
                   <Separator className="bg-border" />
 
-                  <SellListingPhotoGrid
-                    images={images}
-                    maxPhotos={12}
-                    fileInputId={listingPhotosInputId}
-                    photosFileDragActive={photosFileDragActive}
-                    onImageInputChange={handleImageChange}
-                    onDragEnter={handlePhotosFileDragEnter}
-                    onDragLeave={handlePhotosFileDragLeave}
-                    onDragOver={handlePhotosFileDragOver}
-                    onDrop={handlePhotosFileDrop}
-                    onDragEnd={handlePhotosDragEnd}
-                    onRemove={handlePhotoTileRemove}
-                    onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
-                    photoDragSensors={photoDragSensors}
-                    photoDescription="Drop a few clear shots — deck, bottom, and any dings. Drag to reorder; the first is your cover."
-                  />
+                </div>
+                </SellFormSection>
+                ) : null}
 
-                  <Separator className="bg-border" />
-
-                {publishPreview && !loading && (
-                  <div
-                    className={cn(
-                      "rounded-xl border p-4 flex gap-4 transition-colors",
-                      publishPreview.status === "publishing" && "border-primary/25 bg-primary/[0.04]",
-                      publishPreview.status === "live" && "border-emerald-500/30 bg-emerald-500/[0.06]",
-                      publishPreview.status === "error" && "border-destructive/40 bg-destructive/[0.06]",
-                    )}
-                  >
-                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                      <Image
-                        src={proxiedListingImageSrc(publishPreview.coverUrl) || "/placeholder.svg"}
-                        alt=""
-                        fill
-                        className="object-cover object-center"
-                        unoptimized
+                {viewMode === "advanced" || flowStep === "shipping" ? (
+                <SellFormSection
+                  sectionId="sell-section-shipping"
+                  title="Shipping"
+                  description="Pin where the board is, then choose pickup or shipping."
+                  complete={sellSectionCompletion["sell-section-shipping"] === true}
+                >
+                  <div className="space-y-10">
+                    <div className="space-y-6">
+                      <LocationPicker
+                        key={
+                          sellFormHasCommittedMapPins(formData)
+                            ? `loc-${formData.locationLat.toFixed(5)}-${formData.locationLng.toFixed(5)}`
+                            : "loc-empty"
+                        }
+                        onLocationSelect={(loc) => {
+                          setPickupShippingLocationUserCommits((c) => c + 1)
+                          setFormData((f) => ({
+                            ...f,
+                            locationLat: loc.lat,
+                            locationLng: loc.lng,
+                            locationCity: loc.city,
+                            locationState: loc.state,
+                            locationDisplay: loc.displayName,
+                          }))
+                          const saved = rememberSellSavedListingLocation({
+                            city: loc.city,
+                            state: loc.state,
+                            lat: loc.lat,
+                            lng: loc.lng,
+                            displayName: loc.displayName,
+                          })
+                          setSavedListingLocations(saved)
+                          if (!getImpersonation() && loc.city.trim()) {
+                            void saveDefaultListingLocationAction({
+                              city: loc.city.trim(),
+                              state: loc.state.trim() || undefined,
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              display: loc.displayName.trim() || undefined,
+                            })
+                          }
+                        }}
+                        onLocationClear={() => {
+                          setPickupShippingLocationUserCommits(0)
+                          setFormData((f) => ({
+                            ...f,
+                            locationLat: 0,
+                            locationLng: 0,
+                            locationCity: "",
+                            locationState: "",
+                            locationDisplay: "",
+                          }))
+                        }}
+                        prefillSuggested={locationPrefillSuggested}
+                        savedLocations={savedListingLocations}
+                        initialLat={formData.locationLat || undefined}
+                        initialLng={formData.locationLng || undefined}
+                        initialCity={formData.locationCity}
+                        initialState={formData.locationState}
+                        initialDisplay={formData.locationDisplay}
                       />
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-foreground truncate">{publishPreview.title}</p>
-                        {publishPreview.status === "publishing" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Publishing...
-                          </span>
-                        )}
-                        {publishPreview.status === "live" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Live ✓
-                          </span>
-                        )}
-                        {publishPreview.status === "error" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
-                            <AlertCircle className="h-3 w-3" />
-                            Failed
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        ${publishPreview.price}
-                        {publishPreview.detailHref && publishPreview.status === "live" && (
-                          <>
-                            {" · "}
-                            <Link
-                              href={publishPreview.detailHref}
-                              className="text-primary underline-offset-4 hover:underline"
-                            >
-                              View listing
-                            </Link>
-                          </>
-                        )}
-                      </p>
-                      {publishPreview.status === "error" && (
-                        <div className="pt-2 space-y-2">
-                          <p className="text-xs text-muted-foreground">
-                            {publishPreview.failedStepLabel ? (
-                              <>
-                                <span className="font-medium text-foreground">
-                                  {publishPreview.failedStepLabel}
-                                </span>
-                                {" — "}
-                              </>
-                            ) : null}
-                            {publishPreview.errorMessage}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={() => formRef.current?.requestSubmit()}
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                            Retry
-                          </Button>
+
+                      <div className="space-y-3 rounded-xl border border-border bg-card p-3.5 shadow-sm sm:space-y-5 sm:p-6">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 space-y-0.5 sm:space-y-1">
+                            <h3 className="text-sm font-semibold text-foreground sm:text-base">
+                              How will buyers get this board?
+                            </h3>
+                            <p className="text-xs text-muted-foreground sm:text-sm">
+                              You can offer shipping, local pickup, or both.
+                            </p>
+                          </div>
+                          <SellRequiredMark
+                            complete={
+                              deliveryFlags.local_pickup || deliveryFlags.shipping_available
+                            }
+                          />
                         </div>
-                      )}
+                        <div className="space-y-2 sm:space-y-3">
+                          <div
+                            className={cn(
+                              "rounded-lg border p-3 transition-colors sm:rounded-xl sm:p-5",
+                              reswellShippingSelected
+                                ? "border-foreground bg-background shadow-sm"
+                                : "border-border",
+                            )}
+                          >
+                          <div className="flex items-start gap-2.5 sm:gap-3">
+                            <Checkbox
+                              id="sell-delivery-shipping"
+                              checked={reswellShippingSelected}
+                              onCheckedChange={(v) => {
+                                applyBoardShippingOffer(v === true, "reswell")
+                              }}
+                              className="mt-0.5"
+                            />
+                            <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
+                              <div className="space-y-1">
+                                <Label
+                                  htmlFor="sell-delivery-shipping"
+                                  className="flex cursor-pointer flex-wrap items-center gap-1.5 text-xs font-semibold leading-snug sm:gap-2 sm:text-sm"
+                                >
+                                  <span>Have Reswell calculate the shipping cost for buyers</span>
+                                  <Badge
+                                    variant="default"
+                                    className="h-auto border-0 bg-listingHeart px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170] sm:px-2 sm:py-0.5 sm:text-[10px]"
+                                  >
+                                    Recommended
+                                  </Badge>
+                                </Label>
+                                <SmoothCollapse open={reswellShippingSelected}>
+                                  <div className="pt-1 sm:pt-2">
+                                    <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
+                                      <span className="sm:hidden">
+                                        Buyers pay at checkout. We email the UPS label.
+                                      </span>
+                                      <span className="hidden sm:inline">
+                                        Buyers pay shipping at checkout; we email you the UPS
+                                        label. Enter the outer box size and weight you&apos;ll
+                                        ship in.
+                                      </span>
+                                    </p>
+                                  </div>
+                                </SmoothCollapse>
+                                <SmoothCollapse
+                                  open={reswellShippingSelected}
+                                >
+                                  <div className="pt-2 sm:pt-3">
+                                    <ReswellPackageDimensionsCard
+                                      showHeading
+                                      exactCartonMode
+                                      lengthPlaceholder="0"
+                                      className="border-0 bg-transparent p-0 shadow-none sm:border sm:bg-card sm:p-5 sm:shadow-sm"
+                                      lengthIn={formData.reswellPackageLengthIn}
+                                      widthIn={formData.reswellPackageWidthIn}
+                                      heightIn={formData.reswellPackageHeightIn}
+                                      weightLb={formData.reswellPackageWeightLb}
+                                      weightOz={formData.reswellPackageWeightOz}
+                                      onLengthInChange={(v) =>
+                                        setFormData({
+                                          ...formData,
+                                          // Packed box length is outer inches (not board feet'inches).
+                                          reswellPackageLengthIn: normalizeTapeStyleInchesInput(v),
+                                        })
+                                      }
+                                      onWidthInChange={(v) =>
+                                        setFormData({
+                                          ...formData,
+                                          reswellPackageWidthIn:
+                                            normalizeTapeStyleInchesInput(v),
+                                        })
+                                      }
+                                      onHeightInChange={(v) =>
+                                        setFormData({
+                                          ...formData,
+                                          reswellPackageHeightIn:
+                                            normalizeTapeStyleInchesInput(v),
+                                        })
+                                      }
+                                      onWeightLbChange={(v) =>
+                                        setFormData({
+                                          ...formData,
+                                          reswellPackageWeightLb: v,
+                                        })
+                                      }
+                                      onWeightOzChange={(v) =>
+                                        setFormData({
+                                          ...formData,
+                                          reswellPackageWeightOz: v,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                </SmoothCollapse>
+                              </div>
+                            </div>
+                          </div>
+                          </div>
+                          <div
+                            className={cn(
+                              "rounded-lg border p-3 transition-colors sm:rounded-xl sm:p-5",
+                              freeShippingSelected
+                                ? "border-foreground bg-background shadow-sm"
+                                : "border-border",
+                            )}
+                          >
+                            <div className="flex items-start gap-2.5 sm:gap-3">
+                              <Checkbox
+                                id="sell-delivery-shipping-free"
+                                checked={freeShippingSelected}
+                                onCheckedChange={(v) => {
+                                  applyBoardShippingOffer(v === true, "free")
+                                }}
+                                className="mt-0.5"
+                              />
+                              <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
+                                <Label
+                                  htmlFor="sell-delivery-shipping-free"
+                                  className="cursor-pointer text-xs font-semibold leading-snug sm:text-sm"
+                                >
+                                  Offer free shipping
+                                </Label>
+                                <SmoothCollapse open={freeShippingSelected} className="duration-200">
+                                  <p className="pt-0.5 text-xs leading-snug text-muted-foreground sm:pt-1 sm:text-sm sm:leading-relaxed">
+                                    Buyer pays $0 for shipping at checkout. After the sale, buy a
+                                    Reswell shipping label or add your own tracking.
+                                  </p>
+                                </SmoothCollapse>
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            className={cn(
+                              "rounded-lg border p-3 transition-colors sm:rounded-xl sm:p-5",
+                              flatShippingSelected
+                                ? "border-foreground bg-background shadow-sm"
+                                : "border-border",
+                            )}
+                          >
+                            <div className="flex items-start gap-2.5 sm:gap-3">
+                              <Checkbox
+                                id="sell-delivery-shipping-flat"
+                                checked={flatShippingSelected}
+                                onCheckedChange={(v) => {
+                                  applyBoardShippingOffer(v === true, "flat")
+                                }}
+                                className="mt-0.5"
+                              />
+                              <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
+                                <Label
+                                  htmlFor="sell-delivery-shipping-flat"
+                                  className="cursor-pointer text-xs font-semibold leading-snug sm:text-sm"
+                                >
+                                  Set a flat shipping rate
+                                </Label>
+                                <SmoothCollapse open={flatShippingSelected} className="duration-200">
+                                  <div className="space-y-3 pt-1 sm:pt-2">
+                                    <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
+                                      One dollar amount buyers in the Continental U.S. pay at
+                                      checkout. After the sale, buy a Reswell shipping label or add
+                                      your own tracking.
+                                    </p>
+                                    <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
+                                      <Label
+                                        htmlFor="sell-surfboard-shipping-price"
+                                        className="text-sm font-semibold text-foreground"
+                                      >
+                                        Shipping price{" "}
+                                        <SellRequiredMark
+                                          complete={flatShippingRateComplete(
+                                            formData.boardShippingPrice,
+                                          )}
+                                        />
+                                      </Label>
+                                      <div className="relative max-w-md">
+                                        <span
+                                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
+                                          aria-hidden
+                                        >
+                                          $
+                                        </span>
+                                        <Input
+                                          id="sell-surfboard-shipping-price"
+                                          type="number"
+                                          inputMode="decimal"
+                                          min="0"
+                                          step="0.01"
+                                          placeholder="0.00"
+                                          value={formData.boardShippingPrice}
+                                          onChange={(e) =>
+                                            setFormData({
+                                              ...formData,
+                                              boardShippingPrice: e.target.value,
+                                            })
+                                          }
+                                          className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </SmoothCollapse>
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            className={cn(
+                              "flex items-start gap-2.5 rounded-lg border p-3 sm:gap-3 sm:rounded-xl sm:p-5",
+                              deliveryFlags.local_pickup
+                                ? "border-foreground bg-background shadow-sm"
+                                : "border-border",
+                            )}
+                          >
+                            <Checkbox
+                              id="sell-delivery-pickup"
+                              checked={deliveryFlags.local_pickup}
+                              onCheckedChange={(v) => {
+                                const want = v === true
+                                const cur = flagsFromBoardFulfillment(formData.boardFulfillment)
+                                let ns = cur.shipping_available
+                                let np = want
+                                if (!ns && !np) ns = true
+                                setFormData({
+                                  ...formData,
+                                  boardFulfillment: boardFulfillmentFromChecks(ns, np),
+                                })
+                              }}
+                              className="mt-0.5"
+                            />
+                            <Label
+                              htmlFor="sell-delivery-pickup"
+                              className="cursor-pointer pt-0.5 text-xs font-semibold leading-snug sm:text-sm"
+                            >
+                              Local pickup
+                            </Label>
+                          </div>
+                        </div>
+                        {deliveryFlags.shipping_available && shippingSetupIncomplete ? (
+                          <div className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2.5 sm:px-4 sm:py-3">
+                            <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
+                              Not ready to set up shipping?{" "}
+                              <button
+                                type="button"
+                                onClick={handleSkipShippingForNow}
+                                className="font-medium text-foreground underline underline-offset-2 hover:text-listingHeart"
+                              >
+                                Skip it for now
+                              </button>{" "}
+                              and publish with local pickup only — you can add shipping anytime by
+                              editing your listing.
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+
                     </div>
                   </div>
-                )}
 
                 {!loading ? (
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full relative transition-shadow"
+                    className={cn(
+                      "w-full relative transition-shadow",
+                      SELL_PRIMARY_BUTTON_CLASS,
+                    )}
                   >
                     {editId ? (listingIsDraft ? "Publish listing" : "Save changes") : "Create Listing"}
                   </Button>
                 ) : null}
-                </div>
                 </SellFormSection>
                 ) : null}
 
-                <BoardSellWizardFooter
-                  showBack={flowStep !== "basics"}
-                  showNext={flowStep !== "publish"}
+                <BoardSellViewToolbar
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  searchAgainHref={
+                    !editId && cameFromCatalogSearch ? "/sell" : null
+                  }
+                  showBack={viewMode === "guided" && flowStep !== "product"}
+                  showContinue={viewMode === "guided" && flowStep !== "shipping"}
                   onBack={goToPrevSellStep}
-                  onNext={goToNextSellStep}
+                  onContinue={goToNextSellStep}
                   disabled={loading || editLoading}
                 />
                 </form>
@@ -4719,6 +4918,7 @@ const SellPageContent = React.memo(SellPageContentInner)
 export default function SellFlowShell(props: {
   /** From the incoming request URL (RSC); merged with live `useSearchParams` client-side */
   urlEditListingId: string | null
+  initialActorIsAdmin?: boolean
 }) {
   return <SellSearchParamsBridge {...props} />
 }
@@ -4730,6 +4930,7 @@ export default function SellFlowShell(props: {
  */
 function SellSearchParamsBridge(props: {
   urlEditListingId: string | null
+  initialActorIsAdmin?: boolean
 }) {
   const searchParams = useSearchParams()
   const qEditRaw = searchParams.get("edit")
@@ -4766,6 +4967,7 @@ function SellSearchParamsBridge(props: {
       editId={editId}
       startFresh={startFresh}
       onSoftOpenDraft={onSoftOpenDraft}
+      initialActorIsAdmin={props.initialActorIsAdmin}
     />
   )
 }

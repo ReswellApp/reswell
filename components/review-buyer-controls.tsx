@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { SellerReviewDialog } from "@/components/features/messages/seller-review-dialog"
+import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
 import type { ExistingSellerReview } from "@/components/review-seller-controls"
 
 const STAR_FILLED = ratingStarFilledClassName
@@ -77,6 +78,11 @@ export function ReviewBuyerControls({
           ) : (
             <p className="text-sm text-muted-foreground italic">No written comment.</p>
           )}
+          <MarketplaceReviewPhotos
+            reviewId={existingReview.id}
+            photos={existingReview.photos}
+            size={compact ? "sm" : "md"}
+          />
         </CardContent>
       </Card>
     )

@@ -43,6 +43,7 @@ export type FinBrowseListingRow = {
   user_id: string
   title: string
   price: number
+  compare_at_price: number | null
   status: string
   condition: string | null
   local_pickup: boolean | null
@@ -67,6 +68,7 @@ const FIN_BROWSE_LISTING_SELECT = `
   user_id,
   title,
   price,
+  compare_at_price,
   status,
   condition,
   local_pickup,

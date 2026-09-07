@@ -253,12 +253,17 @@ const LEGACY_LISTING_DIMENSION_DB_KEYS = [
   "volume_display",
 ] as const
 
-/** Drop legacy listing dimension columns (for retry when schema cache / migrations lag). */
+const LISTING_SCHEMA_CACHE_OPTIONAL_KEYS = [
+  ...LEGACY_LISTING_DIMENSION_DB_KEYS,
+  "fins_included",
+] as const
+
+/** Drop listing columns that may lag schema cache / migrations (retry insert/update). */
 export function withoutListingDimensionDisplayDbFields(
   row: Record<string, unknown>,
 ): Record<string, unknown> {
   const out = { ...row }
-  for (const k of LEGACY_LISTING_DIMENSION_DB_KEYS) {
+  for (const k of LISTING_SCHEMA_CACHE_OPTIONAL_KEYS) {
     delete out[k]
   }
   return out
@@ -281,7 +286,7 @@ function errorBlobForSchemaCheck(error: unknown): string {
 export function isListingDimensionDisplaySchemaCacheError(error: unknown): boolean {
   const text = errorBlobForSchemaCheck(error)
   const lower = text.toLowerCase()
-  const mentionsLegacy = LEGACY_LISTING_DIMENSION_DB_KEYS.some((k) => lower.includes(k))
+  const mentionsLegacy = LISTING_SCHEMA_CACHE_OPTIONAL_KEYS.some((k) => lower.includes(k))
   if (!mentionsLegacy) return false
   return lower.includes("schema cache") || lower.includes("pgrst204") || lower.includes("does not exist")
 }

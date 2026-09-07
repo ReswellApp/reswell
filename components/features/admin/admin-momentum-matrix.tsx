@@ -17,7 +17,7 @@ import type {
   MomentumFormat,
   MomentumMetric,
   MomentumMetricKey,
-} from '@/lib/services/adminBusinessInsights'
+} from '@/lib/types/adminBusinessInsights'
 import { cn } from '@/lib/utils'
 
 type MetricTheme = {

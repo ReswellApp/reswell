@@ -1,0 +1,203 @@
+<!--
+  Reswell · Klaviyo flow — You’re in the raffle
+  Paste into Flows → Email → Code / HTML (or a Custom HTML block).
+
+  Trigger (pick one):
+  1. Metric → Giveaway Qualified  (best — they published a listing)
+  2. Metric → Giveaway Entered + filter `qualified` is true
+
+  Trigger filter: `reswell_metric_seed` is not true.
+
+  Subject: You’re in the raffle
+  Preview: Your listing is your ticket. Winner drawn October 3rd.
+
+  Event variables (from track-giveaway-entry.ts):
+  - preferred_brand_name, ends_at_formatted, Giveaway_URL, List_URL
+
+  If your Klaviyo shell already has a logo or footer, delete the logo row below.
+  Leave Klaviyo's unsubscribe / address footer in the template shell.
+
+  Do not use {% if %} / {% for %} in this workspace — they often print as raw text.
+-->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;background:#FFFFFF;">
+  <tr>
+    <td align="center" style="padding:28px 16px 40px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;max-width:600px;">
+
+        <!-- Logo -->
+        <tr>
+          <td align="center" style="padding:0 0 24px 0;">
+            <a href="https://www.reswell.app?utm_source=klaviyo&utm_medium=email&utm_campaign=giveaway_entered_confirmation&utm_content=logo" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="160" height="40" style="display:block;width:160px;max-width:100%;height:auto;border:0;" />
+            </a>
+          </td>
+        </tr>
+
+        <!-- Hero photo — legacy homepage mesa wave, not the current Tahiti backdrop -->
+        <tr>
+          <td style="padding:0;border-radius:8px 8px 0 0;overflow:hidden;">
+            <a href="{{ event.Giveaway_URL|default:'https://www.reswell.app/giveaways' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=giveaway_entered_confirmation&utm_content=hero_image" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/home/hero-backdrop-mesa-v2.jpg" alt="You’re entered in the Reswell custom board raffle" width="600" height="280" style="display:block;width:100%;max-width:600px;height:auto;border:0;" />
+            </a>
+          </td>
+        </tr>
+
+        <!-- Hero copy -->
+        <tr>
+          <td align="center" style="padding:28px 32px 32px 32px;background:#163060;border-radius:0 0 8px 8px;">
+            <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#FFFFFF;">
+              You&rsquo;re in the raffle
+            </p>
+            <h1 style="margin:12px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:32px;font-weight:700;line-height:1.15;letter-spacing:-0.03em;color:#FFFFFF;">
+              Your listing is your ticket.
+            </h1>
+            <p style="margin:12px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.5;color:#FFFFFF;">
+              You published a surfboard on Reswell. That enters you for a custom from Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine.
+            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:22px auto 0 auto;">
+              <tr>
+                <td align="center" bgcolor="#5574AD" style="border-radius:50px;">
+                  <a href="{{ event.Giveaway_URL|default:'https://www.reswell.app/giveaways' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=giveaway_entered_confirmation&utm_content=hero_cta" style="display:inline-block;padding:14px 40px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.02em;">
+                    See the giveaway
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Greeting -->
+        <tr>
+          <td style="padding:32px 32px 0 32px;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.55;color:#04070E;">
+            Hey {{ first_name|default:'there' }} &mdash; you&rsquo;re officially entered. No sale needed. Winner is drawn October 3rd.
+          </td>
+        </tr>
+
+        <!-- Entry summary -->
+        <tr>
+          <td style="padding:24px 32px 8px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border:1px solid #E2E8F0;border-radius:8px;">
+              <tr>
+                <td style="padding:20px 24px 8px 24px;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#355185;">
+                  Your entry
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 24px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#64748B;">
+                        Brand
+                      </td>
+                      <td align="right" style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;color:#04070E;">
+                        {{ event.preferred_brand_name|default:'Your pick' }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#64748B;">
+                        Ticket
+                      </td>
+                      <td align="right" style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;color:#04070E;">
+                        Your published listing
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#64748B;">
+                        Winner drawn
+                      </td>
+                      <td align="right" style="padding:12px 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;color:#04070E;">
+                        October 3rd
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 24px 20px 24px;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:1.45;color:#64748B;">
+                  You can change your brand any time before {{ event.ends_at_formatted|default:'September 30' }}.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- What to know -->
+        <tr>
+          <td style="padding:24px 32px 8px 32px;">
+            <h2 style="margin:0 0 16px 0;font-family:Arial, Helvetica, sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.03em;color:#04070E;">
+              What to know
+            </h2>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+              <tr>
+                <td width="36" valign="top" style="padding:0 12px 16px 0;">
+                  <div style="width:28px;height:28px;line-height:28px;text-align:center;font-family:Arial, Helvetica, sans-serif;font-size:13px;font-weight:700;color:#FFFFFF;background:#355185;border-radius:50%;">1</div>
+                </td>
+                <td valign="top" style="padding:0 0 16px 0;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:16px;font-weight:700;color:#04070E;">You&rsquo;re entered</p>
+                  <p style="margin:4px 0 0 0;font-size:15px;line-height:1.45;color:#64748B;">One entry per person. Drafts don&rsquo;t count &mdash; your live listing is the ticket.</p>
+                </td>
+              </tr>
+              <tr>
+                <td width="36" valign="top" style="padding:0 12px 16px 0;">
+                  <div style="width:28px;height:28px;line-height:28px;text-align:center;font-family:Arial, Helvetica, sans-serif;font-size:13px;font-weight:700;color:#FFFFFF;background:#355185;border-radius:50%;">2</div>
+                </td>
+                <td valign="top" style="padding:0 0 16px 0;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:16px;font-weight:700;color:#04070E;">No sale required</p>
+                  <p style="margin:4px 0 0 0;font-size:15px;line-height:1.45;color:#64748B;">You don&rsquo;t have to sell the board to stay in the draw.</p>
+                </td>
+              </tr>
+              <tr>
+                <td width="36" valign="top" style="padding:0 12px 0 0;">
+                  <div style="width:28px;height:28px;line-height:28px;text-align:center;font-family:Arial, Helvetica, sans-serif;font-size:13px;font-weight:700;color:#FFFFFF;background:#355185;border-radius:50%;">3</div>
+                </td>
+                <td valign="top" style="padding:0;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:16px;font-weight:700;color:#04070E;">We&rsquo;ll email the winner</p>
+                  <p style="margin:4px 0 0 0;font-size:15px;line-height:1.45;color:#64748B;">Entries close September 30th. Winner chosen at random on October 3rd.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Closing CTA -->
+        <tr>
+          <td style="padding:24px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border:1px solid #E2E8F0;border-radius:8px;">
+              <tr>
+                <td align="center" style="padding:28px 24px;">
+                  <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#355185;">
+                    Ends September 30th &nbsp;&middot;&nbsp; Winner chosen October 3rd
+                  </p>
+                  <h2 style="margin:10px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:24px;font-weight:700;letter-spacing:-0.03em;line-height:1.2;color:#04070E;">
+                    Sit tight. You&rsquo;re in.
+                  </h2>
+                  <p style="margin:10px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.5;color:#64748B;">
+                    Change your brand anytime, or list another board if you want. Neither changes that you&rsquo;re already entered.
+                  </p>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:20px auto 0 auto;">
+                    <tr>
+                      <td align="center" bgcolor="#5574AD" style="border-radius:50px;">
+                        <a href="{{ event.Giveaway_URL|default:'https://www.reswell.app/giveaways' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=giveaway_entered_confirmation&utm_content=footer_cta" style="display:inline-block;padding:14px 40px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.02em;">
+                          See the giveaway
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Fine print -->
+        <tr>
+          <td style="padding:20px 32px 0 32px;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.5;color:#64748B;">
+            Open to people 18 or older who live in the United States. Listings must be real surfboards offered for sale. This giveaway is run by Reswell and is not sponsored, endorsed, or administered by Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine.
+            <a href="{{ event.Giveaway_URL|default:'https://www.reswell.app/giveaways' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=giveaway_entered_confirmation&utm_content=rules" style="color:#5574AD;text-decoration:underline;">Full details on the giveaway page</a>.
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

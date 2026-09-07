@@ -1,6 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import {
+  insertListingVideos,
+  listingVideosToUpdateOps,
+  syncListingVideos,
+} from "@/lib/services/sync-listing-videos"
 import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
 import { buildMagazineListingPersistFields } from "@/lib/magazine-listing-persist-fields"
 import type {
@@ -52,10 +58,7 @@ export async function syncMagazineListingImages(
       const u = img.url.trim()
       if (u) {
         rowUpdate.url = u
-        rowUpdate.thumbnail_url =
-          typeof img.thumbnailUrl === "string" && img.thumbnailUrl.trim()
-            ? img.thumbnailUrl.trim()
-            : null
+        rowUpdate.thumbnail_url = persistableListingThumbnailUrl(img.thumbnailUrl, img.url)
       }
       await supabase
         .from("listing_images")
@@ -66,10 +69,7 @@ export async function syncMagazineListingImages(
       await supabase.from("listing_images").insert({
         listing_id: listingId,
         url: img.url.trim(),
-        thumbnail_url:
-          typeof img.thumbnailUrl === "string" && img.thumbnailUrl.trim()
-            ? img.thumbnailUrl.trim()
-            : null,
+        thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
         is_primary: img.isPrimary,
         sort_order: img.sortOrder,
       })
@@ -132,6 +132,12 @@ export async function updateMagazineListing(
     input.removedImageIds ?? [],
     imageOps,
   )
+  await syncListingVideos(
+    supabase,
+    listingId,
+    input.removedVideoIds ?? [],
+    listingVideosToUpdateOps(input.videos ?? []),
+  )
 
   return { slug: (updated.slug as string) ?? (existing.slug as string) }
 }
@@ -165,7 +171,7 @@ export async function createMagazineListing(
   const imageRows = input.images.map((img, index) => ({
     listing_id: listingId,
     url: img.url,
-    thumbnail_url: img.thumbnailUrl ?? null,
+    thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
     is_primary: img.isPrimary ?? index === 0,
     sort_order: img.sortOrder ?? index,
   }))
@@ -174,6 +180,17 @@ export async function createMagazineListing(
   if (imageError) {
     await supabase.from("listings").delete().eq("id", listingId)
     throw new Error(imageError.message)
+  }
+
+  try {
+    await insertListingVideos(
+      supabase,
+      listingId,
+      listingVideosToUpdateOps(input.videos ?? []),
+    )
+  } catch (err) {
+    await supabase.from("listings").delete().eq("id", listingId)
+    throw err instanceof Error ? err : new Error("Failed to insert listing videos")
   }
 
   return { listingId, slug: (inserted.slug as string) ?? slug }

@@ -30,6 +30,26 @@ export function isAbortError(err: unknown, depth = 0): boolean {
   return false
 }
 
+/**
+ * Browser-specific TypeError messages when `fetch()` cannot complete
+ * (navigation abort, flaky radio, CORS, offline). Not application bugs.
+ * Chrome: "Failed to fetch"
+ * Safari / WebKit: "Load failed"
+ * Firefox: "NetworkError when attempting to fetch resource."
+ */
+function isBenignFetchFailureMessage(value: string): boolean {
+  const message = value.trim().toLowerCase()
+  return (
+    message === "failed to fetch" ||
+    message === "load failed" ||
+    message === "networkerror when attempting to fetch resource." ||
+    message === "networkerror when attempting to fetch resource" ||
+    message.endsWith(": failed to fetch") ||
+    message.endsWith(": load failed") ||
+    message.includes("networkerror when attempting to fetch resource")
+  )
+}
+
 function messageLooksAborted(value: string): boolean {
   const message = value.toLowerCase()
   return (
@@ -38,19 +58,19 @@ function messageLooksAborted(value: string): boolean {
     message.includes("aborted without reason") ||
     message.includes("the user aborted") ||
     message.includes("the operation was aborted") ||
-    message.includes("failed to fetch")
+    isBenignFetchFailureMessage(value)
   )
 }
 
-/** Navigation / HMR often aborts in-flight server actions as TypeError: Failed to fetch. */
+/** Navigation / HMR often aborts in-flight server actions as a TypeError from fetch(). */
 export function isBenignClientFetchError(err: unknown, depth = 0): boolean {
   if (isAbortError(err, depth)) return true
-  if (err instanceof TypeError && err.message === "Failed to fetch") return true
-  if (err instanceof Error && err.message === "Failed to fetch") return true
+  if (err instanceof Error && isBenignFetchFailureMessage(err.message)) return true
   if (typeof err === "object" && err !== null) {
     const message = (err as { message?: unknown }).message
-    if (typeof message === "string" && message === "Failed to fetch") return true
+    if (typeof message === "string" && isBenignFetchFailureMessage(message)) return true
   }
+  if (typeof err === "string" && isBenignFetchFailureMessage(err)) return true
   return false
 }
 
@@ -73,4 +93,36 @@ export function containsAbortErrorSignal(...values: unknown[]): boolean {
 
   const combined = values.map(stringifyAbortCandidate).join(" ")
   return messageLooksAborted(combined)
+}
+
+type PostHogEventLike = {
+  event?: string
+  properties?: Record<string, unknown> | null
+} | null | undefined
+
+function postHogExceptionMessages(event: PostHogEventLike): string[] {
+  const properties = event?.properties
+  if (!properties) return []
+
+  const messages: string[] = []
+  const topMessage = properties.$exception_message
+  if (typeof topMessage === "string") messages.push(topMessage)
+
+  const list = properties.$exception_list
+  if (!Array.isArray(list)) return messages
+
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue
+    const rec = item as Record<string, unknown>
+    if (typeof rec.value === "string") messages.push(rec.value)
+    if (typeof rec.$exception_message === "string") messages.push(rec.$exception_message)
+  }
+
+  return messages
+}
+
+/** Drop `$exception` events that are browser fetch failures, not application bugs. */
+export function isPostHogBenignClientFetchError(event: PostHogEventLike): boolean {
+  if (!event || event.event !== "$exception") return false
+  return postHogExceptionMessages(event).some((message) => isBenignClientFetchError(message))
 }

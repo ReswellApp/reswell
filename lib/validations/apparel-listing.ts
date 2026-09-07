@@ -1,5 +1,9 @@
 import { z } from "zod"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
+import {
+  listingRemovedVideoIdsSchema,
+  listingVideosFieldSchema,
+} from "@/lib/validations/listing-video"
 import { APPAREL_KIND_OPTIONS, APPAREL_SIZE_OPTIONS } from "@/lib/apparel-listing-config"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -73,6 +77,7 @@ const apparelListingBaseSchema = z.object({
     .array(apparelListingImageSchema)
     .min(APPAREL_LISTING_MIN_PHOTOS, "Add at least one photo")
     .max(APPAREL_LISTING_MAX_PHOTOS),
+  videos: listingVideosFieldSchema,
 })
 
 function withApparelListingRefinements<T extends z.ZodType>(schema: T) {
@@ -83,8 +88,6 @@ function withApparelListingRefinements<T extends z.ZodType>(schema: T) {
     })
     .superRefine((data, ctx) => {
       if (!data.shippingAvailable) return
-      const mode = data.shippingCostMode ?? "reswell"
-      if (mode !== "reswell") return
 
       const L = parseReswellParcelLengthRawToCarrierInches(data.reswellPackageLengthIn)
       if (L == null || L <= 0) {
@@ -118,6 +121,7 @@ function withApparelListingRefinements<T extends z.ZodType>(schema: T) {
 const apparelListingUpdateBaseSchema = apparelListingBaseSchema.extend({
   listingId: z.string().uuid(),
   removedImageIds: z.array(z.string().uuid()).optional().default([]),
+  removedVideoIds: listingRemovedVideoIdsSchema,
 })
 
 export const createApparelListingSchema = withApparelListingRefinements(apparelListingBaseSchema)

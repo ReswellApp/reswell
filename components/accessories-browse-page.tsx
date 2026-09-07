@@ -91,6 +91,7 @@ async function AccessoryListings({
               user_id: accessory.user_id,
               title: accessory.title,
               price: accessory.price,
+              compare_at_price: accessory.compare_at_price,
               status: accessory.status,
               section: "accessories",
               local_pickup: accessory.local_pickup,

@@ -49,9 +49,12 @@ const MARKETPLACE_SURFACE_FILTER = {
   },
 }
 
+let searchAnalyticsIndexReady = false
+
 export async function ensureSearchAnalyticsIndex(): Promise<boolean> {
   const es = getElasticsearchClient()
   if (!es) return false
+  if (searchAnalyticsIndexReady) return true
 
   try {
     const exists = await es.indices.exists({ index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX })
@@ -73,6 +76,7 @@ export async function ensureSearchAnalyticsIndex(): Promise<boolean> {
         // Field may already exist.
       }
     }
+    searchAnalyticsIndexReady = true
     return true
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -92,8 +96,7 @@ export async function indexSearchAnalyticsDocument(doc: SearchAnalyticsDoc): Pro
     await es.index({
       index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
       document: doc,
-      // Make events visible to aggregations immediately (low volume; avoids “refresh and still empty”).
-      refresh: true,
+      refresh: false,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -612,6 +615,131 @@ export async function countMarketplaceSearchesInRange(
   }
 }
 
+function escapeKeywordWildcard(value: string): string {
+  return value.replace(/[\\*?]/g, "\\$&")
+}
+
+export type MarketplaceQueryLookupMatch = {
+  query: string
+  count: number
+}
+
+export type MarketplaceQueryLookupResult = {
+  exactCount: number
+  queryDisplay: string | null
+  firstOccurredAt: string | null
+  lastOccurredAt: string | null
+  matches: MarketplaceQueryLookupMatch[]
+}
+
+function isoFromAgg(raw: string | number | null | undefined): string | null {
+  if (typeof raw === "string" && raw.trim()) return raw
+  if (typeof raw === "number" && Number.isFinite(raw)) return new Date(raw).toISOString()
+  return null
+}
+
+/**
+ * All-time marketplace search count for one query, plus nearby matching terms.
+ * Exact match uses `query_normalized`; related rows are prefix/contains on the same field.
+ */
+export async function lookupMarketplaceQueryAllTime(
+  queryNormalized: string,
+): Promise<MarketplaceQueryLookupResult | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  const escaped = escapeKeywordWildcard(queryNormalized)
+  const empty: MarketplaceQueryLookupResult = {
+    exactCount: 0,
+    queryDisplay: null,
+    firstOccurredAt: null,
+    lastOccurredAt: null,
+    matches: [],
+  }
+
+  try {
+    const [exactRes, relatedRes] = await Promise.all([
+      es.search({
+        index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+        size: 1,
+        track_total_hits: true,
+        sort: [{ occurred_at: { order: "desc" } }],
+        _source: ["query_display"],
+        query: {
+          bool: {
+            filter: [
+              MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+              { term: { query_normalized: queryNormalized } },
+            ],
+          },
+        },
+        aggs: {
+          first_t: { min: { field: "occurred_at" } },
+          last_t: { max: { field: "occurred_at" } },
+        },
+      }),
+      es.search({
+        index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+        size: 0,
+        query: {
+          bool: {
+            filter: [MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>],
+            should: [
+              { prefix: { query_normalized: queryNormalized } },
+              { wildcard: { query_normalized: `*${escaped}*` } },
+            ],
+            minimum_should_match: 1,
+          },
+        },
+        aggs: {
+          q: {
+            terms: { field: "query_normalized", size: 12, order: { _count: "desc" } },
+          },
+        },
+      }),
+    ])
+
+    const hitsTotal = exactRes.hits?.total
+    const exactCount =
+      typeof hitsTotal === "number"
+        ? hitsTotal
+        : typeof hitsTotal === "object" && hitsTotal && "value" in hitsTotal
+          ? hitsTotal.value
+          : 0
+
+    const src = exactRes.hits?.hits?.[0]?._source as { query_display?: string } | undefined
+    const queryDisplay =
+      typeof src?.query_display === "string" && src.query_display.trim()
+        ? src.query_display.trim()
+        : null
+
+    const exactAggs = exactRes.aggregations as
+      | {
+          first_t?: { value?: number | null; value_as_string?: string | null }
+          last_t?: { value?: number | null; value_as_string?: string | null }
+        }
+      | undefined
+
+    const relatedAggs = relatedRes.aggregations as
+      | { q?: { buckets?: Array<{ key: string | number; doc_count: number }> } }
+      | undefined
+
+    return {
+      exactCount,
+      queryDisplay,
+      firstOccurredAt: isoFromAgg(exactAggs?.first_t?.value_as_string ?? exactAggs?.first_t?.value),
+      lastOccurredAt: isoFromAgg(exactAggs?.last_t?.value_as_string ?? exactAggs?.last_t?.value),
+      matches: bucketTerms(relatedAggs?.q?.buckets),
+    }
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return empty
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] lookupMarketplaceQueryAllTime failed:", msg)
+    return empty
+  }
+}
+
 export type NavBarMarketplaceKeywordAgg = {
   volumeByDay: { date: string; count: number }[]
   topQueries: { query: string; count: number }[]
@@ -761,5 +889,190 @@ export async function listNavBarMarketplaceKeywordEvents(
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[elasticsearch] listNavBarMarketplaceKeywordEvents failed:", msg)
     return []
+  }
+}
+
+export type MarketplaceSearchEventHit = {
+  id: string
+  occurredAt: string
+  queryDisplay: string
+  resultCount: number
+  originSurface: string | null
+}
+
+/**
+ * Marketplace listing-search events in a range, newest first.
+ * Used by the daily Gemini report so the model sees individual queries, not only tops.
+ */
+export async function listMarketplaceSearchEvents(
+  fromIso: string,
+  toIsoExclusive: string,
+  limit: number,
+): Promise<MarketplaceSearchEventHit[]> {
+  const es = getElasticsearchClient()
+  if (!es || limit < 1) return []
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: limit,
+      sort: [{ occurred_at: { order: "desc" } }],
+      _source: ["occurred_at", "query_display", "result_count", "origin_surface"],
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lt: toIsoExclusive } } },
+            MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+          ],
+        },
+      },
+    })
+
+    const out: MarketplaceSearchEventHit[] = []
+    for (const hit of res.hits.hits ?? []) {
+      const src = hit._source as
+        | {
+            occurred_at?: string
+            query_display?: string
+            result_count?: number
+            origin_surface?: string
+          }
+        | undefined
+      const occurredAt = typeof src?.occurred_at === "string" ? src.occurred_at : ""
+      const queryDisplay =
+        typeof src?.query_display === "string" && src.query_display.trim()
+          ? src.query_display.trim()
+          : ""
+      if (!occurredAt || !queryDisplay) continue
+      const resultCount =
+        typeof src?.result_count === "number" && Number.isFinite(src.result_count)
+          ? src.result_count
+          : 0
+      const originSurface =
+        typeof src?.origin_surface === "string" && src.origin_surface.trim()
+          ? src.origin_surface.trim()
+          : null
+      out.push({
+        id: typeof hit._id === "string" ? hit._id : `${occurredAt}:${queryDisplay}`,
+        occurredAt,
+        queryDisplay,
+        resultCount,
+        originSurface,
+      })
+    }
+    return out
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return []
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] listMarketplaceSearchEvents failed:", msg)
+    return []
+  }
+}
+
+export type MarketplaceQueryTerms = {
+  topQueries: { query: string; count: number }[]
+  zeroResultQueries: { query: string; count: number }[]
+  uniqueQueriesApprox: number
+  totalSearches: number
+  zeroResultEventCount: number
+  avgResultCount: number | null
+}
+
+export type MarketplaceQueryAggOptions = {
+  topSize?: number
+  zeroSize?: number
+  uniquePrecision?: number
+}
+
+/** Larger terms aggregations for Gemini search briefings (vs the dashboard caps). */
+export async function aggregateMarketplaceQueriesForDailyReport(
+  fromIso: string,
+  toIsoExclusive: string,
+  opts?: MarketplaceQueryAggOptions,
+): Promise<MarketplaceQueryTerms | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  const topSize = Math.min(Math.max(opts?.topSize ?? 120, 1), 400)
+  const zeroSize = Math.min(Math.max(opts?.zeroSize ?? 80, 1), 300)
+  const uniquePrecision = Math.min(Math.max(opts?.uniquePrecision ?? 4000, 100), 40000)
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      track_total_hits: true,
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lt: toIsoExclusive } } },
+            MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+          ],
+        },
+      },
+      aggs: {
+        unique_queries: {
+          cardinality: { field: "query_normalized", precision_threshold: uniquePrecision },
+        },
+        avg_results: { avg: { field: "result_count" } },
+        top_queries: {
+          terms: { field: "query_normalized", size: topSize, order: { _count: "desc" } },
+        },
+        zero_hits: {
+          filter: { term: { result_count: 0 } },
+          aggs: {
+            zq: {
+              terms: { field: "query_normalized", size: zeroSize, order: { _count: "desc" } },
+            },
+          },
+        },
+      },
+    })
+
+    const aggs = res.aggregations as
+      | {
+          unique_queries?: { value?: number }
+          avg_results?: { value?: number | null }
+          top_queries?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+          zero_hits?: {
+            doc_count?: number
+            zq?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+          }
+        }
+      | undefined
+
+    const hitsTotal = res.hits?.total
+    const total =
+      typeof hitsTotal === "number"
+        ? hitsTotal
+        : typeof hitsTotal === "object" && hitsTotal && "value" in hitsTotal
+          ? hitsTotal.value
+          : 0
+
+    const avg = aggs?.avg_results?.value
+    return {
+      topQueries: bucketTerms(aggs?.top_queries?.buckets),
+      zeroResultQueries: bucketTerms(aggs?.zero_hits?.zq?.buckets),
+      uniqueQueriesApprox: aggs?.unique_queries?.value ?? 0,
+      totalSearches: total,
+      zeroResultEventCount: aggs?.zero_hits?.doc_count ?? 0,
+      avgResultCount: avg != null && Number.isFinite(avg) ? avg : null,
+    }
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) {
+      return {
+        topQueries: [],
+        zeroResultQueries: [],
+        uniqueQueriesApprox: 0,
+        totalSearches: 0,
+        zeroResultEventCount: 0,
+        avgResultCount: null,
+      }
+    }
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] aggregateMarketplaceQueriesForDailyReport failed:", msg)
+    return null
   }
 }

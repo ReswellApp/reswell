@@ -1,0 +1,66 @@
+{
+  "generated_for": "Jones Surfboards official named standup catalog",
+  "source": "https://jonessurfboards.com/products.json (Shopify surfboard lineup only — excludes gift cards, custom deposits, fins, apparel, and hats)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jones-surfboards",
+      "name": "Jones Surfboards",
+      "website_url": "https://jonessurfboards.com",
+      "location_label": "North Shore, O'ahu, Hawaii",
+      "founder_name": "Daniel Jones",
+      "lead_shaper_name": "Daniel Jones",
+      "short_description": "North Shore shapes by Daniel Jones — twins, fish, step-ups, and mid-lengths rooted in Rocky Point and the iconic Jones compound.",
+      "models": [
+        {
+          "name": "BLACK BIRD",
+          "image_url": "https://cdn.shopify.com/s/files/1/0408/9718/3905/files/BLK_BRD01.jpg?v=1730926924",
+          "description": "BOARD LENGTH 5'6\" - 7'6\"\n\nWAVE HEIGHT 3' - 10'\n\nFIN SETUP - QUAD / THRUSTER\n\nThe outline of the Blackbird nearly recalls the iconic single fins of the 70's, with a more sensitive rail and a little extra tail width to accommodate a four-fin design. Ultimately, I wanted to capture some of the aesthetics of what I believe to be the most radical era on the North Shore, throwing in a few modifications and a few extra fins.\n\nA quad setup adds its own natural speed to navigate variable conditions – like tradewind and chop – adding a little extra power and control. The ideal craft for pocket rides, full-power hacks, and long carves. A wider nose entry makes the Blackbird a paddling machine, especially useful on hollow waves, in current, larger waves and crowded days. A beaked nose hides volume and pays homage to the shapes of the past.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MAUI PANDA 3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0408/9718/3905/files/C03.jpg?v=1744165440",
+          "description": "TWIN FIN WITH TRAILER\n5'0\" - 6'2\" BOARD LENGTH\n\n1' - 7' WAVE HEIGHT\n\nGateway Twin with Trailer. Short and wide with a sensitive rail for those who like to carve.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "MJ STEP UP",
+          "image_url": "https://cdn.shopify.com/s/files/1/0408/9718/3905/files/U05.jpg?v=1744165376",
+          "description": "QUAD FINS\n6'3\" - 6'8\" BOARD LENGTH\n\n5' - 10' WAVE HEIGHT\n\nOne of Mikala Jones's all-time favorite step-ups for hunting barrels at maxed out Off The Wall. He also rode it anywhere from Rocky Rights to Sunset, where he liked to put it on rail.\n\nFoiled for an optimal paddle-to-performance ratio, featuring a slightly wider nose for early entry into fast-moving swells. A domed deck and precision rails create a dynamic balance that ensures fully engaged bottom turns on big, hollow waves. This translates seamlessly to rail-to-rail surfing. The tail tapers down to a pin, complemented by a low tail rocker and double concave for maximum drive and agility when navigating what could become the wave of your life.\n\nQuad fin setup = more speed and control when you need it most. If you're chasing swell, anywhere, the MJ Step up is the board to pack.\n\nRides from 6'3\" to 6'8\".",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "RICK CANE",
+          "image_url": "https://cdn.shopify.com/s/files/1/0408/9718/3905/products/image_4b14950d-3b39-4e93-b02b-1713447000d5.jpg?v=1682382518",
+          "description": "PERFORMANCE TWIN FINS\n4'11\" - 6'6\" BOARD LENGTH\n\n1.5' - 9' WAVE HEIGHT\n\nConceptually, the Rick Cane Pro model has its niche at the intersection of the modern thruster and classic fish. It's an obscure region to explore as a shaper. From here the path can lead virtually anywhere. But it's precisely here we set out to make some of our funnest, most memorable sleds.\n\nMy chance came along in 2014, when Tanner Gudauskas inquired about making a \"twin fin\", leaving me to figure out the rest. How to accommodate a heavy-footed, world-class goofy footer? I wanted to build a twin for high caliber surfing, while making enough concession to playfulness, especially on small-surf days. The goal was to streamline everything for flow and a skate-like feel . . . the perfect balance of performance and fun.\n\nOver the years, the RC would get a chance to be put to the test in a range of conditions – all over Hawaii, California and Indonesia, becoming an unexpected candidate to replace high-pro shortboarding. Simultaneously loose and controlled, it features the critical maneuverability you'll typically sacrifice when riding a more aesthetic \"fish\", while keeping the speed and flow.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "ROUND PIN SHORTY",
+          "image_url": "https://cdn.shopify.com/s/files/1/0408/9718/3905/files/G03.jpg?v=1733874485",
+          "description": "3 FINS\n5'6\" - 6'2\" BOARD LENGTH\n\n2'-5' WAVE HEIGHT",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TROPICAL FISH",
+          "image_url": "https://cdn.shopify.com/s/files/1/0408/9718/3905/products/image_0a1da482-7da4-486e-b7b4-be2648e93f00.jpg?v=1682382395",
+          "description": "TWIN KEEL FIN FISH\n5'0\"-6'0\" BOARD LENGTH\n\n1' - 3' WAVE HEIGHT\n\nEverything I love from a Keel fin fish slightly modified for Hawai'i\n\nModeled after the original kneeboard \"fish'' designs that emerged from San Diego in the '60s, the Tropical Fish features subtle modifications for variable conditions on the island of Oahu. Works best in small to overhead surf. Ride keel fins for fast carves with lots of drive and hold (think point break). A set of upright fins ride loose and pivot, handling a steeper approach to the lip. Either way, the outline is very user-friendly: fast and fluid down the line, loose but still engaged, with the ability to accelerate through flat sections and trim effortlessly.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "TWINZER",
+          "image_url": "https://cdn.shopify.com/s/files/1/0408/9718/3905/files/Djm122.jpg?v=1779817284",
+          "description": "BOARD LENGTH 5'6\" - 7'2\"\n\nWAVE HEIGHT 2' - 10'\n\nFIN SETUP - TWINZER",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "WHOLPHIN",
+          "image_url": "https://cdn.shopify.com/s/files/1/0408/9718/3905/files/D03.jpg?v=1744165223",
+          "description": "1 | 1+2 | 4 FINS\n7'0\" - 8'3\" BOARD LENGTH\n\n1' - 10' WAVE HEIGHT\n\nThe Wholphin was inspired by the first shortboard revolution. This style of single fin became popular in the late 60s'. I really like the semi-wide noses and pulled-in tails. They basically squashed down their longboards and narrowed the tips and fins making these swooping curves, fine points, and still plenty of board to paddle and move around on.\n\nThese boards were generally between 6'5\" to 8'5\" long. I love it in knee-to-head high surf and deep water breaks that would be way too much work on a shortboard. Jamie Sterling likes to ride his out at Sunset Beach and took his to Puerto Escondido last summer.\n\nThey call these mid-lengths, in-between a shortboard and a longboard. Hence the name Wholphin- the love child of a whale and a dolphin. The ocean's Liger.\n\nThe Wholphin started off as a single fin but also works well as a Twin Fin, 2+1 or Quad.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}

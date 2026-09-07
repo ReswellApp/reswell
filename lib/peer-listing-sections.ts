@@ -30,8 +30,9 @@ export function isPeerListingSection(
   return section != null && PEER_LISTING_SECTION_SET.has(section)
 }
 
-/** Dedicated /sell sub-flow routes for peer sections (surfboards use `/sell`). */
+/** Dedicated /sell sub-flow routes for peer sections. */
 const PEER_SELL_ROUTE_BY_SECTION: Partial<Record<PeerListingSection, string>> = {
+  surfboards: "/sell/boards",
   fins: "/sell/fins",
   wetsuits: "/sell/wetsuits",
   boardbags: "/sell/boardbags",
@@ -57,16 +58,7 @@ export const PEER_LISTING_SECTION_LABELS: Record<PeerListingSection, string> = {
 /** Sell-flow entry URL for admin bulk listing (includes `bulk` slot id). */
 export function peerSellCreateHref(section: PeerListingSection, bulkSlotId: string): string {
   const bulk = `bulk=${encodeURIComponent(bulkSlotId)}`
-  if (section === "surfboards") {
-    return `/sell?type=surfboard&${bulk}`
-  }
-  const base = PEER_SELL_ROUTE_BY_SECTION[section]
-  if (!base) {
-    return `/sell?type=surfboard&${bulk}`
-  }
-  if (section === "fins") {
-    return `${base}?step=search&${bulk}`
-  }
+  const base = PEER_SELL_ROUTE_BY_SECTION[section] ?? "/sell/boards"
   return `${base}?${bulk}`
 }
 
@@ -83,3 +75,24 @@ export function peerListingEditHref(
 
 /** Mutable copy for Supabase `.in("section", …)` filters. */
 export const PEER_LISTING_SECTIONS_FILTER: string[] = [...PEER_LISTING_SECTIONS]
+
+/**
+ * Seller shop “All categories” display order.
+ * Unlisted peer sections (apparel, etc.) sort after these, then by the active sort.
+ */
+export const SELLER_PROFILE_SECTION_SORT_ORDER = [
+  "surfboards",
+  "fins",
+  "wetsuits",
+  "magazines",
+] as const
+
+export function sellerProfileSectionSortRank(
+  section: string | null | undefined,
+): number {
+  if (!section) return SELLER_PROFILE_SECTION_SORT_ORDER.length
+  const index = (SELLER_PROFILE_SECTION_SORT_ORDER as readonly string[]).indexOf(
+    section,
+  )
+  return index === -1 ? SELLER_PROFILE_SECTION_SORT_ORDER.length : index
+}

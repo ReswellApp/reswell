@@ -1,0 +1,48 @@
+{
+  "generated_for": "G Boards official named softboard catalog",
+  "source": "https://gboards.com.au/collections/all (Shopify product lines — excludes fins, leashes, board bags, SUPs, rescue/nipper equipment, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "g-boards",
+      "name": "G Boards",
+      "website_url": "https://gboards.com.au/",
+      "location_label": "Torquay, Victoria, Australia",
+      "founder_name": "Pauly Garrard",
+      "lead_shaper_name": "Pauly Garrard",
+      "short_description": "Torquay soft-top surfboards for learners and everyday surf. A third-generation surfing family shaping closed-cell PE softboards since 1999.",
+      "models": [
+        {
+          "name": "G-Lite Diamond Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/2273/3477/files/Gboard_Glite_softboard_7_6__Top_f112f5f4-1441-49be-b9c8-573f650d1ad2.jpg?v=1705635385",
+          "description": "Where performance meets safety. Gboards took the safety elements from the Gboard Classic and created what they believe is the safest hi-performance soft board on the market. The G-Lite features a wider plan shape for improved stability and speed, with a diamond tail that can be ridden as a single fin or with twin fins.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "G-Lite Swallow Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/2273/3477/files/Gboard_Glite_softboard_6_0__Top_915e020a-902c-45e1-98a3-c5a4a40252cc.jpg?v=1705634933",
+          "description": "Where performance meets safety. The G-Lite Swallow Tail pairs Gboards' closed-cell soft construction with a swallow tail and thruster or twin-fin setups for a hi-performance softboard that still carries the brand's built-in safety features.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "G-Lite The Fun Board",
+          "image_url": "https://cdn.shopify.com/s/files/1/2273/3477/files/Gboard_Glite_softboard_5_6__Top_c93ce033-b466-4ae1-8785-972a5b0ac63b.jpg?v=1705634754",
+          "description": "The G-Lite Fun Machine is built for easy paddling, easy wave catching, and maximum fun. It features Gboards' technically advanced soft construction with a wider plan shape for stability and speed, available in swallow or diamond tail shapes with thruster or twin-fin options.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "GBOARD Classic",
+          "image_url": "https://cdn.shopify.com/s/files/1/2273/3477/products/Gboard_Classic_softboard_8_0__Blue_Top.jpg?v=1600749579",
+          "description": "The Gboard Classic is designed for individual use with a wider plan shape for increased stability and added thickness for paddling efficiency. The range suits everyone from children learning to surf up to a 90 kg beginner in a fun, safe surfing environment.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "GBOARD Original",
+          "image_url": "https://cdn.shopify.com/s/files/1/2273/3477/products/Gboard_Original_softboard_10_6__Blue_Top.jpg?v=1600753228",
+          "description": "Gboards' original surf-school softboard line, built with closed-cell PE foam that does not absorb water if punctured. Designed specifically to provide the most fun, safe, and easiest introduction into surfing for surf schools and first-time riders.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}

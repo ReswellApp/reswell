@@ -107,8 +107,8 @@ export function MessageSmsPhoneCaptureDialog({
             />
             {targetEnabled ? (
               <p className="mt-3 text-[12px] leading-snug text-muted-foreground">
-                By enabling, you agree to receive recurring marketing SMS from Reswell Inc. for
-                message alerts when someone contacts you on Reswell. Message and data rates may
+                By enabling, you agree to receive automated SMS from Reswell Inc. when someone
+                messages you on Reswell, plus other account texts. Message and data rates may
                 apply. Reply STOP to opt out. See our{" "}
                 <Link href="/mobile-terms" className="text-primary underline">
                   Mobile Terms of Service

@@ -1,0 +1,24 @@
+{
+  "generated_for": "Progressive Surfboards official named standup catalog",
+  "source": "https://www.progressivesurfboards.com/classes (official Boards page — only named production models listed; excludes classes, apparel, and placeholder rack labels)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "progressive-surfboards",
+      "name": "Progressive Surfboards",
+      "website_url": "https://www.progressivesurfboards.com/",
+      "location_label": "Goleta, California",
+      "founder_name": "Dave Johnson",
+      "lead_shaper_name": "Dave Johnson",
+      "short_description": "Dave Johnson brings over 50 years of expertise to the fine art of surfboard making, with more than 32,000 hand-shaped boards under the Progressive Surfboards label.",
+      "models": [
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/648f76e4742fd8762e93e934/363a3dd8-1659-4330-b8e6-83623b275c35/bg+fish+016.JPG",
+          "description": "Progressive Surfboards twin-fin fish — the only named production model currently documented on Dave Johnson's official Boards page.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

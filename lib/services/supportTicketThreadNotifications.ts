@@ -11,6 +11,20 @@ const STATUS_TO_MEMBER_LINE: Record<ContactMessageSupportStatus, string> = {
   resolved: "Status: Resolved. Reply here anytime if you still need help.",
 }
 
+/** Short staff welcome after a case is linked. */
+export function formatSupportCaseWelcomeMessage(args: {
+  topicLabel: string
+  caseRef: string
+}): string {
+  return [
+    `Thanks for reaching out — we’ve opened your case (${args.caseRef}).`,
+    "",
+    `Topic: ${args.topicLabel}`,
+    "",
+    "Reply here anytime. We’ll update you in this chat and by email.",
+  ].join("\n")
+}
+
 export function formatSupportTicketOpeningMessage(args: {
   ticketId: string
   topicLabel: string

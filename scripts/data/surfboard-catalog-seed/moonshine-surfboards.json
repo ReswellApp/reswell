@@ -1,0 +1,109 @@
+{
+  "generated_for": "Moonshine Surfboards official named standup catalog",
+  "source": "https://moonshinesurfboards.com.au/collections/all-surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "moonshine-surfboards",
+      "name": "Moonshine Surfboards",
+      "website_url": "https://moonshinesurfboards.com.au",
+      "location_label": "Vasse, Western Australia",
+      "founder_name": "Jack Medland",
+      "lead_shaper_name": "Jack Medland",
+      "short_description": "Traditional crafts re-imagined for the modern rider. Small-batch surfboards from Vasse in Western Australia's southwest, founded in 2019 by Jack Medland.",
+      "logo_url": null,
+      "models": [
+        {
+          "name": "Beach Board",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-ae58eb2bb452de0a932c.webp",
+          "description": "A board that integrates form with function. Found in the mid-1960s and reborn by Moonshine Surfboards. A classic Longboard for all beach goers and surf stompers. This traditional outline being narrower with a subtle rolled bottom throughout provides an exciting ride for swingin’ turns and tight pocket nose riding. The Beach Board is a reserve collection shape. Handshaped Polished finish Redwood Stringer Resin panels or pipelines Glassed in fin or box"
+        },
+        {
+          "name": "Big Iron",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-2753699849686ed75eed.webp",
+          "description": "A vessel capable of wave riding small and long. The ultimate shooter. Narrow and vee'd out under the nose for piercing through sections and steering up front. Gently rolled with a flat prairie planing hull through the midst. Cruise, trim and lock in. Step back, aim and reload How Big will you go ?"
+        },
+        {
+          "name": "Bronco",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-f07fefd657f7e1b384b4.webp",
+          "description": "A western Spin on a hull style board with a stubby outline. Wide point set forward allows extra paddle power and a forward foil tapered to the tail. A traditional hull under the front half blended to a more modern tail gives you the best of both worlds.-stability and control with speed and drive Saddle up and get on a bronc! Side fins optional for extra drive and response."
+        },
+        {
+          "name": "Brumby",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-ca825407d390754b7a67.webp",
+          "description": "The Brumby twin pays homage to the classic twin keel. This modernised hybrid celebrates traditional without compromising performance. The short wide outline features a deep swallow tail, and fast, flat rocker. Cuts through the mush and glides like gravy on a good wave."
+        },
+        {
+          "name": "Demon",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-a16951fa0102d892750a.webp",
+          "description": "‘Ride like the white demon’ The sharp pintail gives it heaps of pivot and makes it rocket through turns, with a forgiving outline making for a soft and smooth ride. The exaggerated double concave gives this beast plenty of get up and go. Goes great as a groveller and all-round performance twin. Perfect round-the-world chariot and an epic stick to have."
+        },
+        {
+          "name": "Desert Raven",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-0da078aa3382b0d75073.webp",
+          "description": "The desert raven is an ode to simpler times and surfing in its purest form. High ‘n’ tight , baby. It’s got the classic beaked nose, and the wide point pushed forward to give it plenty of oomph in the paddle department. In the engine room she’s a vee entry with double concave and vee exit, and the single-fin and flyer combo gives it drive and hold in equal measures. A relic to past prosperity."
+        },
+        {
+          "name": "Drover",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-17857893322ecf4b4b0e.webp",
+          "description": "Drives hard off the tail and trims a treat up front. The hull entry into a subtle spiral vee makes it grippy on take-off, with a real smooth, zippy boost off the tail. Kind of like Cat Stevens in speed delaers. A versatile beast, you can harness in punchier stuff with the trim of a longer board in the cruisier waves. Ride Drover single or 2+1 for extra drive/response off the tail."
+        },
+        {
+          "name": "Halcyon {Passes Colab}",
+          "image_url": "https://cdn.shopify.com/s/files/1/0720/7551/0058/files/5_6_Passes_x_MS_Halcyon_21_1_2_x_2_3_4_front.jpg?v=1776821891",
+          "description": "The halcyon ( hal-see-yun ). Great for getting in early for some beachbreak tubes or beating the crowd with howling fast top-to-bottom surfing on a more open face wave. The accelerated curve behind the keel fins tightens the turning radius while still keeping plenty of planing area throughout the majority of the board. This curve along with a subtle flat/single/double/flat bottom contour and foiled-yet-relaxed rails produces a playful and forgiving board that still has a lively zest to it. Glass on fins only for maximum drive and responsiveness."
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-7a8a09bce94a04b1f2e5.webp",
+          "description": "The Keel Fish is our take on a classic keel fish shape. Healthy dispersion of foam under the chest with a dropped rail line for increased performance and response. A modernised tail shape and bottom contours for added speed and agility without compromising hold. Pair with glass on or trad keels for drive and flow Great board for grovelling and gliding with speed."
+        },
+        {
+          "name": "Lichen {Passes Colab}",
+          "image_url": "https://cdn.shopify.com/s/files/1/0720/7551/0058/files/5_10PassesxMSLichen_19x23_8_Front.jpg?v=1776822015",
+          "description": "Passes Lichen Twin — Moonshine x Passes collaboration twin fin."
+        },
+        {
+          "name": "Longfish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-b7fe640c6f24f7e8a2f4.webp",
+          "description": "The long fish rides like a vintage car on a Sunday afternoon, smooth and powerful in equal measures. She’s a beaut all-rounder, with all the speed and looseness of a twinny in the slop, and heaps of drive and hold from the long rail lines in the juice. Underneath there’s a hull entry, coming into a deep single concave between the fins. Full one-board quiver"
+        },
+        {
+          "name": "Longhorn",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-da73bae069a07c694ae8.webp",
+          "description": "The longhorn is our take on a Californian style Noserider, and based on a 1966 Len Dibben. It’s built for hangtime, with heaps of width up front bringing stability, and a good perch. Most of the board has a gentle rolled belly with a single conc under the nose. The 50/50 rails are slightly fuller through the mid-rail for extra grip on the nose. Kicked tail to help generate pivot and stall when you’re lining one up."
+        },
+        {
+          "name": "Montana Mid",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-df56a28b2f18450399ba.webp",
+          "description": "The Montana is our evolution style mid length board with roots from the late 60s or ‘transitional period’. A design largely influenced by Wayne Lynch. Added 'vee' through the tail helps these boards turn on a dime and really engage the rail. Tight turns in the pocket are made easy whilst also allowing the board to trim and glide with ease. A wider tail outline combined with a generous curve allows the board to swing around and hook late through fade take offs or cutbacks, as well as giving hold for trimming forward of centre. A great all rounder that can be surfed in a variety of waves ranging from 1-4ft Side fins are optional for extra drive and response although a single fin with high rake and flex is recommended to unlock the boards true potential."
+        },
+        {
+          "name": "Outlaw",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-8e6dd4f73ca39647af54.webp",
+          "description": "A traditional outline flared for progressive and original longboarding. Its main features include added rocker and flatter bottom for extra release through turns. Nose riding is made easy in the pocket and will surf well as a competition longboard or an everyday steed. Can be shaped with edge in the tail for extra release, or kept soft railed for more grip nose riding. Tailored Nose concave for hang time or rolled nose for steering critical noseriding."
+        },
+        {
+          "name": "Pintail Log",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-fa5527cf9c1cfd32d8f6.webp",
+          "description": "This Moonshine original is a log built for performance, and designed especially for punchier waves and beach breaks. Incorporates a flatter planning section through the mid with a vee exit, and a gradual rocker and roll from nose to tail. Makes it steer like a bull on the nose and jams sick off the tail in critical sections."
+        },
+        {
+          "name": "Ranger",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-4ae481d314691a8c7552.webp",
+          "description": "The Ranger is our classic all-rounder log, built off the back of Hamo’s 67 San Juan Old Mal. It’s a piggy style log, with the wide point set back of centre. It offers the best compromise in manoeuvrability in our range. Gentle entry with tail lift, 50/50 rails and refined in the tips. Below deck it comes standard as a subtle roll from nose to tail, but we can customise this to generate extra speed or lift. Nose width can also be tailored to suit the rider."
+        },
+        {
+          "name": "Stringerless Log",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-4a7478582e7761a98a94.webp",
+          "description": "Our Stringerless Log is derived from a classic 1967 Cordingleys template, jazzed with a couple shots of original Moonshine twist. (on the house) 50/50 rails and a subtle roll throughout. Pinched rails in the nose and tail helps it hold tight in the pocket. The lack of stringer makes for a spicy ride. At full tilt you can feel the board flex and return giving an extra burst of acceleration in and out of manoeuvres. ‘Ride Stringerless’"
+        },
+        {
+          "name": "Waylon",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-fb3c89f99c190208bb9b.webp",
+          "description": "A blade waiting to be buried in a North-West cabin. Designed to be ridden as a step-up, the longer rail line and harder down rails gives it plenty of hold and paddle power. Under the hood she’s a vee-entry with a double concave through the fins, and a vee exit. Order it as a channel bottom for extra horsepower and control when it really counts. ‘A tube pig if I’ve ever seen one’"
+        }
+      ]
+    }
+  ]
+}

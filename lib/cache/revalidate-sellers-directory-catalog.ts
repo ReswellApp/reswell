@@ -1,10 +1,12 @@
 import { revalidatePath, revalidateTag } from "next/cache"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { CATEGORY_TOP_SHOPS_CACHE_TAG } from "@/lib/cache/category-top-shops"
 import { SELLERS_DIRECTORY_CACHE_TAG } from "@/lib/cache/sellers-directory-catalog"
 
 /** Bust cached `/sellers` directory tiles and all public seller profile pages. */
 export function revalidateSellersDirectoryCatalog(): void {
-  revalidateTag(SELLERS_DIRECTORY_CACHE_TAG, 'max')
+  revalidateTag(SELLERS_DIRECTORY_CACHE_TAG, "max")
+  revalidateTag(CATEGORY_TOP_SHOPS_CACHE_TAG, "max")
   revalidatePath("/sellers", "layout")
 }
 

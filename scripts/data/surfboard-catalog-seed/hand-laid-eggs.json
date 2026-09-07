@@ -1,0 +1,67 @@
+{
+  "generated_for": "Hand Laid Eggs official named standup model catalog",
+  "source": "https://www.handlaideggs.co.uk/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "hand-laid-eggs",
+      "name": "Hand Laid Eggs",
+      "website_url": "https://www.handlaideggs.co.uk/surfboards",
+      "location_label": "Cornwall, United Kingdom",
+      "founder_name": "Max",
+      "lead_shaper_name": "Max",
+      "short_description": "User friendly surfboards, designed and shaped by a surf coach, handmade in Cornwall.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/1651584898499-I1T5QBXHV73Q1V6TMYNA/Hand+Laid+Egg-Black+no+background.png",
+      "models": [
+        {
+          "name": "Sunny Side Up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/1eba37ab-2ec8-46ff-bb1a-599b8a2f2830/blue-mini-mal-surfboard.png",
+          "description": "Our take on a mini-mal surfboard, ideal as your first hardboard. An improver and intermediate surfboard for catching green waves and turning to follow the wave - now you are ready to move on from the foamie. Designed by a surf coach after countless hours improving beginner to intermediate surfers - this egg is wider, shorter and easier to surf than the outdated mini-mals that currently populate the learner surfboard market. The overall thicker and wider measurements allow you to size this board shorter than your average mini-mal - this makes it easier to handle in and out of the water. Easy to turn, fits in the car and a breeze to carry to the beach. Surf this board in ankle to shoulder high waves - the perfect board to progress on from your foamie or as a fun, high volume small wave board for intermediate and improver surfers. Handmade in Cornwall from traditional PU foam and fibreglass — not a mass-produced import.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Scrambled",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/78efa85d-f621-4d54-b12c-2d497f411f03/DSC02804.png",
+          "description": "High volume mid length surfboard for intermediate surfers, surfing green waves but wanting to progress off mini-mals onto something smaller and easier to handle in and out of the water. The perfect board for those feeling held back by their larger mini-mal or struggling on shorter/less floaty boards. The Scrambled fills you with confidence on steeper take offs, egging you on to make better turns on the wave face. For knee to head high sized waves, sized down it's easily punched through bigger waves, and can aid learning to duck dive, helping you get out the back in more powerful conditions. Although usually surfed as a one board do-it-all in UK waves. If sized on the larger end, this mid length surfboard can be an achievable step up as your first hard board, for fast learning, sporty new surfers.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Poached",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/7c80abaa-853f-4161-b166-30e34bc41748/DSC03421.png",
+          "description": "Longboard at the front, shortboard at the rear - this mid-length surfboard is a mini longboard styled one board quiver to be ridden on every wave and in every way. A mixture of longboard front, mid length body, and shortboard-esque tail makes this an extremely versatile board for small to medium UK waves. A firm favourite for longboarders seeking a less bulky mid length to take out in bigger days, this board is a go-to for guaranteed small to medium wave fun. Suitable for ankle to just over head high waves, excellent in mushy/onshore as well as clean offshore conditions. Depending on size, this board can also be a great option for lighter improver surfers as well as advanced surfers who want to up their wave count on smaller days.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Royale",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/34a668f1-610a-4a3f-93c0-a497405274d3/midlength-surfboard-green.png",
+          "description": "Mid length surfboard suitable for a range of surf conditions and abilities. As close as you can get to one board quiver for UK surf conditions, this board can be surfed from 2ft knee high to as big as you can handle. The Royale is a performance based mid that draws inspiration from the recent boom in this style of surfing. Differing from similar imports in design features, it's been tested and tweaked to be the best mid length for UK surf - bonus it's also 100% made in Cornwall. Intermediate surfers love this mid length as a step down from their mini-mals, with decent thickness and volume under the chest providing the paddle power and a thinner more pulled in tail for improving carved turns. More advanced surfers use it as an easy wave catching machine when it's busy out back and you want to maximise your wave count. Sized well, this board is manageable to duck dive and can put you on big windy waves early - setting you up for speed down the line or cover-ups and barrels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Scrambled Lite",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/e3969636-ba65-45de-81eb-d8439d340493/High+volume+shortboard+model",
+          "description": "Perfect for those seeking something more user friendly than a performance shortboard. This high volume shortboard is small enough to duck dive and fit into steeper waves without compromising on paddle power. Taking you out the back on chest to head high days, the Scrambled Lite features our well loved user friendly outline, with a wider nose and tail than a performance shortboard. The mid point sits slightly forward to keep the volume under your chest whilst paddling into waves. With thinner rails than our usual mid length eggs, the board is able to sink and slice into the wave face when angled into a turn. Made as a thruster, this board would also make a floaty and fast twin fin for the more adventurous advanced surfer.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Egg Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/1a33dc09-10f9-4888-999b-0d884c242fa8/DSC02994.png",
+          "description": "A lighter log designed to be easy to control in UK waves. With smaller dimensions to heavy, traditional longboards, this is the best longboard for learning or improving cross stepping towards the nose. A user friendly longboard for maximising wave count whilst dodging summer crowds. Compared to more advanced old school longboards, the Egg Log is made with manageable dimensions for easy walking to the beach - and the nose. Semi flat rocker, nose riding concave, and semi traditional but thinner rails allow smaller riders to stall, trim and position the board on the wave face before moving your feet up and down. To be surfed with a large single fin, the Egg Log hints towards a traditional longboard, whilst keeping the features user friendly like our popular improver mid lengths.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Trad Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/27e5d596-7f9b-4b50-bd93-0e4cc9d4c690/DSC03451.png",
+          "description": "Mid length dimensions combined with a traditional log shape - small wave fun without the burden of a massive longboard. All the features of a classic nose rider longboard in a smaller package. For small and medium waves - an incredibly stylish board for those looking for a mid length/mini-mal with a twist. Featuring a full round nose with nose riding concave - plenty of space and volume up front for hang (or cheater) 5s. Bellied out bottom contours and traditional log style rails combine with the square tail to lock you in and allow you to step and ride the nose even in the smaller sizes.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fish/Twin Fin Surfboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/62712d29fa81a1286a0ce181/1778744632914-1Y7FU5QCR9GKKGAJS6XV/IMG_6276%2B2.jpg?format=1500w",
+          "description": "Often a great choice for advanced UK surfers, twin fin surfboards offer a fast, loose and fluid feeling. Choose from our previous fish, twin pin and swallow tail shapes or tell us your design ideas to create your dream board. Example shapes include Classic Fish (speed on mushy days with flatter rocker and drawn back fins), Twin Pin (two-fin feel with thruster-like hold for hollower waves), Retro/Modern Performance Fish (balance of classic fish feeling with twin pin hold), and Big Fish (mid-length twin fins for small to medium waves or bigger rocker versions for autumn and winter swell). Fish and twin fin surfboards excel in small to medium, slower UK surf — a popular alternative to a groveller shortboard on smaller days.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

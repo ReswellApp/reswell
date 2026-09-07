@@ -8,6 +8,10 @@ import type {
   FinCatalogSearchModelRow,
   FinCatalogSearchVariantRow,
 } from "@/lib/types/fin-catalog-search"
+import {
+  isSellCatalogOptionalSearchToken,
+  parseSellCatalogSearchIntent,
+} from "@/lib/utils/sell-catalog-search-intent"
 
 export type FinCatalogSearchResultRow =
   | FinCatalogSearchBrandRow
@@ -36,8 +40,11 @@ for (const opt of FIN_SIZE_OPTIONS) {
 }
 FACET_NOISE.add("fin")
 FACET_NOISE.add("fins")
+FACET_NOISE.add("finset")
 FACET_NOISE.add("compatible")
 FACET_NOISE.add("system")
+FACET_NOISE.add("keel")
+FACET_NOISE.add("keels")
 
 /** Common fin-catalog aliases (e.g. "ci" → channel islands). */
 const FIN_CATALOG_TOKEN_SYNONYMS: Record<string, readonly string[]> = {
@@ -48,6 +55,8 @@ const FIN_CATALOG_TOKEN_SYNONYMS: Record<string, readonly string[]> = {
   fcs2: ["fcs"],
   fcsii: ["fcs"],
   tri: ["tri", "thruster"],
+  keel: ["keel", "keels", "twin"],
+  keels: ["keel", "keels", "twin"],
   blackstix: ["blackstix", "black"],
   honeycomb: ["honeycomb"],
   hexcore: ["hexcore"],
@@ -92,10 +101,12 @@ function tokenize(raw: string): string[] {
   return out
 }
 
-/** Tokens used for brand/model matching — facet vocabulary is optional, not sufficient alone. */
+/** Tokens used for brand/model matching — facet / category / chatter words are optional. */
 export function finCatalogMeaningfulSearchTokens(qRaw: string): string[] {
   const tokens = tokenize(qRaw)
-  const meaningful = tokens.filter((t) => !FACET_NOISE.has(t))
+  const meaningful = tokens.filter(
+    (t) => !FACET_NOISE.has(t) && !isSellCatalogOptionalSearchToken(t),
+  )
   return meaningful.length > 0 ? meaningful : tokens
 }
 
@@ -156,6 +167,13 @@ function tokenMatchesField(token: string, field: string, fuzzy: boolean): boolea
   return false
 }
 
+function tokenOrSynonymMatchesField(token: string, field: string, fuzzy: boolean): boolean {
+  if (tokenMatchesField(token, field, fuzzy)) return true
+  const synonyms = FIN_CATALOG_TOKEN_SYNONYMS[token]
+  if (!synonyms) return false
+  return synonyms.some((syn) => tokenMatchesField(syn, field, false))
+}
+
 function countTokenMatches(
   tokens: readonly string[],
   title: string,
@@ -166,9 +184,9 @@ function countTokenMatches(
   let matched = 0
   for (const token of tokens) {
     if (
-      tokenMatchesField(token, title, fuzzy) ||
-      tokenMatchesField(token, brand, fuzzy) ||
-      tokenMatchesField(token, model, fuzzy)
+      tokenOrSynonymMatchesField(token, title, fuzzy) ||
+      tokenOrSynonymMatchesField(token, brand, fuzzy) ||
+      tokenOrSynonymMatchesField(token, model, fuzzy)
     ) {
       matched++
     }
@@ -193,6 +211,9 @@ function compactMatchBoost(q: string, title: string, brand: string, model: strin
     return 400
   }
   if (qCompact.length >= 4 && modelCompact.includes(qCompact)) return 350
+  // Query is the catalog name plus extra words ("hobie fish keels" → Hobie Fish).
+  if (modelCompact.length >= 4 && qCompact.includes(modelCompact)) return 380
+  if (titleCompact.length >= 6 && qCompact.includes(titleCompact)) return 420
   // Query is brand+model smashed together (e.g. trueamesbonzer).
   if (
     brandCompact.length >= 4 &&
@@ -222,6 +243,22 @@ function rowCatalogTitle(row: FinCatalogSearchResultRow): string {
   return model ? `${brand} ${model}` : brand
 }
 
+function rowExtraSearchFields(row: FinCatalogSearchResultRow): string[] {
+  if (row.kind === "variant") {
+    return [
+      row.variantLabel,
+      row.suggestedTitle,
+      row.finSetup,
+      row.finSystem,
+      row.modelDescription ?? "",
+    ]
+  }
+  if (row.kind === "model") {
+    return [row.description ?? ""]
+  }
+  return [row.shortDescription ?? ""]
+}
+
 function rowDedupeKey(row: FinCatalogSearchResultRow): string {
   if (row.kind === "brand") return `brand:${row.id}`
   const model = rowModelName(row)?.trim().toLowerCase() ?? ""
@@ -242,6 +279,15 @@ function facetBoost(row: FinCatalogSearchResultRow, q: string, title: string): n
     if (q.includes("futures") && row.finSystem === "futures") score += 25
     if (q.includes("fcs") && row.finSystem.startsWith("fcs")) score += 25
   }
+
+  const intent = parseSellCatalogSearchIntent(q)
+  if (intent.wantsKeel) {
+    const extra = rowExtraSearchFields(row).join(" ").toLowerCase()
+    if (title.includes("keel") || extra.includes("keel")) score += 90
+    if (row.kind === "variant" && (row.finSetup === "twin" || row.finSetup === "twin_only")) {
+      score += 70
+    }
+  }
   return score
 }
 
@@ -257,11 +303,12 @@ export function scoreFinCatalogSearchRow(
   const title = normalizeText(rowCatalogTitle(row))
   const brand = normalizeText(rowBrandName(row))
   const model = normalizeText(rowModelName(row) ?? "")
+  const extra = normalizeText(rowExtraSearchFields(row).join(" "))
   const tokens = finCatalogMeaningfulSearchTokens(q)
   const fuzzy = mode === "relaxed"
   const compactBoost = compactMatchBoost(q, title, brand, model)
   const hasCompactHit = compactBoost > 0
-  const matchedCount = countTokenMatches(tokens, title, brand, model, fuzzy)
+  const matchedCount = countTokenMatches(tokens, `${title} ${extra}`, brand, model, fuzzy)
   const tokenTotal = tokens.length
 
   if (tokenTotal > 0) {

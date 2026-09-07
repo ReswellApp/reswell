@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import {
+  DollarSign,
   ExternalLink,
   Loader2,
   Package,
@@ -34,9 +35,11 @@ import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { AdminShippingStats } from '@/lib/services/adminShippingStats'
+import { AdminAdjustedLabelsTab } from './admin-adjusted-labels-tab'
 import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
 import { AdminFailedLabelsTab } from './admin-failed-labels-tab'
 import { AdminOrderLabelPurchase } from './admin-order-label-purchase'
+import { AdminUserLabelPurchase } from './admin-user-label-purchase'
 import { ShippingRateCalculator } from './rate-calculator'
 import { ReswellUpsCarrierStatus } from './reswell-ups-carrier-status'
 import { ShippingAnalytics } from './shipping-analytics'
@@ -175,7 +178,8 @@ export function AdminShippingClient() {
     tabFromUrl === 'validate' ||
     tabFromUrl === 'rates' ||
     tabFromUrl === 'create' ||
-    tabFromUrl === 'labels-created'
+    tabFromUrl === 'labels-created' ||
+    tabFromUrl === 'adjusted-labels'
       ? tabFromUrl
       : 'overview'
 
@@ -453,6 +457,10 @@ export function AdminShippingClient() {
               Failed labels
               <NavUnreadCountBadge count={failedLabelCount} />
             </TabsTrigger>
+            <TabsTrigger value="adjusted-labels" className={tabTriggerClass}>
+              <DollarSign className="h-4 w-4" />
+              Adjusted labels
+            </TabsTrigger>
             <TabsTrigger value="overview" className={tabTriggerClass} disabled={!configured}>
               <Ship className="h-4 w-4" />
               Overview
@@ -465,7 +473,7 @@ export function AdminShippingClient() {
               Shipping rates
             </TabsTrigger>
             <TabsTrigger value="create" className={tabTriggerClass} disabled={!configured}>
-              Order label
+              Create label
             </TabsTrigger>
             <TabsTrigger value="labels-created" className={tabTriggerClass} disabled={!configured}>
               Labels created
@@ -483,6 +491,10 @@ export function AdminShippingClient() {
 
           <TabsContent value="analytics" className="page-enter mt-6">
             <ShippingAnalytics stats={stats} onRefresh={loadStats} />
+          </TabsContent>
+
+          <TabsContent value="adjusted-labels" className="page-enter mt-6">
+            <AdminAdjustedLabelsTab />
           </TabsContent>
 
           {configured && overview.configured ? (
@@ -684,9 +696,9 @@ export function AdminShippingClient() {
 
           <TabsContent value="create" className="page-enter mt-6 space-y-6">
             <p className="text-sm text-muted-foreground px-0.5">
-              Uses the listing’s packed dimensions and seller locality from checkout, the buyer’s ship-to on the
-              order, and the same cheapest-carrier selection as peer checkout. Paste an admin order URL or search.
-              Buying a label does not mark the order shipped — the seller still ships the package.{' '}
+              Buy a ShipEngine label to send a Reswell package to a member, or buy a marketplace order label
+              from the checkout lane. Buying an order label does not mark the order shipped — the seller still
+              ships the package.{' '}
               <Link
                 href="https://www.shipengine.com/docs/labels/"
                 className="font-medium text-foreground/80 underline decoration-border underline-offset-4 hover:text-foreground"
@@ -696,7 +708,15 @@ export function AdminShippingClient() {
                 ShipEngine labels
               </Link>
             </p>
-            <AdminOrderLabelPurchase />
+            <AdminUserLabelPurchase />
+            <div className="space-y-3 pt-2">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">Marketplace order label</h2>
+              <p className="text-sm text-muted-foreground">
+                Uses the listing&apos;s packed dimensions and seller locality from checkout, the buyer&apos;s
+                ship-to on the order, and the same cheapest-carrier selection as peer checkout.
+              </p>
+              <AdminOrderLabelPurchase />
+            </div>
           </TabsContent>
 
           <TabsContent value="labels-created" className="page-enter mt-6">

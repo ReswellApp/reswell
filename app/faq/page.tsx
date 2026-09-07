@@ -87,6 +87,28 @@ const sections: FaqSection[] = [
     description: "Listing gear, handling offers, and closing the sale.",
     faqs: [
       {
+        question: "Will Reswell buy my surfboard?",
+        answerPlain:
+          "Yes. Sign in and go to We’ll buy your surfboard. Upload photos, a title, and your asking price. We reply in under 30 minutes with an accept or our best offer. If we miss that window, you automatically get an offer at 20% off your asking price. You must ship in a box no more than 22 inches wide and 5 inches high. After you accept, box the board, send packed measurements, then we buy the prepaid label. We pay your wallet when the board arrives — cash out to your bank when you’re ready.",
+        answer: (
+          <>
+            Yes. Sign in and go to{" "}
+            <Link href="/we-buy" className="text-primary underline">
+              We’ll buy your surfboard
+            </Link>
+            . Upload photos, a title, and your asking price. We reply in under 30 minutes with an
+            accept or our best offer. If we miss that window, you automatically get an offer at 20%
+            off your asking price. You must ship in a box no more than 22&quot; wide and 5&quot;
+            high. After you accept, box the board and send packed measurements — we buy the prepaid
+            label then, not at accept. We pay your{" "}
+            <Link href="/dashboard/wallet" className="text-primary underline">
+              wallet
+            </Link>
+            — cash out to your bank when you’re ready.
+          </>
+        ),
+      },
+      {
         question: "How do I list something for sale?",
         answerPlain:
           "Sign in and tap Sell in the header, or go straight to /sell. Choose a category (boards, fins, wetsuits, and more), add good photos, your price, condition, and whether you want to offer local pickup, shipping, or both. Posting a listing is free.",
@@ -238,7 +260,7 @@ const sections: FaqSection[] = [
       {
         question: "I have a problem with a purchase. What should I do?",
         answerPlain:
-          "Message the other person first. Most issues get sorted out with a quick conversation. If you still need help, open the purchase from Purchases and tap Refund help to file a claim, or Ask Reswell for a general question about the purchase. We aim to review claims within 3 business days.",
+          "Message the other person first. Most issues get sorted out with a quick conversation. If you still need help, open the purchase and tap Get help — you can start a Purchase Protection claim or ask a question about the order. We aim to review claims within 3 business days.",
         answer: (
           <>
             Message the other person first. Most issues get sorted out with a quick conversation.
@@ -246,9 +268,9 @@ const sections: FaqSection[] = [
             <Link href="/dashboard/purchases" className="text-primary underline">
               Purchases
             </Link>{" "}
-            and tap <strong className="text-foreground">Refund help</strong> to file a claim, or{" "}
-            <strong className="text-foreground">Ask Reswell</strong> for a general question about
-            the purchase. We aim to review claims within 3 business days.
+            and tap <strong className="text-foreground">Get help</strong> — you can start a Purchase
+            Protection claim or ask a question about the order. We aim to review claims within 3
+            business days.
           </>
         ),
       },

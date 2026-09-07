@@ -105,7 +105,7 @@ function ListingTileCarouselSlide({
       quality={90}
       unoptimized={listingImageShouldBypassOptimization(src)}
       aria-hidden={!active}
-      loading={active ? "eager" : "lazy"}
+      loading={imagePriority && active ? "eager" : "lazy"}
       className={cn(
         "absolute inset-0 transition-opacity duration-[280ms] ease-in-out",
         active ? "z-[2] opacity-100" : "z-[1] opacity-0",
@@ -166,6 +166,7 @@ export function ListingTileImageMedia({
   const [index, setIndex] = useState(0)
   const [exhaustedSlides, setExhaustedSlides] = useState<Set<number>>(() => new Set())
   const [activeLoaded, setActiveLoaded] = useState(false)
+  const [prefetchNeighbors, setPrefetchNeighbors] = useState(false)
 
   const slidesKey = slideCandidates.map((candidates) => candidates.join("|")).join("||")
 
@@ -173,6 +174,7 @@ export function ListingTileImageMedia({
     setIndex(0)
     setExhaustedSlides(new Set())
     setActiveLoaded(false)
+    setPrefetchNeighbors(false)
   }, [slidesKey])
 
   const visibleSlides = useMemo(
@@ -197,12 +199,14 @@ export function ListingTileImageMedia({
 
   const mountedSlideIndices = useMemo(() => {
     if (count <= 1) return [0]
-    const indices = new Set<number>()
-    for (let i = 0; i < count; i += 1) {
-      if (carouselSlideNearActive(i, index, count)) indices.add(i)
+    const indices = new Set<number>([index])
+    if (prefetchNeighbors) {
+      for (let i = 0; i < count; i += 1) {
+        if (carouselSlideNearActive(i, index, count)) indices.add(i)
+      }
     }
     return [...indices].sort((a, b) => a - b)
-  }, [count, index])
+  }, [count, index, prefetchNeighbors])
 
   const handleActiveLoadedChange = useCallback((loaded: boolean) => {
     setActiveLoaded(loaded)
@@ -222,6 +226,7 @@ export function ListingTileImageMedia({
       e.preventDefault()
       e.stopPropagation()
       if (count <= 1) return
+      setPrefetchNeighbors(true)
       setIndex((i) => (i === 0 ? count - 1 : i - 1))
       setActiveLoaded(false)
     },
@@ -233,6 +238,7 @@ export function ListingTileImageMedia({
       e.preventDefault()
       e.stopPropagation()
       if (count <= 1) return
+      setPrefetchNeighbors(true)
       setIndex((i) => (i === count - 1 ? 0 : i + 1))
       setActiveLoaded(false)
     },
@@ -251,6 +257,8 @@ export function ListingTileImageMedia({
         imageAspect === "square" && linkLayoutUnified && "rounded-t-xl",
       )}
       aria-label={imageAlt}
+      onPointerEnter={() => setPrefetchNeighbors(true)}
+      onFocusCapture={() => setPrefetchNeighbors(true)}
     >
       {hasImage ? (
         mountedSlideIndices.map((visibleIndex) => {

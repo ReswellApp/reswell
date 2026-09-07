@@ -1,0 +1,133 @@
+{
+  "generated_for": "D'Arcy Surfboards official named standup catalog",
+  "source": "https://darcysurfboards.com (Shopify surfboard lineup only — excludes gift cards and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "darcy-surfboards",
+      "name": "D'Arcy Surfboards",
+      "website_url": "https://darcysurfboards.com",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Stuart D'Arcy",
+      "lead_shaper_name": "Stuart D'Arcy",
+      "short_description": "Gold Coast custom performance, mid-length, and fish designs from shaper Stuart D'Arcy.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-08-23-77d9837adf34387e2f41.webp",
+      "models": [
+        {
+          "name": "A-Bomb",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/A-Bom-S-D.jpg?v=1584418037",
+          "description": "It's all about volume with shortboard performance... Made to make the most out of dismal surf conditions, you can catch more waves while maintaining performance. The a-bomb is ridden 4 to 6 inches shorter and 1 to 2 inches wider than your normal dimensions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cutaway Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Cutaway-Pink.jpg?v=1584519749",
+          "description": "The Cutaway Fish is a reboot of the Superfish with some performance-enhanced changes. Pulling in the outline between the feet and behind the back foot, allows the board to turn faster in a tighter arc, whilst still maintaining speed and smooth control without losing any paddle power.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Disco Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/disco-twin.png?v=1568620654",
+          "description": "As surfing got more radical in the 80's with 360's, airs, rounder roundhouses and more vertical re-entries, design experimentation went wild! Shorter, curvier and more outline, the flyer swallow twin perfected and performance tested by the likes of Mark Richards and Martin Potter inspired the disco twin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dragon",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/dragon-3.jpg?v=1584519282",
+          "description": "The dragon is an all round short board. A little more out line and volume in the foil allows the bigger surfer to maintain speed without losing performance. Fast and reliable in most conditions, this is my all round weapon of choice.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Frequent Flyer",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/frequent-flyer-blue.jpg?v=1584421624",
+          "description": "The link between the Bomb and the performance short board. The Frequent Flyer is ridden 2 to 3 inches shorter and a little wider in the nose and tail than your normal short-board. Made to perform best in slower or choppy waves, really fast in super clean waves and like the name suggests, quick off the mark.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grom",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/grom-step-up.jpg?v=1584422614",
+          "description": "The Grom shape comes into play when the young surfer takes control of his equipment. Shaped to suit a performance level and wave type is critical at this stage of development. Customise is wise. Tested and proven around the world by Junior Champions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/GUN-8_8.jpg?v=1584518967",
+          "description": "The D'Arcy Gun and Tow Series is the result of hardcore testing by the D'Arcy Team in some of the heaviest waves in Australia, Indonesia and Hawaii. Combined with the strongest materials and best workmanship money can buy, these boards will come through for you when you need them most.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mid-length Magic",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Mid-Length-Crisis-RED.jpg?v=1584423997",
+          "description": "The Mid-length Magic is a mid-length shape usually between 6'8 - 7'6 forced into riding a bigger board through injury. Flat rocker for easy paddling, super hull for easy turns — inspired by the Wayne Lynch evolution model. Fast and effortless to paddle.",
+          "board_category_slug": "mid-length"
+        },
+        {
+          "name": "Mini Long",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/mini-long-1.jpg?v=1584519864",
+          "description": "Like the name suggests the mini long is the little brother to the long. Inspired by the transition from longboard to shortboard made popular by Bob McTavish and Wayne Lynch — the evolution of the mini long made to be graceful in all conditions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pirate Door",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Pirate-door-Blue.jpg?v=1584425022",
+          "description": "This model came about from living in the U.S in 2013, riding mainly slow, sloppy waves. It's a super fun mini board and what it lacks in length it makes up in outline. A wide nose and tail with a semi-hull entry through to single double barrel concave with vee kick out the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pit Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/pit-pro-1.jpg?v=1584518780",
+          "description": "Designed for the contest ready surfer to max their heat points, it's fast and loose with plenty of drive for the aerial attack. A sweet bottom curve and clean outline combined allows performance surfing at it's best.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Single Slave",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/single-slave-board-3.jpg?v=1584519713",
+          "description": "70s shortboard revolution! Speed and radical maneuvers in small to medium waves — shorter, wider, thinner, looser and way more curve will still maintain the single fin style of surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sleepwalker Long",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Long.jpg?v=1584423631",
+          "description": "Not your traditional long board design... working with Michel Demont (World Champion Longboarder) on contest demands and free surfing in Tahiti, we came up with an all rounder. A combination of classic smooth lines and modern curve designs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Snub",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Snub-Black-green.jpg?v=1584426010",
+          "description": "Developed for Pottz in the 90's for the pro tour... A lower nose entry and more nose area makes catching waves and keeping up speed in slow soft waves easy. Using a standard short board tail kick and outline, the snub performs like your favourite short board in small gutless waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Step Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/step-up-1.jpg?v=1584519459",
+          "description": "The ultimate island hopping back-up. As the standard boards are getting smaller, I've designed a board to perform in the 4-8 foot bracket. Bigger than your shortboard and smaller than a gun, this is an essential for your board bag for those tropic adventures.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Superfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Retro-super-fish-black.jpg?v=1584426518",
+          "description": "A super short twin with a wide nose and tail design that gives the feel of a longer board when on its rail. More volume to catch more waves, a rolled vee up front and flat vee through the keels and curve to suit. The keel fins allow it to glide through turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Slingshot",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/sling-shot-2.jpg?v=1587781389",
+          "description": "The Slingshot was made to compliment the pit pro and all its contest savvy attributes, allowing the surfer who surfs very junky waves all the time, the chance to open up the speed between turns whilst maintaining flow.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ugly Betty",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/ugly-betty-orange.jpg?v=1584428609",
+          "description": "Volume, volume, volume... The Ugly Betty was built to maximise paddle volume and keep a performance feel in powerless waves. Combining chimed rails and flat to concave deck line, the Ugly Betty paddles fast with a vee barrel concave bottom that maintains speed through turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Waterbird",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Water-Bird.jpg?v=1584687862",
+          "description": "Working with team rider Jimmy McMillan towards a shape to fuse the performance shortboard with the speed and flow of the Superfish model. Capitalising on volume and outline for maximum wave catchability, fast and stable because of its width yet highly manoeuvrable because of its curves and fin configuration.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

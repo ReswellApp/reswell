@@ -2,7 +2,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { RouteTransitionMark } from "@/components/route-transition-mark"
 import { ListingTileSkeleton } from "@/components/listing-tile-skeleton"
-import { Skeleton } from "@/components/ui/skeleton"
+import { ListingTileShimmer, Skeleton } from "@/components/ui/skeleton"
 
 /**
  * Listing-shaped skeleton for App Router `loading.tsx` under `/l/*` (and anywhere else
@@ -57,9 +57,9 @@ export function ListingDetailRouteSkeleton() {
           </div>
         </div>
 
-        <div className="mx-auto grid w-full min-w-0 max-w-full gap-10 lg:grid-cols-2 lg:gap-14">
-          <div className="min-w-0 space-y-5">
-            <Skeleton className="aspect-[3/4] w-full rounded-3xl" />
+        <div className="mx-auto grid w-full min-w-0 max-w-full gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-14">
+          <div className="min-w-0 space-y-5 md:mx-auto md:max-w-[24rem] lg:mx-0 lg:max-w-[26rem] xl:max-w-[28rem]">
+            <ListingTileShimmer className="aspect-[3/4] w-full rounded-3xl" />
             <div className="flex gap-2 lg:hidden">
               <Skeleton className="h-12 flex-1 rounded-full" />
               <Skeleton className="h-12 flex-1 rounded-full" />

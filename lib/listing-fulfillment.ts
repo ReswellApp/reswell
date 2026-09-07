@@ -54,6 +54,16 @@ export function boardFulfillmentSummary(
   }
 }
 
+/** Accordion heading on listing pages — names only the options this listing actually offers. */
+export function boardFulfillmentSectionTitle(
+  pickupOffered: boolean,
+  shippingOffered: boolean,
+): string {
+  if (pickupOffered && shippingOffered) return "Shipping or pickup"
+  if (shippingOffered) return "Shipping only"
+  return "Local pickup only"
+}
+
 /**
  * One label per enabled option for listing detail metadata (e.g. condition · type · Local pickup · Shipping).
  * When the seller set a flat shipping amount, include it so buyers see the add-on clearly.

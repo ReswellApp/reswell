@@ -2,6 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
+function serviceOrFallback(supabase: SupabaseClient): SupabaseClient {
+  try {
+    return createServiceRoleClient()
+  } catch {
+    return supabase
+  }
+}
+
 /**
  * Returns true when the seller has already published at least one non-draft
  * listing in `section` other than `excludeListingId` (the listing just created).
@@ -19,12 +27,7 @@ export async function sellerHasPriorPublishedListingInSection(
   const listingId = excludeListingId.trim()
   if (!uid || !listingId) return true
 
-  let client: SupabaseClient
-  try {
-    client = createServiceRoleClient()
-  } catch {
-    client = _supabase
-  }
+  const client = serviceOrFallback(_supabase)
 
   const { count, error } = await client
     .from("listings")

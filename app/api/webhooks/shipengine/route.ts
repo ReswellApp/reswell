@@ -1,18 +1,24 @@
 import { NextResponse } from "next/server"
 import { applyShipEngineTrackWebhook } from "@/lib/services/applyShipEngineTrackWebhook"
+import { syncShipEngineLabelAdjustments } from "@/lib/services/syncShipEngineLabelAdjustments"
 import {
   ShipEngineMissingWebhookHeadersError,
   ShipEngineWebhookSignatureError,
   ShipEngineWebhookTimestampError,
   verifyShipEngineWebhookSignature,
 } from "@/lib/shipengine/webhook-signature"
+import {
+  extractShipEngineReportId,
+  shipEngineReportWebhookSchema,
+} from "@/lib/validations/shipengine-report-webhook"
 import { shipEngineTrackWebhookSchema } from "@/lib/validations/shipengine-track-webhook"
 
 export const runtime = "nodejs"
 
 /**
- * ShipStation API (ShipEngine) → track webhook.
- * Dashboard: Developer → Webhooks → event `track` → URL `https://<domain>/api/webhooks/shipengine`
+ * ShipStation API (ShipEngine) → track + report_complete webhooks.
+ * Dashboard: Developer → Webhooks → `track` and `report_complete`
+ * → URL `https://<domain>/api/webhooks/shipengine`
  * Verify signatures with JWKS (no shared secret in env).
  */
 export async function POST(request: Request) {
@@ -47,6 +53,20 @@ export async function POST(request: Request) {
   }
 
   const rec = json && typeof json === "object" ? (json as { resource_type?: string }) : null
+  if (rec?.resource_type === "API_REPORT_COMPLETE") {
+    const parsedReport = shipEngineReportWebhookSchema.safeParse(json)
+    if (!parsedReport.success) {
+      console.warn("[shipengine webhook] report payload validation:", parsedReport.error.flatten())
+      return NextResponse.json({ error: "Invalid report payload" }, { status: 400 })
+    }
+    const reportId = extractShipEngineReportId(parsedReport.data)
+    const result = await syncShipEngineLabelAdjustments({ reportId, force: true })
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
+    return NextResponse.json({ received: true, reportId, summary: result.summary })
+  }
+
   if (rec?.resource_type !== "API_TRACK") {
     return NextResponse.json({ received: true, skipped: true })
   }

@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { fetchAcceptedOffersForBuyerListings } from "@/lib/db/offers"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { parseOfferLineItems, type OfferLineItem } from "@/lib/types/offer-line-item"
 import type { PeerSurfboardCheckoutListingRow } from "@/lib/services/peerListingShippingQuote"
 import {
+  acceptedUnitPriceForSingleItemOffer,
   applyOfferLineItemsToListings,
   findAcceptedOfferMatchingListings,
   validateAcceptedOfferForPaymentIntent,
@@ -59,7 +62,7 @@ export type ApplyAcceptedOfferOptions = {
 
 /**
  * When a buyer has an ACCEPTED offer, use agreed item prices for checkout totals.
- * Supports single-board offers and bundled pickup offers with per-line pricing.
+ * Supports single-item offers and bundled offers with per-line pricing.
  *
  * Prefer `options.offerId` whenever checkout has an explicit offer (e.g. `/checkout?offer=`).
  * Rediscovery is a fallback for cart checkout without an offer id.
@@ -84,19 +87,52 @@ export async function applyAcceptedOfferToPeerCheckoutListings(
     return priceListingsFromAcceptedOffer(listingsOrdered, check.offer, check.lineItems)
   }
 
-  const sellerId = listingsOrdered[0]!.user_id
-  if (!listingsOrdered.every((row) => row.user_id === sellerId)) {
-    return listingsOrdered
+  const pricedById = new Map<string, number>()
+  const peerBySeller = new Map<string, PeerSurfboardCheckoutListingRow[]>()
+
+  for (const row of listingsOrdered) {
+    if (!isPeerListingSection(row.section)) continue
+    const group = peerBySeller.get(row.user_id) ?? []
+    group.push(row)
+    peerBySeller.set(row.user_id, group)
   }
 
-  const offer = await findAcceptedOfferMatchingListings(
-    supabase,
-    buyerId,
-    listingsOrdered.map((row) => row.id),
-    sellerId,
-  )
+  for (const [sellerId, rows] of peerBySeller) {
+    const offer = await findAcceptedOfferMatchingListings(
+      supabase,
+      buyerId,
+      rows.map((row) => row.id),
+      sellerId,
+    )
+    if (offer) {
+      for (const priced of priceListingsFromAcceptedOffer(rows, offer)) {
+        const amount = roundMoney(parseFloat(String(priced.price)))
+        if (Number.isFinite(amount) && amount > 0) pricedById.set(priced.id, amount)
+      }
+      continue
+    }
 
-  if (!offer) return listingsOrdered
+    if (rows.length <= 1) continue
 
-  return priceListingsFromAcceptedOffer(listingsOrdered, offer)
+    const singles = await fetchAcceptedOffersForBuyerListings(
+      supabase,
+      buyerId,
+      rows.map((row) => row.id),
+    )
+    for (const row of rows) {
+      if (pricedById.has(row.id)) continue
+      const single = singles.find((o) => o.listing_id === row.id && o.seller_id === sellerId)
+      if (!single) continue
+      const unit = acceptedUnitPriceForSingleItemOffer(single, row.id)
+      if (unit != null) pricedById.set(row.id, unit)
+    }
+  }
+
+  if (pricedById.size === 0) return listingsOrdered
+
+  return listingsOrdered.map((row) => {
+    const agreed = pricedById.get(row.id)
+    if (agreed == null) return row
+    return { ...row, price: agreed }
+  })
 }

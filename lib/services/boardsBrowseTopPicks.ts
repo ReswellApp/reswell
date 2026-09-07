@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   deleteBoardsBrowseTopPickListingRow,
+  deleteStaleBoardsBrowseTopPickListingRows,
   insertBoardsBrowseTopPickListing,
   listBoardsBrowseTopPickCurationRows,
   reorderBoardsBrowseTopPickListingRows,
@@ -116,4 +117,22 @@ export async function searchBoardsBrowseTopPickPickerService(
     console.error("searchBoardsBrowseTopPickPickerService:", e)
     return { ok: false, error: "Could not search listings" }
   }
+}
+
+export async function cleanupStaleBoardsBrowseTopPicksService(): Promise<
+  { ok: true; removed: number } | { ok: false; error: string; status?: number }
+> {
+  let svc: ReturnType<typeof createServiceRoleClient>
+  try {
+    svc = createServiceRoleClient()
+  } catch (e) {
+    console.error("cleanupStaleBoardsBrowseTopPicksService: missing service role", e)
+    return { ok: false, error: "Server configuration error", status: 500 }
+  }
+
+  const result = await deleteStaleBoardsBrowseTopPickListingRows(svc)
+  if (!result.ok) {
+    return { ok: false, error: result.error, status: 500 }
+  }
+  return { ok: true, removed: result.removed }
 }

@@ -12,11 +12,6 @@ import {
   LISTING_TITLE_MAX_LENGTH,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
-import { parseSurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
-import {
-  parseSurfboardShippingPackBandId,
-  surfboardShippingPackBandBoardSpecsError,
-} from "@/lib/surfboard-shipping-pack-bands"
 import {
   isReswellPackedWeightComplete,
   parseReswellParcelLengthRawToCarrierInches,
@@ -26,21 +21,15 @@ import {
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
 
-function photosTitleSectionComplete(form: SellFormValidationInput): boolean {
+function titleComplete(form: SellFormValidationInput): boolean {
   if (!form.title?.trim()) return false
   return buildResolvedListingTitle(form).length <= LISTING_TITLE_MAX_LENGTH
 }
 
-function brandModelComplete(form: SellFormValidationInput): boolean {
-  const model = form.boardModelName?.trim() ?? ""
-  if (
-    !form.brand?.trim() ||
-    !model ||
-    model.length > LISTING_BOARD_MODEL_MAX_LENGTH
-  ) {
-    return false
-  }
-  return true
+/** Brand/model are optional; only block when free-text model exceeds the max length. */
+function brandModelWithinLimits(form: SellFormValidationInput): boolean {
+  const model = form.boardModelName ?? ""
+  return model.length <= LISTING_BOARD_MODEL_MAX_LENGTH
 }
 
 function shapeSectionComplete(form: SellFormValidationInput): boolean {
@@ -56,11 +45,11 @@ function descriptionOnlyComplete(form: SellFormValidationInput): boolean {
 }
 
 function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
-  const shippingRequiresDims = flagsFromBoardFulfillment(form.boardFulfillment).shipping_available
+  const shippingRequiresLength = flagsFromBoardFulfillment(form.boardFulfillment).shipping_available
   const lenRaw = form.boardLength?.trim() ?? ""
 
-  // Pickup-only: dimensions stay optional. Shipping: length, width, and thickness required.
-  if (!lenRaw) return !shippingRequiresDims
+  // Pickup-only: dimensions stay optional. Shipping: length required; width/thickness optional.
+  if (!lenRaw) return !shippingRequiresLength
 
   const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
   if (!feetStr) return false
@@ -71,31 +60,17 @@ function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
   const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
   if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return false
 
-  if (shippingRequiresDims) {
-    if (!form.boardWidthInches?.trim()) return false
+  if (form.boardWidthInches?.trim()) {
     const width =
       parseBoardMeasurement(form.boardWidthInches.trim()) ??
       Number.parseFloat(form.boardWidthInches.trim())
     if (!Number.isFinite(width) || width <= 0) return false
-
-    if (!form.boardThicknessInches?.trim()) return false
+  }
+  if (form.boardThicknessInches?.trim()) {
     const thick =
       parseBoardMeasurement(form.boardThicknessInches.trim()) ??
       Number.parseFloat(form.boardThicknessInches.trim())
     if (!Number.isFinite(thick) || thick <= 0) return false
-  } else {
-    if (form.boardWidthInches?.trim()) {
-      const width =
-        parseBoardMeasurement(form.boardWidthInches.trim()) ??
-        Number.parseFloat(form.boardWidthInches.trim())
-      if (!Number.isFinite(width) || width <= 0) return false
-    }
-    if (form.boardThicknessInches?.trim()) {
-      const thick =
-        parseBoardMeasurement(form.boardThicknessInches.trim()) ??
-        Number.parseFloat(form.boardThicknessInches.trim())
-      if (!Number.isFinite(thick) || thick <= 0) return false
-    }
   }
 
   if (form.boardVolumeL?.trim()) {
@@ -118,29 +93,13 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
       const raw = String(form.boardShippingPrice ?? "").trim().replace(/,/g, "")
       const n = Number.parseFloat(raw)
       if (!raw || !Number.isFinite(n) || n < 0) return false
-    } else if (form.adminCustomShippingCarton === true) {
-      // Admin custom carton — packed L×W×H + weight.
-      if (!form.boardLength.trim()) return false
+    } else {
+      // Reswell — seller-entered packed L×W×H + weight (no pack-band autofill).
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
       if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
-        return false
-      }
-    } else {
-      // Reswell mode only — UPS shortboard pack bands (free/flat skip this).
-      if (!form.boardLength.trim()) return false
-      if (parseSurfboardShippingTierId(form.surfboardShippingTier) !== "shortboard") return false
-      const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
-      if (!bandId) return false
-      if (
-        surfboardShippingPackBandBoardSpecsError({
-          bandId,
-          boardLength: form.boardLength,
-          boardWidthInches: form.boardWidthInches,
-        })
-      ) {
         return false
       }
     }
@@ -170,8 +129,8 @@ function pricePublishFieldsComplete(form: SellFormValidationInput): boolean {
  * Per-section completion for the `/sell` board wizard stepper. Rules mirror
  * {@link validateSellListingForm} field groups so checkmarks match what’s left to publish.
  *
- * Delivery (`sell-section-delivery`): the `/sell` page may additionally require visiting the
- * delivery step + explicit `LocationPicker` confirmation before marking that step complete
+ * Shipping (`sell-section-shipping`): the `/sell` page may additionally require visiting the
+ * shipping step + explicit `LocationPicker` confirmation before marking that step complete
  * in the rail (prefill alone cannot), unless the form already carries map coordinates from
  * draft restore / hydrate.
  */
@@ -180,15 +139,121 @@ export function computeSellSectionCompletion(
   opts: { imageCount: number; imagesUploadReady: boolean },
 ): Record<string, boolean> {
   return {
-    "sell-section-basics":
-      brandModelComplete(form) && shapeSectionComplete(form) && conditionComplete(form),
-    "sell-section-details":
-      dimensionsSectionComplete(form) && descriptionOnlyComplete(form),
-    "sell-section-delivery": deliverySectionComplete(form),
-    "sell-section-publish":
-      photosTitleSectionComplete(form) &&
+    "sell-section-product":
+      titleComplete(form) &&
+      brandModelWithinLimits(form) &&
+      conditionComplete(form) &&
+      shapeSectionComplete(form),
+    "sell-section-photos":
       opts.imageCount >= LISTING_MIN_PHOTOS &&
       opts.imagesUploadReady &&
-      pricePublishFieldsComplete(form),
+      descriptionOnlyComplete(form) &&
+      dimensionsSectionComplete(form),
+    "sell-section-pricing": pricePublishFieldsComplete(form),
+    "sell-section-shipping": deliverySectionComplete(form),
+  }
+}
+
+export interface SellStepChecklistItem {
+  id: string
+  label: string
+  complete: boolean
+  /** Wizard section this requirement belongs to (for jump-to-form from the last step). */
+  sectionId: string
+}
+
+/**
+ * Itemized per-section requirements for the `/sell` board wizard, using the same
+ * predicates as {@link computeSellSectionCompletion} so the inline checklist can
+ * never disagree with the section checkmarks or publish validation.
+ */
+export function computeSellStepChecklist(
+  form: SellFormValidationInput,
+  opts: { imageCount: number; imagesUploadReady: boolean },
+): Record<string, SellStepChecklistItem[]> {
+  const shippingEnabled = flagsFromBoardFulfillment(form.boardFulfillment).shipping_available
+
+  const product: SellStepChecklistItem[] = [
+    {
+      id: "title",
+      label: "Listing title",
+      complete: titleComplete(form),
+      sectionId: "sell-section-product",
+    },
+    {
+      id: "condition",
+      label: "Condition",
+      complete: conditionComplete(form),
+      sectionId: "sell-section-product",
+    },
+    {
+      id: "board-type",
+      label: "Board type",
+      complete: shapeSectionComplete(form),
+      sectionId: "sell-section-product",
+    },
+  ]
+
+  const photos: SellStepChecklistItem[] = [
+    {
+      id: "photos",
+      label:
+        opts.imageCount >= LISTING_MIN_PHOTOS && !opts.imagesUploadReady
+          ? "Photos (finishing upload…)"
+          : `Photos (at least ${LISTING_MIN_PHOTOS})`,
+      complete: opts.imageCount >= LISTING_MIN_PHOTOS && opts.imagesUploadReady,
+      sectionId: "sell-section-photos",
+    },
+    {
+      id: "dimensions",
+      label: shippingEnabled ? "Dimensions (required for shipping)" : "Dimensions",
+      complete: dimensionsSectionComplete(form),
+      sectionId: "sell-section-photos",
+    },
+    {
+      id: "description",
+      label: "Description",
+      complete: descriptionOnlyComplete(form),
+      sectionId: "sell-section-photos",
+    },
+  ]
+
+  const pricing: SellStepChecklistItem[] = [
+    {
+      id: "price",
+      label: form.autoPriceDrop ? "Price and price-drop floor" : "Price",
+      complete: pricePublishFieldsComplete(form),
+      sectionId: "sell-section-pricing",
+    },
+  ]
+
+  const locationDone = Boolean(form.locationCity?.trim() && form.locationState?.trim())
+  const shipping: SellStepChecklistItem[] = [
+    {
+      id: "location",
+      label: "Pickup location",
+      complete: locationDone,
+      sectionId: "sell-section-shipping",
+    },
+  ]
+  if (shippingEnabled) {
+    const shippingConfigComplete = deliverySectionComplete({
+      ...form,
+      locationCity: form.locationCity?.trim() ? form.locationCity : "x",
+      locationState: form.locationState?.trim() ? form.locationState : "x",
+    })
+    shipping.push({
+      id: "shipping-setup",
+      label: "Package size and weight",
+      complete: shippingConfigComplete,
+      sectionId: "sell-section-shipping",
+    })
+  }
+
+  return {
+    "sell-section-product": product,
+    "sell-section-photos": photos,
+    "sell-section-pricing": pricing,
+    "sell-section-shipping": shipping,
   }
 }

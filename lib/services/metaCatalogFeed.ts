@@ -1,9 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { z } from "zod"
 import { fetchMetaCatalogFeedPage } from "@/lib/db/metaCatalogFeed"
 import {
   listingToMetaCatalogFeedItem,
+  META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL,
+  META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL,
+  META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL,
   type MetaCatalogFeedItem,
 } from "@/lib/meta/catalog-product"
+import { findUserIdByEmail } from "@/lib/services/resolveUserIdByEmail"
 
 const DEFAULT_MAX_ITEMS = 10_000
 
@@ -20,7 +25,75 @@ const META_CATALOG_CSV_HEADERS = [
   "google_product_category",
   "additional_image_link",
   "identifier_exists",
+  "custom_label_0",
+  "video[0].url",
 ] as const
+
+async function resolveShopUserIdByEnvOrEmail(
+  supabase: SupabaseClient,
+  options: {
+    userIdEnv: string
+    emailEnv: string
+    defaultEmail: string
+  },
+): Promise<string | null> {
+  const byIdRaw = process.env[options.userIdEnv]?.trim()
+  if (byIdRaw) {
+    const parsed = z.string().uuid().safeParse(byIdRaw)
+    if (parsed.success) return parsed.data
+    console.warn(
+      `[meta] ${options.userIdEnv} is not a valid UUID; falling back to email lookup`,
+    )
+  }
+
+  const email = process.env[options.emailEnv]?.trim() || options.defaultEmail
+  return findUserIdByEmail(supabase, email)
+}
+
+/**
+ * Resolves Hayden Garfield’s seller profile id for Meta `custom_label_0`.
+ * Prefer `META_CATALOG_HAYDEN_SHOP_USER_ID`, else email
+ * (`META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL` or haydensbsb@gmail.com).
+ */
+export async function resolveMetaCatalogHaydenShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  return resolveShopUserIdByEnvOrEmail(supabase, {
+    userIdEnv: "META_CATALOG_HAYDEN_SHOP_USER_ID",
+    emailEnv: "META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL",
+    defaultEmail: META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL,
+  })
+}
+
+/**
+ * Resolves OutSurfing’s seller profile id for Meta `custom_label_0`.
+ * Prefer `META_CATALOG_OUTSURFING_SHOP_USER_ID`, else email
+ * (`META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL` or davidacason@gmail.com).
+ */
+export async function resolveMetaCatalogOutSurfingShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  return resolveShopUserIdByEnvOrEmail(supabase, {
+    userIdEnv: "META_CATALOG_OUTSURFING_SHOP_USER_ID",
+    emailEnv: "META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL",
+    defaultEmail: META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL,
+  })
+}
+
+/**
+ * Resolves Brownstone’s seller profile id for Meta `custom_label_0`.
+ * Prefer `META_CATALOG_BROWNSTONE_SHOP_USER_ID`, else email
+ * (`META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL` or eric@questavolta.com).
+ */
+export async function resolveMetaCatalogBrownstoneShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  return resolveShopUserIdByEnvOrEmail(supabase, {
+    userIdEnv: "META_CATALOG_BROWNSTONE_SHOP_USER_ID",
+    emailEnv: "META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL",
+    defaultEmail: META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL,
+  })
+}
 
 function catalogFeedMaxItems(): number {
   const raw = process.env.META_CATALOG_FEED_MAX_ITEMS?.trim()
@@ -41,6 +114,12 @@ export async function buildMetaCatalogFeed(
   supabase: SupabaseClient,
 ): Promise<MetaCatalogFeedItem[]> {
   const maxItems = catalogFeedMaxItems()
+  const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId] = await Promise.all([
+    resolveMetaCatalogHaydenShopUserId(supabase),
+    resolveMetaCatalogOutSurfingShopUserId(supabase),
+    resolveMetaCatalogBrownstoneShopUserId(supabase),
+  ])
+  const feedContext = { haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId }
   const items: MetaCatalogFeedItem[] = []
   let offset = 0
 
@@ -50,7 +129,7 @@ export async function buildMetaCatalogFeed(
 
     for (const row of page.rows) {
       if (items.length >= maxItems) break
-      const item = listingToMetaCatalogFeedItem(row)
+      const item = listingToMetaCatalogFeedItem(row, feedContext)
       if (item) items.push(item)
     }
 

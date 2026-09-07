@@ -10,7 +10,6 @@ import { fetchWetsuitsBrowsePage, WETSUITS_BROWSE_PAGE_SIZE } from "@/lib/db/wet
 import { wetsuitFacetSelectionsFromParams } from "@/lib/wetsuits-browse-facets"
 import {
   wetsuitsBrowseFilterHeadline,
-  wetsuitsBrowseHeroSubtext,
   wetsuitsBrowseRootLabel,
   type WetsuitsBrowseSearchParams,
 } from "@/lib/wetsuits-browse-metadata"
@@ -91,6 +90,7 @@ async function WetsuitListings({
               user_id: wetsuit.user_id,
               title: wetsuit.title,
               price: wetsuit.price,
+              compare_at_price: wetsuit.compare_at_price,
               status: wetsuit.status,
               section: "wetsuits",
               local_pickup: wetsuit.local_pickup,
@@ -135,11 +135,10 @@ export async function WetsuitsBrowsePage(props: {
         </div>
       </section>
 
-      <section className="min-w-0 bg-offwhite pt-4 pb-4 sm:pt-5">
+      <section className="min-w-0 bg-offwhite pt-2 pb-4 sm:pt-5">
         <div className="container mx-auto min-w-0">
           <WetsuitsBrowseClient
             title={filterCrumb ?? wetsuitsBrowseRootLabel}
-            description={wetsuitsBrowseHeroSubtext(searchParams)}
           >
             <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading wetsuits" />}>
               <WetsuitListings searchParams={props.searchParams} />

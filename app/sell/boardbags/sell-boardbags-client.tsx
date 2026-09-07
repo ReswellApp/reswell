@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Heart, Loader2, Upload, X, Zap } from "lucide-react"
+import { Loader2, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -24,8 +23,16 @@ import {
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
+import { SellSimplePhotoTile } from "@/components/features/sell/sell-simple-photo-tile"
+import { useSimpleListingPhotoRotate } from "@/components/features/sell/hooks/use-simple-listing-photo-rotate"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
+import {
+  SellListingVideoAddTile,
+  SellListingVideoFilledTile,
+} from "@/components/features/sell/sell-listing-photo-grid"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellBoardbagsFacetFields } from "@/components/features/sell/sell-boardbags-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
@@ -40,6 +47,10 @@ import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-ow
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
+import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import {
   assertListingOriginalSize,
@@ -61,12 +72,17 @@ import { buildBoardbagListingPersistFields } from "@/lib/boardbag-listing-persis
 import { computeBoardbagSellSectionCompletion } from "@/lib/boardbag-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   clearImpersonation,
   clearImpersonationStorageIfCookieMissing,
   getImpersonation,
 } from "@/lib/impersonation"
+import {
+  ensureImpersonationForListingOwner,
+  syncClientImpersonationForListingOwner,
+} from "@/lib/utils/admin-impersonation-for-listing"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import {
   normalizeBoardLengthInput,
@@ -102,6 +118,7 @@ type PhotoSlot = {
   thumbnailUrl?: string
   phase: PhotoPhase
   progress: number
+  userRotate180?: boolean
 }
 
 function shippingPriceToFormValue(v: unknown): string {
@@ -177,6 +194,35 @@ const INITIAL_STATE: BoardbagFormState = {
   buyerOffers: true,
 }
 
+/** Type-safe merge of an IndexedDB draft snapshot onto the boardbag form state. */
+function boardbagFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): BoardbagFormState {
+  const next: BoardbagFormState = { ...INITIAL_STATE }
+  for (const key of Object.keys(INITIAL_STATE) as Array<keyof BoardbagFormState>) {
+    const value = snapshot[key]
+    if (value === undefined) continue
+    const initial = INITIAL_STATE[key]
+    if (key === "locationLat" || key === "locationLng") {
+      if (value === null || typeof value === "number") {
+        next[key] = value as BoardbagFormState["locationLat"]
+      }
+      continue
+    }
+    if (key === "shippingMode") {
+      if (value === "reswell" || value === "free" || value === "flat") next.shippingMode = value
+      continue
+    }
+    if (typeof value === typeof initial) {
+      next[key] = value as never
+    }
+  }
+  return next
+}
+
+/** This flow's photo pipeline predates the shared upload hook — draft recovery covers the form only. */
+const NO_DRAFT_PHOTO_SLOTS: ListingPhotoSlot[] = []
+const noopSetDraftImages = () => {}
+const noopRetryDraftPhotoSlot = () => {}
+
 function newClientId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
@@ -189,7 +235,9 @@ function scrollBoardbagSellSectionIntoView(sectionId: string) {
 
 export default function SellBoardbagsFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
-  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
+  const searchParams = useSearchParams()
+  const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const startFresh = searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -202,6 +250,35 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
   const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
 
+  const sellVideoReturnPath = useCallback(
+    () =>
+      typeof window === "undefined"
+        ? editId
+          ? `/sell/boardbags?edit=${editId}`
+          : "/sell/boardbags"
+        : `${window.location.pathname}${window.location.search}`,
+    [editId],
+  )
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: sellVideoReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    removedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+  const videoFileInputId = useId()
+
+
   const photosRef = useRef<PhotoSlot[]>([])
   photosRef.current = photos
 
@@ -213,9 +290,23 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     }
   }, [])
 
+  const restoreBoardbagDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm(boardbagFormFromDraftSnapshot(snapshot))
+  }, [])
+
+  const { clearRecoveredDraft, flushDraftNow } = useSellAccessoryDraftRecovery({
+    listingType: "boardbags",
+    editId,
+    startFresh,
+    formSnapshot: form,
+    images: NO_DRAFT_PHOTO_SLOTS,
+    onRestoreForm: restoreBoardbagDraftForm,
+    setImages: noopSetDraftImages,
+    retryPhotoSlot: noopRetryDraftPhotoSlot,
+  })
+
   const hydrateBoardbagEdit = useCallback(
-    (listing: OwnedListingForEditRow) => {
-      const imp = getImpersonation()
+    async (listing: OwnedListingForEditRow) => {
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can't be edited.")
@@ -235,9 +326,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       }
 
       setEditListingOwnerId(listing.user_id as string)
-      if (imp && imp.userId !== listing.user_id) {
-        clearImpersonation()
-      }
+      await syncClientImpersonationForListingOwner(String(listing.user_id ?? ""))
 
       const loadedReswellPackage = reswellPackageFormFromDbRow(
         listing as {
@@ -310,11 +399,44 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
           }
         })
 
+
+      const existingVideos = (
+        (listing.listing_videos as Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          duration_seconds?: number | null
+          byte_size?: number | null
+          sort_order?: number | null
+        }> | null) ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       setPhotos(existingImages)
       setRemovedImageIds([])
       return { status: "ready" as const }
     },
-    [router],
+    [hydrateExistingVideo, router],
   )
 
   const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -354,11 +476,6 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     }
   }, [])
 
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (form.shippingMode !== "free" && form.shippingMode !== "flat") return
-    setField("shippingMode", "reswell")
-  }, [actorIsAdmin, form.shippingMode, setField])
 
 
   const updateSlot = useCallback((clientId: string, patch: Partial<PhotoSlot>) => {
@@ -370,8 +487,11 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       if (!slot.file) return
       try {
         const decodable = await ensureBrowserDecodableImageFile(slot.file)
-        const prepared = await prepareListingImagePairFromFile(decodable)
-        updateSlot(slot.clientId, { phase: "uploading", progress: 5 })
+        const prepared = await prepareListingImagePairFromFile(decodable, {
+          rotate180: Boolean(slot.userRotate180),
+        })
+        const nextPreviewUrl = listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
+        updateSlot(slot.clientId, { phase: "uploading", progress: 5, previewUrl: nextPreviewUrl })
 
         const supabase = supabaseRef.current
         const session = await resolveClientSessionForMutation(supabase)
@@ -471,6 +591,12 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     })
   }, [])
 
+  const rotatePhoto180 = useSimpleListingPhotoRotate({
+    photosRef,
+    setPhotos,
+    uploadSlot,
+  })
+
   const uploadingCount = photos.filter((p) => p.phase !== "done" && p.phase !== "error").length
   const readyPhotos = photos.filter((p) => p.phase === "done" && p.url)
 
@@ -512,7 +638,11 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
-      signIn("/sell/boardbags")
+      toast.message("Listing saved on this device", {
+        description: "Create a free account to publish — you’ll pick up right here.",
+      })
+      signIn("/sell/boardbags", { preferSignUp: true, skipSessionProbe: true })
+      void flushDraftNow({ includeInFlightPhotos: true })
       return
     }
 
@@ -542,6 +672,10 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     }
     if (uploadingCount > 0) {
       failValidation("Hang tight — your photos are still uploading.")
+      return
+    }
+    if (!videoUploadReady || videoUploading) {
+      failValidation("Hang tight — your video is still uploading.")
       return
     }
     if (!form.title.trim()) {
@@ -630,6 +764,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
         isPrimary: index === 0,
         sortOrder: index,
       })),
+      videos: readyVideo ? [readyVideo] : [],
     }
 
     setSubmitting(true)
@@ -657,14 +792,16 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       const adminImpersonatesListingOwner = Boolean(
         editId &&
           editListingOwnerId &&
-          listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
+          submitActorIsAdmin &&
           user.id !== editListingOwnerId,
       )
 
       if (editId) {
         const ownerEditsOwnListing = user.id === editListingOwnerId
         if (adminImpersonatesListingOwner) {
+          if (editListingOwnerId) {
+            await ensureImpersonationForListingOwner(editListingOwnerId)
+          }
           const imageOps = payload.images.map((img, index) => ({
             id: img.id,
             url: img.url,
@@ -681,6 +818,8 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
               listing: buildBoardbagListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
               removedImageIds,
               images: imageOps,
+              removedVideoIds,
+              videos: payload.videos,
             }),
           })
           const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
@@ -705,7 +844,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
             durationMs: Date.now() - publishStartedAt,
           })
           toast.success("Listing updated")
-          router.push(`/l/${data.slug ?? editId}`)
+          navigateAfterListingSave(`/l/${data.slug ?? editId}`)
           return
         }
 
@@ -721,6 +860,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
           ...payload,
           listingId: editId,
           removedImageIds,
+          removedVideoIds,
         })
         if ("error" in result) {
           const message = sellActionErrorMessage(result.error)
@@ -741,7 +881,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        router.push(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${result.slug}`)
         return
       }
 
@@ -755,6 +895,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
+        videos: payload.videos,
         title: payload.title,
         section: "boardbags",
         bulkSlotId,
@@ -763,6 +904,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
         successToast: "Your boardbag is live!",
         setSubmitting,
         directCreate: () => createBoardbagListingAction(payload),
+        onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {
       const aborted = isSellSubmitAbortError(err)
@@ -868,10 +1010,11 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
-                        <h3 className="text-sm font-semibold text-foreground">Photos</h3>
+                        <h3 className="text-sm font-semibold text-foreground">Photos & video</h3>
                         <p className="text-xs text-muted-foreground sm:text-sm">
                           Add clear photos. The first image is your main photo — tap the star on any
-                          other photo to make it the cover.
+                          other photo to make it the cover. Tap rotate if a photo is upside down.
+                          Optional: add one short video.
                         </p>
                       </div>
                       <div className="shrink-0 pt-0.5" aria-live="polite">
@@ -888,66 +1031,49 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                     </div>
                     <Label className="sr-only">Listing photos</Label>
                     {photos.length === 0 ? (
-                      <SellListingPhotoEmptyDropzone
-                        fileInputId={fileInputId}
-                        onFilesSelected={addFiles}
-                      />
+                      <div className="space-y-3">
+                        <SellListingPhotoEmptyDropzone
+                          fileInputId={fileInputId}
+                          onFilesSelected={addFiles}
+                        />
+                        {video ? (
+                          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                            <SellListingVideoFilledTile
+                              video={video}
+                              fileInputId={videoFileInputId}
+                              onInputChange={handleVideoInputChange}
+                              onRemove={handleVideoRemove}
+                              onRetry={handleVideoRetry}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
                     ) : (
                     <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
                       {photos.map((photo, index) => (
-                        <div
+                        <SellSimplePhotoTile
                           key={photo.clientId}
-                          className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted"
-                        >
-                          <Image
-                            src={photo.previewUrl}
-                            alt={`Photo ${index + 1}`}
-                            fill
-                            sizes="120px"
-                            className="object-cover object-center"
-                            unoptimized
-                          />
-                          {photo.phase !== "done" ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/70 text-xs text-muted-foreground">
-                              {photo.phase === "error" ? (
-                                <span className="text-destructive">Failed</span>
-                              ) : (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  {photo.progress > 0 ? `${photo.progress}%` : null}
-                                </>
-                              )}
-                            </div>
-                          ) : null}
-                          {index === 0 ? (
-                            <span className="absolute left-1.5 top-1.5 rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background">
-                              Main
-                            </span>
-                          ) : null}
-                          <div className="absolute right-1 top-1 flex gap-1">
-                            {index !== 0 && photo.phase === "done" ? (
-                              <button
-                                type="button"
-                                onClick={() => makePrimary(photo.clientId)}
-                                className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                                title="Make main photo"
-                                aria-label="Make main photo"
-                              >
-                                ★
-                              </button>
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() => removePhoto(photo.clientId)}
-                              className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                              title="Remove photo"
-                              aria-label="Remove photo"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
+                          photo={photo}
+                          index={index}
+                          onRotate180={rotatePhoto180}
+                          onMakePrimary={makePrimary}
+                          onRemove={removePhoto}
+                        />
                       ))}
+                      {video ? (
+                        <SellListingVideoFilledTile
+                          video={video}
+                          fileInputId={videoFileInputId}
+                          onInputChange={handleVideoInputChange}
+                          onRemove={handleVideoRemove}
+                          onRetry={handleVideoRetry}
+                        />
+                      ) : (
+                        <SellListingVideoAddTile
+                          fileInputId={videoFileInputId}
+                          onInputChange={handleVideoInputChange}
+                        />
+                      )}
                       {photos.length < BOARDBAG_LISTING_MAX_PHOTOS ? (
                         <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary/50">
                           <label
@@ -981,17 +1107,6 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                       ) : null}
                     </div>
                     )}
-                    <p className="space-y-1 text-xs text-muted-foreground">
-                      <span className="block">Thank you for listing on Reswell.</span>
-                      <span className="inline-flex flex-wrap items-center gap-1">
-                        <span>Made with</span>
-                        <Heart
-                          className="h-4 w-4 shrink-0 fill-listingHeart text-listingHeart"
-                          aria-hidden
-                        />
-                        <span>in Santa Barbara.</span>
-                      </span>
-                    </p>
                   </div>
 
                   <Separator className="bg-border" />
@@ -1176,7 +1291,6 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                         idPrefix="sell-boardbags"
                         value={form.shippingMode}
                         onChange={(mode) => setField("shippingMode", mode)}
-                        allowPrivilegedModes={actorIsAdmin === true}
                         flatRateSlot={
                         <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
                           <Label htmlFor="boardbag-shipping-price" className="text-sm font-semibold text-foreground">
@@ -1316,6 +1430,11 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                   {uploadingCount > 0 ? (
                     <p className="text-center text-xs text-muted-foreground">
                       {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
+                    </p>
+                  ) : null}
+                  {videoUploading ? (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Video still uploading…
                     </p>
                   ) : null}
                 </div>

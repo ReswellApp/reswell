@@ -26,6 +26,8 @@ import {
   reswellProtectionCardClassName,
   reswellProtectionTrustRibbonColumnDividerClassName,
 } from "@/lib/reswell-protection-surface"
+import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
+import { marketplaceReviewPhotoRefs } from "@/lib/marketplace-review-photos"
 
 const STAR_FILL = ratingStarFilledClassName
 const STAR_EMPTY = ratingStarEmptyClassName
@@ -35,6 +37,7 @@ export type SellerReviewPreviewRow = {
   rating: number
   comment: string | null
   created_at: string
+  metadata?: unknown
 }
 
 type ReviewerEmbed =
@@ -236,7 +239,7 @@ export function ListingAboutSellerSection({
     "min-h-touch w-full rounded-full border-0 bg-[#f2f3f5] px-5 py-2.5 text-[16px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
 
   return (
-    <section className="border-b border-neutral-200/90 pb-6 dark:border-neutral-700/70">
+    <section className="border-b border-neutral-200/90 pb-6 dark:border-neutral-700/70 max-lg:border-b-0 max-lg:pb-0">
       <h2 className="text-[1.375rem] font-bold tracking-tight text-foreground">About the seller</h2>
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
@@ -348,6 +351,11 @@ export function ListingAboutSellerSection({
                       ) : (
                         <p className="mt-1 text-[14px] text-muted-foreground">Rated {rv.rating.toFixed(0)}★</p>
                       )}
+                      <MarketplaceReviewPhotos
+                        reviewId={rv.id}
+                        photos={marketplaceReviewPhotoRefs(rv.metadata)}
+                        size="sm"
+                      />
                     </li>
                   )
                 })}

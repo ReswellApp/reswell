@@ -22,10 +22,24 @@ import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
+import {
+  takeSellCatalogHandoff,
+  sellCatalogHandoffToSelectionCard,
+} from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellWetsuitsFacetFields } from "@/components/features/sell/sell-wetsuits-facet-fields"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import {
@@ -53,12 +67,17 @@ import { buildWetsuitListingPersistFields } from "@/lib/wetsuit-listing-persist-
 import { computeWetsuitSellSectionCompletion } from "@/lib/wetsuit-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   clearImpersonation,
   clearImpersonationStorageIfCookieMissing,
   getImpersonation,
 } from "@/lib/impersonation"
+import {
+  ensureImpersonationForListingOwner,
+  syncClientImpersonationForListingOwner,
+} from "@/lib/utils/admin-impersonation-for-listing"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import {
   normalizeBoardLengthInput,
@@ -154,6 +173,30 @@ const INITIAL_STATE: WetsuitFormState = {
   buyerOffers: true,
 }
 
+/** Type-safe merge of an IndexedDB draft snapshot onto the wetsuit form state. */
+function wetsuitFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): WetsuitFormState {
+  const next: WetsuitFormState = { ...INITIAL_STATE }
+  for (const key of Object.keys(INITIAL_STATE) as Array<keyof WetsuitFormState>) {
+    const value = snapshot[key]
+    if (value === undefined) continue
+    const initial = INITIAL_STATE[key]
+    if (key === "locationLat" || key === "locationLng") {
+      if (value === null || typeof value === "number") {
+        next[key] = value as WetsuitFormState["locationLat"]
+      }
+      continue
+    }
+    if (key === "shippingMode") {
+      if (value === "reswell" || value === "free" || value === "flat") next.shippingMode = value
+      continue
+    }
+    if (typeof value === typeof initial) {
+      next[key] = value as never
+    }
+  }
+  return next
+}
+
 function scrollWetsuitSellSectionIntoView(sectionId: string) {
   const el = document.getElementById(sectionId)
   if (!el) return
@@ -162,16 +205,44 @@ function scrollWetsuitSellSectionIntoView(sectionId: string) {
 
 export default function SellWetsuitsFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
-  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
+  const searchParams = useSearchParams()
+  const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const startFresh = searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
+  const formRef = useRef<HTMLFormElement | null>(null)
   const editId = editListingId?.trim() || null
 
   const [form, setForm] = useState<WetsuitFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
+
+  // One-shot brand/model prefill from the /sell cross-category catalog search wall.
+  const catalogHandoffTakenRef = useRef(false)
+  /** A fresh catalog pick outranks any stashed IndexedDB draft — skip restore when set. */
+  const catalogHandoffAppliedRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] =
+    useState<SellCatalogSelectionCardData | null>(null)
+  useEffect(() => {
+    if (catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    const handoff = takeSellCatalogHandoff("wetsuits")
+    if (!handoff) return
+    catalogHandoffAppliedRef.current = true
+    setCatalogSelectionCard(sellCatalogHandoffToSelectionCard(handoff))
+    setForm((prev) => ({
+      ...prev,
+      title: prev.title.trim() ? prev.title : handoff.suggestedTitle,
+      description:
+        prev.description.trim() || !handoff.suggestedDescription
+          ? prev.description
+          : handoff.suggestedDescription,
+      brand: handoff.brandName,
+      model: handoff.selectionKind === "model" ? handoff.modelName : "",
+    }))
+  }, [editId])
 
   const wetsuitSellReturnPath = useCallback(
     () =>
@@ -189,6 +260,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     openSignIn: signIn,
     supabase: supabaseRef.current,
     funnelListingType: "wetsuits",
+    promptSignInOnUpload: false,
   })
 
   const {
@@ -197,6 +269,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     uploadingCount,
     readyImages,
     images,
+    setImages,
     handleImageInputChange,
     handlePhotosFileDragEnter,
     handlePhotosFileDragLeave,
@@ -208,11 +281,46 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     handlePhotoTileRetry,
     handlePhotoTileRotate,
     hydrateExistingImages,
+    imagesRef,
   } = photoUpload
 
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: wetsuitSellReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    removedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+  const videoFileInputId = useId()
+
+  const restoreWetsuitDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm(wetsuitFormFromDraftSnapshot(snapshot))
+  }, [])
+
+  const { clearRecoveredDraft, flushDraftNow, draftHydrated } = useSellAccessoryDraftRecovery({
+    listingType: "wetsuits",
+    editId,
+    startFresh,
+    formSnapshot: form,
+    images,
+    onRestoreForm: restoreWetsuitDraftForm,
+    setImages,
+    retryPhotoSlot: photoUpload.handlePhotoTileRetry,
+    skipRestore: () => catalogHandoffAppliedRef.current,
+  })
+
   const hydrateWetsuitEdit = useCallback(
-    (listing: OwnedListingForEditRow) => {
-      const imp = getImpersonation()
+    async (listing: OwnedListingForEditRow) => {
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can't be edited.")
@@ -232,9 +340,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       }
 
       setEditListingOwnerId(listing.user_id as string)
-      if (imp && imp.userId !== listing.user_id) {
-        clearImpersonation()
-      }
+      await syncClientImpersonationForListingOwner(String(listing.user_id ?? ""))
 
       const loadedReswellPackage = reswellPackageFormFromDbRow(
         listing as {
@@ -307,10 +413,42 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           }),
         )
 
+      const existingVideos = (
+        (listing.listing_videos as Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          duration_seconds?: number | null
+          byte_size?: number | null
+          sort_order?: number | null
+        }> | null) ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       hydrateExistingImages(existingImages)
       return { status: "ready" as const }
     },
-    [hydrateExistingImages, router],
+    [hydrateExistingImages, hydrateExistingVideo, router],
   )
 
   const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -321,6 +459,14 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     notFoundRedirectHref: "/sell/wetsuits",
     router,
     onHydrate: hydrateWetsuitEdit,
+  })
+
+  usePendingPublishResume({
+    listingKind: "wetsuits",
+    draftHydrated,
+    formRef,
+    imagesRef,
+    editLoading,
   })
 
   const setField = useCallback(<K extends keyof WetsuitFormState>(key: K, value: WetsuitFormState[K]) => {
@@ -350,11 +496,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     }
   }, [])
 
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (form.shippingMode !== "free" && form.shippingMode !== "flat") return
-    setField("shippingMode", "reswell")
-  }, [actorIsAdmin, form.shippingMode, setField])
 
 
   const sellSectionCompletion = useMemo(
@@ -395,7 +536,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
-      signIn("/sell/wetsuits")
+      await beginGuestListingPublishAuth({
+        kind: "wetsuits",
+        returnPath: "/sell/wetsuits",
+        openSignIn: signIn,
+        persistDraft: () => flushDraftNow({ includeInFlightPhotos: true }),
+      })
       return
     }
 
@@ -425,6 +571,10 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     }
     if (uploadingCount > 0) {
       failValidation("Hang tight — your photos are still uploading.")
+      return
+    }
+    if (!videoUploadReady || videoUploading) {
+      failValidation("Hang tight — your video is still uploading.")
       return
     }
     if (!form.title.trim()) {
@@ -504,6 +654,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         isPrimary: index === 0,
         sortOrder: index,
       })),
+      videos: readyVideo ? [readyVideo] : [],
     }
 
     setSubmitting(true)
@@ -531,14 +682,16 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       const adminImpersonatesListingOwner = Boolean(
         editId &&
           editListingOwnerId &&
-          listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
+          submitActorIsAdmin &&
           user.id !== editListingOwnerId,
       )
 
       if (editId) {
         const ownerEditsOwnListing = user.id === editListingOwnerId
         if (adminImpersonatesListingOwner) {
+          if (editListingOwnerId) {
+            await ensureImpersonationForListingOwner(editListingOwnerId)
+          }
           const imageOps = payload.images.map((img, index) => ({
             id: img.id,
             url: img.url,
@@ -555,6 +708,8 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
               listing: buildWetsuitListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
               removedImageIds,
               images: imageOps,
+              removedVideoIds,
+              videos: payload.videos,
             }),
           })
           const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
@@ -579,7 +734,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
             durationMs: Date.now() - publishStartedAt,
           })
           toast.success("Listing updated")
-          router.replace(
+          navigateAfterListingSave(
             listingDetailHref({
               id: editId,
               slug: data.slug ?? null,
@@ -600,6 +755,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           ...payload,
           listingId: editId,
           removedImageIds,
+          removedVideoIds,
         })
         if ("error" in result) {
           const message = sellActionErrorMessage(result.error)
@@ -620,7 +776,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        router.replace(
+        navigateAfterListingSave(
           listingDetailHref({
             id: editId,
             slug: result.slug,
@@ -639,6 +795,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
+        videos: payload.videos,
         title: payload.title,
         section: "wetsuits",
         bulkSlotId,
@@ -647,6 +804,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         successToast: "Your wetsuit is live!",
         setSubmitting,
         directCreate: () => createWetsuitListingAction(payload),
+        onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {
       const aborted = isSellSubmitAbortError(err)
@@ -742,7 +900,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
               className="mb-8 hidden md:block lg:hidden"
             />
 
-            <form onSubmit={handleSubmit} className="space-y-10 lg:space-y-12" aria-busy={submitting}>
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="space-y-10 lg:space-y-12"
+              aria-busy={submitting}
+            >
               <SellFormSection
                 sectionId="sell-wetsuits-section-photos-title"
                 title="Photos & title"
@@ -750,6 +913,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                 complete={sellSectionCompletion["sell-wetsuits-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => setCatalogSelectionCard(null)}
+                    />
+                  ) : null}
                   <SellListingPhotoGrid
                     images={images}
                     maxPhotos={WETSUIT_LISTING_MAX_PHOTOS}
@@ -765,7 +934,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                     onRetry={handlePhotoTileRetry}
                     onRotate180={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
-                    photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles."
+                    photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles. Optional: add one short video."
+                    video={video}
+                    videoFileInputId={videoFileInputId}
+                    onVideoInputChange={handleVideoInputChange}
+                    onVideoRemove={handleVideoRemove}
+                    onVideoRetry={handleVideoRetry}
                   />
 
                   <Separator className="bg-border" />
@@ -872,7 +1046,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                       idPrefix="sell-wetsuits"
                       value={form.shippingMode}
                       onChange={(mode) => setField("shippingMode", mode)}
-                      allowPrivilegedModes={actorIsAdmin === true}
                       flatRateSlot={
                         <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
                           <Label htmlFor="wetsuit-shipping-price" className="text-sm font-semibold text-foreground">
@@ -1011,6 +1184,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                   {uploadingCount > 0 ? (
                     <p className="text-center text-xs text-muted-foreground">
                       {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
+                    </p>
+                  ) : null}
+                  {videoUploading ? (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Video still uploading…
                     </p>
                   ) : null}
                 </div>

@@ -1,13 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Truck, CheckCircle2, Package, Loader2, AlertCircle, RotateCcw } from "lucide-react"
+import { Truck, CheckCircle2, Package, Loader2, AlertCircle, LifeBuoy, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { helpHubHref } from "@/lib/help/help-hub-intents"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -308,8 +310,7 @@ export function BuyerPickupCode({
 }
 
 // ── Seller: request support (refund or cancel via Reswell) ──
-// Sellers cannot issue refunds or cancel orders directly. This sends a request to
-// the admin team via order_support_requests. Returns are buyer-only.
+// Sellers cannot issue refunds or cancel orders directly — Help Hub opens a case.
 
 export function SellerRequestSupportButton({
   orderId,
@@ -318,89 +319,21 @@ export function SellerRequestSupportButton({
   orderId: string
   orderStatus: string
 }) {
-  const [busy, setBusy] = useState(false)
-  const [open, setOpen] = useState(false)
-  const [requestType, setRequestType] = useState<"refund_request" | "cancel_request">("refund_request")
-  const [body, setBody] = useState("")
-
   if (orderStatus === "refunded" || orderStatus === "refunding") return null
 
-  const typeLabels: Record<typeof requestType, string> = {
-    refund_request: "Ask Reswell to issue a refund",
-    cancel_request: "Ask Reswell to cancel the order",
-  }
-
-  const submit = async () => {
-    if (body.trim().length < 10) {
-      toast.error("Please add a bit more detail (at least 10 characters).")
-      return
-    }
-    setBusy(true)
-    try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/seller-support`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ request_type: requestType, body: body.trim() }),
-      })
-      const data = (await res.json()) as { error?: string }
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not send request")
-        return
-      }
-      setOpen(false)
-      setBody("")
-    } catch {
-      toast.error("Something went wrong")
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline" className="w-full gap-2 text-muted-foreground">
-          <RotateCcw className="h-4 w-4" />
-          Ask Reswell for a refund or cancellation
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Submit a request to Reswell support</AlertDialogTitle>
-          <AlertDialogDescription>
-            You can’t issue a refund or cancel the order yourself — tell us what you need and we’ll
-            review it. Returns are handled on the buyer side.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="flex flex-wrap gap-2">
-            {(["refund_request", "cancel_request"] as const).map((t) => (
-              <Button
-                key={t}
-                size="sm"
-                variant={requestType === t ? "default" : "outline"}
-                onClick={() => setRequestType(t)}
-              >
-                {typeLabels[t]}
-              </Button>
-            ))}
-          </div>
-          <textarea
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[100px]"
-            placeholder="Tell us what happened and why you're requesting this…"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-          />
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-          <Button onClick={submit} disabled={busy || body.trim().length < 10}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Submit request
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Button variant="outline" className="w-full gap-2 text-muted-foreground" asChild>
+      <Link
+        href={helpHubHref({
+          intent: "order",
+          orderId,
+          role: "seller",
+        })}
+      >
+        <LifeBuoy className="h-4 w-4" />
+        Get help with this sale
+      </Link>
+    </Button>
   )
 }
 

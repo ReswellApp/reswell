@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import Link from "next/link"
 import { format, formatDistanceToNow, parseISO } from "date-fns"
 import {
   Area,
@@ -76,6 +77,8 @@ import type {
 } from "@/lib/services/searchAnalytics"
 import { SEARCH_TREND_WINDOW_DAYS } from "@/lib/validations/search-analytics"
 import { cn } from "@/lib/utils"
+import { SearchAnalyticsPulseBar } from "@/components/features/admin/search-analytics-pulse-bar"
+import { SearchAnalyticsQueryLookup } from "@/components/features/admin/search-analytics-query-lookup"
 
 const RANGE_OPTIONS = [
   { value: "7", label: "Last 7 days" },
@@ -1112,7 +1115,7 @@ function InsightCard({
               variant="outline"
               size="sm"
               className="h-8 gap-1.5 border-slate-200 bg-white text-xs"
-              onClick={() => openInNewTab("/admin/catalog-overview")}
+              onClick={() => openInNewTab("/admin/used-board-market-dashboard?tab=catalog")}
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Brand catalog
@@ -2033,6 +2036,8 @@ export function SearchAnalyticsAdminClient() {
         </p>
       )}
 
+      <SearchAnalyticsQueryLookup />
+
       {loading && !data ? (
         <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-20 text-sm text-slate-500 shadow-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -2049,6 +2054,11 @@ export function SearchAnalyticsAdminClient() {
         <div className="min-h-[60vh] w-full max-w-[1600px] space-y-8">
           {/* Top bar — reference dashboard header */}
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            {data.pulse ? (
+              <div className="border-b border-slate-100 bg-slate-50/70 px-6 py-5">
+                <SearchAnalyticsPulseBar pulse={data.pulse} />
+              </div>
+            ) : null}
             <div className="flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-semibold text-slate-900">Search Analytics Dashboard</h2>
@@ -2098,6 +2108,17 @@ export function SearchAnalyticsAdminClient() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 border-slate-200 bg-white"
+                    asChild
+                  >
+                    <Link href="/admin/search-daily-report">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="ml-2">Search reports</span>
+                    </Link>
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

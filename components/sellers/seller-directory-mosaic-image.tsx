@@ -51,6 +51,11 @@ export function SellerDirectoryMosaicImage({
         sizes={sizes}
         className="object-cover object-center"
         unoptimized={listingImageShouldBypassOptimization(src)}
+        ref={(img) => {
+          if (img?.complete && img.naturalWidth > 0) {
+            setLoaded(true)
+          }
+        }}
         onLoad={handleLoad}
         onError={handleError}
         priority={priority}

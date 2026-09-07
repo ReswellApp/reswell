@@ -14,7 +14,7 @@ const StripeCardCheckout = dynamic(
     ssr: false,
     // Matches the reserved min-h of the mounted Stripe element so the page doesn't reflow.
     loading: () => (
-      <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-lg border bg-card text-sm text-muted-foreground">
+      <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-lg border bg-card text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading secure checkout…
       </div>
@@ -35,8 +35,10 @@ interface PurchaseOptionsProps {
   offerId?: string | null
   /** Newsletter welcome promo code (Reswell-funded discount). */
   promoCode?: string | null
-  /** Signed token from `/api/checkout/shipping-quote` — skips duplicate ShipEngine on payment intent. */
+  /** Signed token from `/api/checkout/shipping-quote` — charges that ShipEngine rate without a second lookup. */
   shippingQuoteToken?: string | null
+  /** Multi-surfboard: together (one box) vs separate (one label per board). */
+  packagingMode?: "together" | "separate" | null
   /** When false, card checkout stays disabled until purchase details are complete. */
   purchaseDetailsReady?: boolean
   /** True when the order ships (includes ship-only listings where fulfillment is undefined). */
@@ -45,13 +47,15 @@ interface PurchaseOptionsProps {
   submitButtonClassName?: string
   /** Hide the default one-line Stripe footer (when the parent already shows secure copy). */
   hideStripeFooter?: boolean
+  /** Prefills Link / billing email when the buyer is signed in. */
+  buyerEmail?: string | null
 }
 
 function purchaseDetailsPlaceholder(needsShipping: boolean): string {
   if (needsShipping) {
     return "Add your phone number and shipping address above to continue to payment."
   }
-  return "Add your phone number above to pay with your card."
+  return "Add your phone number above to continue to payment."
 }
 
 export function PurchaseOptions({
@@ -63,11 +67,13 @@ export function PurchaseOptions({
   offerId,
   promoCode,
   shippingQuoteToken,
+  packagingMode = null,
   purchaseDetailsReady = true,
   needsShipping = false,
   submitButtonLabel,
   submitButtonClassName,
   hideStripeFooter = false,
+  buyerEmail,
 }: PurchaseOptionsProps) {
   const showCard = stripeCardCheckoutEnabled()
 
@@ -89,7 +95,7 @@ export function PurchaseOptions({
   // Reserve space matching the mounted Stripe element + Pay button so the page
   // doesn't shift when the iframe loads (CLS fix).
   return (
-    <div className="flex min-h-[340px] flex-col">
+    <div className="flex min-h-[400px] flex-col">
       {!canMountStripe ? (
         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
           {purchaseDetailsPlaceholder(needsShipping)}
@@ -105,10 +111,12 @@ export function PurchaseOptions({
             offerId={offerId ?? null}
             promoCode={promoCode ?? null}
             shippingQuoteToken={shippingQuoteToken ?? null}
+            packagingMode={packagingMode}
             purchaseDetailsReady
             needsShipping={needsShipping}
             submitButtonLabel={submitButtonLabel}
             submitButtonClassName={submitButtonClassName}
+            buyerEmail={buyerEmail}
           />
           {!hideStripeFooter ? (
             <p className="text-xs text-muted-foreground">Secure payment processed by Stripe.</p>

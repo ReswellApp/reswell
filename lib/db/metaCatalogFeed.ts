@@ -8,6 +8,7 @@ export const META_CATALOG_FEED_PAGE_SIZE = 500
 
 const CATALOG_LISTING_SELECT = `
   id,
+  user_id,
   slug,
   title,
   description,
@@ -17,7 +18,8 @@ const CATALOG_LISTING_SELECT = `
   hidden_from_site,
   brand,
   condition,
-  listing_images ( url, thumbnail_url, is_primary, sort_order )
+  listing_images ( url, thumbnail_url, is_primary, sort_order ),
+  listing_videos ( url, thumbnail_url, sort_order, duration_seconds )
 `.trim()
 
 export type MetaCatalogFeedPageResult = {
@@ -26,7 +28,7 @@ export type MetaCatalogFeedPageResult = {
 }
 
 /**
- * Active, site-visible peer listings (surfboards, fins, magazines) for Meta Commerce catalog sync (newest first).
+ * Active, site-visible peer listings (surfboards, fins, wetsuits, magazines) for Meta Commerce catalog sync (newest first).
  */
 export async function fetchMetaCatalogFeedPage(
   supabase: SupabaseClient,

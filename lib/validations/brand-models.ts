@@ -1,10 +1,13 @@
 import { z } from "zod"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import { BRAND_PRODUCT_CATEGORY_SLUGS } from "@/lib/brand-product-categories"
+import { SURFBOARD_SELL_CATEGORY_ORDER } from "@/lib/surfboard-sell-categories"
 
 const uuid = z.string().trim().uuid()
 
 const brandModelProductCategorySchema = z.enum(BRAND_PRODUCT_CATEGORY_SLUGS)
+
+const brandModelBoardCategorySchema = z.enum(SURFBOARD_SELL_CATEGORY_ORDER)
 
 export type BrandModelProductCategorySlug = BrandProductCategorySlug
 
@@ -28,6 +31,7 @@ export const adminBrandModelCreateBodySchema = z.object({
   description: z.string().trim().max(2000).optional().nullable(),
   image_url: optionalImageUrl,
   product_category_slug: brandModelProductCategorySchema.optional().default("surfboards"),
+  board_category_slug: brandModelBoardCategorySchema.optional().nullable(),
 })
 
 export type AdminBrandModelCreateBody = z.infer<typeof adminBrandModelCreateBodySchema>
@@ -38,6 +42,7 @@ export const adminBrandModelPatchBodySchema = z.object({
   brand_id: uuid.optional(),
   image_url: optionalImageUrl,
   product_category_slug: brandModelProductCategorySchema.optional(),
+  board_category_slug: brandModelBoardCategorySchema.optional().nullable(),
 })
 
 export type AdminBrandModelPatchBody = z.infer<typeof adminBrandModelPatchBodySchema>

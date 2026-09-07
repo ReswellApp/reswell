@@ -6,6 +6,10 @@ import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sell
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { patchListingPriceByOwner } from "@/lib/db/listings"
 import { notifyKlaviyoFavoritePriceDrop } from "@/lib/services/klaviyoFavoritePriceDrop"
+import {
+  parseOptionalUsdAmount,
+  resolveCompareAtPriceOnUpdate,
+} from "@/lib/listing-compare-at-price"
 
 const QUICK_PRICE_ALLOWED_STATUSES = ["active", "pending_sale", "pending", "draft"] as const
 
@@ -15,12 +19,13 @@ type ListingQuickPriceRow = {
   user_id: string
   status: string
   price: string | number
+  compare_at_price: string | number | null
   slug: string | null
   section: string | null
 }
 
 export type UpdateSellerListingQuickPriceResult =
-  | { ok: true; priceUsd: number }
+  | { ok: true; priceUsd: number; compareAtPriceUsd: number | null }
   | { ok: false; status: number; error: string }
 
 export function roundUsdTwoDecimals(n: number): number {
@@ -33,7 +38,7 @@ async function loadListingQuickPriceRow(
 ): Promise<ListingQuickPriceRow | null> {
   const { data, error } = await supabase
     .from("listings")
-    .select("user_id, status, price, slug, section")
+    .select("user_id, status, price, compare_at_price, slug, section")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -46,9 +51,14 @@ async function loadListingQuickPriceRow(
  */
 export async function updateSellerListingQuickPrice(
   supabase: SupabaseClient,
-  params: { listingId: string; sellerUserId: string; priceUsd: number },
+  params: {
+    listingId: string
+    sellerUserId: string
+    priceUsd: number
+    showPriceMarkdown?: boolean
+  },
 ): Promise<UpdateSellerListingQuickPriceResult> {
-  const { listingId, sellerUserId, priceUsd } = params
+  const { listingId, sellerUserId, priceUsd, showPriceMarkdown } = params
 
   const row = await loadListingQuickPriceRow(supabase, listingId)
   if (!row) {
@@ -78,14 +88,34 @@ export async function updateSellerListingQuickPrice(
     return { ok: false, status: 400, error: "Current listing price is invalid." }
   }
 
-  if (nextUsd === currentUsd) {
-    return { ok: true, priceUsd: nextUsd }
+  const existingCompareAt = parseOptionalUsdAmount(row.compare_at_price)
+  const nextCompareAt =
+    showPriceMarkdown === undefined
+      ? existingCompareAt != null && existingCompareAt > nextUsd
+        ? existingCompareAt
+        : null
+      : resolveCompareAtPriceOnUpdate({
+          currentPriceUsd: currentUsd,
+          nextPriceUsd: nextUsd,
+          existingCompareAtUsd: existingCompareAt,
+          showPriceMarkdown,
+        })
+
+  const compareAtUnchanged =
+    (existingCompareAt == null && nextCompareAt == null) ||
+    (existingCompareAt != null &&
+      nextCompareAt != null &&
+      existingCompareAt === nextCompareAt)
+
+  if (nextUsd === currentUsd && compareAtUnchanged) {
+    return { ok: true, priceUsd: nextUsd, compareAtPriceUsd: nextCompareAt }
   }
 
   const patched = await patchListingPriceByOwner(supabase, {
     listingId,
     ownerUserId: sellerUserId,
     priceUsd: nextUsd,
+    compareAtPriceUsd: nextCompareAt,
     allowedStatuses: [...QUICK_PRICE_ALLOWED_STATUSES],
   })
 
@@ -122,5 +152,5 @@ export async function updateSellerListingQuickPrice(
     })
   }
 
-  return { ok: true, priceUsd: nextUsd }
+  return { ok: true, priceUsd: nextUsd, compareAtPriceUsd: nextCompareAt }
 }

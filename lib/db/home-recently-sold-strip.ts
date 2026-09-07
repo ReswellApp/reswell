@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import {
+  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
+  hydrateHomePeerListingRows,
+} from "@/lib/db/home-peer-listing-feed"
 import { fetchAdminTerminalSoldListingIds } from "@/lib/db/admin-terminal-sold-feed"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
@@ -404,5 +407,5 @@ export async function fetchHomeRecentlySoldSurfboardRows(
     }
     ordered.push(row)
   }
-  return ordered
+  return hydrateHomePeerListingRows(ordered)
 }

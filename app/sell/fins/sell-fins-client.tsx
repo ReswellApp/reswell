@@ -24,7 +24,6 @@ import { SellShippingCostModeRadios } from "@/components/features/sell/sell-ship
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellFinsFacetFields } from "@/components/features/sell/sell-fins-facet-fields"
-import { SellFinsCatalogSearch } from "@/components/features/sell/sell-fins-catalog-search"
 import type { FinCatalogSearchSelection } from "@/lib/types/fin-catalog-search"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
@@ -38,6 +37,8 @@ import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-err
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { SellPublishValidationBanner } from "@/components/features/sell/sell-publish-validation-banner"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { useSellListingDraftPersistence } from "@/components/features/sell/hooks/use-sell-listing-draft-persistence"
 import {
@@ -60,6 +61,7 @@ import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
 import { computeFinSellSectionCompletion } from "@/lib/fin-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { singleFinSetupSlugForForm } from "@/lib/listing-fin-setup-tags"
 import {
@@ -67,15 +69,22 @@ import {
   clearImpersonationStorageIfCookieMissing,
   getImpersonation,
 } from "@/lib/impersonation"
-import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import {
-  normalizeBoardLengthInput,
-  normalizeTapeStyleInchesInput,
-} from "@/lib/board-measurements"
+  ensureImpersonationForListingOwner,
+  syncClientImpersonationForListingOwner,
+} from "@/lib/utils/admin-impersonation-for-listing"
+import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
+import { normalizeTapeStyleInchesInput } from "@/lib/board-measurements"
 import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form-value"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { scrollPublishValidationBannerIntoView } from "@/lib/sell-flow/scroll-section-into-view"
 import { validateFinListingForm } from "@/lib/sell-flow/validate-fin-listing-form"
+import {
+  applyFinReswellPackageDefaults,
+  FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN,
+  FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN,
+  FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN,
+} from "@/lib/fin-reswell-shipping-defaults"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
@@ -87,10 +96,22 @@ import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-sessi
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
 import {
   clearPendingPublish,
-  markPendingPublish,
+  isPendingPublish,
   sellFlowStepSessionKey,
   SELL_SUPPRESS_IDB_RESTORE_KEY,
 } from "@/lib/sell-flow/session-keys"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
+import {
+  takeSellCatalogHandoff,
+  peekSellCatalogHandoff,
+  markSellCatalogSearchAgain,
+  sellCatalogHandoffToFinSelection,
+  sellCatalogHandoffToSelectionCard,
+} from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
 import {
   clearSellListingDraft,
   type SellListingDraftFormSnapshot,
@@ -173,9 +194,9 @@ const INITIAL_STATE: FinFormState = {
   localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
-  reswellPackageLengthIn: "",
-  reswellPackageWidthIn: "",
-  reswellPackageHeightIn: "",
+  reswellPackageLengthIn: FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN,
+  reswellPackageWidthIn: FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN,
+  reswellPackageHeightIn: FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN,
   reswellPackageWeightLb: "",
   reswellPackageWeightOz: "",
   buyerOffers: true,
@@ -183,18 +204,7 @@ const INITIAL_STATE: FinFormState = {
 
 const FIN_FLOW_STEP_KEY = sellFlowStepSessionKey("fins") ?? "reswell.sell.fins.flowStep"
 
-function readStoredFinSellFlowStep(): "search" | "form" | null {
-  if (typeof window === "undefined") return null
-  try {
-    const value = sessionStorage.getItem(FIN_FLOW_STEP_KEY)
-    if (value === "form" || value === "search") return value
-  } catch {
-    /* quota / private mode */
-  }
-  return null
-}
-
-function persistFinSellFlowStep(step: "search" | "form"): void {
+function persistFinSellFlowStep(step: "form"): void {
   try {
     sessionStorage.setItem(FIN_FLOW_STEP_KEY, step)
   } catch {
@@ -212,11 +222,9 @@ function clearPersistedFinSellFlowStep(): void {
 
 export default function SellFinsFlow({
   editListingId = null,
-  startAtSearch = false,
   startFresh = false,
 }: {
   editListingId?: string | null
-  startAtSearch?: boolean
   startFresh?: boolean
 }) {
   const router = useRouter()
@@ -240,11 +248,8 @@ export default function SellFinsFlow({
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   const removedImageIdsRef = useRef<string[]>([])
 
-  const [flowStep, setFlowStep] = useState<"search" | "form">(() => {
-    if (editId) return "form"
-    if (startAtSearch) return "search"
-    return readStoredFinSellFlowStep() ?? "search"
-  })
+  // Fins listing form only — dedicated catalog-search step removed; /sell handoff prefills the form.
+  const [flowStep, setFlowStep] = useState<"form">("form")
 
   const onSoftOpenDraft = useCallback((draftId: string) => {
     if (!draftId) return
@@ -260,11 +265,9 @@ export default function SellFinsFlow({
   const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [draftHydrated, setDraftHydrated] = useState(Boolean(editId))
-  const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
   const [publishValidationBanner, setPublishValidationBanner] = useState<string | null>(null)
   const [startNewListingBusy, setStartNewListingBusy] = useState(false)
 
-  const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
   const finSellReturnPath = useCallback(
     () =>
       typeof window === "undefined"
@@ -279,6 +282,7 @@ export default function SellFinsFlow({
     openSignIn: signIn,
     supabase: supabaseRef.current,
     funnelListingType: "fins",
+    promptSignInOnUpload: false,
   })
 
   const {
@@ -304,28 +308,56 @@ export default function SellFinsFlow({
     hydrateExistingImages,
   } = photoUpload
 
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: finSellReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    removedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+  const videoFileInputId = useId()
+
   useEffect(() => {
     removedImageIdsRef.current = removedImageIds
   }, [removedImageIds])
 
   const restoreFormFromDraft = useCallback((snapshot: SellListingDraftFormSnapshot) => {
-    setForm((prev) => ({
-      ...prev,
-      ...(snapshot as Partial<FinFormState>),
-      brandId:
-        typeof snapshot.brandId === "string" ? snapshot.brandId : prev.brandId,
-      brandModelId:
-        typeof snapshot.brandModelId === "string" ? snapshot.brandModelId : prev.brandModelId,
-      locationLat:
-        typeof snapshot.locationLat === "number" ? snapshot.locationLat : prev.locationLat,
-      locationLng:
-        typeof snapshot.locationLng === "number" ? snapshot.locationLng : prev.locationLng,
-    }))
-    const storedStep = snapshot.finFlowStep
-    if (storedStep === "form" || storedStep === "search") {
-      setFlowStep(storedStep)
-      persistFinSellFlowStep(storedStep)
-    }
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        ...(snapshot as Partial<FinFormState>),
+        brandId:
+          typeof snapshot.brandId === "string" ? snapshot.brandId : prev.brandId,
+        brandModelId:
+          typeof snapshot.brandModelId === "string" ? snapshot.brandModelId : prev.brandModelId,
+        locationLat:
+          typeof snapshot.locationLat === "number" ? snapshot.locationLat : prev.locationLat,
+        locationLng:
+          typeof snapshot.locationLng === "number" ? snapshot.locationLng : prev.locationLng,
+      }
+      return {
+        ...next,
+        ...applyFinReswellPackageDefaults({
+          reswellPackageLengthIn: next.reswellPackageLengthIn,
+          reswellPackageWidthIn: next.reswellPackageWidthIn,
+          reswellPackageHeightIn: next.reswellPackageHeightIn,
+          reswellPackageWeightLb: next.reswellPackageWeightLb,
+          reswellPackageWeightOz: next.reswellPackageWeightOz,
+        }),
+      }
+    })
+    setFlowStep("form")
+    persistFinSellFlowStep("form")
   }, [])
 
   useSellListingDraftPersistence({
@@ -341,21 +373,18 @@ export default function SellFinsFlow({
     draftPhotosPendingRef,
   })
 
-  usePendingPublishResume({
-    listingKind: "fins",
-    editId,
-    draftHydrated,
-    formRef,
-    imagesRef,
-  })
-
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
-      try {
-        sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
-      } catch {
-        /* quota / private mode */
+      const fromCatalog =
+        new URLSearchParams(window.location.search).get("from") === "catalog"
+      if (fromCatalog) markSellCatalogSearchAgain()
+      if (!isPendingPublish("fins")) {
+        try {
+          sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
+        } catch {
+          /* quota / private mode */
+        }
       }
       clearSellServerDraftListingId("fins")
       router.replace("/sell/fins", { scroll: false })
@@ -370,7 +399,8 @@ export default function SellFinsFlow({
       }
       draftPhotosPendingRef.current = null
       clearPersistedFinSellFlowStep()
-      setFlowStep("search")
+      setFlowStep("form")
+      persistFinSellFlowStep("form")
       setForm(INITIAL_STATE)
       setImages([])
       setPublishValidationBanner(null)
@@ -425,8 +455,7 @@ export default function SellFinsFlow({
   )
 
   const hydrateFinEdit = useCallback(
-    (listing: OwnedListingForEditRow) => {
-      const imp = getImpersonation()
+    async (listing: OwnedListingForEditRow) => {
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can't be edited.")
@@ -454,9 +483,7 @@ export default function SellFinsFlow({
           replaceSellDraftEditUrl("fins", String(listing.id))
         }
       }
-      if (imp && imp.userId !== listing.user_id) {
-        clearImpersonation()
-      }
+      await syncClientImpersonationForListingOwner(String(listing.user_id ?? ""))
 
       const loadedReswellPackage = reswellPackageFormFromDbRow(
         listing as {
@@ -501,7 +528,7 @@ export default function SellFinsFlow({
         localPickup: false,
         shippingMode,
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
-        ...loadedReswellPackage,
+        ...applyFinReswellPackageDefaults(loadedReswellPackage),
         buyerOffers:
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
       })
@@ -536,15 +563,47 @@ export default function SellFinsFlow({
           }
         })
 
+      const existingVideos = (
+        (listing.listing_videos as Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          duration_seconds?: number | null
+          byte_size?: number | null
+          sort_order?: number | null
+        }> | null) ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       setFlowStep("form")
       persistFinSellFlowStep("form")
       hydrateExistingImages(existingImages)
       return { status: "ready" as const }
     },
-    [editId, hydrateExistingImages, router],
+    [editId, hydrateExistingImages, hydrateExistingVideo, router],
   )
 
-  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+  const { editLoading, showEditSkeleton, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
     editId: loadListingId,
     supabase: supabaseRef.current,
     signInReturnPath: loadListingId ? `/sell/fins?edit=${loadListingId}` : "/sell/fins",
@@ -555,6 +614,14 @@ export default function SellFinsFlow({
       if (!editId) clearSellServerDraftListingId("fins")
     },
     onHydrate: hydrateFinEdit,
+  })
+
+  usePendingPublishResume({
+    listingKind: "fins",
+    draftHydrated,
+    formRef,
+    imagesRef,
+    editLoading,
   })
 
   const serverDraft = useSellServerDraft({
@@ -590,29 +657,11 @@ export default function SellFinsFlow({
   const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
 
   useEffect(() => {
-    void supabaseRef.current.auth.getUser().then(({ data: { user } }) => {
-      setSignedInUserId(user?.id ?? null)
-    })
-    const {
-      data: { subscription },
-    } = supabaseRef.current.auth.onAuthStateChange((_event, session) => {
-      setSignedInUserId(session?.user?.id ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
     if (!draftHydrated || editId) return
     const pending = draftPhotosPendingRef.current
     if (!pending?.length) return
     draftPhotosPendingRef.current = null
   }, [draftHydrated, editId])
-
-  useEffect(() => {
-    if (!startAtSearch || editId) return
-    setFlowStep("search")
-    persistFinSellFlowStep("search")
-  }, [startAtSearch, editId])
 
   const setField = useCallback(<K extends keyof FinFormState>(key: K, value: FinFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -641,21 +690,11 @@ export default function SellFinsFlow({
     }
   }, [])
 
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (form.shippingMode !== "free" && form.shippingMode !== "flat") return
-    setField("shippingMode", "reswell")
-  }, [actorIsAdmin, form.shippingMode, setField])
 
 
   const enterFormStep = useCallback(() => {
     setFlowStep("form")
     persistFinSellFlowStep("form")
-  }, [])
-
-  const enterSearchStep = useCallback(() => {
-    setFlowStep("search")
-    persistFinSellFlowStep("search")
   }, [])
 
   const exitSellFlow = useCallback(() => {
@@ -668,10 +707,7 @@ export default function SellFinsFlow({
         ...prev,
         brand: selection.brandName,
         brandId: selection.brandId,
-        title: selection.suggestedTitle || prev.title,
-      }
-      if (selection.suggestedDescription) {
-        next.description = selection.suggestedDescription
+        title: prev.title.trim() ? prev.title : selection.suggestedTitle,
       }
       if (selection.kind === "model" || selection.kind === "variant") {
         next.model = selection.modelName
@@ -689,6 +725,22 @@ export default function SellFinsFlow({
     })
     enterFormStep()
   }, [enterFormStep])
+
+  // After draft hydration so `?new=1` URL strip/remount cannot consume the
+  // session handoff before the form is ready — same order as surfboards.
+  const catalogHandoffTakenRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] =
+    useState<SellCatalogSelectionCardData | null>(null)
+  useEffect(() => {
+    if (!draftHydrated || catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    if (peekSellCatalogHandoff("fins")) markSellCatalogSearchAgain()
+    const handoff = takeSellCatalogHandoff("fins")
+    if (!handoff) return
+    setCatalogSelectionCard(sellCatalogHandoffToSelectionCard(handoff))
+    const selection = sellCatalogHandoffToFinSelection(handoff)
+    if (selection) applyCatalogSelection(selection)
+  }, [editId, draftHydrated, applyCatalogSelection])
 
   const sellSectionCompletion = useMemo(
     () =>
@@ -752,15 +804,19 @@ export default function SellFinsFlow({
     const user = session?.user
 
     const persistDraftForSignIn = async () => {
-      await persistListingDraftSnapshot({
-        listingType: "fins",
-        formData: { ...form, finFlowStep: flowStep } as SellListingDraftFormSnapshot,
-        images,
-        userId: null,
+      await beginGuestListingPublishAuth({
+        kind: "fins",
+        returnPath: finSellReturnPath(),
+        openSignIn: signIn,
+        persistDraft: () =>
+          persistListingDraftSnapshot({
+            listingType: "fins",
+            formData: { ...form, finFlowStep: flowStep } as SellListingDraftFormSnapshot,
+            images,
+            userId: null,
+            includeInFlightPhotos: true,
+          }),
       })
-      markPendingPublish("fins")
-      toast.message("Sign in to publish your listing")
-      signIn(finSellReturnPath())
     }
 
     if (!user || !session?.access_token) {
@@ -779,6 +835,7 @@ export default function SellFinsFlow({
     const validationMessage = validateFinListingForm(form, {
       imageCount: images.length,
       imagesUploadReady,
+      videoUploadReady,
     })
     if (validationMessage) {
       logSellFunnelEvent({
@@ -787,6 +844,17 @@ export default function SellFinsFlow({
         message: validationMessage,
       })
       setPublishValidationBanner(validationMessage)
+      scrollPublishValidationBannerIntoView()
+      return
+    }
+    if (videoUploading) {
+      const message = "Hang tight — your video is still uploading."
+      logSellFunnelEvent({
+        listingType: "fins",
+        event: "validation_failed",
+        message,
+      })
+      setPublishValidationBanner(message)
       scrollPublishValidationBannerIntoView()
       return
     }
@@ -828,6 +896,7 @@ export default function SellFinsFlow({
         isPrimary: index === 0,
         sortOrder: index,
       })),
+      videos: readyVideo ? [readyVideo] : [],
     }
 
     setSubmitting(true)
@@ -858,8 +927,7 @@ export default function SellFinsFlow({
       const adminImpersonatesListingOwner = Boolean(
         editId &&
           editListingOwnerId &&
-          listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
+          submitActorIsAdmin &&
           user.id !== editListingOwnerId,
       )
 
@@ -874,6 +942,9 @@ export default function SellFinsFlow({
           isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
 
         if (adminImpersonatesListingOwner) {
+          if (editListingOwnerId) {
+            await ensureImpersonationForListingOwner(editListingOwnerId)
+          }
           const imageOps = payload.images.map((img, index) => ({
             id: img.id,
             url: img.url,
@@ -890,6 +961,8 @@ export default function SellFinsFlow({
               listing: buildFinListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
               removedImageIds,
               images: imageOps,
+              removedVideoIds,
+              videos: payload.videos,
               publishFromDraft: listingIsDraft,
             }),
           })
@@ -926,7 +999,7 @@ export default function SellFinsFlow({
               ? "Your fin is live!"
               : "Listing updated",
           )
-          router.push(`/l/${data.slug ?? editId}`)
+          navigateAfterListingSave(`/l/${data.slug ?? editId}`)
           return
         }
 
@@ -942,6 +1015,7 @@ export default function SellFinsFlow({
           ...payload,
           listingId: effectiveEditId,
           removedImageIds,
+          removedVideoIds,
         })
         if ("error" in result) {
           const message = sellActionErrorMessage(result.error)
@@ -968,7 +1042,7 @@ export default function SellFinsFlow({
         toast.success(
           listingIsDraft || isLocalOnlyServerDraftSubmit ? "Your fin is live!" : "Listing updated",
         )
-        router.push(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${result.slug}`)
         return
       }
 
@@ -983,6 +1057,7 @@ export default function SellFinsFlow({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
+        videos: payload.videos,
         title: payload.title,
         section: "fins",
         bulkSlotId,
@@ -1037,22 +1112,19 @@ export default function SellFinsFlow({
     )
   }
 
-  if (editLoading) {
+  if (showEditSkeleton) {
     return <SellFlowRouteSkeleton />
   }
 
-  if (flowStep === "search") {
-    return (
-      <SellFinsCatalogSearch
-        onSelect={applyCatalogSelection}
-        onSkip={enterFormStep}
-        onExit={exitSellFlow}
-      />
-    )
-  }
-
   return (
-    <main className={cn("flex-1 w-full pt-8 pb-16 md:pb-20 lg:pb-24", SELL_PAGE_GROUND_CLASS)}>
+    <main
+      aria-busy={editLoading || undefined}
+      className={cn(
+        "flex-1 w-full pt-8 pb-16 transition-opacity md:pb-20 lg:pb-24",
+        SELL_PAGE_GROUND_CLASS,
+        editLoading && "pointer-events-none opacity-60",
+      )}
+    >
       <AdminBulkListingBanner section="fins" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit fin listing" : "List your fins"}</h1>
@@ -1069,22 +1141,10 @@ export default function SellFinsFlow({
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                    <Link href={sellListingsHubHref}>Listings</Link>
+                    <Link href="/sell">Sell</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                {!editId ? (
-                  <>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                        <button type="button" onClick={enterSearchStep}>
-                          Catalog search
-                        </button>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  </>
-                ) : null}
                 <BreadcrumbItem>
                   <BreadcrumbPage className="font-normal text-[#5c6b89]">
                     {editId ? "Edit fin listing" : "List fins"}
@@ -1098,14 +1158,14 @@ export default function SellFinsFlow({
                 <div className="flex items-center gap-3">
                   {finDraftControls}
                   <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
-                    <Link href={sellListingsHubHref} onClick={exitSellFlow}>
+                    <Link href="/sell" onClick={exitSellFlow}>
                       <X className="h-4 w-4" aria-hidden />
                     </Link>
                   </Button>
                 </div>
               ) : (
                 <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
-                  <Link href={sellListingsHubHref} onClick={exitSellFlow}>
+                  <Link href="/sell" onClick={exitSellFlow}>
                     <X className="h-4 w-4" aria-hidden />
                   </Link>
                 </Button>
@@ -1151,6 +1211,19 @@ export default function SellFinsFlow({
                 complete={sellSectionCompletion["sell-fins-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => {
+                        setCatalogSelectionCard(null)
+                        setForm((prev) => ({
+                          ...prev,
+                          brandId: null,
+                          brandModelId: null,
+                        }))
+                      }}
+                    />
+                  ) : null}
                   <SellListingPhotoGrid
                     images={images}
                     maxPhotos={FIN_LISTING_MAX_PHOTOS}
@@ -1166,13 +1239,23 @@ export default function SellFinsFlow({
                     onRetry={handlePhotoTileRetry}
                     onRotate180={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
+                    video={video}
+                    videoFileInputId={videoFileInputId}
+                    onVideoInputChange={handleVideoInputChange}
+                    onVideoRemove={handleVideoRemove}
+                    onVideoRetry={handleVideoRetry}
                   />
 
                   <Separator className="bg-border" />
 
                   <div className="space-y-2">
                     <div className="flex items-end justify-between gap-2">
-                      <Label htmlFor="fin-title">Title *</Label>
+                      <Label htmlFor="fin-title">
+                        Title{" "}
+                        <span className="text-destructive" aria-hidden="true">
+                          *
+                        </span>
+                      </Label>
                       <span
                         className={cn(
                           "text-xs tabular-nums",
@@ -1301,7 +1384,33 @@ export default function SellFinsFlow({
                       idPrefix="sell-fins"
                       value={form.shippingMode}
                       onChange={(mode) => setField("shippingMode", mode)}
-                      allowPrivilegedModes={actorIsAdmin === true}
+                      reswellDetails={{
+                        originCity: form.locationCity,
+                        originState: form.locationState,
+                      }}
+                      reswellPackageSlot={
+                        <ReswellPackageDimensionsCard
+                          showHeading
+                          lengthPlaceholder="e.g. 10"
+                          className="rounded-lg border-border bg-background p-3 shadow-none sm:p-4"
+                          lengthIn={form.reswellPackageLengthIn}
+                          widthIn={form.reswellPackageWidthIn}
+                          heightIn={form.reswellPackageHeightIn}
+                          weightLb={form.reswellPackageWeightLb}
+                          weightOz={form.reswellPackageWeightOz}
+                          onLengthInChange={(v) =>
+                            setField("reswellPackageLengthIn", normalizeTapeStyleInchesInput(v))
+                          }
+                          onWidthInChange={(v) =>
+                            setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
+                          }
+                          onHeightInChange={(v) =>
+                            setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
+                          }
+                          onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
+                          onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
+                        />
+                      }
                       flatRateSlot={
                         <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
                           <Label htmlFor="fin-shipping-price" className="text-sm font-semibold text-foreground">
@@ -1334,35 +1443,6 @@ export default function SellFinsFlow({
                   </div>
                 </div>
               </SellFormSection>
-
-              {form.shippingMode === "reswell" ? (
-                <SellFormSection
-                  sectionId="sell-fins-section-reswell-package"
-                  title="Reswell shipping: packed size & weight"
-                >
-                  <ReswellPackageDimensionsCard
-                    showHeading={false}
-                    lengthPlaceholder="e.g. 10"
-                    className="rounded-none border-0 bg-transparent p-0 shadow-none"
-                    lengthIn={form.reswellPackageLengthIn}
-                    widthIn={form.reswellPackageWidthIn}
-                    heightIn={form.reswellPackageHeightIn}
-                    weightLb={form.reswellPackageWeightLb}
-                    weightOz={form.reswellPackageWeightOz}
-                    onLengthInChange={(v) =>
-                      setField("reswellPackageLengthIn", normalizeBoardLengthInput(v))
-                    }
-                    onWidthInChange={(v) =>
-                      setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onHeightInChange={(v) =>
-                      setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
-                    onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
-                  />
-                </SellFormSection>
-              ) : null}
 
               <SellFormSection
                 sectionId="sell-fins-section-publish"
@@ -1441,6 +1521,11 @@ export default function SellFinsFlow({
                   {uploadingCount > 0 ? (
                     <p className="text-center text-xs text-muted-foreground">
                       {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
+                    </p>
+                  ) : null}
+                  {videoUploading ? (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Video still uploading…
                     </p>
                   ) : null}
                 </div>

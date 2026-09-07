@@ -6,6 +6,8 @@ import {
   markOrderReviewInvitePhaseSent,
 } from "@/lib/db/orderReviewInvites"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
+import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
+import type { ExistingMarketplaceReview } from "@/lib/types/marketplace-review"
 import { trackKlaviyoReviewInvite } from "@/lib/klaviyo/track-review-invite"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -233,12 +235,7 @@ export type OrderReviewInvitePageContext = {
   sellerName: string
   canSubmitReview: boolean
   fulfillmentComplete: boolean
-  existingReview: {
-    id: string
-    rating: number
-    comment: string | null
-    created_at: string
-  } | null
+  existingReview: ExistingMarketplaceReview | null
 }
 
 export async function loadOrderReviewInvitePageContext(
@@ -299,14 +296,7 @@ export async function loadOrderReviewInvitePageContext(
     sellerName,
     canSubmitReview: canSubmitReview && !existingReview,
     fulfillmentComplete,
-    existingReview: existingReview
-      ? {
-          id: existingReview.id,
-          rating: existingReview.rating,
-          comment: existingReview.comment,
-          created_at: existingReview.created_at,
-        }
-      : null,
+    existingReview: existingReview ? existingMarketplaceReviewFromRow(existingReview) : null,
   }
 }
 

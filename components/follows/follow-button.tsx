@@ -116,7 +116,7 @@ export function FollowButton({
         onMouseLeave={() => setHovering(false)}
         className={cn(
           isDirectory
-            ? "h-9 shrink-0 rounded-full px-5 text-sm font-bold shadow-none"
+            ? "h-7 shrink-0 rounded-full px-2.5 text-xs font-semibold shadow-none"
             : isProfileHero
               ? "h-9 shrink-0 rounded-full px-5 text-sm font-semibold shadow-none"
               : isProfilePage

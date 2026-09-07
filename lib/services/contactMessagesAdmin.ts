@@ -16,8 +16,13 @@ import { resolveLiveChatSessionsForTickets } from "@/lib/services/liveChatEscala
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import {
   insertSupportStaffThreadMessage,
-  insertSupportStatusMessageAsSupportUser,
 } from "@/lib/services/supportTicketThreadNotifications"
+import {
+  getSupportCaseByContactMessageId,
+  updateSupportCaseAdmin,
+} from "@/lib/db/supportCases"
+import { contactStatusToCaseStatus } from "@/lib/utils/support-case-display"
+import { postSupportCaseSystemMessage } from "@/lib/services/supportCaseThread"
 import {
   ensureSupportTicketThreadSchema,
   supportTicketReplyFromAdminSchema,
@@ -87,41 +92,42 @@ export async function updateContactMessageAdminService(
   const statusChanged =
     payload.support_status !== undefined && payload.support_status !== existing.support_status
 
-  // Ticket resolved → resolve any live chat linked to it so the next chat starts fresh.
   if (statusChanged && payload.support_status === "resolved") {
     await resolveLiveChatSessionsForTickets([existing.id])
   }
 
-  if (
-    statusChanged &&
-    existing.support_conversation_id
-  ) {
-    const resolved = await resolveSupportRecipientUserId()
-    if (resolved.ok) {
-      const posted = await insertSupportStatusMessageAsSupportUser({
-        conversationId: existing.support_conversation_id,
-        supportUserId: resolved.userId,
-        status: payload.support_status!,
-        ticketId: existing.id,
+  try {
+    const service = createServiceRoleClient()
+    const shadow = await getSupportCaseByContactMessageId(service, existing.id)
+    if (shadow) {
+      await updateSupportCaseAdmin(service, {
+        id: shadow.id,
+        status: payload.support_status
+          ? contactStatusToCaseStatus(payload.support_status)
+          : undefined,
+        internal_notes: payload.internal_notes,
       })
-      if (!posted.ok) {
-        console.error("updateContactMessageAdminService: failed to post ticket status message")
-      } else if (
-        posted.messageId &&
-        posted.customerVisibleContent &&
-        existing.email.trim()
-      ) {
-        await trackKlaviyoSupportTicketResponse({
-          supportTicketId: existing.id,
-          email: existing.email.trim(),
-          externalId: existing.user_id,
-          response: posted.customerVisibleContent,
-          responseType: "status_update",
-          supportStatus: payload.support_status!,
-          uniqueId: `support-ticket-response-${posted.messageId}`,
-        })
+      if (statusChanged && payload.support_status) {
+        await postSupportCaseSystemMessage(
+          shadow.id,
+          `Status updated to ${payload.support_status.replaceAll("_", " ")}.`,
+        )
+        if (existing.email.trim()) {
+          await trackKlaviyoSupportTicketResponse({
+            supportTicketId: shadow.id,
+            email: existing.email.trim(),
+            externalId: existing.user_id,
+            response: `Your support case is now ${payload.support_status.replaceAll("_", " ")}.`,
+            responseType: "status_update",
+            supportStatus: payload.support_status,
+            uniqueId: `support-case-status-${shadow.id}-${payload.support_status}`,
+            ticketUrl: undefined,
+          })
+        }
       }
     }
+  } catch (err) {
+    console.warn("[updateContactMessageAdminService] case sync skipped", err)
   }
 
   return { success: true }

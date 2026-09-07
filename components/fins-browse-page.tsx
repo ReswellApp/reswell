@@ -4,13 +4,16 @@ import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { CategoryBrowseBreadcrumbs } from "@/components/category-browse-breadcrumbs"
 import { createClient } from "@/lib/supabase/server"
 import { FinsBrowseClient } from "@/components/fins-browse-client"
+import {
+  CategoryTopShopsSection,
+  CategoryTopShopsSectionSkeleton,
+} from "@/components/features/browse/category-top-shops-section"
 import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { fetchFinsBrowsePage, FINS_BROWSE_PAGE_SIZE } from "@/lib/db/fin-listings"
 import { finFacetSelectionsFromParams } from "@/lib/fins-browse-facets"
 import {
   finsBrowseFilterHeadline,
-  finsBrowseHeroSubtext,
   finsBrowseRootLabel,
   type FinsBrowseSearchParams,
 } from "@/lib/fins-browse-metadata"
@@ -96,6 +99,7 @@ async function FinListings({
               user_id: fin.user_id,
               title: fin.title,
               price: fin.price,
+              compare_at_price: fin.compare_at_price,
               status: fin.status,
               section: "fins",
               local_pickup: fin.local_pickup,
@@ -155,12 +159,11 @@ export async function FinsBrowsePage(props: {
         </div>
       </section>
 
-      <section className="min-w-0 bg-offwhite pt-4 pb-4 sm:pt-5">
+      <section className="min-w-0 bg-offwhite pt-2 pb-4 sm:pt-5">
         <div className="container mx-auto min-w-0">
           <FinsBrowseClient
             counts={facetCounts}
             title={filterCrumb ?? finsBrowseRootLabel}
-            description={finsBrowseHeroSubtext(searchParams)}
           >
             <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading fins" />}>
               <FinListings searchParams={props.searchParams} />
@@ -168,6 +171,10 @@ export async function FinsBrowsePage(props: {
           </FinsBrowseClient>
         </div>
       </section>
+
+      <Suspense fallback={<CategoryTopShopsSectionSkeleton />}>
+        <CategoryTopShopsSection section="fins" />
+      </Suspense>
     </main>
   )
 }

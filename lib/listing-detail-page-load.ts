@@ -1,5 +1,7 @@
-import type { User } from "@supabase/supabase-js"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { listingIdsWithOpenMarketplaceCheckout } from "@/lib/db/listingDeleteEligibility"
+import { listingEligibleForSellerRelist } from "@/lib/listing-sold-state"
 import { findListingByParam } from "@/lib/listing-query"
 import {
   getCachedPublicSurfboardListing,
@@ -37,6 +39,7 @@ export async function loadListingDetailPageContext({
       supabase: createAnonSupabaseClient(),
       user: null as User | null,
       listing: prefetchedListing,
+      canSellerRelist: false,
     }
   }
 
@@ -56,5 +59,34 @@ export async function loadListingDetailPageContext({
     }
   }
 
-  return { supabase, user, listing }
+  return {
+    supabase,
+    user,
+    listing,
+    canSellerRelist: await resolveCanSellerRelist(supabase, user, listing),
+  }
+}
+
+async function resolveCanSellerRelist(
+  supabase: SupabaseClient,
+  user: User | null,
+  listing: Record<string, unknown> | null,
+): Promise<boolean> {
+  if (!user || !listing) return false
+  const listingId = typeof listing.id === "string" ? listing.id : null
+  const ownerId = typeof listing.user_id === "string" ? listing.user_id : null
+  if (!listingId || ownerId !== user.id) return false
+  if (
+    !listingEligibleForSellerRelist({
+      status: typeof listing.status === "string" ? listing.status : null,
+      sold_off_platform: listing.sold_off_platform === true,
+      archived_at: typeof listing.archived_at === "string" ? listing.archived_at : null,
+    })
+  ) {
+    return false
+  }
+
+  const checkoutSold = await listingIdsWithOpenMarketplaceCheckout(supabase, [listingId])
+  if (checkoutSold.error) return false
+  return !checkoutSold.listingIds.has(listingId)
 }

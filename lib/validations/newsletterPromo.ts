@@ -1,5 +1,8 @@
 import { z } from "zod"
-import { normalizeNewsletterPromoCodeInput, normalizeNewsletterPromoEmail } from "@/lib/utils/newsletter-promo-code"
+import {
+  normalizeNewsletterPromoCodeInput,
+  normalizeNewsletterPromoEmail,
+} from "@/lib/utils/normalize-newsletter-promo-code"
 
 export const newsletterSignupBodySchema = z.object({
   email: z

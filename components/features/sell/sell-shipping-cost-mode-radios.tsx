@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
-import Link from "next/link"
+import { useEffect, type ReactNode } from "react"
 import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { SmoothCollapse } from "@/components/ui/smooth-collapse"
+import { SellReswellCalculatedShippingDetails } from "@/components/features/sell/sell-reswell-calculated-shipping-details"
 import type { SellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { cn } from "@/lib/utils"
 
@@ -11,43 +12,66 @@ type SellShippingCostModeRadiosProps = {
   idPrefix: string
   value: SellShippingCostMode
   onChange: (mode: SellShippingCostMode) => void
-  /** When false, only Reswell is shown (sellers). Admins see free + flat. */
-  allowPrivilegedModes: boolean
+  /**
+   * @deprecated Free/flat are shown to all sellers. Kept for call-site compat; ignored.
+   */
+  allowPrivilegedModes?: boolean
   /**
    * When false, Reswell (UPS-calculated) cannot be selected — free/flat remain available
-   * for admins who ship with another carrier.
+   * for sellers who ship with another carrier.
    */
   reswellAvailable?: boolean
-  flatRateSlot?: React.ReactNode
+  flatRateSlot?: ReactNode
+  /** Origin + package summary shown under the Reswell calculated option. */
+  reswellDetails?: {
+    originCity?: string
+    originState?: string
+    packageLengthIn?: string
+    packageWidthIn?: string
+    packageHeightIn?: string
+    packageWeightLb?: string
+    packageWeightOz?: string
+  }
+  /** Packed size/weight fields nested under the Reswell option. */
+  reswellPackageSlot?: ReactNode
 }
+
+const FREE_FLAT_FULFILLMENT_HINT =
+  "After the sale, buy a Reswell shipping label or add your own tracking."
 
 export function SellShippingCostModeRadios({
   idPrefix,
   value,
   onChange,
-  allowPrivilegedModes,
   reswellAvailable = true,
   flatRateSlot,
+  reswellDetails,
+  reswellPackageSlot,
 }: SellShippingCostModeRadiosProps) {
   const reswellEnabled = reswellAvailable !== false
   const effectiveValue = (() => {
-    if (!allowPrivilegedModes && (value === "free" || value === "flat")) return "reswell"
-    // Oversize + Reswell selected → show free/flat selection surface instead of a dead Reswell radio.
-    if (!reswellEnabled && value === "reswell" && allowPrivilegedModes) return "flat"
+    if (!reswellEnabled && value === "reswell") return "flat"
     return value
   })()
 
-  // Keep parent form in sync when Reswell UPS is unavailable (avoid Save validating UPS DIM).
   useEffect(() => {
-    if (!allowPrivilegedModes || reswellEnabled) return
+    if (reswellEnabled) return
     if (value !== "reswell") return
     onChange("flat")
-    // Intentionally omit `onChange` — parent often passes an inline handler.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync only when mode/availability changes
-  }, [allowPrivilegedModes, reswellEnabled, value])
+  }, [reswellEnabled, value])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold text-foreground sm:text-base">
+          How will you handle shipping costs in the Continental U.S.?
+        </h4>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground sm:px-2.5 sm:text-[10px]">
+          Required
+        </span>
+      </div>
+
       <RadioGroup
         value={effectiveValue}
         onValueChange={(next) => {
@@ -55,16 +79,15 @@ export function SellShippingCostModeRadios({
           if (mode === "reswell" && !reswellEnabled) return
           onChange(mode)
         }}
-        className="space-y-3"
+        className="space-y-2 sm:space-y-3"
       >
-        <label
-          htmlFor={`${idPrefix}-ship-mode-reswell`}
+        <div
           className={cn(
-            "flex gap-3 rounded-lg border p-4 transition-colors",
-            reswellEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+            "flex gap-2.5 rounded-lg border p-3 transition-colors sm:gap-3 sm:rounded-xl sm:p-5",
+            !reswellEnabled && "opacity-60",
             effectiveValue === "reswell"
-              ? "border-primary bg-primary/5"
-              : "border-slate-300 hover:border-primary/35",
+              ? "border-foreground bg-background shadow-sm"
+              : "border-border hover:border-foreground/30",
           )}
         >
           <RadioGroupItem
@@ -73,102 +96,99 @@ export function SellShippingCostModeRadios({
             className="mt-0.5"
             disabled={!reswellEnabled}
           />
-          <div className="min-w-0 flex-1 flex-col gap-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium leading-snug text-foreground">
-                Reswell shipping (UPS)
+          <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
+            <label
+              htmlFor={`${idPrefix}-ship-mode-reswell`}
+              className={cn(
+                "flex flex-wrap items-center gap-1.5 sm:gap-2",
+                reswellEnabled ? "cursor-pointer" : "cursor-not-allowed",
+              )}
+            >
+              <span className="text-xs font-semibold leading-snug text-foreground sm:text-sm">
+                Have Reswell calculate the shipping cost for buyers
               </span>
               <Badge
                 variant="default"
-                className="h-auto shrink-0 border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
+                className="h-auto shrink-0 border-0 bg-listingHeart px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170] sm:px-2 sm:py-0.5 sm:text-[10px]"
               >
                 Recommended
               </Badge>
-            </div>
-            {effectiveValue === "reswell" && reswellEnabled ? (
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                We calculate the UPS rate from packed dimensions and add it at checkout. After the
-                sale we email you the Reswell shipping label.{" "}
-                <Link
-                  href="/terms"
-                  className="text-foreground underline underline-offset-2 hover:text-primary"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  View terms
-                </Link>
-              </p>
-            ) : null}
+            </label>
+            <SmoothCollapse
+              open={effectiveValue === "reswell" && reswellEnabled}
+              className="duration-200"
+            >
+              <SellReswellCalculatedShippingDetails
+                originCity={reswellDetails?.originCity}
+                originState={reswellDetails?.originState}
+                packageLengthIn={reswellDetails?.packageLengthIn}
+                packageWidthIn={reswellDetails?.packageWidthIn}
+                packageHeightIn={reswellDetails?.packageHeightIn}
+                packageWeightLb={reswellDetails?.packageWeightLb}
+                packageWeightOz={reswellDetails?.packageWeightOz}
+                packageSlot={reswellPackageSlot}
+              />
+            </SmoothCollapse>
             {!reswellEnabled ? (
-              <p className="text-sm leading-relaxed text-destructive">
+              <p className="text-xs leading-snug text-destructive sm:text-sm sm:leading-relaxed">
                 Not available — this board exceeds UPS size limits. Use free or flat-rate shipping
                 with another carrier instead.
               </p>
             ) : null}
           </div>
+        </div>
+
+        <label
+          htmlFor={`${idPrefix}-ship-mode-free`}
+          className={cn(
+            "flex cursor-pointer gap-2.5 rounded-lg border p-3 transition-colors sm:gap-3 sm:rounded-xl sm:p-5",
+            effectiveValue === "free"
+              ? "border-foreground bg-background shadow-sm"
+              : "border-border hover:border-foreground/30",
+          )}
+        >
+          <RadioGroupItem value="free" id={`${idPrefix}-ship-mode-free`} className="mt-0.5" />
+          <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
+            <span className="text-xs font-semibold leading-snug text-foreground sm:text-sm">
+              Offer free shipping
+            </span>
+            <SmoothCollapse open={effectiveValue === "free"} className="duration-200">
+              <p className="pt-0.5 text-xs leading-snug text-muted-foreground sm:pt-1 sm:text-sm sm:leading-relaxed">
+                Buyer pays $0 for shipping at checkout. {FREE_FLAT_FULFILLMENT_HINT}
+              </p>
+            </SmoothCollapse>
+          </div>
         </label>
 
-        {allowPrivilegedModes ? (
-          <>
-            <label
-              htmlFor={`${idPrefix}-ship-mode-free`}
-              className={cn(
-                "flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors",
-                effectiveValue === "free"
-                  ? "border-primary bg-primary/5"
-                  : "border-slate-300 hover:border-primary/35",
-              )}
-            >
-              <RadioGroupItem value="free" id={`${idPrefix}-ship-mode-free`} className="mt-0.5" />
-              <div className="min-w-0 flex-1 flex-col gap-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium leading-snug text-foreground">
-                    Free shipping
-                  </span>
-                  <Badge variant="secondary" className="h-auto px-2 py-0.5 text-[10px] uppercase">
-                    Admin
-                  </Badge>
-                </div>
-                {effectiveValue === "free" ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    Buyer pays $0 for shipping at checkout. You arrange fulfillment with any carrier
-                    — not through Reswell UPS labels.
-                  </p>
-                ) : null}
-              </div>
-            </label>
-
-            <label
-              htmlFor={`${idPrefix}-ship-mode-flat`}
-              className={cn(
-                "flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors",
-                effectiveValue === "flat"
-                  ? "border-primary bg-primary/5"
-                  : "border-slate-300 hover:border-primary/35",
-              )}
-            >
-              <RadioGroupItem value="flat" id={`${idPrefix}-ship-mode-flat`} className="mt-0.5" />
-              <div className="min-w-0 flex-1 flex-col gap-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium leading-snug text-foreground">
-                    Flat-rate shipping
-                  </span>
-                  <Badge variant="secondary" className="h-auto px-2 py-0.5 text-[10px] uppercase">
-                    Admin
-                  </Badge>
-                </div>
-                {effectiveValue === "flat" ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    One dollar amount buyers in the Continental U.S. pay at checkout. You arrange
-                    fulfillment with any carrier — not through Reswell UPS labels.
-                  </p>
-                ) : null}
-              </div>
-            </label>
-          </>
-        ) : null}
+        <label
+          htmlFor={`${idPrefix}-ship-mode-flat`}
+          className={cn(
+            "flex cursor-pointer gap-2.5 rounded-lg border p-3 transition-colors sm:gap-3 sm:rounded-xl sm:p-5",
+            effectiveValue === "flat"
+              ? "border-foreground bg-background shadow-sm"
+              : "border-border hover:border-foreground/30",
+          )}
+        >
+          <RadioGroupItem value="flat" id={`${idPrefix}-ship-mode-flat`} className="mt-0.5" />
+          <div className="min-w-0 flex-1 space-y-1 sm:space-y-1.5">
+            <span className="text-xs font-semibold leading-snug text-foreground sm:text-sm">
+              Set a flat shipping rate
+            </span>
+            <SmoothCollapse open={effectiveValue === "flat"} className="duration-200">
+              <p className="pt-0.5 text-xs leading-snug text-muted-foreground sm:pt-1 sm:text-sm sm:leading-relaxed">
+                One dollar amount buyers in the Continental U.S. pay at checkout.{" "}
+                {FREE_FLAT_FULFILLMENT_HINT}
+              </p>
+            </SmoothCollapse>
+          </div>
+        </label>
       </RadioGroup>
 
-      {allowPrivilegedModes && effectiveValue === "flat" ? flatRateSlot : null}
+      {flatRateSlot ? (
+        <SmoothCollapse open={effectiveValue === "flat"}>
+          <div className="pt-1">{flatRateSlot}</div>
+        </SmoothCollapse>
+      ) : null}
     </div>
   )
 }

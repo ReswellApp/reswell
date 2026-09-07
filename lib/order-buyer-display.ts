@@ -17,9 +17,6 @@ export function resolveMarketplaceOrderBuyerLabel(input: {
   const guestName = input.shippingAddress?.name?.trim()
   if (guestName) return guestName
 
-  const guestEmail = input.shippingAddress?.email?.trim()
-  if (guestEmail) return guestEmail
-
   if (input.buyerId) {
     return `Buyer ${input.buyerId.slice(0, 8)}…`
   }

@@ -52,6 +52,16 @@ function normalizeNullableMoney(v: unknown): number | null {
 const ADMIN_SELECT_LIST =
   "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, fin_boxes, material, condition, fin_size, configuration_label, fin_base_label, fin_height_label, fin_foil_label, fin_color_label, product_category_slug, price, image_url, sort_order, created_at, updated_at"
 
+/** PostgREST returns at most ~1000 rows per request unless ranged. */
+const OVERVIEW_LIST_PAGE = 1000
+
+function mapOverviewVariantRows(rows: Record<string, unknown>[]): BrandModelVariantRow[] {
+  return rows.map((r) => ({
+    ...(r as Omit<BrandModelVariantRow, "price">),
+    price: normalizeNullableMoney(r.price),
+  })) as BrandModelVariantRow[]
+}
+
 export async function listBrandModelVariantsForAdmin(
   supabase: SupabaseClient,
   brandModelId: string,
@@ -67,34 +77,68 @@ export async function listBrandModelVariantsForAdmin(
     console.error("listBrandModelVariantsForAdmin:", error.message)
     return []
   }
-  const rows = (data ?? []) as Record<string, unknown>[]
-  return rows.map((r) => ({
-    ...(r as Omit<BrandModelVariantRow, "price">),
-    price: normalizeNullableMoney(r.price),
-  })) as BrandModelVariantRow[]
+  return mapOverviewVariantRows((data ?? []) as Record<string, unknown>[])
 }
 
 /** Read-only: every row in `brand_model_variants` for admin catalog overview. */
 export async function listAllBrandModelVariantsForOverview(
   supabase: SupabaseClient,
 ): Promise<BrandModelVariantRow[]> {
+  const out: BrandModelVariantRow[] = []
+  let from = 0
+
+  for (;;) {
+    const { data, error } = await supabase
+      .from("brand_model_variants")
+      .select(ADMIN_SELECT_LIST)
+      .order("brand_id", { ascending: true })
+      .order("brand_model_id", { ascending: true })
+      .order("sort_order", { ascending: true })
+      .order("length_label", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + OVERVIEW_LIST_PAGE - 1)
+
+    if (error) {
+      console.error("listAllBrandModelVariantsForOverview:", error.message)
+      break
+    }
+
+    const batch = (data ?? []) as Record<string, unknown>[]
+    out.push(...mapOverviewVariantRows(batch))
+    if (batch.length < OVERVIEW_LIST_PAGE) break
+    from += OVERVIEW_LIST_PAGE
+  }
+
+  return out
+}
+
+export type SurfboardStockSizeRow = {
+  id: string
+  length_label: string
+  width_label: string
+  thickness_label: string
+  volume_label: string
+}
+
+/** Public read (RLS select is open): a model's surfboard stock sizes for the /sell dims picker. */
+export async function listSurfboardStockSizeRowsForModel(
+  supabase: SupabaseClient,
+  brandModelId: string,
+): Promise<SurfboardStockSizeRow[]> {
   const { data, error } = await supabase
     .from("brand_model_variants")
-    .select(ADMIN_SELECT_LIST)
-    .order("brand_id", { ascending: true })
-    .order("brand_model_id", { ascending: true })
+    .select("id, length_label, width_label, thickness_label, volume_label")
+    .eq("brand_model_id", brandModelId)
+    .eq("product_category_slug", "surfboards")
     .order("sort_order", { ascending: true })
     .order("length_label", { ascending: true })
+    .limit(60)
 
   if (error) {
-    console.error("listAllBrandModelVariantsForOverview:", error.message)
+    console.error("listSurfboardStockSizeRowsForModel:", error.message)
     return []
   }
-  const rows = (data ?? []) as Record<string, unknown>[]
-  return rows.map((r) => ({
-    ...(r as Omit<BrandModelVariantRow, "price">),
-    price: normalizeNullableMoney(r.price),
-  })) as BrandModelVariantRow[]
+  return (data ?? []) as SurfboardStockSizeRow[]
 }
 
 export async function insertBrandModelVariant(

@@ -7,7 +7,7 @@ import { resolveProfileCompletionReturnPath } from "@/lib/auth/profile-completio
 
 /**
  * Legacy / bookmarked `/auth/complete-profile` URLs — send users to their `next` target
- * (usually `/`) so {@link ProfileCompletionRequiredDialog} can open over the homepage.
+ * (usually `/`). Username is optional on the sign-up form; there is no follow-up prompt.
  */
 export function CompleteProfilePagePanel() {
   const router = useRouter()

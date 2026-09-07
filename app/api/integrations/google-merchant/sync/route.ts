@@ -5,7 +5,7 @@ import { isGoogleMerchantConfigured } from "@/lib/google-merchant/config"
 import { syncAllActiveListingsToGoogleMerchant } from "@/lib/services/googleMerchantSync"
 
 /**
- * Bulk sync active surfboard and fin listings to Google Merchant Center.
+ * Bulk sync active peer listings (surfboards, fins, wetsuits, magazines, apparel) to Google Merchant Center.
  * POST /api/integrations/google-merchant/sync
  *
  * Auth: admin session or Bearer SEARCH_REINDEX_SECRET / GOOGLE_MERCHANT_SETUP_SECRET / CRON_SECRET.

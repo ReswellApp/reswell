@@ -1,9 +1,4 @@
-import {
-  MAGAZINES_SECTION,
-  MAGAZINE_LISTING_DEFAULT_LOCATION,
-  magazineListingFixedReswellPackageFormFields,
-  USED_MAGAZINES_CATEGORY_ID,
-} from "@/lib/magazine-listing-config"
+import { MAGAZINES_SECTION, USED_MAGAZINES_CATEGORY_ID } from "@/lib/magazine-listing-config"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import type { CreateMagazineListingInput } from "@/lib/validations/magazine-listing"
 
@@ -28,7 +23,11 @@ export function buildMagazineListingPersistFields(
   const shipping = magazineListingShippingFieldsFor(input)
   const packedRow = reswellPackageFieldsToDb({
     boardShippingCostMode: "reswell",
-    ...magazineListingFixedReswellPackageFormFields(),
+    reswellPackageLengthIn: input.reswellPackageLengthIn,
+    reswellPackageWidthIn: input.reswellPackageWidthIn,
+    reswellPackageHeightIn: input.reswellPackageHeightIn,
+    reswellPackageWeightLb: input.reswellPackageWeightLb,
+    reswellPackageWeightOz: input.reswellPackageWeightOz,
   })
 
   const brand = input.brand.trim()
@@ -40,10 +39,10 @@ export function buildMagazineListingPersistFields(
     condition: input.condition,
     section: MAGAZINES_SECTION,
     category_id: USED_MAGAZINES_CATEGORY_ID,
-    latitude: MAGAZINE_LISTING_DEFAULT_LOCATION.latitude,
-    longitude: MAGAZINE_LISTING_DEFAULT_LOCATION.longitude,
-    city: MAGAZINE_LISTING_DEFAULT_LOCATION.city,
-    state: MAGAZINE_LISTING_DEFAULT_LOCATION.state,
+    latitude: input.locationLat ?? null,
+    longitude: input.locationLng ?? null,
+    city: input.locationCity.trim(),
+    state: input.locationState.trim(),
     ...shipping,
     ...packedRow,
     buyer_offers_enabled: false,

@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import { useEffect, useRef } from "react"
+import posthog from "posthog-js"
 
 /**
  * Fires Klaviyo **Checkout Started** once per checkout mount via API route.
@@ -20,6 +21,12 @@ export function KlaviyoCheckoutStartedTracker(): null {
     if (fromCart && !sellerId) return
 
     sentRef.current = true
+
+    posthog.capture('checkout_started', {
+      from_cart: fromCart,
+      listing_id: listing || undefined,
+      seller_id: sellerId || undefined,
+    })
 
     void fetch("/api/integrations/klaviyo/checkout-started", {
       method: "POST",

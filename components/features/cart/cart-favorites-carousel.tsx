@@ -4,8 +4,11 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight } from "lucide-react"
-import { HomeListingScrollRow, HomePeerListingScrollTile } from "@/components/features/home"
-import type { HomePeerScrollListing } from "@/components/features/home"
+import { HomeListingScrollRow } from "@/components/features/home/home-listing-scroll-row"
+import {
+  HomePeerListingScrollTile,
+  type HomePeerScrollListing,
+} from "@/components/features/home/home-peer-listing-scroll-tile"
 import { Button } from "@/components/ui/button"
 import type { CartCarouselFavoriteListing } from "@/lib/db/favorites"
 
@@ -18,6 +21,7 @@ function toHomePeerListing(l: CartCarouselFavoriteListing): HomePeerScrollListin
     user_id: l.user_id,
     title: l.title,
     price: l.price,
+    compare_at_price: l.compare_at_price,
     status: l.status,
     section: l.section,
     local_pickup: l.local_pickup,
@@ -60,7 +64,7 @@ export function CartFavoritesCarousel({
           <p className="text-muted-foreground">Listings you&apos;ve saved for later</p>
         </div>
         <Button variant="outline" asChild>
-          <Link href="/favorites">
+          <Link href="/dashboard/favorites">
             View all
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>

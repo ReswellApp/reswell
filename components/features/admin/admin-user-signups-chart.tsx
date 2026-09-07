@@ -25,6 +25,7 @@ export interface MonthlySignupPoint {
 interface AdminUserSignupsChartProps {
   data: MonthlySignupPoint[]
   className?: string
+  chartSubtitle?: string
 }
 
 function compactNumber(value: number): string {
@@ -60,7 +61,11 @@ function ChartTooltip({ active, payload }: TooltipProps<number, string>) {
   )
 }
 
-export function AdminUserSignupsChart({ data, className }: AdminUserSignupsChartProps) {
+export function AdminUserSignupsChart({
+  data,
+  className,
+  chartSubtitle,
+}: AdminUserSignupsChartProps) {
   const { hasData, total, current, previous, momPct } = useMemo(() => {
     const total = data.reduce((sum, d) => sum + d.count, 0)
     const current = data.length > 0 ? data[data.length - 1].count : 0
@@ -77,7 +82,8 @@ export function AdminUserSignupsChart({ data, className }: AdminUserSignupsChart
         <div>
           <h3 className="font-headline text-base font-semibold text-foreground">Sign-up trend</h3>
           <p className="text-xs text-muted-foreground">
-            New users per month over the last {data.length} month{data.length === 1 ? '' : 's'}
+            {chartSubtitle ??
+              `New users per month over the last ${data.length} month${data.length === 1 ? '' : 's'}`}
           </p>
         </div>
         <div className="flex items-center gap-4">

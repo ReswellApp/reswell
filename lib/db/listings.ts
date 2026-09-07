@@ -203,6 +203,7 @@ export async function patchListingPriceByOwner(
     listingId: string
     ownerUserId: string
     priceUsd: number
+    compareAtPriceUsd: number | null
     allowedStatuses: readonly string[]
   },
 ): Promise<
@@ -210,12 +211,13 @@ export async function patchListingPriceByOwner(
   | { ok: false; kind: "not_found"; message: string }
   | { ok: false; kind: "update_failed"; message: string }
 > {
-  const { listingId, ownerUserId, priceUsd, allowedStatuses } = params
+  const { listingId, ownerUserId, priceUsd, compareAtPriceUsd, allowedStatuses } = params
 
   const { data, error } = await client
     .from("listings")
     .update({
       price: priceUsd,
+      compare_at_price: compareAtPriceUsd,
       updated_at: new Date().toISOString(),
     })
     .eq("id", listingId)

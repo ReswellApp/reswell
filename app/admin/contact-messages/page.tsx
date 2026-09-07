@@ -1,11 +1,11 @@
 import { Suspense } from "react"
 import { Loader2 } from "lucide-react"
 import { privatePageMetadata } from "@/lib/site-metadata"
-import { ContactMessagesAdminClient } from "@/components/features/admin/contact-messages-admin-client"
+import { CaseInboxAdminClient } from "@/components/features/admin/case-inbox-admin-client"
 
 export const metadata = privatePageMetadata({
-  title: "Support inbox — Admin — Reswell",
-  description: "Customer support tickets from the website and from in-app Messages.",
+  title: "Cases — Admin — Reswell",
+  description: "Unified customer help cases — general, orders, and Purchase Protection claims.",
   path: "/admin/contact-messages",
 })
 
@@ -19,7 +19,7 @@ export default function AdminContactMessagesPage() {
         </div>
       }
     >
-      <ContactMessagesAdminClient />
+      <CaseInboxAdminClient />
     </Suspense>
   )
 }

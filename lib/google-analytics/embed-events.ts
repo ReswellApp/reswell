@@ -1,3 +1,5 @@
+import { getGa4MeasurementId } from "@/lib/google-analytics/config"
+
 export type PartnerEmbedClickType = "logo" | "listing" | "browse_cta"
 
 declare global {
@@ -19,7 +21,11 @@ export function trackPartnerEmbedClick(params: {
   linkUrl: string
   listingId?: string
 }): void {
+  const measurementId = getGa4MeasurementId()
+  if (!measurementId) return
+
   gtagSafe("event", "partner_embed_click", {
+    send_to: measurementId,
     embed_slug: params.embedSlug,
     link_type: params.linkType,
     link_url: params.linkUrl,

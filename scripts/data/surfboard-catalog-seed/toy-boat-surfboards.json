@@ -1,0 +1,58 @@
+{
+  "generated_for": "Toy Boat Surfboards official named standup catalog",
+  "source": "https://www.toyboatsurfboards.com/models (Squarespace surfboard model pages only — excludes custom orders, goods, and apparel)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "toy-boat-surfboards",
+      "name": "Toy Boat Surfboards",
+      "website_url": "https://www.toyboatsurfboards.com/",
+      "location_label": "Santa Barbara, California",
+      "founder_name": "Trevor Gordon",
+      "lead_shaper_name": "Trevor Gordon",
+      "short_description": "Toy Boat Surfboards is the personal shaping label of Santa Barbara surfer, sailor, and creative Trevor Gordon — fast, loose boards known for flowing rail-to-rail performance.",
+      "models": [
+        {
+          "name": "Quail Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/5d11b024-0f81-47c1-934f-d084485a42da/6615CE0C-2A1D-4F7F-AB87-C9358FD397AD.JPG",
+          "description": "An all-rounder high-performance, fuller templated board that can be ridden in a ton of different sizes and all types of different waves and conditions. Similar to the VMG, it has a tri-plane style hull that allows for easy transitions and a go-anywhere-on-the-wave approach. Wide point centered and normally paired with a quad setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Willard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/33af25e8-220c-4faa-8929-aacb5f61ad78/IMG_5151.JPG",
+          "description": "The gap between a mid length and a glider style board. Designed for high speed trimming in the pocket while being quickly able to switch gears, turn and re-direct down the line. It has a rolly controlled feeling and a ton of speed while riding far up on the board. Ideal lengths between 7'6\" and 8'4\" and ridden as a single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "VMG",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/cf02705a-2cad-4cdc-8cb2-f8442abe325b/Surf05.JPG",
+          "description": "A traditional San Diego-style fish with adjustments for a thinner overall foil, mellower rounded rails, and a little more curve through the back half. Works great in the barrel and can be done as a twin or split-keel quad. The bottom shape is a single to triplane forward. The VMG stretched up to 7'–10' is the Lordship model.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pluero",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/603b3093-3477-4410-8114-e4950c4bd01d/IMG_0150.JPG",
+          "description": "Short for Plueronectiform — like a halibut or any asymmetrical fish. A high-performance shortboard whose template and design changes to the person and the purpose. More often than not the toe side is straighter and the heel side is curvier, with thinner toe-side rails and fuller heel-side rails. Two, three, or four fins; sizing ranges from two inches below your height to a step-up mini gun.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Lordship",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/d2424ab7-102a-49aa-98bb-178b7c9fa363/IMG_0315+2.JPG",
+          "description": "The VMG stretched up to 7'–10' — a longer fish template built for glide, trim, and speed in a wide range of conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flathead",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/a21b0fc9-a389-4b3f-97d5-40d585f02b50/Gemini_Generated_Image_iislb5iislb5iisl.png",
+          "description": "A purpose-designed board meant to be ridden 3 to 4 inches shorter than your traditional keel fish, built for maximum sensitivity, lift, and drive in a small, efficient package. The polarizing nose design keeps the rail line of a longer board for hold and drive while reducing swing weight, with heavy single concave and pinched rails for lift and bite. Sweet spot is waist-high to slightly overhead surf with clean surface tension and fast down-the-line waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blood Sausage",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/d2424ab7-102a-49aa-98bb-178b7c9fa363/IMG_0315+2.JPG"
+        }
+      ]
+    }
+  ]
+}

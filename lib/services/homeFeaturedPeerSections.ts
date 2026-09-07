@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { listHomeRecentSectionListingIdsOrdered } from "@/lib/db/home-recent-section-listings"
-import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import {
+  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
+  hydrateHomePeerListingRows,
+} from "@/lib/db/home-peer-listing-feed"
 import { sortRecordsByIdOrder } from "@/lib/utils/sort-by-id-order"
 
 type ListingEligibility = {
@@ -40,10 +43,12 @@ export async function loadHomeFeaturedSurfboardRows(
     console.error("loadHomeFeaturedSurfboardRows:", error.message)
     return []
   }
-  return [...(data ?? [])].sort(
-    (a, b) =>
-      new Date((b as { created_at?: string }).created_at ?? "").getTime() -
-      new Date((a as { created_at?: string }).created_at ?? "").getTime(),
+  return hydrateHomePeerListingRows(
+    [...(data ?? [])].sort(
+      (a, b) =>
+        new Date((b as { created_at?: string }).created_at ?? "").getTime() -
+        new Date((a as { created_at?: string }).created_at ?? "").getTime(),
+    ) as Record<string, unknown>[],
   )
 }
 
@@ -64,7 +69,9 @@ export async function loadHomeFeaturedShortboardRows(
       const filtered = sorted.filter((r) =>
         passesShortboardRow(r as unknown as ListingEligibility & { board_type?: string | null }),
       )
-      if (filtered.length > 0) return filtered
+      if (filtered.length > 0) {
+        return hydrateHomePeerListingRows(filtered as Record<string, unknown>[])
+      }
     }
   }
 
@@ -83,10 +90,12 @@ export async function loadHomeFeaturedShortboardRows(
     console.error("loadHomeFeaturedShortboardRows (fallback):", fallbackErr.message)
     return []
   }
-  return [...(fallbackData ?? [])].sort(
-    (a, b) =>
-      new Date((b as { created_at?: string }).created_at ?? "").getTime() -
-      new Date((a as { created_at?: string }).created_at ?? "").getTime(),
+  return hydrateHomePeerListingRows(
+    [...(fallbackData ?? [])].sort(
+      (a, b) =>
+        new Date((b as { created_at?: string }).created_at ?? "").getTime() -
+        new Date((a as { created_at?: string }).created_at ?? "").getTime(),
+    ) as Record<string, unknown>[],
   )
 }
 
@@ -108,9 +117,11 @@ export async function loadHomeFeaturedFinRows(
     console.error("loadHomeFeaturedFinRows:", error.message)
     return []
   }
-  return [...(data ?? [])].sort(
-    (a, b) =>
-      new Date((b as { created_at?: string }).created_at ?? "").getTime() -
-      new Date((a as { created_at?: string }).created_at ?? "").getTime(),
+  return hydrateHomePeerListingRows(
+    [...(data ?? [])].sort(
+      (a, b) =>
+        new Date((b as { created_at?: string }).created_at ?? "").getTime() -
+        new Date((a as { created_at?: string }).created_at ?? "").getTime(),
+    ) as Record<string, unknown>[],
   )
 }

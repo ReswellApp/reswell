@@ -42,6 +42,7 @@ export async function PATCH(
       listingId,
       sellerUserId: user.id,
       priceUsd: parsed.data.priceUsd,
+      showPriceMarkdown: parsed.data.showPriceMarkdown,
     })
 
     if (!result.ok) {

@@ -8,7 +8,7 @@
  */
 
 /** Static homepage hero backdrop (replaces the rotating slideshow). */
-export const HOME_HERO_BACKDROP_PATH = "/images/home/hero-backdrop-mesa-v2.jpg"
+export const HOME_HERO_BACKDROP_PATH = "/images/home/hero-backdrop-tahiti.jpg"
 
 /** Default hero art when there are no recent listing images to show. */
 export const FALLBACK_HOME_HERO_SLIDE_PATHS = [

@@ -1,4 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import {
+  listingIdsBlockedFromPermanentDelete,
+  listingIdsWithOpenMarketplaceCheckout,
+} from "@/lib/db/listingDeleteEligibility"
+import { listingCanShowSellerRelist } from "@/lib/listing-sold-state"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import type { ListingCartOfferProspect } from "@/lib/types/listing-cart-holders"
 
 export type MyListingImageRow = {
   url: string
@@ -11,6 +18,7 @@ export type MyListingRow = {
   slug: string | null
   title: string
   price: number
+  compare_at_price: number | null
   status: string
   section: string
   condition: string | null
@@ -22,6 +30,9 @@ export type MyListingRow = {
   created_at: string
   archived_at: string | null
   hidden_from_site: boolean | null
+  sold_off_platform: boolean | null
+  canDelete: boolean
+  canRelist: boolean
   listing_images: MyListingImageRow[] | null
 }
 
@@ -39,7 +50,7 @@ export type FetchMyListingsResult = {
 }
 
 const MY_LISTINGS_SELECT =
-  "id, slug, title, price, status, section, condition, brand, model, views, created_at, archived_at, hidden_from_site, listing_images(url, thumbnail_url, is_primary)"
+  "id, slug, title, price, compare_at_price, status, section, condition, brand, model, views, created_at, archived_at, hidden_from_site, sold_off_platform, listing_images(url, thumbnail_url, is_primary)"
 
 const EMPTY_STATS: MyListingsDashboardStats = {
   totalListings: 0,
@@ -119,16 +130,74 @@ export async function fetchMyListings(
     return { listings: [], stats: EMPTY_STATS, error: listingsRes.error.message }
   }
 
-  const listings = ((listingsRes.data ?? []) as Omit<MyListingRow, "cartCount" | "favoriteCount">[]).map(
-    (listing) => {
-      const engagement = engagementCounts.get(listing.id)
-      return {
-        ...listing,
-        cartCount: engagement?.cartCount ?? 0,
-        favoriteCount: engagement?.favoriteCount ?? 0,
-      }
-    },
-  )
+  const listingRows = (listingsRes.data ?? []) as Omit<
+    MyListingRow,
+    "cartCount" | "favoriteCount" | "canDelete" | "canRelist"
+  >[]
+  const soldIds = listingRows
+    .filter((listing) => listing.status === "sold")
+    .map((listing) => listing.id)
+  const [blockedIds, checkoutSold] = await Promise.all([
+    listingIdsBlockedFromPermanentDelete(
+      supabase,
+      listingRows.map((listing) => listing.id),
+    ),
+    listingIdsWithOpenMarketplaceCheckout(supabase, soldIds),
+  ])
+  const listings = listingRows.map((listing) => {
+    const engagement = engagementCounts.get(listing.id)
+    return {
+      ...listing,
+      cartCount: engagement?.cartCount ?? 0,
+      favoriteCount: engagement?.favoriteCount ?? 0,
+      canDelete: !blockedIds.has(listing.id),
+      canRelist: listingCanShowSellerRelist(
+        listing,
+        checkoutSold.listingIds.has(listing.id),
+      ),
+    }
+  })
 
   return { listings, stats }
+}
+
+/** Active peer listings the seller owns that currently have buyers in cart. */
+export async function fetchMyListingCartOfferProspects(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ListingCartOfferProspect[]> {
+  const engagementCounts = await fetchMyListingsEngagementCounts(supabase)
+  const ids = [...engagementCounts.entries()]
+    .filter(([, engagement]) => engagement.cartCount > 0)
+    .map(([listingId]) => listingId)
+  if (ids.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("id, title, price, status, section, hidden_from_site")
+    .eq("user_id", userId)
+    .in("id", ids)
+    .in("status", ["active", "pending_sale"])
+    .eq("hidden_from_site", false)
+
+  if (error) {
+    console.error("[fetchMyListingCartOfferProspects]", error.message)
+    return []
+  }
+
+  const prospects: ListingCartOfferProspect[] = []
+  for (const row of data ?? []) {
+    if (!isPeerListingSection(row.section)) continue
+    const cartCount = engagementCounts.get(row.id)?.cartCount ?? 0
+    if (cartCount <= 0) continue
+    const price = Number.parseFloat(String(row.price ?? 0))
+    prospects.push({
+      id: row.id,
+      title: (row.title ?? "").trim() || "Listing",
+      cartCount,
+      price: Number.isFinite(price) ? price : 0,
+    })
+  }
+
+  return prospects.sort((a, b) => b.cartCount - a.cartCount)
 }

@@ -1,6 +1,10 @@
 import { Suspense } from "react"
-import { SellTypeChooser } from "@/components/features/sell/sell-type-chooser"
+import { redirect } from "next/navigation"
+import { SellStart } from "@/components/features/sell/sell-start"
+import type { SellTrendingBrand } from "@/components/features/sell/sell-trending-brands"
+import { getCachedHomeTrendingBrandsCatalog } from "@/lib/cache/home-public-catalog"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
+import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "./sell-flow-client"
 
@@ -28,30 +32,62 @@ export default async function SellPage({
     edit?: string | string[]
     new?: string | string[]
     type?: string | string[]
+    choose?: string | string[]
   }>
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
   const type = firstParam(qs.type)
+  const chooseSurfboard = firstParam(qs.choose) === "surfboard"
+
+  const supabase = await createClient()
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData.user
+
+  // Legacy choose=surfboard — send to Guided boards.
+  if (chooseSurfboard && !editId && type !== "surfboard") {
+    redirect(SURFBOARD_SELL_BOARDS_CREATE_HREF)
+  }
+
+  const isAdminPromise = user
+    ? fetchProfileIsAdmin(supabase, user.id)
+    : Promise.resolve(false)
 
   // Editing an existing listing or explicitly choosing surfboards goes straight
   // to the surfboard flow (/sell/boards is the canonical boards sell URL).
-  // A fresh /sell visit shows the product-type chooser.
   // Suspense fallback is null: the client form owns its own editLoading skeleton,
   // and a route-level skeleton was flashing on every `?edit=` draft switch.
   if (editId || type === "surfboard") {
     return (
       <Suspense fallback={null}>
-        <SellFlowShell urlEditListingId={editId} />
+        <SellFlowShell
+          urlEditListingId={editId}
+          initialActorIsAdmin={await isAdminPromise}
+        />
       </Suspense>
     )
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isAdmin = user ? await fetchProfileIsAdmin(supabase, user.id) : false
+  const [isAdmin, trendingBrandsCatalog] = await Promise.all([
+    isAdminPromise,
+    getCachedHomeTrendingBrandsCatalog(),
+  ])
 
-  return <SellTypeChooser isAdmin={isAdmin} />
+  const trendingBrands: SellTrendingBrand[] = trendingBrandsCatalog.homeTrendingBrandRows.map(
+    (row) => ({
+      id: row.brand.id,
+      slug: row.brand.slug,
+      name: row.brand.name,
+      logoUrl: row.brand.logo_url,
+    }),
+  )
+
+  // `/sell` and `/sell?new=1` land on catalog search (+ compact type links).
+  return (
+    <SellStart
+      isAdmin={isAdmin}
+      trendingBrands={trendingBrands}
+      surfboardSellHref={SURFBOARD_SELL_BOARDS_CREATE_HREF}
+    />
+  )
 }

@@ -19,6 +19,7 @@ import type {
   OtherPartyProfileSummary,
   ProfileReviewItem,
 } from "@/lib/messages/profile-reviews-loader"
+import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
 
 interface ConversationPartyProfileProps {
   /** Display name of the other party (used as link text + popover header). */
@@ -310,6 +311,7 @@ function ReviewRow({ review }: { review: ProfileReviewItem }) {
           {review.comment}
         </p>
       ) : null}
+      <MarketplaceReviewPhotos reviewId={review.id} photos={review.photos} size="sm" />
     </div>
   )
 }

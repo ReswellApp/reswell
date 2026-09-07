@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -26,8 +25,8 @@ import {
   offerShippingCostLabel,
 } from "@/lib/offer-listing-shipping"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
-import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
-import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import type { SellerOfferListing } from "@/lib/types/seller-offer-listing"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -41,16 +40,32 @@ function parseAmountInput(raw: string): number | null {
   return roundMoney(n)
 }
 
-type SellerListingRow = {
-  id: string
-  title: string | null
-  price: number
-  minimum_offer_pct: number | null
-  shipping_available: boolean | null
-  local_pickup: boolean | null
-  shipping_price: number | null
-  board_shipping_cost_mode: "reswell" | "flat" | "free" | null
-  listing_images: ListingImageForCard[] | null
+type SellerListingRow = SellerOfferListing
+
+function fallbackSellerListingRow({
+  listingId,
+  listingTitle,
+  listPrice,
+  primaryImageUrl,
+}: {
+  listingId: string
+  listingTitle?: string
+  listPrice?: number
+  primaryImageUrl?: string | null
+}): SellerListingRow | null {
+  if (listPrice == null || listPrice <= 0) return null
+  return {
+    id: listingId,
+    title: listingTitle?.trim() || "Listing",
+    section: null,
+    price: roundMoney(listPrice),
+    minimum_offer_pct: null,
+    shipping_available: null,
+    local_pickup: true,
+    shipping_price: null,
+    board_shipping_cost_mode: null,
+    listing_images: primaryImageUrl ? [{ url: primaryImageUrl, is_primary: true }] : null,
+  }
 }
 
 function ListingThumb({
@@ -223,6 +238,10 @@ export type SellerMakeOfferToBuyerDialogProps = {
   listingTitle?: string
   listPrice?: number
   primaryImageUrl?: string | null
+  /** Form only — parent already provides the dialog shell. */
+  embedded?: boolean
+  /** When false, the offer is locked to this listing — no bundle picker. */
+  allowAdditionalListings?: boolean
   onOfferSent?: (payload: {
     listingId: string
     buyerUserId: string
@@ -236,13 +255,24 @@ export function SellerMakeOfferToBuyerDialog({
   onOpenChange,
   listingId,
   buyerUserId,
-  sellerUserId,
   conversationId,
+  listingTitle,
+  listPrice,
+  primaryImageUrl,
+  embedded = false,
+  allowAdditionalListings = true,
   onOfferSent,
 }: SellerMakeOfferToBuyerDialogProps) {
   const router = useRouter()
-  const supabase = createClient()
-  const [listings, setListings] = useState<SellerListingRow[]>([])
+  const [listings, setListings] = useState<SellerListingRow[]>(() => {
+    const fallback = fallbackSellerListingRow({
+      listingId,
+      listingTitle,
+      listPrice,
+      primaryImageUrl,
+    })
+    return fallback ? [fallback] : []
+  })
   const [loadingListings, setLoadingListings] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set([listingId]))
   /** Selected listing order — thread listing pinned first; newly added appear next. */
@@ -252,45 +282,66 @@ export function SellerMakeOfferToBuyerDialog({
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
+  const seedFallbackListing = useCallback((): SellerListingRow | null => {
+    return fallbackSellerListingRow({
+      listingId,
+      listingTitle,
+      listPrice,
+      primaryImageUrl,
+    })
+  }, [listingId, listingTitle, listPrice, primaryImageUrl])
+
   const loadSellerListings = useCallback(async () => {
     setLoadingListings(true)
     try {
-      const { data, error } = await supabase
-        .from("listings")
-        .select(
-          "id, title, price, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)",
-        )
-        .eq("user_id", sellerUserId)
-        .in("section", PEER_LISTING_SECTIONS_FILTER)
-        .in("status", ["active", "pending_sale"])
-        .eq("hidden_from_site", false)
-        .eq("buyer_offers_enabled", true)
-        .order("created_at", { ascending: false })
+      const listingQuery = allowAdditionalListings ? "" : "?anchorOnly=1"
+      const res = await fetch(`/api/listings/${listingId}/seller-offers${listingQuery}`, {
+        method: "GET",
+        credentials: "include",
+      })
+      const json: unknown = await res.json().catch(() => ({}))
+      const payload =
+        typeof json === "object" && json !== null && "data" in json
+          ? (json as { data?: { listings?: SellerOfferListing[] } }).data
+          : undefined
+      const loaded = Array.isArray(payload?.listings) ? payload.listings : []
+      const rows = allowAdditionalListings
+        ? loaded
+        : loaded.filter((row) => row.id === listingId)
 
-      if (error) {
-        toast.error("Could not load your listings.")
+      if (!res.ok || rows.length === 0) {
+        const fallback = seedFallbackListing()
+        if (fallback) {
+          setListings([fallback])
+          return
+        }
+        if (!res.ok) {
+          const err =
+            typeof json === "object" &&
+            json !== null &&
+            "error" in json &&
+            typeof (json as { error: unknown }).error === "string"
+              ? (json as { error: string }).error
+              : "Could not load your listings."
+          toast.error(err)
+        }
+        setListings([])
         return
       }
 
-      const rows: SellerListingRow[] = (data ?? []).map((row) => ({
-        id: row.id as string,
-        title: (row.title as string | null) ?? null,
-        price: roundMoney(parseFloat(String(row.price ?? 0))),
-        minimum_offer_pct: (row.minimum_offer_pct as number | null) ?? null,
-        shipping_available: row.shipping_available as boolean | null,
-        local_pickup: row.local_pickup as boolean | null,
-        shipping_price:
-          row.shipping_price != null ? roundMoney(parseFloat(String(row.shipping_price))) : null,
-        board_shipping_cost_mode:
-          (row.board_shipping_cost_mode as SellerListingRow["board_shipping_cost_mode"]) ?? null,
-        listing_images: (row.listing_images as ListingImageForCard[] | null) ?? null,
-      }))
-
       setListings(rows)
+    } catch {
+      const fallback = seedFallbackListing()
+      if (fallback) {
+        setListings([fallback])
+      } else {
+        toast.error("Could not load your listings.")
+        setListings([])
+      }
     } finally {
       setLoadingListings(false)
     }
-  }, [supabase, sellerUserId])
+  }, [allowAdditionalListings, listingId, seedFallbackListing])
 
   useEffect(() => {
     if (!open) return
@@ -341,25 +392,19 @@ export function SellerMakeOfferToBuyerDialog({
       : 0
 
   const bundleFulfillmentMode = useMemo(() => {
-    if (orderedSelectedListings.length === 0) return "pickup_only" as const
+    if (orderedSelectedListings.length === 0) return "none" as const
     const allPickup = orderedSelectedListings.every((row) => row.local_pickup !== false)
     const allShip = orderedSelectedListings.every((row) => !!row.shipping_available)
-    if (allPickup && allShip && orderedSelectedListings.length === 1) {
-      return "pickup_and_shipping" as const
-    }
+    if (allPickup && allShip) return "pickup_and_shipping" as const
     if (allPickup) return "pickup_only" as const
-    if (allShip && orderedSelectedListings.length === 1) return "shipping_only" as const
-    return "pickup_only" as const
+    if (allShip) return "shipping_only" as const
+    return "none" as const
   }, [orderedSelectedListings])
 
   useEffect(() => {
-    if (isBundle) {
-      setFulfillment("pickup")
-      return
-    }
     if (bundleFulfillmentMode === "shipping_only") setFulfillment("shipping")
     if (bundleFulfillmentMode === "pickup_only") setFulfillment("pickup")
-  }, [isBundle, bundleFulfillmentMode])
+  }, [bundleFulfillmentMode])
 
   const lineItems = useMemo(() => {
     return orderedSelectedListings.map((row) => ({
@@ -423,6 +468,7 @@ export function SellerMakeOfferToBuyerDialog({
       : null
 
   function addListing(id: string) {
+    if (!allowAdditionalListings) return
     if (selectedIds.has(id)) return
     setSelectedIds((prev) => new Set([...prev, id]))
     setSelectedOrder((prev) => [id, ...prev.filter((rowId) => rowId !== id)])
@@ -458,7 +504,10 @@ export function SellerMakeOfferToBuyerDialog({
         body: JSON.stringify({
           buyerUserId,
           fulfillment,
-          lineItems: lineItems.map((row) => ({
+          lineItems: (allowAdditionalListings
+            ? lineItems
+            : lineItems.filter((row) => row.listingId === listingId)
+          ).map((row) => ({
             listingId: row.listingId,
             amount: row.amount,
           })),
@@ -511,32 +560,33 @@ export function SellerMakeOfferToBuyerDialog({
   }
 
   const canPick =
-    orderedSelectedListings.length === 0 ||
+    orderedSelectedListings.length > 0 &&
     orderedSelectedListings.every((r) => r.local_pickup !== false)
   const canShip =
-    !isBundle && orderedSelectedListings.length === 1 && !!orderedSelectedListings[0]?.shipping_available
+    orderedSelectedListings.length > 0 &&
+    orderedSelectedListings.every((r) => !!r.shipping_available)
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton
-        className="flex max-h-[min(92vh,720px)] w-[calc(100%-1.5rem)] max-w-lg flex-col overflow-hidden p-0"
-      >
+  const form = (
+    <>
         <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 px-5 pb-4 pt-5 sm:px-6">
           <DialogTitle className="text-left text-xl font-semibold">Make them an offer</DialogTitle>
           <p className="text-left text-[15px] leading-snug text-muted-foreground">
-            Set your price for each listing. Add more listings to bundle into one offer.
+            {allowAdditionalListings
+              ? "Set your price for each listing. Add more listings to bundle into one offer."
+              : "Set your price for this listing."}
           </p>
         </DialogHeader>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">
-                In this offer ({orderedSelectedListings.length})
-              </Label>
+              {allowAdditionalListings ? (
+                <Label className="text-sm font-semibold">
+                  In this offer ({orderedSelectedListings.length})
+                </Label>
+              ) : null}
 
-              {orderedSelectedListings.length > 0 && !loadingListings ? (
+              {allowAdditionalListings && orderedSelectedListings.length > 0 && !loadingListings ? (
                 <div className="rounded-xl border border-border/60 bg-muted/30 px-3.5 py-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -573,7 +623,7 @@ export function SellerMakeOfferToBuyerDialog({
                 </div>
               ) : null}
 
-              {loadingListings ? (
+              {orderedSelectedListings.length === 0 && loadingListings ? (
                 <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   Loading your listings…
@@ -586,19 +636,23 @@ export function SellerMakeOfferToBuyerDialog({
                     <SelectedOfferListingCard
                       key={row.id}
                       row={row}
-                      isAnchor={row.id === listingId}
+                      isAnchor={allowAdditionalListings && row.id === listingId}
                       amountInput={amountByListingId[row.id] ?? ""}
                       onAmountChange={(value) =>
                         setAmountByListingId((prev) => ({ ...prev, [row.id]: value }))
                       }
-                      onRemove={row.id === listingId ? undefined : () => removeListing(row.id)}
+                      onRemove={
+                        allowAdditionalListings && row.id !== listingId
+                          ? () => removeListing(row.id)
+                          : undefined
+                      }
                     />
                   ))}
                 </ul>
               )}
             </div>
 
-            {!loadingListings && unselectedListings.length > 0 ? (
+            {allowAdditionalListings && !loadingListings && unselectedListings.length > 0 ? (
               <div className="space-y-2 border-t border-border/50 pt-4">
                 <Label className="text-sm font-semibold">Add another listing</Label>
                 <p className="text-xs text-muted-foreground">
@@ -617,11 +671,11 @@ export function SellerMakeOfferToBuyerDialog({
             ) : null}
 
             <div className="space-y-2 border-t border-border/50 pt-4">
-              <Label className="text-sm font-semibold">Fulfillment</Label>
-              {isBundle ? (
-                <p className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
-                  <Package className="h-4 w-4 shrink-0" aria-hidden />
-                  Bundled offers use local pickup for all items.
+              <Label className="text-sm font-semibold">Delivery method</Label>
+              {bundleFulfillmentMode === "none" && orderedSelectedListings.length > 0 ? (
+                <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
+                  These listings don&apos;t share a delivery method. Offer items that all allow
+                  pickup, all allow shipping, or both.
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
@@ -653,18 +707,32 @@ export function SellerMakeOfferToBuyerDialog({
                     )}
                   >
                     <Truck className="h-4 w-4" aria-hidden />
-                    <span className="font-medium text-foreground">Ship to me</span>
+                    <span className="font-medium text-foreground">Shipping</span>
                   </button>
                 </div>
               )}
+              {canPick && canShip ? (
+                <p className="text-xs text-muted-foreground">
+                  The buyer can still choose local pickup or shipping at checkout.
+                </p>
+              ) : null}
             </div>
 
-            {fulfillment === "shipping" && !isBundle && singleListing ? (
+            {fulfillment === "shipping" && singleListing ? (
               <div className="space-y-1.5">
                 <Label className="text-sm font-semibold">Shipping from listing</Label>
                 <p className="text-sm font-medium tabular-nums">{shippingLabel}</p>
                 <p className="text-xs text-muted-foreground">
                   {offerShippingCostHint(shippingMode, listingFlatRate)}
+                </p>
+              </div>
+            ) : fulfillment === "shipping" && isBundle ? (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold">Shipping</Label>
+                <p className="text-sm font-medium">Calculated at checkout</p>
+                <p className="text-xs text-muted-foreground">
+                  Items ship together in one box. The buyer pays the quoted rate at checkout — not
+                  negotiated.
                 </p>
               </div>
             ) : null}
@@ -713,7 +781,11 @@ export function SellerMakeOfferToBuyerDialog({
               <Textarea
                 rows={3}
                 maxLength={200}
-                placeholder="e.g. Happy to meet locally this weekend, or bundle both items."
+                placeholder={
+                  allowAdditionalListings
+                    ? "e.g. Happy to meet locally this weekend, or bundle both items."
+                    : "e.g. Happy to meet locally this weekend."
+                }
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="resize-none"
@@ -731,7 +803,10 @@ export function SellerMakeOfferToBuyerDialog({
                 submitting ||
                 loadingListings ||
                 orderedSelectedListings.length === 0 ||
-                !allAmountsValid
+                !allAmountsValid ||
+                bundleFulfillmentMode === "none" ||
+                (fulfillment === "pickup" && !canPick) ||
+                (fulfillment === "shipping" && !canShip)
               }
             >
               {submitting ? (
@@ -745,6 +820,18 @@ export function SellerMakeOfferToBuyerDialog({
             </Button>
           </DialogFooter>
         </form>
+    </>
+  )
+
+  if (embedded) return form
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton
+        className="flex max-h-[min(92vh,720px)] w-[calc(100%-1.5rem)] max-w-lg flex-col overflow-hidden p-0"
+      >
+        {form}
       </DialogContent>
     </Dialog>
   )

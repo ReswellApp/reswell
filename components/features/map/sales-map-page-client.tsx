@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useSyncExternalStore } from "react"
-import { formatDistanceToNow, parseISO } from "date-fns"
+import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { ArrowRight, MapPin, Package, TrendingUp } from "lucide-react"
 import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
 import { BRAND_CTA_BLUE, BRAND_DARK_BLUE, BRAND_DEEP_BLUE } from "@/lib/brand-colors"
@@ -63,9 +63,17 @@ function hexToRgba(hex: string, alpha: number): string {
 type UsaSalesFlowMapProps = {
   data: MarketplaceSalesMapPayload
   className?: string
+  /** Compact height for directory embeds; default matches `/map`. */
+  size?: "default" | "compact"
 }
 
-export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
+export function UsaSalesFlowMap({
+  data,
+  className,
+  size = "default",
+}: UsaSalesFlowMapProps) {
+  const isCompact = size === "compact"
+  const svgIdPrefix = isCompact ? "cities-map" : "sales-map"
   const isMobileView = useMobileMapView()
   const [selection, setSelection] = useState<MapSelection>(null)
   const { geometry } = data
@@ -130,8 +138,20 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
 
   return (
     <div className={cn("relative", className)}>
-      <div className="overflow-hidden rounded-xl border border-border/80 bg-gradient-to-b from-muted/30 via-background to-background shadow-sm sm:rounded-2xl">
-        <div className="relative h-[480px] w-full sm:h-[520px] md:h-[560px] lg:h-[600px]">
+      <div
+        className={cn(
+          "overflow-hidden border border-border/80 bg-gradient-to-b from-muted/30 via-background to-background shadow-sm",
+          isCompact ? "rounded-lg" : "rounded-xl sm:rounded-2xl",
+        )}
+      >
+        <div
+          className={cn(
+            "relative w-full",
+            isCompact
+              ? "h-[96px] sm:h-[108px] md:h-[120px]"
+              : "h-[480px] sm:h-[520px] md:h-[560px] lg:h-[600px]",
+          )}
+        >
           <svg
             viewBox={`0 0 ${geometry.width} ${geometry.height}`}
             className={cn("h-full w-full", isMobileView && "touch-manipulation")}
@@ -140,12 +160,12 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
             aria-label="United States map showing Reswell sales flowing from seller states to buyer states"
           >
             <defs>
-              <linearGradient id="map-surface" x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient id={`${svgIdPrefix}-surface`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="hsl(var(--background))" />
                 <stop offset="100%" stopColor="hsl(var(--muted) / 0.35)" />
               </linearGradient>
               <marker
-                id="flow-arrow"
+                id={`${svgIdPrefix}-flow-arrow`}
                 viewBox="0 0 10 10"
                 refX="8"
                 refY="5"
@@ -160,7 +180,7 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
             <rect
               width={geometry.width}
               height={geometry.height}
-              fill="url(#map-surface)"
+              fill={`url(#${svgIdPrefix}-surface)`}
               onClick={() => {
                 if (isMobileView) setSelection(null)
               }}
@@ -226,7 +246,7 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
                   stroke="#dc2626"
                   strokeWidth={isSelected ? flow.width + 1.2 : flow.width}
                   strokeOpacity={isSelected ? 0.95 : flow.opacity}
-                  markerEnd="url(#flow-arrow)"
+                  markerEnd={`url(#${svgIdPrefix}-flow-arrow)`}
                   className={cn(
                     "transition-[stroke-width,stroke-opacity] duration-200",
                     isMobileView && "cursor-pointer",
@@ -276,11 +296,28 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
           </svg>
 
           {selectionLabel && !isMobileView ? (
-            <div className="pointer-events-none absolute left-2 top-2 max-w-[11rem] rounded-lg border border-border/80 bg-background/95 px-2.5 py-2 shadow-lg backdrop-blur-sm sm:left-3 sm:top-3 sm:max-w-xs sm:rounded-xl sm:px-3 sm:py-2.5">
-              <p className="text-xs font-semibold text-foreground sm:text-sm">
+            <div
+              className={cn(
+                "pointer-events-none absolute left-2 top-2 rounded-lg border border-border/80 bg-background/95 shadow-lg backdrop-blur-sm",
+                isCompact
+                  ? "max-w-[8.5rem] px-2 py-1.5"
+                  : "max-w-[11rem] px-2.5 py-2 sm:left-3 sm:top-3 sm:max-w-xs sm:rounded-xl sm:px-3 sm:py-2.5",
+              )}
+            >
+              <p
+                className={cn(
+                  "font-semibold text-foreground",
+                  isCompact ? "text-[10px] leading-tight" : "text-xs sm:text-sm",
+                )}
+              >
                 {selectionLabel.title}
               </p>
-              <ul className="mt-0.5 space-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+              <ul
+                className={cn(
+                  "mt-0.5 space-y-0.5 text-muted-foreground",
+                  isCompact ? "text-[9px] leading-snug" : "text-[10px] sm:text-xs",
+                )}
+              >
                 {selectionLabel.lines.map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -288,26 +325,28 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
             </div>
           ) : null}
 
-          <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg border border-border/70 bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:bottom-3 sm:left-3 sm:right-auto sm:rounded-xl sm:px-2.5 sm:py-2">
-            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:justify-start sm:gap-x-3 sm:text-xs">
-              {isMobileView && !selection ? (
-                <span className="w-full text-center font-medium text-foreground/80 sm:w-auto">
-                  Tap a state for stats
+          {!isCompact ? (
+            <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg border border-border/70 bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:bottom-3 sm:left-3 sm:right-auto sm:rounded-xl sm:px-2.5 sm:py-2">
+              <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:justify-start sm:gap-x-3 sm:text-xs">
+                {isMobileView && !selection ? (
+                  <span className="w-full text-center font-medium text-foreground/80 sm:w-auto">
+                    Tap a state for stats
+                  </span>
+                ) : null}
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" />
+                  Flow
                 </span>
-              ) : null}
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" />
-                Flow
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span
-                  className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
-                  style={{ backgroundColor: BRAND_CTA_BLUE }}
-                />
-                Active states
-              </span>
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
+                    style={{ backgroundColor: BRAND_CTA_BLUE }}
+                  />
+                  Active states
+                </span>
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
 
         {selectionLabel && isMobileView ? (
@@ -392,11 +431,9 @@ export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
             </p>
           ) : null}
 
-          <p
-            className="mt-3 text-center text-[10px] text-muted-foreground sm:mt-4 sm:text-xs"
-            suppressHydrationWarning
-          >
-            Updated {formatDistanceToNow(parseISO(data.generatedAt), { addSuffix: true })} · New
+          <p className="mt-3 text-center text-[10px] text-muted-foreground sm:mt-4 sm:text-xs">
+            Updated{" "}
+            <RelativeTime iso={data.generatedAt} formatLabel={formatDistanceToNowLabel} /> · New
             sales added after checkout
           </p>
         </div>

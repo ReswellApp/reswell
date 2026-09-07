@@ -1,0 +1,84 @@
+{
+  "generated_for": "Bauer Surfboards official named standup catalog",
+  "source": "https://www.bauersurfboards.com/products.json",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "bauer-surfboards",
+      "name": "Bauer Surfboards",
+      "website_url": "https://www.bauersurfboards.com",
+      "location_label": "Port Angeles, Washington",
+      "founder_name": "Chris Bauer",
+      "lead_shaper_name": "Chris Bauer",
+      "short_description": "Hand-shaped Pacific Northwest surfboards from Chris Bauer in Port Angeles — stock models tested in cold-water beach breaks.",
+      "models": [
+        {
+          "name": "Glider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/Glider10_1_e107a894-9169-436a-b31b-1b24867aa886.jpg?v=1744397278",
+          "description": "Shaper Notes: Features a more parallel rail contour, and pointed nose and tail. The bottom rail is turned up to a hard edge in the tail to 18\" up. Rolled bottom entry through the front 2/3 of the board into double concave through the last 1/3 and into the fin area. Provides early entry into waves, allowing the rider to set up a line early. It's shaped to trim to the max but is plenty nimble on the cutback. Gauranteed to up your wave count once you master the glide.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bull Kelp",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/BullKelp_NWNoseRider9_8_7d674e43-ab75-4d87-b1a0-5d88b301117d.jpg?v=1744399061",
+          "description": "Shaper Notes: Bottom contour features a deep nose concave which blends to a rolled bottom through the front 2/3 of the board. The last 1/3 of the board features vee panels with an edge. Rails are turned up 60/40 to the vee panel. Designed and shaped for the NW and our wonky waves. Will ride from the nose and the tail equally well, keeping you in the waves, no matter the weather. Easy cutbacks paired with plenty of hold through the turns, the Bull Kelp will make sections a lot of other soft tail longboards can't. (In Photo: 9'8\" Bull Kelp)",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bull Whip Comp NR",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/bauer.png?v=1744400128",
+          "description": "Shaper Notes: Blended nose concave to flat bottom section at the midpoint for speed. Last 1/3 of the bottom features a double concave and a spiral vee through the tail. Designed and shaped for those taking their longboarding to the next level with features made to handle aggressive waves and big turns. Knifes a more aggressive drop than the average longboard while allowing for plenty of control while noseriding. Keep an eye out at PNW competitions and you may see a few of these.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini-Malibu",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/MiniMal8_8_056553ab-3ed1-42ab-8ca9-4718eccac037.jpg?v=1744400278",
+          "description": "Shaper Notes: Wide nose, square tail outline with plenty of single nose concave to a rolled bottom. Tail has a slight edge 16\" up for a responsive tail ride. The Mini Malibu is small in size, but rides huge. It has plenty of paddle volume and can easily noseride. Has a more agressive rail, with dialed nose and tail foils for a very responsive ride. Available in 2+1 or single fin options available.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Longfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/bauer.png?v=1744400128",
+          "description": "Shaper Notes: Widepoint forward, flat entry rocker to single concave under the chest and front foot. The Longfish has double concave/spiral vee through the back 1/3 of the board. Finely foiled nose, tail tips, and down-foiled rail. The Longfish paddles easily into waves is responsive from the tail, but truly loves a long trim line. Available in twin and quad fin configuration.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/RockFish.jpg?v=1744403949",
+          "description": "Shaper Notes: Bottom has a flat entry to a very slight single concave for lift. The last 1/3 of the board is a spiral vee panel off the tail tips. Foiled tail tips help to keep the board nimble. The Bauer Retro Fish is steeped in tradition. Shaped to ride and feel just like the 70's fish did. Paddles effortlessly with easy wave entry and draws skatey lines with an edge that can handle bigger carves. Available with twin fin configuration or double foil glass-on keel fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Channel Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/bauer.png?v=1744400128",
+          "description": "Shaper Notes: The Channeled Twin Pin outline is nicely rounded with its wide point and paddle zone slightly forward. Deep single concave under the chest and through the tail. 4-6 channels running parallel to the fins, starting 24\" up through the tail. The Channeled Twin Pin's enhanced paddle zone helps boost an early entry into waves and the twin fin gives the board a very skatey feel and has a lot of drive. Channels add directional drive and foils the water and energy through the fins. Tons of hold and carves huge turns - a good board for barrels.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spicoli's Speed Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/SpicoliPro.jpg?v=1744468593",
+          "description": "Shaper Notes: The Speed Egg has a flat entry to a single concave under the chest and front foot. Has a double concave through the tail and fin area. Foiled rails, nose and tail for a very responsive ride. Most versatile and multipurpose board in the Bauer Surfboards quiver. Easy takeoff and plenty of speed and hold to surf just about all conditions. Available in round, rounded pin, and diamond tail options, 2+1 or thruster fin setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Single-Wing Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/bauer.png?v=1744400128",
+          "description": "Shaper Notes: Flat to a single concave that transitions to a vee panel on the tail. Lower rocker, with a modern downrail, and a nose and tail foil. Hybrid-retro design twin fin that paddles better than a shortboard with the skatey feel of a twin. The wings and hard edges increase your hold through tight turns. Available with optional trailer nub fin box.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "HP Groveller Squash",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/bauer.png?v=1744400128",
+          "description": "Shaper Notes: Refined outline with pinched nose and tail areas. Single-to-double concave bottom. Shortboard by nature with lower rockers and a wider outline. This groveller is a reliable board with incredibly easy paddle entry into weak faces. Still, the groveller remains nimble enough for some vertical turns. Available as a thruster or quad fin configurations.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "HP Driver Round Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0649/2117/4228/files/Short-Round_0bbab1ed-be7e-4cc9-bf98-80c16ac32f3e.jpg?v=1744469999",
+          "description": "Shaper Notes: Deep single concave from entry to fin area. Has a healthy rail rocker line and flat stinger. High performance step-up driver. Designed and shaped for easy entry into STEEP waves. Provides tons of drives and speed, has a healthy rail rocker and a flat stringer line provides plenty of hold through turns and maneuvers. Available as a thruster or quad fin configuration, with optional channel bottom.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}

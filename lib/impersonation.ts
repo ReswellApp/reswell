@@ -1,10 +1,37 @@
 export const IMPERSONATION_COOKIE = "admin_impersonating"
 const STORAGE_KEY = "admin_impersonating"
+export const IMPERSONATION_CHANGED_EVENT = "reswell:impersonation-changed"
+export const IMPERSONATION_COOKIE_MAX_AGE_SEC = 60 * 60 * 4
 
 export interface ImpersonationData {
   userId: string
   displayName: string
   email: string | null
+}
+
+export function impersonationCookieOptions(
+  maxAgeSec: number = IMPERSONATION_COOKIE_MAX_AGE_SEC,
+) {
+  return {
+    path: "/",
+    maxAge: maxAgeSec,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: false,
+  }
+}
+
+export function serializeImpersonationCookie(data: ImpersonationData): string {
+  return JSON.stringify({
+    userId: data.userId,
+    displayName: data.displayName.trim() || "User",
+    email: data.email,
+  })
+}
+
+function notifyImpersonationChanged() {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new Event(IMPERSONATION_CHANGED_EVENT))
 }
 
 /** Parse the impersonation cookie value on the server. Handles both encoded and plain JSON. */
@@ -35,6 +62,7 @@ export function parseImpersonationCookie(raw: string): ImpersonationData | null 
 export function setImpersonation(data: ImpersonationData) {
   if (typeof window === "undefined") return
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  notifyImpersonationChanged()
 }
 
 /** Read impersonation data from localStorage (client-side only). */
@@ -50,21 +78,23 @@ export function getImpersonation(): ImpersonationData | null {
 }
 
 /**
- * If the admin impersonation cookie is gone but localStorage still has data, drop localStorage.
- * Admin APIs only trust the cookie for the target user id — stale LS alone caused wrong UX.
+ * Keep localStorage in sync when the impersonation cookie is readable.
+ *
+ * Do **not** wipe localStorage when `document.cookie` omits the cookie — Next.js
+ * may set it httpOnly, in which case fetch still sends it but JS cannot see it.
+ * Wiping here dropped the admin “edit as seller” target and Save then aborted.
  */
 export function clearImpersonationStorageIfCookieMissing() {
   if (typeof window === "undefined") return
-  const hasCookie = document.cookie
-    .split(";")
-    .some((c) => c.trim().startsWith(`${IMPERSONATION_COOKIE}=`))
-  if (!hasCookie) {
-    try {
-      localStorage.removeItem(STORAGE_KEY)
-    } catch {
-      /* ignore */
-    }
-  }
+  const raw = readCookieValue(IMPERSONATION_COOKIE)
+  if (!raw) return
+  const parsed = parseImpersonationCookie(raw)
+  if (!parsed) return
+  const stored = getImpersonation()
+  // A stale document.cookie (previous seller) must not overwrite the target
+  // written immediately after POST /api/admin/impersonate.
+  if (stored && stored.userId !== parsed.userId) return
+  setImpersonation(parsed)
 }
 
 /** Clear impersonation from both localStorage and the cookie. */
@@ -72,6 +102,7 @@ export function clearImpersonation() {
   if (typeof window === "undefined") return
   localStorage.removeItem(STORAGE_KEY)
   document.cookie = `${IMPERSONATION_COOKIE}=; path=/; max-age=0`
+  notifyImpersonationChanged()
 }
 
 function readCookieValue(name: string): string | null {
@@ -87,13 +118,19 @@ function readCookieValue(name: string): string | null {
 }
 
 /**
- * Current impersonation target from the admin cookie, after dropping stale localStorage
- * when the cookie is missing. Use for UI (banner); APIs still validate the cookie server-side.
+ * Current impersonation target from the admin cookie, falling back to localStorage
+ * when the cookie is httpOnly (still sent on `credentials: "include"` fetches).
+ * Admin APIs still validate the HTTP cookie server-side.
  */
 export function getActiveImpersonationClient(): ImpersonationData | null {
   if (typeof window === "undefined") return null
-  clearImpersonationStorageIfCookieMissing()
+  const stored = getImpersonation()
   const raw = readCookieValue(IMPERSONATION_COOKIE)
-  if (!raw) return null
-  return parseImpersonationCookie(raw)
+  const fromCookie = raw ? parseImpersonationCookie(raw) : null
+  if (stored && fromCookie && stored.userId !== fromCookie.userId) {
+    // localStorage is written in the same tick as a successful impersonate POST.
+    // document.cookie can still show the previous seller during client navigation.
+    return stored
+  }
+  return fromCookie ?? stored
 }

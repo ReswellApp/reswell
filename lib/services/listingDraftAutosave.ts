@@ -110,6 +110,7 @@ export function buildSurfboardDraftListingRow(
       boardFins: fd.boardFins,
       boardFinSystem: fd.boardFinSystem,
       boardConstruction: fd.boardConstruction,
+      boardFinsIncluded: fd.boardFinsIncluded,
     }),
     model: fd.boardModelName?.trim() ? fd.boardModelName.trim() : null,
     brand_model_id: fd.boardBrandModelId?.trim() ? fd.boardBrandModelId.trim() : null,
@@ -151,6 +152,7 @@ export interface SellDraftSummary {
   price: number | null
   updatedAt: string
   primaryImageUrl: string | null
+  section?: string
 }
 
 /**
@@ -215,8 +217,79 @@ export async function listSurfboardListingDrafts(
       price: typeof r.price === "number" ? r.price : null,
       updatedAt: r.updated_at,
       primaryImageUrl: primary?.url ?? null,
+      section: "surfboards",
     }
   })
+}
+
+type SellerDraftListRow = {
+  id: string
+  title: string | null
+  price: number | null
+  updated_at: string
+  section: string | null
+  listing_images:
+    | { url: string | null; is_primary: boolean | null; sort_order: number | null }[]
+    | null
+}
+
+function mapSellerDraftRows(rows: SellerDraftListRow[]): SellDraftSummary[] {
+  return rows.map((r) => {
+    const imgs = Array.isArray(r.listing_images) ? r.listing_images : []
+    const primary =
+      imgs.find((i) => i.is_primary) ??
+      imgs.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]
+    const rawTitle = typeof r.title === "string" ? r.title.trim() : ""
+    const section = typeof r.section === "string" && r.section.trim() ? r.section.trim() : "surfboards"
+    return {
+      id: r.id,
+      title: rawTitle && rawTitle !== "Untitled draft" ? rawTitle : null,
+      price: typeof r.price === "number" ? r.price : null,
+      updatedAt: r.updated_at,
+      primaryImageUrl: primary?.url ?? null,
+      section,
+    }
+  })
+}
+
+/**
+ * Signed-in seller drafts across every peer section (resume strip + dashboard).
+ */
+export async function listSellerListingDrafts(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 20,
+): Promise<SellDraftSummary[]> {
+  const selectCols = "id, title, price, updated_at, section, listing_images(url, is_primary, sort_order)"
+
+  let query = supabase
+    .from("listings")
+    .select(selectCols)
+    .eq("user_id", userId)
+    .eq("status", "draft")
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(limit)
+
+  let { data, error } = await query
+  if (
+    error &&
+    (error.code === "42703" ||
+      (typeof error.message === "string" && error.message.includes("archived_at")))
+  ) {
+    const fallback = await supabase
+      .from("listings")
+      .select(selectCols)
+      .eq("user_id", userId)
+      .eq("status", "draft")
+      .order("updated_at", { ascending: false })
+      .limit(limit)
+    data = fallback.data
+    error = fallback.error
+  }
+  if (error) throw error
+
+  return mapSellerDraftRows((data ?? []) as SellerDraftListRow[])
 }
 
 async function fetchDefaultBoardCategoryId(supabase: SupabaseClient): Promise<string | null> {
@@ -296,6 +369,96 @@ export async function upsertSurfboardListingDraft(
       .from("listings")
       .insert({
         user_id: userId,
+        ...withoutListingDimensionDisplayDbFields(row),
+      })
+      .select("id")
+      .single()
+    created = retry.data
+    insErr = retry.error
+  }
+
+  if (insErr || !created?.id) {
+    throw insErr ?? new Error("Failed to create draft")
+  }
+  return { id: created.id as string }
+}
+
+/**
+ * Guest draft upsert via service-role client. Cookie hash is the sole owner key
+ * until claim. Caps create volume per token+section.
+ */
+export async function upsertGuestSurfboardListingDraft(
+  service: SupabaseClient,
+  tokenHash: string,
+  input: ListingDraftAutosaveInput,
+): Promise<{ id: string }> {
+  const {
+    countGuestDraftsForToken,
+    fetchGuestDraftById,
+    guestDraftLimitReached,
+  } = await import("@/lib/db/listingGuestDrafts")
+
+  const defaultCategoryId = await fetchDefaultBoardCategoryId(service)
+  if (!defaultCategoryId) {
+    throw new Error("No board category configured")
+  }
+
+  const row = buildSurfboardDraftListingRow(input, defaultCategoryId)
+  const listingId = input.listingId?.trim() || null
+
+  if (listingId) {
+    const existing = await fetchGuestDraftById(service, listingId)
+    if (!existing || existing.status !== "draft" || existing.user_id !== null) {
+      throw new Error("Draft not found")
+    }
+    if (existing.guest_token_hash !== tokenHash) {
+      throw new Error("Draft not found")
+    }
+    if (existing.section !== "surfboards") {
+      throw new Error("Draft not found")
+    }
+
+    let { error: upErr } = await service
+      .from("listings")
+      .update({ ...row, guest_token_hash: tokenHash, user_id: null })
+      .eq("id", listingId)
+    if (upErr && isListingDimensionDisplaySchemaCacheError(upErr)) {
+      const retry = await service
+        .from("listings")
+        .update({
+          ...withoutListingDimensionDisplayDbFields(row),
+          guest_token_hash: tokenHash,
+          user_id: null,
+        })
+        .eq("id", listingId)
+      upErr = retry.error
+    }
+    if (upErr) throw upErr
+    return { id: listingId }
+  }
+
+  const count = await countGuestDraftsForToken(service, tokenHash, "surfboards")
+  if (guestDraftLimitReached(count)) {
+    throw new Error("Guest draft limit reached")
+  }
+
+  const insertRow = {
+    user_id: null,
+    guest_token_hash: tokenHash,
+    ...row,
+  }
+  let { data: created, error: insErr } = await service
+    .from("listings")
+    .insert(insertRow)
+    .select("id")
+    .single()
+
+  if (insErr && isListingDimensionDisplaySchemaCacheError(insErr)) {
+    const retry = await service
+      .from("listings")
+      .insert({
+        user_id: null,
+        guest_token_hash: tokenHash,
         ...withoutListingDimensionDisplayDbFields(row),
       })
       .select("id")

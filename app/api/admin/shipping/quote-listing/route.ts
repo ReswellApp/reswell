@@ -26,7 +26,7 @@ const buyerSchema = z.object({
   state_province: z.string().trim().min(2).max(40),
   postal_code: z.string().trim().regex(/^\d{5}(-\d{4})?$/),
   country_code: z.literal("US"),
-  residential: z.enum(["yes", "no", "unknown"]).default("no"),
+  residential: z.enum(["yes", "no", "unknown"]).default("yes"),
 })
 
 /** Accepts a UUID (`listings.id`), a slug (`listings.slug`), or a public URL containing either. */

@@ -8,12 +8,17 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import {
   syncListingImages,
   type ListingImageUpdateOp,
 } from "@/lib/services/sync-listing-images"
+import {
+  insertListingVideos,
+  listingVideosToUpdateOps,
+  syncListingVideos,
+} from "@/lib/services/sync-listing-videos"
 import { WETSUITS_SECTION } from "@/lib/wetsuit-listing-config"
 import { buildWetsuitListingPersistFields } from "@/lib/wetsuit-listing-persist-fields"
 import type {
@@ -62,9 +67,8 @@ export async function updateWetsuitListing(
     throw new Error("Sold listings cannot be edited")
   }
 
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
   const updateFields = buildWetsuitListingPersistFields(input, {
-    allowPrivilegedShippingModes,
+    allowPrivilegedShippingModes: true,
   })
   const { data: updated, error: updateError } = await supabase
     .from("listings")
@@ -87,6 +91,12 @@ export async function updateWetsuitListing(
   }))
 
   await syncWetsuitListingImages(supabase, listingId, input.removedImageIds ?? [], imageOps)
+  await syncListingVideos(
+    supabase,
+    listingId,
+    input.removedVideoIds ?? [],
+    listingVideosToUpdateOps(input.videos ?? []),
+  )
 
   return { slug: (updated.slug as string) ?? (existing.slug as string) }
 }
@@ -97,9 +107,8 @@ export async function createWetsuitListing(
   input: CreateWetsuitListingInput,
 ): Promise<CreateWetsuitListingResult> {
   const slug = await generateUniqueListingSlug(supabase, input.title)
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
   const persistFields = buildWetsuitListingPersistFields(input, {
-    allowPrivilegedShippingModes,
+    allowPrivilegedShippingModes: true,
   })
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
 
@@ -123,7 +132,7 @@ export async function createWetsuitListing(
   const imageRows = input.images.map((img, index) => ({
     listing_id: listingId,
     url: img.url,
-    thumbnail_url: img.thumbnailUrl ?? null,
+    thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
     is_primary: img.isPrimary ?? index === 0,
     sort_order: img.sortOrder ?? index,
   }))
@@ -132,6 +141,17 @@ export async function createWetsuitListing(
   if (imageError) {
     await supabase.from("listings").delete().eq("id", listingId)
     throw new Error(imageError.message)
+  }
+
+  try {
+    await insertListingVideos(
+      supabase,
+      listingId,
+      listingVideosToUpdateOps(input.videos ?? []),
+    )
+  } catch (err) {
+    await supabase.from("listings").delete().eq("id", listingId)
+    throw err instanceof Error ? err : new Error("Failed to insert listing videos")
   }
 
   return { listingId, slug: (inserted.slug as string) ?? slug }

@@ -4,6 +4,7 @@ import { useCallback, useId, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
@@ -22,22 +23,33 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
+import { LocationPicker } from "@/components/location-picker"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
+import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import { SELL_PAGE_GROUND_CLASS, SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
+import { normalizeTapeStyleInchesInput } from "@/lib/board-measurements"
+import {
+  parseReswellParcelLengthRawToCarrierInches,
+  parseReswellParcelWidthHeightRawToCarrierInches,
+  validateReswellPackedWeightRequired,
+} from "@/lib/reswell-parcel-fields"
+import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { createClient } from "@/lib/supabase/client"
-import {
-  MAGAZINES_SECTION,
-  MAGAZINE_STANDARD_PACKAGE_INCHES,
-  MAGAZINE_STANDARD_PACKAGE_WEIGHT_LB,
-  magazineListingFixedReswellPackageFormFields,
-} from "@/lib/magazine-listing-config"
+import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
 import {
   createMagazineListingAction,
   updateMagazineListingAction,
@@ -48,6 +60,7 @@ import {
 } from "@/lib/validations/magazine-listing"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
@@ -60,6 +73,16 @@ type MagazineFormState = {
   condition: string
   brand: string
   year: string
+  locationCity: string
+  locationState: string
+  locationLat: number | null
+  locationLng: number | null
+  locationDisplay: string
+  reswellPackageLengthIn: string
+  reswellPackageWidthIn: string
+  reswellPackageHeightIn: string
+  reswellPackageWeightLb: string
+  reswellPackageWeightOz: string
 }
 
 const INITIAL_STATE: MagazineFormState = {
@@ -69,6 +92,36 @@ const INITIAL_STATE: MagazineFormState = {
   condition: "",
   brand: "",
   year: "",
+  locationCity: "",
+  locationState: "",
+  locationLat: null,
+  locationLng: null,
+  locationDisplay: "",
+  reswellPackageLengthIn: "",
+  reswellPackageWidthIn: "",
+  reswellPackageHeightIn: "",
+  reswellPackageWeightLb: "",
+  reswellPackageWeightOz: "",
+}
+
+/** Type-safe merge of an IndexedDB draft snapshot onto the magazine form state. */
+function magazineFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): MagazineFormState {
+  const next: MagazineFormState = { ...INITIAL_STATE }
+  for (const key of Object.keys(INITIAL_STATE) as Array<keyof MagazineFormState>) {
+    const value = snapshot[key]
+    if (value === undefined) continue
+    const initial = INITIAL_STATE[key]
+    if (key === "locationLat" || key === "locationLng") {
+      if (value === null || typeof value === "number") {
+        next[key] = value as MagazineFormState["locationLat"]
+      }
+      continue
+    }
+    if (typeof value === typeof initial) {
+      next[key] = value as never
+    }
+  }
+  return next
 }
 
 const CONDITION_UNSELECTED = "__magazine_condition_unselected__"
@@ -81,9 +134,11 @@ export default function SellMagazinesFlow({
   const router = useRouter()
   const searchParams = useSearchParams()
   const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const startFresh = searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
+  const formRef = useRef<HTMLFormElement | null>(null)
   const editId = editListingId?.trim() || null
   const [form, setForm] = useState<MagazineFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
@@ -104,10 +159,12 @@ export default function SellMagazinesFlow({
     openSignIn: signIn,
     supabase: supabaseRef.current,
     funnelListingType: "magazines",
+    promptSignInOnUpload: false,
   })
 
   const {
     images,
+    setImages,
     removedImageIds,
     photosFileDragActive,
     uploadingCount,
@@ -123,7 +180,42 @@ export default function SellMagazinesFlow({
     handlePhotoTileRetry,
     handlePhotoTileRotate,
     hydrateExistingImages,
+    imagesRef,
   } = photoUpload
+
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: magazineSellReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    removedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+  const videoFileInputId = useId()
+
+  const restoreMagazineDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm(magazineFormFromDraftSnapshot(snapshot))
+  }, [])
+
+  const { clearRecoveredDraft, flushDraftNow, draftHydrated } = useSellAccessoryDraftRecovery({
+    listingType: "magazines",
+    editId,
+    startFresh,
+    formSnapshot: form,
+    images,
+    onRestoreForm: restoreMagazineDraftForm,
+    setImages,
+    retryPhotoSlot: photoUpload.handlePhotoTileRetry,
+  })
 
   const setField = useCallback(<K extends keyof MagazineFormState>(key: K, value: MagazineFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -148,6 +240,15 @@ export default function SellMagazinesFlow({
         return { status: "handled" as const }
       }
 
+      const loadedReswellPackage = reswellPackageFormFromDbRow(
+        listing as {
+          shipping_packed_length_in?: number | string | null
+          shipping_packed_width_in?: number | string | null
+          shipping_packed_height_in?: number | string | null
+          shipping_packed_weight_oz?: number | string | null
+        },
+      )
+
       setForm({
         title: listing.title?.trim() ?? "",
         description: listing.description?.trim() ?? "",
@@ -161,6 +262,12 @@ export default function SellMagazinesFlow({
           )
             ? String((listing as { magazine_year?: number | string | null }).magazine_year)
             : "",
+        locationCity: listing.city ?? "",
+        locationState: listing.state ?? "",
+        locationLat: listing.latitude != null ? Number(listing.latitude) : null,
+        locationLng: listing.longitude != null ? Number(listing.longitude) : null,
+        locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
+        ...loadedReswellPackage,
       })
 
       const existingImages = ((listing.listing_images as Array<{
@@ -190,10 +297,42 @@ export default function SellMagazinesFlow({
           }),
         )
 
+      const existingVideos = (
+        (listing.listing_videos as Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          duration_seconds?: number | null
+          byte_size?: number | null
+          sort_order?: number | null
+        }> | null) ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       hydrateExistingImages(existingImages)
       return { status: "ready" as const }
     },
-    [hydrateExistingImages, router],
+    [hydrateExistingImages, hydrateExistingVideo, router],
   )
 
   const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -206,6 +345,14 @@ export default function SellMagazinesFlow({
     onHydrate: hydrateMagazineEdit,
   })
 
+  usePendingPublishResume({
+    listingKind: "magazines",
+    draftHydrated,
+    formRef,
+    imagesRef,
+    editLoading,
+  })
+
   const buildPayload = () => ({
     title: form.title,
     description: form.description,
@@ -213,8 +360,16 @@ export default function SellMagazinesFlow({
     condition: form.condition,
     brand: form.brand,
     year: form.year,
+    locationCity: form.locationCity,
+    locationState: form.locationState,
+    locationLat: form.locationLat ?? undefined,
+    locationLng: form.locationLng ?? undefined,
     shippingCostMode: "reswell" as const,
-    ...magazineListingFixedReswellPackageFormFields(),
+    reswellPackageLengthIn: form.reswellPackageLengthIn,
+    reswellPackageWidthIn: form.reswellPackageWidthIn,
+    reswellPackageHeightIn: form.reswellPackageHeightIn,
+    reswellPackageWeightLb: form.reswellPackageWeightLb,
+    reswellPackageWeightOz: form.reswellPackageWeightOz,
     images: readyImages.map((photo, index) => ({
       id: photo.id,
       url: photo.url!,
@@ -222,10 +377,23 @@ export default function SellMagazinesFlow({
       isPrimary: index === 0,
       sortOrder: index,
     })),
+    videos: readyVideo ? [readyVideo] : [],
   })
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (submitting) return
+
+    const session = await resolveClientSessionForMutation(supabaseRef.current)
+    if (!session?.user || !session.access_token) {
+      await beginGuestListingPublishAuth({
+        kind: "magazines",
+        returnPath: magazineSellReturnPath(),
+        openSignIn: signIn,
+        persistDraft: () => flushDraftNow({ includeInFlightPhotos: true }),
+      })
+      return
+    }
 
     const publishStartedAt = Date.now()
     logSellFunnelEvent({
@@ -246,6 +414,36 @@ export default function SellMagazinesFlow({
       failValidation("Hang tight — your photos are still uploading.")
       return
     }
+    if (!videoUploadReady || videoUploading) {
+      failValidation("Hang tight — your video is still uploading.")
+      return
+    }
+    if (!form.locationCity.trim() || !form.locationState.trim()) {
+      failValidation("Confirm where you're listing from.")
+      return
+    }
+    const packedLength = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
+    const packedWidth = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
+    const packedHeight = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
+    if (
+      packedLength == null ||
+      packedLength <= 0 ||
+      packedWidth == null ||
+      packedWidth <= 0 ||
+      packedHeight == null ||
+      packedHeight <= 0
+    ) {
+      failValidation("Enter packed box dimensions for Reswell shipping.")
+      return
+    }
+    const packedWeightError = validateReswellPackedWeightRequired(
+      form.reswellPackageWeightLb,
+      form.reswellPackageWeightOz,
+    )
+    if (packedWeightError) {
+      failValidation(packedWeightError)
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -256,6 +454,7 @@ export default function SellMagazinesFlow({
           ...payload,
           listingId: editId,
           removedImageIds,
+          removedVideoIds,
         })
         if ("error" in result) {
           const message = sellActionErrorMessage(result.error)
@@ -275,8 +474,7 @@ export default function SellMagazinesFlow({
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Magazine listing updated.")
-        router.push(listingDetailHref({ id: editId, slug: result.slug }))
-        router.refresh()
+        navigateAfterListingSave(listingDetailHref({ id: editId, slug: result.slug }))
         return
       }
 
@@ -292,6 +490,8 @@ export default function SellMagazinesFlow({
         toast.error(message)
         return
       }
+
+      await clearRecoveredDraft()
 
       logSellFunnelEvent({
         listingType: "magazines",
@@ -314,8 +514,12 @@ export default function SellMagazinesFlow({
         return
       }
 
-      router.push(listingDetailHref({ id: result.listingId, slug: result.slug }))
-      router.refresh()
+      setJustPublishedListingMarker({
+        listingId: result.listingId,
+        slug: result.slug,
+        section: "magazines",
+      })
+      navigateAfterListingSave(listingDetailHref({ id: result.listingId, slug: result.slug }))
     } catch (err) {
       const aborted = isSellSubmitAbortError(err)
       if (!aborted) {
@@ -370,11 +574,12 @@ export default function SellMagazinesFlow({
           {editId ? "Edit magazine listing" : "List a magazine"}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Start with cover photos, then details. Reswell shipping only — no local pickup.
+          Start with cover photos, then details. Shipping rates are calculated from where you
+          list — Reswell shipping only, no local pickup.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
         <SellListingPhotoGrid
           images={images}
           maxPhotos={MAGAZINE_LISTING_MAX_PHOTOS}
@@ -390,7 +595,12 @@ export default function SellMagazinesFlow({
           onRetry={handlePhotoTileRetry}
           onRotate180={handlePhotoTileRotate}
           photoDragSensors={photoDragSensors}
-          photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles."
+          photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles. Optional: add one short video."
+          video={video}
+          videoFileInputId={videoFileInputId}
+          onVideoInputChange={handleVideoInputChange}
+          onVideoRemove={handleVideoRemove}
+          onVideoRetry={handleVideoRetry}
         />
 
         <div className="space-y-2">
@@ -489,33 +699,65 @@ export default function SellMagazinesFlow({
           </div>
         </div>
 
-        <div className="space-y-3 rounded-xl border border-slate-300 bg-card p-4 shadow-md ring-1 ring-slate-900/[0.05] sm:p-5">
+        <div className="space-y-6">
           <div>
             <h2 className="text-base font-semibold">Shipping</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Each listing ships one copy at a time via Reswell. Package size and weight are
-              standardized for all magazine listings.
+              Pin where you&apos;re listing from, then enter the outer box you&apos;ll ship the
+              magazine or book in. Checkout rates use your location and package size.
             </p>
           </div>
-          <dl className="grid gap-4 text-sm sm:grid-cols-2">
-            <div className="rounded-lg border border-border/80 bg-muted/30 px-4 py-3">
-              <dt className="text-muted-foreground">Packed dimensions</dt>
-              <dd className="mt-1 font-medium tabular-nums">
-                {MAGAZINE_STANDARD_PACKAGE_INCHES.length} × {MAGAZINE_STANDARD_PACKAGE_INCHES.width}{" "}
-                × {MAGAZINE_STANDARD_PACKAGE_INCHES.height} in
-              </dd>
-            </div>
-            <div className="rounded-lg border border-border/80 bg-muted/30 px-4 py-3">
-              <dt className="text-muted-foreground">Weight (one copy)</dt>
-              <dd className="mt-1 font-medium tabular-nums">
-                {MAGAZINE_STANDARD_PACKAGE_WEIGHT_LB} lb
-              </dd>
-            </div>
-          </dl>
+
+          <LocationPicker
+            initialLat={form.locationLat ?? undefined}
+            initialLng={form.locationLng ?? undefined}
+            initialCity={form.locationCity}
+            initialState={form.locationState}
+            initialDisplay={form.locationDisplay}
+            onLocationSelect={(loc) => {
+              setForm((prev) => ({
+                ...prev,
+                locationLat: loc.lat,
+                locationLng: loc.lng,
+                locationCity: loc.city,
+                locationState: loc.state,
+                locationDisplay: loc.displayName,
+              }))
+            }}
+            onLocationClear={() => {
+              setForm((prev) => ({
+                ...prev,
+                locationLat: null,
+                locationLng: null,
+                locationCity: "",
+                locationState: "",
+                locationDisplay: "",
+              }))
+            }}
+          />
+
+          <ReswellPackageDimensionsCard
+            lengthIn={form.reswellPackageLengthIn}
+            widthIn={form.reswellPackageWidthIn}
+            heightIn={form.reswellPackageHeightIn}
+            weightLb={form.reswellPackageWeightLb}
+            weightOz={form.reswellPackageWeightOz}
+            onLengthInChange={(value) =>
+              setField("reswellPackageLengthIn", normalizeTapeStyleInchesInput(value))
+            }
+            onWidthInChange={(value) =>
+              setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(value))
+            }
+            onHeightInChange={(value) =>
+              setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(value))
+            }
+            onWeightLbChange={(value) => setField("reswellPackageWeightLb", value)}
+            onWeightOzChange={(value) => setField("reswellPackageWeightOz", value)}
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-2">
-          <Button type="submit" disabled={submitting || uploadingCount > 0}>
+          <Button type="submit" disabled={submitting || uploadingCount > 0 || videoUploading}>
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />

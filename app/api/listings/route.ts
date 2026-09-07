@@ -9,7 +9,9 @@ import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFirstTimeSeller'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
+import { notifyFollowersNewListingKlaviyo } from '@/lib/services/notifyFollowersNewListingKlaviyo'
 import { evaluateSellerCanSell } from '@/lib/services/sellerBan'
+import { qualifyPublishedListingForGiveaways } from '@/lib/services/giveawayEntry'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
   composeListingDimensionsFromSplitListingFields,
@@ -266,12 +268,19 @@ export async function POST(request: NextRequest) {
     sellerEmail: user.email ?? null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void notifyFollowersNewListingKlaviyo(listing.id)
 
   if (section === 'surfboards') {
     revalidateBoardsBrowseCatalog()
   }
   await revalidateSellersAfterListingChange(supabase, user.id)
   revalidateNavSearchSuggest()
+  await qualifyPublishedListingForGiveaways(
+    supabase,
+    listing.id,
+    user.id,
+    user.email ?? null,
+  )
 
   return NextResponse.json({ success: true, listing_id: listing.id })
 }

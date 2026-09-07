@@ -36,6 +36,12 @@ function resultFromExisting(params: {
     paperlessQrUrl: params.paperlessQrUrl ?? null,
     paperlessInstructions: params.paperlessInstructions ?? null,
     paperlessHandoffCode: params.paperlessHandoffCode ?? null,
+    insuranceProvider: null,
+    insuredValueAmount: null,
+    insuranceCostAmount: null,
+    insuranceClaimUrl: null,
+    shipengineLabelId: null,
+    shipengineShipmentId: null,
   }
 }
 

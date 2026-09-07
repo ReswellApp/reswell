@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+
+<html lang="en-CA">
+
+	<head>
+	  	<meta charset="UTF-8">
+	  	<meta name="viewport" content="width=device-width">
+	  	<link rel="profile" href="http://gmpg.org/xfn/11">
+	  	<script data-cfasync="false" data-no-defer="1" data-no-minify="1" data-no-optimize="1">var ewww_webp_supported=!1;function check_webp_feature(A,e){var w;e=void 0!==e?e:function(){},ewww_webp_supported?e(ewww_webp_supported):((w=new Image).onload=function(){ewww_webp_supported=0<w.width&&0<w.height,e&&e(ewww_webp_supported)},w.onerror=function(){e&&e(!1)},w.src="data:image/webp;base64,"+{alpha:"UklGRkoAAABXRUJQVlA4WAoAAAAQAAAAAAAAAAAAQUxQSAwAAAARBxAR/Q9ERP8DAABWUDggGAAAABQBAJ0BKgEAAQAAAP4AAA3AAP7mtQAAAA=="}[A])}check_webp_feature("alpha");</script><script data-cfasync="false" data-no-defer="1" data-no-minify="1" data-no-optimize="1">var Arrive=function(c,w){"use strict";if(c.MutationObserver&&"undefined"!=typeof HTMLElement){var r,a=0,u=(r=HTMLElement.prototype.matches||HTMLElement.prototype.webkitMatchesSelector||HTMLElement.prototype.mozMatchesSelector||HTMLElement.prototype.msMatchesSelector,{matchesSelector:function(e,t){return e instanceof HTMLElement&&r.call(e,t)},addMethod:function(e,t,r){var a=e[t];e[t]=function(){return r.length==arguments.length?r.apply(this,arguments):"function"==typeof a?a.apply(this,arguments):void 0}},callCallbacks:function(e,t){t&&t.options.onceOnly&&1==t.firedElems.length&&(e=[e[0]]);for(var r,a=0;r=e[a];a++)r&&r.callback&&r.callback.call(r.elem,r.elem);t&&t.options.onceOnly&&1==t.firedElems.length&&t.me.unbindEventWithSelectorAndCallback.call(t.target,t.selector,t.callback)},checkChildNodesRecursively:function(e,t,r,a){for(var i,n=0;i=e[n];n++)r(i,t,a)&&a.push({callback:t.callback,elem:i}),0<i.childNodes.length&&u.checkChildNodesRecursively(i.childNodes,t,r,a)},mergeArrays:function(e,t){var r,a={};for(r in e)e.hasOwnProperty(r)&&(a[r]=e[r]);for(r in t)t.hasOwnProperty(r)&&(a[r]=t[r]);return a},toElementsArray:function(e){return e=void 0!==e&&("number"!=typeof e.length||e===c)?[e]:e}}),e=(l.prototype.addEvent=function(e,t,r,a){a={target:e,selector:t,options:r,callback:a,firedElems:[]};return this._beforeAdding&&this._beforeAdding(a),this._eventsBucket.push(a),a},l.prototype.removeEvent=function(e){for(var t,r=this._eventsBucket.length-1;t=this._eventsBucket[r];r--)e(t)&&(this._beforeRemoving&&this._beforeRemoving(t),(t=this._eventsBucket.splice(r,1))&&t.length&&(t[0].callback=null))},l.prototype.beforeAdding=function(e){this._beforeAdding=e},l.prototype.beforeRemoving=function(e){this._beforeRemoving=e},l),t=function(i,n){var o=new e,l=this,s={fireOnAttributesModification:!1};return o.beforeAdding(function(t){var e=t.target;e!==c.document&&e!==c||(e=document.getElementsByTagName("html")[0]);var r=new MutationObserver(function(e){n.call(this,e,t)}),a=i(t.options);r.observe(e,a),t.observer=r,t.me=l}),o.beforeRemoving(function(e){e.observer.disconnect()}),this.bindEvent=function(e,t,r){t=u.mergeArrays(s,t);for(var a=u.toElementsArray(this),i=0;i<a.length;i++)o.addEvent(a[i],e,t,r)},this.unbindEvent=function(){var r=u.toElementsArray(this);o.removeEvent(function(e){for(var t=0;t<r.length;t++)if(this===w||e.target===r[t])return!0;return!1})},this.unbindEventWithSelectorOrCallback=function(r){var a=u.toElementsArray(this),i=r,e="function"==typeof r?function(e){for(var t=0;t<a.length;t++)if((this===w||e.target===a[t])&&e.callback===i)return!0;return!1}:function(e){for(var t=0;t<a.length;t++)if((this===w||e.target===a[t])&&e.selector===r)return!0;return!1};o.removeEvent(e)},this.unbindEventWithSelectorAndCallback=function(r,a){var i=u.toElementsArray(this);o.removeEvent(function(e){for(var t=0;t<i.length;t++)if((this===w||e.target===i[t])&&e.selector===r&&e.callback===a)return!0;return!1})},this},i=new function(){var s={fireOnAttributesModification:!1,onceOnly:!1,existing:!1};function n(e,t,r){return!(!u.matchesSelector(e,t.selector)||(e._id===w&&(e._id=a++),-1!=t.firedElems.indexOf(e._id)))&&(t.firedElems.push(e._id),!0)}var c=(i=new t(function(e){var t={attributes:!1,childList:!0,subtree:!0};return e.fireOnAttributesModification&&(t.attributes=!0),t},function(e,i){e.forEach(function(e){var t=e.addedNodes,r=e.target,a=[];null!==t&&0<t.length?u.checkChildNodesRecursively(t,i,n,a):"attributes"===e.type&&n(r,i)&&a.push({callback:i.callback,elem:r}),u.callCallbacks(a,i)})})).bindEvent;return i.bindEvent=function(e,t,r){t=void 0===r?(r=t,s):u.mergeArrays(s,t);var a=u.toElementsArray(this);if(t.existing){for(var i=[],n=0;n<a.length;n++)for(var o=a[n].querySelectorAll(e),l=0;l<o.length;l++)i.push({callback:r,elem:o[l]});if(t.onceOnly&&i.length)return r.call(i[0].elem,i[0].elem);setTimeout(u.callCallbacks,1,i)}c.call(this,e,t,r)},i},o=new function(){var a={};function i(e,t){return u.matchesSelector(e,t.selector)}var n=(o=new t(function(){return{childList:!0,subtree:!0}},function(e,r){e.forEach(function(e){var t=e.removedNodes,e=[];null!==t&&0<t.length&&u.checkChildNodesRecursively(t,r,i,e),u.callCallbacks(e,r)})})).bindEvent;return o.bindEvent=function(e,t,r){t=void 0===r?(r=t,a):u.mergeArrays(a,t),n.call(this,e,t,r)},o};d(HTMLElement.prototype),d(NodeList.prototype),d(HTMLCollection.prototype),d(HTMLDocument.prototype),d(Window.prototype);var n={};return s(i,n,"unbindAllArrive"),s(o,n,"unbindAllLeave"),n}function l(){this._eventsBucket=[],this._beforeAdding=null,this._beforeRemoving=null}function s(e,t,r){u.addMethod(t,r,e.unbindEvent),u.addMethod(t,r,e.unbindEventWithSelectorOrCallback),u.addMethod(t,r,e.unbindEventWithSelectorAndCallback)}function d(e){e.arrive=i.bindEvent,s(i,e,"unbindArrive"),e.leave=o.bindEvent,s(o,e,"unbindLeave")}}(window,void 0),ewww_webp_supported=!1;function check_webp_feature(e,t){var r;ewww_webp_supported?t(ewww_webp_supported):((r=new Image).onload=function(){ewww_webp_supported=0<r.width&&0<r.height,t(ewww_webp_supported)},r.onerror=function(){t(!1)},r.src="data:image/webp;base64,"+{alpha:"UklGRkoAAABXRUJQVlA4WAoAAAAQAAAAAAAAAAAAQUxQSAwAAAARBxAR/Q9ERP8DAABWUDggGAAAABQBAJ0BKgEAAQAAAP4AAA3AAP7mtQAAAA==",animation:"UklGRlIAAABXRUJQVlA4WAoAAAASAAAAAAAAAAAAQU5JTQYAAAD/////AABBTk1GJgAAAAAAAAAAAAAAAAAAAGQAAABWUDhMDQAAAC8AAAAQBxAREYiI/gcA"}[e])}function ewwwLoadImages(e){if(e){for(var t=document.querySelectorAll(".batch-image img, .image-wrapper a, .ngg-pro-masonry-item a, .ngg-galleria-offscreen-seo-wrapper a"),r=0,a=t.length;r<a;r++)ewwwAttr(t[r],"data-src",t[r].getAttribute("data-webp")),ewwwAttr(t[r],"data-thumbnail",t[r].getAttribute("data-webp-thumbnail"));for(var i=document.querySelectorAll("div.woocommerce-product-gallery__image"),r=0,a=i.length;r<a;r++)ewwwAttr(i[r],"data-thumb",i[r].getAttribute("data-webp-thumb"))}for(var n=document.querySelectorAll("video"),r=0,a=n.length;r<a;r++)ewwwAttr(n[r],"poster",e?n[r].getAttribute("data-poster-webp"):n[r].getAttribute("data-poster-image"));for(var o,l=document.querySelectorAll("img.ewww_webp_lazy_load"),r=0,a=l.length;r<a;r++)e&&(ewwwAttr(l[r],"data-lazy-srcset",l[r].getAttribute("data-lazy-srcset-webp")),ewwwAttr(l[r],"data-srcset",l[r].getAttribute("data-srcset-webp")),ewwwAttr(l[r],"data-lazy-src",l[r].getAttribute("data-lazy-src-webp")),ewwwAttr(l[r],"data-src",l[r].getAttribute("data-src-webp")),ewwwAttr(l[r],"data-orig-file",l[r].getAttribute("data-webp-orig-file")),ewwwAttr(l[r],"data-medium-file",l[r].getAttribute("data-webp-medium-file")),ewwwAttr(l[r],"data-large-file",l[r].getAttribute("data-webp-large-file")),null!=(o=l[r].getAttribute("srcset"))&&!1!==o&&o.includes("R0lGOD")&&ewwwAttr(l[r],"src",l[r].getAttribute("data-lazy-src-webp"))),l[r].className=l[r].className.replace(/\bewww_webp_lazy_load\b/,"");for(var s=document.querySelectorAll(".ewww_webp"),r=0,a=s.length;r<a;r++)e?(ewwwAttr(s[r],"srcset",s[r].getAttribute("data-srcset-webp")),ewwwAttr(s[r],"src",s[r].getAttribute("data-src-webp")),ewwwAttr(s[r],"data-orig-file",s[r].getAttribute("data-webp-orig-file")),ewwwAttr(s[r],"data-medium-file",s[r].getAttribute("data-webp-medium-file")),ewwwAttr(s[r],"data-large-file",s[r].getAttribute("data-webp-large-file")),ewwwAttr(s[r],"data-large_image",s[r].getAttribute("data-webp-large_image")),ewwwAttr(s[r],"data-src",s[r].getAttribute("data-webp-src"))):(ewwwAttr(s[r],"srcset",s[r].getAttribute("data-srcset-img")),ewwwAttr(s[r],"src",s[r].getAttribute("data-src-img"))),s[r].className=s[r].className.replace(/\bewww_webp\b/,"ewww_webp_loaded");window.jQuery&&jQuery.fn.isotope&&jQuery.fn.imagesLoaded&&(jQuery(".fusion-posts-container-infinite").imagesLoaded(function(){jQuery(".fusion-posts-container-infinite").hasClass("isotope")&&jQuery(".fusion-posts-container-infinite").isotope()}),jQuery(".fusion-portfolio:not(.fusion-recent-works) .fusion-portfolio-wrapper").imagesLoaded(function(){jQuery(".fusion-portfolio:not(.fusion-recent-works) .fusion-portfolio-wrapper").isotope()}))}function ewwwWebPInit(e){ewwwLoadImages(e),ewwwNggLoadGalleries(e),document.arrive(".ewww_webp",function(){ewwwLoadImages(e)}),document.arrive(".ewww_webp_lazy_load",function(){ewwwLoadImages(e)}),document.arrive("videos",function(){ewwwLoadImages(e)}),"loading"==document.readyState?document.addEventListener("DOMContentLoaded",ewwwJSONParserInit):("undefined"!=typeof galleries&&ewwwNggParseGalleries(e),ewwwWooParseVariations(e))}function ewwwAttr(e,t,r){null!=r&&!1!==r&&e.setAttribute(t,r)}function ewwwJSONParserInit(){"undefined"!=typeof galleries&&check_webp_feature("alpha",ewwwNggParseGalleries),check_webp_feature("alpha",ewwwWooParseVariations)}function ewwwWooParseVariations(e){if(e)for(var t=document.querySelectorAll("form.variations_form"),r=0,a=t.length;r<a;r++){var i=t[r].getAttribute("data-product_variations"),n=!1;try{for(var o in i=JSON.parse(i))void 0!==i[o]&&void 0!==i[o].image&&(void 0!==i[o].image.src_webp&&(i[o].image.src=i[o].image.src_webp,n=!0),void 0!==i[o].image.srcset_webp&&(i[o].image.srcset=i[o].image.srcset_webp,n=!0),void 0!==i[o].image.full_src_webp&&(i[o].image.full_src=i[o].image.full_src_webp,n=!0),void 0!==i[o].image.gallery_thumbnail_src_webp&&(i[o].image.gallery_thumbnail_src=i[o].image.gallery_thumbnail_src_webp,n=!0),void 0!==i[o].image.thumb_src_webp&&(i[o].image.thumb_src=i[o].image.thumb_src_webp,n=!0));n&&ewwwAttr(t[r],"data-product_variations",JSON.stringify(i))}catch(e){}}}function ewwwNggParseGalleries(e){if(e)for(var t in galleries){var r=galleries[t];galleries[t].images_list=ewwwNggParseImageList(r.images_list)}}function ewwwNggLoadGalleries(e){e&&document.addEventListener("ngg.galleria.themeadded",function(e,t){window.ngg_galleria._create_backup=window.ngg_galleria.create,window.ngg_galleria.create=function(e,t){var r=$(e).data("id");return galleries["gallery_"+r].images_list=ewwwNggParseImageList(galleries["gallery_"+r].images_list),window.ngg_galleria._create_backup(e,t)}})}function ewwwNggParseImageList(e){for(var t in e){var r=e[t];if(void 0!==r["image-webp"]&&(e[t].image=r["image-webp"],delete e[t]["image-webp"]),void 0!==r["thumb-webp"]&&(e[t].thumb=r["thumb-webp"],delete e[t]["thumb-webp"]),void 0!==r.full_image_webp&&(e[t].full_image=r.full_image_webp,delete e[t].full_image_webp),void 0!==r.srcsets)for(var a in r.srcsets)nggSrcset=r.srcsets[a],void 0!==r.srcsets[a+"-webp"]&&(e[t].srcsets[a]=r.srcsets[a+"-webp"],delete e[t].srcsets[a+"-webp"]);if(void 0!==r.full_srcsets)for(var i in r.full_srcsets)nggFSrcset=r.full_srcsets[i],void 0!==r.full_srcsets[i+"-webp"]&&(e[t].full_srcsets[i]=r.full_srcsets[i+"-webp"],delete e[t].full_srcsets[i+"-webp"])}return e}check_webp_feature("alpha",ewwwWebPInit);</script><meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
+<link rel="alternate" href="https://www.canadamoving.com/london-moving-company/" hreflang="en" />
+<link rel="alternate" href="https://www.canadamoving.com/fr/demenagement-london-ontario-succursale/" hreflang="fr" />
+
+	<!-- This site is optimized with the Yoast SEO plugin v28.2 - https://yoast.com/product/yoast-seo-wordpress/ -->
+	<title>Best London Movers - Canada Moving</title>
+	<meta name="description" content="Awarded Top Moving Companies in the London Region with +125 Yrs of Moving &amp; Storage for Local and Long Distance Moving. 1.855.337.6848." />
+	<link rel="canonical" href="https://www.canadamoving.com/london-moving-company/" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:locale:alternate" content="fr_CA" />
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content="Best London Movers - Canada Moving" />
+	<meta property="og:description" content="Awarded Top Moving Companies in the London Region with +125 Yrs of Moving &amp; Storage for Local and Long Distance Moving. 1.855.337.6848." />
+	<meta property="og:url" content="https://www.canadamoving.com/london-moving-company/" />
+	<meta property="og:site_name" content="Canada Moving" />
+	<meta property="article:modified_time" content="2025-10-09T15:38:55+00:00" />
+	<meta property="og:image" content="https://www.canadamoving.com/wp-content/uploads/2024/01/london-ontario-canada-moving-banner.jpg" />
+	<meta property="og:image:width" content="2000" />
+	<meta property="og:image:height" content="800" />
+	<meta property="og:image:type" content="image/jpeg" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:label1" content="Est. reading time" />
+	<meta name="twitter:data1" content="4 minutes" />
+	<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https:\/\/schema.org","@graph":[{"@type":"WebPage","@id":"https:\/\/www.canadamoving.com\/london-moving-company\/","url":"https:\/\/www.canadamoving.com\/london-moving-company\/","name":"Best London Movers - Canada Moving","isPartOf":{"@id":"https:\/\/www.canadamoving.com\/#website"},"primaryImageOfPage":{"@id":"https:\/\/www.canadamoving.com\/london-moving-company\/#primaryimage"},"image":{"@id":"https:\/\/www.canadamoving.com\/london-moving-company\/#primaryimage"},"thumbnailUrl":"https:\/\/www.canadamoving.com\/wp-content\/uploads\/2024\/01\/london-ontario-canada-moving-banner.jpg","datePublished":"2020-08-19T19:06:24+00:00","dateModified":"2025-10-09T15:38:55+00:00","description":"Awarded Top Moving Companies in the London Region with +125 Yrs of Moving & Storage for Local and Long Distance Moving. 1.855.337.6848.","breadcrumb":{"@id":"https:\/\/www.canadamoving.com\/london-moving-company\/#breadcrumb"},"inLanguage":"en-CA","potentialAction":[{"@type":"ReadAction","target":["https:\/\/www.canadamoving.com\/london-moving-company\/"]}]},{"@type":"ImageObject","inLanguage":"en-CA","@id":"https:\/\/www.canadamoving.com\/london-moving-company\/#primaryimage","url":"https:\/\/www.canadamoving.com\/wp-content\/uploads\/2024\/01\/london-ontario-canada-moving-banner.jpg","contentUrl":"https:\/\/www.canadamoving.com\/wp-content\/uploads\/2024\/01\/london-ontario-canada-moving-banner.jpg","width":2000,"height":800},{"@type":"BreadcrumbList","@id":"https:\/\/www.canadamoving.com\/london-moving-company\/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.canadamoving.com\/"},{"@type":"ListItem","position":2,"name":"London ON, Moving Company &#8211; Location &#038; Head Office"}]},{"@type":"WebSite","@id":"https:\/\/www.canadamoving.com\/#website","url":"https:\/\/www.canadamoving.com\/","name":"Canada Moving","description":"","publisher":{"@id":"https:\/\/www.canadamoving.com\/#organization"},"potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https:\/\/www.canadamoving.com\/?s={search_term_string}"},"query-input":{"@type":"PropertyValueSpecification","valueRequired":true,"valueName":"search_term_string"}}],"inLanguage":"en-CA"},{"@type":"Organization","@id":"https:\/\/www.canadamoving.com\/#organization","name":"Canada Moving","url":"https:\/\/www.canadamoving.com\/","logo":{"@type":"ImageObject","inLanguage":"en-CA","@id":"https:\/\/www.canadamoving.com\/#\/schema\/logo\/image\/","url":"https:\/\/www.canadamoving.com\/wp-content\/uploads\/2021\/06\/canada-moving-logo-light.png","contentUrl":"https:\/\/www.canadamoving.com\/wp-content\/uploads\/2021\/06\/canada-moving-logo-light.png","width":260,"height":96,"caption":"Canada Moving"},"image":{"@id":"https:\/\/www.canadamoving.com\/#\/schema\/logo\/image\/"}}]}</script>
+	<!-- / Yoast SEO plugin. -->
+
+
+<link rel='dns-prefetch' href='//maps.googleapis.com' />
+<link rel='dns-prefetch' href='//www.googletagmanager.com' />
+<link href='https://fonts.gstatic.com' crossorigin rel='preconnect' />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://www.canadamoving.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.canadamoving.com%2Flondon-moving-company%2F&#038;lang=en" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://www.canadamoving.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.canadamoving.com%2Flondon-moving-company%2F&#038;format=xml&#038;lang=en" />
+<style id="wp-img-auto-sizes-contain-inline-css">
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+<style id="wp-emoji-styles-inline-css">
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+/*# sourceURL=wp-emoji-styles-inline-css */
+</style>
+<style id="classic-theme-styles-inline-css">
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+/*# sourceURL=/wp-includes/css/classic-themes.min.css */
+</style>
+<style id="global-styles-inline-css">
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}:where(body) { margin: 0; }:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;font-style: inherit;font-weight: inherit;letter-spacing: inherit;line-height: inherit;padding-top: calc(0.667em + 2px);padding-right: calc(1.333em + 2px);padding-bottom: calc(0.667em + 2px);padding-left: calc(1.333em + 2px);text-decoration: none;text-transform: inherit;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+:root :where(.wp-block-icon svg){width: 24px;}
+:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}
+:where(.wp-block-term-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-term-template.is-layout-grid){gap: 1.25em;}
+:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}
+:root :where(.wp-block-pullquote){font-size: 1.5em;line-height: 1.6;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+<link rel='stylesheet' id='font-awesome-default-css' href='https://www.canadamoving.com/wp-content/plugins/elementor/assets/lib/font-awesome/css/fontawesome.min.css?ver=7.0.4' media='all' />
+<link rel='stylesheet' id='font-awesome-4-shim-css' href='https://www.canadamoving.com/wp-content/plugins/elementor/assets/lib/font-awesome/css/v4-shims.min.css?ver=7.0.4' media='all' />
+<link rel='stylesheet' id='font-awesome-5-all-css' href='https://www.canadamoving.com/wp-content/plugins/elementor/assets/lib/font-awesome/css/all.min.css?ver=7.0.4' media='all' />
+<link rel='stylesheet' id='owl-carousel-css' href='https://www.canadamoving.com/wp-content/themes/canadamoving/assets/css/owl.carousel.min.css?ver=7.0.4' media='all' />
+<link rel='stylesheet' id='owl-carousel-default-css' href='https://www.canadamoving.com/wp-content/themes/canadamoving/assets/css/owl.theme.default.min.css?ver=7.0.4' media='all' />
+<link rel='stylesheet' id='theme-style-css' href='https://www.canadamoving.com/wp-content/themes/canadamoving/assets/css/theme.css?ver=7.0.4' media='all' />
+<link rel='stylesheet' id='canada_moving-basic-style-css' href='https://www.canadamoving.com/wp-content/themes/canadamoving/style.css?ver=7.0.4' media='all' />
+<link rel='stylesheet' id='elementor-icons-css' href='https://www.canadamoving.com/wp-content/plugins/elementor/assets/lib/eicons/css/elementor-icons.min.css?ver=5.53.0' media='all' />
+<link rel='stylesheet' id='elementor-frontend-css' href='https://www.canadamoving.com/wp-content/plugins/elementor/assets/css/frontend.min.css?ver=4.2.2' media='all' />
+<link rel='stylesheet' id='elementor-post-143-css' href='https://www.canadamoving.com/wp-content/uploads/elementor/css/post-143.css?ver=1786714478' media='all' />
+<link rel='stylesheet' id='widget-heading-css' href='https://www.canadamoving.com/wp-content/plugins/elementor/assets/css/widget-heading.min.css?ver=4.2.2' media='all' />
+<!--n2css--><!--n2js--><script id="jquery-core-js" src="https://www.canadamoving.com/wp-includes/js/jquery/jquery.min.js?ver=3.7.1"></script>
+<script id="jquery-migrate-js" src="https://www.canadamoving.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1"></script>
+<script id="theme-scripts-js-extra">
+var script_var = {"ajax_url":"https://www.canadamoving.com/wp-admin/admin-ajax.php"};
+//# sourceURL=theme-scripts-js-extra
+</script>
+<script id="theme-scripts-js" src="https://www.canadamoving.com/wp-content/themes/canadamoving/assets/js/theme.js?ver=7.0.4"></script>
+
+<!-- Google tag (gtag.js) snippet added by Site Kit -->
+<!-- Google Analytics snippet added by Site Kit -->
+<script id="google_gtagjs-js" src="https://www.googletagmanager.com/gtag/js?id=G-2ZSP5YW2PR" async></script>
+<script id="google_gtagjs-js-after">
+window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}
+gtag("set","linker",{"domains":["www.canadamoving.com"]});
+gtag("js", new Date());
+gtag("set", "developer_id.dZTNiMT", true);
+gtag("config", "G-2ZSP5YW2PR");
+//# sourceURL=google_gtagjs-js-after
+</script>
+<script id="font-awesome-4-shim-js" src="https://www.canadamoving.com/wp-content/plugins/elementor/assets/lib/font-awesome/js/v4-shims.min.js?ver=4.2.2"></script>
+<link rel="https://api.w.org/" href="https://www.canadamoving.com/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://www.canadamoving.com/wp-json/wp/v2/pages/746" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://www.canadamoving.com/xmlrpc.php?rsd" />
+<meta name="generator" content="WordPress 7.0.4" />
+<link rel='shortlink' href='https://www.canadamoving.com/?p=746' />
+<meta name="generator" content="Site Kit by Google 1.185.0" /><meta name="generator" content="Elementor 4.2.2; features: additional_custom_breakpoints; settings: css_print_method-external, google_font-enabled, font_display-auto">
+			<style>
+				.e-con.e-parent:nth-of-type(n+4):not(.e-lazyloaded):not(.e-no-lazyload),
+				.e-con.e-parent:nth-of-type(n+4):not(.e-lazyloaded):not(.e-no-lazyload) * {
+					background-image: none !important;
+				}
+				@media screen and (max-height: 1024px) {
+					.e-con.e-parent:nth-of-type(n+3):not(.e-lazyloaded):not(.e-no-lazyload),
+					.e-con.e-parent:nth-of-type(n+3):not(.e-lazyloaded):not(.e-no-lazyload) * {
+						background-image: none !important;
+					}
+				}
+				@media screen and (max-height: 640px) {
+					.e-con.e-parent:nth-of-type(n+2):not(.e-lazyloaded):not(.e-no-lazyload),
+					.e-con.e-parent:nth-of-type(n+2):not(.e-lazyloaded):not(.e-no-lazyload) * {
+						background-image: none !important;
+					}
+				}
+			</style>
+			<noscript><style>.lazyload[data-src]{display:none !important;}</style></noscript><style>.lazyload{background-image:none !important;}.lazyload:before{background-image:none !important;}</style>
+<!-- Google Tag Manager snippet added by Site Kit -->
+<script>
+			( function( w, d, s, l, i ) {
+				w[l] = w[l] || [];
+				w[l].push( {'gtm.start': new Date().getTime(), event: 'gtm.js'} );
+				var f = d.getElementsByTagName( s )[0],
+					j = d.createElement( s ), dl = l != 'dataLayer' ? '&l=' + l : '';
+				j.async = true;
+				j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+				f.parentNode.insertBefore( j, f );
+			} )( window, document, 'script', 'dataLayer', 'GTM-NG9JQDQ' );
+			
+</script>
+
+<!-- End Google Tag Manager snippet added by Site Kit -->
+<link rel="icon" href="https://www.canadamoving.com/wp-content/uploads/2020/07/favicon.png" sizes="32x32" />
+<link rel="icon" href="https://www.canadamoving.com/wp-content/uploads/2020/07/favicon.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://www.canadamoving.com/wp-content/uploads/2020/07/favicon.png" />
+<meta name="msapplication-TileImage" content="https://www.canadamoving.com/wp-content/uploads/2020/07/favicon.png" />
+	</head>
+
+	<body class="wp-singular page-template page-template-page-location page-template-page-location-php page page-id-746 wp-custom-logo wp-theme-canadamoving elementor-default elementor-kit-143 elementor-page elementor-page-746">
+		<header id="header" role="banner">
+			<div class="container">
+				<div class="row">
+					<div class="col">
+						
+<div id="site-logo" class="logo">
+                        <a href="https://www.canadamoving.com/" class="custom-logo-link" rel="home"><img width="260" height="96" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAABgAQMAAADB1J6xAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABpJREFUSMftwQENAAAAwqD3T20ON6AAAAA+DAzAAAHjZ9g4AAAAAElFTkSuQmCC" class="custom-logo lazyload ewww_webp_lazy_load" alt="Canada Moving - Logo" decoding="async" data-src="https://www.canadamoving.com/wp-content/uploads/2021/06/canada-moving-logo-light.png" data-eio-rwidth="260" data-eio-rheight="96" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2021/06/canada-moving-logo-light.png.webp" /><noscript><img width="260" height="96" src="https://www.canadamoving.com/wp-content/uploads/2021/06/canada-moving-logo-light.png" class="custom-logo" alt="Canada Moving - Logo" decoding="async" data-eio="l" /></noscript></a>        
+            
+    <div class="hide">
+        
+                                    <div class="site-title"><a href="https://www.canadamoving.com/" rel="home">Canada Moving</a></div>
+                    
+        							
+    </div>
+</div>			
+						
+<nav id="site-navigation" class="main-navigation" role="navigation" aria-label="Top Menu">
+	<div class="menu-button">Menu</div>
+	<div class="menu-section">
+		<div class="close-button-x"></div>		
+		<div class="social-links-section">
+			<div class="tools">
+				<div class="search-box">
+            <form role="search" method="get" id="searchform" class="searchform" action="https://www.canadamoving.com/" >
+                <div>
+                    <input type="text" value="" name="s" placeholder="Search" />
+                    <button type="submit" aria-label="Search"><i class="fa fa-search"></i></button>
+                </div>
+            </form></div>
+				<ul class="language-switcher">	<li class="lang-item lang-item-6 lang-item-fr lang-item-first"><a lang="fr-CA" hreflang="fr-CA" href="https://www.canadamoving.com/fr/demenagement-london-ontario-succursale/">FR</a></li>
+</ul>						
+			</div>			
+			<aside id="block-27" class="widget widget_block"><ul>
+<li><a href="tel:1.855.337.6848" title="phone"><i class="fas fa-phone-alt" aria-hidden="true"></i> </a></li>
+<li>
+<!-- li>[contact_detail tag="email" show_link="1" show_icon="1" hide_text="1"]</li -->
+<li><a href="https://goo.gl/maps/BLZao45kYp32" title="Google" target="_blank"><i class="fa fa-google" aria-hidden="true"></i></a></li>
+<li><a href="https://www.facebook.com/CanadaMovingInc/" title="Facebook" target="_blank"><i class="fa fa-facebook" aria-hidden="true"></i></a></li>
+<li><a href="https://www.instagram.com/canadamovinggrp/" title="Instagram" target="_blank"><i class="fa fa-instagram" aria-hidden="true"></i></a></li>
+<li><a href="https://twitter.com/canadamovinginc" title="X" target="_blank"><i class="fab fa-x-twitter" aria-hidden="true"></i></a></li>		
+<li><a href="https://www.youtube.com/@canadamoving6950" title="Youtube" target="_blank"><i class="fa fa-youtube" aria-hidden="true"></i></a></li>
+<li><a href="https://www.linkedin.com/in/canada-moving-1a1113353" title="LinkedIn" target="_blank"><i class="fa fa-linkedin" aria-hidden="true"></i></a></li>
+</ul></aside>		</div>        	
+
+		<div class="menu-container"><ul id="menu-main-menu-en" class="main-menu"><li id="menu-item-238" class="services-menu long-menu menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-238"><a href="https://www.canadamoving.com/moving-storage-services/">Services</a>
+<ul class="sub-menu">
+	<li id="menu-item-339" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-339"><a href="https://www.canadamoving.com/household-home-moving-company/">Household and Home Moving</a>
+	<ul class="sub-menu">
+		<li id="menu-item-342" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-342"><a href="https://www.canadamoving.com/local-household-moving-company/">Local Moving</a></li>
+		<li id="menu-item-343" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-343"><a href="https://www.canadamoving.com/long-distance-moving-company/">Long Distance Moving</a></li>
+		<li id="menu-item-344" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-344"><a href="https://www.canadamoving.com/cross-border-moving/">Cross Border Moving</a></li>
+		<li id="menu-item-345" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-345"><a href="https://www.canadamoving.com/international-moving-company/">International Moving</a></li>
+		<li id="menu-item-346" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-346"><a href="https://www.canadamoving.com/car-vehicle-moving-company/">Car and Vehicle Moving</a></li>
+		<li id="menu-item-347" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-347"><a href="https://www.canadamoving.com/piano-moving-company/">Piano Moving</a></li>
+		<li id="menu-item-348" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-348"><a href="https://www.canadamoving.com/crating-shipping-services-moving/">Crating Services When Moving</a></li>
+		<li id="menu-item-349" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-349"><a href="https://www.canadamoving.com/packing-services/">Packing Services When Moving</a></li>
+		<li id="menu-item-350" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-350"><a href="https://www.canadamoving.com/senior-moving-storage-services/">Senior Moving and Storage Services</a></li>
+	</ul>
+</li>
+	<li id="menu-item-340" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-340"><a href="https://www.canadamoving.com/commercial-moving-company/">Commercial Moving</a>
+	<ul class="sub-menu">
+		<li id="menu-item-351" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-351"><a href="https://www.canadamoving.com/office-moving/">Office Moving</a></li>
+		<li id="menu-item-352" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-352"><a href="https://www.canadamoving.com/library-moving/">Library Movers</a></li>
+		<li id="menu-item-353" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-353"><a href="https://www.canadamoving.com/storage-warehouse-solutions-moving/">Storage and Warehouse Solutions</a></li>
+		<li id="menu-item-354" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-354"><a href="https://www.canadamoving.com/full-truck-load-freight-ftl/">Full Truck Load Freight (FTL)</a></li>
+		<li id="menu-item-355" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-355"><a href="https://www.canadamoving.com/special-commodities-moving/">Special Commodities Moving</a></li>
+		<li id="menu-item-1331" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1331"><a href="https://www.canadamoving.com/packing-services/">Business Packing</a></li>
+	</ul>
+</li>
+	<li id="menu-item-341" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-341"><a href="https://www.canadamoving.com/storage-container-rental/">Storage, Container Rentals for Moving</a>
+	<ul class="sub-menu">
+		<li id="menu-item-1336" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1336"><a href="https://www.canadamoving.com/storage-container-rental/">Home Storage</a></li>
+		<li id="menu-item-359" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-359"><a href="https://www.canadamoving.com/warehouse-and-inventory-moving/">Warehouse and Inventory Moving</a></li>
+		<li id="menu-item-357" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-357"><a href="https://www.canadamoving.com/commercial-container-storage/">Commercial Container Storage</a></li>
+	</ul>
+</li>
+	<li id="menu-item-367" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-367"><a href="https://www.canadamoving.com/do-it-yourself-moving/">Do It Yourself Moving Solutions</a></li>
+	<li id="menu-item-3548" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-3548"><a href="https://www.canadamoving.com/corporate-relocation-employees-employers/">Corporate Relocation</a>
+	<ul class="sub-menu">
+		<li id="menu-item-365" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-365"><a href="https://www.canadamoving.com/corporate-relocation-employees/">Corporate Relocation For Employees</a></li>
+		<li id="menu-item-366" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-366"><a href="https://www.canadamoving.com/corporate-relocation-employers/">Corporate Relocation for Employers</a></li>
+	</ul>
+</li>
+</ul>
+</li>
+<li id="menu-item-237" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-237"><a href="https://www.canadamoving.com/resources-checklist-home-moving/">Resources</a>
+<ul class="sub-menu">
+	<li id="menu-item-1349" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1349"><a href="https://www.canadamoving.com/resources-checklist-home-moving/">Resources and Checklists for Home Moving</a></li>
+	<li id="menu-item-361" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-361"><a href="https://www.canadamoving.com/resources-commercial-office-moving/">Resources and Checklists for Commercial Moving</a></li>
+	<li id="menu-item-363" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-363"><a href="https://www.canadamoving.com/household-home-moving-protection/">Home – Added Coverage</a></li>
+	<li id="menu-item-362" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-362"><a href="https://www.canadamoving.com/commercial-moving-added-protection/">Commercial – Added Coverage</a></li>
+	<li id="menu-item-3540" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3540"><a href="https://www.canadamoving.com/how-much-do-movers-cost/">How Much Do Movers Cost</a></li>
+	<li id="menu-item-17883" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-17883"><a href="https://www.canadamoving.com/moving-tips/">Moving Tips</a></li>
+	<li id="menu-item-3539" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3539"><a href="https://www.canadamoving.com/moving-with-pets-tips/">Moving with Pets Tips</a></li>
+	<li id="menu-item-364" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-364"><a href="https://www.canadamoving.com/frequently-asked-questions/">Frequently Asked Questions (FAQ)</a></li>
+	<li id="menu-item-28991" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-28991"><a href="https://www.canadamoving.com/videos/">Watch Our Videos</a></li>
+</ul>
+</li>
+<li id="menu-item-234" class="locations-menu long-menu menu-item menu-item-type-post_type menu-item-object-page current-menu-ancestor current_page_ancestor menu-item-has-children menu-item-234"><a href="https://www.canadamoving.com/moving-locations/">Locations</a>
+<ul class="sub-menu">
+	<li id="menu-item-434" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-434"><a href="https://www.canadamoving.com/alberta-moving-company/">Alberta</a>
+	<ul class="sub-menu">
+		<li id="menu-item-440" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-440"><a href="https://www.canadamoving.com/calgary-moving-company/">Calgary AB</a></li>
+		<li id="menu-item-441" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-441"><a href="https://www.canadamoving.com/cold-lake-moving-company/">Cold Lake AB</a></li>
+		<li id="menu-item-442" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-442"><a href="https://www.canadamoving.com/edmonton-moving-company/">Edmonton AB</a></li>
+	</ul>
+</li>
+	<li id="menu-item-1130" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-1130"><a href="https://www.canadamoving.com/manitoba-moving-company/">Manitoba</a>
+	<ul class="sub-menu">
+		<li id="menu-item-1178" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1178"><a href="https://www.canadamoving.com/brandon-moving-company/">Brandon MB</a></li>
+		<li id="menu-item-1131" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1131"><a href="https://www.canadamoving.com/winnipeg-moving-company/">Winnipeg MB</a></li>
+	</ul>
+</li>
+	<li id="menu-item-1126" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-1126"><a href="https://www.canadamoving.com/new-brunswick-moving-company/">New Brunswick</a>
+	<ul class="sub-menu">
+		<li id="menu-item-1188" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1188"><a href="https://www.canadamoving.com/fredericton-moving-company/">Fredericton NB</a></li>
+		<li id="menu-item-1193" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1193"><a href="https://www.canadamoving.com/miramichi-moving-company/">Miramichi NB</a></li>
+		<li id="menu-item-1194" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1194"><a href="https://www.canadamoving.com/saint-john-moving-company/">Saint John NB</a></li>
+	</ul>
+</li>
+	<li id="menu-item-1132" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-1132"><a href="https://www.canadamoving.com/nova-scotia-moving-company/">Nova Scotia</a>
+	<ul class="sub-menu">
+		<li id="menu-item-1195" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1195"><a href="https://www.canadamoving.com/dartmouth-moving-company/">Dartmouth NS</a></li>
+		<li id="menu-item-1196" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1196"><a href="https://www.canadamoving.com/middleton-moving-company/">Middleton NS</a></li>
+	</ul>
+</li>
+	<li id="menu-item-1133" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-ancestor current-menu-parent current_page_parent current_page_ancestor menu-item-has-children menu-item-1133"><a href="https://www.canadamoving.com/ontario-moving-company/">Ontario</a>
+	<ul class="sub-menu">
+		<li id="menu-item-1198" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1198"><a href="https://www.canadamoving.com/burlington-moving-company/">Burlington ON</a></li>
+		<li id="menu-item-1201" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-746 current_page_item menu-item-1201"><a href="https://www.canadamoving.com/london-moving-company/" aria-current="page">London ON</a></li>
+		<li id="menu-item-1202" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1202"><a href="https://www.canadamoving.com/mississauga-moving-company/">Mississauga ON</a></li>
+		<li id="menu-item-1203" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1203"><a href="https://www.canadamoving.com/ottawa-moving-company/">Ottawa ON</a></li>
+		<li id="menu-item-1204" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1204"><a href="https://www.canadamoving.com/owen-sound-moving-company/">Owen Sound ON</a></li>
+		<li id="menu-item-1205" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1205"><a href="https://www.canadamoving.com/stittsville-moving-company/">Stittsville ON</a></li>
+		<li id="menu-item-1206" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1206"><a href="https://www.canadamoving.com/thunder-bay-moving-company/">Thunder Bay ON</a></li>
+		<li id="menu-item-1134" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1134"><a href="https://www.canadamoving.com/toronto-moving-company/">Toronto ON</a></li>
+		<li id="menu-item-1135" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1135"><a href="https://www.canadamoving.com/waterloo-moving-company/">Waterloo ON</a></li>
+		<li id="menu-item-1136" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1136"><a href="https://www.canadamoving.com/windsor-moving-company/">Windsor ON</a></li>
+	</ul>
+</li>
+	<li id="menu-item-1137" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-1137"><a href="https://www.canadamoving.com/quebec-moving-company/">Quebec</a>
+	<ul class="sub-menu">
+		<li id="menu-item-1209" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1209"><a href="https://www.canadamoving.com/montreal-moving-company/">Montreal QC</a></li>
+	</ul>
+</li>
+</ul>
+</li>
+<li id="menu-item-4222" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-4222"><a href="https://www.canadamoving.com/about-us/">About Us</a>
+<ul class="sub-menu">
+	<li id="menu-item-371" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-371"><a href="https://www.canadamoving.com/our-partners/">Our Partners</a></li>
+	<li id="menu-item-370" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-370"><a href="https://www.canadamoving.com/careers/">Career Opportunities</a></li>
+	<li id="menu-item-372" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-372"><a href="https://www.canadamoving.com/moving-company-reviews/">Reviews and Testimonials</a></li>
+	<li id="menu-item-3514" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3514"><a href="https://www.canadamoving.com/history/">History of Canada Moving</a></li>
+	<li id="menu-item-3544" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3544"><a href="https://www.canadamoving.com/going-green/">Going Green</a></li>
+	<li id="menu-item-18396" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-18396"><a href="https://www.canadamoving.com/accessibility-policy/">Accessibility Plan</a></li>
+	<li id="menu-item-38367" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-38367"><a href="https://www.canadamoving.com/blue-rewards/">Blue Rewards</a></li>
+</ul>
+</li>
+<li id="menu-item-239" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-239"><a href="https://www.canadamoving.com/contact-us/">Contact Us</a></li>
+</ul></div>
+		<div class="buttons">
+			<a href="/get-a-quote/" class="popupbutton button" data-widget-num="1">Get A Quote</a>
+			<a href="/" class="popup-button button" data-widget-num="2">Reviews</a>
+		</div>
+	</div>
+</nav>	
+						
+<div id="site-info" class="info">
+	
+	<div class="phone-link"><a href="tel:1.855.337.6848"><i class="fas fa-phone-alt"></i> 1.855.337.6848</a></div>
+	<div class="cta-button"><a href="/get-a-quote/" class="popupbutton" data-widget-num="1">Get A Quote</a></div>
+	<div class="search-box">
+		<div class="search-button"><i class="fa fa-search"></i></div>		
+		
+            <form role="search" method="get" id="searchform" class="searchform" action="https://www.canadamoving.com/" >
+                <div>
+                    <input type="text" value="" name="s" placeholder="Search" />
+                    <button type="submit" aria-label="Search"><i class="fa fa-search"></i></button>
+                </div>
+            </form>	</div>
+	<ul class="language-switcher">	<li class="lang-item lang-item-6 lang-item-fr lang-item-first"><a lang="fr-CA" hreflang="fr-CA" href="https://www.canadamoving.com/fr/demenagement-london-ontario-succursale/">FR</a></li>
+</ul>						
+</div>																	
+					</div>
+				</div>
+			</div>
+		</header>
+		<div id="header-cta">
+			<div class="container">
+				<div class="row">	
+					<div class="col">
+						<aside id="custom_html-40" class="widget_text widget widget_custom_html"><div class="textwidget custom-html-widget"><div>
+	<a href="/get-a-quote/" class="cta-button popupbutton" data-widget-num="1">Get A Quote</a>
+</div>
+<div>
+	<span class="phone"><a href="tel:1.855.337.6848" title="phone"><i class="fas fa-phone-alt" aria-hidden="true"></i> </a><a href="tel:1.855.337.6848" title="phone">1.855.337.6848</a></span>
+</div></div></aside>							
+					</div>
+				</div>
+			</div>
+		</div>	
+ 
+<main id="main-content" role="main">
+
+    
+        
+
+<section class="inner-banner lazyload"  style=""  data-back="https://www.canadamoving.com/wp-content/uploads/2024/01/london-ontario-canada-moving-banner.jpg" data-eio-rwidth="2000" data-eio-rheight="800" data-back-webp="https://www.canadamoving.com/wp-content/uploads/2024/01/london-ontario-canada-moving-banner.jpg.webp" data-back-webp="https://www.canadamoving.com/wp-content/uploads/2024/01/london-ontario-canada-moving-banner.jpg.webp">
+	<div class="overlay"></div>
+	<div class="container">
+		<div class="row">    	
+			<div class="col">	
+				
+				<h1 class="page-title has-sub-title">London ON, Moving Company &#8211; Location &#038; Head Office</h1>				
+				
+				<div class="sub-title">Campbell Bros</div>					
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="content">
+	<div class="container">  
+		<div class="row">    
+			<div class="col">
+				<div class="page-content">
+							<div data-elementor-type="wp-page" data-elementor-id="746" class="elementor elementor-746">
+						<section class="elementor-section elementor-top-section elementor-element elementor-element-3c8e189 elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="3c8e189" data-element_type="section" data-e-type="section">
+						<div class="elementor-container elementor-column-gap-default">
+					<div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-844486c" data-id="844486c" data-element_type="column" data-e-type="column">
+			<div class="elementor-widget-wrap elementor-element-populated">
+						<div class="elementor-element elementor-element-6cf9f05 elementor-widget elementor-widget-heading" data-id="6cf9f05" data-element_type="widget" data-e-type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Canada Moving in London – Quality Service</h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-88fab41 elementor-widget elementor-widget-text-editor" data-id="88fab41" data-element_type="widget" data-e-type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p><img fetchpriority="high" decoding="async" class="alignleft wp-image-3082 size-medium lazyload ewww_webp_lazy_load" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADIAQMAAABoEU4WAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAB5JREFUWMPtwTEBAAAAwqD1T20Hb6AAAAAAAAAA4DceeAABFyjdmQAAAABJRU5ErkJggg==" alt="" width="300" height="200"   data-src="https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7-300x200.jpg" data-srcset="https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7-300x200.jpg 300w, https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7.jpg 600w" data-sizes="auto" data-eio-rwidth="300" data-eio-rheight="200" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7-300x200.jpg.webp" data-srcset-webp="https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7-300x200.jpg.webp 300w, https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7.jpg.webp 600w" /><noscript><img fetchpriority="high" decoding="async" class="alignleft wp-image-3082 size-medium" src="https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7-300x200.jpg" alt="" width="300" height="200" srcset="https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7-300x200.jpg 300w, https://www.canadamoving.com/wp-content/uploads/2021/11/location-page-image-600x400-7.jpg 600w" sizes="(max-width: 300px) 100vw, 300px" data-eio="l" /></noscript>Are you moving to the London Region? </p><p><a href="https://www.canadamoving.com/london-moving-company/">Campbell Bros. Movers</a> (A Canada Moving Company) in London can provide you with the help you need.</p><p><a href="https://www.canadamoving.com/london-moving-company/">Campbell Bros. Movers – Head Office</a><br />(A Canada Moving Company)<br />55 Midpark Cr.<br />London, Ontario<br />N6N 1A9</p><p>Call Us Now  <a href="tel:5196815710">1.519.681.5710</a></p><p>Office Hours: Monday to Friday, 9:00 to 17:00 local</p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-c1245af elementor-widget elementor-widget-text-editor" data-id="c1245af" data-element_type="widget" data-e-type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>We have 22 locations across Canada with service to most cities nationwide.</p>
+<p>We can handle any size moves from a&nbsp;1 bedroom home&nbsp;to&nbsp;20 story office buildings.&nbsp;Our number one priority is to leave you with a good moving experience.</p>
+<p>We&#8217;ve been moving people and businesses since 1890.</p>
+<p>Campbell Bros. Movers&nbsp; (A Canada Moving Company) is London Ontario’s <a href="https://www.canadamoving.com/history/">oldest moving company</a>&nbsp;and has been providing affordable moving rates for over 125 years and it’s the location of&nbsp;Canada Moving’s National Headquarters.</p>
+<p>At the helm of Operations is&nbsp;Adam Campbell, President of Canada Moving, who hand picks each member of his staff.</p>
+<p>Adam’s team will simplify the stressful tasks of moving and turn your move into a smooth process regardless if you’re moving in or out of Ontario for&nbsp;<a href="https://www.canadamoving.com/household-home-moving-company/">home – residential</a>&nbsp;moving and&nbsp;<a href="https://www.canadamoving.com/commercial-moving-company/">commercial</a>&nbsp;moving services; be it:</p>
+<ul>
+<li><a href="https://www.canadamoving.com/local-household-moving-company/">Local Moving</a></li>
+<li><a href="https://www.canadamoving.com/long-distance-moving-company/">Long Distance Moving</a></li>
+<li><a href="https://www.canadamoving.com/cross-border-moving/">Cross-border Moving</a></li>
+<li><a href="https://www.canadamoving.com/international-moving-company/">International Moving</a></li>
+</ul>								</div>
+				</div>
+				<div class="elementor-element elementor-element-c7830fa elementor-widget elementor-widget-html" data-id="c7830fa" data-element_type="widget" data-e-type="widget" data-widget_type="html.default">
+				<div class="elementor-widget-container">
+					<div class="virtual-quote-block "><aside id="custom_html-31" class="widget_text widget widget_custom_html item"><h3 class="widget-title">Tell Us What You Think About Our Service</h3><div class="textwidget custom-html-widget"><p>
+<img decoding="async" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAAELAQMAAADN0EIPAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAACRJREFUaN7twQENAAAAwqD3T20PBxQAAAAAAAAAAAAAAADAiQE1MQABp43LFwAAAABJRU5ErkJggg==" alt="Reviews" class="alignright lazyload ewww_webp_lazy_load" style="max-width:300px; width:100% !important;" data-src="https://www.canadamoving.com/wp-content/uploads/2023/01/reviews-canada-moving-widget-image.jpg" data-eio-rwidth="400" data-eio-rheight="267" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2023/01/reviews-canada-moving-widget-image.jpg.webp" /><noscript><img decoding="async" src="https://www.canadamoving.com/wp-content/uploads/2023/01/reviews-canada-moving-widget-image.jpg" alt="Reviews" class="alignright" style="max-width:300px; width:100% !important;" data-eio="l" /></noscript> We want to hear about your moving experience with Canada Moving. You can submit your review two (2) easy ways:	
+</p>
+
+<ol>
+	<li><a href="https://goo.gl/maps/BLZao45kYp32" class="google-reviews-link" target="_blank">Google Reviews</a> (account required)</li>
+	<li><a href="/" class="facebook-reviews-link" target="_blank">Facebook</a> (account required)</li>
+</ol>
+
+<div class="logos">
+	<img decoding="async" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAABLAQMAAACob+xQAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABRJREFUOMtjYBgFo2AUjIJRMNwAAAXcAAGFcLFxAAAAAElFTkSuQmCC" alt="Google" data-src="/wp-content/uploads/2022/08/canada-moving-google-reviews-logo.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="150" data-eio-rheight="75" data-src-webp="/wp-content/uploads/2022/08/canada-moving-google-reviews-logo.png.webp" /><noscript><img decoding="async" src="/wp-content/uploads/2022/08/canada-moving-google-reviews-logo.png" alt="Google" data-eio="l" /></noscript>
+	<img decoding="async" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAAzAQMAAABPHmP8AAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABFJREFUKM9jYBgFo2AUjEQAAAP8AAHJv2LgAAAAAElFTkSuQmCC" alt="Facebook" data-src="/wp-content/uploads/2022/08/canada-moving-facebook-reviews-logo.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="150" data-eio-rheight="51" data-src-webp="/wp-content/uploads/2022/08/canada-moving-facebook-reviews-logo.png.webp" /><noscript><img decoding="async" src="/wp-content/uploads/2022/08/canada-moving-facebook-reviews-logo.png" alt="Facebook" data-eio="l" /></noscript>
+</div>
+
+<div style="margin-bottom:40px" class="spacer">&nbsp;</div></div></aside><aside id="media_image-3" class="widget widget_media_image item"><h3 class="widget-title">Virtual In-Home Quote</h3><img decoding="async" width="890" height="560" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA3oAAAIwAQMAAADqKYuFAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAFRJREFUeNrtwTEBAAAAwqD1T20JT6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeBj3MAABHr3pLAAAAABJRU5ErkJggg==" class="image wp-image-3602  attachment-full size-full lazyload ewww_webp_lazy_load" alt="Canada Moving - Virtual Quote" style="max-width: 100%; height: auto;" title="Virtual In-Home Quote"   data-src="https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image.jpg" data-srcset="https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image.jpg 890w, https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image-300x189.jpg 300w, https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image-768x483.jpg 768w" data-sizes="auto" data-eio-rwidth="890" data-eio-rheight="560" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image.jpg.webp" data-srcset-webp="https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image.jpg.webp 890w, https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image-300x189.jpg.webp 300w, https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image-768x483.jpg.webp 768w" /><noscript><img decoding="async" width="890" height="560" src="https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image.jpg" class="image wp-image-3602  attachment-full size-full" alt="Canada Moving - Virtual Quote" style="max-width: 100%; height: auto;" title="Virtual In-Home Quote" srcset="https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image.jpg 890w, https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image-300x189.jpg 300w, https://www.canadamoving.com/wp-content/uploads/2022/02/canada-moving-virtual-quote-image-768x483.jpg 768w" sizes="(max-width: 890px) 100vw, 890px" data-eio="l" /></noscript></aside><aside id="text-2" class="widget widget_text item">			<div class="textwidget"><p>During the COVID-19 pandemic, the safety of our clients and our team is paramount. To avoiding physical interaction we’re doing FREE virtual In-home price estimates.  All you need is a phone or tablet with a camera.</p>
+<p>Our moving coordinators will:</p>
+<ul>
+<li>Assess how many items you’re moving.</li>
+<li>Estimate the total weight of your move.</li>
+<li>Review &amp; prepare arrangements for special moving requirements for items like pianos and vehicles.</li>
+<li>And build an individual moving-day plan that works for you and your budget.</li>
+</ul>
+<p>Feel safe knowing that Canada Moving will provide you with honest and affordable local and long-distance moving prices; all from the comfort of your home.</p>
+<p><a href="/contact-us/">Receive your free moving estimate now!</a></p>
+</div>
+		</aside></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-cafb038 elementor-widget elementor-widget-html" data-id="cafb038" data-element_type="widget" data-e-type="widget" data-widget_type="html.default">
+				<div class="elementor-widget-container">
+					<div class="air-miles-block "><aside id="custom_html-45" class="widget_text widget widget_custom_html item"><div class="textwidget custom-html-widget"><div class="yembo-block "><aside id="block-116" class="widget widget_block item"><div>
+<img decoding="async" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAJYAQMAAACEqAqfAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAENJREFUeNrtwQENAAAAwqD3T20ON6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL4NsiAAAVub+pEAAAAASUVORK5CYII=" alt="Yembo" data-src="https://www.canadamoving.com/wp-content/uploads/2025/03/yembo_image_with-logo.jpg" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="600" data-eio-rheight="600" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2025/03/yembo_image_with-logo.jpg.webp" /><noscript><img decoding="async" src="https://www.canadamoving.com/wp-content/uploads/2025/03/yembo_image_with-logo.jpg" alt="Yembo" data-eio="l" /></noscript>
+</div>
+<div>
+<h4>Yembo AI Surveys – Simplifying Inventory for Faster Estimates</h4>
+<p>Experience the future of inventory surveys with Yembo! We've partnered with Yembo to bring AI-powered surveys to all our locations nationwide. With a simple video walkthrough, Yembo’s advanced AI instantly identifies items and creates a detailed Visual Inventory in real time. This streamlined process saves time for both customers and sales representatives while ensuring accurate, reliable estimates—faster than ever. Ask your sales representative about Yembo today!</p>
+<p><a href="https://yembo.ai/" target="_blank">VISIT YEMBO</a></p>
+</div></aside></div></div></aside><aside id="block-51" class="widget widget_block item"><div>
+<img decoding="async" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAO4AAACWAQMAAADjUSbNAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABpJREFUWMPtwQEBAAAAgJD+r+4ICgAAAACqBhIqAAHk8trfAAAAAElFTkSuQmCC" alt="Blue Rewards" data-src="/wp-content/uploads/2026/06/blue-rewards-card-en.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="238" data-eio-rheight="150" data-src-webp="/wp-content/uploads/2026/06/blue-rewards-card-en.png.webp"><noscript><img decoding="async" src="/wp-content/uploads/2026/06/blue-rewards-card-en.png" alt="Blue Rewards" data-eio="l"></noscript>
+</div>
+<div>
+<h4>Earn BLUE REWARDS For Your Move</h4>
+<p>As a Member of United Van Lines Canada you’ll be able to boost your BLUE REWARDS balance!</p>
+<p>
+<strong>
+Standard BLUE REWARDS for every move.
+<br><br>
+<span style="display:inline-block; width: 200px;">Local Moves</span>: 3,200 points
+<br>
+<span style="display:inline-block; width: 200px;">Long Distance Moves</span>: 9,500 points
+</strong>
+</p>
+<br>
+<p><a href="https://www.bluerewards.ca/en.html" target="_blank">VISIT BLUE REWARDS</a></p>
+</div></aside></div>				</div>
+				</div>
+				<div class="elementor-element elementor-element-18d6d59 elementor-widget elementor-widget-heading" data-id="18d6d59" data-element_type="widget" data-e-type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">What You Need to Know When Moving in Ontario</h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-89fd5fa elementor-widget elementor-widget-text-editor" data-id="89fd5fa" data-element_type="widget" data-e-type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p><img loading="lazy" decoding="async" class="wp-image-22046 size-medium alignright lazyload ewww_webp_lazy_load" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADIAQMAAABoEU4WAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAB5JREFUWMPtwTEBAAAAwqD1T20Hb6AAAAAAAAAA4DceeAABFyjdmQAAAABJRU5ErkJggg==" alt="" width="300" height="200"   data-src="https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY-300x200.jpg" data-srcset="https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY-300x200.jpg 300w, https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY.jpg 600w" data-sizes="auto" data-eio-rwidth="300" data-eio-rheight="200" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY-300x200.jpg.webp" data-srcset-webp="https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY-300x200.jpg.webp 300w, https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY.jpg.webp 600w" /><noscript><img loading="lazy" decoding="async" class="wp-image-22046 size-medium alignright" src="https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY-300x200.jpg" alt="" width="300" height="200" srcset="https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY-300x200.jpg 300w, https://www.canadamoving.com/wp-content/uploads/2023/11/city-page-image-600x400-truck-GREY.jpg 600w" sizes="(max-width: 300px) 100vw, 300px" data-eio="l" /></noscript>Here are some useful links you’ll need to smoothen out the process.</p><ul><li><a href="https://www.ontario.ca/page/government-ontario">Official Province Government Site</a></li><li><a href="https://www.canada.ca/en.html">Government of Canada Website</a></li><li>Calculate How Much Taxes – <a href="https://ca.talent.com/tax-calculator">Payroll Tax Calculator</a></li><li>Get Access to our <a href="https://www.canadamoving.com/resources-checklist-home-moving/">Household | Home Moving Resources</a></li><li>Browse Our <a href="https://www.canadamoving.com/resources-commercial-office-moving/">Business Moving Tips</a></li><li>We Offer <a href="https://www.canadamoving.com/household-home-moving-protection/">Additional Coverage</a>  for Your Valuables.</li></ul>								</div>
+				</div>
+				<div class="elementor-element elementor-element-70c645c elementor-widget elementor-widget-heading" data-id="70c645c" data-element_type="widget" data-e-type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">Quality Movers in London</h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-2539d1b elementor-widget elementor-widget-text-editor" data-id="2539d1b" data-element_type="widget" data-e-type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>Unlike other moving companies in London Ontario, we cater all our moves to meet each of your specific needs. Our professional movers not only help with Home moving, but we’re also experienced in Long Distance Moving, and Office Moving.</p><p>We also have Storage Units in London to serve you better whether you need short term or long term storage. Being associated with CAM (<a href="https://www.mover.net/" target="_blank" rel="noopener">Canadian Association of Movers</a>), it reassures that you’re choosing an ethical and industry leading mover in London, Ontario.</p><p>Whether you’re moving in or out of Ontario; we’ll simplify the stressful tasks of  moving and turn your move into a smooth process.</p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-a89757f elementor-widget elementor-widget-heading" data-id="a89757f" data-element_type="widget" data-e-type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">How We Stand Out From Other Moving Companies</h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-4b0c1b8 elementor-widget elementor-widget-text-editor" data-id="4b0c1b8" data-element_type="widget" data-e-type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p><img loading="lazy" decoding="async" class="alignleft wp-image-7530 size-medium lazyload ewww_webp_lazy_load" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADIAQMAAABoEU4WAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAB5JREFUWMPtwTEBAAAAwqD1T20Hb6AAAAAAAAAA4DceeAABFyjdmQAAAABJRU5ErkJggg==" alt="" width="300" height="200"   data-src="https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-300x200.jpg" data-srcset="https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-300x200.jpg 300w, https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-768x512.jpg 768w, https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit.jpg 800w" data-sizes="auto" data-eio-rwidth="300" data-eio-rheight="200" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-300x200.jpg.webp" data-srcset-webp="https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-300x200.jpg.webp 300w, https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-768x512.jpg.webp 768w, https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit.jpg.webp 800w" /><noscript><img loading="lazy" decoding="async" class="alignleft wp-image-7530 size-medium" src="https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-300x200.jpg" alt="" width="300" height="200" srcset="https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-300x200.jpg 300w, https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit-768x512.jpg 768w, https://www.canadamoving.com/wp-content/uploads/2022/08/local-move-image-edit.jpg 800w" sizes="(max-width: 300px) 100vw, 300px" data-eio="l" /></noscript></p><p>What makes us one of the most popular movers in London is some of the specialty services we offer;</p><ul><li>Records Management</li><li>CARM</li><li>Organize Elections Ontario</li><li>Evidence room moving</li><li>Fertility Lab moving</li></ul><p>Our Movers are also home to the one and only Freight division in the <a href="https://www.campbellgroupofcompanies.com/" target="_blank" rel="noopener">Campbell Group of Companies</a>. Our Freight Division specializes in transporting household goods and special commodities across North America.</p><p>We are one of <a href="http://www.canadianbusiness.com/lists-and-rankings/best-managed-companies/campbell-bros-movers/" target="_blank" rel="nofollow noopener noreferrer">Canada’s Best Managed Companies.</a></p>								</div>
+				</div>
+				<div class="elementor-element elementor-element-b4b866a elementor-widget elementor-widget-heading" data-id="b4b866a" data-element_type="widget" data-e-type="widget" data-widget_type="heading.default">
+				<div class="elementor-widget-container">
+					<h2 class="elementor-heading-title elementor-size-default">How we support the London Ontario Community</h2>				</div>
+				</div>
+				<div class="elementor-element elementor-element-60e5fb3 elementor-widget elementor-widget-text-editor" data-id="60e5fb3" data-element_type="widget" data-e-type="widget" data-widget_type="text-editor.default">
+				<div class="elementor-widget-container">
+									<p>The <strong>Campbell Bros. Movers</strong> (A Canada Moving Company) firmly believes in being an active member of our community supports local charities and community events and organizations. Some of the associations we assist include:</p><ul><li><a href="http://www.stjustinsparish.ca/" target="_blank" rel="nofollow noopener noreferrer">St. Justin’s Church</a> – distribution of food hampers</li><li><a href="http://www.londonfoodbank.ca/" target="_blank" rel="nofollow noopener noreferrer">London Food Bank</a></li><li><a href="https://www.rmhccanada.ca/" target="_blank" rel="nofollow noopener noreferrer">Ronald MacDonald House</a> – deliveries</li><li><a href="http://www.salvationarmy.ca/" target="_blank" rel="nofollow noopener noreferrer">Salvation Army</a></li><li><a href="http://www.alzheimer.ca/en" target="_blank" rel="nofollow noopener noreferrer">Alzheimer Society</a></li><li><a href="http://www.omsbf.org/" target="_blank" rel="nofollow noopener noreferrer">Ontario Medical Students Bursary Fund</a> (OMSBF) – contributions</li><li><a href="http://shepherdsofgoodhope.com/" target="_blank" rel="nofollow noopener noreferrer">Shepherds of Good Hope</a> – Christmas Turkey donations</li><li><a href="http://onlung.ca/" target="_blank" rel="nofollow noopener noreferrer">Ontario Lung Association</a></li><li><a href="http://www.lhsc.on.ca/" target="_blank" rel="nofollow noopener noreferrer">London Health Science</a></li><li><a href="http://ssvp.on.ca/rc/index.php" target="_blank" rel="nofollow noopener noreferrer">St. Vincent De Paul</a> – Free moving services</li></ul><p>We are also proud sponsors and the official movers of the <a href="http://www.uwo.ca/" target="_blank" rel="nofollow noopener noreferrer">University of Western, Ontario</a>. Campbell Bros. Movers also makes considerable donations to the St. Thomas Elgin General Hospital Foundation and will be signing the visible beam in their new addition as a way to leave a physical mark in the new addition of the hospital!</p><p>We are also a finalist for the <a href="http://www.londonchamber.com/business-achievement-awards?platform=hootsuite" target="_blank" rel="nofollow noopener noreferrer">London Chamber of Commerce’s Large Business of the Year</a>!</p>								</div>
+				</div>
+					</div>
+		</div>
+					</div>
+		</section>
+				</div>
+						</div>
+			</div>
+			<div class="col sidebar-right">
+				<div class="sidebar-content">
+					
+					<div class="contact-info">
+						<div class="close-button-x"></div>										
+						<h3>CONTACT</h3>
+						<div>
+							<div class="info"><div><i class="fas fa-map-marker-alt"></i> <span>55 Midpark Cr., London, ON, N6N 1A9</span></div></div>
+
+							<div class="info">
+																	<a href="tel:1.519.681.5710"><i class="fas fa-phone-alt"></i> <span>1.519.681.5710</span></a>
+															</div>
+
+							<div class="info"><a href="mailto:london@canadamoving.com?subject=Email via Canada Moving Website - Inquiry"><i class="fa fa-envelope"></i> <span>london@canadamoving.com</span></a></div>						
+							<div class="info"><div><i class="fa fa-clock"></i> <span>Mon to Fri - 9:00 to 17:00 local</span></div></div>                        
+							<div class="info"><a href="/get-a-quote/"><i class="fa fa-list"></i> <span>Online Form</span></a></div>                        																
+							
+													</div>
+
+						
+													<div class="service-areas">
+								<h3>SERVICE AREAS</h3>
+
+																
+									<ul class="locations-list "><li class="location-item"><a href="https://www.canadamoving.com/aylmer-moving-company/" class="title"> Aylmer ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/chatham-kent-moving-company/" class="title"> Chatham-Kent ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/delaware-moving-company/" class="title"> Delaware ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/ingersoll-moving-company/" class="title"> Ingersoll ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/komoka-moving-company/" class="title"> Komoka ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/mount-brydges-moving-company/" class="title"> Mount Brydges ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/sarnia-moving-company/" class="title"> Sarnia ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/st-thomas-moving-company/" class="title"> St. Thomas ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/strathroy-moving-company/" class="title"> Strathroy ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/tillsonburg-moving-company/" class="title"> Tillsonburg ON  </a></li><li class="location-item"><a href="https://www.canadamoving.com/woodstock-moving-company/" class="title"> Woodstock ON  </a></li></ul>	
+								
+															</div>                     
+												
+					</div>
+
+					<div class="sidebar-widgets"><aside id="block-47" class="widget widget_block"><h3>CUSTOMER REVIEWS</h3>
+<div class="testimonials "><div class="owl-carousel"><div class="items"><aside id="block-23" class="widget widget_block item"><p>Excellent service from the first contact by telephone to the crew that helped us move to our new house. The moving crew was friendly, helpful and professional. We were quoted about 6 to 7 hour, but the crew got the move done quicker than that. Very impressed. Appreciated the follow up calls and emails.</p>
+<div class="stars" data-stars="5"></div>
+<div>Julia Wooster</div></aside><aside id="block-20" class="widget widget_block item"><p>Just wanted to extend a huge thank you to your team. You guys made the move simple and quick. Much appreciated!</p>
+<div class="stars" data-stars="5"></div>
+<div>Jason J.</div></aside><aside id="block-21" class="widget widget_block item"><p>Just a quick note to say how great Gary and Mike were today with the moving/ packing of our personal belongings and overall service they provided within a very tight window for two moves and different locations.</p>
+<div class="stars" data-stars="5"></div>
+<div>Penny O.</div></aside><aside id="block-22" class="widget widget_block item"><p>I wanted to send a note to make sure you were aware of the amazing service I have received from Lorrie Macfarlane. As background, my wife and I are experienced at relocations as we have moved back and forth across Canada 7 times over the years and in 2014 we relocated to Australia.</p>
+<div class="stars" data-stars="5"></div>
+<div>Brad T.</div></aside><aside id="block-24" class="widget widget_block item"><p>We were very pleased with the service we received. The movers were on time, professional and worked efficiently. None of our property was damaged and all protected by moving blankets. The cost was reasonable as well.</p>
+<div class="stars" data-stars="5"></div>
+<div>Robert Zeigler</div></aside></div></div></div></aside></div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">
+				<div class="location-content-block page-content"><aside id="custom_html-32" class="widget_text widget widget_custom_html"><h3 class="widget-title">Why Choose Canada Moving?</h3><div class="textwidget custom-html-widget"><p>
+	<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABLAAAAEtAQMAAAAiLwu2AAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAENJREFUeNrtwYEAAAAAw6D5U1/hAFUBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANwGsYsAAa1TC30AAAAASUVORK5CYII=" alt="Canada Moving truck" data-src="https://www.canadamoving.com/wp-content/uploads/2023/11/Canada-moving-home-banner-1200x300-grey.jpg" decoding="async" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="1200" data-eio-rheight="301" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2023/11/Canada-moving-home-banner-1200x300-grey.jpg.webp" /><noscript><img src="https://www.canadamoving.com/wp-content/uploads/2023/11/Canada-moving-home-banner-1200x300-grey.jpg" alt="Canada Moving truck" data-eio="l" /></noscript>
+	<br><br>
+</p>
+<h4>Moving Canadian Families & Businesses for Over a Century</h4>
+<p>
+From humble beginnings in London, Ontario, Canada Moving has grown into one of the country’s most trusted moving companies, helping families and businesses relocate across Canada and beyond for generations.
+</p>
+<p>
+	With over 125 years of moving experience and as a member of the largest moving network - <a href="http://www.uvl.ca/">United Van Lines</a>, we continue to deliver dependable <a href="/local-household-moving-company/">local</a>, <a href="/long-distance-moving-company/">long-distance</a>, and <a href="/international-moving-company/">international moving</a> services with care and professionalism.
+</p>
+<ul>
+	<li>Clear Moving Inventory Lists for All Our Moves.</li>
+	<li>Guaranteed Quotes With a thorough Walk-through; Keeping You on Budget.</li>
+	<li>Payment at Delivery with a Nominal Deposit.</li>
+	<li>We’re Part of the <a href="https://www.mover.net/">Canadian Association of Movers</a>.</li>
+	<li>Provide References for Our Movers.</li>
+	<li><a href="https://www.canadamoving.com/packing-services/">Packing</a> Options and Dedicated Teams for Special Moves.</li>
+	<li>Flexible Schedules – We’ll Work Around Your Busy Schedule.</li>
+	<li>All Equipment is Included in the Cost (Blankets. Runners that Help Minimize any Damage).</li>
+</ul>
+<p>
+Unique to other moving companies, we provide a dedicated Moving Coordinator who will assist you with your move.	
+</p>
+<p>
+Our Moving Coordinators will help coordinate budgets, schedules and ensure your moving crew have the right equipment for moving those specialty items.
+</p></div></aside><aside id="custom_html-35" class="widget_text widget widget_custom_html"><h3 class="widget-title">Services at Our Location</h3><div class="textwidget custom-html-widget"><p>
+Not only do we move your household or commercial goods, we can provide full service packing. Here a list of some of the services at our location:	
+</p>
+
+<div class="services-list "><aside id="block-55" class="widget widget_block item"><a href="/local-household-moving-company/" title="Local Moving"><i class="fas fa-home" aria-hidden="true"></i>
+<div>
+Local Moving</a>
+<span>Our local household movers get the job done right the first time. With more than 125 years in the moving industry and with +2,000 affiliated locations near you, we can help make your move stress free.</span>
+</div></aside><aside id="block-56" class="widget widget_block item"><a href="/long-distance-moving-company/" title="Long Distance Moving"><i class="fas fa-truck-moving" aria-hidden="true"></i>
+<div>
+Long Distance Moving</a>
+<span>Long distance home moves are typically more than 150 km so we make sure that you have first-class movers to get you organized for a move either it be from Toronto – Mississauga to Vancouver or Halifax to Calgary.</span>
+</div></aside><aside id="block-57" class="widget widget_block item"><a href="/cross-border-moving/" title="Cross-Border Moving"><i class="fas fa-flag-usa" aria-hidden="true"></i>
+<div>
+Cross-Border Moving</a>
+<span>Moving to and from Canada/US offers its own challenges. We, at Canada Moving, along with our partners at United Van Lines make up the largest moving network in North America, allowing us to easily and competently service moves across borders.</span>
+</div></aside><aside id="block-58" class="widget widget_block item"><a href="/international-moving-company/" title="International Moving"><i class="fas fa-plane" aria-hidden="true"></i>
+<div>
+International Moving</a>
+<span>We boast a wide network of partners all over the world. We are able to offer a wide variety of services to meet every budget.</span>
+</div></aside><aside id="block-59" class="widget widget_block item"><a href="/car-vehicle-moving/" title="Car & Vehicle Moving"><i class="fas fa-car" aria-hidden="true"></i>
+<div>
+Car & Vehicle Moving</a>
+<span>Need to Move Your Car or Vehicle Across Canada, U.S. or Internationally? We Offer Quality Moving Services for Any Vehicle!</span>
+</div></aside><aside id="block-60" class="widget widget_block item"><a href="/piano-moving-company/" title="Piano Moving"><i class="fas fa-music" aria-hidden="true"></i>
+<div>
+Piano Moving</a>
+<span>Our Professional Piano Movers will Ensure Your Piano Arrives Safe. We have the right equipment.</span>
+</div></aside><aside id="block-61" class="widget widget_block item"><a href="/crating-shipping-services-moving/" title="Crating Services"><i class="fas fa-boxes" aria-hidden="true"></i>
+<div>
+Crating Services</a>
+<span>Crating is highly recommended for certain items in order to have the best possible protection when moving. Use custom created to ensure a protected transition and re-settling.</span>
+</div></aside><aside id="block-62" class="widget widget_block item"><a href="/packing-services/" title="Packing Services"><i class="fas fa-box-open" aria-hidden="true"></i>
+<div>
+Packing Services</a>
+<span>In the chaos of moving preparations, one of the most important parts often doesn’t get enough attention until the last minute – Packing! Moving large items has its challenges, but is truly the most difficult part of moving.</span>
+</div></aside><aside id="block-63" class="widget widget_block item"><a href="/senior-moving-storage-services/" title="Moving Seniors"><i class="fab fa-accessible-icon" aria-hidden="true"></i>
+<div>
+Moving Seniors</a>
+<span>We have custom made programs in place for senior moving like packing, checklists for downsizing, removal services and permanent or temporary storage solutions.</span>
+</div></aside><aside id="block-64" class="widget widget_block item"><a href="/office-moving/" title="Office Moving"><i class="fas fa-building" aria-hidden="true"></i>
+<div>
+Office Moving</a>
+<span>We have experienced and trained office moving specialists. They'll help make your office move quick and proficient for a seamless transition regardless of whether you are moving a small or large office.</span>
+</div></aside><aside id="block-65" class="widget widget_block item"><a href="/library-moving/" title="Library Moving"><i class="fas fa-book" aria-hidden="true"></i>
+<div>
+Library Moving</a>
+<span>We've developed different moving tricks and moving systems using specialty equipment that allow for a quick and orderly library move.</span>
+</div></aside><aside id="block-66" class="widget widget_block item"><a href="/storage-warehouse-solutions/" title="Warehouse & Inventory Moving"><i class="fas fa-warehouse" aria-hidden="true"></i>
+<div>
+Warehouse & Inventory Moving</a>
+<span>Our warehouse storage locations feature a full-range of units for all capacities, including accommodation for home and large office storage needs. We have container storage too.</span>
+</div></aside><aside id="block-67" class="widget widget_block item"><a href="/full-truck-load-freight-ftl/" title="Full Truck Load Freight"><i class="fas fa-truck-loading" aria-hidden="true"></i>
+<div>
+Full Truck Load Freight</a>
+<span>Your goods travel alone on a dedicated trailer from Point A to Point B, without being moved, repacked, or otherwise handled in transit.</span>
+</div></aside><aside id="block-68" class="widget widget_block item"><a href="/special-commodities-moving/" title="Special Commodities Moving"><i class="fas fa-atom" aria-hidden="true"></i>
+<div>
+Special Commodities Moving</a>
+<span>We ensure that your special commodities move will be smooth, efficient, and professional, all while staying within your budget.</span>
+</div></aside><aside id="block-69" class="widget widget_block item"><a href="/packing-services/" title="Business Packing"><i class="fas fa-store" aria-hidden="true"></i>
+<div>
+Business Packing</a>
+<span>Protecting small and delicate items with proper packing is crucial. Canada Moving has over 100 years of experience in packing at rates that is sure to fit your budget.</span>
+</div></aside><aside id="block-70" class="widget widget_block item"><a href="/storage-container-rental/" title="Home Storage"><i class="fas fa-door-open" aria-hidden="true"></i>
+<div>
+Home Storage</a>
+<span>Rent a Storage Container; it's a great, safe, cheap and secure way to temporarily store or transport your belongings directly to your new home.</span>
+</div></aside><aside id="block-71" class="widget widget_block item"><a href="/warehouse-and-inventory-moving/" title="Warehouse Facilities"><i class="fas fa-industry" aria-hidden="true"></i>
+<div>
+Warehouse Facilities</a>
+<span>We're Flexible - Canada Moving Works With Your Schedule (Weekends, Evenings or Nights) to Minimize Downtime and Keep Your Business Competitive.</span>
+</div></aside><aside id="block-72" class="widget widget_block item"><a href="/commercial-container-storage/" title="Commercial Storage"><i class="fas fa-store-alt" aria-hidden="true"></i>
+<div>
+Commercial Storage</a>
+<span>Canada Moving rents portable storage containers that are overseas quality and very durable for all storage needs.</span>
+</div></aside></div></div></aside></div>
+			</div>
+		</div>
+	</div>
+	<div class="google-reviews-url" data-url="https://goo.gl/maps/BLZao45kYp32"></div>
+	<div class="facebook-reviews-url" data-url="https://www.facebook.com/CanadaMovingLondon/reviews/"></div>	
+</section>
+
+<div class="clearfix"></div>    
+    
+</main>
+
+
+	<footer id="footer">
+		<div class="footer-top">
+			<div class="container">
+				<div class="row">
+					<div class="col footer-block">
+						<aside id="media_image-2" class="widget widget_media_image"><img width="260" height="96" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAABgAQMAAADB1J6xAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABpJREFUSMftwQENAAAAwqD3T20ON6AAAAA+DAzAAAHjZ9g4AAAAAElFTkSuQmCC" class="image wp-image-1440  attachment-full size-full lazyload ewww_webp_lazy_load" alt="Canada Moving - Logo" style="max-width: 100%; height: auto;" decoding="async" data-src="https://www.canadamoving.com/wp-content/uploads/2021/06/canada-moving-logo-light.png" data-eio-rwidth="260" data-eio-rheight="96" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2021/06/canada-moving-logo-light.png.webp" /><noscript><img width="260" height="96" src="https://www.canadamoving.com/wp-content/uploads/2021/06/canada-moving-logo-light.png" class="image wp-image-1440  attachment-full size-full" alt="Canada Moving - Logo" style="max-width: 100%; height: auto;" decoding="async" data-eio="l" /></noscript></aside><aside id="block-29" class="widget widget_block"><div class="note">
+<p>
+At Canada Moving, our top priority is to provide a positive moving experience for our customers whether you're moving across the street or around the world - we can help make your move trouble-free.
+</p>
+<p><a href="/about-us/">LEARN MORE</a> &nbsp;&nbsp;|&nbsp;&nbsp; <a href="/sitemap/">VIEW SITEMAP</a></p>
+</div></aside>					</div>
+					<div class="col footer-block">
+						<aside id="block-28" class="widget widget_block"><div class="contact-info">
+<h3>HEAD OFFICE</h3>
+<div>
+<p>
+<i class="fas fa-map-marker-alt" aria-hidden="true"></i> 55 Midpark Cr.<br>
+London ON N6N 1A9
+</p>
+<p>
+<a href="tel:1.855.337.6848" title="phone"><i class="fas fa-phone-alt" aria-hidden="true"></i> </a><a href="tel:1.855.337.6848" title="phone">1.855.337.6848</a>
+</p>
+<!--p>
+[contact_detail tag="email" show_link="1" show_icon="1"]
+</p-->
+<p>
+<i class="fa fa-clock" aria-hidden="true"></i> <span class="english">Monday – Friday<br>
+8:00 AM to 5:00 PM EST</span>
+<span class="french">Lundi – Vendredi<br>
+08:00 – 17:00 EST</span>
+</p>
+<p>
+<div class="social-links "><aside id="block-27" class="widget widget_block"><ul>
+<li><a href="tel:1.855.337.6848" title="phone"><i class="fas fa-phone-alt" aria-hidden="true"></i> </a></li>
+<li>
+<!-- li>[contact_detail tag="email" show_link="1" show_icon="1" hide_text="1"]</li -->
+<li><a href="https://goo.gl/maps/BLZao45kYp32" title="Google" target="_blank"><i class="fa fa-google" aria-hidden="true"></i></a></li>
+<li><a href="https://www.facebook.com/CanadaMovingInc/" title="Facebook" target="_blank"><i class="fa fa-facebook" aria-hidden="true"></i></a></li>
+<li><a href="https://www.instagram.com/canadamovinggrp/" title="Instagram" target="_blank"><i class="fa fa-instagram" aria-hidden="true"></i></a></li>
+<li><a href="https://twitter.com/canadamovinginc" title="X" target="_blank"><i class="fab fa-x-twitter" aria-hidden="true"></i></a></li>		
+<li><a href="https://www.youtube.com/@canadamoving6950" title="Youtube" target="_blank"><i class="fa fa-youtube" aria-hidden="true"></i></a></li>
+<li><a href="https://www.linkedin.com/in/canada-moving-1a1113353" title="LinkedIn" target="_blank"><i class="fa fa-linkedin" aria-hidden="true"></i></a></li>
+</ul></aside></div>
+</p>
+</div>
+</div></aside><aside id="media_image-6" class="widget widget_media_image"><img width="100" height="71" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABHAQMAAADLFHCPAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAABBJREFUGBljGAWjYBQMYwAAA+IAAUF/uAMAAAAASUVORK5CYII=" class="image wp-image-33562 floating-canadian-logo attachment-full size-full lazyload ewww_webp_lazy_load" alt="100% Canadian" style="max-width: 100%; height: auto;" decoding="async" data-src="https://www.canadamoving.com/wp-content/uploads/2025/07/100-percent-canadian.png" data-eio-rwidth="100" data-eio-rheight="71" data-src-webp="https://www.canadamoving.com/wp-content/uploads/2025/07/100-percent-canadian.png.webp" /><noscript><img width="100" height="71" src="https://www.canadamoving.com/wp-content/uploads/2025/07/100-percent-canadian.png" class="image wp-image-33562 floating-canadian-logo attachment-full size-full" alt="100% Canadian" style="max-width: 100%; height: auto;" decoding="async" data-eio="l" /></noscript></aside>					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<aside id="block-32" class="widget widget_block"><div class="partners">
+<h5>OUR PARTNERS</h5>
+<div>
+<a href="https://www.bluerewards.ca/en.html"><img decoding="async" width="90" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH8AAABQAQMAAAAKiTizAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABNJREFUGBljGAWjYBSMglFAFQAABVAAATmPcRMAAAAASUVORK5CYII=" alt="Blue Rewards" data-src="/wp-content/uploads/2026/06/blue-rewards-logo-medium-en.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="127" data-eio-rheight="80" data-src-webp="/wp-content/uploads/2026/06/blue-rewards-logo-medium-en.png.webp"><noscript><img decoding="async" width="90" src="/wp-content/uploads/2026/06/blue-rewards-logo-medium-en.png" alt="Blue Rewards" data-eio="l"></noscript></a>
+</div>
+<div>
+<a href="https://www.mover.net/"><img decoding="async" width="90" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAAoAQMAAAAmD5GkAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABBJREFUKM9jYBgFo2AU4AIAAyAAAc6PEMQAAAAASUVORK5CYII=" alt="CAM" data-src="/wp-content/uploads/2021/08/logo-cam-white.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="150" data-eio-rheight="40" data-src-webp="/wp-content/uploads/2021/08/logo-cam-white.png.webp"><noscript><img decoding="async" width="90" src="/wp-content/uploads/2021/08/logo-cam-white.png" alt="CAM" data-eio="l"></noscript></a>
+</div>
+<div>
+<a href="https://www.uvl.ca/"><img decoding="async" width="150" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAA4AQMAAABucUDSAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABRJREFUOMtjYBgFo2AUjIJRQA4AAAVAAAHhdXMZAAAAAElFTkSuQmCC" alt="United Van Lines" data-src="/wp-content/uploads/2022/07/united-member-white.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="180" data-eio-rheight="56" data-src-webp="/wp-content/uploads/2022/07/united-member-white.png.webp"><noscript><img decoding="async" width="150" src="/wp-content/uploads/2022/07/united-member-white.png" alt="United Van Lines" data-eio="l"></noscript></a>
+</div>
+<div>
+<img decoding="async" width="60" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFMAAAB4AQMAAAC0F1y2AAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABRJREFUOMtjYBgFo2AUjIJRMBgBAAWgAAErlUh4AAAAAElFTkSuQmCC" alt="Profit 500" data-src="/wp-content/uploads/2021/08/logo-profit500-white.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="83" data-eio-rheight="120" data-src-webp="/wp-content/uploads/2021/08/logo-profit500-white.png.webp"><noscript><img decoding="async" width="60" src="/wp-content/uploads/2021/08/logo-profit500-white.png" alt="Profit 500" data-eio="l"></noscript>
+</div>
+<div>
+<a href="https://www.canadianbusiness.com/lists-and-rankings/best-managed-companies/campbell-bros-movers/"><img decoding="async" width="90" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAABKAQMAAABjMz/1AAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABRJREFUOMtjYBgFo2AUjIJRMJQBAAXIAAEi51JmAAAAAElFTkSuQmCC" alt="Best Managed Companies" data-src="/wp-content/uploads/2021/08/logo-best-managed-white.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="150" data-eio-rheight="74" data-src-webp="/wp-content/uploads/2021/08/logo-best-managed-white.png.webp"><noscript><img decoding="async" width="90" src="/wp-content/uploads/2021/08/logo-best-managed-white.png" alt="Best Managed Companies" data-eio="l"></noscript></a>
+</div>
+<div>
+<a href="https://humanecanada.ca/"><img decoding="async" width="90" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAABEAQMAAABZOV6FAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABRJREFUOMtjYBgFo2AUjIJRQA0AAAVQAAHMu8r0AAAAAElFTkSuQmCC" alt="Humane Canada" data-src="/wp-content/uploads/2022/09/humane-canada-white.png" class="lazyload ewww_webp_lazy_load" data-eio-rwidth="150" data-eio-rheight="68" data-src-webp="/wp-content/uploads/2022/09/humane-canada-white.png.webp"><noscript><img decoding="async" width="90" src="/wp-content/uploads/2022/09/humane-canada-white.png" alt="Humane Canada" data-eio="l"></noscript></a>
+</div>
+</div></aside><aside id="block-54" class="widget widget_block"><div id="cookie-message">
+<div class="container">
+<span>We use cookies to ensure the best experience. By continuing, you agree to the use of cookies.</span><br>
+<span class="close-button">OK</span>
+</div>
+</div></aside>					
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="footer-bottom">
+			<div class="container">
+				<div class="copyright">
+					&copy; Copyright 2026 - Canada Moving				</div>
+				<div>
+					<aside id="custom_html-42" class="widget_text widget widget_custom_html"><div class="textwidget custom-html-widget"><a href="/privacy-policy/">Privacy Policy</a> &nbsp;|&nbsp; 
+<a href="https://www.cgcmarketing.ca/" target="_blank">Designed By CGC Marketing</a></div></aside>				</div>
+			</div>
+		</div>
+		<div class="scroll-up"><i class="fas fa-arrow-up"></i></div>
+	</footer>
+	<div id="popup-window">
+		<div class="close-button-x"></div>				
+		<div class="popup-content"><aside id="block-52" class="widget widget_block"><div class="cta-block">
+<h3>GET A QUOTE</h3>
+<p>Do you want to ask for a quote? Here are a few easy ways to reach us.</p>
+<div>
+<a href="/get-a-quote/"><i class="fa fa-list-alt"></i></a>
+<div><span class="label">SUBMIT</span><a href="/get-a-quote/">Online Form</a></div>
+</div>
+<div>
+<a href="tel:1.855.337.6848" title="phone"><i class="fas fa-phone-alt" aria-hidden="true"></i> </a><div><span class="label">CALL US</span> <a href="tel:1.855.337.6848" title="phone">1.855.337.6848</a></div>
+</div>
+<!--div>
+[contact_detail tag="email" show_link="1" show_icon="1" show_label="1"]
+</div-->
+<div>
+<a href="/moving-locations/"><i class="fas fa-map-marker-alt"></i></a>
+<div><span class="label">VIEW</span><a href="/moving-locations/">Our Locations</a></div>
+</div>
+</div></aside><aside id="block-26" class="widget widget_block"><div class="reviews">
+<h3>REVIEWS</h3>
+<p><div class="testimonials "><div class="owl-carousel"><div class="items"><aside id="block-23" class="widget widget_block item"><p>Excellent service from the first contact by telephone to the crew that helped us move to our new house. The moving crew was friendly, helpful and professional. We were quoted about 6 to 7 hour, but the crew got the move done quicker than that. Very impressed. Appreciated the follow up calls and emails.</p>
+<div class="stars" data-stars="5"></div>
+<div>Julia Wooster</div></aside><aside id="block-20" class="widget widget_block item"><p>Just wanted to extend a huge thank you to your team. You guys made the move simple and quick. Much appreciated!</p>
+<div class="stars" data-stars="5"></div>
+<div>Jason J.</div></aside><aside id="block-21" class="widget widget_block item"><p>Just a quick note to say how great Gary and Mike were today with the moving/ packing of our personal belongings and overall service they provided within a very tight window for two moves and different locations.</p>
+<div class="stars" data-stars="5"></div>
+<div>Penny O.</div></aside><aside id="block-22" class="widget widget_block item"><p>I wanted to send a note to make sure you were aware of the amazing service I have received from Lorrie Macfarlane. As background, my wife and I are experienced at relocations as we have moved back and forth across Canada 7 times over the years and in 2014 we relocated to Australia.</p>
+<div class="stars" data-stars="5"></div>
+<div>Brad T.</div></aside><aside id="block-24" class="widget widget_block item"><p>We were very pleased with the service we received. The movers were on time, professional and worked efficiently. None of our property was damaged and all protected by moving blankets. The cost was reasonable as well.</p>
+<div class="stars" data-stars="5"></div>
+<div>Robert Zeigler</div></aside></div></div></div>	</p>
+<div class="more-reviews-button">
+<a href="/moving-company-reviews/" class="yellow-button">MORE REVIEWS</a>
+</div>
+</div></aside></div>
+	</div>					
+
+	<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/wp-*.php","/wp-admin/*","/wp-content/uploads/*","/wp-content/*","/wp-content/plugins/*","/wp-content/themes/canadamoving/*","/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+			<script>
+				( () => {
+					const lazyloadRunObserver = () => {
+						const lazyloadBackgrounds = document.querySelectorAll( `.e-con.e-parent:not(.e-lazyloaded)` );
+						const lazyloadBackgroundObserver = new IntersectionObserver( ( entries ) => {
+							entries.forEach( ( entry ) => {
+								if ( entry.isIntersecting ) {
+									let lazyloadBackground = entry.target;
+									if( lazyloadBackground ) {
+										lazyloadBackground.classList.add( 'e-lazyloaded' );
+									}
+									lazyloadBackgroundObserver.unobserve( entry.target );
+								}
+							});
+						}, { rootMargin: '200px 0px 200px 0px' } );
+						lazyloadBackgrounds.forEach( ( lazyloadBackground ) => {
+							lazyloadBackgroundObserver.observe( lazyloadBackground );
+						} );
+					};
+					const events = [
+						'DOMContentLoaded',
+						'elementor/lazyload/observe',
+					];
+					events.forEach( ( event ) => {
+						document.addEventListener( event, lazyloadRunObserver );
+					} );
+				} )();
+			</script>
+					<!-- Google Tag Manager (noscript) snippet added by Site Kit -->
+		<noscript>
+			<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NG9JQDQ" height="0" width="0" style="display:none;visibility:hidden"></iframe>
+		</noscript>
+		<!-- End Google Tag Manager (noscript) snippet added by Site Kit -->
+		<script id="eio-lazy-load-js-before">
+var eio_lazy_vars = {"bg_min_dpr":1.1,"exactdn_domain":"","safe_domains":["www.canadamoving.com","canadamoving.com"],"skip_autoscale":0,"threshold":0,"use_dpr":1};
+//# sourceURL=eio-lazy-load-js-before
+</script>
+<script async data-wp-strategy="async" id="eio-lazy-load-js" src="https://www.canadamoving.com/wp-content/plugins/ewww-image-optimizer/includes/lazysizes.min.js?ver=875"></script>
+<script id="pll_cookie_script-js-after">
+(function() {
+				var expirationDate = new Date();
+				expirationDate.setTime( expirationDate.getTime() + 31536000 * 1000 );
+				document.cookie = "pll_language=en; expires=" + expirationDate.toUTCString() + "; path=/; secure; SameSite=Lax";
+			}());
+
+//# sourceURL=pll_cookie_script-js-after
+</script>
+<script id="rocket-browser-checker-js-after">
+"use strict";var _createClass=function(){function defineProperties(target,props){for(var i=0;i<props.length;i++){var descriptor=props[i];descriptor.enumerable=descriptor.enumerable||!1,descriptor.configurable=!0,"value"in descriptor&&(descriptor.writable=!0),Object.defineProperty(target,descriptor.key,descriptor)}}return function(Constructor,protoProps,staticProps){return protoProps&&defineProperties(Constructor.prototype,protoProps),staticProps&&defineProperties(Constructor,staticProps),Constructor}}();function _classCallCheck(instance,Constructor){if(!(instance instanceof Constructor))throw new TypeError("Cannot call a class as a function")}var RocketBrowserCompatibilityChecker=function(){function RocketBrowserCompatibilityChecker(options){_classCallCheck(this,RocketBrowserCompatibilityChecker),this.passiveSupported=!1,this._checkPassiveOption(this),this.options=!!this.passiveSupported&&options}return _createClass(RocketBrowserCompatibilityChecker,[{key:"_checkPassiveOption",value:function(self){try{var options={get passive(){return!(self.passiveSupported=!0)}};window.addEventListener("test",null,options),window.removeEventListener("test",null,options)}catch(err){self.passiveSupported=!1}}},{key:"initRequestIdleCallback",value:function(){!1 in window&&(window.requestIdleCallback=function(cb){var start=Date.now();return setTimeout(function(){cb({didTimeout:!1,timeRemaining:function(){return Math.max(0,50-(Date.now()-start))}})},1)}),!1 in window&&(window.cancelIdleCallback=function(id){return clearTimeout(id)})}},{key:"isDataSaverModeOn",value:function(){return"connection"in navigator&&!0===navigator.connection.saveData}},{key:"supportsLinkPrefetch",value:function(){var elem=document.createElement("link");return elem.relList&&elem.relList.supports&&elem.relList.supports("prefetch")&&window.IntersectionObserver&&"isIntersecting"in IntersectionObserverEntry.prototype}},{key:"isSlowConnection",value:function(){return"connection"in navigator&&"effectiveType"in navigator.connection&&("2g"===navigator.connection.effectiveType||"slow-2g"===navigator.connection.effectiveType)}}]),RocketBrowserCompatibilityChecker}();
+//# sourceURL=rocket-browser-checker-js-after
+</script>
+<script id="rocket-preload-links-js-extra">
+var RocketPreloadLinksConfig = {"excludeUris":"/videos/|/moving-tips/|/(?:.+/)?feed(?:/(?:.+/?)?)?$|/(?:.+/)?embed/|/(index.php/)?(.*)wp-json(/.*|$)|/refer/|/go/|/recommend/|/recommends/","usesTrailingSlash":"1","imageExt":"jpg|jpeg|gif|png|tiff|bmp|webp|avif|pdf|doc|docx|xls|xlsx|php","fileExt":"jpg|jpeg|gif|png|tiff|bmp|webp|avif|pdf|doc|docx|xls|xlsx|php|html|htm","siteUrl":"https://www.canadamoving.com","onHoverDelay":"100","rateThrottle":"3"};
+//# sourceURL=rocket-preload-links-js-extra
+</script>
+<script id="rocket-preload-links-js-after">
+(function() {
+"use strict";var r="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},e=function(){function i(e,t){for(var n=0;n<t.length;n++){var i=t[n];i.enumerable=i.enumerable||!1,i.configurable=!0,"value"in i&&(i.writable=!0),Object.defineProperty(e,i.key,i)}}return function(e,t,n){return t&&i(e.prototype,t),n&&i(e,n),e}}();function i(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}var t=function(){function n(e,t){i(this,n),this.browser=e,this.config=t,this.options=this.browser.options,this.prefetched=new Set,this.eventTime=null,this.threshold=1111,this.numOnHover=0}return e(n,[{key:"init",value:function(){!this.browser.supportsLinkPrefetch()||this.browser.isDataSaverModeOn()||this.browser.isSlowConnection()||(this.regex={excludeUris:RegExp(this.config.excludeUris,"i"),images:RegExp(".("+this.config.imageExt+")$","i"),fileExt:RegExp(".("+this.config.fileExt+")$","i")},this._initListeners(this))}},{key:"_initListeners",value:function(e){-1<this.config.onHoverDelay&&document.addEventListener("mouseover",e.listener.bind(e),e.listenerOptions),document.addEventListener("mousedown",e.listener.bind(e),e.listenerOptions),document.addEventListener("touchstart",e.listener.bind(e),e.listenerOptions)}},{key:"listener",value:function(e){var t=e.target.closest("a"),n=this._prepareUrl(t);if(null!==n)switch(e.type){case"mousedown":case"touchstart":this._addPrefetchLink(n);break;case"mouseover":this._earlyPrefetch(t,n,"mouseout")}}},{key:"_earlyPrefetch",value:function(t,e,n){var i=this,r=setTimeout(function(){if(r=null,0===i.numOnHover)setTimeout(function(){return i.numOnHover=0},1e3);else if(i.numOnHover>i.config.rateThrottle)return;i.numOnHover++,i._addPrefetchLink(e)},this.config.onHoverDelay);t.addEventListener(n,function e(){t.removeEventListener(n,e,{passive:!0}),null!==r&&(clearTimeout(r),r=null)},{passive:!0})}},{key:"_addPrefetchLink",value:function(i){return this.prefetched.add(i.href),new Promise(function(e,t){var n=document.createElement("link");n.rel="prefetch",n.href=i.href,n.onload=e,n.onerror=t,document.head.appendChild(n)}).catch(function(){})}},{key:"_prepareUrl",value:function(e){if(null===e||"object"!==(void 0===e?"undefined":r(e))||!1 in e||-1===["http:","https:"].indexOf(e.protocol))return null;var t=e.href.substring(0,this.config.siteUrl.length),n=this._getPathname(e.href,t),i={original:e.href,protocol:e.protocol,origin:t,pathname:n,href:t+n};return this._isLinkOk(i)?i:null}},{key:"_getPathname",value:function(e,t){var n=t?e.substring(this.config.siteUrl.length):e;return n.startsWith("/")||(n="/"+n),this._shouldAddTrailingSlash(n)?n+"/":n}},{key:"_shouldAddTrailingSlash",value:function(e){return this.config.usesTrailingSlash&&!e.endsWith("/")&&!this.regex.fileExt.test(e)}},{key:"_isLinkOk",value:function(e){return null!==e&&"object"===(void 0===e?"undefined":r(e))&&(!this.prefetched.has(e.href)&&e.origin===this.config.siteUrl&&-1===e.href.indexOf("?")&&-1===e.href.indexOf("#")&&!this.regex.excludeUris.test(e.href)&&!this.regex.images.test(e.href))}}],[{key:"run",value:function(){"undefined"!=typeof RocketPreloadLinksConfig&&new n(new RocketBrowserCompatibilityChecker({capture:!0,passive:!0}),RocketPreloadLinksConfig).init()}}]),n}();t.run();
+}());
+
+//# sourceURL=rocket-preload-links-js-after
+</script>
+<script id="google-maps-api-js" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAoNVQQdk_ojWCpj0fH3Bs9CmwbOAIHxBQ&#038;libraries=places&#038;callback=initAutocomplete&#038;loading=async"></script>
+<script id="owl-carousel-js" src="https://www.canadamoving.com/wp-content/themes/canadamoving/assets/js/owl.carousel.min.js?ver=7.0.4"></script>
+<script id="elementor-webpack-runtime-js" src="https://www.canadamoving.com/wp-content/plugins/elementor/assets/js/webpack.runtime.min.js?ver=4.2.2"></script>
+<script id="elementor-frontend-modules-js" src="https://www.canadamoving.com/wp-content/plugins/elementor/assets/js/frontend-modules.min.js?ver=4.2.2"></script>
+<script id="jquery-ui-core-js" src="https://www.canadamoving.com/wp-includes/js/jquery/ui/core.min.js?ver=1.13.3"></script>
+<script id="elementor-frontend-js-before">
+var elementorFrontendConfig = {"environmentMode":{"edit":false,"wpPreview":false,"isScriptDebug":false},"i18n":{"shareOnFacebook":"Share on Facebook","shareOnX":"Share on X","pinIt":"Pin it","download":"Download","downloadImage":"Download image","fullscreen":"Fullscreen","zoom":"Zoom","share":"Share","playVideo":"Play Video","previous":"Previous","next":"Next","close":"Close","a11yCarouselPrevSlideMessage":"Previous slide","a11yCarouselNextSlideMessage":"Next slide","a11yCarouselFirstSlideMessage":"This is the first slide","a11yCarouselLastSlideMessage":"This is the last slide","a11yCarouselPaginationBulletMessage":"Go to slide"},"is_rtl":false,"breakpoints":{"xs":0,"sm":480,"md":768,"lg":1025,"xl":1440,"xxl":1600},"responsive":{"breakpoints":{"mobile":{"label":"Mobile Portrait","value":767,"default_value":767,"direction":"max","is_enabled":true},"mobile_extra":{"label":"Mobile Landscape","value":880,"default_value":880,"direction":"max","is_enabled":false},"tablet":{"label":"Tablet Portrait","value":1024,"default_value":1024,"direction":"max","is_enabled":true},"tablet_extra":{"label":"Tablet Landscape","value":1200,"default_value":1200,"direction":"max","is_enabled":false},"laptop":{"label":"Laptop","value":1366,"default_value":1366,"direction":"max","is_enabled":false},"widescreen":{"label":"Widescreen","value":2400,"default_value":2400,"direction":"min","is_enabled":false}},"hasCustomBreakpoints":false},"version":"4.2.2","is_static":false,"experimentalFeatures":{"additional_custom_breakpoints":true,"e_panel_promotions":true,"global_classes_should_enforce_capabilities":true,"e_variables":true,"e_opt_in_v4_page":true,"e_components":true,"e_interactions":true,"e_widget_creation":true,"import-export-customization":true},"urls":{"assets":"https:\/\/www.canadamoving.com\/wp-content\/plugins\/elementor\/assets\/","ajaxurl":"https:\/\/www.canadamoving.com\/wp-admin\/admin-ajax.php","uploadUrl":"https:\/\/www.canadamoving.com\/wp-content\/uploads"},"nonces":{"floatingButtonsClickTracking":"a174820c62","atomicFormsSendForm":"702f5164a2"},"swiperClass":"swiper","settings":{"page":[],"editorPreferences":[]},"kit":{"active_breakpoints":["viewport_mobile","viewport_tablet"],"global_image_lightbox":"yes","lightbox_enable_counter":"yes","lightbox_enable_fullscreen":"yes","lightbox_enable_zoom":"yes","lightbox_enable_share":"yes","lightbox_title_src":"title","lightbox_description_src":"description"},"post":{"id":746,"title":"Best%20London%20Movers%20-%20Canada%20Moving","excerpt":"","featuredImage":"https:\/\/www.canadamoving.com\/wp-content\/uploads\/2024\/01\/london-ontario-canada-moving-banner-1024x410.jpg"}};
+//# sourceURL=elementor-frontend-js-before
+</script>
+<script id="elementor-frontend-js" src="https://www.canadamoving.com/wp-content/plugins/elementor/assets/js/frontend.min.js?ver=4.2.2"></script>
+
+<!-- This site is optimized with Phil Singleton's WP SEO Structured Data Plugin v2.8.1 - https://kcseopro.com/wordpress-seo-structured-data-schema-plugin/ -->
+<script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Best London Movers - Canada Moving",
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://www.canadamoving.com/london-moving-company/"
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Canada Moving",
+        "url": "https://www.canadamoving.com/"
+    },
+    "publisher": {
+        "@type": "Organization",
+        "name": "Canada Moving",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.canadamoving.com/wp-content/uploads/2022/01/canada-moving-colour.jpg",
+            "height": 293,
+            "width": 786
+        }
+    },
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://www.canadamoving.com/wp-content/uploads/2022/01/growth-500-image.jpg",
+        "height": 974,
+        "width": 2020
+    },
+    "datePublished": "2022-01-17 04:34:54",
+    "dateModified": "2022-01-17 04:34:54"
+}</script><script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "London Movers",
+    "serviceType": "Moving",
+    "category": "Moving"
+}</script><script type="application/ld+json">{
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": "https://www.canadamoving.com",
+    "name": "Best London Movers - Canada Moving",
+    "description": "Awarded Top Moving Companies in the London Region with +125 Yrs of Moving &amp; Storage for Local and Long Distance Moving. 1.855.337.6848.",
+    "image": "https://www.canadamoving.com/wp-content/uploads/2022/01/canada-moving-colour.jpg",
+    "priceRange": "$$",
+    "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "London",
+        "addressRegion": "ON",
+        "postalCode": "N6N 1A9",
+        "streetAddress": "55 Midpark Crescent"
+    },
+    "telephone": "1.519.681.5710"
+}</script>
+<!-- / WP SEO Structured Data Plugin. -->
+
+  </body>
+</html>

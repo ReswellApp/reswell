@@ -27,7 +27,7 @@ export const MANAGED_PAGE_GROUPS: ManagedPageGroup[] = [
   { id: "content", label: "Content & community", description: "Editorial, forum, and help." },
   { id: "trust", label: "Trust & legal", description: "Policies buyers and sellers check." },
   { id: "marketing", label: "Marketing & growth", description: "Landing and conversion pages." },
-  { id: "dynamic", label: "Dynamic page types", description: "Templates applied to every listing, brand, and seller." },
+  { id: "dynamic", label: "Dynamic page types", description: "Templates applied to every listing, brand, seller, city, and surf shop." },
 ]
 
 export interface ManagedPageDefaults {
@@ -122,9 +122,9 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/1260e45d-5bbd-4e3e-9e02-9b7995b2f23e.jpg",
   }),
   page("about", "core", "About", {
-    title: "About Reswell | Peer-to-Peer Surf Marketplace",
+    title: "About Reswell | Nationwide Surfboard Marketplace",
     description:
-      "Learn how Reswell connects surfers to buy and sell surfboards and gear safely. Trusted marketplace with secure checkout and buyer protection.",
+      "Reswell connects surfers nationwide to buy and sell surfboards with built in shipping, checkout on the site, and Purchase Protection for eligible purchases.",
     path: "/about",
     ogImageUrl:
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/e4235355-97b9-4331-b9e0-8cca85c9644b.jpg",
@@ -145,6 +145,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/contact",
     ogImageUrl:
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/834f5712-af90-43f9-acf1-c4ce0e87daea.jpg",
+  }),
+  page("careers", "core", "Careers", {
+    title: "Careers at Reswell | Surf Marketplace Jobs",
+    description:
+      "Open roles at Reswell in Santa Barbara. Buy, prep, and ship used surfboards with a small team.",
+    path: "/careers",
   }),
 
   // ---- Marketplace ----
@@ -276,12 +282,6 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse the latest surfboard listings on Reswell — a curated feed from active sellers.",
     path: "/search/recent",
   }),
-  page("categories", "marketplace", "Categories", {
-    title: "Browse categories — Reswell",
-    description:
-      "Browse surfboard categories on Reswell — explore shapes and jump into live peer-to-peer listings from local sellers.",
-    path: "/categories",
-  }),
   page("brands", "marketplace", "Brands directory", {
     title: "Surf brands directory — Reswell",
     description: "Explore shapers and surfboard brands on Reswell — profiles from our catalog.",
@@ -292,6 +292,50 @@ export const MANAGED_PAGES: ManagedPage[] = [
     description:
       "Explore surf sellers on Reswell — support fellow surfers and find shops near you or who ship to your area.",
     path: "/sellers",
+  }),
+  page("board-finder", "marketplace", "Board Finder", {
+    title: "Board Finder — save searches & get alerts | Reswell",
+    description:
+      "Find the surfboard you want. Save up to five searches — brand, model, size, price, and more — and get emailed when a matching board is listed on Reswell.",
+    path: "/board-finder",
+    keywords: [
+      "surfboard finder",
+      "surfboard alerts",
+      "saved board search",
+      "used surfboard wanted",
+    ],
+  }),
+  page("priceguide", "marketplace", "Price Guide", {
+    title: "Surfboard & surf gear price guide — Reswell",
+    description:
+      "See what used surfboards and surf gear are worth. Typical values, sold comps, and live asking prices from the Reswell marketplace.",
+    path: "/priceguide",
+    keywords: [
+      "surfboard price guide",
+      "used surfboard values",
+      "surf gear pricing",
+      "what is my surfboard worth",
+    ],
+  }),
+  page("cities-top", "marketplace", "Top cities directory", {
+    title: "Top cities for surf gear — Reswell",
+    description:
+      "Browse every city with active surfboard and gear listings on Reswell, then open that city's landing page to shop local pickup.",
+    path: "/cities/top",
+    keywords: ["surfboard cities", "used surfboards near me", "surf marketplace cities"],
+  }),
+  page("surf-shops", "marketplace", "Surf shops directory", {
+    title: "Surf shops — Reswell",
+    description:
+      "Independent surf shops featured on Reswell city pages. Find a shop, get directions, and browse used boards nearby.",
+    path: "/surf-shops",
+    keywords: ["surf shops", "local surf shop", "rincon designs"],
+  }),
+  page("public-api", "marketplace", "Public research API", {
+    title: "Public research API — Reswell",
+    description:
+      "JSON API for Reswell listings, used-board pricing comps, and catalog search. Built for LLMs and research bots.",
+    path: "/public-api",
   }),
   // ---- Content & community ----
   page("blog", "content", "Blog index", {
@@ -383,11 +427,19 @@ export const MANAGED_PAGES: ManagedPage[] = [
   }),
 
   // ---- Marketing & growth ----
+  page("we-buy", "marketing", "We’ll buy your surfboard", {
+    title: "We’ll Buy Your Surfboard | Reswell",
+    description:
+      "Sell your surfboard to Reswell. Quote in under 30 minutes. Ship in a box max 22\" wide and 5\" high — we buy the prepaid label after you send packed measurements.",
+    path: "/we-buy",
+    keywords: ["sell surfboard", "we buy surfboards", "surfboard quote", "sell board to Reswell"],
+  }),
   page("listyoursurfboard", "marketing", "List your surfboard", {
     title: "List your surfboard | Reswell",
     description:
       "List your surfboard on Reswell — reach surfers locally and nationwide with photos, messaging, and secure checkout. Free to post.",
     path: "/listyoursurfboard",
+    ogImageUrl: "/images/marketing/list-your-surfboard-share.jpg",
   }),
   page("shipping-estimator", "marketing", "Shipping estimator", {
     title: "Shipping label cost estimator — Reswell",
@@ -395,6 +447,28 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Estimate US surfboard shipping label costs by ship-from ZIP, receiver ZIP, weight, and package dimensions with live carrier quotes.",
     path: "/shipping-estimator",
   }),
+  page("giveaways", "marketing", "Giveaways", {
+    title: "Surfboard Giveaways | Reswell",
+    description:
+      "Current Reswell giveaways for sellers. List a surfboard for a chance to win a custom from Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine.",
+    path: "/giveaways",
+    keywords: ["surfboard giveaway", "win a surfboard", "list surfboard raffle"],
+  }),
+  page("giveaway-win-a-custom-surfboard", "marketing", "Win a custom surfboard", {
+    title: "List a surfboard to win a surfboard | Reswell",
+    description:
+      "Publish a surfboard on Reswell and you’re entered to win a custom from Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine. You pick the brand.",
+    path: "/giveaways/win-a-custom-surfboard",
+    keywords: [
+      "custom surfboard giveaway",
+      "Channel Islands",
+      "Lost",
+      "JS",
+      "Sharpeye",
+      "Hayden Shapes",
+      "Lovemachine",
+    ],
+  }, { note: "Redirects to /giveaways." }),
   page("ratereswell", "marketing", "Rate Reswell", {
     title: "Rate Reswell",
     description:

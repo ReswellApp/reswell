@@ -45,3 +45,106 @@ export function resolveOfferThreadNote(
   if (offerTimeline === undefined) return null
   return openingOfferNoteFromTimeline(offerTimeline, options)
 }
+
+function parseMoneyLoose(v: unknown): number | null {
+  const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(/,/g, ""))
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : null
+}
+
+/** Dollar amount from a mirrored negotiation thread line (offer, counter, accept). */
+export function parseNegotiationAmountFromContent(content: string): number | null {
+  const t = content.trim()
+  const patterns = [
+    /^Counteroffer:\s*\$([\d,]+(?:\.\d{2})?)/i,
+    /^Offer from seller:\s*\$([\d,]+(?:\.\d{2})?)/i,
+    /^(?:Counteroffer|Offer) accepted\s*[—–-]\s*\$([\d,]+(?:\.\d{2})?)/i,
+    /^(?:Counteroffer|Offer) declined\s*[—–-]\s*(?:seller asked\s*)?\$([\d,]+(?:\.\d{2})?)/i,
+  ] as const
+  for (const pattern of patterns) {
+    const m = pattern.exec(t)
+    if (m?.[1]) return parseMoneyLoose(m[1])
+  }
+  return null
+}
+
+type OfferLikeForNegotiation = {
+  id: string
+  status: string
+  current_amount: number | string
+  listing_id?: string
+  seller_initiated?: boolean | null
+  expires_at?: string | null
+  line_items?: unknown
+}
+
+function matchOfferByAmountAndListing(
+  offers: OfferLikeForNegotiation[],
+  content: string,
+  listingId: string | null | undefined,
+): OfferLikeForNegotiation | null {
+  const amount = parseNegotiationAmountFromContent(content)
+
+  if (amount != null) {
+    const amountMatch = offers.find((o) => {
+      if (listingId && o.listing_id && o.listing_id !== listingId) return false
+      const current = parseMoneyLoose(o.current_amount)
+      return current != null && Math.abs(current - amount) <= 0.001
+    })
+    if (amountMatch) return amountMatch
+  }
+
+  const onListing = listingId
+    ? offers.filter((o) => !o.listing_id || o.listing_id === listingId)
+    : offers
+  return onListing.length === 1 ? onListing[0]! : null
+}
+
+/**
+ * Match a mirrored counter / seller-offer line to an open COUNTERED offer so the
+ * latest thread card can show Accept / Decline.
+ */
+export function resolveActionableCounteredOffer(
+  offers: OfferLikeForNegotiation[],
+  kind: OfferNegotiationKind,
+  content: string,
+  listingId: string | null | undefined,
+): OfferLikeForNegotiation | null {
+  if (kind !== "counter" && kind !== "seller_offer") return null
+
+  const now = Date.now()
+
+  const open = offers.filter((o) => {
+    if (o.status !== "COUNTERED") return false
+    if (kind === "seller_offer" && !o.seller_initiated) return false
+    if (kind === "counter" && o.seller_initiated) return false
+    if (listingId && o.listing_id && o.listing_id !== listingId) return false
+    if (o.expires_at) {
+      const exp = new Date(o.expires_at).getTime()
+      if (Number.isFinite(exp) && exp <= now) return false
+    }
+    return true
+  })
+
+  return matchOfferByAmountAndListing(open, content, listingId)
+}
+
+/**
+ * Match a mirrored accept line to an ACCEPTED offer so the latest thread card
+ * can show Checkout.
+ */
+export function resolveAcceptedOfferForCheckout(
+  offers: OfferLikeForNegotiation[],
+  kind: OfferNegotiationKind,
+  content: string,
+  listingId: string | null | undefined,
+): OfferLikeForNegotiation | null {
+  if (kind !== "accepted") return null
+
+  const accepted = offers.filter((o) => {
+    if (o.status !== "ACCEPTED") return false
+    if (listingId && o.listing_id && o.listing_id !== listingId) return false
+    return true
+  })
+
+  return matchOfferByAmountAndListing(accepted, content, listingId)
+}

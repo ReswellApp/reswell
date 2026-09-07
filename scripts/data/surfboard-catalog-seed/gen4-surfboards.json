@@ -1,0 +1,78 @@
+{
+  "generated_for": "Gen4 Surfboards official named standup catalog",
+  "source": "https://gen4surf.com/products.json (Shopify surfboard product type only — excludes apparel and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "gen4-surfboards",
+      "name": "Gen4 Surfboards",
+      "website_url": "https://gen4surf.com",
+      "location_label": "Tweed Heads, New South Wales, Australia",
+      "founder_name": "Jye Gudenswager",
+      "lead_shaper_name": "Jye Gudenswager",
+      "short_description": "Fourth-generation Australian custom boards from Jye Gudenswager in Tweed Heads — shortboards, fishes, hybrids, and fun shapes.",
+      "models": [
+        {
+          "name": "ALL STAR",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/AllStar_All_1638x2047_73c38d84-0334-48ae-929d-62162a8dd0a1.jpg",
+          "description": "The AllStar is our high performance shortboard made for experienced surfers. This is the board to use if you are heading on a boat trip to perfect Indo waves, or have a pumping day at your local break. This board was designed with the input of the worlds best surfers such as Mick Fanning, Mitch Parkinson, and Mark Occhilupo. It's the go-to board for good surfers in great conditions. Wave range: 3ft – 6ft+. Good to Excellent, Clean Conditions. Design: The AllStar runs a high entry rocker and single concave through the chest to double concave through the fins. Shaper notes: Rides this board a couple of inches taller than your height. Step Up available for waves 6ft+ Standard Fin Configuration: FCS I / FCS II / Futures Thruster (5 fin available for an extra $30)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "ALL STAR X",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/AllStar_X_All_1638x2047_611ea0dc-b480-4013-be08-5955337c1828.jpg",
+          "description": "(WAVE TYPE) - 3 TO 10FT POINT BREAKS, PUNCHY BEACH BREAKS, REEF BREAKS FULL ROCKER LOW RAIL Similar to our highly rated Allstar model in a few ways but different in so many others. We have taken all the best features and tweaked them for the better to create one of our highest performers yet. Keeping an eye-catchingly smooth outline that flows into a slight hip allows for easy directional changes, matched with our slight rocker extension out through the nose allows for a larger sweet spot and prevents any catching through big powerful carves or critical parts of the wave. A slightly deeper single concave under your front foot runs down into a double concave through the fins for a bit of extra lift yet maintaining control in larger conditions. Overall the All star X will rise to the occasion to support instinctive and fast surfing. A go to board for athletes on the wsl to some of the craziest clips floating through your social media.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "BLACK MAGIC",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/Black_MAGIC_All_1638x2047_3e4077a4-0710-45c9-8186-dee06f093d16.jpg",
+          "description": "The Black Magic is the perfect all rounder for intermediate and experienced surfers. This is Mitch Parkinson's favourite model and the board that he uses daily. The Black Magic is designed to be a one board quiver for good surfers that will excel in a wide variety of conditions. Wave range: 2ft – 5ft. All Conditions. Design: With a high entry rocker and single to double concave this board will change the way you think about surfing. It has a wide middle/chest area for stability and paddle power, but the nose and tail are refined like a high performance model making the perfect combination. Shaper notes: Rides this board a little shorter and wider than your AllStar (High Performance shortboard). But keep a similar thickness to your AllStar. Standard Fin Configuration: FCS I / FCS II / Futures Thruster (5 fin available for an extra $30)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BLACK MAGIC 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/Black_MAGIC_All_1638x2047_367fb36f-e0a8-4013-9c3f-0a9303e464ab.jpg",
+          "description": "WAVE TYPE – 2 TO 6FT ALL WAVE TYPES MEDIUM ROCKER MEDIUM/LOW RAIL We have decided its time to take our \"BEST SELLING\" Black Magic tweak some refinements and add some spice to give you the 2.0 version. Pulling the nose in slightly and dropping its flowing rocker and rail line creating a much larger sweetspot for the pilot. We kept the single concave running down into a double concave through the fins to allow lift and generate speed in average conditions but also to maintain control when the waves turn on. Now here's the SPICEY part and our favourite part, the single channel running 5 inches up the tail with same angle as the fins allowing the water to flow freely through the back of the board, creating a slight v for directional change but allowing the board to latch onto the wave for control, giving you just enough zip to ditch the fins, slide and recover. An allround high performing favourite of our team, tested all over the world, from perfect Indonesia to cross shore Hawaiian ramps and right here at home behind the rock at Snapper.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "DOUBLE DARE",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/DoubleDare_All_1638x2047_125d3353-64f2-42e8-9b93-b971d8a839a1.jpg",
+          "description": "WAVE TYPE – 0 TO 4FT ALL WAVE TYPES MEDIUM ROCKER FULL RAIL Keeping the old school traditional smooth outline of a twinny but adding some new school flair, we have created a board that screams fun! Adding a slightly fuller rocker then your usual twin combining that with a v-tail pushing up to flat under your chest and secretly moving our fin position backwards a few inches for control, our Double Dare is able to generate maximum speed while maintaining control through fast manouvers. Thoroughly tested by our team in terrible beachies to pumping point breaks up the whole east coast of Australia the Double Dare gets the tick of approval.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "HYBRID",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/files/IMG_2611.jpg",
+          "description": "The Hybrid is the love child of the Black Magic and the Bull. It's the all round board for the moderate to intermediate surfer. Having the chest and nose of the Bull means that the board paddles like a dream. Then the rear end and tail of the Black Magic gives you the manoeuvrability that you need to turn and hit sections. Wave range: 4ft and under. Any Conditions. Design: The Hybrid has a broad nose slowly slimming into a refined tail that will give you stability and the ability to charge straight over flat sections, whilst still allowing you to smack a section when it presents itself. The board also has a medium entry rocker and a V tail heading into a single concave to allow plenty of lift and manoeuvrability. Shaper notes: Rides this board 2-3 inches shorter than your height. Standard Fin Configuration: FCS I / FCS II / Futures Thruster (5 fin available for an extra $30)",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "LITTLE SECRET",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/Spread.jpg",
+          "description": "The Little Secret is the high performance shortboard made for the moderate-intermediate surfer. We realise that not everyone can surf everyday and be as fit as the pros, so we made a high performance board that allows you to rip and perform in high quality waves. Wave range: 3ft – 6ft+. Good to Excellent, Clean Conditions. Design: We've given the Little Secret more foam around the chest area to make paddling easier and add stability. The Little Secret is a little wider than an Allstar, but we've added the hip near the tail to allow for easier turning. As with our other performance boards the Little Secret keeps a high entry rocker and single concave through the chest to double concave through the fins. Shaper notes: Rides this board 1-2 inches taller than your height. Step Up available for waves 6ft+ Standard Fin Configuration: FCS I / FCS II / Futures Thruster (5 fin available for an extra $30)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "LUV MONSTR",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/LUV-MONSTER_All_1638x2047_4b316c9a-218d-406d-a3a4-d53d78e563fa.jpg",
+          "description": "WAVE TYPE - 1 TO 6FT BEACH BREAKS, POINT BREAKS, REEF BREAKS MEDIUM ROCKER MEDIUM RAIL The Luvmonstr was originally designed as that in between board you go to that's forgiving, easy to ride and your able to switch back an forth between our other models with no transition period. I've made the luvmonstr thicker under the chest area by redistributing foam forwards and deepening the bottom contours allowing fast acceleration from the get go. Combine all that with its soft rail and you're in for a fast yet forgiving ride. Designed for all types of surfers and all types of conditions, from onshore slop to perfect clean points, it's a \"MUST HAVE\" in your quiver.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MINI MAL",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/Product_4_Front.png",
+          "description": "The Mini Mal is the perfect fun board for Summer conditions. Mini mal surfboards are perfect for the person who likes the feel of a longboard but wants more maneuverability. Minimals are easier to carry and manage out in the water but with all the surfing ease of a longboard. Wave range: 3ft and under. Any conditions. Design: The Mini Mal has a low entry rocker and plenty of width and thickness to give this little magic carpet maximum speed in crap conditions. Shaper notes: Ride this board around 2 foot taller than your height. Standard Fin Configuration: FCS I / FCS II / Futures Thruster / Single Fin box available for an extra $50)",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "THE BULL",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/The_Bull_All_1638x2047_f522754e-0e7d-4d9f-9d0d-1f2c7c83dfd1.jpg",
+          "description": "The Bull is the ultimate groveller, designed for all surfers on those days when you desperately want to surf but the conditions are less than average. The Bull has plenty of thickness and width to provide the paddle power needed in gutless surf. The V at the tip of the tail acts like a see-saw that allows you turn the board on a dime in the slop. Wave range: 2ft and under. Any conditions. Design: The Bull has a low entry rocker and plenty of width and thickness to give this little magic carpet maximum speed in crap conditions. Having a V tail to flat bottom, combined with a single flyer and swallow tail, gives the board maximum manouverability in the slop. Shaper notes: Rides this board around 4 inches shorter than your height. Standard Fin Configuration: FCS I / FCS II / Futures Thruster (5 fin available for an extra $30)",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}

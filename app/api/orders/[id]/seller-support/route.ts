@@ -1,11 +1,14 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
+import { insertOrderSupportRequest } from "@/lib/db/order-support"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { orderRequestTypeSubject, orderRequestTypeToKind } from "@/lib/utils/support-case-display"
 
 const schema = z.object({
-  request_type: z.enum(["refund_request", "cancel_request"]),
+  request_type: z.enum(["refund_request", "cancel_request", "help_request"]),
   body: z.string().min(10).max(8000),
 })
 
@@ -13,10 +16,7 @@ export const dynamic = "force-dynamic"
 
 /**
  * POST /api/orders/:id/seller-support
- *
- * Sellers submit refund or cancellation requests for admin review (returns are buyer-only).
- * Inserts into `order_support_requests` via service role (RLS on that table
- * only allows the buyer; sellers use this authenticated path instead).
+ * Sellers open order help cases (refund or cancel request) for admin review.
  */
 export async function POST(
   request: NextRequest,
@@ -68,27 +68,50 @@ export async function POST(
     orderId,
   )
 
+  const mappedType =
+    parsed.data.request_type === "cancel_request"
+      ? "cancel_order"
+      : parsed.data.request_type === "refund_request"
+        ? "refund_help"
+        : "help"
+
   const serviceSupabase = createServiceRoleClient()
-  const { data, error } = await serviceSupabase
-    .from("order_support_requests")
-    .insert({
-      order_id: orderId,
-      buyer_id: user.id,
-      request_type: "help",
-      body: `[Seller ${parsed.data.request_type.replace(/_/g, " ")}]\n\n${parsed.data.body.trim()}`,
-      contacted_seller_first: null,
-      order_ref: orderRef,
-    })
-    .select("id")
-    .single()
+  const { data, error } = await insertOrderSupportRequest(serviceSupabase, {
+    order_id: orderId,
+    buyer_id: user.id,
+    request_type: mappedType,
+    body: parsed.data.body.trim(),
+    contacted_seller_first: null,
+    order_ref: orderRef,
+    requester_role: "seller",
+  })
 
   if (error || !data) {
     console.error("[seller-support] insert:", error)
     return NextResponse.json({ error: "Could not submit request" }, { status: 500 })
   }
 
+  const kind = orderRequestTypeToKind(mappedType)
+  const subject = `[Seller] ${orderRequestTypeSubject(mappedType, orderRef)}`
+  const opened = await createSupportCaseWithOpeningMessage(serviceSupabase, {
+    kind,
+    subject,
+    preview: parsed.data.body.trim(),
+    requester_user_id: user.id,
+    requester_email: user.email ?? null,
+    requester_role: "seller",
+    order_id: orderId,
+    order_ref: orderRef,
+    order_support_request_id: data.id,
+    source_channel: "order_seller",
+    priority: "high",
+    body: parsed.data.body.trim(),
+    authorUserId: user.id,
+  })
+
+  const caseId = opened?.id ?? data.id
   await trackKlaviyoSupportTicketCreated({
-    supportTicketId: data.id,
+    supportTicketId: caseId,
     email: user.email ?? "",
     externalId: user.id,
     source: "order_seller_support",
@@ -97,5 +120,5 @@ export async function POST(
     orderRef: orderRef,
   })
 
-  return NextResponse.json({ success: true, id: data.id })
+  return NextResponse.json({ success: true, id: caseId })
 }

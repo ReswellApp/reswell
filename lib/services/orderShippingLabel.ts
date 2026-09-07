@@ -5,12 +5,17 @@ import {
 } from "@/lib/shipengine/surfboard-label"
 import {
   listingUsesAdminCustomSurfboardCarton,
+  resolveCombinedPackedParcelFromListings,
   resolvePackedParcelFromListing,
   resolveSurfboardShippingTierIdFromListing,
   suggestPackedBoxInchesFromListing,
   type ListingPackedParcelSource,
   type ResolvedPackedParcelSource,
 } from "@/lib/reswell-packed-parcel-from-listing"
+import {
+  isMultiSurfboardOneBoxShipment,
+  validateMultiSurfboardOneBoxParcel,
+} from "@/lib/surfboard-multi-board-parcel"
 
 /** Seller flat/free labels: never auto-quote from listing volume heuristics — seller must enter parcel. */
 export const SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR =
@@ -21,6 +26,7 @@ import {
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { getReswellWarehouseAddress } from "@/lib/reswell-warehouse-address"
 import {
   LABEL_PARCEL_MIN_WEIGHT_LB,
   SURFBOARD_LABEL_LIMITS_ERROR,
@@ -120,6 +126,71 @@ export function resolveOrderLabelParcelFromListing(
 }
 
 /**
+ * One-box label parcel for a same-seller order. Multi-surfboard orders use
+ * longest board + 4″ and a count-based profile (2 boards 22 × 5; 3 boards 27 × 7).
+ */
+export function resolveOrderLabelParcelFromListings(
+  listings: ListingPackedParcelSource[],
+): { ok: true; parcel: ResolvedOrderLabelParcel } | { ok: false; error: string } {
+  if (listings.length === 0) {
+    return { ok: false, error: "No listings to size a shipping label for." }
+  }
+  if (listings.length === 1) {
+    return resolveOrderLabelParcelFromListing(listings[0]!)
+  }
+
+  const r = resolveCombinedPackedParcelFromListings(listings)
+  if (!r.ok) {
+    return { ok: false, error: r.error }
+  }
+
+  const weightLb = Math.max(LABEL_PARCEL_MIN_WEIGHT_LB, r.weightOz / 16)
+  const dims = {
+    lengthIn: r.lengthIn,
+    widthIn: r.widthIn,
+    heightIn: r.heightIn,
+    weightLb,
+  }
+
+  if (isMultiSurfboardOneBoxShipment(listings)) {
+    const multiCheck = validateMultiSurfboardOneBoxParcel(dims)
+    if (!multiCheck.ok) {
+      return multiCheck
+    }
+  } else {
+    const limitCheck = validateLabelParcelEntry(dims)
+    if (!limitCheck.ok) {
+      return limitCheck
+    }
+  }
+
+  const firstSurfboard = listings.find((row) => resolveSurfboardShippingTierIdFromListing(row) != null)
+  const tierId = firstSurfboard ? resolveSurfboardShippingTierIdFromListing(firstSurfboard) : null
+
+  logPackBandLabelTelemetry({
+    listingId:
+      firstSurfboard && "id" in firstSurfboard
+        ? String((firstSurfboard as { id?: string }).id ?? "")
+        : null,
+    tierId,
+    bandId: firstSurfboard?.shipping_package_band,
+    dims,
+  })
+
+  return {
+    ok: true,
+    parcel: {
+      lengthIn: r.lengthIn,
+      widthIn: r.widthIn,
+      heightIn: r.heightIn,
+      weightLb,
+      source: r.source,
+      tierId,
+    },
+  }
+}
+
+/**
  * Optional L×W×H prefill for seller flat/free label forms (board dims floored to whole inches).
  * Weight is never inferred — sellers must measure and enter it.
  */
@@ -135,6 +206,8 @@ export async function fetchRatesForSurfboardOrder(params: {
   parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
   tierId?: SurfboardShippingTierId | null
   adminCustomCarton?: boolean
+  listingSection?: string | null
+  insuredValueUsd?: number | null
 }) {
   return fetchShipEngineRatesForSurfboard(params)
 }
@@ -160,20 +233,16 @@ export function resolveAddressesForLabel(params: {
 }
 
 /**
- * Return label: buyer ships back to the seller's ship-from address.
- * `from` = buyer order shipping address, `to` = seller profile address.
+ * Return label: buyer ships back to Reswell HQ (915 De La Vina).
+ * `from` = buyer order shipping address, `to` = Reswell warehouse.
  */
 export function resolveAddressesForReturnLabel(params: {
-  sellerAddress: ProfileAddressRow
   orderShippingJson: unknown
 }): { ok: true; from: RateQuoteAddressFields; to: RateQuoteAddressFields } | { ok: false; error: string } {
   const from = orderShippingJsonToRateQuoteAddress(params.orderShippingJson)
   if (!from) {
     return { ok: false, error: "This order does not have a complete buyer shipping address for the return." }
   }
-  const to = profileRowToRateQuoteAddress(params.sellerAddress)
-  if (!to.name?.trim() || !to.address_line1?.trim() || !to.city_locality?.trim() || !to.state_province?.trim()) {
-    return { ok: false, error: "Seller ship-from address is incomplete." }
-  }
+  const to = getReswellWarehouseAddress()
   return { ok: true, from, to }
 }

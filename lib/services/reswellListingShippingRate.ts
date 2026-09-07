@@ -15,6 +15,8 @@ import {
 import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
+  normalizeCarrierEstimatedDeliveryIso,
+  peerCheckoutSectionRestrictsUspsServices,
   peerCheckoutShippingServiceError,
   type PeerCheckoutShippingRateOption,
   toPeerCheckoutShippingRateOptions,
@@ -26,6 +28,10 @@ import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { formatShipEngineApiError } from "@/lib/shipengine/errors"
 import {
+  getShipEngineLabelInsuranceProvider,
+  isShipEngineLabelInsuranceEnabled,
+} from "@/lib/shipengine/insurance"
+import {
   buildShipmentBody,
   extractCarrierIdsFromCarriersResponse,
   extractRatesFromApiEnvelope,
@@ -33,6 +39,10 @@ import {
   type ShippingAddressInput,
 } from "@/lib/shipping/shipengine-rate-helpers"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+import {
+  isMultiSurfboardOneBoxShipment,
+  validateMultiSurfboardOneBoxParcel,
+} from "@/lib/surfboard-multi-board-parcel"
 
 /** Minimum listing slice required to rate a Reswell-shipped surfboard at checkout. */
 export type ReswellRateableListing = ListingPackedParcelSource & {
@@ -40,6 +50,8 @@ export type ReswellRateableListing = ListingPackedParcelSource & {
   longitude?: number | string | null
   city?: string | null
   state?: string | null
+  /** Listing price used as ParcelGuard insured value when insurance is enabled. */
+  price?: number | string | null
 }
 
 export type ReswellListingRateRow = {
@@ -52,6 +64,7 @@ export type ReswellListingRateRow = {
   serviceName: string
   serviceCode: string | null
   deliveryDays: number | null
+  estimatedDeliveryDate: string | null
   attributes: string[]
 }
 
@@ -200,10 +213,27 @@ export function buyerProfileAddressToShipTo(
       state_province: normalizeUsStateProvinceForShipping("US", st),
       postal_code: zip,
       country_code: "US",
-      /** Match admin calculator default (commercial-style quote). */
-      residential: "no",
+      /** Buyer homes — residential so purchased labels and rates match delivery. */
+      residential: "yes",
     },
   }
+}
+
+function parseCarrierDeliveryDays(r: Record<string, unknown>): number | null {
+  const candidates: unknown[] = [r.delivery_days, r.carrier_delivery_days]
+  for (const value of candidates) {
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+      return Math.round(value)
+    }
+    if (typeof value === "string") {
+      const match = value.trim().match(/^(\d+)/)
+      if (match) {
+        const n = Number.parseInt(match[1]!, 10)
+        if (Number.isFinite(n) && n > 0) return n
+      }
+    }
+  }
+  return null
 }
 
 function rowFromRate(r: Record<string, unknown>): ReswellListingRateRow {
@@ -214,6 +244,8 @@ function rowFromRate(r: Record<string, unknown>): ReswellListingRateRow {
     : []
   const carrierCode = typeof r.carrier_code === "string" && r.carrier_code.trim() ? r.carrier_code.trim() : null
   const serviceCode = typeof r.service_code === "string" && r.service_code.trim() ? r.service_code.trim() : null
+  const estimatedRaw =
+    typeof r.estimated_delivery_date === "string" ? r.estimated_delivery_date : null
   return {
     rate_id: rateId,
     totalAmount: total,
@@ -222,10 +254,8 @@ function rowFromRate(r: Record<string, unknown>): ReswellListingRateRow {
     carrierCode,
     serviceName: String(r.service_type ?? r.service_code ?? "Service"),
     serviceCode,
-    deliveryDays:
-      typeof r.delivery_days === "number" && Number.isFinite(r.delivery_days)
-        ? r.delivery_days
-        : null,
+    deliveryDays: parseCarrierDeliveryDays(r),
+    estimatedDeliveryDate: normalizeCarrierEstimatedDeliveryIso(estimatedRaw),
     attributes: attrs,
   }
 }
@@ -251,9 +281,9 @@ export async function getCheapestReswellRateForListing(input: {
   diagnosticTag?: string
   /** Listing section — restricts USPS services for fins and magazines at checkout. */
   section?: string | null
-  /** Buyer-selected ShipEngine rate id from checkout (fins). Ephemeral — prefer {@link selectedServiceCode}. */
+  /** Buyer-selected ShipEngine rate id from checkout. Ephemeral — prefer {@link selectedServiceCode}. */
   selectedRateId?: string | null
-  /** Stable USPS service bucket for fins checkout (e.g. `usps_priority_mail`). */
+  /** Stable service bucket (e.g. `usps_priority_mail` or `ups_ground`). */
   selectedServiceCode?: string | null
   /**
    * Ship-from contact name on carrier labels (printed under “Seller” / shipper on the label).
@@ -267,9 +297,9 @@ export async function getCheapestReswellRateForListing(input: {
 /**
  * One-box rate for multiple same-seller listings shipped together.
  *
- * The combined parcel uses the **biggest item's dimensions** and the **sum of all item weights**
- * (see {@link resolveCombinedPackedParcelFromListings}). Ship-from is resolved from the first
- * listing — all listings belong to one seller, so localities match.
+ * The combined parcel is {@link resolveCombinedPackedParcelFromListings}
+ * (2 surfboards: longest + 4″ × 22 × 5 × 22 lb; 3 boards: × 27 × 7; otherwise biggest-DIM carton + summed weights).
+ * Ship-from is resolved from the first listing — all listings belong to one seller.
  */
 function resolveSelectedCheckoutRate(
   decorated: ReswellListingRateRow[],
@@ -280,7 +310,7 @@ function resolveSelectedCheckoutRate(
   const filtered = filterReswellRatesForPeerSection(decorated, section)
   const checkoutRateOptions = toPeerCheckoutShippingRateOptions(filtered, section)
 
-  if (section === "fins" || section === "magazines") {
+  if (peerCheckoutSectionRestrictsUspsServices(section)) {
     if (checkoutRateOptions.length === 0) {
       return { ok: false, error: peerCheckoutShippingServiceError(section) }
     }
@@ -321,14 +351,13 @@ function resolveSelectedCheckoutRate(
 
   const purchasable =
     defaultRow ??
-    (section === "fins" || section === "magazines" ? filtered : decorated).find((row) => row.rate_id != null)
+    (peerCheckoutSectionRestrictsUspsServices(section) ? filtered : decorated).find((row) => row.rate_id != null)
   if (!purchasable?.rate_id) {
     return {
       ok: false,
-      error:
-        section === "fins" || section === "magazines"
-          ? peerCheckoutShippingServiceError(section)
-          : "No carrier returned a label rate for this shipment. Try again or check ShipEngine.",
+      error: peerCheckoutSectionRestrictsUspsServices(section)
+        ? peerCheckoutShippingServiceError(section)
+        : "No carrier returned a label rate for this shipment. Try again or check ShipEngine.",
     }
   }
 
@@ -371,8 +400,16 @@ export async function getCheapestReswellRateForListings(input: {
     .map((listing) => resolveSurfboardShippingTierIdFromListing(listing))
     .filter((tierId): tierId is SurfboardShippingTierId => tierId != null)
   const usesFreightTier = listingTiers.some((tierId) => !surfboardShippingTierUsesUpsParcelLimits(tierId))
+  const multiSurfboardBox = isMultiSurfboardOneBoxShipment(input.listings)
 
-  if (usesFreightTier) {
+  if (multiSurfboardBox) {
+    if (!usesFreightTier) {
+      const multiCheck = validateMultiSurfboardOneBoxParcel(dims)
+      if (!multiCheck.ok) {
+        return multiCheck
+      }
+    }
+  } else if (usesFreightTier) {
     for (const listing of input.listings) {
       const tierId = resolveSurfboardShippingTierIdFromListing(listing)
       if (!tierId) continue
@@ -422,9 +459,17 @@ export async function getCheapestReswellRateForListings(input: {
     return { ok: false, error: "No shipping carriers are configured yet." }
   }
 
+  const insuredFromListings = input.listings.reduce((sum, listing) => {
+    const price = Number(listing.price ?? 0)
+    return sum + (Number.isFinite(price) && price > 0 ? price : 0)
+  }, 0)
+  const insuranceEnabled = isShipEngineLabelInsuranceEnabled()
+  const insuredAmount =
+    insuranceEnabled && insuredFromListings > 0 ? Math.round(insuredFromListings * 100) / 100 : null
+
   const payload: ReswellListingRateRequestPayload = {
     rate_options: { carrier_ids: carrierIds },
-    shipment: buildShipmentBody(shipFrom.address, input.shipTo, {
+    shipment: buildShipmentBody(shipFrom.address, { ...input.shipTo, residential: "yes" }, {
       weightValue: parcel.weightOz,
       weightUnit: "ounce",
       length: parcel.lengthIn,
@@ -433,6 +478,9 @@ export async function getCheapestReswellRateForListings(input: {
       dimUnit: "inch",
       packageCode: "package",
       validateAddress: "no_validation",
+      insuranceProvider: insuredAmount != null ? getShipEngineLabelInsuranceProvider() : null,
+      insuredValueAmount: insuredAmount,
+      insuredValueCurrency: "usd",
     }),
   }
 

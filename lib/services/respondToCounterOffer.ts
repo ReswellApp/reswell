@@ -1,12 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { trackKlaviyoOfferAccepted } from "@/lib/klaviyo/track-offer-accepted"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
-import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
+import { reconcileOfferFulfillmentWithListings } from "@/lib/offer-listing-shipping"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -82,7 +83,7 @@ export async function respondToCounterOfferService(
   const { data: listing, error: listErr } = await supabase
     .from("listings")
     .select(
-      "id, title, user_id, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
+      "id, title, user_id, slug, section, price, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
     )
     .eq("id", offer.listing_id)
     .maybeSingle()
@@ -154,15 +155,38 @@ export async function respondToCounterOfferService(
 
   // accept — offer price is stored on offers only; listings.price stays at the original list price.
   const lineItems = parseOfferLineItems((offer as { line_items?: unknown }).line_items)
-  const isBundle = !!lineItems && lineItems.length > 1
-  const reconciled = reconcileOfferFulfillmentWithListing(
+  const extraIds = (lineItems ?? [])
+    .map((row) => row.listing_id)
+    .filter((id) => id !== listing.id)
+  let extraListings: Array<{
+    shipping_available: boolean | null
+    local_pickup: boolean | null
+  }> = []
+  if (extraIds.length > 0) {
+    const { data: extraRows, error: extraErr } = await supabase
+      .from("listings")
+      .select("id, shipping_available, local_pickup")
+      .in("id", extraIds)
+    if (extraErr || !extraRows || extraRows.length !== extraIds.length) {
+      return { ok: false, error: "One or more listings are no longer available." }
+    }
+    extraListings = extraRows as Array<{
+      shipping_available: boolean | null
+      local_pickup: boolean | null
+    }>
+  }
+  const reconciled = reconcileOfferFulfillmentWithListings(
     (offer as { fulfillment?: string | null }).fulfillment,
-    {
-      shipping_available: isBundle ? false : listing.shipping_available,
-      local_pickup: listing.local_pickup,
-      shipping_price: listing.shipping_price,
-      board_shipping_cost_mode: listing.board_shipping_cost_mode,
-    },
+    [
+      {
+        section: listing.section,
+        shipping_available: listing.shipping_available,
+        local_pickup: listing.local_pickup,
+        shipping_price: listing.shipping_price,
+        board_shipping_cost_mode: listing.board_shipping_cost_mode,
+      },
+      ...extraListings,
+    ],
   )
   if (!reconciled.fulfillment) {
     return {
@@ -214,8 +238,8 @@ export async function respondToCounterOfferService(
 
   const acceptText =
     lineItems && lineItems.length > 1
-      ? `Offer accepted — $${current.toFixed(2)} for ${lineItems.length} items. You can check out the full bundle in one payment from messages or Offers.`
-      : `Counteroffer accepted — $${current.toFixed(2)} for “${title}”. You can purchase at this price from messages or the listing when you choose; you’re not required to.`
+      ? `Offer accepted — $${current.toFixed(2)} for ${lineItems.length} items.`
+      : `Counteroffer accepted — $${current.toFixed(2)}.`
 
   await appendNegotiationLine(supabase, offer, buyerUserId, acceptText)
 
@@ -228,6 +252,24 @@ export async function respondToCounterOfferService(
       message: `${title}: buyer accepted your counter of $${current.toFixed(2)}.`,
     })
   }
+
+  const listPrice = roundMoney(parseFloat(String(listing.price)))
+  void trackKlaviyoOfferAccepted({
+    offerId,
+    listingId: offer.listing_id as string,
+    listingTitle: title,
+    listingSlug: (listing.slug as string | null | undefined) ?? null,
+    listingSection: (listing.section as string) || "surfboards",
+    listPrice: Number.isFinite(listPrice) ? listPrice : current,
+    offerAmount: current,
+    buyerUserId: buyerUserId,
+    sellerUserId: offer.seller_id as string,
+    acceptedBy: "buyer",
+    fulfillment: reconciled.fulfillment,
+    conversationId: conv?.id ?? null,
+  }).catch((e) => {
+    console.error("[respondToCounterOffer] klaviyo Offer Accepted:", e)
+  })
 
   return { ok: true, conversationId: conv?.id ?? null }
 }

@@ -7,11 +7,14 @@
 
 import { unstable_cache } from "next/cache"
 import { generateText, Output } from "ai"
+import { gatewayTagsForFeature } from "@/lib/llm/app-models"
 import {
   marketplaceNlSearchIntentSchema,
   type MarketplaceNlSearchIntent,
 } from "@/lib/validations/marketplaceNlSearch"
 import type { MarketplaceParsedQuery } from "@/lib/services/marketplaceQueryParse"
+import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
+import { compactSearchCurationKey } from "@/lib/validations/searchCuration"
 import {
   constructionLabel,
   extractConstructionsFromQuery,
@@ -29,9 +32,16 @@ import {
   queryMentionsTailFilters,
   tailShapeLabel,
 } from "@/lib/utils/marketplace-tail-query"
+import {
+  boardStyleLabel,
+  extractBoardStylesFromQuery,
+  queryMentionsBoardStyles,
+} from "@/lib/utils/marketplace-style-query"
+import { searchQualityMemoryPromptBlock } from "@/lib/services/searchQuality"
 
-const NL_CACHE_TAG = "marketplace-nl-search"
+export const MARKETPLACE_NL_SEARCH_CACHE_TAG = "marketplace-nl-search"
 const NL_CACHE_SECONDS = 60 * 30
+const MAX_SYNONYM_HINTS = 12
 
 /** Default: Gemini Flash via Vercel AI Gateway (`AI_GATEWAY_API_KEY` or OIDC). */
 function nlSearchModelId(): string {
@@ -71,20 +81,62 @@ export function marketplaceQueryLikelyNeedsLlm(
     /\b\d{1,2}'\s*\d{0,2}\b/.test(lower) ||
     queryMentionsFinFilters(q) ||
     queryMentionsTailFilters(q) ||
-    queryMentionsConstructionFilters(q)
+    queryMentionsConstructionFilters(q) ||
+    queryMentionsBoardStyles(q)
 
   if (nlSignals) return true
 
-  // Multi-token queries with no structured brand/model hit still benefit from NL.
   const tokens = lower.match(/[\w']+/g) ?? []
-  if (tokens.length >= 3 && !rulesParsed.model && rulesParsed.modelIds.length === 0) {
+  const hasModel = Boolean(rulesParsed.model || rulesParsed.modelIds.length > 0)
+
+  // Multi-token queries with no structured brand/model hit still benefit from NL.
+  if (tokens.length >= 3 && !hasModel) return true
+
+  // Curated synonym/typo recovery — expansions matched but the typed query isn't already
+  // the canonical catalog name (skip "channel islands"; keep "ci 6 foot" / "chanel islands").
+  if (
+    tokens.length >= 2 &&
+    (rulesParsed.expansions?.length ?? 0) > 0 &&
+    !hasModel &&
+    !queryMatchesCanonicalExpansion(q, rulesParsed.expansions)
+  ) {
+    return true
+  }
+
+  // Two-token proper-name-looking queries with no catalog hit (e.g. "dumpstr diver").
+  if (!hasModel && !rulesParsed.brand && looksLikeCatalogNameQuery(tokens)) {
     return true
   }
 
   return false
 }
 
-async function callGeminiForNlIntent(rawQuery: string): Promise<MarketplaceNlSearchIntent | null> {
+/** Distinctive 2–4 token phrases that look like a mistyped brand/model, not filter chatter. */
+function looksLikeCatalogNameQuery(tokens: string[]): boolean {
+  if (tokens.length < 2 || tokens.length > 4) return false
+  const meaningful = tokens.filter((t) => t.length >= 4 && !isMarketplaceSearchNoiseToken(t))
+  return meaningful.length >= 2
+}
+
+function queryMatchesCanonicalExpansion(rawQuery: string, expansions: string[]): boolean {
+  const q = compactSearchCurationKey(rawQuery)
+  if (q.length < 4) return false
+  return expansions.some((expansion) => compactSearchCurationKey(expansion) === q)
+}
+
+function synonymHintBlock(expansions: string[]): string {
+  if (expansions.length === 0) return ""
+  const lines = expansions.map((e) => `- ${e}`).join("\n")
+  return `
+Known catalog names for this query (from search synonyms). If the user mistyped or used a nickname, set brandText/modelText to these canonical names. Do not invent names that are not in this list or clearly named in the query:
+${lines}`
+}
+
+async function callGeminiForNlIntent(
+  rawQuery: string,
+  synonymExpansions: string[],
+  memoryBlock = "",
+): Promise<MarketplaceNlSearchIntent | null> {
   const q = rawQuery.trim()
   if (q.length < 2) return null
 
@@ -96,22 +148,28 @@ async function callGeminiForNlIntent(rawQuery: string): Promise<MarketplaceNlSea
 Only use the provided enum values for styles, conditions, constructions, finSystems, finSetups, and tailShapes.
 Map casual language:
 - "new" / "brand new" → brand_new; "mint" / "like new" → excellent
-- "CI" → brandText "Channel Islands"; "Lost" → brandText "Lost Surfboards"
+- "CI" → brandText "Channel Islands"; "Lost" / "Mayhem" → brandText "Lost Surfboards"
 - Length: "6 foot" / "6 feet" / "6ft" / "6'" → lengthToken "6'0"; "5'10" stays "5'10"
+- Board STYLES: "fish" / "fish board" → fish (shape, NOT the brand Fish Stix); "shortboard" → shortboard; "longboard" → longboard; "groveler" → groveler; "hybrid" / "midlength" / "funboard" → hybrid; "gun" / "step-up" → step-up-gun; "asym" → asym. Only set brandText "Fish Stix" when the user typed that brand name.
 - Fin SYSTEMS (plugs): "fcs" / "fcs2" / "fcs ii" → fcs_ii; "futures" → futures; "twin tab" → fcs_twin_tab; "glass on" → glass_on
 - Fin SETUPS (layout): "thruster" / "tri" → thruster; "twin" → twin_only; "2+1" → twin; "quad" → quad; "5-fin" → five; "single" → single
 - Tail shapes: "round tail" / "round" → round; "squash" → squash; "pin" / "pintail" → pin; "swallow" → swallow
 - Construction: "epoxy" → eps_epoxy; "poly" / "pu" → pu_poly; "carbon" → carbon
 If a field is not mentioned, use null or [].
-CRITICAL: Never invent brandText or modelText. Only set them when the user clearly named that brand or model. Queries like "6 foot board" / "6 foot surfboard" are length-only — brandText and modelText must be null, lengthToken "6'0", residualText "".
+CRITICAL: Never invent brandText or modelText the user did not refer to. Obvious misspellings of well-known surf brands/models are allowed (e.g. "chanel islands" → Channel Islands, "dumpstr diver" → Dumpster Diver). If a Known catalog names list is provided, prefer those. Queries like "6 foot board" / "6 foot surfboard" are length-only — brandText and modelText must be null, lengthToken "6'0", residualText "".
 Split the query into:
 1) structured filters (brand/model/price/condition/fins/tail/construction/location/shipping/style)
 2) residualText = ONLY leftover model words that help rank listings (e.g. "puddle jumper", "sub driver").
 Never put brand names, prices, fin/tail words (fcs, thruster, round tail, …), "under"/"over"/"near", shipping, condition words, or generic words like "boards"/"surfboards"/"board" into residualText.
 If the query is only filters (e.g. "lost under $800", "boards with fcs", "6 foot board"), residualText must be "".
-Prices are USD integers.`,
-      prompt: `Extract search filters from this query:\n"""${q}"""`,
+Prices are USD integers.${memoryBlock}`,
+      prompt: `Extract search filters from this query:\n"""${q}"""${synonymHintBlock(synonymExpansions)}`,
       temperature: 0,
+      providerOptions: {
+        gateway: {
+          tags: gatewayTagsForFeature("marketplace_nl_search"),
+        },
+      },
     })
 
     if (!output) return null
@@ -152,11 +210,26 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 const getCachedNlIntent = unstable_cache(
-  async (normalizedQuery: string): Promise<MarketplaceNlSearchIntent | null> => {
-    return callGeminiForNlIntent(normalizedQuery)
+  async (
+    normalizedQuery: string,
+    expansionKey: string,
+    memoryBlock: string,
+  ): Promise<MarketplaceNlSearchIntent | null> => {
+    let expansions: string[] = []
+    if (expansionKey) {
+      try {
+        const parsed: unknown = JSON.parse(expansionKey)
+        if (Array.isArray(parsed)) {
+          expansions = parsed.filter((item): item is string => typeof item === "string")
+        }
+      } catch {
+        expansions = []
+      }
+    }
+    return callGeminiForNlIntent(normalizedQuery, expansions, memoryBlock)
   },
-  ["marketplace-nl-search-v5"],
-  { revalidate: NL_CACHE_SECONDS, tags: [NL_CACHE_TAG] },
+  ["marketplace-nl-search-v7"],
+  { revalidate: NL_CACHE_SECONDS, tags: [MARKETPLACE_NL_SEARCH_CACHE_TAG] },
 )
 
 /**
@@ -176,7 +249,9 @@ export async function understandMarketplaceQueryWithLlm(
   if (!options?.force && !marketplaceQueryLikelyNeedsLlm(q, rulesParsed)) return null
 
   const key = q.toLowerCase().replace(/\s+/g, " ")
-  return getCachedNlIntent(key)
+  const expansions = uniqueStrings((rulesParsed.expansions ?? []).slice(0, MAX_SYNONYM_HINTS))
+  const memoryBlock = await searchQualityMemoryPromptBlock(q)
+  return getCachedNlIntent(key, JSON.stringify(expansions), memoryBlock)
 }
 
 /** Human-readable chips for the results banner. */
@@ -207,15 +282,18 @@ export function rulesFinOverlayFromQuery(rawQuery: string): MarketplaceNlSearchI
   const finSetups = extractFinSetupsFromQuery(rawQuery)
   const tailShapes = extractTailShapesFromQuery(rawQuery)
   const constructions = extractConstructionsFromQuery(rawQuery)
+  const styles = extractBoardStylesFromQuery(rawQuery)
   if (
     finSystems.length === 0 &&
     finSetups.length === 0 &&
     tailShapes.length === 0 &&
-    constructions.length === 0
+    constructions.length === 0 &&
+    styles.length === 0
   ) {
     return null
   }
   const labels = [
+    ...styles.map(boardStyleLabel),
     ...finSystems.map(finSystemLabel),
     ...finSetups.map(finSetupLabel),
     ...tailShapes.map((t) => `${tailShapeLabel(t)} tail`),
@@ -225,7 +303,7 @@ export function rulesFinOverlayFromQuery(rawQuery: string): MarketplaceNlSearchI
     brandText: null,
     modelText: null,
     residualText: "",
-    styles: [],
+    styles,
     conditions: [],
     constructions,
     finSystems,

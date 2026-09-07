@@ -105,6 +105,33 @@ function formatInList(ids: string[]): string {
   return ids.join(",")
 }
 
+function conversationLastActivityMs(conv: AdminMarketplaceConversationListRow): number {
+  let maxMs = 0
+  if (conv.last_message_at) {
+    const fromConv = new Date(conv.last_message_at).getTime()
+    if (Number.isFinite(fromConv)) maxMs = fromConv
+  }
+  for (const message of conv.messages ?? []) {
+    const t = new Date(message.created_at).getTime()
+    if (Number.isFinite(t) && t > maxMs) maxMs = t
+  }
+  if (maxMs === 0 && conv.created_at) {
+    const fromCreated = new Date(conv.created_at).getTime()
+    if (Number.isFinite(fromCreated)) maxMs = fromCreated
+  }
+  return maxMs
+}
+
+function sortConversationsByRecentActivity(
+  rows: AdminMarketplaceConversationListRow[],
+): AdminMarketplaceConversationListRow[] {
+  return [...rows].sort((a, b) => {
+    const delta = conversationLastActivityMs(b) - conversationLastActivityMs(a)
+    if (delta !== 0) return delta
+    return a.id.localeCompare(b.id)
+  })
+}
+
 /**
  * Paginated conversation threads for admin inbox (newest activity first).
  * When `search` is set, matches buyer/seller display name, listing title, or any message body in the thread.
@@ -154,6 +181,7 @@ export async function listAdminMarketplaceConversations(
 
   convQuery = convQuery
     .order("last_message_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
     .order("created_at", { ascending: false, referencedTable: "messages" })
     .limit(1, { referencedTable: "messages" })
     .range(args.offset, args.offset + args.limit - 1)
@@ -165,7 +193,9 @@ export async function listAdminMarketplaceConversations(
   }
 
   return {
-    rows: (data ?? []) as unknown as AdminMarketplaceConversationListRow[],
+    rows: sortConversationsByRecentActivity(
+      (data ?? []) as unknown as AdminMarketplaceConversationListRow[],
+    ),
     count,
     error: null,
   }

@@ -1,3 +1,4 @@
+import { listingAlwaysUsesReswellShipping } from "@/lib/apparel-listing-config"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { resolvePackedParcelFromListing } from "@/lib/reswell-packed-parcel-from-listing"
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
@@ -7,7 +8,10 @@ import {
   getCheapestReswellRateForListings,
   type ReswellRateableListing,
 } from "@/lib/services/reswellListingShippingRate"
-import type { PeerCheckoutShippingRateOption } from "@/lib/shipping/peer-checkout-usps-services"
+import {
+  peerCheckoutSharedSection,
+  type PeerCheckoutShippingRateOption,
+} from "@/lib/shipping/peer-checkout-usps-services"
 
 /**
  * Supabase `listings` select fragment for peer surfboard checkout + ShipEngine.
@@ -61,6 +65,7 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
 export function effectiveBoardShippingMode(
   listing: PeerListingForShippingQuote,
 ): "free" | "flat" | "reswell" {
+  if (listingAlwaysUsesReswellShipping(listing.section)) return "reswell"
   const m = listing.board_shipping_cost_mode?.trim()
   if (m === "free" || m === "flat" || m === "reswell") return m
   const sp = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
@@ -125,8 +130,8 @@ export async function quoteReswellPeerShippingUsd(input: {
  *   • every listing mode `"free"` → $0
  *   • no `"reswell"` listing (flat/free mix) → sum of the flat shipping prices
  *   • any `"reswell"` listing → single combined-box ShipEngine quote
- *     (biggest item's dims + summed weights — flat prices are NOT added on top,
- *     since the whole bundle ships in that one carton)
+ *     (2 surfboards: longest + 4″ × 22 × 5 × 22 lb; 3 boards: × 27 × 7; otherwise biggest-DIM carton.
+ *     Flat prices are NOT added on top — the whole bundle ships in that one carton)
  */
 export async function computePeerBundleShippingUsd(input: {
   listings: PeerListingForShippingQuote[]
@@ -173,7 +178,7 @@ export async function computePeerBundleShippingUsd(input: {
     shipTo: shipTo.address,
     diagnosticTag: input.diagnosticTag ?? "checkout-bundle",
     sellerShipFromName: input.sellerShipFromName,
-    section: input.listings[0]?.section ?? null,
+    section: peerCheckoutSharedSection(input.listings.map((l) => l.section)),
     selectedRateId: input.selectedRateId,
     selectedServiceCode: input.selectedServiceCode,
   })
@@ -258,12 +263,23 @@ export async function computePeerCheckoutTotalsUsd(input: {
       return parcelCheck
     }
     const ship = input.shippingOverride.shippingUsd
+    const rateId = input.shippingOverride.rateId?.trim() || ""
     return {
       ok: true,
       itemPrice,
       shippingUsd: ship,
       totalUsd: itemPrice + ship,
       usedReswellQuote: input.shippingOverride.usedReswellQuote,
+      reswellQuote:
+        input.shippingOverride.usedReswellQuote && rateId
+          ? {
+              shippingUsd: ship,
+              rateId,
+              serviceCode: input.shippingOverride.serviceCode?.trim() || "",
+              serviceName: "",
+              availableRates: [],
+            }
+          : undefined,
     }
   }
 

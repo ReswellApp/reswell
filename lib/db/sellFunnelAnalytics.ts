@@ -72,6 +72,7 @@ function parseSellFunnelDashboardJson(raw: unknown): SellFunnelAnalyticsDashboar
     uploadFailures: asInt(s.uploadFailures) ?? 0,
     publishFailures: asInt(s.publishFailures) ?? 0,
     flowStarts: asInt(s.flowStarts) ?? 0,
+    forkToFull: asInt(s.forkToFull) ?? 0,
     uniqueUsers: asInt(s.uniqueUsers) ?? 0,
     medianDurationMs: asFloat(s.medianDurationMs),
     successRate: asFloat(s.successRate),
@@ -79,6 +80,9 @@ function parseSellFunnelDashboardJson(raw: unknown): SellFunnelAnalyticsDashboar
 
   const byEvent = parseEventRows(o.byEvent)
   const byListingType = parseListingTypeRows(o.byListingType)
+  // Older RPCs may omit these — treat as empty so deploys don't hard-fail mid-migration.
+  const byEntryPoint = parseEntryPointRows(o.byEntryPoint) ?? []
+  const topFields = parseFieldRows(o.topFields) ?? []
   const topValidationFailures = parseValidationRows(o.topValidationFailures)
   const stepFunnel = parseStepRows(o.stepFunnel)
   const dailyTrend = parseDailyRows(o.dailyTrend)
@@ -101,6 +105,8 @@ function parseSellFunnelDashboardJson(raw: unknown): SellFunnelAnalyticsDashboar
     summary,
     byEvent,
     byListingType,
+    byEntryPoint,
+    topFields,
     topValidationFailures,
     stepFunnel,
     dailyTrend,
@@ -152,6 +158,46 @@ function parseListingTypeRows(
       validationFailures,
       flowStarts,
     })
+  }
+  return rows
+}
+
+function parseEntryPointRows(
+  raw: unknown,
+): SellFunnelAnalyticsDashboard["byEntryPoint"] | null {
+  if (!Array.isArray(raw)) return null
+  const rows: SellFunnelAnalyticsDashboard["byEntryPoint"] = []
+  for (const item of raw) {
+    if (!item || typeof item !== "object") return null
+    const r = item as Record<string, unknown>
+    const entryPoint = asString(r.entryPoint)
+    const flowStarts = asInt(r.flowStarts)
+    const publishAttempts = asInt(r.publishAttempts)
+    const publishSuccesses = asInt(r.publishSuccesses)
+    if (
+      !entryPoint ||
+      flowStarts == null ||
+      publishAttempts == null ||
+      publishSuccesses == null
+    ) {
+      return null
+    }
+    rows.push({ entryPoint, flowStarts, publishAttempts, publishSuccesses })
+  }
+  return rows
+}
+
+function parseFieldRows(raw: unknown): SellFunnelAnalyticsDashboard["topFields"] | null {
+  if (!Array.isArray(raw)) return null
+  const rows: SellFunnelAnalyticsDashboard["topFields"] = []
+  for (const item of raw) {
+    if (!item || typeof item !== "object") return null
+    const r = item as Record<string, unknown>
+    const field = asString(r.field)
+    const interactions = asInt(r.interactions)
+    const validationFailures = asInt(r.validationFailures)
+    if (!field || interactions == null || validationFailures == null) return null
+    rows.push({ field, interactions, validationFailures })
   }
   return rows
 }
@@ -224,6 +270,7 @@ function parseRecentRows(raw: unknown): SellFunnelAnalyticsDashboard["recentEven
       message: asString(r.message),
       listingId: asString(r.listingId),
       durationMs: asInt(r.durationMs),
+      entryPoint: asString(r.entryPoint),
     })
   }
   return rows

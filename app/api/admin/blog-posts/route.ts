@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { adminBlogPostWriteSchema } from "@/lib/validations/blog"
 import { adminCreateBlogPostService, adminListBlogArticlesService } from "@/lib/services/blogPostsAdmin"
+import { revalidateBlogPaths } from "@/lib/blog/revalidate-blog"
 
 export async function GET() {
   const gate = await requireAdmin()
@@ -37,7 +37,6 @@ export async function POST(request: Request) {
     )
   }
 
-  revalidatePath("/blog")
-  revalidatePath("/blog/[slug]", "layout")
+  revalidateBlogPaths(parsed.data.slug)
   return NextResponse.json({ data: { id: result.id } }, { status: 201 })
 }

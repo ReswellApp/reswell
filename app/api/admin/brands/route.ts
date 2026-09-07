@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
+import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
+import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { listBrands } from "@/lib/brands/server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
@@ -195,5 +197,7 @@ export async function POST(request: Request) {
   revalidateNavSearchSuggest()
   void syncBrandToIndex(supabase, data.id)
   void syncFinCatalogBrandToIndex(supabase, data.id)
+  void syncSellCatalogBrandToIndex(supabase, data.id)
+  revalidateSellCatalogSearch()
   return NextResponse.json({ slug: data.slug, id: data.id })
 }

@@ -1,11 +1,14 @@
-export type SellFlowListingKind = "board" | "fins"
+import type { SellListingDraftListingType } from "@/lib/sell-listing-draft-idb"
+
+export type SellFlowListingKind = SellListingDraftListingType
 
 /** While set, IndexedDB restore must not run — coordinates with draft clear after `?new=1`. */
 export const SELL_SUPPRESS_IDB_RESTORE_KEY = "reswell.sell.suppressIdbRestoreOnce"
 
 /** Set when Publish is tapped while signed out — resume submit after sign-in. */
 export function sellPendingPublishKey(kind: SellFlowListingKind): string {
-  return kind === "fins" ? "reswell.sell.fins.pendingPublishOnce" : "reswell.sell.pendingPublishOnce"
+  if (kind === "board") return "reswell.sell.pendingPublishOnce"
+  return `reswell.sell.${kind}.pendingPublishOnce`
 }
 
 export function sellFlowStepSessionKey(kind: SellFlowListingKind): string | null {
@@ -36,4 +39,10 @@ export function isPendingPublish(kind: SellFlowListingKind): boolean {
   } catch {
     return false
   }
+}
+
+export function isPendingPublishForDraftType(
+  listingType: SellListingDraftListingType,
+): boolean {
+  return isPendingPublish(listingType)
 }

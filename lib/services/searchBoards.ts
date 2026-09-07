@@ -28,6 +28,7 @@ import { stripFinFilterPhrasesFromKeyword } from "@/lib/utils/marketplace-fin-qu
 import { extractPriceFiltersFromQuery } from "@/lib/utils/marketplace-price-query"
 import { extractLengthBoundsFromQuery } from "@/lib/utils/marketplace-length-query"
 import { stripTailFilterPhrasesFromKeyword } from "@/lib/utils/marketplace-tail-query"
+import { stripBoardStylePhrasesFromKeyword } from "@/lib/utils/marketplace-style-query"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
 import type { MarketplaceNlSearchIntent } from "@/lib/validations/marketplaceNlSearch"
 
@@ -156,9 +157,11 @@ function nlIntentToOverlay(intent: MarketplaceNlSearchIntent): SearchBoardsNlOve
     shippingAvailable: intent.shippingAvailable === true ? true : undefined,
     lengthInches,
     lengthToken,
-    residualText: stripConstructionFilterPhrasesFromKeyword(
-      stripTailFilterPhrasesFromKeyword(
-        stripFinFilterPhrasesFromKeyword(intent.residualText?.trim() || ""),
+    residualText: stripBoardStylePhrasesFromKeyword(
+      stripConstructionFilterPhrasesFromKeyword(
+        stripTailFilterPhrasesFromKeyword(
+          stripFinFilterPhrasesFromKeyword(intent.residualText?.trim() || ""),
+        ),
       ),
     ),
     brandText: intent.brandText?.trim() || undefined,
@@ -214,6 +217,7 @@ export async function resolveBoardsSearchQuery(
         textQuery: q,
         isBrandOnly: false,
         sectionIntent: null,
+        styleIntent: [],
         expansions: [],
       }
 
@@ -445,9 +449,11 @@ export async function resolveBoardsSearchQuery(
 
   const residualKeyword = nl
     ? stripFilterLanguageFromKeyword(
-        stripConstructionFilterPhrasesFromKeyword(
-          stripTailFilterPhrasesFromKeyword(
-            stripFinFilterPhrasesFromKeyword(nl.residualText || ""),
+        stripBoardStylePhrasesFromKeyword(
+          stripConstructionFilterPhrasesFromKeyword(
+            stripTailFilterPhrasesFromKeyword(
+              stripFinFilterPhrasesFromKeyword(nl.residualText || ""),
+            ),
           ),
         ),
       ) ||
@@ -457,9 +463,11 @@ export async function resolveBoardsSearchQuery(
         : "") ||
       ""
     : stripFilterLanguageFromKeyword(
-        stripConstructionFilterPhrasesFromKeyword(
-          stripTailFilterPhrasesFromKeyword(
-            stripFinFilterPhrasesFromKeyword(enriched.textQuery || q),
+        stripBoardStylePhrasesFromKeyword(
+          stripConstructionFilterPhrasesFromKeyword(
+            stripTailFilterPhrasesFromKeyword(
+              stripFinFilterPhrasesFromKeyword(enriched.textQuery || q),
+            ),
           ),
         ),
       ) || ""

@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import {
+  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
+  hydrateHomePeerListingRows,
+} from "@/lib/db/home-peer-listing-feed"
 
 /** Recently listed homepage grid — 16 tiles on mobile (2×8), 15 on desktop (5×3). */
 export const HOME_RECENTLY_LISTED_GRID_TILE_COUNT = 16
@@ -29,7 +32,7 @@ async function fetchRecentlyListedRowsForSection(
     return []
   }
 
-  return data ?? []
+  return hydrateHomePeerListingRows((data ?? []) as Record<string, unknown>[])
 }
 
 export async function fetchHomeRecentlyListedSurfboardRows(

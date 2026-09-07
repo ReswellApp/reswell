@@ -1,0 +1,122 @@
+{
+  "generated_for": "Cole Surfboards official named standup catalog",
+  "source": "https://www.colesurfboards.com (main nav model pages)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cole-surfboards",
+      "name": "Cole Surfboards",
+      "website_url": "https://www.colesurfboards.com",
+      "location_label": "San Clemente, California",
+      "founder_name": "Cole Simler",
+      "lead_shaper_name": "Cole Simler",
+      "short_description": "USA-made custom shortboards, fishes, and grovelers from Cole Simler in San Clemente.",
+      "models": [
+        {
+          "name": "2 Stroke",
+          "image_url": "https://www.colesurfboards.com/blog/wp-content/uploads/2018/07/IMG_1321.jpg",
+          "description": null,
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Batfish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-cb0fd08b810c204a6a7d.jpg",
+          "description": "The Bat Fish has a wider rounded nose for catching waves easily and planing through sections. This is basically our Bullet fish with a bat tail. These boards are great for smaller to medium surf. These boards are excellent for perfecting tricks, such as, tail slide, airs, and reverses. This user friendly board is a great addition to any serious board quiver. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'5\" 19 1/4\" 2 1/4\" 26.6 5'6\" 19 1/2 2 1/4\" 27.8 5'7\" 19 1/2\" 2 5/16\" 29.2 5'8\" 19 3/4 2 3/8\" 30 5'9\" 19 3/4 2 7/16\" 31.2 5'10\" 20\" 2 7/16\" 32 5'11\" 20 1/4 2 7/16\" 33.7 6'0\" 20 1/2 2 1/2\" 36.27 6'1\" 20 3/4 2 9/16\" 37.4 6'2\" 20 3/4 2 5/8\" 37.7 6'3\" 21\ufffd\ufffd\ufffd 2 5/8\" 40 6'4\"\u2026"
+        },
+        {
+          "name": "Bullet Fish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-5eca6916877168f28eb2.jpg",
+          "description": "has a wider round nose for catching waves easy and for gliding through sections. The twin fin side fins with small center fin make the board very loose but also allow the board to drive and accelerate very quickly. The bottom features include a single concave running from the nose through the center with a double concave vee out the back one third of the board. This year we are also offering this same board with a slightly different fin placement for surfers who prefer a standard tri fin set up. Both of these boards are excellent for learning tricks such as tail slides, airs, and reverses. Try one today and turn your local break into a skate park! DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS\u2026"
+        },
+        {
+          "name": "Firefly",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-e9555a45988ff5ebde3f.jpg",
+          "description": "The Cole Firefly Quad is the culmination of years of experimentation research and testing. The Firefly Quad came about when Nathan Fletcher and Cole were searching for something more exciting than the standard thruster, which had been stagnating, or at least, getting a bit boring throughout the 1990\u2019s. Around 2000, \u201cNathan and I had both ridden Quads in the past and loved certain things about the design, so we began working on combining the Four Fin Design with the more contemporary outlines, rockers and bottom contours of today.\u201d DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'8\" 18 3/4 2\ufffd 5/16 26.52 5'10\" 18 7/8\" 2\ufffd 3/8 28.2 5'11\" 19\" 2\ufffd 7/16 29.41 6'0\" 19 1/4\" 2\ufffd\u2026"
+        },
+        {
+          "name": "Flight Deck",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-814d24a688ed3375f813.jpg",
+          "description": "Designed primarily for small to medium sized surf, the Flight Deck features a slightly fuller outline and a wider tail block than a standard shortboard. This outline, along with slightly deeper concaves allow this design to catch waves easily and slingshot through mushy sections at the same time. These boards maintain the snappy characteristics of the high performance shortboard while giving the rider a bit more glide through flat sports. This model is a must for making the most of everyday surf. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'8\" 18 5/8\" 2\ufffd 1/4 25.57 5'9\" 18 3/4 2\ufffd 1/4 26.12 5'10\" 18 3/4\" 2 5/16\" 27.3 5'11\" 19 1/8\" 2\ufffd 3/8 28.98 6'0\" 19 1/4\" 2 7/16\"\u2026"
+        },
+        {
+          "name": "Grasshopper",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-9b800001ef0c60c74463.jpg",
+          "description": "The Grasshopper quad, is a full outline, semi-fish, version of our world renowned Firefly quad. It has a very low entry rocker with a moderate amount of kick out the tail. The Grasshopper also features a unique double wing bat tail, which allows the board to be wider at the fins, for quick acceleration and drive, and then pull in quickly for more holding power on tight turns. This board flies through and over sections in small to medium surf. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'6\" 19 1/4 2\ufffd 5/16 25.42 5'8\" 19 1/2 2\ufffd 3/8 27.99 5'10\" 19 3/4 2\ufffd 7/16 29.9 5'11\" 20 1/4\" 2\ufffd 9/16 32.6 6'0\" 20 1/2 2 5/8\" 34.3 6'1\" 20 1/2\" 2 5/8\" 34.77 6'2\" 20 3/4 2 5/8\" 35.77 6'3\"\u2026"
+        },
+        {
+          "name": "Grom Pro",
+          "image_url": "https://www.colesurfboards.com/blog/wp-content/uploads/2018/07/GROMPRO3-e1531168461881.jpg",
+          "description": "The Grom Pro has been the go to for the latest crop of young shredders and competitors. This model features a smooth clean outline with a rounded squash tail allowing it to be ultra maneuverable. The smooth continuous rocker and single concave, makes it really easy to catch waves on and super fast, while at the same time being very forgiving and easy to ride.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://www.colesurfboards.com/blog/wp-content/uploads/2018/07/IMG_7813.jpg",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Loose Cannon",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-12c52ba7ade63dfa78b2.jpg",
+          "description": "The Loose Cannon is a full outlined shortboard inspired by the trend towards the shorter wider boards being ridden by many of the top pros these days. The board is designed with a full outline in the nose , a pronounced hip at the front fins and a wide rounded square tail. The board has a low entry rocker, with a substantial single concave through the front of the board with a double concave dropped into it between the fins. The back of the board has a moderate tail kick and a slight vee out the last 6 inches of the tail. The Loose Cannon is perfect for smaller and less powerful surf, while still being solid and stable enough, to ride, well into overhead plus surf. DOWNLOAD ORDER CARD\u2026"
+        },
+        {
+          "name": "Pistol",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-3a5a9c670231be9a4b48.jpg",
+          "description": "The Pistol features a sleek outline with a smooth entry rocker. A fair amount of tail rocker allows for snappy turns and the board fits nicely into the curve of the pocket. The bottom contours feature a blend of flat, vee, and double concave vee for a balance of speed and control. These boards have fairly narrow tails (usually round-pins or narrow round-squares) for holding power and control. This is the model for good waves and good surfing. They are the perfect boards to take on a surf trip! DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOL 6'0\" 18 1/4\" 2 1/4\" 26 6'1\" 18 3/8\" 2 5/16\" 27.25 6'2\" 18 1/2\" 2\ufffd 3/8 28.5 6'3\" 18 5/8\" 2 3/8\" 29 6'4\" 18 3/4\" 2 3/8\" 29.75 6'5\" 19\" 2\u2026"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://www.colesurfboards.com/blog/wp-content/uploads/2018/07/IMG_4441.jpg",
+          "description": null,
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Road Tripper",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-26a6636292e3f9364039.jpg",
+          "description": "This is a high performance swallow tail, it has a very low entry rocker with moderate tail lift. This model features a combination of single concave, double concave and vee out the tail for smooth rail to rail transitions. This board is extremely quick to get up to speed and is really snappy and loose off the top. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'6\" 19 1/2 2\ufffd 3/8 27.8 5'7\" 19 5/8\" 2\ufffd 3/8 29.12 5'8\" 19 3/4\" 2\ufffd 7/16 30.3 5'9\" 20\" 2\ufffd 1/2 32 5'10\" 20 1/4 2\ufffd 9/16 33.74 5'11\" 20 1/2 2\ufffd 5/8 35.35 6'0\" 20 5/8 2\ufffd 5/8 36.07 6'2\" 20 3/4 2\ufffd 3/4 38.76 6'4\" 21\" 2\ufffd 3/4 40.29 6'6\" 21 1/4 2\ufffd 7/8 43.57   COLE SURFBOARDS | 129 Calle De Los Molina San Clemente, CA 92672 |\u2026"
+        },
+        {
+          "name": "Single Barrel",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-3dcad7a379391c700beb.jpg",
+          "description": "This is a state of the art performance shortboard, it has a relatively low entry rocker and quite a bit of rocker out the tail. The board has a single concave starting about 16\u201d back from the nose and running the full length out the tail. The outline has the wide point back about 1 \u00bd\u2019from center to accentuate the curve in the back \u00bd of the board. This board is very drivey , while at the same time it is really snappy off the top and in the pocket. Fast, loose and predictable, this board is a favorite of top pros, and average surfers as well, for its all around versatility and high performance. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS N / A   COLE SURFBOARDS | 129 Calle De Los Molinos San\u2026"
+        },
+        {
+          "name": "Skeleton Fish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-e2ff52481ac7452d7d08.jpg",
+          "description": "This design is ideal for, but not limited to, small to medium sized surf. The full outline, along with the single to double concave bottom allows for increased planning speed, acceleration and looseness. The tri fin design maintains the drive and carving power of the standard thruster. We have had great success with the double-wing swallow in this design. The double-wing swallow allows for extra width under the front fins for looseness, while also allowing for the tail to be pulled in for extra control and carving. These boars fly through flat spots, and allow the rider to find pockets of speed in even the most gutless surf. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK\u2026"
+        },
+        {
+          "name": "Slingshot",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-38e8fe956ce6385c8e92.jpg",
+          "description": "The Slingshot features a fuller nose with a wide forward outline, round forgiving rails, and a flatter deck. The Slingshot features an extremely low entry rocker, allowing for instant acceleration and making it a wave caching machine. This back half of the board features a smooth moderate rocker, with an exaggerated tail kick out the tail for tight radius turns in the pocket.Although this board was originally designed for small to medium size surf, the smooth outline and full length single concave bottom, has proven to maintain it\u2019s drive and hold an edge into larger surf as well.The Slingshot comes standard with a wide diamond tail. As popularity of this design has grown, we have begun to\u2026"
+        },
+        {
+          "name": "Soy Saucer",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-f0c55c474362b7addd30.jpg",
+          "description": "This full outlined disc makes small surf a pleasure, it catches waves with ease and flies through flat sections like a skateboard. Works great with most fin configurations. This board can be custom tailored to fit any surfers needs. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOL 5'8\" 19 1/4 2\ufffd 5/16 27.5 5'9\" 19 3/8\" 2\ufffd 5/16 28 5'10\" 19 1/2 2\ufffd 3/8 29 5'11\" 19 5/8\" 2\ufffd 7/16 30.75 6'0\" 19 3/4\" 2\ufffd 1/2 32 6'1\" 20\" 2\ufffd 5/8 34.5 6'2\" 20 1/4 2\ufffd 5/8 36 6'3\" 20 3/4 2\ufffd 3/4 38.5 6'4\" 21\" 2\ufffd 3/4 39.5 6'5\" 21\" 2\ufffd 3/4 40 6'6\" 21 1/4 2\ufffd 7/8 42.75   COLE SURFBOARDS | 129 Calle De Los Molinos San Clemente, CA 92672 | Phone: 949.940.9044 Email: colesurfboards@gmail.com"
+        },
+        {
+          "name": "Trunk Board",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-8d1e6aeb7cc77846fd15.jpg",
+          "description": "Trunk Board (AKA Black Diamond 5) This short, stubby design, features a very low entry rocker, with a moderate amount of tail rocker. The deep \u201cbonzer\u201d style concave that runs full length from the nose, through the fins, and out the tail. Even though it is short, the low entry rocker combined with this full length concave allow this board to catch waves and plane through sections with ease. For 2010, we\u2019ve added this board in a five fin with 4 bonzer side runners and a single box, this fin setup works amazing with this design making it very carvy and drivey, yet still very loose. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'0\" 20 1/2 2 3/8\" 28.11 5'1\" 20 5/8 2\ufffd 7/16\u2026"
+        },
+        {
+          "name": "V12",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-a8828514cc302c48c047.jpg",
+          "description": "This board is fast and loose! Its design is extremely versatile and dependable in a wide variety of surf conditions. This model features a combination of single concave, double concave and a touch of vee out the tail for smooth rail to rail transitions. The rocker configuration and bottom contours allow instant acceleration, drive, and speed, The High Performance Shortboard maintains the maneuverability needed for radical directions, aerial and power surfing. This design continues to set the standard for cutting edge, performance surfing. This model has been ridden by some of the world's best professional surfers and has been tested and refined based on rider feedback. DOWNLOAD ORDER CARD\u2026"
+        },
+        {
+          "name": "Wrecking Ball",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-f0ec9bf4c3e25af0ec1e.jpg",
+          "description": "The Wrecking Ball is a small wave destroyer. It's designed to turn mushy, boring surf into a fun and rippable playground. The full outline, combined with the flatter deck and fuller volume, help the wrecking ball catch small or weak waves super easily. The bottom features a very subtle single concave through the relaxed entry rocker, feeding into vee through the back one third of the board. The vee allows the board to transfer from rail to rail with ease. We have then dropped a unique \"bonzer\" style double concave between the feet to keep the board running at full speed down the line, and through flat ,or soft sections. This board will keep you psyched on crappy surf, or let you get crazy\u2026"
+        },
+        {
+          "name": "X10",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-cfb60a43fd8a82611836.jpg",
+          "description": "This X10 was inspired by Kelly Slater\u2019s short , full nose, step up, that he rode in this years Pipe masters. We originally designed this board as a step up board for bigger surf, and the results were great. Soon after, some of our team riders began experimenting with the board in small to medium surf, and found the board to be very drivey and fast. To make the board even more versatile, and to loosen it up a bit in smaller surf, we ended up increased the tail width and put a bit more kick in the tail. We also tested it as a quad in addition to the tri set up, and had great feed back on the all around performance of the board with both fin configurations. This board will be introduced into\u2026"
+        }
+      ]
+    }
+  ]
+}

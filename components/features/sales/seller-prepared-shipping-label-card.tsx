@@ -18,12 +18,19 @@ const USPS_LABEL_BROKER_FINDER =
 
 export function SellerPreparedShippingLabelCard({
   orderId,
+  labelId = null,
+  title = null,
+  description = null,
   downloadApiPrefix = "/api/orders",
   hasPaperlessQr = false,
   paperlessInstructions = null,
   paperlessHandoffCode = null,
 }: {
   orderId: string
+  /** Specific marketplace label row when the order has multiple packages. */
+  labelId?: string | null
+  title?: string | null
+  description?: string | null
   /** API prefix before `/:orderId/shipping-label/download` — use `/api/admin/orders` on admin pages. */
   downloadApiPrefix?: string
   /** USPS Label Broker QR available for phone drop-off. */
@@ -35,9 +42,10 @@ export function SellerPreparedShippingLabelCard({
   const [qrOpen, setQrOpen] = useState(false)
 
   const encodedId = encodeURIComponent(orderId)
-  const viewHref = `${downloadApiPrefix}/${encodedId}/shipping-label/download?inline=1`
-  const downloadHref = `${downloadApiPrefix}/${encodedId}/shipping-label/download`
-  const qrHref = `${downloadApiPrefix}/${encodedId}/shipping-label/qr`
+  const labelQuery = labelId ? `&label_id=${encodeURIComponent(labelId)}` : ""
+  const viewHref = `${downloadApiPrefix}/${encodedId}/shipping-label/download?inline=1${labelQuery}`
+  const downloadHref = `${downloadApiPrefix}/${encodedId}/shipping-label/download${labelId ? `?label_id=${encodeURIComponent(labelId)}` : ""}`
+  const qrHref = `${downloadApiPrefix}/${encodedId}/shipping-label/qr${labelId ? `?label_id=${encodeURIComponent(labelId)}` : ""}`
 
   return (
     <>
@@ -45,12 +53,14 @@ export function SellerPreparedShippingLabelCard({
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Truck className="h-4 w-4 text-primary" />
-            {SHIPPING_LABEL_CREATED_STATUS}
+            {title?.trim() || SHIPPING_LABEL_CREATED_STATUS}
           </CardTitle>
           <CardDescription className="text-sm leading-relaxed">
-            {hasPaperlessQr
-              ? "Show this QR code at a participating USPS Post Office — they will print and apply the label. Tap the code to open it fullscreen. You can also print the PDF yourself."
-              : "Reswell purchased this carrier label for the sale. View or download the PDF, print it, and attach it to your package before handing it to the carrier."}
+            {description?.trim()
+              ? description
+              : hasPaperlessQr
+                ? "Show this QR code at a participating USPS Post Office — they will print and apply the label. Tap the code to open it fullscreen. You can also print the PDF yourself."
+                : "Reswell purchased this carrier label for the sale. View or download the PDF, print it, and attach it to your package before handing it to the carrier."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

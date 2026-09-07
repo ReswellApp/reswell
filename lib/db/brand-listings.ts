@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
+import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
+import { brandTextAliasesForSearch } from "@/lib/utils/marketplace-brand-synonyms"
+import { brandLegacyRecallTokens } from "@/lib/utils/marketplace-brand-query"
 import { fetchRecentlySoldListingsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
 import { isPeerListingSection, PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
@@ -11,6 +14,7 @@ const BRAND_MARKETPLACE_LISTING_SELECT = `
   user_id,
   title,
   price,
+  compare_at_price,
   condition,
   section,
   status,
@@ -24,7 +28,8 @@ const BRAND_MARKETPLACE_LISTING_SELECT = `
   updated_at,
   hidden_from_site,
   archived_at,
-  listing_images (url, is_primary),
+  primary_image_url,
+  primary_thumbnail_url,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
@@ -33,12 +38,45 @@ function escapeForOrFilter(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
 }
 
+/**
+ * Directory brand_id, official brand text, synonym aliases (Lost ↔ Mayhem), and
+ * last-name / legacy title tokens ("Christenson" for "Chris Christenson").
+ */
+function brandInventoryOrClause(brand: { id: string; name: string }): string {
+  const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
+  const clauses = [`brand_id.eq.${brand.id}`, `brand.ilike.${namePattern}`]
+  const seen = new Set<string>(clauses)
+
+  const addIlike = (field: "brand" | "title" | "model", token: string) => {
+    if (token.length < 4) return
+    const clause = `${field}.ilike."%${escapeForOrFilter(token)}%"`
+    if (seen.has(clause)) return
+    seen.add(clause)
+    clauses.push(clause)
+  }
+
+  for (const alias of brandTextAliasesForSearch(brand.name)) {
+    addIlike("brand", alias)
+    addIlike("title", alias)
+  }
+
+  const fullNameLower = brand.name.trim().toLowerCase()
+  for (const token of brandLegacyRecallTokens(brand.name)) {
+    if (token !== fullNameLower) addIlike("brand", token)
+    addIlike("title", token)
+    addIlike("model", token)
+  }
+
+  return clauses.join(",")
+}
+
 interface BrandMarketplaceListingRow {
   id: string
   slug: string | null
   user_id: string
   title: string
   price: number
+  compare_at_price?: number | string | null
   condition: string
   section: string
   status?: string
@@ -51,6 +89,8 @@ interface BrandMarketplaceListingRow {
   board_type?: string | null
   dimensions?: string | null
   updated_at?: string | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
   listing_images?: RecentListing["listing_images"]
   profiles?: RecentListing["profiles"]
   categories?: RecentListing["categories"]
@@ -64,6 +104,7 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
     user_id: row.user_id,
     title: row.title,
     price: row.price,
+    compare_at_price: row.compare_at_price ?? null,
     condition: row.condition,
     section: row.section,
     status: row.status,
@@ -74,7 +115,9 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
     board_type: row.board_type,
     board_length: boardLength,
     updated_at: row.updated_at ?? null,
-    listing_images: row.listing_images,
+    listing_images:
+      row.listing_images ??
+      listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url),
     profiles: row.profiles,
     categories: row.categories,
   }
@@ -129,7 +172,8 @@ export async function countActiveListingsByBrandIds(
 }
 
 /**
- * Active marketplace listings linked to a directory brand (`brand_id`) or legacy `brand` text.
+ * Active marketplace listings linked to a directory brand (`brand_id`), official
+ * brand text, synonym aliases, or last-name / legacy title text.
  * Matches `/search?brandSlug=` surfboard results (optional category filter).
  */
 export async function listActiveListingsForBrand(
@@ -138,7 +182,6 @@ export async function listActiveListingsForBrand(
   options: { limit: number; categoryId?: string | null; sections?: string[] },
 ): Promise<RecentListing[]> {
   const { limit, categoryId = null, sections } = options
-  const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
 
   let q = supabase
     .from("listings")
@@ -155,7 +198,7 @@ export async function listActiveListingsForBrand(
     q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
   }
 
-  q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
+  q = q.or(brandInventoryOrClause(brand))
   q = q.order("created_at", { ascending: false }).limit(limit)
 
   const { data, error } = await q
@@ -177,7 +220,6 @@ export async function listRecentlySoldListingsForBrand(
   options: { limit: number; categoryId?: string | null },
 ): Promise<RecentListing[]> {
   const { limit, categoryId = null } = options
-  const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
 
   const { orderedListingIds, confirmedAtIsoByListingId } =
     await fetchRecentlySoldListingsConfirmedCheckoutOrdering(
@@ -197,7 +239,7 @@ export async function listRecentlySoldListingsForBrand(
     q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
   }
 
-  q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
+  q = q.or(brandInventoryOrClause(brand))
   q = q.order("updated_at", { ascending: false }).limit(Math.min(limit * 4, 120))
 
   const { data, error } = await q
@@ -236,4 +278,41 @@ export async function listRecentlySoldListingsForBrand(
   }
 
   return ordered
+}
+
+/**
+ * Active listing ids linked to catalog models — same recall path nav typeahead
+ * uses when Elasticsearch over-constrains a shared model prefix.
+ */
+export async function listActiveListingIdsByBrandModelIds(
+  supabase: SupabaseClient,
+  modelIds: string[],
+  options: { limit: number; sections?: string[] },
+): Promise<string[]> {
+  const ids = [...new Set(modelIds.map((id) => id.trim()).filter(Boolean))]
+  if (ids.length === 0) return []
+
+  let q = supabase
+    .from("listings")
+    .select("id")
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .in("brand_model_id", ids)
+    .order("created_at", { ascending: false })
+    .limit(options.limit)
+
+  if (options.sections?.length) {
+    q = q.in("section", options.sections)
+  } else {
+    q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
+  }
+
+  const { data, error } = await q
+  if (error) {
+    console.error("[listActiveListingIdsByBrandModelIds]", error.message)
+    return []
+  }
+  return ((data ?? []) as { id: string }[])
+    .map((row) => row.id)
+    .filter((id) => id.length > 0)
 }

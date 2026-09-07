@@ -3,7 +3,9 @@
  * All tiles delegate to {@link ListingTile} with shared scroll styles from `@/lib/home-listing-scroll-styles`.
  */
 import type { ReactNode } from "react"
+import { Truck } from "lucide-react"
 import { ListingTile } from "@/components/listing-tile"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -38,6 +40,7 @@ export type HomePeerScrollListing = {
   user_id: string
   title: string
   price: string | number
+  compare_at_price?: number | string | null
   status: string
   section: string
   local_pickup?: boolean | null
@@ -68,6 +71,7 @@ export function HomePeerListingScrollTile({
   imagePriority = false,
   compact = false,
   cardContentClassName,
+  cardClassName,
   metaFooterClassName,
 }: {
   listing: HomePeerScrollListing
@@ -90,6 +94,8 @@ export function HomePeerListingScrollTile({
   compact?: boolean
   /** Overrides default body inset (e.g. auth landing grid). */
   cardContentClassName?: string
+  /** Overrides default card shell (e.g. city spotlight strip on navy). */
+  cardClassName?: string
   /** Overrides footer spacing below title/subtitle. */
   metaFooterClassName?: string
 }) {
@@ -101,6 +107,7 @@ export function HomePeerListingScrollTile({
     local_pickup: listing.local_pickup,
     shipping_available: listing.shipping_available,
   })
+  const ships = !!listing.shipping_available
 
   const conditionLine = formatHomePeerListingConditionLine(listing.condition)
 
@@ -126,7 +133,9 @@ export function HomePeerListingScrollTile({
       imagePriority={imagePriority}
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
-      cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}
+      cardClassName={
+        cardClassName ?? (isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass)
+      }
       cardContentClassName={
         cardContentClassName ??
         (compact ? homeMostViewedCompactBodyClass : homeUniformScrollBodyClass)
@@ -151,16 +160,35 @@ export function HomePeerListingScrollTile({
         <div className={metaFooterClassName ?? homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <p className={compact ? homeMostViewedCompactPriceClass : homePeerTilePriceClass}>
-              ${Number(listing.price).toFixed(2)}
-            </p>
-            {cart?.type === "addToCartServer" ? (
-              <ListingTileAddToCartServerIcon listingId={cart.listingId} isLoggedIn={cart.isLoggedIn} />
-            ) : (
-              <span
-                className={cn(compact ? homeCompactTileCartSlotClass : homeScrollTileCartSlotClass)}
-                aria-hidden
+              <ListingPriceWithMarkdown
+                priceUsd={Number(listing.price)}
+                compareAtPriceUsd={listing.compare_at_price}
+                priceClassName={compact ? homeMostViewedCompactPriceClass : homePeerTilePriceClass}
+                compareClassName="text-sm font-medium text-muted-foreground line-through tabular-nums"
               />
-            )}
+            </p>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {ships ? (
+                <span
+                  className="inline-flex shrink-0 items-center justify-center text-muted-foreground"
+                  title="Ships"
+                  aria-label="Ships"
+                >
+                  <Truck
+                    className={cn("shrink-0", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+                    aria-hidden
+                  />
+                </span>
+              ) : null}
+              {cart?.type === "addToCartServer" ? (
+                <ListingTileAddToCartServerIcon listingId={cart.listingId} isLoggedIn={cart.isLoggedIn} />
+              ) : (
+                <span
+                  className={cn(compact ? homeCompactTileCartSlotClass : homeScrollTileCartSlotClass)}
+                  aria-hidden
+                />
+              )}
+            </div>
           </div>
           {footerTrailing ?? null}
         </div>

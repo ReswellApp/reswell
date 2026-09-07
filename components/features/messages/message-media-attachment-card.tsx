@@ -27,15 +27,19 @@ function MessageMediaAttachmentImage({
   messageId,
   fileName,
   className,
+  onOpenImage,
 }: {
   messageId: string
   fileName: string
   className?: string
+  /** When set, parent owns the lightbox (thread-wide gallery). */
+  onOpenImage?: (messageId: string) => void
 }) {
   const attachmentPath = `/api/messages/${messageId}/attachment`
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const useParentGallery = typeof onOpenImage === "function"
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
@@ -52,7 +56,13 @@ function MessageMediaAttachmentImage({
         <>
           <button
             type="button"
-            onClick={() => setLightboxOpen(true)}
+            onClick={() => {
+              if (useParentGallery) {
+                onOpenImage(messageId)
+                return
+              }
+              setLightboxOpen(true)
+            }}
             className="block cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             aria-label={`View photo: ${fileName}`}
           >
@@ -70,12 +80,14 @@ function MessageMediaAttachmentImage({
               }}
             />
           </button>
-          <MessageMediaImageLightbox
-            open={lightboxOpen}
-            onOpenChange={setLightboxOpen}
-            src={attachmentPath}
-            title={fileName}
-          />
+          {!useParentGallery ? (
+            <MessageMediaImageLightbox
+              open={lightboxOpen}
+              onOpenChange={setLightboxOpen}
+              src={attachmentPath}
+              title={fileName}
+            />
+          ) : null}
         </>
       )}
     </div>
@@ -171,12 +183,15 @@ export function MessageMediaAttachmentCard({
   content,
   isOwn,
   formattedTime,
+  onOpenImage,
 }: {
   messageId: string
   metadata: unknown
   content: string
   isOwn: boolean
   formattedTime: string
+  /** Opens a parent-owned image gallery (swipe across thread photos). */
+  onOpenImage?: (messageId: string) => void
 }) {
   const imageAtt = parseMarketplaceMessageImageAttachment(metadata)
   const videoAtt = parseMarketplaceMessageVideoAttachment(metadata)
@@ -198,6 +213,7 @@ export function MessageMediaAttachmentCard({
             messageId={messageId}
             fileName={imageAtt.file_name}
             className={messageMediaFrameClass}
+            onOpenImage={onOpenImage}
           />
         ) : null}
         {videoAtt ? (

@@ -103,7 +103,8 @@ async function fetchSellerDisplayName(
 
 /**
  * For listing threads where the buyer's latest message is 7+ days old with no seller reply:
- * apply vacation mode on the listing and emit Klaviyo **Inactive Seller** to the seller.
+ * apply vacation mode on the listing (which emits **Listing Auto Vacation**)
+ * and emit Klaviyo **Inactive Seller** to the seller.
  */
 export async function processSellerMessageInactivity(
   supabase: SupabaseClient,

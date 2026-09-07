@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
@@ -263,16 +262,6 @@ export async function postOrderExclusiveRepurchaseThreadNotification(
   } catch {
     // No-op outside Next.js request context (e.g. scripts).
   }
-
-  void trackKlaviyoMessageSent({
-    senderUserId: params.sellerId,
-    receiverUserId: params.buyerId,
-    message: content,
-    conversationId: conv.id,
-    listingId: params.primaryListingId,
-    messageId: inserted.id,
-    sentAt: inserted.created_at,
-  })
 }
 
 /** Posts the exclusive repurchase follow-up in the buyer↔seller thread when applicable. */

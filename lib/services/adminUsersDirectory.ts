@@ -1,3 +1,4 @@
+import { listTippedMarkSoldGmsContributions } from '@/lib/db/sellerSaleTips'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
 /**
@@ -6,7 +7,8 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
  * Runs on the **service-role** client so listing and order aggregates are
  * accurate regardless of RLS, and replaces the previous per-user N+1 count
  * queries with three bulk reads tallied in memory. Money is USD; sales/GMV
- * use confirmed, non-test orders (matching `adminPlatformFees.ts`).
+ * use confirmed, non-test orders plus listing prices of off-platform
+ * mark-as-sold sales with a succeeded seller tip.
  */
 
 const PAGE = 1000
@@ -23,9 +25,9 @@ export type AdminUserDirectoryRow = {
   shop_verified: boolean
   is_reswell_seller: boolean
   created_at: string
-  last_active_at: string | null
   listings_count: number
   active_listings_count: number
+  draft_listings_count: number
   sales_count: number
   gmv: number
 }
@@ -66,7 +68,6 @@ type ProfileRow = {
   shop_verified: boolean | null
   is_reswell_seller: boolean | null
   created_at: string
-  last_active_at: string | null
 }
 
 type ListingRow = { user_id: string | null; status: string | null }
@@ -91,12 +92,12 @@ export async function loadAdminUsersDirectory(): Promise<
   }
 
   try {
-    const [profiles, listings, orders] = await Promise.all([
+    const [profiles, listings, orders, tippedGms] = await Promise.all([
       fetchAll<ProfileRow>((from, to) =>
         db
           .from('profiles')
           .select(
-            'id, email, display_name, avatar_url, city, is_admin, is_employee, shop_verified, is_reswell_seller, created_at, last_active_at',
+            'id, email, display_name, avatar_url, city, is_admin, is_employee, shop_verified, is_reswell_seller, created_at',
           )
           .order('created_at', { ascending: false })
           .range(from, to),
@@ -107,14 +108,16 @@ export async function loadAdminUsersDirectory(): Promise<
       fetchAll<OrderRow>((from, to) =>
         db.from('orders').select('seller_id, amount, status, is_admin_test').range(from, to),
       ),
+      listTippedMarkSoldGmsContributions(db),
     ])
 
-    const listingMap = new Map<string, { total: number; active: number }>()
+    const listingMap = new Map<string, { total: number; active: number; draft: number }>()
     for (const l of listings) {
       if (!l.user_id) continue
-      const agg = listingMap.get(l.user_id) ?? { total: 0, active: 0 }
+      const agg = listingMap.get(l.user_id) ?? { total: 0, active: 0, draft: 0 }
       agg.total += 1
       if (l.status === 'active') agg.active += 1
+      if (l.status === 'draft') agg.draft += 1
       listingMap.set(l.user_id, agg)
     }
 
@@ -126,6 +129,13 @@ export async function loadAdminUsersDirectory(): Promise<
       agg.count += 1
       agg.gmv += num(o.amount)
       salesMap.set(o.seller_id, agg)
+    }
+
+    for (const tip of tippedGms) {
+      const agg = salesMap.get(tip.sellerUserId) ?? { count: 0, gmv: 0 }
+      agg.count += 1
+      agg.gmv += tip.listingPriceUsd
+      salesMap.set(tip.sellerUserId, agg)
     }
 
     const users: AdminUserDirectoryRow[] = profiles.map((p) => {
@@ -142,9 +152,9 @@ export async function loadAdminUsersDirectory(): Promise<
         shop_verified: p.shop_verified === true,
         is_reswell_seller: p.is_reswell_seller === true,
         created_at: p.created_at,
-        last_active_at: p.last_active_at,
         listings_count: listingAgg?.total ?? 0,
         active_listings_count: listingAgg?.active ?? 0,
+        draft_listings_count: listingAgg?.draft ?? 0,
         sales_count: salesAgg?.count ?? 0,
         gmv: salesAgg?.gmv ?? 0,
       }

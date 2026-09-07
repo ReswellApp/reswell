@@ -26,16 +26,20 @@ export function AdminGuard({
         pathname === '/admin/seo' ||
         pathname === '/admin/google-merchant' ||
         pathname === '/admin/google-analytics' ||
+        pathname === '/admin/ad-sales' ||
         pathname === '/admin/search-curation' ||
         pathname === '/admin/shipping' ||
         pathname === '/admin/tools' ||
         pathname === '/admin/site-assets' ||
         pathname === '/admin/pnl' ||
+        pathname === '/admin/llm-usage' ||
+        pathname === '/admin/intelligence' ||
         pathname === '/admin/listings/brand-model-autofills' ||
         pathname === '/admin/orders/test-purchase' ||
         pathname === '/admin/orders/terminal' ||
         pathname === '/admin/promo-codes' ||
         pathname === '/admin/fbcatalog' ||
+        pathname === '/admin/facebook-marketplace-bulk' ||
         pathname === '/admin/shop'
       ) {
         router.replace('/admin')

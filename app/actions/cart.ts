@@ -3,15 +3,29 @@
 import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-eligibility"
+import { fetchAcceptedOffersForBuyerListings } from "@/lib/db/offers"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
+import { listingTileImageSrcFromRow } from "@/lib/listing-image-display"
+import { isListingPurchasable } from "@/lib/listing-public-visibility"
 import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
-import type { MetaBrowserSignalsInput } from "@/lib/validations/metaBrowserSignals"
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
-import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-eligibility"
+import { captureServerEvent } from "@/lib/posthog-server"
 import { isReswellShopListing } from "@/lib/reswell-shop"
-import { isListingPurchasable } from "@/lib/listing-public-visibility"
+import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
+import {
+  countSurfboardListings,
+  isSurfboardListingSection,
+  peerCheckoutSurfboardCountError,
+} from "@/lib/surfboard-multi-board-parcel"
+import {
+  cartFromCartCheckoutHref,
+  cartItemCountFromQuantities,
+  type AddedToCartPreview,
+} from "@/lib/utils/added-to-cart"
+import type { MetaBrowserSignalsInput } from "@/lib/validations/metaBrowserSignals"
 
 export type CartListingRow = {
   id: string
@@ -45,6 +59,8 @@ export type CartPageItem = {
   cartCreatedAt: string
   quantity: number
   listing: CartListingRow
+  /** Accepted single-item offer unit price. Cart/checkout charge this instead of list price. */
+  agreedPriceUsd: number | null
 }
 
 type CartEligibleListing = PeerListingCartFields & {
@@ -114,6 +130,92 @@ export type AddCartItemResult = {
   contentName?: string
   /** Shared event id so the browser AddToCart dedupes against the Conversions API event. */
   metaEventId?: string
+  preview?: AddedToCartPreview
+}
+
+type AddedToCartListingRow = {
+  id: string
+  title: string | null
+  price: number | string | null
+  slug: string | null
+  section: string | null
+  user_id: string
+}
+
+async function fetchAddedToCartBundle(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  listingId: string,
+  buyerId: string,
+) {
+  const [listingRes, imageRes, profileRes, cartRes] = await Promise.all([
+    supabase
+      .from("listings")
+      .select("id, title, price, slug, section, user_id")
+      .eq("id", listingId)
+      .maybeSingle(),
+    supabase
+      .from("listing_images")
+      .select("url, thumbnail_url")
+      .eq("listing_id", listingId)
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("profiles").select("email").eq("id", buyerId).maybeSingle(),
+    supabase.from("cart_items").select("quantity").eq("profile_id", buyerId),
+  ])
+
+  return {
+    listingRow: listingRes.data as AddedToCartListingRow | null,
+    firstImage: imageRes.data as { url?: string | null; thumbnail_url?: string | null } | null,
+    profileRow: profileRes.data as { email?: string | null } | null,
+    cartCount: cartItemCountFromQuantities(cartRes.data),
+  }
+}
+
+function buildAddedToCartPreview(input: {
+  listingId: string
+  sellerId: string
+  listingRow: AddedToCartListingRow | null
+  firstImage: { url?: string | null; thumbnail_url?: string | null } | null
+  lineQuantity: number
+  addedQuantity: number
+  cartCount: number
+}): { preview: AddedToCartPreview; value?: number; contentName?: string; photoUrl: string | null } {
+  const priceRaw = input.listingRow
+    ? typeof input.listingRow.price === "number"
+      ? input.listingRow.price
+      : Number(input.listingRow.price)
+    : NaN
+  const value = Number.isFinite(priceRaw) && priceRaw > 0 ? priceRaw : undefined
+  const title = String(input.listingRow?.title ?? "").trim()
+  const contentName = title || undefined
+  const imageUrl =
+    listingTileImageSrcFromRow({
+      url: input.firstImage?.url ?? null,
+      thumbnail_url: input.firstImage?.thumbnail_url ?? null,
+    }) || null
+  const photoUrl =
+    (input.firstImage?.thumbnail_url && String(input.firstImage.thumbnail_url).trim()) ||
+    (input.firstImage?.url && String(input.firstImage.url).trim()) ||
+    null
+  const lineQuantity = Math.max(1, input.lineQuantity)
+  const addedQuantity = Math.max(1, input.addedQuantity)
+
+  return {
+    preview: {
+      listingId: input.listingId,
+      title: title || "Listing",
+      imageUrl,
+      priceUsd: value ?? null,
+      lineQuantity,
+      addedQuantity,
+      cartCount: Math.max(lineQuantity, input.cartCount),
+      checkoutHref: cartFromCartCheckoutHref(input.sellerId),
+    },
+    value,
+    contentName,
+    photoUrl,
+  }
 }
 
 export async function addCartItem(
@@ -142,6 +244,34 @@ export async function addCartItem(
     return { ok: false, error: isShop ? "Not enough stock available" : "This listing is already limited to one" }
   }
 
+  if (isSurfboardListingSection(check.listing.section)) {
+    const { data: cartPeerRows } = await supabase
+      .from("cart_items")
+      .select("listing_id, listings!inner ( user_id, section )")
+      .eq("profile_id", user.id)
+    const alreadyIds = new Set<string>()
+    const sellerBoards: Array<{ section?: string | null }> = []
+    for (const row of cartPeerRows ?? []) {
+      const raw = row as {
+        listing_id?: string
+        listings?: { user_id?: string; section?: string | null } | { user_id?: string; section?: string | null }[] | null
+      }
+      const listing = Array.isArray(raw.listings) ? raw.listings[0] : raw.listings
+      const listingId = String(raw.listing_id ?? "").trim()
+      if (listingId) alreadyIds.add(listingId)
+      if (listing?.user_id === check.listing.user_id) {
+        sellerBoards.push({ section: listing.section })
+      }
+    }
+    if (!alreadyIds.has(listingId)) {
+      const nextCount = countSurfboardListings(sellerBoards) + 1
+      const capError = peerCheckoutSurfboardCountError(nextCount)
+      if (capError) {
+        return { ok: false, error: capError }
+      }
+    }
+  }
+
   const metaEventId = randomUUID()
 
   const { data: existing } = await supabase
@@ -150,6 +280,8 @@ export async function addCartItem(
     .eq("profile_id", user.id)
     .eq("listing_id", listingId)
     .maybeSingle()
+
+  let lineQuantity = isShop ? addQty : 1
 
   if (existing) {
     const prevQty = Math.max(1, Math.floor(Number((existing as { quantity?: number }).quantity) || 1))
@@ -166,7 +298,24 @@ export async function addCartItem(
           fbp: metaBrowserSignals?.fbp ?? null,
         },
       })
-      return { ok: true, error: null, metaEventId }
+      const bundle = await fetchAddedToCartBundle(supabase, listingId, user.id)
+      const built = buildAddedToCartPreview({
+        listingId,
+        sellerId: check.listing.user_id,
+        listingRow: bundle.listingRow,
+        firstImage: bundle.firstImage,
+        lineQuantity: 1,
+        addedQuantity: 1,
+        cartCount: bundle.cartCount,
+      })
+      return {
+        ok: true,
+        error: null,
+        value: built.value,
+        contentName: built.contentName,
+        metaEventId,
+        preview: built.preview,
+      }
     }
     const nextQty = prevQty + addQty
     if (nextQty > maxQty) {
@@ -180,6 +329,7 @@ export async function addCartItem(
     if (updateErr) {
       return { ok: false, error: updateErr.message }
     }
+    lineQuantity = nextQty
   } else {
     const { error } = await supabase.from("cart_items").insert({
       profile_id: user.id,
@@ -190,48 +340,54 @@ export async function addCartItem(
     if (error) {
       if (error.code === "23505") {
         revalidatePath("/cart")
-        return { ok: true, error: null, metaEventId }
+        const bundle = await fetchAddedToCartBundle(supabase, listingId, user.id)
+        const built = buildAddedToCartPreview({
+          listingId,
+          sellerId: check.listing.user_id,
+          listingRow: bundle.listingRow,
+          firstImage: bundle.firstImage,
+          lineQuantity: 1,
+          addedQuantity: 1,
+          cartCount: bundle.cartCount,
+        })
+        return {
+          ok: true,
+          error: null,
+          value: built.value,
+          contentName: built.contentName,
+          metaEventId,
+          preview: built.preview,
+        }
       }
       return { ok: false, error: error.message }
     }
   }
 
-  const [{ data: listingRow }, { data: firstImage }, { data: profileRow }] = await Promise.all([
-    supabase.from("listings").select("id, title, price, slug, section").eq("id", listingId).maybeSingle(),
-    supabase
-      .from("listing_images")
-      .select("url, thumbnail_url")
-      .eq("listing_id", listingId)
-      .order("sort_order", { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-    supabase.from("profiles").select("email").eq("id", user.id).maybeSingle(),
-  ])
+  const bundle = await fetchAddedToCartBundle(supabase, listingId, user.id)
+  const listingRow = bundle.listingRow
+  const built = buildAddedToCartPreview({
+    listingId,
+    sellerId: listingRow?.user_id ?? check.listing.user_id,
+    listingRow,
+    firstImage: bundle.firstImage,
+    lineQuantity,
+    addedQuantity: addQty,
+    cartCount: bundle.cartCount,
+  })
 
-  let value: number | undefined
-  let contentName: string | undefined
   if (listingRow) {
-    const photoUrl =
-      (firstImage?.thumbnail_url && String(firstImage.thumbnail_url).trim()) ||
-      (firstImage?.url && String(firstImage.url).trim()) ||
-      null
     const buyerEmail =
-      (typeof profileRow?.email === "string" && profileRow.email.trim()
-        ? profileRow.email.trim()
+      (typeof bundle.profileRow?.email === "string" && bundle.profileRow.email.trim()
+        ? bundle.profileRow.email.trim()
         : null) ||
       user.email?.trim() ||
       null
-    const price =
-      typeof listingRow.price === "number" ? listingRow.price : Number(listingRow.price)
-    if (Number.isFinite(price) && price > 0) value = price
-    const title = String(listingRow.title ?? "").trim()
-    if (title) contentName = title
     void trackMetaAddToCartServerEvent({
       eventId: metaEventId,
       listingId: listingRow.id,
       listingSlug: listingRow.slug ?? null,
       listingSection: String(listingRow.section ?? "surfboards"),
-      value,
+      value: built.value,
       buyerUserId: user.id,
       buyerEmail: user.email ?? null,
       browserSignals: {
@@ -244,17 +400,29 @@ export async function addCartItem(
       buyerEmail,
       listingId: listingRow.id,
       title: String(listingRow.title ?? ""),
-      price,
+      price: built.value ?? Number(listingRow.price),
       slug: listingRow.slug ?? null,
       section: String(listingRow.section ?? "surfboards"),
-      photoUrl,
+      photoUrl: built.photoUrl,
     })
   }
 
   revalidatePath("/cart")
   const pathSlug = listingRow?.slug?.trim()
   revalidatePath(pathSlug ? `/l/${pathSlug}` : `/l/${listingId}`)
-  return { ok: true, error: null, value, contentName, metaEventId }
+  await captureServerEvent(user.id, "cart_item_added", {
+    listing_id: listingId,
+    section: listingRow ? String(listingRow.section ?? "surfboards") : undefined,
+    quantity: addQty,
+  })
+  return {
+    ok: true,
+    error: null,
+    value: built.value,
+    contentName: built.contentName,
+    metaEventId,
+    preview: built.preview,
+  }
 }
 
 export async function updateCartItemQuantity(
@@ -431,7 +599,26 @@ export async function getCartPageItems(): Promise<{
       cartCreatedAt: raw.created_at,
       quantity: isReswellShopListing(listing.section) ? qty : 1,
       listing,
+      agreedPriceUsd: null,
     })
+  }
+
+  const peerIds = items
+    .filter((row) => isPeerListingSection(row.listing.section))
+    .map((row) => row.listing.id)
+  const acceptedOffers = await fetchAcceptedOffersForBuyerListings(supabase, user.id, peerIds)
+  if (acceptedOffers.length > 0) {
+    const agreedByListingId = new Map<string, number>()
+    for (const offer of acceptedOffers) {
+      if (agreedByListingId.has(offer.listing_id)) continue
+      const listing = items.find((row) => row.listing.id === offer.listing_id)?.listing
+      if (!listing || offer.seller_id !== listing.user_id) continue
+      const unit = acceptedUnitPriceForSingleItemOffer(offer, offer.listing_id)
+      if (unit != null) agreedByListingId.set(offer.listing_id, unit)
+    }
+    for (const row of items) {
+      row.agreedPriceUsd = agreedByListingId.get(row.listing.id) ?? null
+    }
   }
 
   return { items, error: null }

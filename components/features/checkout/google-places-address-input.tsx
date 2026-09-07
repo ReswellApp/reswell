@@ -23,6 +23,13 @@ import {
 } from "@/lib/maps/places-autocomplete-new"
 import { parseGoogleAddressComponents } from "@/lib/maps/parse-google-address-components"
 
+/** If Maps JS never settles, fall back (checkout OSM) instead of spinning forever. */
+const GOOGLE_MAPS_BOOT_HANG_MS = 12_000
+/** If autocomplete fetch hangs, stop showing an in-field spinner. */
+const GOOGLE_PREDICTION_HANG_MS = 12_000
+/** If Place Details never returns after a pick, clear resolving state. */
+const GOOGLE_PLACE_DETAILS_HANG_MS = 15_000
+
 export type GoogleResolvedAddress = {
   line1: string
   line2: string
@@ -135,8 +142,24 @@ export function GooglePlacesAddressInput({
   const inputRef = useRef<HTMLInputElement>(null)
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
+  const predictHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const detailsHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onProviderErrorRef = useRef(onProviderError)
   onProviderErrorRef.current = onProviderError
+
+  const clearPredictHangTimer = () => {
+    if (predictHangTimerRef.current) {
+      clearTimeout(predictHangTimerRef.current)
+      predictHangTimerRef.current = null
+    }
+  }
+
+  const clearDetailsHangTimer = () => {
+    if (detailsHangTimerRef.current) {
+      clearTimeout(detailsHangTimerRef.current)
+      detailsHangTimerRef.current = null
+    }
+  }
 
   const qTrim = value.trim()
   const apiReady = placesBackend !== null
@@ -152,9 +175,15 @@ export function GooglePlacesAddressInput({
 
   useEffect(() => {
     let cancelled = false
+    const bootHang = window.setTimeout(() => {
+      if (cancelled) return
+      onProviderErrorRef.current?.()
+    }, GOOGLE_MAPS_BOOT_HANG_MS)
+
     void loadGoogleMapsWithPlaces()
       .then((g) => {
         if (cancelled) return
+        window.clearTimeout(bootHang)
         const mode = choosePlacesAutocompleteBackend(g)
         if (mode === "legacy") {
           autocompleteServiceRef.current = new g.maps.places.AutocompleteService()
@@ -162,10 +191,21 @@ export function GooglePlacesAddressInput({
         setPlacesBackend(mode)
       })
       .catch(() => {
-        if (!cancelled) onProviderErrorRef.current?.()
+        if (cancelled) return
+        window.clearTimeout(bootHang)
+        onProviderErrorRef.current?.()
       })
     return () => {
       cancelled = true
+      window.clearTimeout(bootHang)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (predictHangTimerRef.current) clearTimeout(predictHangTimerRef.current)
+      if (detailsHangTimerRef.current) clearTimeout(detailsHangTimerRef.current)
     }
   }, [])
 
@@ -175,6 +215,8 @@ export function GooglePlacesAddressInput({
       clearTimeout(debounceRef.current)
       debounceRef.current = null
     }
+    clearPredictHangTimer()
+    setLoadingPredictions(false)
   }, [])
 
   const isInputFocused = () =>
@@ -193,12 +235,24 @@ export function GooglePlacesAddressInput({
       return
     }
 
+    // After a pick, the street line is already filled — don't refetch (or spin) until they type.
+    if (suppressOpenUntilTypingRef.current) {
+      clearPredictHangTimer()
+      setLoadingPredictions(false)
+      setRows([])
+      setOpen(false)
+      setFetchEmpty(false)
+      setActiveIndex(-1)
+      return
+    }
+
     setFetchEmpty(false)
     const runId = ++generationRef.current
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
       debounceRef.current = null
     }
+    clearPredictHangTimer()
 
     setLoadingPredictions(true)
     setRows([])
@@ -206,13 +260,25 @@ export function GooglePlacesAddressInput({
 
     const backend = placesBackend
 
+    const finishPredictions = () => {
+      if (runId !== generationRef.current) return
+      clearPredictHangTimer()
+      setLoadingPredictions(false)
+    }
+
     debounceRef.current = setTimeout(() => {
+      predictHangTimerRef.current = setTimeout(() => {
+        predictHangTimerRef.current = null
+        if (runId !== generationRef.current) return
+        setLoadingPredictions(false)
+      }, GOOGLE_PREDICTION_HANG_MS)
+
       if (backend === "new") {
         void (async () => {
           if (runId !== generationRef.current) return
           const g = window.google
           if (!g?.maps?.places) {
-            setLoadingPredictions(false)
+            finishPredictions()
             onProviderErrorRef.current?.()
             return
           }
@@ -231,7 +297,7 @@ export function GooglePlacesAddressInput({
             })
             if (runId !== generationRef.current) return
             const mapped = mapAddressSuggestions(suggestions)
-            setLoadingPredictions(false)
+            finishPredictions()
             if (mapped.length === 0) {
               setRows([])
               setFetchEmpty(true)
@@ -256,7 +322,7 @@ export function GooglePlacesAddressInput({
               const list = await legacyFetchAddressPredictions(g, autocompleteServiceRef.current, q)
               if (runId !== generationRef.current) return
               setPlacesBackend("legacy")
-              setLoadingPredictions(false)
+              finishPredictions()
               if (list.length === 0) {
                 setRows([])
                 setFetchEmpty(true)
@@ -277,7 +343,7 @@ export function GooglePlacesAddressInput({
               const allowOpen = !suppressOpenUntilTypingRef.current
               setOpen(isInputFocused() && allowOpen)
             } catch {
-              setLoadingPredictions(false)
+              finishPredictions()
               onProviderErrorRef.current?.()
               setRows([])
               setFetchEmpty(false)
@@ -294,14 +360,14 @@ export function GooglePlacesAddressInput({
         const g = window.google
         const svc = autocompleteServiceRef.current
         if (!g?.maps?.places || !svc) {
-          setLoadingPredictions(false)
+          finishPredictions()
           onProviderErrorRef.current?.()
           return
         }
         try {
           const list = await legacyFetchAddressPredictions(g, svc, q)
           if (runId !== generationRef.current) return
-          setLoadingPredictions(false)
+          finishPredictions()
           if (list.length === 0) {
             setRows([])
             setFetchEmpty(true)
@@ -323,7 +389,7 @@ export function GooglePlacesAddressInput({
           setOpen(isInputFocused() && allowOpen)
         } catch {
           if (runId !== generationRef.current) return
-          setLoadingPredictions(false)
+          finishPredictions()
           onProviderErrorRef.current?.()
           setRows([])
           setFetchEmpty(false)
@@ -380,9 +446,15 @@ export function GooglePlacesAddressInput({
 
   const resolvePlace = useCallback(
     (row: PredictionRow) => {
+      setLoadingDetails(true)
+      clearDetailsHangTimer()
+      detailsHangTimerRef.current = setTimeout(() => {
+        detailsHangTimerRef.current = null
+        setLoadingDetails(false)
+      }, GOOGLE_PLACE_DETAILS_HANG_MS)
+
       void loadGoogleMapsWithPlaces()
         .then(async (g) => {
-          setLoadingDetails(true)
           try {
             if (row.prediction) {
               const place = row.prediction.toPlace()
@@ -391,6 +463,7 @@ export function GooglePlacesAddressInput({
                 : (["addressComponents"] as const)
               await place.fetchFields({ fields: [...fields] })
               sessionTokenRef.current = null
+              clearDetailsHangTimer()
               setLoadingDetails(false)
 
               const geo = newPlaceAddressComponentsToGeocoder(place.addressComponents)
@@ -431,6 +504,7 @@ export function GooglePlacesAddressInput({
               ? (["address_components", "formatted_address", "geometry", "place_id"] as const)
               : (["address_components"] as const)
             const place = await legacyFetchPlaceDetails(g, row.placeId, [...fields])
+            clearDetailsHangTimer()
             setLoadingDetails(false)
             if (!place?.address_components) {
               onProviderErrorRef.current?.()
@@ -464,11 +538,13 @@ export function GooglePlacesAddressInput({
               }
             }
           } catch {
+            clearDetailsHangTimer()
             setLoadingDetails(false)
             onProviderErrorRef.current?.()
           }
         })
         .catch(() => {
+          clearDetailsHangTimer()
           setLoadingDetails(false)
           onProviderErrorRef.current?.()
         })
@@ -651,7 +727,7 @@ export function GooglePlacesAddressInput({
           panelOpen && "ring-1 ring-[#5574AD]/30 ring-offset-0",
         )}
       />
-      {(!apiReady || loadingPredictions || loadingDetails) && !disabled ? (
+      {(loadingPredictions || loadingDetails) && !disabled ? (
         <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#5574AD]/80" />
       ) : null}
       {dropdownPanel}

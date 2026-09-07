@@ -4,7 +4,8 @@ import { NextResponse } from "next/server"
 
 /**
  * Daily job: unanswered buyer listing messages older than 7 days → vacation mode +
- * Klaviyo **Inactive Seller** email to the seller.
+ * Klaviyo **Listing Auto Vacation** (listing hidden) and **Inactive Seller**
+ * (missed messages) to the seller.
  *
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */

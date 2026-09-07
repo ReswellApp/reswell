@@ -1,6 +1,29 @@
 const AW_ID_PATTERN = /^AW-\d+$/
 const CONVERSION_SEND_TO_PATTERN = /^AW-\d+\/[A-Za-z0-9_-]+$/
 
+/** GA4 auto / engagement events. Never import these as Google Ads conversions. */
+export const GA4_EVENTS_NEVER_IMPORT_AS_ADS_CONVERSIONS = [
+  "page_view",
+  "add_to_cart",
+  "session_start",
+  "user_engagement",
+] as const
+
+/** The only GA4 event that may be imported as an Ads conversion (optional). */
+export const GA4_PURCHASE_EVENT_FOR_ADS_IMPORT = "purchase"
+
+/**
+ * True when the Ads account imports GA4 `purchase` as a conversion.
+ * The website purchase tag must then stay off so the same order is not counted twice.
+ *
+ * Set `NEXT_PUBLIC_GOOGLE_ADS_IMPORT_GA4_PURCHASE=true` after importing `purchase`
+ * in Google Ads → Goals → Conversions. Leave unset to keep the website (AW) tag.
+ */
+export function isGa4PurchaseImportedAsAdsConversion(): boolean {
+  const raw = process.env.NEXT_PUBLIC_GOOGLE_ADS_IMPORT_GA4_PURCHASE?.trim().toLowerCase()
+  return raw === "true" || raw === "1"
+}
+
 function parseAwIdFromSendTo(raw: string | undefined): string | null {
   const trimmed = raw?.trim()
   if (!trimmed || !CONVERSION_SEND_TO_PATTERN.test(trimmed)) return null
@@ -37,7 +60,13 @@ export function getGoogleAdsSignupConversionSendTo(): string | null {
   return raw
 }
 
+/**
+ * Website (AW) purchase conversion send_to.
+ * Returns null when GA4 `purchase` is imported as the Ads conversion so the
+ * website tag does not double-count the same order.
+ */
 export function getGoogleAdsPurchaseConversionSendTo(): string | null {
+  if (isGa4PurchaseImportedAsAdsConversion()) return null
   return resolvePurchaseConversionSendTo()
 }
 

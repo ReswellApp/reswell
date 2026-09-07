@@ -6,11 +6,13 @@ import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
+import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
+import { qualifyPublishedListingForGiveaways } from "@/lib/services/giveawayEntry"
 
 const PRICE_MIN = 0.01
 
@@ -84,6 +86,12 @@ export async function applyPublishedListingSideEffects(
   sellerUserId: string,
 ): Promise<void> {
   try {
+    await qualifyPublishedListingForGiveaways(supabase, listingId, sellerUserId)
+  } catch {
+    // Giveaway qualification is best-effort — never block publish.
+  }
+
+  try {
     await syncListingToIndex(supabase, listingId)
   } catch {
     // ES optional
@@ -101,10 +109,20 @@ export async function applyPublishedListingSideEffects(
     // best-effort
   }
 
-  await revalidateAfterListingSiteModeration(supabase, [listingId])
-  revalidateBoardsBrowseCatalog()
-  revalidateNavSearchSuggest()
-  await revalidateSellersAfterListingChange(supabase, sellerUserId)
+  try {
+    await notifyFollowersNewListingKlaviyo(listingId)
+  } catch {
+    // best-effort
+  }
+
+  try {
+    await revalidateAfterListingSiteModeration(supabase, [listingId])
+    revalidateBoardsBrowseCatalog()
+    revalidateNavSearchSuggest()
+    await revalidateSellersAfterListingChange(supabase, sellerUserId)
+  } catch {
+    // Cache revalidation is best-effort — listing is already live.
+  }
 }
 
 async function fetchDraftListingForPublish(

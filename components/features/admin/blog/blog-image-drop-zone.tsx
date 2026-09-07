@@ -12,14 +12,16 @@ type Props = {
   label: string
   /** Controlled HTTPS URL after upload */
   value: string
-  onUrlChange: (next: string) => void
+  onUrlChange: (next: string, dimensions?: { width: number; height: number }) => void
   /** Narrower footprint for inline/block editors */
   compact?: boolean
+  /** Extra line under the upload constraints (copyright policy, optional cover, etc.) */
+  hint?: string
   className?: string
 }
 
 /** Drag-and-drop or click-to-upload strip (CMS). */
-export function BlogImageDropZone({ label, value, onUrlChange, compact, className }: Props) {
+export function BlogImageDropZone({ label, value, onUrlChange, compact, hint, className }: Props) {
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = React.useState(false)
   const [uploading, setUploading] = React.useState(false)
@@ -28,8 +30,8 @@ export function BlogImageDropZone({ label, value, onUrlChange, compact, classNam
     if (!file) return
     setUploading(true)
     try {
-      const url = await uploadBlogMediaFile(file)
-      if (url) onUrlChange(url)
+      const uploaded = await uploadBlogMediaFile(file)
+      if (uploaded) onUrlChange(uploaded.url, { width: uploaded.width, height: uploaded.height })
     } finally {
       setUploading(false)
     }
@@ -111,8 +113,9 @@ export function BlogImageDropZone({ label, value, onUrlChange, compact, classNam
         </span>
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <ImagePlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          JPEG · PNG · WebP · GIF · max 8MB · stored as 3000×2000 (center-cropped)
+          JPEG · PNG · WebP · GIF · max 8MB · copyright-free only
         </span>
+        {hint?.trim() ? <span className="max-w-[28rem] text-xs leading-relaxed text-muted-foreground">{hint.trim()}</span> : null}
       </button>
 
       {compact && urlLooksLikeImage ? (
@@ -121,7 +124,7 @@ export function BlogImageDropZone({ label, value, onUrlChange, compact, classNam
           <img
             src={previewSrc || trimmedValue}
             alt=""
-            className="max-h-28 w-auto max-w-full rounded-md border border-border object-contain"
+            className="h-auto max-h-28 w-auto max-w-full rounded-md border border-border object-contain"
           />
         </div>
       ) : null}
@@ -132,7 +135,7 @@ export function BlogImageDropZone({ label, value, onUrlChange, compact, classNam
           <img
             src={previewSrc || trimmedValue}
             alt=""
-            className="max-h-40 rounded-md border border-border object-contain shadow-sm"
+            className="h-auto max-h-40 w-auto max-w-full rounded-md border border-border object-contain shadow-sm"
           />
         </div>
       ) : null}

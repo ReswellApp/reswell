@@ -2,9 +2,9 @@
  * Shortboard pack bands — fixed cartons under the Shortboard family.
  *
  * Checkout quotes and labels use the selected band carton (not always Medium).
- * Two sizes only, both at or under the 130″ UPS large-package DIM cliff:
- *   Compact — 72×22×4 (DIM 124″)
- *   Medium  — 78×22×4 (DIM 130″) for boards above 72″ packed length
+ * Both stay at or under the Reswell UPS parcel DIM cap (160″):
+ *   Compact — 72×22×5 (DIM 126″) — under the 130″ large-package cliff
+ *   Medium  — 78×25.5×7.25 (DIM 143.5″) for boards above 72″ packed length
  */
 
 import {
@@ -68,9 +68,9 @@ export type SurfboardShippingPackBand = {
 }
 
 /**
- * Locked shortboard pack bands — every carton must stay at or under {@link UPS_LARGE_PACKAGE_DIM_IN}
- * (130″ DIM) so Reswell UPS quotes avoid large-package surcharges, and under
+ * Locked shortboard pack bands — every carton must stay under
  * {@link SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN} (160″ Reswell UPS parcel cap).
+ * Compact is also tuned under {@link UPS_LARGE_PACKAGE_DIM_IN} (130″); Medium may exceed it.
  */
 export const SURFBOARD_SHIPPING_PACK_BANDS: Record<
   SurfboardShippingPackBandId,
@@ -82,21 +82,21 @@ export const SURFBOARD_SHIPPING_PACK_BANDS: Record<
     summary: "Tight pack — stays under UPS large-package DIM (130″)",
     lengthIn: 72,
     widthIn: 22,
-    heightIn: 4,
-    weightLb: 18,
+    heightIn: 5,
+    weightLb: 14,
     maxBoardLengthIn: 71,
     maxBoardWidthIn: 21,
   },
   shortboard_medium: {
     id: "shortboard_medium",
     label: "Medium",
-    summary: "Longer shortboard pack — max length at the 130″ UPS DIM ceiling",
+    summary: "For packed boards above 72″ — wider/taller shortboard carton",
     lengthIn: 78,
-    widthIn: 22,
-    heightIn: 4,
+    widthIn: 25.5,
+    heightIn: 7.25,
     weightLb: 22,
     maxBoardLengthIn: 77,
-    maxBoardWidthIn: 21,
+    maxBoardWidthIn: 24.5,
   },
 }
 
@@ -318,11 +318,6 @@ export function assertSurfboardShippingPackBandsWithinCarrierLimits(): void {
     })
     if (!upsCheck.ok) {
       throw new Error(`Surfboard pack band "${bandId}" exceeds UPS limits: ${upsCheck.error}`)
-    }
-    if (parcel.dimIn > UPS_LARGE_PACKAGE_DIM_IN) {
-      throw new Error(
-        `Surfboard pack band "${bandId}" exceeds UPS large-package DIM (${UPS_LARGE_PACKAGE_DIM_IN}" max, got ${parcel.dimIn}")`,
-      )
     }
   }
 }

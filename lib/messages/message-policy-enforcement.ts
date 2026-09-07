@@ -61,8 +61,7 @@ export async function getMessagePolicyViolationForSender(
  * Same as {@link getMessagePolicyViolationForSender}, plus a cross-message check:
  * phone numbers split into short digit-only messages ("843" / "997" / "5252")
  * are caught by combining the sender's trailing digit-only messages with the
- * new one. Blocked fragments are never inserted, so the run rebuilds naturally
- * if the sender keeps trying.
+ * new one. Phone hits are captured for review but still delivered.
  */
 export async function getMessagePolicyViolationForSenderInConversation(
   supabase: SupabaseClient,

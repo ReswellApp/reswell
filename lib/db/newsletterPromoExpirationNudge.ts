@@ -123,3 +123,17 @@ export async function recordNewsletterPromoExpirationNudge(
   if (error) return { error: error.message }
   return { error: null }
 }
+
+/** Clears prior expiration-nudge rows so a replaced code can be nudged again near the new expiry. */
+export async function clearNewsletterPromoExpirationNudgesForPromo(
+  supabase: SupabaseClient,
+  promoId: string,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from("newsletter_promo_expiration_nudges")
+    .delete()
+    .eq("promo_code_id", promoId)
+
+  if (error) return { error: error.message }
+  return { error: null }
+}

@@ -1,0 +1,18 @@
+---
+description: Blog images must be copyright-free; covers are optional and fall back to a generated title card.
+alwaysApply: true
+---
+
+# Blog images
+
+Never attach brand, Shopify, Firewire, press, or other copyrighted product photos to a Reswell blog post.
+
+Allowed image sources only:
+
+- Unsplash, Pexels, Pixabay (standard free licenses — not Unsplash+)
+- Wikimedia Commons files with a documented free license (credit in the caption)
+- Photos Reswell owns or the author created, uploaded through the blog CMS
+
+If no legal photo exists, **omit the image**. Cover is optional. Posts without a cover use the generated title card (`BlogTitleCover` in the app, `opengraph-image` for shares).
+
+Do not hotlink manufacturer CDNs. Do not upload scraped catalog shots into `blog-images`. Instagram belongs in an embed block, not as a cover or inline image URL.

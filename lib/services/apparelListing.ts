@@ -8,11 +8,17 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { APPAREL_SECTION, APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { buildApparelListingPersistFields } from "@/lib/apparel-listing-persist-fields"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import {
+  insertListingVideos,
+  listingVideosToUpdateOps,
+  syncListingVideos,
+} from "@/lib/services/sync-listing-videos"
 import type {
   CreateApparelListingInput,
   UpdateApparelListingInput,
@@ -73,10 +79,7 @@ export async function syncApparelListingImages(
       const u = img.url.trim()
       if (u) {
         rowUpdate.url = u
-        rowUpdate.thumbnail_url =
-          typeof img.thumbnailUrl === "string" && img.thumbnailUrl.trim()
-            ? img.thumbnailUrl.trim()
-            : null
+        rowUpdate.thumbnail_url = persistableListingThumbnailUrl(img.thumbnailUrl, img.url)
       }
       await supabase
         .from("listing_images")
@@ -87,10 +90,7 @@ export async function syncApparelListingImages(
       await supabase.from("listing_images").insert({
         listing_id: listingId,
         url: img.url.trim(),
-        thumbnail_url:
-          typeof img.thumbnailUrl === "string" && img.thumbnailUrl.trim()
-            ? img.thumbnailUrl.trim()
-            : null,
+        thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
         is_primary: img.isPrimary,
         sort_order: img.sortOrder,
       })
@@ -128,10 +128,7 @@ export async function updateApparelListing(
     throw new Error("Sold listings cannot be edited")
   }
 
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
-  const updateFields = buildApparelListingPersistFields(input, {
-    allowPrivilegedShippingModes,
-  })
+  const updateFields = buildApparelListingPersistFields(input)
   const { data: updated, error: updateError } = await supabase
     .from("listings")
     .update(updateFields)
@@ -153,6 +150,12 @@ export async function updateApparelListing(
   }))
 
   await syncApparelListingImages(supabase, listingId, input.removedImageIds ?? [], imageOps)
+  await syncListingVideos(
+    supabase,
+    listingId,
+    input.removedVideoIds ?? [],
+    listingVideosToUpdateOps(input.videos ?? []),
+  )
 
   return { slug: (updated.slug as string) ?? (existing.slug as string) }
 }
@@ -165,10 +168,7 @@ export async function createApparelListing(
   await assertApparelSellAllowed(supabase, userId)
 
   const slug = await generateUniqueListingSlug(supabase, input.title)
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
-  const persistFields = buildApparelListingPersistFields(input, {
-    allowPrivilegedShippingModes,
-  })
+  const persistFields = buildApparelListingPersistFields(input)
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
 
   const { data: inserted, error: listingError } = await supabase
@@ -191,7 +191,7 @@ export async function createApparelListing(
   const imageRows = input.images.map((img, index) => ({
     listing_id: listingId,
     url: img.url,
-    thumbnail_url: img.thumbnailUrl ?? null,
+    thumbnail_url: persistableListingThumbnailUrl(img.thumbnailUrl, img.url),
     is_primary: img.isPrimary ?? index === 0,
     sort_order: img.sortOrder ?? index,
   }))
@@ -200,6 +200,17 @@ export async function createApparelListing(
   if (imageError) {
     await supabase.from("listings").delete().eq("id", listingId)
     throw new Error(imageError.message)
+  }
+
+  try {
+    await insertListingVideos(
+      supabase,
+      listingId,
+      listingVideosToUpdateOps(input.videos ?? []),
+    )
+  } catch (err) {
+    await supabase.from("listings").delete().eq("id", listingId)
+    throw err instanceof Error ? err : new Error("Failed to insert listing videos")
   }
 
   return { listingId, slug: (inserted.slug as string) ?? slug }

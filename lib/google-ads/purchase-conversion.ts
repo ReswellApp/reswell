@@ -1,5 +1,8 @@
 import { getGoogleAdsPurchaseConversionSendTo } from "@/lib/google-ads/config"
-import { purchaseConversionDedupKey } from "@/lib/google-ads/purchase-conversion-inline"
+import {
+  hasReportedPurchaseConversion,
+  markPurchaseConversionReported,
+} from "@/lib/google-ads/purchase-conversion-inline"
 
 const GTAG_WAIT_MS = 8_000
 const GTAG_POLL_MS = 50
@@ -11,29 +14,7 @@ declare global {
   }
 }
 
-function purchaseDedupKey(orderId: string): string {
-  return purchaseConversionDedupKey(orderId)
-}
-
-export function hasReportedPurchaseConversion(orderId: string): boolean {
-  const trimmed = orderId.trim()
-  if (!trimmed) return false
-  try {
-    return sessionStorage.getItem(purchaseDedupKey(trimmed)) === "1"
-  } catch {
-    return false
-  }
-}
-
-function markPurchaseConversionReported(orderId: string): void {
-  const trimmed = orderId.trim()
-  if (!trimmed) return
-  try {
-    sessionStorage.setItem(purchaseDedupKey(trimmed), "1")
-  } catch {
-    /* private mode / blocked storage */
-  }
-}
+export { hasReportedPurchaseConversion, markPurchaseConversionReported }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -97,12 +78,10 @@ export async function reportPurchaseConversion(
   const currency = options.currency?.trim().toUpperCase() || "USD"
 
   if (hasReportedPurchaseConversion(orderId)) return true
+  markPurchaseConversionReported(orderId)
 
   const gtag = await waitForGtag(options.gtagWaitMs ?? GTAG_WAIT_MS)
   if (!gtag) return false
-
-  if (hasReportedPurchaseConversion(orderId)) return true
-  markPurchaseConversionReported(orderId)
 
   const callbackTimeoutMs =
     options.callbackTimeoutMs ?? CONVERSION_CALLBACK_TIMEOUT_MS

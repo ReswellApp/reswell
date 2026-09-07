@@ -109,7 +109,7 @@ export function BuyerCounterOfferDialog({
         <div className="space-y-4 py-1">
           <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {sellerOpened ? "Their price" : "Seller&apos;s counter"}
+              {sellerOpened ? "Their price" : "Seller's counter"}
             </p>
             <p className="mt-1 text-[28px] font-semibold tabular-nums tracking-tight text-foreground">
               ${total.toFixed(2)}
@@ -121,7 +121,7 @@ export function BuyerCounterOfferDialog({
             ) : null}
             {offer.fulfillment === "shipping" && shippingAmount == null ? (
               <p className="mt-1 text-[13px] text-muted-foreground">
-                ${counter.toFixed(2)} items + Reswell shipping at checkout
+                ${counter.toFixed(2)} items + shipping calculated at checkout
               </p>
             ) : null}
             {offer.fulfillment === "shipping" && shippingAmount === 0 ? (

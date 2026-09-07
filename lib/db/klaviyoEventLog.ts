@@ -406,3 +406,40 @@ export async function fetchKlaviyoEventLogPage(
     recipientSummary,
   }
 }
+
+/**
+ * Which of `uniqueIds` already have a successful (`sent`) log row.
+ * Uses `klaviyo_event_log_sent_unique_id_idx` — keep the status='sent' predicate.
+ */
+export async function findSentKlaviyoUniqueIds(
+  uniqueIds: string[],
+): Promise<Set<string>> {
+  const ids = [...new Set(uniqueIds.map((id) => id.trim()).filter(Boolean))]
+  if (ids.length === 0) return new Set()
+
+  try {
+    const supabase = createServiceRoleClient()
+    const { data, error } = await supabase
+      .from("klaviyo_event_log")
+      .select("unique_id")
+      .eq("status", "sent")
+      .in("unique_id", ids)
+
+    if (error) {
+      console.error("[klaviyoEventLog] findSentKlaviyoUniqueIds:", error.message)
+      return new Set()
+    }
+
+    return new Set(
+      (data ?? [])
+        .map((row) => (typeof row.unique_id === "string" ? row.unique_id : ""))
+        .filter(Boolean),
+    )
+  } catch (e) {
+    console.error(
+      "[klaviyoEventLog] findSentKlaviyoUniqueIds:",
+      e instanceof Error ? e.message : e,
+    )
+    return new Set()
+  }
+}

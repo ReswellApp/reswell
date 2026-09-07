@@ -10,6 +10,7 @@ import { getInventoryProductById } from "@/app/actions/marketplace"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
@@ -44,6 +45,7 @@ export function QuantitySelector({
   const [added, setAdded] = useState(false)
   const [product, setProduct] = useState<InventoryItem | null>(itemProp ?? null)
   const authModal = useOptionalAuthModal()
+  const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
@@ -118,7 +120,7 @@ export function QuantitySelector({
         eventId: r.metaEventId,
       })
       setAdded(true)
-      window.dispatchEvent(new CustomEvent("cartUpdated"))
+      reportAddedToCart(r)
       setTimeout(() => {
         setAdded(false)
         setQuantity(1)

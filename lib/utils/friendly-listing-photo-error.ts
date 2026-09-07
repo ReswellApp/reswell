@@ -1,4 +1,5 @@
 import { isAbortError } from "@/lib/utils/is-abort-error"
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
 function errorMessage(err: unknown): string {
   if (err instanceof Error && err.message.trim()) return err.message.trim()
@@ -37,6 +38,7 @@ function looksTechnical(message: string): boolean {
   return (
     lower.includes("aborterror") ||
     lower.includes("domexception") ||
+    lower.includes("notfounderror") ||
     lower.includes("operation was aborted") ||
     lower.includes("signal is aborted") ||
     lower.includes("err_") ||
@@ -56,6 +58,12 @@ export function friendlyListingPhotoErrorMessage(
   context: "add" | "upload" | "rotate" = "add",
 ): string {
   const raw = errorMessage(err)
+
+  if (isStaleFileNotFoundError(err) || isStaleFileNotFoundError(raw)) {
+    if (context === "rotate") return "We couldn't rotate this photo. Try again."
+    if (context === "upload") return "This photo is no longer available. Choose it again."
+    return "This photo is no longer available. Choose it again."
+  }
 
   if (context === "rotate") {
     if (!raw || looksTechnical(raw)) {

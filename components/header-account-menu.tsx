@@ -46,8 +46,8 @@ function HeaderAccountMenuInner({
   return (
     <DropdownMenu modal={false} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-foreground">
-          <Avatar className="h-9 w-9">
+        <Button variant="ghost" size="icon" className="h-9 w-9 text-foreground md:h-10 md:w-10">
+          <Avatar className="h-8 w-8 md:h-9 md:w-9">
             {profileAvatarUrl && !avatarImageFailed ? (
               <AvatarImage
                 src={profileAvatarUrl}
@@ -113,7 +113,7 @@ function HeaderAccountMenuInner({
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/admin" className="flex items-center text-foreground">
+              <Link href="/admin/home" className="flex items-center text-foreground">
                 <User className="mr-2 h-4 w-4" />
                 Admin Panel
               </Link>

@@ -1,7 +1,7 @@
 export type SignUpPasswordResult = { valid: true } | { valid: false; error: string }
 
 export const SIGN_UP_PASSWORD_HINT =
-  "Must contain at least 12 characters, one uppercase letter, one lowercase letter, one number, and one special character."
+  "12+ chars, upper, lower, number, and special character."
 
 export function validateSignUpPassword(password: string): SignUpPasswordResult {
   if (password.length < 12) {

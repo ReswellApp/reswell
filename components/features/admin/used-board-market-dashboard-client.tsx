@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react"
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { format, formatDistanceToNow, parseISO } from "date-fns"
@@ -62,8 +63,25 @@ import {
   type DashboardSeriesPoint,
   type UsedBoardMarketDashboard,
 } from "@/lib/services/usedBoardMarketDashboard.shared"
+import { UsedBoardMarketCatalogCms } from "@/components/features/admin/used-board-market-catalog-cms"
+import { UsedBoardMarketCatalogIngestTiles } from "@/components/features/admin/used-board-market-catalog-ingest-tiles"
 import { canonicalListingsBoardTypeKey } from "@/lib/board-type-canonical"
 import { cn } from "@/lib/utils"
+
+const BrandCatalogOverviewClient = dynamic(
+  () =>
+    import("@/components/features/admin/brand-catalog-overview-client").then((mod) => ({
+      default: mod.BrandCatalogOverviewClient,
+    })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-16 text-sm text-slate-500 shadow-sm">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading brand catalog…
+      </div>
+    ),
+  },
+)
 
 const CONDITION_PALETTE = ["#0F172A", "#1E40AF", "#0EA5E9", "#14B8A6", "#F59E0B", "#EF4444"]
 const BOARD_TYPE_PALETTE = ["#1E40AF", "#0EA5E9", "#14B8A6", "#A855F7", "#F59E0B", "#EF4444", "#64748B"]
@@ -151,6 +169,17 @@ function capitalize(input: string): string {
 // URL filter state
 // ---------------------------------------------------------------------------
 
+type DashboardTab = "overview" | "supply" | "pricing" | "sales" | "geo" | "catalog"
+
+const DASHBOARD_TABS: readonly DashboardTab[] = [
+  "overview",
+  "supply",
+  "pricing",
+  "sales",
+  "geo",
+  "catalog",
+]
+
 type UrlFilters = {
   range: DashboardRangeKey
   brandId: string | null
@@ -159,6 +188,7 @@ type UrlFilters = {
   boardType: string | null
   condition: string | null
   state: string | null
+  tab: DashboardTab
 }
 
 const DEFAULT_FILTERS: UrlFilters = {
@@ -169,6 +199,12 @@ const DEFAULT_FILTERS: UrlFilters = {
   boardType: null,
   condition: null,
   state: null,
+  tab: "overview",
+}
+
+function readTabFromSearchParams(params: URLSearchParams): DashboardTab {
+  const raw = params.get("tab")
+  return DASHBOARD_TABS.includes(raw as DashboardTab) ? (raw as DashboardTab) : "overview"
 }
 
 function readFiltersFromSearchParams(params: URLSearchParams): UrlFilters {
@@ -190,6 +226,7 @@ function readFiltersFromSearchParams(params: URLSearchParams): UrlFilters {
     boardType,
     condition: params.get("condition") || null,
     state: params.get("state") || null,
+    tab: readTabFromSearchParams(params),
   }
 }
 
@@ -202,6 +239,7 @@ function buildSearchParamString(filters: UrlFilters): string {
   if (filters.boardType) params.set("boardType", filters.boardType)
   if (filters.condition) params.set("condition", filters.condition)
   if (filters.state) params.set("state", filters.state)
+  if (filters.tab !== "overview") params.set("tab", filters.tab)
   return params.toString()
 }
 
@@ -378,6 +416,7 @@ export function UsedBoardMarketDashboardClient() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [catalogRefreshKey, setCatalogRefreshKey] = useState(0)
   const initialAttemptDoneRef = useRef(false)
 
   const updateFilters = useCallback(
@@ -401,12 +440,15 @@ export function UsedBoardMarketDashboardClient() {
   )
 
   const clearAllFilters = useCallback(() => {
-    startTransition(() => {
-      router.replace(`${pathname}?range=${filters.range !== "90d" ? filters.range : ""}`.replace(/[?&]$/, ""), {
-        scroll: false,
-      })
+    const qs = buildSearchParamString({
+      ...DEFAULT_FILTERS,
+      range: filters.range,
+      tab: filters.tab,
     })
-  }, [filters.range, pathname, router, startTransition])
+    startTransition(() => {
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    })
+  }, [filters.range, filters.tab, pathname, router, startTransition])
 
   const load = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -463,53 +505,65 @@ export function UsedBoardMarketDashboardClient() {
   )
 
   const filterCount = activeFilterCount(filters)
+  const showMarketFilters = filters.tab !== "catalog"
+  const waitingOnMarket = showMarketFilters && loading && !data
 
   return (
     <div className="w-full space-y-6 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 sm:p-6 dark:bg-transparent dark:border-border">
-      {error ? (
+      {error && showMarketFilters ? (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
           {error}
         </div>
       ) : null}
 
-      {loading && !data ? (
+      <UsedBoardMarketCatalogIngestTiles refreshKey={catalogRefreshKey} />
+
+      <DashboardHeader
+        data={data}
+        filters={filters}
+        filterCount={filterCount}
+        onChangeFilters={updateFilters}
+        onClearAll={clearAllFilters}
+        refreshing={refreshing}
+        onRefresh={() => void load({ silent: false })}
+        showMarketFilters={showMarketFilters && Boolean(data)}
+        onCatalogSaved={() => setCatalogRefreshKey((n) => n + 1)}
+      />
+
+      {waitingOnMarket ? (
         <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-20 text-sm text-slate-500 shadow-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading used surfboard market dashboard…
         </div>
-      ) : data ? (
+      ) : null}
+
+      {data && showMarketFilters && filterCount > 0 ? (
+        <FilterChipBar
+          data={data}
+          filters={filters}
+          onChangeFilters={updateFilters}
+          onClearAll={clearAllFilters}
+        />
+      ) : null}
+
+      {data && showMarketFilters && data.warnings.length > 0 ? (
+        <div className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="space-y-1">
+            {data.warnings.map((w) => (
+              <p key={w}>{w}</p>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {!waitingOnMarket ? (
         <>
-          <DashboardHeader
-            data={data}
-            filters={filters}
-            filterCount={filterCount}
-            onChangeFilters={updateFilters}
-            onClearAll={clearAllFilters}
-            refreshing={refreshing}
-            onRefresh={() => void load({ silent: false })}
-          />
-
-          {filterCount > 0 ? (
-            <FilterChipBar
-              data={data}
-              filters={filters}
-              onChangeFilters={updateFilters}
-              onClearAll={clearAllFilters}
-            />
-          ) : null}
-
-          {data.warnings.length > 0 ? (
-            <div className="flex flex-wrap items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <div className="space-y-1">
-                {data.warnings.map((w) => (
-                  <p key={w}>{w}</p>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs
+            value={filters.tab}
+            onValueChange={(value) => updateFilters({ tab: value as DashboardTab })}
+            className="w-full"
+          >
             <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
               <TabsTrigger value="overview" className="data-[state=active]:bg-slate-100">
                 Overview
@@ -523,11 +577,16 @@ export function UsedBoardMarketDashboardClient() {
               <TabsTrigger value="sales" className="data-[state=active]:bg-slate-100">
                 Sales
               </TabsTrigger>
+              <TabsTrigger value="geo" className="data-[state=active]:bg-slate-100">
+                Geo &amp; coverage
+              </TabsTrigger>
               <TabsTrigger value="catalog" className="data-[state=active]:bg-slate-100">
-                Catalog &amp; geo
+                Catalog
               </TabsTrigger>
             </TabsList>
 
+            {data ? (
+              <>
             <TabsContent value="overview" className="mt-6 space-y-6">
               <KpiGrid
                 kpis={data.kpis}
@@ -588,30 +647,39 @@ export function UsedBoardMarketDashboardClient() {
               />
             </TabsContent>
 
-            <TabsContent value="catalog" className="mt-6 space-y-6">
+            <TabsContent value="geo" className="mt-6 space-y-6">
               <LocationPerformanceCard rows={data.locationRows} rangeLabel={rangeLabel} />
               <VariantCoverageCard coverage={data.variantCoverage} dimension={data.dimension} />
               <SalesEventsStubCard message={data.salesEventsStub.message} />
             </TabsContent>
+              </>
+            ) : null}
+
+            <TabsContent value="catalog" className="mt-6 space-y-6">
+              <BrandCatalogOverviewClient embedded refreshKey={catalogRefreshKey} />
+            </TabsContent>
           </Tabs>
 
-          <Separator className="bg-slate-200" />
-
-          <p className="text-center text-xs text-slate-500">
-            Generated{" "}
-            {data.generatedAt
-              ? formatDistanceToNow(new Date(data.generatedAt), { addSuffix: true })
-              : "just now"}
-            {data.rangeFromIso ? (
-              <>
-                {" "}
-                · window {format(parseISO(data.rangeFromIso), "MMM d, yyyy")} –{" "}
-                {format(parseISO(data.rangeToIso), "MMM d, yyyy")}
-              </>
-            ) : (
-              <> · all time</>
-            )}
-          </p>
+          {data && showMarketFilters ? (
+            <>
+              <Separator className="bg-slate-200" />
+              <p className="text-center text-xs text-slate-500">
+                Generated{" "}
+                {data.generatedAt
+                  ? formatDistanceToNow(new Date(data.generatedAt), { addSuffix: true })
+                  : "just now"}
+                {data.rangeFromIso ? (
+                  <>
+                    {" "}
+                    · window {format(parseISO(data.rangeFromIso), "MMM d, yyyy")} –{" "}
+                    {format(parseISO(data.rangeToIso), "MMM d, yyyy")}
+                  </>
+                ) : (
+                  <> · all time</>
+                )}
+              </p>
+            </>
+          ) : null}
         </>
       ) : null}
     </div>
@@ -623,19 +691,21 @@ export function UsedBoardMarketDashboardClient() {
 // ---------------------------------------------------------------------------
 
 function DashboardHeader(props: {
-  data: UsedBoardMarketDashboard
+  data: UsedBoardMarketDashboard | null
   filters: UrlFilters
   filterCount: number
   onChangeFilters: (patch: Partial<UrlFilters>) => void
   onClearAll: () => void
   refreshing: boolean
   onRefresh: () => void
+  showMarketFilters: boolean
+  onCatalogSaved: () => void
 }) {
   const { data, filters, refreshing } = props
   const showModel = Boolean(filters.brandId)
   const showVariant = Boolean(filters.brandId && filters.modelSlug)
 
-  const viewingScope = data.viewingScope
+  const viewingScope = data?.viewingScope
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -646,39 +716,47 @@ function DashboardHeader(props: {
               Used surfboard market dashboard
             </h2>
             <p className="mt-1 max-w-3xl text-sm text-slate-500">
-              Single source of truth for the used surfboard market. Filters re-scope
+              Market analytics, catalog explorer, and brand / model / variant CMS in one place.
+              Filters re-scope
               <span className="font-medium text-slate-700"> and re-group </span>
-              every section: with no filter the page ranks brands; pick a brand, it ranks models;
+              every market section: with no filter the page ranks brands; pick a brand, it ranks models;
               pick a model, it ranks variants.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right text-sm">
-              <div className="text-xs text-slate-500">
-                {refreshing ? (
-                  <span className="inline-flex items-center gap-1.5 text-blue-600">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Updating…
-                  </span>
-                ) : (
-                  "Last updated"
-                )}
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <UsedBoardMarketCatalogCms onSaved={props.onCatalogSaved} />
+            {data ? (
+              <div className="flex items-center gap-3">
+                <div className="text-right text-sm">
+                  <div className="text-xs text-slate-500">
+                    {refreshing ? (
+                      <span className="inline-flex items-center gap-1.5 text-blue-600">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Updating…
+                      </span>
+                    ) : (
+                      "Last updated"
+                    )}
+                  </div>
+                  <div className="font-medium text-slate-700">
+                    {data.generatedAt
+                      ? format(parseISO(data.generatedAt), "MMM d, yyyy h:mm a")
+                      : "—"}
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    "h-2 w-2 shrink-0 rounded-full",
+                    refreshing ? "bg-blue-500 animate-pulse" : "bg-emerald-500 animate-pulse",
+                  )}
+                  aria-hidden
+                />
               </div>
-              <div className="font-medium text-slate-700">
-                {data.generatedAt
-                  ? format(parseISO(data.generatedAt), "MMM d, yyyy h:mm a")
-                  : "—"}
-              </div>
-            </div>
-            <span
-              className={cn(
-                "h-2 w-2 shrink-0 rounded-full",
-                refreshing ? "bg-blue-500 animate-pulse" : "bg-emerald-500 animate-pulse",
-              )}
-              aria-hidden
-            />
+            ) : null}
           </div>
         </div>
 
+        {data && props.showMarketFilters && viewingScope ? (
+          <>
         {/* Viewing scope strip */}
         <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -891,6 +969,8 @@ function DashboardHeader(props: {
             </Button>
           </div>
         </div>
+          </>
+        ) : null}
       </div>
     </div>
   )

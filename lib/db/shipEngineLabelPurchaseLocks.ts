@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { TOGETHER_PACKAGE_KEY } from "@/lib/shipping/packaging-mode"
 
 export type ShipEngineLabelPurchaseLockStatus = "pending" | "purchased" | "failed"
 
 export type ShipEngineLabelPurchaseLockRow = {
   order_id: string
+  package_key: string
   owner_key: string
   status: ShipEngineLabelPurchaseLockStatus
   shipengine_rate_id: string | null
@@ -19,11 +21,16 @@ function asLockRow(data: unknown): ShipEngineLabelPurchaseLockRow | null {
   const r = data as Record<string, unknown>
   const orderId = typeof r.order_id === "string" ? r.order_id : null
   const ownerKey = typeof r.owner_key === "string" ? r.owner_key : null
+  const packageKey =
+    typeof r.package_key === "string" && r.package_key.trim()
+      ? r.package_key.trim()
+      : TOGETHER_PACKAGE_KEY
   const status = r.status
   if (!orderId || !ownerKey) return null
   if (status !== "pending" && status !== "purchased" && status !== "failed") return null
   return {
     order_id: orderId,
+    package_key: packageKey,
     owner_key: ownerKey,
     status,
     shipengine_rate_id: typeof r.shipengine_rate_id === "string" ? r.shipengine_rate_id : null,
@@ -38,13 +45,15 @@ function asLockRow(data: unknown): ShipEngineLabelPurchaseLockRow | null {
 export async function getShipEngineLabelPurchaseLock(
   supabase: SupabaseClient,
   orderId: string,
+  packageKey: string = TOGETHER_PACKAGE_KEY,
 ): Promise<ShipEngineLabelPurchaseLockRow | null> {
   const { data, error } = await supabase
     .from("shipengine_label_purchase_locks")
     .select(
-      "order_id, owner_key, status, shipengine_rate_id, tracking_number, tracking_carrier, label_pdf_url, created_at, updated_at",
+      "order_id, package_key, owner_key, status, shipengine_rate_id, tracking_number, tracking_carrier, label_pdf_url, created_at, updated_at",
     )
     .eq("order_id", orderId)
+    .eq("package_key", packageKey.trim() || TOGETHER_PACKAGE_KEY)
     .maybeSingle()
 
   if (error) {
@@ -59,14 +68,17 @@ export async function insertShipEngineLabelPurchaseLock(params: {
   orderId: string
   ownerKey: string
   rateId: string | null
+  packageKey?: string
 }): Promise<
   | { ok: true; inserted: true }
   | { ok: true; inserted: false }
   | { ok: false; error: string }
 > {
   const now = new Date().toISOString()
+  const packageKey = params.packageKey?.trim() || TOGETHER_PACKAGE_KEY
   const { error } = await params.supabase.from("shipengine_label_purchase_locks").insert({
     order_id: params.orderId,
+    package_key: packageKey,
     owner_key: params.ownerKey,
     status: "pending",
     shipengine_rate_id: params.rateId,
@@ -93,8 +105,10 @@ export async function reclaimFailedShipEngineLabelPurchaseLock(params: {
   orderId: string
   ownerKey: string
   rateId: string | null
+  packageKey?: string
 }): Promise<boolean> {
   const now = new Date().toISOString()
+  const packageKey = params.packageKey?.trim() || TOGETHER_PACKAGE_KEY
   const { data, error } = await params.supabase
     .from("shipengine_label_purchase_locks")
     .update({
@@ -107,6 +121,7 @@ export async function reclaimFailedShipEngineLabelPurchaseLock(params: {
       updated_at: now,
     })
     .eq("order_id", params.orderId)
+    .eq("package_key", packageKey)
     .eq("status", "failed")
     .select("order_id")
     .maybeSingle()
@@ -126,8 +141,10 @@ export async function markShipEngineLabelPurchaseLockPurchased(params: {
   trackingNumber: string
   trackingCarrier: string | null
   labelPdfUrl: string | null
+  packageKey?: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const now = new Date().toISOString()
+  const packageKey = params.packageKey?.trim() || TOGETHER_PACKAGE_KEY
   const { data, error } = await params.supabase
     .from("shipengine_label_purchase_locks")
     .update({
@@ -139,6 +156,7 @@ export async function markShipEngineLabelPurchaseLockPurchased(params: {
       updated_at: now,
     })
     .eq("order_id", params.orderId)
+    .eq("package_key", packageKey)
     .eq("owner_key", params.ownerKey)
     .eq("status", "pending")
     .select("order_id")
@@ -158,8 +176,10 @@ export async function markShipEngineLabelPurchaseLockFailed(params: {
   supabase: SupabaseClient
   orderId: string
   ownerKey: string
+  packageKey?: string
 }): Promise<void> {
   const now = new Date().toISOString()
+  const packageKey = params.packageKey?.trim() || TOGETHER_PACKAGE_KEY
   const { error } = await params.supabase
     .from("shipengine_label_purchase_locks")
     .update({
@@ -167,6 +187,7 @@ export async function markShipEngineLabelPurchaseLockFailed(params: {
       updated_at: now,
     })
     .eq("order_id", params.orderId)
+    .eq("package_key", packageKey)
     .eq("owner_key", params.ownerKey)
     .eq("status", "pending")
 
@@ -175,7 +196,7 @@ export async function markShipEngineLabelPurchaseLockFailed(params: {
   }
 }
 
-/** Sync lock to purchased when another path already saved tracking on the order. */
+/** Sync lock to purchased when another path already saved tracking for this package. */
 export async function syncShipEngineLabelPurchaseLockFromExisting(params: {
   supabase: SupabaseClient
   orderId: string
@@ -183,11 +204,14 @@ export async function syncShipEngineLabelPurchaseLockFromExisting(params: {
   trackingCarrier: string | null
   labelPdfUrl: string | null
   rateId: string | null
+  packageKey?: string
 }): Promise<void> {
   const now = new Date().toISOString()
+  const packageKey = params.packageKey?.trim() || TOGETHER_PACKAGE_KEY
   const { error } = await params.supabase.from("shipengine_label_purchase_locks").upsert(
     {
       order_id: params.orderId,
+      package_key: packageKey,
       owner_key: "synced_existing",
       status: "purchased",
       shipengine_rate_id: params.rateId,
@@ -197,7 +221,7 @@ export async function syncShipEngineLabelPurchaseLockFromExisting(params: {
       updated_at: now,
       created_at: now,
     },
-    { onConflict: "order_id" },
+    { onConflict: "order_id,package_key" },
   )
   if (error) {
     console.error("[shipEngineLabelPurchaseLocks] sync existing:", error.message)
@@ -205,18 +229,25 @@ export async function syncShipEngineLabelPurchaseLockFromExisting(params: {
 }
 
 /**
- * Clears the one-label-per-order lock so an admin can buy a replacement after voiding.
+ * Clears package locks so an admin can buy a replacement after voiding.
  * Only call from the admin exact-parcel replace flow after the prior label has been voided
  * (or best-effort void attempted) and order tracking cleared.
  */
 export async function deleteShipEngineLabelPurchaseLockForReplacement(params: {
   supabase: SupabaseClient
   orderId: string
+  packageKey?: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { error } = await params.supabase
+  let query = params.supabase
     .from("shipengine_label_purchase_locks")
     .delete()
     .eq("order_id", params.orderId)
+
+  if (params.packageKey?.trim()) {
+    query = query.eq("package_key", params.packageKey.trim())
+  }
+
+  const { error } = await query
 
   if (error) {
     console.error("[shipEngineLabelPurchaseLocks] delete for replacement:", error.message)

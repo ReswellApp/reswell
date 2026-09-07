@@ -24,6 +24,7 @@ export type AdminUserDetailListingRow = {
   price: number
   section: string
   status: string
+  slug: string | null
   hidden_from_site: boolean | null
   created_at: string
   listing_images: { url: string }[]
@@ -62,7 +63,7 @@ export async function dbListAdminUserDetailListings(
 > {
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, price, section, status, hidden_from_site, created_at, listing_images(url)")
+    .select("id, title, price, section, status, slug, hidden_from_site, created_at, listing_images(url)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
 

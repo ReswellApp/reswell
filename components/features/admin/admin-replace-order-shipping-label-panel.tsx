@@ -486,6 +486,9 @@ export function AdminReplaceOrderShippingLabelPanel({
               ))}
             </TableBody>
           </Table>
+          <p className="text-xs text-muted-foreground">
+            Showing the lowest UPS Ground or Priority rates.
+          </p>
 
           <Button
             type="button"

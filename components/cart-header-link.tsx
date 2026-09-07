@@ -6,7 +6,6 @@ import { ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
@@ -29,13 +28,18 @@ export function CartHeaderLink({
   authResolved = false,
   /** When set (including `null` for guests), skips `auth.getUser()` in the nav. */
   userId,
+  className,
+  iconClassName,
+  iconStrokeWidth,
 }: {
   showOnNarrowScreens?: boolean
   showOnDesktopNav?: boolean
   authResolved?: boolean
   userId?: string | null
+  className?: string
+  iconClassName?: string
+  iconStrokeWidth?: number
 }) {
-  const openSignIn = useSignInGate()
   const [count, setCount] = useState<number | null>(null)
   const visibility = showOnNarrowScreens
     ? "inline-flex"
@@ -95,38 +99,37 @@ export function CartHeaderLink({
 
   if (count === null) {
     return (
-      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center", visibility)} aria-hidden>
-        <Skeleton className="h-10 w-10 rounded-lg" />
+      <div
+        className={cn("flex h-10 w-10 shrink-0 items-center justify-center", visibility, className)}
+        aria-hidden
+      >
+        <Skeleton className="size-full rounded-lg" />
       </div>
     )
   }
 
   return (
-    <Link
-      href="/cart"
-      className={cn("relative", visibility)}
-      onClick={
-        authResolved && userId === null
-          ? (e) => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-              e.preventDefault()
-              openSignIn("/cart")
-            }
-          : undefined
-      }
+    <Button
+      asChild
+      variant="ghost"
+      size="icon"
+      className={cn("relative h-10 w-10 text-foreground hover:bg-pacific/5", visibility, className)}
     >
-      <Button variant="ghost" size="icon" className="h-10 w-10 text-foreground hover:bg-pacific/5">
-        <ShoppingCart className="h-6 w-6" />
+      <Link href="/cart">
+        <ShoppingCart
+          className={cn("h-6 w-6", iconClassName)}
+          strokeWidth={iconStrokeWidth}
+        />
         {count > 0 && (
           <Badge
             variant="secondary"
-            className="absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center"
+            className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-0.5 text-[10px] leading-none md:-right-1 md:-top-1 md:h-5 md:min-w-[1.25rem] md:px-1 md:text-xs"
           >
             {count > 9 ? "9+" : count}
           </Badge>
         )}
         <span className="sr-only">Cart{count > 0 ? `, ${count} items` : ""}</span>
-      </Button>
-    </Link>
+      </Link>
+    </Button>
   )
 }

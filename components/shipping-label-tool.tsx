@@ -553,6 +553,9 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                     </TableBody>
                   </Table>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Showing the 4 lowest USPS, UPS, and FedEx Ground or Priority rates.
+                </p>
 
                 <SellerShippingLabelCheckout
                   orderId={orderId}

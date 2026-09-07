@@ -1,0 +1,66 @@
+{
+  "generated_for": "Mat Manners Surfboards official named standup catalog",
+  "source": "https://www.matmanners.com/shapes (Squarespace shape pages — excludes ding repair, second-hand stock, and custom order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mat-manners-surfboards",
+      "name": "Mat Manners Surfboards",
+      "website_url": "https://www.matmanners.com",
+      "location_label": "Margaret River, Western Australia",
+      "founder_name": "Mat Manners",
+      "lead_shaper_name": "Mat Manners",
+      "short_description": "Hand-shaped performance and big-wave surfboards by Mat Manners in Margaret River, Western Australia — shortboards, grovelers, step-ups, and rhino chasers from the workshop on Auger Way West.",
+      "models": [
+        {
+          "name": "Best Mate",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534560791895-XX8B5TASDHVMYEH0RYKL/DSCF3437.png",
+          "description": "A super hi-performance all-round shortboard for all types of waves — your Best Mate. Sizes: 4'10–7'0\". Fin setup: 3-fin FCS II / Futures. Best for: 2–6 ft waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Keeper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1539469483733-VWU2AE8LXNRE73WDMIKL/DSCF3439.png",
+          "description": "Hi-performance small-wave board with more volume and shorter than your all-rounder. Sizes: 4'10–7'0\". Fin setup: 3/5-fin FCS II / Futures. Best for: smaller waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Droid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534563237945-SHX2AE2XKMO9TGYG0D3M/DSCF3485+copy.png",
+          "description": "Super quick board that drives hard and holds its lines. Sizes: 4'10–7'0\". Fin setup: 3/5-fin FCS II / Futures. Best for: small to medium surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "River",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534560922428-VS2YPPD2ELA341JN1B3O/DSCF3453.png",
+          "description": "The River is fast and smooth down the line — the flow-rider. Such a fun, easy board to ride. Sizes: 4'10–7'0\". Fin setup: 2/3/5-fin FCS II / Futures. Best for: small waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Rondog",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534564998729-DJ5T2GFXUGLXUZWBYXA2/DSCF3517+copy.png",
+          "description": "Big-wave boards tested in the heaviest waves Australia has to offer — tried and proven over the last 30 years by the best big-wave surfers around. Sizes: 7'0\"–10'6\". Fin setup: 3/5-fin FCS II / Futures.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Selamt Datang",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1540445083187-RZFIMCZ5Z86YR3EMA526/ORDY1214.png",
+          "description": "Step-up board proven across Australia, Indonesia, and the world. Sizes: 3\" or more longer than your standard shortboard. Fin setup: 3/5-fin FCS II / Futures. Best for: 4–6 ft waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Magic Carpet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534561102687-NE3S8QVDJLKPYXIVJIV4/DSCF3477.png",
+          "description": "This board will motivate you and get your stoke back when the swell drops — very loose and fun to ride. PU or EPS available. Sizes: 4'10–6'6\". Fin setup: 3/5-fin FCS II / Futures. Best for: tiny to small waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Orc",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1539470685907-V0MDF8NN2Q2V7C3AE7OO/ORDY1235.png",
+          "description": "The Orc is the answer for bigger surfers wanting a board they can shred on — volume and curves in all the right places. Sizes: 6'6\"–7'6\". Fin setup: 3/5-fin FCS II / Futures. Best for: all-round conditions.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}

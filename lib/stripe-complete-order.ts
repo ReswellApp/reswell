@@ -8,12 +8,19 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
+import {
+  DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveShippingPackagingMode,
+} from "@/lib/shipping/packaging-mode"
+import { insertOrderShipmentsForOrder } from "@/lib/db/orderShipments"
 import {
   applyAcceptedOfferToPeerCheckoutListings,
   priceListingsFromAcceptedOffer,
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
+import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
@@ -29,6 +36,7 @@ import {
   profileAddressToOrderShippingJson,
   type ProfileAddressRow,
 } from "@/lib/profile-address"
+import { ensureProfileAddressFromOrderShipping } from "@/lib/services/sellerShipFromAddress"
 import { generatePickupCode } from "@/lib/order-status"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
@@ -38,8 +46,12 @@ import { reemitPurchaseSuccessfulForOrder } from "@/lib/klaviyo/reemit-purchase-
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import {
+  parseStripeAttributionMetadata,
+  STRIPE_AD_ATTR_METADATA_KEY,
+} from "@/lib/ads/attribution"
+import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
-import { touchUserLastActive } from "@/lib/db/userActivity"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
@@ -60,6 +72,7 @@ import {
   computeAdminTerminalInPersonCheckoutUsd,
 } from "@/lib/services/adminTerminalSale"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
+import { isSellerSaleTipPaymentIntent } from "@/lib/stripe/seller-sale-tip-intent"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -127,6 +140,36 @@ function applyTerminalCustomerToOrderShippingJson(
     email: customer.email,
     phone: customer.phone,
     admin_terminal: true,
+  }
+}
+
+function parseShipenginePackageRatesMeta(raw: string | null | undefined): CheckoutShippingPackageRate[] | null {
+  const text = raw?.trim()
+  if (!text) return null
+  try {
+    const parsed = JSON.parse(text) as unknown
+    if (!Array.isArray(parsed) || parsed.length === 0) return null
+    const out: CheckoutShippingPackageRate[] = []
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null
+      const r = entry as Record<string, unknown>
+      const listingId = typeof r.listingId === "string" ? r.listingId.trim() : ""
+      const rateId = typeof r.rateId === "string" ? r.rateId.trim() : ""
+      const shippingCents =
+        typeof r.shippingCents === "number" && Number.isFinite(r.shippingCents)
+          ? Math.round(r.shippingCents)
+          : NaN
+      if (!listingId || !rateId || !Number.isFinite(shippingCents) || shippingCents < 0) return null
+      out.push({
+        listingId,
+        rateId,
+        shippingCents,
+        serviceCode: typeof r.serviceCode === "string" ? r.serviceCode : null,
+      })
+    }
+    return out
+  } catch {
+    return null
   }
 }
 
@@ -286,6 +329,14 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
 export async function completeMarketplaceOrderFromPaymentIntent(
   pi: Stripe.PaymentIntent,
 ): Promise<StripeCompleteOrderResult> {
+  if (isSellerSaleTipPaymentIntent(pi)) {
+    return {
+      ok: false,
+      error: "Sale tips are not marketplace orders",
+      status: 400,
+    }
+  }
+
   const piId = pi.id
   const isAdminTerminalSale = pi.metadata?.sales_channel === ADMIN_TERMINAL_SALES_CHANNEL
 
@@ -560,10 +611,32 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         buyerAddress,
         diagnosticTagPrefix: "finalize-order",
         quantityByListingId,
+        packagingMode: resolveShippingPackagingMode(
+          pi.metadata.shipping_packaging_mode,
+          DEFAULT_SHIPPING_PACKAGING_MODE,
+        ),
+        ...(pi.metadata.reswell_shipping_cents?.trim() &&
+        /^\d+$/.test(pi.metadata.reswell_shipping_cents.trim())
+          ? {
+              preverifiedShipping: {
+                shippingUsd: parseInt(pi.metadata.reswell_shipping_cents.trim(), 10) / 100,
+                usedReswellQuote: true,
+                rateId: pi.metadata.shipengine_rate_id?.trim() || null,
+                serviceCode: pi.metadata.shipengine_service_code?.trim() || null,
+                packageRates: parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates),
+              },
+            }
+          : {}),
       })
   if (!bundle.ok) {
     return { ok: false, error: bundle.error, status: 400 }
   }
+
+  const chargedShippingCentsRaw = pi.metadata.reswell_shipping_cents?.trim()
+  const shippingUsd =
+    chargedShippingCentsRaw && /^\d+$/.test(chargedShippingCentsRaw)
+      ? parseInt(chargedShippingCentsRaw, 10) / 100
+      : bundle.totalShippingUsd
 
   const promoCodeId = pi.metadata.promo_code_id?.trim() || null
   const promoCodeFromMeta = pi.metadata.promo_code?.trim() || null
@@ -599,7 +672,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     const { discountUsd: expectedDiscountUsd, totalUsd: expectedPromoTotal } =
       computeCheckoutTotalWithNewsletterPromo({
         itemSubtotalUsd: bundle.totalItemPriceUsd,
-        shippingUsd: bundle.totalShippingUsd,
+        shippingUsd,
         discountPercent: promoDiscountPercent,
       })
 
@@ -619,18 +692,17 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       ? Math.round(
           computeCheckoutTotalWithNewsletterPromo({
             itemSubtotalUsd: bundle.totalItemPriceUsd,
-            shippingUsd: bundle.totalShippingUsd,
+            shippingUsd,
             discountPercent: promoDiscountPercent,
           }).totalUsd * 100,
         )
-      : Math.round(bundle.totalUsd * 100)
+      : Math.round((bundle.totalItemPriceUsd + shippingUsd) * 100)
 
   if (pi.amount !== expectedCents) {
     return { ok: false, error: "Payment amount does not match listing", status: 400 }
   }
 
   const chargedUsd = pi.amount / 100
-  const shippingUsd = bundle.totalShippingUsd
   const platformFee = bundle.totalPlatformFee
   const sellerEarnings = bundle.totalSellerEarnings
 
@@ -687,6 +759,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const orderId = randomUUID()
 
+  const packagingModeForOrder =
+    fulfillmentMethod === "shipping" && listingsOrdered.length > 1
+      ? resolveShippingPackagingMode(
+          pi.metadata.shipping_packaging_mode,
+          DEFAULT_SHIPPING_PACKAGING_MODE,
+        )
+      : null
+
   const { data: purchase, error: insertError } = await serviceSupabase
     .from("orders")
     .insert({
@@ -708,6 +788,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       delivery_status: deliveryStatus,
       pickup_code: pickupCode,
       sales_channel: isAdminTerminalSale ? "admin_terminal" : "online",
+      ...(packagingModeForOrder ? { shipping_packaging_mode: packagingModeForOrder } : {}),
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
     })
     .select()
@@ -746,6 +827,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       msg.includes("delivery_status") ||
       msg.includes("pickup_code") ||
       msg.includes("shipping_amount") ||
+      msg.includes("shipping_packaging_mode") ||
       msg.includes("order_items") ||
       msg.includes("sales_channel") ||
       msg.includes("buyer_required") ||
@@ -761,6 +843,13 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not create order", status: 500 }
   }
 
+  // Keep buyer shipping addresses on the profile so they can later ship as sellers.
+  if (buyerId && shippingAddressJson && fulfillmentMethod === "shipping" && !isTerminalGuestSale) {
+    void ensureProfileAddressFromOrderShipping(serviceSupabase, buyerId, shippingAddressJson, {
+      makeDefaultIfEmpty: true,
+    })
+  }
+
   const orderItemsPayload = bundle.lines.map((line, idx) => ({
     order_id: purchase.id,
     listing_id: line.listingId,
@@ -772,7 +861,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     seller_earnings: line.sellerEarnings,
   }))
 
-  const { error: orderItemsErr } = await serviceSupabase.from("order_items").insert(orderItemsPayload)
+  const { data: insertedOrderItems, error: orderItemsErr } = await serviceSupabase
+    .from("order_items")
+    .insert(orderItemsPayload)
+    .select("id, listing_id, sort_order")
 
   if (orderItemsErr) {
     console.error("[stripe-complete-order] order_items insert:", orderItemsErr)
@@ -788,6 +880,51 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       }
     }
     return { ok: false, error: "Could not create order lines", status: 500 }
+  }
+
+  if (fulfillmentMethod === "shipping" && insertedOrderItems && insertedOrderItems.length > 0) {
+    const packageRates = parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates)
+    const rateByListing = new Map(
+      (packageRates ?? []).map((r) => [r.listingId, r.rateId] as const),
+    )
+    const togetherRate = pi.metadata.shipengine_rate_id?.trim() || null
+    const sortedItems = [...insertedOrderItems].sort(
+      (a, b) =>
+        (Number((a as { sort_order?: number }).sort_order) || 0) -
+        (Number((b as { sort_order?: number }).sort_order) || 0),
+    )
+    const shipmentLines = sortedItems.map((row) => {
+      const r = row as { id: string; listing_id: string }
+      const perLineRate = rateByListing.get(r.listing_id) ?? null
+      return {
+        orderItemId: r.id,
+        listingId: r.listing_id,
+        shipengineRateId:
+          packagingModeForOrder === "separate"
+            ? perLineRate
+            : togetherRate || perLineRate,
+      }
+    })
+
+    const shipmentsCreated = await insertOrderShipmentsForOrder({
+      supabase: serviceSupabase,
+      orderId: purchase.id,
+      packagingMode: packagingModeForOrder ?? DEFAULT_SHIPPING_PACKAGING_MODE,
+      lines: shipmentLines,
+    })
+    if (!shipmentsCreated.ok) {
+      console.error("[stripe-complete-order] shipments:", shipmentsCreated.error)
+      // Non-fatal for payment success — label automation can still attach later after backfill,
+      // but surface loudly so ops notices missing shipment rows.
+    }
+  }
+
+  if (!isAdminTerminalSale) {
+    void insertOrderAdAttribution(
+      serviceSupabase,
+      purchase.id,
+      parseStripeAttributionMetadata(pi.metadata?.[STRIPE_AD_ATTR_METADATA_KEY]),
+    )
   }
 
   if (promoCodeId && promoKind) {
@@ -841,7 +978,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   if (peerListingIds.length > 0) {
     const { error: listingErr } = await serviceSupabase
       .from("listings")
-      .update({ status: "sold" })
+      .update(listingSoldViaCheckoutUpdate())
       .in("id", peerListingIds)
 
     if (listingErr) {
@@ -893,11 +1030,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (buyerId) {
     void deleteBuyerCartRowsForListings(serviceSupabase, buyerId, listingIdsOrdered)
-  }
-
-  void touchUserLastActive(serviceSupabase, bundleSellerId)
-  if (buyerId) {
-    void touchUserLastActive(serviceSupabase, buyerId)
   }
 
   const listingTitles = listingsOrdered.map((l) => String(l.title ?? ""))

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   BOARDS_BROWSE_PAGE_SIZE,
   buildSurfboardBrowseBaseQuery,
-  fetchBoardsBrowseTopPicksPage,
+  fetchBoardsBrowseDailyRotatePage,
   type BoardBrowseListingRow,
 } from "@/lib/db/boards-browse-listings"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
@@ -138,10 +138,9 @@ export async function fetchBoardsBrowsePreviewForUnavailableLanding(
   opts?: { pageSize?: number },
 ): Promise<BoardBrowseListingRow[]> {
   const pageSize = opts?.pageSize ?? BOARDS_BROWSE_PAGE_SIZE
-  const { boards } = await fetchBoardsBrowseTopPicksPage(supabase, {
+  const { boards } = await fetchBoardsBrowseDailyRotatePage(supabase, {
     boardType: "all",
     condition: "all",
-    query: "",
     page: 1,
   })
   return boards.slice(0, pageSize)

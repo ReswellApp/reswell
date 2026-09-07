@@ -25,6 +25,17 @@ import {
   residualMarketplaceQueryAfterBrand,
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
+import {
+  extractBoardStylesFromQuery,
+  isGenericSurfSearchToken,
+  isMarketplaceBoardStyleOnlyQuery,
+  isMarketplaceGenericSurfSearchOnly,
+  stripBoardStylePhrasesFromKeyword,
+} from "@/lib/utils/marketplace-style-query"
+import {
+  brandNamesAreSearchSynonyms,
+  brandTextAliasesForSearch,
+} from "@/lib/utils/marketplace-brand-synonyms"
 import { matchModelFromTitle } from "@/lib/utils/listing-brand-model-match"
 
 export type MarketplaceParsedBrand = {
@@ -44,7 +55,7 @@ export type MarketplaceParsedQuery = {
   /** Noise-stripped query used for residual matching. */
   cleaned: string
   brand: MarketplaceParsedBrand | null
-  /** Best catalog model match (longest / exact). */
+  /** Best catalog model match (exact / phrase / unique completion). Null when sibling variants share the query. */
   model: MarketplaceParsedModel | null
   /** All catalog models matching the model phrase (e.g. Dumpster Diver + Dumpster Diver 2). */
   modelIds: string[]
@@ -62,6 +73,8 @@ export type MarketplaceParsedQuery = {
    * Callers should scope ES/Supabase section filters when set.
    */
   sectionIntent: ElasticsearchIndexedListingSection | null
+  /** Board styles implied by query tokens (e.g. "fish" → fish). */
+  styleIntent: string[]
   expansions: string[]
 }
 
@@ -190,15 +203,23 @@ function isNoiseOnlyModelQuery(modelQuery: string): boolean {
 }
 
 /**
- * Brand/model labels for Applied chips / hard filters must appear in the typed query.
- * Blocks synonym-only and fuzzy catalog accidents from the banner.
+ * Brand/model labels for Applied chips / hard filters must appear in the typed query
+ * (or be a built-in brand alias such as Mayhem → Lost). Blocks fuzzy catalog accidents.
  */
 export function catalogLabelGroundedInQuery(query: string, label: string | null | undefined): boolean {
   const q = (query || "").trim().toLowerCase()
   const name = (label || "").trim().toLowerCase()
   if (!q || !name) return false
+  if (brandNamesAreSearchSynonyms(q, name)) return true
   if (q.includes(name)) return true
-  if (name.includes(q) && q.length >= 5 && !isNoiseOnlyModelQuery(q)) return true
+  if (
+    name.includes(q) &&
+    q.length >= 5 &&
+    !isNoiseOnlyModelQuery(q) &&
+    !isGenericSurfSearchToken(q)
+  ) {
+    return true
+  }
   const nameTokens =
     name
       .match(/[\w']+/g)
@@ -233,21 +254,57 @@ function toParsedBrand(row: DirectoryBrandMini): MarketplaceParsedBrand {
   return { id: row.id, name: row.name, slug: row.slug }
 }
 
+/** Brand-name tokens that can prove the shopper meant this catalog row (not "fish" in Fish Stix). */
+function distinctiveCatalogBrandTokens(brandName: string): string[] {
+  return (
+    brandName
+      .toLowerCase()
+      .match(/[\w']+/g)
+      ?.map((t) => t.replace(/^['']+|['']+$/g, ""))
+      .filter(
+        (t) =>
+          t.length >= 3 &&
+          !isMarketplaceSearchNoiseToken(t) &&
+          !isGenericSurfSearchToken(t),
+      ) ?? []
+  )
+}
+
 function brandMatchIsGrounded(
   query: string,
   brandName: string,
   expansions: string[],
 ): boolean {
-  const brandOnly = isBrandOnlyMarketplaceSuggestQuery(query, brandName)
-  if (brandOnly) return true
+  // "fish" / "fish twin" are shape + setup, not a grounded match for "Fish Stix".
+  if (isMarketplaceGenericSurfSearchOnly(query)) return false
+  if (brandNamesAreSearchSynonyms(query, brandName)) return true
   if (query.toLowerCase().includes(brandName.toLowerCase())) return true
-  const residual = residualMarketplaceQueryAfterBrand(query, brandName)
-  if (residual.length < query.trim().length) return true
+  const distinctive = distinctiveCatalogBrandTokens(brandName)
+  const q = query.toLowerCase()
+  if (distinctive.some((t) => q.includes(t))) return true
+  const brandOnly = isBrandOnlyMarketplaceSuggestQuery(query, brandName)
+  if (brandOnly && distinctive.length === 0) return true
   const brandLower = brandName.toLowerCase()
   return expansions.some((e) => {
     const el = e.toLowerCase()
+    if (isGenericSurfSearchToken(el) || isMarketplaceGenericSurfSearchOnly(e)) return false
     return el === brandLower || brandLower.includes(el) || el.includes(brandLower)
   })
+}
+
+function residualAfterBrandAndAliases(
+  query: string,
+  brandName: string,
+  expansions: string[],
+): string {
+  let residual = residualMarketplaceQueryAfterBrand(query, brandName)
+  for (const alias of brandTextAliasesForSearch(brandName)) {
+    residual = residualMarketplaceQueryAfterBrand(residual, alias)
+  }
+  for (const expansion of expansions) {
+    residual = residualMarketplaceQueryAfterBrand(residual, expansion)
+  }
+  return residual
 }
 
 async function resolveBrandForParse(
@@ -264,6 +321,7 @@ async function resolveBrandForParse(
   const candidates = [withoutLength, raw, ...expansions]
     .map((c) => c.trim())
     .filter((c) => c.length >= 2)
+    .filter((c) => !isMarketplaceGenericSurfSearchOnly(c))
 
   const seen = new Set<string>()
   for (const candidate of candidates) {
@@ -279,11 +337,23 @@ async function resolveBrandForParse(
   return null
 }
 
+/**
+ * Catalog tokens the shopper did not type. Size letters ("L") are ignored so
+ * "John John Florence (L)" stays a family match for "john john florence".
+ */
+function extraDistinctiveModelTokens(name: string, query: string): string[] {
+  const queryTokens = new Set(modelQueryTokens(query))
+  return modelQueryTokens(name).filter(
+    (t) => !queryTokens.has(t) && t.length >= 3 && !MODEL_QUERY_LENGTH_UNIT_STOPWORDS.has(t),
+  )
+}
+
 function pickBestModel(
   q: string,
   candidates: MarketplaceParsedModel[],
 ): MarketplaceParsedModel | null {
   if (candidates.length === 0) return null
+  if (candidates.length === 1) return candidates[0] ?? null
   const lower = q.toLowerCase()
   const exact = candidates.find((c) => c.name.toLowerCase() === lower)
   if (exact) return exact
@@ -294,8 +364,20 @@ function pickBestModel(
   if (matched) {
     return candidates.find((c) => c.id === matched.id) ?? null
   }
-  // Prefer longer catalog names so "Dumpster Diver 2" wins over a short partial when both match.
-  return [...candidates].sort((a, b) => b.name.length - a.name.length)[0] ?? null
+  // Sibling variants share a prefix ("John John Florence Techflex" vs
+  // "… Vapor Core Scimitar"). Longest-name wins used to pick one sibling,
+  // then ES required that variant's extra tokens and dropped the others.
+  const scored = candidates.map((c) => ({
+    model: c,
+    extra: extraDistinctiveModelTokens(c.name, q).length,
+  }))
+  const minExtra = Math.min(...scored.map((s) => s.extra))
+  const closest = scored.filter((s) => s.extra === minExtra)
+  if (closest.length === 1) return closest[0]?.model ?? null
+  if (minExtra > 0) return null
+  return (
+    [...closest].sort((a, b) => a.model.name.length - b.model.name.length)[0]?.model ?? null
+  )
 }
 
 async function resolveModelsForParse(
@@ -363,11 +445,13 @@ export async function parseMarketplaceQuery(
       textQuery: "",
       isBrandOnly: false,
       sectionIntent: null,
+      styleIntent: [],
       expansions,
     }
   }
 
   const { lengthInches, lengthToken, withoutLength } = extractLengthFromQuery(raw)
+  const styleIntent = extractBoardStylesFromQuery(withoutLength)
 
   // Bare "fins" / "wetsuits" / etc. are section browse intent — never Futures Fins, etc.
   if (isMarketplaceSectionOnlyQuery(withoutLength) && sectionIntent) {
@@ -383,6 +467,26 @@ export async function parseMarketplaceQuery(
       textQuery: "",
       isBrandOnly: false,
       sectionIntent,
+      styleIntent: [],
+      expansions,
+    }
+  }
+
+  // Bare "fish" / "shortboard" / etc. are shape browse intent — never Fish Stix, etc.
+  if (isMarketplaceBoardStyleOnlyQuery(withoutLength) && styleIntent.length > 0) {
+    return {
+      raw,
+      cleaned: "",
+      brand: null,
+      model: null,
+      modelIds: [],
+      lengthInches,
+      lengthToken,
+      residualText: "",
+      textQuery: "",
+      isBrandOnly: false,
+      sectionIntent,
+      styleIntent,
       expansions,
     }
   }
@@ -403,7 +507,7 @@ export async function parseMarketplaceQuery(
   // catalog models whose names include the brand (e.g. "Channel Islands (AMK) Keels…").
   const residualAfterBrand = brand
     ? stripMarketplaceSearchNoiseWords(
-        residualMarketplaceQueryAfterBrand(withoutLength, brand.name),
+        residualAfterBrandAndAliases(withoutLength, brand.name, expansions),
       )
     : ""
 
@@ -420,8 +524,10 @@ export async function parseMarketplaceQuery(
       model = modelsForBrand.model
       modelIds = modelsForBrand.modelIds
     }
-  } else {
+  } else if (!isMarketplaceGenericSurfSearchOnly(cleaned)) {
     // Model-only queries (no brand resolved yet) — e.g. "dumpster diver".
+    // Skip when leftover text is only shape / fin-layout words ("fish twin") so a
+    // catalog model named Twin cannot adopt Fish Stix (or similar) as the brand.
     const modelFirst = await resolveModelsForParse(supabase, null, cleaned)
     model = modelFirst.model
     modelIds = modelFirst.modelIds
@@ -446,7 +552,7 @@ export async function parseMarketplaceQuery(
 
   let residual = withoutLength
   if (resolvedBrand) {
-    residual = residualMarketplaceQueryAfterBrand(residual, resolvedBrand.name)
+    residual = residualAfterBrandAndAliases(residual, resolvedBrand.name, expansions)
   }
   if (model) {
     residual = stripPhraseFromQuery(residual, model.name)
@@ -474,20 +580,30 @@ export async function parseMarketplaceQuery(
       .join(" ")
   }
   residual = stripMarketplaceSearchNoiseWords(residual)
+  if (styleIntent.length > 0) {
+    residual = stripBoardStylePhrasesFromKeyword(residual)
+  }
 
   // After brand/model/length/noise strip (incl. section words like "fins"), nothing left ⇒ brand-only.
+  // Style words ("fish") are filters, not leftover brand tokens — "ci fish" is not brand-only.
   const isBrandOnly = Boolean(
     resolvedBrand &&
       !model &&
       modelIds.length === 0 &&
       lengthInches == null &&
+      styleIntent.length === 0 &&
       (residual.length === 0 ||
         isBrandOnlyMarketplaceSuggestQuery(withoutLength, resolvedBrand.name) ||
         (synonymMapsToBrand && residual.length === 0)),
   )
 
-  // Always keep keyword text so listings missing brand_model_id still match on title/model.
-  const textQuery = residual || model?.name || cleaned || raw
+  // Keyword text is what the shopper typed, never a longer catalog variant.
+  // Falling back to model.name turned "john john florence" into
+  // "John John Florence Vapor Core Scimitar (L)" and ES dropped Techflex.
+  let textQuery = residual || residualAfterBrand || cleaned || raw
+  if (styleIntent.length > 0) {
+    textQuery = stripBoardStylePhrasesFromKeyword(textQuery)
+  }
 
   return {
     raw,
@@ -501,6 +617,7 @@ export async function parseMarketplaceQuery(
     textQuery,
     isBrandOnly,
     sectionIntent,
+    styleIntent,
     expansions,
   }
 }

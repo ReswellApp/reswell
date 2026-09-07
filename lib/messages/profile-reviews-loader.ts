@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { marketplaceReviewPhotoRefs, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
+import type { MarketplaceReviewPhotoRef } from "@/lib/types/marketplace-review"
 
 /**
  * Direction of a review relative to the *reviewed* user, derived from the
@@ -20,6 +22,7 @@ export interface ProfileReviewItem {
   created_at: string
   direction: ProfileReviewDirection
   reviewer: ProfileReviewerSummary | null
+  photos: MarketplaceReviewPhotoRef[]
 }
 
 export interface ProfileReviewSummary {
@@ -38,6 +41,8 @@ export interface OtherPartyProfileSummary {
 }
 
 const REVIEW_SELECT =
+  "id, rating, comment, created_at, metadata, reviewed_id, reviewer:profiles!reviews_reviewer_id_fkey(id, display_name, avatar_url), listing:listings!reviews_listing_id_fkey(user_id)"
+const REVIEW_SELECT_LEGACY =
   "id, rating, comment, created_at, reviewed_id, reviewer:profiles!reviews_reviewer_id_fkey(id, display_name, avatar_url), listing:listings!reviews_listing_id_fkey(user_id)"
 
 interface RawReviewRow {
@@ -46,6 +51,7 @@ interface RawReviewRow {
   comment: string | null
   created_at: string
   reviewed_id: string
+  metadata?: unknown
   reviewer:
     | { id: string | null; display_name: string | null; avatar_url: string | null }
     | { id: string | null; display_name: string | null; avatar_url: string | null }[]
@@ -79,6 +85,7 @@ export function normalizeReviewRow(
     comment: row.comment,
     created_at: row.created_at,
     direction,
+    photos: marketplaceReviewPhotoRefs(row.metadata),
     reviewer: reviewer
       ? {
           id: reviewer.id,
@@ -121,7 +128,7 @@ export async function loadOtherPartyProfile(
 ): Promise<OtherPartyProfileSummary> {
   const recentLimit = Math.max(1, opts.recentLimit ?? 12)
 
-  const [profileRes, listingProbeRes, reviewsRes] = await Promise.all([
+  const [profileRes, listingProbeRes, reviewsFirst] = await Promise.all([
     supabase.from("profiles").select("seller_slug").eq("id", userId).maybeSingle(),
     supabase
       .from("listings")
@@ -134,6 +141,15 @@ export async function loadOtherPartyProfile(
       .eq("reviewed_id", userId)
       .order("created_at", { ascending: false }),
   ])
+
+  let reviewsRes = reviewsFirst
+  if (reviewsRes.error && isReviewsMetadataColumnMissing(reviewsRes.error)) {
+    reviewsRes = await supabase
+      .from("reviews")
+      .select(REVIEW_SELECT_LEGACY)
+      .eq("reviewed_id", userId)
+      .order("created_at", { ascending: false })
+  }
 
   const sellerSlug =
     (profileRes.data as { seller_slug: string | null } | null)?.seller_slug ?? null

@@ -1,4 +1,5 @@
 import { isHiddenFromAdminOverviewReport } from '@/lib/admin/overview-report-orders'
+import { marketplaceGmvExcludingShippingUsd } from '@/lib/seller-fees'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export type AdminPlatformPurchaseFees = {
@@ -17,7 +18,7 @@ export async function loadAdminPlatformPurchaseFees(): Promise<
     const adminDb = createServiceRoleClient()
     const { data: orderRows, error: ordersError } = await adminDb
       .from('orders')
-      .select('platform_fee, amount, delivery_status, created_at, status')
+      .select('platform_fee, amount, shipping_amount, delivery_status, created_at, status')
       .eq('status', 'confirmed')
       .eq('is_admin_test', false)
 
@@ -37,7 +38,10 @@ export async function loadAdminPlatformPurchaseFees(): Promise<
         totalFeesFulfilled: fulfilled.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0),
         fulfilledOrderCount: fulfilled.length,
         confirmedCount: rows.length,
-        totalSaleVolume: rows.reduce((s, r) => s + Number(r.amount ?? 0), 0),
+        totalSaleVolume: rows.reduce(
+          (s, r) => s + marketplaceGmvExcludingShippingUsd(r),
+          0,
+        ),
       },
     }
   } catch {

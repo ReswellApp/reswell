@@ -1,6 +1,7 @@
 /**
- * - `listingTileImageSrcFromRow` — single image row for browse tiles: stored thumb first,
- *   then derived `-thumb.` sibling, then on-demand `?variant=tile` resize for legacy full-res.
+ * - `listingTileImageSrcFromRow` — single image row for browse tiles: persisted thumb first
+ *   (only when it is distinct from the full URL), then on-demand `?variant=tile` resize.
+ *   Does not guess `*-thumb.` siblings — those 404s serialized every card on first paint.
  * - `listingCardImageSrc` — primary photo for marketplace tiles (`ListingTile` and similar).
  * - `listingTileCarouselImageUrls` — ordered CDN URLs for multi-photo tiles (primary first).
  * - `listingTitleThumbnailSrc` — compact “thumb + title” rows (cart, checkout, orders).
@@ -11,18 +12,12 @@ import {
   proxiedListingImageSrc,
   withListingMediaTileVariant,
 } from "@/lib/listing-media-proxy-url"
+import { listingStoredThumbIsDistinctFromFull } from "@/lib/listing-thumb-url"
 
 export type ListingImageForCard = {
   url?: string | null
   thumbnail_url?: string | null
   is_primary?: boolean | null
-}
-
-/** When `thumbnail_url` was never persisted, pair uploads still store `*-thumb.webp` beside `*-full.*`. */
-function derivedListingThumbUrlFromFullUrl(fullUrl: string): string | null {
-  const t = fullUrl.trim()
-  if (!t.includes("-full.")) return null
-  return t.replace("-full.", "-thumb.")
 }
 
 function pushUniqueCandidate(out: string[], seen: Set<string>, candidate: string): void {
@@ -32,25 +27,20 @@ function pushUniqueCandidate(out: string[], seen: Set<string>, candidate: string
   out.push(t)
 }
 
-/** Ordered fallbacks for one listing photo — try stored thumb, derived thumb, resized full, then raw full. */
+/** Ordered fallbacks for one listing photo — persisted thumb, resized full, then raw full. */
 export function listingTileImageSrcCandidatesFromRow(img: ListingImageForCard): string[] {
   const out: string[] = []
   const seen = new Set<string>()
 
-  const storedThumb = img.thumbnail_url?.trim()
-  if (storedThumb) {
+  const storedThumb = img.thumbnail_url?.trim() || ""
+  const full = img.url?.trim() || ""
+  // Imports used to copy the full URL into thumbnail_url. That is not a thumb —
+  // skip it so we hit `?variant=tile` instead of downloading the original first.
+  if (listingStoredThumbIsDistinctFromFull(storedThumb, full)) {
     pushUniqueCandidate(out, seen, proxiedListingImageSrc(storedThumb))
   }
 
-  const full = img.url?.trim()
   if (!full) return out
-
-  if (!storedThumb) {
-    const derivedThumb = derivedListingThumbUrlFromFullUrl(full)
-    if (derivedThumb) {
-      pushUniqueCandidate(out, seen, proxiedListingImageSrc(derivedThumb))
-    }
-  }
 
   const proxiedFull = proxiedListingImageSrc(full)
   if (proxiedFull.startsWith("/media/listings/")) {
@@ -79,6 +69,49 @@ export function listingCardImageSrc(
   const primary = list.find((i) => i.is_primary) || list[0]
   if (!primary) return ""
   return listingTileImageSrcFromRow(primary)
+}
+
+/**
+ * Build a one-element `listing_images` array from denormalized cover columns on
+ * `listings`. Used by card/browse selects that skip the listing_images join.
+ */
+export function listingImagesFromPrimaryFields(
+  primaryImageUrl: string | null | undefined,
+  primaryThumbnailUrl: string | null | undefined,
+): ListingImageForCard[] | null {
+  const url = typeof primaryImageUrl === "string" ? primaryImageUrl.trim() : ""
+  if (!url) return null
+  const thumb =
+    typeof primaryThumbnailUrl === "string" && primaryThumbnailUrl.trim()
+      ? primaryThumbnailUrl.trim()
+      : null
+  return [{ url, thumbnail_url: thumb, is_primary: true }]
+}
+
+/** Prefer nested images when present; otherwise use denormalized primary columns. */
+export function coalesceListingImagesForCard(row: {
+  listing_images?: ListingImageForCard[] | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
+}): ListingImageForCard[] | null {
+  if (Array.isArray(row.listing_images) && row.listing_images.length > 0) {
+    return row.listing_images
+  }
+  return listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url)
+}
+
+/** Attach `listing_images` for card UIs after a denorm-only select. */
+export function hydrateCardListingImages<
+  T extends {
+    listing_images?: ListingImageForCard[] | null
+    primary_image_url?: string | null
+    primary_thumbnail_url?: string | null
+  },
+>(rows: T[]): Array<T & { listing_images: ListingImageForCard[] | null }> {
+  return rows.map((row) => ({
+    ...row,
+    listing_images: coalesceListingImagesForCard(row),
+  }))
 }
 
 /** All listing photos for carousel tiles: primary first, then remaining images in original order. */

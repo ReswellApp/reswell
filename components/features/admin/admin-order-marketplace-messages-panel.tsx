@@ -5,10 +5,9 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { ExternalLink, Loader2, MessageCircle } from "lucide-react"
 import type { AdminMarketplaceMessageListRow } from "@/lib/db/adminMarketplaceMessages"
-import { parseMarketplaceMessagePdfAttachment } from "@/lib/validations/marketplace-message-attachment"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { OpenMarketplacePdfButton } from "@/components/features/messages/open-marketplace-pdf-button"
+import { AdminMarketplaceMessageBody } from "@/components/features/admin/admin-marketplace-message-body"
 
 type AdminOrderMarketplaceMessagesPanelProps = {
   conversationId: string | null
@@ -17,6 +16,10 @@ type AdminOrderMarketplaceMessagesPanelProps = {
   sellerId: string
   buyerName: string
   sellerName: string
+  /** When set, photos in the thread can be saved onto this support case. */
+  orderSupportRequestId?: string | null
+  /** Compact chrome for embedding inside the case inbox. */
+  embedded?: boolean
 }
 
 export function AdminOrderMarketplaceMessagesPanel({
@@ -26,6 +29,8 @@ export function AdminOrderMarketplaceMessagesPanel({
   sellerId,
   buyerName,
   sellerName,
+  orderSupportRequestId = null,
+  embedded = false,
 }: AdminOrderMarketplaceMessagesPanelProps) {
   const [messages, setMessages] = useState<AdminMarketplaceMessageListRow[]>([])
   const [loading, setLoading] = useState(Boolean(conversationId))
@@ -80,6 +85,72 @@ export function AdminOrderMarketplaceMessagesPanel({
     return senderId.slice(0, 8)
   }
 
+  const body = (
+      <>
+        {!conversationId ? (
+          <p className="text-sm text-muted-foreground">
+            No marketplace conversation exists yet for this buyer, seller, and listing.
+          </p>
+        ) : loading ? (
+          <div className="flex items-center gap-2 py-8 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+            Loading messages…
+          </div>
+        ) : error ? (
+          <p className="text-sm text-destructive">{error}</p>
+        ) : messages.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No messages in this thread yet.</p>
+        ) : (
+          <div className={embedded ? "max-h-[28rem] space-y-3 overflow-y-auto pr-1" : "max-h-[32rem] space-y-3 overflow-y-auto pr-1"}>
+            {orderSupportRequestId ? (
+              <p className="text-xs text-muted-foreground">
+                Photos below can be downloaded or saved onto this support case with{" "}
+                <strong className="font-medium text-foreground">Add to case</strong>.
+              </p>
+            ) : null}
+            {messages.map((message) => {
+              const isBuyer = message.sender_id === buyerId
+              const isSeller = message.sender_id === sellerId
+              const bubbleTone = isBuyer
+                ? "border-sky-500/25 bg-sky-500/[0.06]"
+                : isSeller
+                  ? "border-emerald-500/25 bg-emerald-500/[0.06]"
+                  : "border-amber-500/30 bg-amber-500/[0.08]"
+
+              return (
+                <div
+                  key={message.id}
+                  className={`rounded-xl border px-3 py-2.5 text-sm ${bubbleTone}`}
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 pb-1.5 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                      {senderLabel(message.sender_id, message.sender?.display_name)}
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        · {isBuyer ? "Buyer" : isSeller ? "Seller" : "Support"}
+                      </span>
+                    </span>
+                    <time dateTime={message.created_at}>
+                      {format(new Date(message.created_at), "MMM d, yyyy h:mm a")}
+                    </time>
+                  </div>
+                  <AdminMarketplaceMessageBody
+                    messageId={message.id}
+                    metadata={message.metadata}
+                    content={message.content}
+                    orderSupportRequestId={orderSupportRequestId}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </>
+  )
+
+  if (embedded) {
+    return <div className="space-y-3">{body}</div>
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
@@ -102,69 +173,7 @@ export function AdminOrderMarketplaceMessagesPanel({
           </Button>
         ) : null}
       </CardHeader>
-      <CardContent>
-        {!conversationId ? (
-          <p className="text-sm text-muted-foreground">
-            No marketplace conversation exists yet for this buyer, seller, and listing.
-          </p>
-        ) : loading ? (
-          <div className="flex items-center gap-2 py-8 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-            Loading messages…
-          </div>
-        ) : error ? (
-          <p className="text-sm text-destructive">{error}</p>
-        ) : messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No messages in this thread yet.</p>
-        ) : (
-          <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
-            {messages.map((message) => {
-              const pdfAttachment = parseMarketplaceMessagePdfAttachment(message.metadata)
-              const redundantCaption =
-                pdfAttachment && message.content.trim() === `Attachment: ${pdfAttachment.file_name}`
-
-              return (
-                <div
-                  key={message.id}
-                  className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/40 pb-1.5 text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">
-                      {senderLabel(message.sender_id, message.sender?.display_name)}
-                    </span>
-                    <time dateTime={message.created_at}>
-                      {format(new Date(message.created_at), "MMM d, yyyy h:mm a")}
-                    </time>
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    {pdfAttachment ? (
-                      <OpenMarketplacePdfButton
-                        messageId={message.id}
-                        fileName={pdfAttachment.file_name}
-                      />
-                    ) : null}
-                    {!redundantCaption && message.content.trim() ? (
-                      <p className="whitespace-pre-wrap break-words text-foreground">
-                        {message.content}
-                      </p>
-                    ) : null}
-                    {message.metadata != null &&
-                    typeof message.metadata === "object" &&
-                    !pdfAttachment ? (
-                      <details className="text-xs text-muted-foreground">
-                        <summary className="cursor-pointer select-none">Structured metadata</summary>
-                        <pre className="mt-2 overflow-x-auto rounded-md border border-border/60 bg-background p-2 text-[11px] leading-relaxed">
-                          {JSON.stringify(message.metadata, null, 2)}
-                        </pre>
-                      </details>
-                    ) : null}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </CardContent>
+      <CardContent>{body}</CardContent>
     </Card>
   )
 }

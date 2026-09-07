@@ -1,5 +1,9 @@
 import { z } from "zod"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
+import {
+  listingRemovedVideoIdsSchema,
+  listingVideosFieldSchema,
+} from "@/lib/validations/listing-video"
 import { LEASH_SIZE_OPTIONS } from "@/lib/leash-listing-config"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -69,6 +73,7 @@ const leashListingBaseSchema = z.object({
     .array(leashListingImageSchema)
     .min(LEASH_LISTING_MIN_PHOTOS, "Add at least one photo")
     .max(LEASH_LISTING_MAX_PHOTOS),
+  videos: listingVideosFieldSchema,
 })
 
 function withLeashListingRefinements<T extends z.ZodType>(schema: T) {
@@ -114,6 +119,7 @@ function withLeashListingRefinements<T extends z.ZodType>(schema: T) {
 const leashListingUpdateBaseSchema = leashListingBaseSchema.extend({
   listingId: z.string().uuid(),
   removedImageIds: z.array(z.string().uuid()).optional().default([]),
+  removedVideoIds: listingRemovedVideoIdsSchema,
 })
 
 export const createLeashListingSchema = withLeashListingRefinements(leashListingBaseSchema)

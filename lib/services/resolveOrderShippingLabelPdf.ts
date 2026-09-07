@@ -61,8 +61,31 @@ async function resolveShipEngineLabelPdfByTracking(
 /** Stored marketplace/admin PDF first; Reswell-purchased labels may be resolved from ShipEngine by tracking. */
 export async function resolveOrderShippingLabelPdf(
   supabase: SupabaseClient,
-  input: { orderId: string; trackingNumber: string | null },
+  input: { orderId: string; trackingNumber: string | null; labelId?: string | null },
 ): Promise<ResolvedOrderShippingLabelPdf | null> {
+  if (input.labelId?.trim()) {
+    const { data } = await supabase
+      .from("order_shipping_labels")
+      .select(
+        "label_pdf_url, label_storage_path, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code",
+      )
+      .eq("order_id", input.orderId)
+      .eq("id", input.labelId.trim())
+      .maybeSingle()
+    if (data) {
+      const row = data as {
+        label_pdf_url: string | null
+        label_storage_path: string | null
+      }
+      if (row.label_pdf_url?.trim() || row.label_storage_path?.trim()) {
+        return {
+          label_pdf_url: row.label_pdf_url?.trim() || null,
+          label_storage_path: row.label_storage_path?.trim() || null,
+        }
+      }
+    }
+  }
+
   const stored = await getLatestPreparedShippingLabelForOrder(supabase, input.orderId)
   if (stored) return stored
 
@@ -80,10 +103,71 @@ export async function resolveOrderShippingLabelPdf(
 
 export async function orderHasAccessibleShippingLabelPdf(
   supabase: SupabaseClient,
-  input: { orderId: string; trackingNumber: string | null },
+  input: { orderId: string; trackingNumber: string | null; labelId?: string | null },
 ): Promise<boolean> {
   const resolved = await resolveOrderShippingLabelPdf(supabase, input)
   return Boolean(resolved?.label_pdf_url || resolved?.label_storage_path)
+}
+
+const LABEL_BUCKET = "order-shipping-labels"
+
+export type LoadShippingLabelPdfBytesResult =
+  | { ok: true; bytes: Uint8Array; contentType: string }
+  | { ok: false; reason: "not_found" | "storage" | "fetch" }
+
+/** Downloads the resolved label PDF bytes from storage or the carrier URL. */
+export async function loadShippingLabelPdfBytes(
+  supabase: SupabaseClient,
+  input: { orderId: string; trackingNumber: string | null; labelId?: string | null },
+): Promise<LoadShippingLabelPdfBytesResult> {
+  const label = await resolveOrderShippingLabelPdf(supabase, input)
+  if (!label) return { ok: false, reason: "not_found" }
+
+  if (label.shipEngineLabel) {
+    await backfillMarketplaceLabelFromShipEngine({
+      supabase,
+      orderId: input.orderId,
+      label: label.shipEngineLabel,
+    })
+  }
+
+  if (label.label_storage_path?.trim()) {
+    const { data: blob, error: dlErr } = await supabase.storage
+      .from(LABEL_BUCKET)
+      .download(label.label_storage_path.trim())
+
+    if (dlErr || !blob) {
+      console.error("[shipping-label pdf] storage:", dlErr)
+      return { ok: false, reason: "storage" }
+    }
+
+    const buf = await blob.arrayBuffer()
+    return { ok: true, bytes: new Uint8Array(buf), contentType: "application/pdf" }
+  }
+
+  const pdfUrl = label.label_pdf_url?.trim()
+  if (!pdfUrl) return { ok: false, reason: "not_found" }
+
+  let pdfRes: Response
+  try {
+    pdfRes = await fetch(pdfUrl, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(60_000),
+      headers: { Accept: "application/pdf,*/*" },
+    })
+  } catch (e) {
+    console.error("[shipping-label pdf] fetch pdf:", e)
+    return { ok: false, reason: "fetch" }
+  }
+
+  if (!pdfRes.ok) return { ok: false, reason: "fetch" }
+
+  const buf = await pdfRes.arrayBuffer()
+  return {
+    ok: true,
+    bytes: new Uint8Array(buf),
+    contentType: pdfRes.headers.get("content-type") ?? "application/pdf",
+  }
 }
 
 /** Persist a ShipEngine label on the order when automation missed writing the PDF row. */

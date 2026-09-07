@@ -14,13 +14,22 @@ import {
   searchListingIdsFromElasticsearch,
 } from "@/lib/elasticsearch/listings-index"
 import {
+  brandLegacyRecallTokens,
   fuzzyBrandNamePrefix,
   isLikelyTypoBrandMatch,
   isMarketplaceSectionOnlyQuery,
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
+import {
+  isMarketplaceBoardStyleOnlyQuery,
+  isMarketplaceGenericSurfSearchOnly,
+} from "@/lib/utils/marketplace-style-query"
+import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
-import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
+import {
+  listActiveListingIdsByBrandModelIds,
+  listActiveListingsForBrand,
+} from "@/lib/db/brand-listings"
 import { fetchCuratedRecentListings } from "@/lib/db/curatedRecentListings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
@@ -29,6 +38,10 @@ import {
   normalizeMarketplaceSearchQueryForAnalytics,
   recordMarketplaceSearchAnalyticsEvent,
 } from "@/lib/services/searchAnalytics"
+import {
+  newSearchQualityEventId,
+  scheduleSearchQualityEventCapture,
+} from "@/lib/services/searchQuality"
 import {
   parseMarketplaceQuery,
   type MarketplaceParsedQuery,
@@ -134,12 +147,15 @@ export async function SearchPageView({
       : null)
 
   // Brand-only free-text still resolves via directory when the parser misses.
-  // Skip for bare section keywords ("fins") — those must not match Futures Fins, etc.
+  // Skip for bare section keywords ("fins") and shape / fin-layout queries
+  // ("fish", "fish twin") — those must not match Futures Fins / Fish Stix, etc.
   if (
     !brandRow &&
     rawQuery.trim() &&
     !parsedQuery?.model &&
-    !isMarketplaceSectionOnlyQuery(rawQuery)
+    !isMarketplaceSectionOnlyQuery(rawQuery) &&
+    !isMarketplaceBoardStyleOnlyQuery(rawQuery) &&
+    !isMarketplaceGenericSurfSearchOnly(rawQuery)
   ) {
     brandRow = await resolveDirectoryBrandRowFromLabel(supabase, rawQuery)
   }
@@ -181,21 +197,38 @@ export async function SearchPageView({
     Boolean(brandFromUrl),
   )
 
-  if (rawQuery.trim() && searchMeta) {
-    const analyticsPayload = {
-      queryDisplay: displayMarketplaceSearchQueryForAnalytics(rawQuery),
-      queryNormalized: normalizeMarketplaceSearchQueryForAnalytics(rawQuery),
-      resultCount: searchMeta.resultCount,
-      backend: searchMeta.backend,
-      categorySlug: categorySlugForLog,
-      ...(analyticsOriginHeaderNav ? { originSurface: "header_nav" as const } : {}),
-    }
-    after(async () => {
-      try {
-        await recordMarketplaceSearchAnalyticsEvent(analyticsPayload)
-      } catch (e) {
-        console.error("[SearchPageView] marketplace search analytics failed:", e)
+  if (rawQuery.trim()) {
+    if (searchMeta) {
+      const analyticsPayload = {
+        queryDisplay: displayMarketplaceSearchQueryForAnalytics(rawQuery),
+        queryNormalized: normalizeMarketplaceSearchQueryForAnalytics(rawQuery),
+        resultCount: searchMeta.resultCount,
+        backend: searchMeta.backend,
+        categorySlug: categorySlugForLog,
+        ...(analyticsOriginHeaderNav ? { originSurface: "header_nav" as const } : {}),
       }
+      after(async () => {
+        try {
+          await recordMarketplaceSearchAnalyticsEvent(analyticsPayload)
+        } catch (e) {
+          console.error("[SearchPageView] marketplace search analytics failed:", e)
+        }
+      })
+    }
+    scheduleSearchQualityEventCapture({
+      eventId: newSearchQualityEventId(),
+      rawQuery,
+      searchSurface: "marketplace",
+      backend: searchMeta?.backend ?? null,
+      listings: listings.map((l) => ({
+        id: l.id,
+        title: l.title,
+        slug: l.slug,
+        price: l.price,
+        board_type: l.board_type,
+        listing_images: l.listing_images,
+      })),
+      parsed: parsedQuery,
     })
   }
 
@@ -245,7 +278,7 @@ export async function SearchPageView({
           <p className="mt-1 text-sm text-muted-foreground">
             {brandUnknown ? (
               <>Check the spelling or search from the header — that slug is not in our brand directory.</>
-            ) : matchedModel && rawQuery.trim() ? (
+            ) : parsedQuery?.model && rawQuery.trim() ? (
               <>
                 Matching catalog model
                 {parsedQuery?.lengthToken ? <> · length {parsedQuery.lengthToken}</> : null}
@@ -359,9 +392,11 @@ async function resolveSearchListings(
   const categoryId = category?.id ?? null
 
   // Brand inventory only for brand-only intent (URL brand with no q, or parsed brand-only).
+  // Skip exclusive inventory when synonyms exist (Lost ↔ Mayhem) so alias titles recall too.
   const useBrandInventory =
     Boolean(brand) &&
-    ((!rawQuery.trim() && brandFromUrl) || Boolean(parsed?.isBrandOnly))
+    ((!rawQuery.trim() && brandFromUrl) || Boolean(parsed?.isBrandOnly)) &&
+    (parsed?.expansions.length ?? 0) === 0
 
   if (useBrandInventory && brand) {
     const inventorySections = parsed?.sectionIntent ? [parsed.sectionIntent] : undefined
@@ -370,9 +405,14 @@ async function resolveSearchListings(
       categoryId,
       sections: inventorySections,
     })
-    // Section-scoped brand inventory can be empty for co-brands (CI query → Futures fins).
-    // Fall through to ES text search in that case.
-    if (listings.length > 0 || !parsed?.sectionIntent) {
+    if (listings.length > 0) {
+      return { listings, searchMeta: null }
+    }
+    // Empty inventory with no typed query (brandSlug URL / brand page) stays empty.
+    // Brand-only free text must fall through so last-name titles still recall
+    // (e.g. "Christenson" → "6'6 Christenson Lane Splitter"). Section-scoped
+    // inventory can also be empty for co-brands (CI query → Futures fins).
+    if (!rawQuery.trim()) {
       return { listings, searchMeta: null }
     }
   }
@@ -382,10 +422,20 @@ async function resolveSearchListings(
     return { listings, searchMeta: null }
   }
 
-  const expansions = parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))
+  const expansions = [
+    ...(parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))),
+    ...(brand ? brandLegacyRecallTokens(brand.name) : []),
+  ]
   // Prefer parser text (may be "" for section-only "fins" → all listings in that section).
-  const textQuery =
-    parsed != null ? (parsed.textQuery ?? "").trim() : rawQuery.trim()
+  // Brand-only + aliases: empty keyword so brand_id OR alias text is the recall clause.
+  const widenBrandWithAliases = Boolean(
+    parsed?.isBrandOnly && expansions.length > 0 && (parsed.brand?.id || brand?.id),
+  )
+  const textQuery = widenBrandWithAliases
+    ? ""
+    : parsed != null
+      ? (parsed.textQuery ?? "").trim()
+      : rawQuery.trim()
   const brandModelIds =
     parsed?.modelIds?.length
       ? parsed.modelIds
@@ -397,6 +447,7 @@ async function resolveSearchListings(
       ? null
       : parsed?.brand?.id ?? (brandFromUrl ? brand?.id : null) ?? null
   const lengthInches = parsed?.lengthInches ?? null
+  const boardTypes = parsed?.styleIntent?.length ? parsed.styleIntent : null
   const sections = categoryId
     ? ["surfboards"]
     : parsed?.sectionIntent
@@ -413,6 +464,7 @@ async function resolveSearchListings(
         brandModelIds?: string[] | null
         brandId?: string | null
         lengthInches?: number | null
+        boardTypes?: string[] | null
         typoFallback?: boolean
       }) =>
         searchListingIdsFromElasticsearch(opts.q, LIMIT, {
@@ -422,6 +474,7 @@ async function resolveSearchListings(
           brandId: opts.brandId,
           brandModelIds: opts.brandModelIds,
           lengthInches: opts.lengthInches,
+          boardTypes: opts.boardTypes,
           typoFallback: opts.typoFallback,
         })
 
@@ -431,9 +484,16 @@ async function resolveSearchListings(
         brandModelIds,
         brandId,
         lengthInches,
+        boardTypes,
       })
       if (ids.length === 0 && lengthInches != null && brandModelIds.length > 0) {
-        ids = await runEs({ q: textQuery, brandModelIds, brandId: null, lengthInches: null })
+        ids = await runEs({
+          q: textQuery,
+          brandModelIds,
+          brandId: null,
+          lengthInches: null,
+          boardTypes,
+        })
       }
       if (ids.length === 0 && brandModelIds.length > 0) {
         ids = await runEs({
@@ -441,6 +501,7 @@ async function resolveSearchListings(
           brandModelIds: null,
           brandId: parsed?.brand?.id ?? brandId,
           lengthInches: null,
+          boardTypes,
         })
       }
       if (ids.length === 0) {
@@ -449,6 +510,7 @@ async function resolveSearchListings(
           brandModelIds: null,
           brandId: null,
           lengthInches: null,
+          boardTypes,
         })
       }
       if (ids.length === 0) {
@@ -457,25 +519,69 @@ async function resolveSearchListings(
           brandModelIds: null,
           brandId: null,
           lengthInches: null,
+          boardTypes,
           typoFallback: true,
         })
       }
       listings = await hydrateListingsByIds(supabase, ids)
+      // Stale ES hits (deleted/hidden) skip relaxation because ids.length > 0.
+      if (listings.length === 0 && ids.length > 0) {
+        ids = await runEs({
+          q: rawQuery.trim(),
+          brandModelIds: null,
+          brandId: null,
+          lengthInches: null,
+          boardTypes,
+        })
+        listings = await hydrateListingsByIds(supabase, ids)
+      }
       backend = "elasticsearch"
     } catch (err) {
       console.error("[search] Elasticsearch error, falling back to Supabase:", err)
-      const r = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT, expansions)
+      const r = await buildSearchFromSupabase(
+        supabase,
+        rawQuery,
+        categoryId,
+        LIMIT,
+        expansions,
+        boardTypes,
+      )
       listings = r.listings
       backend = "supabase"
     }
   } else {
-    const r = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT, expansions)
+    const r = await buildSearchFromSupabase(
+      supabase,
+      rawQuery,
+      categoryId,
+      LIMIT,
+      expansions,
+      boardTypes,
+    )
     listings = r.listings
     if (listings.length === 0) {
-      const retry = await buildSearchFromSupabaseTypoFallback(supabase, rawQuery, categoryId, LIMIT)
+      const retry = await buildSearchFromSupabaseTypoFallback(
+        supabase,
+        rawQuery,
+        categoryId,
+        LIMIT,
+        boardTypes,
+      )
       listings = retry.listings
     }
     backend = "supabase"
+  }
+
+  // Same recall path as nav typeahead: listings linked to the matched catalog models.
+  if (listings.length === 0 && brandModelIds.length > 0) {
+    const pinnedIds = await listActiveListingIdsByBrandModelIds(supabase, brandModelIds, {
+      limit: LIMIT,
+      sections,
+    })
+    if (pinnedIds.length > 0) {
+      listings = await hydrateListingsByIds(supabase, pinnedIds)
+      if (listings.length > 0) backend = "supabase"
+    }
   }
 
   // Final safety net: admin-pinned listings for queries that still found nothing.
@@ -493,24 +599,37 @@ async function resolveSearchListings(
   }
 }
 
+function applyBoardTypeFilter<T extends { in: (column: string, values: string[]) => T }>(
+  query: T,
+  boardTypes: string[] | null,
+): T {
+  const dbTypes = Array.from(
+    new Set((boardTypes ?? []).flatMap((s) => listingBoardTypeDbValuesForFilter(s))),
+  )
+  if (dbTypes.length === 0) return query
+  return query.in("board_type", dbTypes)
+}
+
 async function buildSearchFromSupabase(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rawQuery: string,
   categoryId: string | null,
   limit: number,
   expansions: string[] = [],
+  boardTypes: string[] | null = null,
 ): Promise<{
   listings: RecentListing[]
 }> {
-  const allRes = await buildSearchQuery(supabase, rawQuery, categoryId, limit)
+  const allRes = await buildSearchQuery(supabase, rawQuery, categoryId, limit, boardTypes)
   let rows = allRes.data ?? []
 
-  // Synonym recovery: when the literal query matches nothing, try each expansion.
-  if (rows.length === 0 && expansions.length > 0) {
-    const merged = new Map<string, any>()
+  // Synonym expansions are OR-added (same as ES) so Lost also retrieves Mayhem, etc.
+  if (expansions.length > 0) {
+    const merged = new Map<string, (typeof rows)[number]>()
+    for (const row of rows) merged.set(row.id, row)
     for (const expansion of expansions) {
       if (merged.size >= limit) break
-      const expRes = await buildSearchQuery(supabase, expansion, categoryId, limit)
+      const expRes = await buildSearchQuery(supabase, expansion, categoryId, limit, boardTypes)
       for (const row of expRes.data ?? []) {
         if (!merged.has(row.id)) merged.set(row.id, row)
       }
@@ -531,6 +650,7 @@ async function buildSearchFromSupabaseTypoFallback(
   rawQuery: string,
   categoryId: string | null,
   limit: number,
+  boardTypes: string[] | null = null,
 ): Promise<{ listings: RecentListing[] }> {
   const meaningful = meaningfulSearchTerms(rawQuery)
   const primary = [...meaningful].sort((a, b) => b.length - a.length)[0]
@@ -550,6 +670,7 @@ async function buildSearchFromSupabaseTypoFallback(
       user_id,
       title,
       price,
+      compare_at_price,
       condition,
       section,
       city,
@@ -575,6 +696,7 @@ async function buildSearchFromSupabaseTypoFallback(
   } else {
     query = query.in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
   }
+  query = applyBoardTypeFilter(query, boardTypes)
 
   const { data, error } = await query
   if (error || !data?.length) return { listings: [] }
@@ -589,6 +711,7 @@ function rowToRecentListing(row: any): RecentListing {
     user_id: row.user_id,
     title: row.title,
     price: row.price,
+    compare_at_price: row.compare_at_price ?? null,
     condition: row.condition,
     section: row.section,
     city: row.city,
@@ -607,6 +730,7 @@ async function buildSearchQuery(
   rawQuery: string,
   categoryId: string | null,
   limit: number,
+  boardTypes: string[] | null = null,
 ): Promise<{ data: any[] }> {
   let query = supabase
     .from("listings")
@@ -617,6 +741,7 @@ async function buildSearchQuery(
       user_id,
       title,
       price,
+      compare_at_price,
       condition,
       section,
       city,
@@ -637,6 +762,7 @@ async function buildSearchQuery(
   } else {
     query = query.in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
   }
+  query = applyBoardTypeFilter(query, boardTypes)
 
   if (rawQuery) {
     const meaningful = meaningfulSearchTerms(rawQuery)

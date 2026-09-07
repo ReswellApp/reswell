@@ -42,7 +42,12 @@ import {
   OfferNegotiationEventCard,
 } from '@/components/features/messages/offer-negotiation-event-card'
 import type { OfferRowLite } from '@/components/features/messages/seller-offer-response-dialog'
-import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiation-message'
+import {
+  parseOfferNegotiationMessage,
+  resolveActionableCounteredOffer,
+  resolveAcceptedOfferForCheckout,
+} from '@/lib/utils/parse-offer-negotiation-message'
+import { parseOfferLineItems } from '@/lib/types/offer-line-item'
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
 import { parseOrderRefundedMessageMetadata } from '@/lib/validations/order-refunded-message-metadata'
@@ -57,8 +62,20 @@ import { ReviewRequestMessageCard } from '@/components/features/messages/review-
 import { MessageLocationCard } from '@/components/features/messages/message-location-card'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
+import {
+  SupportCaseOpenedCard,
+  SupportCaseStatusCard,
+} from '@/components/features/support/support-case-system-card'
+import { parseSupportThreadSystemMessage } from '@/lib/messages/parse-support-thread-message'
+import {
+  MessageMediaImageLightbox,
+  type MessageMediaImageLightboxItem,
+} from '@/components/features/messages/message-media-image-lightbox'
 import { MessageSellerOfferButton } from '@/components/features/messages/message-seller-offer-button'
-import { parseMarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
+import {
+  parseMarketplaceMessageAttachment,
+  parseMarketplaceMessageImageAttachment,
+} from '@/lib/validations/marketplace-message-attachment'
 import { isPeerListingSection } from '@/lib/peer-listing-sections'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
@@ -155,6 +172,8 @@ export interface ConversationThreadClientProps {
   conversationId: string
   initialData: ConversationThreadData
   embedded?: boolean
+  /** Hide the marketplace thread header (use when a parent already provides chrome). */
+  hideHeader?: boolean
   backHref?: string
 }
 
@@ -162,6 +181,7 @@ export function ConversationThreadClient({
   conversationId: id,
   initialData,
   embedded = false,
+  hideHeader = false,
   backHref: backHrefProp,
 }: ConversationThreadClientProps) {
   const [conversation, setConversation] = useState<Conversation | null>(
@@ -200,6 +220,33 @@ export function ConversationThreadClient({
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       ),
     [messages],
+  )
+
+  const threadImageGallery = useMemo((): Array<MessageMediaImageLightboxItem & { messageId: string }> => {
+    const items: Array<MessageMediaImageLightboxItem & { messageId: string }> = []
+    for (const message of orderedMessages) {
+      const imageAtt = parseMarketplaceMessageImageAttachment(message.metadata)
+      if (!imageAtt) continue
+      items.push({
+        messageId: message.id,
+        src: `/api/messages/${message.id}/attachment`,
+        title: imageAtt.file_name,
+      })
+    }
+    return items
+  }, [orderedMessages])
+
+  const [threadImageLightboxOpen, setThreadImageLightboxOpen] = useState(false)
+  const [threadImageLightboxIndex, setThreadImageLightboxIndex] = useState(0)
+
+  const openThreadImage = useCallback(
+    (messageId: string) => {
+      const nextIndex = threadImageGallery.findIndex((item) => item.messageId === messageId)
+      if (nextIndex < 0) return
+      setThreadImageLightboxIndex(nextIndex)
+      setThreadImageLightboxOpen(true)
+    },
+    [threadImageGallery],
   )
 
   const threadPrimaryListingId = useMemo(() => {
@@ -617,6 +664,7 @@ export function ConversationThreadClient({
       if (parseMarketplaceMessageAttachment(m.metadata)) return false
       if (parseOfferNegotiationMessage(m.content)) return false
       if (m.content.trimStart().startsWith('Offer:') && !m.offer_id) return false
+      if (parseSupportThreadSystemMessage(m.content)) return false
       return true
     },
     [currentUserId, offersById],
@@ -669,6 +717,7 @@ export function ConversationThreadClient({
         )}
       >
         {/* Header */}
+        {!hideHeader ? (
         <header
           className={cn(
             "relative z-20 shrink-0 border-b border-border/60 bg-background py-2",
@@ -752,6 +801,7 @@ export function ConversationThreadClient({
             </div>
           </div>
         </header>
+        ) : null}
 
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {listingChromeLoading ? (
@@ -1000,6 +1050,7 @@ export function ConversationThreadClient({
                             content={message.content}
                             isOwn={isOwn}
                             formattedTime={formatMessageDate(message.created_at)}
+                            onOpenImage={openThreadImage}
                           />
                         </div>
                       )
@@ -1007,6 +1058,31 @@ export function ConversationThreadClient({
 
                     const negotiationKind = parseOfferNegotiationMessage(message.content)
                     if (negotiationKind) {
+                      const listingIdForOffer =
+                        threadPrimaryListingId ?? conversation?.listing_id
+                      const offersList = Object.values(offersById)
+                      const actionable =
+                        !isSeller &&
+                        (negotiationKind === 'counter' || negotiationKind === 'seller_offer')
+                          ? resolveActionableCounteredOffer(
+                              offersList,
+                              negotiationKind,
+                              message.content,
+                              listingIdForOffer,
+                            )
+                          : null
+                      const checkoutOffer =
+                        !isSeller && negotiationKind === 'accepted'
+                          ? resolveAcceptedOfferForCheckout(
+                              offersList,
+                              negotiationKind,
+                              message.content,
+                              listingIdForOffer,
+                            )
+                          : null
+                      const checkoutLineItems = checkoutOffer
+                        ? parseOfferLineItems(checkoutOffer.line_items)
+                        : null
                       return (
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <OfferNegotiationEventCard
@@ -1015,6 +1091,11 @@ export function ConversationThreadClient({
                             createdAt={message.created_at}
                             isOwn={isOwn}
                             showSellerDashboardLink={isSeller && isOwn}
+                            actionableOfferId={actionable?.id ?? null}
+                            actionableExpiresAt={actionable?.expires_at ?? null}
+                            checkoutOfferId={checkoutOffer?.id ?? null}
+                            checkoutLineItemCount={checkoutLineItems?.length ?? 0}
+                            onThreadRefresh={loadThread}
                           />
                         </div>
                       )
@@ -1025,6 +1106,28 @@ export function ConversationThreadClient({
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <OfferLegacyMirrorCard
                             content={message.content}
+                            createdAt={message.created_at}
+                          />
+                        </div>
+                      )
+                    }
+
+                    const supportSystem = parseSupportThreadSystemMessage(message.content)
+                    if (supportSystem?.kind === 'opened') {
+                      return (
+                        <div className={cn('flex w-full justify-center', cardMargin || 'mt-2.5')}>
+                          <SupportCaseOpenedCard
+                            parsed={supportSystem}
+                            createdAt={message.created_at}
+                          />
+                        </div>
+                      )
+                    }
+                    if (supportSystem?.kind === 'status') {
+                      return (
+                        <div className={cn('flex w-full justify-center', cardMargin || 'mt-2.5')}>
+                          <SupportCaseStatusCard
+                            parsed={supportSystem}
                             createdAt={message.created_at}
                           />
                         </div>
@@ -1144,6 +1247,13 @@ export function ConversationThreadClient({
         </MessageThreadMobileComposerDock>
         </div>
       </div>
+      <MessageMediaImageLightbox
+        open={threadImageLightboxOpen}
+        onOpenChange={setThreadImageLightboxOpen}
+        items={threadImageGallery}
+        index={threadImageLightboxIndex}
+        onIndexChange={setThreadImageLightboxIndex}
+      />
     </main>
   )
 }

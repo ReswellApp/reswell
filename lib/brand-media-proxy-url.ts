@@ -1,4 +1,8 @@
-import { proxiedBrandRequestLogoSrc } from "@/lib/brand-request-media-proxy-url"
+import {
+  BRAND_REQUEST_MEDIA_PROXY_PATH_PREFIX,
+  brandRequestLogosStorageObjectPathFromUrl,
+  proxiedBrandRequestLogoSrc,
+} from "@/lib/brand-request-media-proxy-url"
 import { isOurPublicStorageMediaHost } from "@/lib/public-storage-media-host"
 
 const PUBLIC_BRAND_ASSETS_MARKER = "/storage/v1/object/public/brand-assets/"
@@ -64,4 +68,47 @@ export function brandLogoDisplaySrc(url: string | null | undefined): string {
   if (fromBrandAssets !== t) return fromBrandAssets
 
   return proxiedBrandRequestLogoSrc(t)
+}
+
+export type BrandLogoStorageBucket = "brand-assets" | "brand-request-logos"
+
+export type BrandLogoStorageRef = {
+  bucket: BrandLogoStorageBucket
+  objectPath: string
+}
+
+function objectPathFromProxiedMediaSrc(src: string, prefix: string): string | null {
+  if (!src.startsWith(prefix)) return null
+  const raw = src.slice(prefix.length).split(/[?#]/)[0] ?? ""
+  try {
+    const decoded = raw
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => decodeURIComponent(segment))
+      .join("/")
+    if (!decoded || decoded.includes("..")) return null
+    return decoded
+  } catch {
+    return null
+  }
+}
+
+/** Storage object for a catalog or request logo URL (public URL or `/media/*` proxy). */
+export function brandLogoStorageRef(
+  logoUrl: string | null | undefined,
+): BrandLogoStorageRef | null {
+  const trimmed = logoUrl?.trim()
+  if (!trimmed) return null
+
+  const brandAssetsPath =
+    brandAssetsStorageObjectPathFromUrl(trimmed) ??
+    objectPathFromProxiedMediaSrc(trimmed, BRAND_MEDIA_PROXY_PATH_PREFIX)
+  if (brandAssetsPath) return { bucket: "brand-assets", objectPath: brandAssetsPath }
+
+  const requestPath =
+    brandRequestLogosStorageObjectPathFromUrl(trimmed) ??
+    objectPathFromProxiedMediaSrc(trimmed, BRAND_REQUEST_MEDIA_PROXY_PATH_PREFIX)
+  if (requestPath) return { bucket: "brand-request-logos", objectPath: requestPath }
+
+  return null
 }

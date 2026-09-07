@@ -12,6 +12,7 @@ import { WetsuitsBrowseFacetControls } from "@/components/wetsuits-browse-facet-
 import { useWetsuitsFilterState } from "@/components/wetsuits-browse-filter-state"
 import { WETSUIT_FACET_PARAM_KEYS, wetsuitFacetOptionLabel } from "@/lib/wetsuits-browse-facets"
 import { cn } from "@/lib/utils"
+import wetsuitsBrowseAtmosphere from "@/public/images/brand/wetsuits-browse-atmosphere.jpg"
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
 
@@ -67,6 +68,8 @@ export function WetsuitsBrowseClient({
       <CategoryBrowsePageHeader
         title={title}
         description={description}
+        atmosphereImage={wetsuitsBrowseAtmosphere}
+        atmosphereImageClassName="object-[center_48%] md:object-[center_58%]"
         action={
           <CategoryBrowseFilterButton
             category="wetsuits"

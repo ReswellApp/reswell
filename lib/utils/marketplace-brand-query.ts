@@ -4,6 +4,7 @@
  */
 
 import type { ElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
+import { marketplaceBrandSynonymCandidates } from "@/lib/utils/marketplace-brand-synonyms"
 
 const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "surfboard",
@@ -17,6 +18,10 @@ const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "wetsuits",
   "magazine",
   "magazines",
+  "apparel",
+  "clothing",
+  "boardshort",
+  "boardshorts",
   "used",
   "new",
   "for",
@@ -28,6 +33,35 @@ const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "sell",
   "gear",
 ])
+
+/**
+ * Brand-name tokens that are too generic to use as title recall
+ * ("Hayden Shapes" must not match every listing with "shapes" in the title).
+ */
+const GENERIC_BRAND_NAME_TOKENS = new Set([
+  "shapes",
+  "designs",
+  "industries",
+  "company",
+  "inc",
+  "ltd",
+  "lab",
+  "labs",
+  "factory",
+  "handmade",
+  "customs",
+  "custom",
+  "the",
+  "studio",
+  "studios",
+  "workshop",
+])
+
+/**
+ * Minimum length for a brand-name token used as last-name / legacy title recall.
+ * Keeps "Chris" from matching unrelated titles while still matching "Christenson".
+ */
+const MIN_LEGACY_BRAND_TOKEN_LEN = 6
 
 /**
  * Query tokens that imply a marketplace listing section (e.g. "channel islands fins").
@@ -42,12 +76,17 @@ const SECTION_INTENT_BY_TOKEN: Record<string, ElasticsearchIndexedListingSection
   magazines: "magazines",
   surfboard: "surfboards",
   surfboards: "surfboards",
+  apparel: "apparel",
+  clothing: "apparel",
+  boardshort: "apparel",
+  boardshorts: "apparel",
 }
 
 const SECTION_INTENT_PRIORITY: ElasticsearchIndexedListingSection[] = [
   "fins",
   "wetsuits",
   "magazines",
+  "apparel",
   "surfboards",
 ]
 
@@ -95,6 +134,8 @@ export function marketplaceSectionBrowseHref(
       return "/magazines"
     case "surfboards":
       return "/boards"
+    case "apparel":
+      return "/apparel"
     default:
       return null
   }
@@ -151,6 +192,10 @@ export function marketplaceBrandQueryCandidates(raw: string): string[] {
     add(token)
   }
 
+  for (const alias of marketplaceBrandSynonymCandidates(trimmed)) {
+    add(alias)
+  }
+
   return out
 }
 
@@ -158,6 +203,28 @@ export function marketplaceBrandQueryCandidates(raw: string): string[] {
 export function isMarketplaceSearchNoiseToken(token: string): boolean {
   const core = token.trim().toLowerCase().replace(/^['']+|['']+$/g, "")
   return core.length > 0 && MARKETPLACE_SEARCH_NOISE_WORDS.has(core)
+}
+
+/**
+ * Distinctive tokens from a directory brand name for last-name / legacy title recall.
+ * "Chris Christenson" → ["christenson"] so listings titled "Christenson Lane Splitter"
+ * still match a brand-only search. Skips given-name-length tokens and generic suffixes.
+ */
+export function brandLegacyRecallTokens(brandName: string): string[] {
+  const rawTokens = tokenizeQuery(brandName).filter((t) => !isMarketplaceSearchNoiseToken(t))
+  if (rawTokens.length === 0) return []
+
+  const distinctive = rawTokens.filter(
+    (t) => t.length >= MIN_LEGACY_BRAND_TOKEN_LEN && !GENERIC_BRAND_NAME_TOKENS.has(t),
+  )
+  if (distinctive.length === 0) return []
+
+  if (rawTokens.length >= 2) {
+    const lastNameLike = distinctive.filter((t) => t !== rawTokens[0])
+    if (lastNameLike.length > 0) return lastNameLike
+  }
+
+  return distinctive
 }
 
 export function levenshteinDistance(a: string, b: string): number {

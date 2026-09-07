@@ -1,7 +1,7 @@
 import { COMPLETE_PROFILE_PATH } from "@/lib/auth/profile-completion"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
-/** Where to send the user after they finish username / profile setup. */
+/** Where to send the user from the legacy `/auth/complete-profile` redirect. */
 export function resolveProfileCompletionReturnPath(
   pathname: string | null,
   searchParams: Pick<URLSearchParams, "get" | "toString">,

@@ -1,0 +1,48 @@
+{
+  "generated_for": "Mitsven official named standup catalog",
+  "source": "https://mitsvensurfboards.eu/en/surfboards/ (Bob Mitsven production models only — excludes custom deposits and one-off stock)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mitsven",
+      "name": "Mitsven",
+      "website_url": "https://mitsvensurfboards.eu/en/surfboards/",
+      "location_label": "San Diego, California",
+      "founder_name": "Bob Mitsven",
+      "lead_shaper_name": "Bob Mitsven",
+      "short_description": "Hand-shaped San Diego surfboards by Bob Mitsven — fishes, eggs, midlengths, gliders, and logs in the classic California tradition.",
+      "models": [
+        {
+          "name": "Mitsven Fish",
+          "image_url": "https://mitsvensurfboards.eu/wp-content/uploads/2025/10/Fish-3-1-722x1024.png",
+          "description": "Bob Mitsven's Fish is an iconic model hand-shaped in San Diego. Its speed, maneuverability and classic styling make it a must-have board for surfers passionate about authentic riding.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "San Diego Egg",
+          "image_url": "https://mitsvensurfboards.eu/wp-content/uploads/2025/10/Egg-3-1-722x1024.png",
+          "description": "Bob Mitsven's San Diego Egg embodies the pure tradition of California shaping: Skip Frye-inspired rails, fluid glide and perfect line. A versatile hand-shaped model for surfers seeking speed, control and timeless style.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Magic",
+          "image_url": "https://mitsvensurfboards.eu/wp-content/uploads/2025/10/Magic-3-1-722x1024.png",
+          "description": "The Mitsven Magic is a Skip Frye-inspired midlength hand-shaped by Bob Mitsven in San Diego. Fluidity, control and speed: a versatile board designed for pure glide.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mitsven Glider",
+          "image_url": "https://mitsvensurfboards.eu/wp-content/uploads/2025/10/Glider-3-722x1024.png",
+          "description": "The Mitsven Glider is a longboard hand-shaped by Bob Mitsven in San Diego. Designed for pure glide and perfect lines, it embodies classic Californian style and timeless surfing tradition.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mitsven Log",
+          "image_url": "https://mitsvensurfboards.eu/wp-content/uploads/2025/10/Log-5-722x1024.png",
+          "description": "The Mitsven Log is a traditional longboard hand-shaped by Bob Mitsven in San Diego. A design inspired by vintage Californian logs, offering stability, elegance and glide for classic style.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "generated_for": "Simon Shapes official named standup catalog",
+  "source": "https://simonshapes.com/models (Webflow model pages — excludes fins, apparel, stock dimension SKUs, and custom orders)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "simon-shapes",
+      "name": "Simon Shapes",
+      "website_url": "https://simonshapes.com",
+      "location_label": "Ventura, California",
+      "founder_name": "John Simon",
+      "lead_shaper_name": "John Simon",
+      "short_description": "Hand-shaped surfboards by John Simon in Ventura — forward-thinking performance designs from shortboards and fish to asymmetric quads and finless craft.",
+      "models": [
+        {
+          "name": "Bumper",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/64bec34527d4705c516b6940_Bumper-img.webp",
+          "description": "Embracing the best of both worlds, this performance shortboard design blends the speed and skatiness of a wider diamond tail, with the tight carving characteristics of a more pulled in round tail. The toe side features a shorter rail line, but has more planing surface and less curve. Its combination of design features promote efficiency in all aspects. The bottom shape consists of panel V entry with inverted V cut into it, effectively straightening the center entry rocker curve while retaining the advantages of the raised rail line entry for late takeoffs. It then transitions to an offset single concave that is deepest under the toe side that eventually evens out to flat at the tail tip. The heel side tail rocker has a generous amount of curve that accelerates around the fins, shortening its turning radius and enabling tighter carves. The Bumper is a highly reliable shortboard capable of connecting maneuvers in open faced waves, as well as handling steep takeoffs and navigating in tubes.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cessna",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/6683facb656502369f3a08f4_667bd3c9cfa4c4cefaca4294_Group%2010%20(2)%201.png",
+          "description": "Sometimes, we need a surfboard designed for a specific type of wave or condition. Other times, we need one that adapts to a broad range of scenarios. The Cessna fulfills this need. It's a fantastic one-board quiver that retains its functionality across multiple wave types and fills a practical gap in any travel quiver. This board isn't just for cruising; it's designed for high performance and precision carving as well. The design allows the rider to accelerate through flat spots while simultaneously handling late take-offs and challenging sections with ease. This design promotes an equal balance of maneuverability and speed generation without being too restrictive in higher-quality surf. The result is a user-friendly, easily shreddable board that makes high-performance surfing accessible to a wide range of surfers. The Cessna's bottom shape features panel V entry, which raises the rail line in the front of the board to reduce the risk of catching on steeper takeoffs. This transitions to a flat bottom under the chest, eventually blending into a panel V through the tail, which is enhanced by a channel bottom for increased propulsion and controlled drift. This design is typically ridden with an upright, performance-oriented twin-fin setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "DTDN",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/649c1626433fb54b2b47d563_DTDN.png",
+          "description": "The diamond nose and diamond tail give the board a short rail line in comparison to its actual overall length. This allows the board to surf tight in the pocket, while still keeping the outline relatively parallel for speed in a straight line. This shape can be customized and altered for specific wave types and conditions. The quad fin placement gives the board a tight turning arc and grip through hooks in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EAST",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/649c167b6e9ad48f04885fcd_East.png",
+          "description": "This design was conceptualized with Ryan Burch for Stab's \"Electric Acid Surfboard Test\" featuring Mick Fanning. As demonstrated by Mick, this design is focused on keeping speed through carves, and surfing tight in the pocket of the wave with control. Its asymmetric outline, twisted rocker, offset bottom shape, offset rail shapes, and skewed quad fin placements all work together to help the board generate speed from the toe side, and control speed from the heel side. Its bottom shape consists of panel V entry, with inverted V cut into the panel V in order to straighten the center entry rocker curve while still keeping the benefits of the raised rail line entry intact for late takeoffs. It then transitions to an offset single concave of which is deepest under the toe side that eventually evens out to flat at the tail tip. The toe side fins are placed slightly further back and closer to the rail in order to mimic a feeling closer to that of a twin on the toe side. The heel side fins are placed further up, further away from the rail, and more spread apart in order to help give the board more control when leaning on the heel side in critical parts of the wave.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Finless",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/66431845701cb159498e0ee9_Group%20145.png",
+          "description": "This design is tuned for high-performance finless surfing, emphasizing functional finless maneuvers like spinning and sideslips while ensuring additional control in steeper sections when they present themselves. Its asymmetric outline, twisted rocker, offset bottom shape and offset rail shapes work together to enhance grip and disengagement in all the right moments. Its bottom shape facilitates a blend of speed, lift, and grip depending on how the rider distributes their weight. Additionally, the hard edge and steep chine of the toe side rail assist in keeping the board on course, providing a narrow planing surface when the rider chooses to bottom turn, engaging the chine into the face of the wave. Each ride presents an engaging challenge in positioning and course-plotting.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Hi-Phi Phish",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/65aec87e4cc90fd6a0f78ac8_Group%2067102%20(1)-min.png",
+          "description": "While keeping an emphasis on the speed generating elements that are so inherent in the classic fish concept, this design also incorporates some elements that foster the ability to draw lines more reminiscent to that of a high performance shortboard. Its bottom shape consists of panel V entry with inverted V cut into it, effectively straightening the center entry rocker curve while retaining the advantages of the raised rail line entry for late takeoffs. It then transitions to a full inverted V bottom from rail to rail through the fins, and it eventually evens out to flat off the tail tips.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Kegg",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/65aec89b015283081e66c183_Group%2067102%20(2).png",
+          "description": "This design draws inspiration from the Quegg but is suited more specifically for larger, rounder waves and emphasizes a more performance-oriented approach. With its increased outline curve, forward widepoint, ample rocker curve, and quad fin setup, this design excels in maintaining control during critical situations. The bottom consists of a panel V entry with inverted V cut into it, effectively straightening the center entry rocker curve while retaining the advantages of the raised rail line entry for late takeoffs. Transitioning to a spiral V around the fins, it eventually evens out to flat off the tail tip.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mysterious Crystal",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/66759e6c2a6974d6d5b25613_image%207.png",
+          "description": "The Mysterious Crystal is a highly efficient performance board for smaller waves. Its bottom shape and flat rocker are key elements that contribute to its ability to generate speed in flatter sections of the wave. Simultaneously, its short length and outline curve allow it to fit into tight pockets, maintaining its functionality in bowly waves as well. It features a flat deck, low rocker curve, and a clustered quad fin setup. The bottom shape consists of a combination of panel-V and inverted panel-V in the nose, which transitions to a triplane bottom with a deep single concave as the center plane and slightly angled flat panels as the outside planes, eventually breaking into a significant amount of panel V in the last few inches of the tail. Overall, this design makes high-performance surfing accessible to a broader range of surfers, enabling the rider to focus on maneuvers rather than speed generation, which the board inherently provides.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Parang",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/649c1692c0f2409564e135e3_Swallow%20Tail%20Quad%20Shortboard.png",
+          "description": "I shaped the first version of this design as part of a quiver to take to Indonesia in 2022. This design is focused on vertical surfing, breaking free in the lip through turns, and navigating with control in the barrel. The outline features a slightly forward widepoint, lots of overall curve, and a slight hip placed around the fins. The bottom shape consists of panel V entry, with inverted V cut into the panel V in order to straighten the center entry rocker curve while still keeping the benefits of the raised rail line entry intact for late takeoffs. It then transitions to a single concave through most of the board of which evens out to flat at the tail tips.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pendolino",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/649c1659fdfd1de2871550db_Arc%20Tail%20Quad%20Hull.png",
+          "description": "This design is focused on lateral surfing and trim. The wider tail provides stability and creates a more parallel outline for speed generation. It has a convex bottom shape with a thin, low apex rail shape. Not only does this combination of design features easily handle higher speeds, but it also helps the board to roll over and project through turns, as well as provide a unique feeling of heightened sensitivity. The quad fins are placed close to the rail to mimic the feeling of a twin keel fin, while providing more overall control and a slightly shorter turning arc.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Quad Fish",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/649c157d739a02564cd8a242_quad-fish.png",
+          "description": "This design is focused on flowing through sections and linking carves. The increased outline curve gives it control at high speeds, and allows it to fit in tight pockets of the wave. It is a functional, high performing, and adaptable design that can be pushed hard with the right mindset and approach. The standard bottom shape consists of light V entry, to a double concave, to spiral V in the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quegg",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/649c1611433fb54b2b47bd22_Quad%20Egg.png",
+          "description": "This design is focused on smooth rail surfing and connecting clean lines. This shape is conducive to a relaxed, but calculated performance surfing style. The rocker curve is neutral and continuous from nose to tail giving it functionality in multiple wave types. It has a convex bottom shape with a low apex rail shape. Not only does this combination of design features easily handle higher speeds, but it also helps the board to roll over and project through turns when leaning on the rail. The quad fins are placed close to the rail to mimic the feeling of a twin keel fin, while providing more overall control and a slightly shorter turning arc.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Squash Tail Twin",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/649c1642fdfd1de287151f49_Squash%20tail%20twin.png",
+          "description": "This design is focused on smooth shredding and the benefits that pivot, and tight radius turns from a center fin provide. Its neutral rocker curve and balanced outline make for a versatile egg/shortboard combination in multiple wave types and situations. It has well foiled rails with a hard edge in the tail for engagement and sensitivity. It has a bottom shape consisting of light panel V entry, to light double barrel concave, to spiral V, to flat behind the rear fin placement.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Transmitter",
+          "image_url": "https://cdn.prod.website-files.com/63ef81603451bd4335bd5950/649c16a947357d8c65bdf36a_Channel%20Double%20Trailer.png",
+          "description": "This design is focused on blending the positive feelings of a twin fin and a quad fin setup. It is designed to be ridden in the mid 6' to low 7' range and cover the bases in many different wave types. With its fairly neutral rocker curve, widepoint placement just ahead of center, and generous volume distribution, It can act as a step up board in open faced waves while also functioning as a more approachable alternative to a performance shortboard in average waves. Its bottom shape consists of light panel V entry, to flat, to panel V through the rest of the board with channels placed inside the panel V in the tail in order to let the board easily roll onto rail, while also projecting in the desired direction of the surfer. The fin setup gives the twin fin feeling a little bit more projection and control, but without being as pivotal as a larger, single trailing fin.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}

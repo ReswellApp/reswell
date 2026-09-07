@@ -1,0 +1,90 @@
+{
+  "generated_for": "Cheyne Horan Surfboards official named standup catalog",
+  "source": "https://cheynehoransurfboards.com.au/ (Divi custom-surfboard model list — excludes fin shop products and custom-order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cheyne-horan-surfboards",
+      "name": "Cheyne Horan Surfboards",
+      "website_url": "https://cheynehoransurfboards.com.au/",
+      "location_label": "Australia",
+      "founder_name": "Cheyne Horan",
+      "lead_shaper_name": "Cheyne Horan",
+      "short_description": "Legendary Australian pro-turned-shaper Cheyne Horan builds high-performance custom boards — Spitfire, Zyphx, Lazor Zap, and the double-wing swallow designs he pioneered.",
+      "models": [
+        {
+          "name": "Spitfire",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2025/03/Spitfire-fff.jpg",
+          "description": "The SpitFire is the modern day single fin — Cheyne Horan's signature single-fin design for high-performance surfing.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Zyphx",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/ZYPHX-1.png",
+          "description": "Without compromise — Cheyne Horan's high-performance shortboard built for speed, planing, and modern power surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lazor Zap",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/LAZORZAP.png",
+          "description": "Named production shortboard model from Cheyne Horan's custom catalog.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Yowza Allrounder",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/YOWZA-ALLROUNDER.jpg",
+          "description": "All-round hybrid model designed for versatile everyday surfing across a wide range of conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "84 Bells Winner",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/84-BELLS-WINNER.jpg",
+          "description": "Competition shortboard model referencing Cheyne Horan's 1984 Bells Beach win — built for powerful point and reef waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Azores",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/AZORES.png",
+          "description": "Competition-oriented shortboard model from Cheyne Horan's named production catalog.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Deluxe",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/DELUXE.png",
+          "description": "Named hybrid model from Cheyne Horan's custom surfboard lineup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twinnie Zippy",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/TWINNIE.png",
+          "description": "Twin-fin fish model with a zippy, skatey feel for small to medium surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Snoz Nose Rider",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/SNOZ.jpg",
+          "description": "Longboard nose-rider model designed for trim, cross-stepping, and classic longboard performance.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/GUN.jpg",
+          "description": "Big-wave gun for heavy surf — Cheyne Horan's step-up design for serious swell.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Shlong Magneto",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/SHLONG.jpg",
+          "description": "Longboard model from Cheyne Horan's named production catalog.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "78 Remix Double Flyer",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/78-REMIX.jpg",
+          "description": "Retro-inspired double-flyer swallow tail design referencing Cheyne Horan's innovative late-1970s shapes.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

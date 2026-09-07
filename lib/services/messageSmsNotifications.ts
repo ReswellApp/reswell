@@ -3,13 +3,15 @@ import { createClient } from "@/lib/supabase/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   getMessageSmsOptInForUser,
+  resolveMessageSmsPhoneE164,
   upsertMessageSmsOptInForUser,
 } from "@/lib/db/messageSmsNotifications"
-import { getProfilePersonalInfo, resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
+import { getProfilePersonalInfo } from "@/lib/db/profilePersonalInfo"
 import {
   saveProfilePersonalPhone,
   saveProfilePersonalPhoneAndSubscribeSms,
 } from "@/lib/services/profilePersonalInfo"
+import { subscribeKlaviyoProfileSmsConsent } from "@/lib/klaviyo/subscribe-profile-sms-consent"
 import { subscribeKlaviyoProfileSmsMarketing } from "@/lib/klaviyo/subscribe-profile-sms-marketing"
 import { messageSmsPhoneInputSchema } from "@/lib/validations/messageSmsPhone"
 
@@ -26,14 +28,14 @@ export async function loadMessageSmsNotificationsStateForUser(
   const service = createServiceRoleClient()
   const [message_sms_opt_in, phoneE164, personal] = await Promise.all([
     getMessageSmsOptInForUser(service, userId),
-    resolveProfilePhoneE164(service, userId, authPhone),
+    resolveMessageSmsPhoneE164(service, userId, authPhone),
     getProfilePersonalInfo(service, userId),
   ])
 
   return {
     message_sms_opt_in,
     has_phone: phoneE164 != null,
-    phone: personal?.phone?.trim() || null,
+    phone: personal?.phone?.trim() || phoneE164,
   }
 }
 
@@ -108,7 +110,7 @@ export async function saveMessageSmsNotificationsWithPhone(
     return { ok: false, error: optInSaved.error }
   }
 
-  const phoneE164 = await resolveProfilePhoneE164(supabase, user.id, user.phone)
+  const phoneE164 = await resolveMessageSmsPhoneE164(supabase, user.id, user.phone)
   if (phoneE164) {
     void subscribeKlaviyoProfileSmsMarketing({
       phoneNumber: phoneE164,
@@ -141,7 +143,7 @@ export async function updateMessageSmsNotificationsOptIn(
   const { enabled } = parsed.data
 
   if (enabled) {
-    const phoneE164 = await resolveProfilePhoneE164(supabase, user.id, user.phone)
+    const phoneE164 = await resolveMessageSmsPhoneE164(supabase, user.id, user.phone)
     if (!phoneE164) {
       return {
         ok: false,
@@ -155,11 +157,12 @@ export async function updateMessageSmsNotificationsOptIn(
       return { ok: false, error: saved.error }
     }
 
-    void subscribeKlaviyoProfileSmsMarketing({
+    void subscribeKlaviyoProfileSmsConsent({
       phoneNumber: phoneE164,
       email: user.email,
       externalId: user.id,
-      consent: "SUBSCRIBED",
+      transactional: "SUBSCRIBED",
+      marketing: "SUBSCRIBED",
     })
 
     return { ok: true, message_sms_opt_in: true }
@@ -170,7 +173,7 @@ export async function updateMessageSmsNotificationsOptIn(
     return { ok: false, error: saved.error }
   }
 
-  const phoneE164 = await resolveProfilePhoneE164(supabase, user.id, user.phone)
+  const phoneE164 = await resolveMessageSmsPhoneE164(supabase, user.id, user.phone)
   if (phoneE164) {
     void subscribeKlaviyoProfileSmsMarketing({
       phoneNumber: phoneE164,

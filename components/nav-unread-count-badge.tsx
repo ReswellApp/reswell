@@ -25,7 +25,8 @@ export function NavUnreadCountBadge({
       variant="destructive"
       className={cn(
         'flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-xs text-white hover:bg-red-600',
-        overlay && 'pointer-events-none absolute -right-1 -top-1',
+        overlay &&
+          'pointer-events-none absolute -right-0.5 -top-0.5 h-4 min-w-4 px-0.5 text-[10px] leading-none md:-right-1 md:-top-1 md:h-5 md:min-w-[1.25rem] md:px-1 md:text-xs',
         className,
       )}
     >

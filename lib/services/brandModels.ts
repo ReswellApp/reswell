@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
+import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import {
   deleteBrandModel,
   insertBrandModel,
@@ -12,6 +14,10 @@ import {
   deleteFinCatalogDocument,
   syncFinCatalogModelToIndex,
 } from "@/lib/elasticsearch/fin-catalog-index"
+import {
+  deleteSellCatalogDocument,
+  syncSellCatalogModelToIndex,
+} from "@/lib/elasticsearch/sell-catalog-index"
 
 export type { BrandModelAdminRow, BrandModelRow }
 
@@ -35,6 +41,7 @@ export async function createBrandModelService(
     description: string | null
     image_url: string | null
     product_category_slug?: BrandProductCategorySlug
+    board_category_slug?: SurfboardSellCategoryKey | null
   },
 ): Promise<{ ok: true; row: BrandModelRow } | { ok: false; error: string; status?: number }> {
   const { data: brand, error: brandErr } = await supabase.from("brands").select("id").eq("id", input.brand_id).maybeSingle()
@@ -53,6 +60,8 @@ export async function createBrandModelService(
     return { ok: false, error: result.error, status }
   }
   void syncFinCatalogModelToIndex(supabase, result.row.id)
+  void syncSellCatalogModelToIndex(supabase, result.row.id)
+  revalidateSellCatalogSearch()
   return { ok: true, row: result.row }
 }
 
@@ -65,6 +74,7 @@ export async function updateBrandModelService(
     brand_id?: string
     image_url?: string | null
     product_category_slug?: BrandProductCategorySlug
+    board_category_slug?: SurfboardSellCategoryKey | null
   },
 ): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
   if (patch.brand_id) {
@@ -84,6 +94,8 @@ export async function updateBrandModelService(
     return { ok: false, error: result.error, status }
   }
   void syncFinCatalogModelToIndex(supabase, id)
+  void syncSellCatalogModelToIndex(supabase, id)
+  revalidateSellCatalogSearch()
   return { ok: true }
 }
 
@@ -97,5 +109,7 @@ export async function deleteBrandModelService(
     return { ok: false, error: result.error, status: isNotFound ? 404 : 500 }
   }
   void deleteFinCatalogDocument("model", id)
+  void deleteSellCatalogDocument("model", id)
+  revalidateSellCatalogSearch()
   return { ok: true }
 }

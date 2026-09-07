@@ -1,8 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import { Ban } from "lucide-react"
-import { MessagesSupportDialog } from "@/components/features/messages/messages-support-dialog"
 import { SELLER_BANNED_USER_MESSAGE } from "@/lib/messages/seller-ban-errors"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type SellerBanRestrictedPanelProps = {
@@ -35,12 +36,14 @@ export function SellerBanRestrictedPanel({
         </div>
       </div>
       <div className={cn(compact ? "" : "pl-8")}>
-        <MessagesSupportDialog
-          triggerLabel="Get help"
+        <Button
+          asChild
           variant="outline"
           size="sm"
-          triggerClassName="border-orange-600/40 bg-background/60 text-orange-950 hover:bg-background dark:text-orange-50"
-        />
+          className="border-orange-600/40 bg-background/60 text-orange-950 hover:bg-background dark:text-orange-50"
+        >
+          <Link href="/dashboard/support/new?intent=account">Get help</Link>
+        </Button>
       </div>
     </div>
   )

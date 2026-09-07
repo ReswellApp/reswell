@@ -1,21 +1,29 @@
-import { createClient } from "@/lib/supabase/server"
-import { userParticipatesInConversation, ensureConversationBetweenBuyerAndSeller } from "@/lib/db/conversations"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { userParticipatesInConversation } from "@/lib/db/conversations"
 import {
   submitMessagesSupportTicketSchema,
   messagesSupportTopicLabels,
 } from "@/lib/validations/messagesSupportTicket"
-import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
-import {
-  formatSupportTicketOpeningMessage,
-  insertMemberMessageInConversation,
-} from "@/lib/services/supportTicketThreadNotifications"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
+import type { SupportCaseKind } from "@/lib/types/supportCase"
+
+function topicToKind(topic: string): SupportCaseKind {
+  switch (topic) {
+    case "account":
+      return "account"
+    case "payments":
+      return "payments"
+    case "safety":
+      return "safety"
+    default:
+      return "general"
+  }
+}
 
 export async function submitMessagesSupportTicketService(
   raw: unknown,
-): Promise<
-  { success: true; id: string; support_conversation_id: string | null } | { error: string }
-> {
+): Promise<{ success: true; id: string } | { error: string }> {
   const parsed = submitMessagesSupportTicketSchema.safeParse(raw)
   if (!parsed.success) {
     const first = parsed.error.flatten().fieldErrors
@@ -58,15 +66,7 @@ export async function submitMessagesSupportTicketService(
   }
 
   const subject = messagesSupportTopicLabels[parsed.data.topic]
-
-  let supportConversationId: string | null = null
-  const resolvedSupport = await resolveSupportRecipientUserId()
-  if (resolvedSupport.ok && resolvedSupport.userId !== user.id) {
-    const conv = await ensureConversationBetweenBuyerAndSeller(supabase, user.id, resolvedSupport.userId)
-    if (conv) {
-      supportConversationId = conv.id
-    }
-  }
+  const details = parsed.data.details.trim()
 
   const { data: row, error } = await supabase
     .from("contact_messages")
@@ -74,11 +74,10 @@ export async function submitMessagesSupportTicketService(
       name,
       email,
       subject,
-      message: parsed.data.details.trim(),
+      message: details,
       source: "messages_support",
       user_id: user.id,
       related_conversation_id: relatedId,
-      support_conversation_id: supportConversationId,
     })
     .select("id")
     .single()
@@ -88,32 +87,33 @@ export async function submitMessagesSupportTicketService(
     return { error: "Could not send your request. Try again in a moment." }
   }
 
-  const ticketId = row.id as string
+  const sidecarId = row.id as string
+  const service = createServiceRoleClient()
+  const kind = topicToKind(parsed.data.topic)
+  const opened = await createSupportCaseWithOpeningMessage(service, {
+    kind,
+    subject,
+    preview: details,
+    requester_user_id: user.id,
+    requester_email: email,
+    requester_role: "member",
+    conversation_id: relatedId,
+    contact_message_id: sidecarId,
+    source_channel: "help_hub",
+    priority: kind === "safety" ? "urgent" : "normal",
+    body: details,
+    authorUserId: user.id,
+  })
 
-  if (supportConversationId) {
-    const content = formatSupportTicketOpeningMessage({
-      ticketId,
-      topicLabel: subject,
-      body: parsed.data.details.trim(),
-    })
-    const posted = await insertMemberMessageInConversation(supabase, {
-      conversationId: supportConversationId,
-      senderId: user.id,
-      content,
-    })
-    if (!posted) {
-      console.error("submitMessagesSupportTicketService: failed to post opening thread message")
-    }
-  }
-
+  const caseId = opened?.id ?? sidecarId
   await trackKlaviyoSupportTicketCreated({
-    supportTicketId: ticketId,
+    supportTicketId: caseId,
     email,
     externalId: user.id,
     source: "messages_support",
     subject,
-    message: parsed.data.details.trim(),
+    message: details,
   })
 
-  return { success: true, id: ticketId, support_conversation_id: supportConversationId }
+  return { success: true, id: caseId }
 }

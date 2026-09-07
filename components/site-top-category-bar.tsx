@@ -24,13 +24,18 @@ export function SiteTopCategoryBar() {
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
   const compact = pathname === "/listyoursurfboard"
+  const listingDetail = pathname.startsWith("/l/")
 
   return (
     <div className="shrink-0 bg-background lg:hidden" data-site-top-category-bar>
       <div
         className={cn(
           "container mx-auto px-4 sm:px-6",
-          compact ? "py-2 sm:py-2" : "py-3 sm:py-3.5",
+          compact
+            ? "py-2 sm:py-2"
+            : listingDetail
+              ? "pt-3 pb-1.5 sm:pt-3.5 sm:pb-2"
+              : "py-3 sm:py-3.5",
         )}
       >
         <nav aria-label="Browse surfboards, sellers, and community">
@@ -88,6 +93,7 @@ export function shouldShowSiteTopCategoryBar(pathname: string | null): boolean {
   }
   if (pathname === "/sell" || pathname.startsWith("/sell/")) return false
   if (pathname === "/checkout" || pathname.startsWith("/checkout/")) return false
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return false
   // Keep the category slider on the /messages inbox (like other dashboard
   // pages), but hide it inside the full-height conversation thread shell.
   if (isMessageThreadDetailRoute(pathname)) return false

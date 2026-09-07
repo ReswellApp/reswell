@@ -1,5 +1,4 @@
 import { clearSupabaseAuthCookies } from "@/lib/auth/clear-supabase-auth-cookies"
-import { postSignOutLoginHref } from "@/lib/auth/post-sign-out-login-href"
 import { safeRedirectPathWithQuery } from "@/lib/auth/safe-redirect"
 import { IMPERSONATION_COOKIE } from "@/lib/impersonation"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
@@ -7,9 +6,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
-  const next = safeRedirectPathWithQuery(
-    searchParams.get("next") ?? postSignOutLoginHref(),
-  )
+  const next = safeRedirectPathWithQuery(searchParams.get("next") ?? "/")
 
   const redirectResponse = NextResponse.redirect(`${origin}${next}`)
   redirectResponse.headers.set("Cache-Control", "private, no-store")

@@ -1,29 +1,36 @@
+import { careerRoleHref, careerRoles } from "@/lib/careers"
+
 /** Footer + mobile hamburger — single source of truth for these destinations. */
 
 export type SiteFooterNavLink = { name: string; href: string }
 
 export const siteFooterNavLinks: {
   marketplace: readonly SiteFooterNavLink[]
-  support: readonly SiteFooterNavLink[]
+  help: readonly SiteFooterNavLink[]
+  careers: readonly SiteFooterNavLink[]
   legal: readonly SiteFooterNavLink[]
 } = {
   marketplace: [
-    { name: "Surfboards", href: "/boards" },
     { name: "Shop from Reswell", href: "/reswell/shop" },
+    { name: "Board Finder", href: "/board-finder" },
     { name: "Recently sold", href: "/sold" },
     { name: "Sell your gear", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
-    { name: "What is Reswell", href: "/what-is-reswell" },
+    { name: "Cities", href: "/cities/top" },
+    { name: "Surf shops", href: "/surf-shops" },
+    { name: "Giveaways", href: "/giveaways" },
     { name: "Blog", href: "/blog" },
   ],
-  support: [
+  help: [
     { name: "Help Center", href: "/help" },
-    { name: "FAQ", href: "/faq" },
-    { name: "Purchase Protection", href: "/protection-policy" },
-    { name: "Safety Tips", href: "/safety" },
-    { name: "Shipping Guide", href: "/shipping" },
-    { name: "Shipping label estimator", href: "/shipping-estimator" },
-    { name: "Contact Us", href: "/contact" },
+    { name: "FAQs", href: "/faq" },
+    { name: "Reswell Protection", href: "/protection-policy" },
+    { name: "Get help", href: "/dashboard/support/new" },
+    { name: "Contact", href: "/contact" },
+  ],
+  careers: [
+    { name: "Open roles", href: "/careers" },
+    ...careerRoles.map((role) => ({ name: role.title, href: careerRoleHref(role) })),
   ],
   legal: [
     { name: "Privacy Policy", href: "/privacy" },

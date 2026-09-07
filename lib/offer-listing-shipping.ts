@@ -7,6 +7,7 @@ function roundMoney(n: number): number {
 export type OfferShippingCostMode = "reswell" | "flat" | "free"
 
 export type ListingForOfferShipping = {
+  section?: string | null
   shipping_available?: boolean | null
   local_pickup?: boolean | null
   shipping_price?: string | number | null
@@ -24,6 +25,56 @@ export function offerShippingAmountFromListing(
   if (mode === "free") return 0
   const n = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
   return roundMoney(n)
+}
+
+/** Methods every listing in the set currently supports. */
+export function sharedListingFulfillmentFlags(
+  listings: Array<{
+    shipping_available?: boolean | null
+    local_pickup?: boolean | null
+  }>,
+): { shipping_available: boolean; local_pickup: boolean } {
+  if (listings.length === 0) {
+    return { shipping_available: false, local_pickup: false }
+  }
+  return {
+    shipping_available: listings.every((row) => !!row.shipping_available),
+    local_pickup: listings.every((row) => row.local_pickup !== false),
+  }
+}
+
+/** Flat/free snapshot for a single listing. Bundles quote shipping at checkout. */
+export function offerShippingAmountForListings(
+  listings: ListingForOfferShipping[],
+  fulfillment: "pickup" | "shipping",
+): number | null {
+  if (fulfillment !== "shipping" || listings.length !== 1) return null
+  return offerShippingAmountFromListing(listings[0]!, fulfillment)
+}
+
+export function reconcileOfferFulfillmentWithListings(
+  offerFulfillment: string | null | undefined,
+  listings: ListingForOfferShipping[],
+): {
+  fulfillment: "pickup" | "shipping" | null
+  shippingAmount: number | null
+  adjusted: boolean
+  reason: string | null
+} {
+  const flags = sharedListingFulfillmentFlags(listings)
+  const primary = listings[0]
+  const reconciled = reconcileOfferFulfillmentWithListing(offerFulfillment, {
+    section: primary?.section,
+    shipping_available: flags.shipping_available,
+    local_pickup: flags.local_pickup,
+    shipping_price: primary?.shipping_price,
+    board_shipping_cost_mode: primary?.board_shipping_cost_mode,
+  })
+  if (!reconciled.fulfillment) return reconciled
+  return {
+    ...reconciled,
+    shippingAmount: offerShippingAmountForListings(listings, reconciled.fulfillment),
+  }
 }
 
 export function normalizeOfferFulfillment(

@@ -1,0 +1,288 @@
+{
+  "generated_for": "Luke Young Shapes official named surfboard catalog",
+  "source": "https://www.lukeyoungshapes.co.uk/surfboards.html (official board pages — excludes wakeboard)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "luke-young-shapes",
+      "name": "Luke Young Shapes",
+      "website_url": "https://www.lukeyoungshapes.co.uk",
+      "location_label": "Plympton, Plymouth, Devon, United Kingdom",
+      "founder_name": "Luke Young",
+      "lead_shaper_name": "Luke Young",
+      "short_description": "Custom surfboards hand-shaped by Luke Young in Plympton, Plymouth, Devon — over 20 years of off-the-blank shaping with field testing on national and international waves.",
+      "models": [
+        {
+          "name": "Blitzkrieg",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/blitzkrieg-top.jpg",
+          "description": "The Blitzkrieg is a combo of the lower rockered performance front end of our tried and tested minizero and the acceleration, control and drive of the tail section of our popular Meteor model. A great all rounder that excels in beach, reef and point break waves up to 4-6 feet.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "choona chunk",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/choona-chunk.png",
+          "description": "Small wave twinnie with trailer option. Really fun, really fast with straight aft rails into tiny wings and a diamond tail. This elliminates the usual problems with wide tailed, winged twins at higher speeds or on your backhand. Slight single concave into pannel vee for increased lift and control through the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Circa '63",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/circa63.png",
+          "description": "Early sixties California replica model, narrow nose, wider tail template. Rolled vee throughout with 50/50 rails. Comes with classic rainbow D fin. A must for all retro enthusiasts.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Mal",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/classic-mal-top.jpg",
+          "description": "All round classic cruiser, with wider nose and tail. Slight rolled Vee through the tail helps the board rock from rail to rail. fdsfdfds",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cybercharger",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/cyber-charger.png",
+          "description": "Building on the success of my cyborg model the past two summers we’ve given birth to the cyber-charger for bigger, hollower waves. We got so used to riding the flatter rockered boards even in good surf that hopping back to a conventional shortboard with heaps of rocker just wasnt the same. We’ve kept the nose width and rocker of the cyborg and added a rounded pin tail with a sleeker rail curve in the rear half. By upping the length by two to three inches from the cyborg its possible to be riding bigger waves on a much smaller board due to the low nose entry. The cyber-charger comes with a 5 fin convertable fin set up.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cyborg",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/cyborg.png",
+          "description": "Small to medium sized surf shortboard. A follow on from the popular Robot, the Cyborg features a more shortboard plan shape, with domed deck and pinched rails over a very low rocker. Single to double concave, with the single pulled out towards the rail giving a harder release and double cvoncave extending right through and out the back of the tail. The Cyborg can be ridden in a wider range of surf than the Robot and its rail to rail surfing abilities exceed that of the robot for punchier winter surf. Order 2 to 3 inches shorter than your standard shortboard, and 3/4” to 1” wider with same thickness.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cyborg tow board",
+          "image_url": null,
+          "description": "Tow board with design influences taken from the Cyborg surfboard. Narrowed tail plan shape and quad fin design holds the board in the water at high speeds. Low rocker throughout, rolled vee through the nose to break up surface chop, into single concave through to double running through the fins and out the tail, increasing drive and control. Super solid construction with fitted Chinook strap inserts. Order in high density foam with over-sized stringer and your own foot strap insert configuration.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Devo 2",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/devo2.png",
+          "description": "Next generation of the Devolution, S-wing and diamond tail options. Slightly narrower in the tail - easing rail to rail transition.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Devolution",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/devo.png",
+          "description": "80’s throwback, flat deck with D rails and flat panel Vee through the tail.Beaked nose, ultra low rocker - great for slack or small surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dirty Bastard",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/dirty-bastard.png",
+          "description": "Small to medium wave quad, the dirty bastard has low entry and exit rockers for increased speed and a full nose template. The plan shape sees a slight kink in the rail line a quarter of the way up from the tail to create a straighter section for increased down the line speed. Double reverse curve cut outs in the tail area make for tight turns in small surf. With a subtle single concave through to a slight pannel vee through the tail the dirty bastard flies through flat sections and breaks sharply into tight turns at speed. The fin set up has twin fin sides and a pair of trailer fins in the back giving huge amounts of drive whilst maintaining responsiveness. (MRTFX + GX for FCS option, LBXT + XM for Lokbox option) order six inches shorter than your standard shortboard, an inch and a half wider and the same thickness for a high performance bastard or your standard retro fish dimensions for a more easy, cruisy ride.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dog Tool",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/dogtool-top.jpg",
+          "description": "With the standards of high performance surfing ever increasing, we spent this year carefully working on our brand new performance shortboard - the dog tool. We’ve drawn the rail line slightly straighter around the mid part of the board ever so slightly increasing nose and tail width and creating a faster, straighter plan shape. With a deep single concave throughout and increased tail lift, the dogtool is the perfect vehicle for today and tomorrow’s ripping. Available Rounded square/round tail",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "El Sheaffy",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/el-sheaffy.png",
+          "description": "High performance shortboard for week to medium powered waves, the inchpincher combines key elements from our very popular ‘Robot’ and ‘Minizero’ models formulating our new weapon. Inchpincher has a fuller nose shape than the minizero but not as round as the robot reducing the risk of forward rail catching during vertical surfing, the wide rounded square tail and deep single concave maximise lift and speed. We designed it slightly longer than your usual ‘summer plug’ to maintain a longer rail line for greater down the line speed. We’ve pinched the rails throughout to increase drive and control, plus increased the lift in the tail rocker to draw out rail turns at high speed. The inchpincher should be ridden 4-5 inches shorter than your standard shortboard and a half inch wider with the same thickness (for example 65kg surfer, standard shortboard 6’1 x 18 1/4” x 2 1/4”, typical Inchpincher dims 5’8 x 18 3/4” x 2 1/4”) Can be ordered as a thruster, quad or 5 fin convertible fin set up with FCS or Lokbox fin systems.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gasser",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/gasser.png",
+          "description": "High performance shortboard for quality waves/competition. Your choice of single or single to double concave. Lower entry rocker for easy paddling, thruster fin set up. Your choice of tail shape.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Guvnor",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/guvnor.png",
+          "description": "Shortboard designed with the big guy in mind. Wide in overall plan shape, deck and rail but with kinked tail template, reducing width in the tail section, maintaining shortboard manouverability. Your choice of tail shape.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Half pint",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/half-pint-top-lrg.jpg",
+          "description": "Super-grom performance model, we took into account the difficulties of low paddle power and low body weight experienced by feather-weight surfers and designed the half pint with today’s standards of performance surfing in mind. Low entry rocker, pinched rails, hidden chest/mid volume and our own mini fin cluster set up come together to fast track the next generation… Look out, here they come!!!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Hullster",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/hullster.png",
+          "description": "A modern take on the 70’s ‘Displacement Hull’ style of board, with pinched 50/50 rails, huge rolling ‘s’ deck and two plus one set up including all glass hull flex fin. The original boards were rolled vee throughout, we still offer this but also offer a slight concave version making the board a little more lively in slacker surf. We also offer the Hullster in larger, more narrow dimensions for larger heavier surf, with pulled in tail and stinger wings. Please call to discuss your needs for a spacific wave type. We highly recommend this board to any retro enthusiast or anyone fancying something different for summer fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Inch pincher",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/inch-pincher.png",
+          "description": "High performance shortboard for week to medium powered waves, the inchpincher combines key elements from our very popular ‘Robot’ and ‘Minizero’ models formulating our new weapon. Inchpincher has a fuller nose shape than the minizero but not as round as the robot reducing the risk of forward rail catching during vertical surfing, the wide rounded square tail and deep single concave maximise lift and speed. We designed it slightly longer than your usual ‘summer plug’ to maintain a longer rail line for greater down the line speed. We’ve pinched the rails throughout to increase drive and control, plus increased the lift in the tail rocker to draw out rail turns at high speed. The inchpincher should be ridden 4-5 inches shorter than your standard shortboard and a half inch wider with the same thickness (for example 65kg surfer, standard shortboard 6’1 x 18 1/4” x 2 1/4”, typical Inchpincher dims 5’8 x 18 3/4” x 2 1/4”) Can be ordered as a thruster, quad or 5 fin convertible fin set up with FCS or Lokbox fin systems.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Iron Fist",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/iron-fist.jpg",
+          "description": "Gun template for big waves, flat bottom to slight double concave vee to rolled vee in the tail, increasing speed, control and drive. Ultra pulled in tail template to deal with waves as big as you can go!!!",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Iron Fist Micro",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/iron-fist-micro.png",
+          "description": "Shortboard for bigger, more powerful waves. More drawn in rounded pin tail and slight single to double concave Vee increases control and drive. Tighter rocker line throughout, to fit in the face of steep barrelling faces.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Iron Fist Mini",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/iron-fist-mini.png",
+          "description": "Small gun template for serious waves. Slight single concave to rounded Vee in the tail maintains control and drive in critical situations. Pulled in tail with rounded pin to increase down the line speed.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Kaiten",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/kaiten.png",
+          "description": "4 fin egg to suit every surfer from learner to advanced. Low rocker and single to double concave accompany the four fins to out accellerate any other board!! Can be surfed in one to six foot waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "M-Twin",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/m-twin.png",
+          "description": "Small wave twin fin for slack surf. Flat bottom to slight panel Vee in the tail. Ultra bouyant - ultra fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "M Twin Royale",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/m-twin-royale.png",
+          "description": "All the flowing characteristics of the M Twin but with elegant stringers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mahi 2",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/mahi-2-top.jpg",
+          "description": "The next generation twin fin fish following on from our popular Mahimahi original model. A good friend of mine is a true fish enthusiast and a very good surfer, but needed to get that magic fish under his feet. So he came up the factory to get his issues off of his chest and between us we came up with the now very popular Mahi2 (pronounced marheetoo) model. With a classic fish outline It has a deep single to double concave through to a slight vee in the tail, foiled rear rails for grip and control and has most of its volume towards the front half of the board for increased wave catching ability and to help engage the rear rails at speed. A must for everyone’s quiver from intermediate to pro surfers. The Mahi2 is available in standard PU/polyester construction or ‘LY eco sled’ stringered or stringerless Marko foam eps and super-sap epoxy. Be part of the twin fin revolution!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mahi Mahi",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/mahi-mahi.png",
+          "description": "Classic all round twin fin fish. Also avaliable as a quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mako",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/mako-top.jpg",
+          "description": "Our latest edition to 2016… ‘The Mako’ is now available… A follow up to our popular new ‘Meteor’ model the Mako is more shortboard in plan shape with a rounded diamond tail. The ‘hip’ in the tail is brought forward to 16” to widen the area directly below your centre of gravity when turning and to maintain a sensibly wider tail section. The deep 4 channel bottom and low, sharp rear rails add drive and grip in surf from 2-6 ft. The mako can be ordered shorter and wider for slacker surf or as standard shortboard dimensions. Please feel free to contact us for more info…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Meat cleaver",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/meat-cleaver-top-lrg.jpg",
+          "description": "meat-cleaver",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Meteor",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/meteor-top-lrg.jpg",
+          "description": "We created a performance fish outline with wing and shallow swallow tail to maximize planing area, coupled it with a deep single to sunk double concave through the fin area for increased lift. The Meteor has a very low entry rocker to increase paddle speed and also give you early entry into waves. We’ve rolled the deck, pinched the rails and especially foiled the aft rail (through the tail) for increased drive and grip through high speed turns, this will also allow greater flex/spring in the tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MF Shredder",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/mf-shredder.png",
+          "description": "Super high performance competition longboard with single concave through the nose to deep double concave Vee in the tail. Accentuated tail rocker increases manouverability for steep banking turns 2+1 or thruster setup. Tested and proven in contests and heavy surf.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Zero",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/mini-zero.png",
+          "description": "The mini zero is an adapted version of my popular zero shortboard model for small or weak surf. The length is reduced by four inches, the entry rocker is lowered right down and the width is increased by half an inch, but you still ride the same thickness. This allows you to paddle into waves really early and once into them fly through flat spots with ease. The mini zero has a deep single concave running right through with a thruster fin set up and your choice or round or rounded square tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Oahu '72",
+          "image_url": null,
+          "description": "Classic single fin pintail inspired by boards witnessed in Luke’s previous trips to the North Shore. For solid surf or great as a wall hanger.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Pagan",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/pagan.png",
+          "description": "Super squat egg template, deep single concave to rolled vee through tail section. Comes with heaviliy raked bioflex rainbow fin for ultimate drive, control and speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Paipo",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/paipo.png",
+          "description": "The Paipo is a modern day take on the belly board ridden by early polynesians traditionally built from Breadfruit or Koa wood. This is where the Bodyboard comes from today… we believe the Paipo is faster due to its rigidity and twin fin set up than the bodyboard and looks a hell of a lot cooler with extras such as resin tints and custom paint work!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Panzer",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/panzer.png",
+          "description": "Wide bouyant ‘egg’ template for all sized surf. Flat bottomed or single to double concave depentant on the individuals requirements. Thruster setup or single fin",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Phantom",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/phantom.png",
+          "description": "Small to medium wave performance shortboard with narrow nose template and cut-off square tail. Phantom has deep single to double concave which continues right through to the tail of the board, increasing down the line speed and alowing for tight turns in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Prodium",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/prodium-top.jpg",
+          "description": "New for 2017 Our new high performance shortboard replacing the dogtool model for experienced through to pro surfers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Slinky Fish",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/slinky-fish.png",
+          "description": "Your eyes are not deceiving you!! The slinky fish uses a reverse tail curve instead of wings or cut-outs. Flat bottom to panel Vee. Comes with keel fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Speedwing",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/speedwing.png",
+          "description": "Performance retro twin fin, slight single concave to double concave Vee running through the fin section and right out the tail. Increased grip in the water and drive though turns. Best in small to medium waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Speedwing mini",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/speedwing-mini.png",
+          "description": "Squashed version of the Speedwing. Squashed tail, widend nose and mid point.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spitfire 2",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/spitfire2.png",
+          "description": "Same as the spitfire, but narrower nose and more high performance shortboard characteristics. Same tail as the spitfire sw, but has narrower nose and tighter rocker for the more experienced surfer in small waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Supercharger",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/supercharger-top.jpg",
+          "description": "Moving forward with board design, we took the cyber-charger which we designed a few years ago and refined its outline and rocker so it performs better in many more conditions than just bigger, hollower waves, and here it is… The Supercharger. As we got so used to riding the flatter rockered boards even in good surf, hopping back to a conventional shortboard with heaps of rocker just wasnt the same. We’ve kept the nose width and entry rocker of the cyborg/minizero and added a rounded pin tail/mini swallow with a sleeker rail curve in the rear half. We’ve theortically stuck the nose half of an easy paddling groveller board to the tail section of a ‘step up’ board for a ‘two in one’ feel. By moving the wide point of the board two inches forward wave catching is made easy and its therefore possible to be riding bigger waves on a much smaller board, however due to the refining for 2013 the supercharger can also be used as an allrounder if ordered slightly shorter and wider. The supercharger comes with a 5 fin convertable fin set up and a single concave right through.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vulcan",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/vulcan-top.jpg",
+          "description": "Available as a winged swallow tail with quad fin set up, or rounded pin 5 fin convertable, the vulcan favours the heavier surfer in smaller, weaker surf. super low nose entry with natural mid to tail rocker allows the vulcan to perform better than the standard fish design, with a deep single concave through to slight double in the fins flowing out into a light vee in the tail to aid the wide vulcan move from rail to rail. Extremely full deck volume gives the vulcan the most possible bouyancy without compromising performance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Walu",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/walu.png",
+          "description": "All roung generic longboard. Perfect for beginners, intermediate and advanced. The Walu performer has a more progressive rocker.Comes in single fin, 2+1 or thruster setup",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Xenon",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/xenon.jpg",
+          "description": "2019s’ summer small wave model available in Eps/epoxy and PU/polyester. The Xenon uses one of my tried and tested small waves rocker curves with a single to sunk double concave through the back foot giving plenty of lift and drive through flat wave sections.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Zero",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/zero.png",
+          "description": "Slightly wider nose template than a standard shortboard for easy entry into all conditions. Has a slight hip into a round tail for smooth transition through turns. Natural rocker line with single to double concave into slight rolled vee around rear fin for extra control in fast, tight banking turns.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}

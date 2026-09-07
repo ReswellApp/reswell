@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 
@@ -22,7 +23,21 @@ export function FocusScrim({
   ariaLabel = "Dismiss",
   className,
 }: FocusScrimProps) {
-  if (!open || typeof document === "undefined") return null
+  const [mounted, setMounted] = useState(open)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true)
+      const frame = requestAnimationFrame(() => setVisible(true))
+      return () => cancelAnimationFrame(frame)
+    }
+    setVisible(false)
+    const timeout = window.setTimeout(() => setMounted(false), 280)
+    return () => window.clearTimeout(timeout)
+  }, [open])
+
+  if (!mounted || typeof document === "undefined") return null
 
   return createPortal(
     <button
@@ -31,7 +46,8 @@ export function FocusScrim({
       aria-label={ariaLabel}
       className={cn(
         "fixed inset-0 z-40 cursor-default border-0 bg-foreground/30 p-0",
-        "animate-in fade-in-0 duration-200 motion-reduce:animate-none",
+        "transition-opacity duration-300 ease-out motion-reduce:transition-none",
+        visible ? "opacity-100" : "opacity-0",
         "supports-[backdrop-filter]:backdrop-blur-[1px]",
         className,
       )}

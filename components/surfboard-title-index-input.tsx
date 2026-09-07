@@ -3,8 +3,6 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
 import { computeBelowFieldDropdownLayout } from "@/lib/utils/below-field-dropdown-layout"
-import Image from "next/image"
-import { SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
@@ -16,8 +14,6 @@ import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch
 import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 const BRAND_SUGGEST_DEBOUNCE_MS = 200
 
@@ -285,7 +281,14 @@ export function SurfboardTitleIndexInput({
       return
     }
     const update = () => {
-      setDropdownRect(computeBelowFieldDropdownLayout(el))
+      // Reverb-style: flush under the field, same width as the input (no min-width bump).
+      setDropdownRect(
+        computeBelowFieldDropdownLayout(el, {
+          gap: 2,
+          minListWidth: 0,
+          maxListWidth: Number.POSITIVE_INFINITY,
+        }),
+      )
     }
     update()
     window.addEventListener("scroll", update, true)
@@ -319,16 +322,17 @@ export function SurfboardTitleIndexInput({
   }, [open])
 
   const suggestListClassName = cn(
-    "overscroll-contain py-1",
+    "divide-y divide-border overscroll-contain",
     anchoredBelowInputMobile
       ? "min-h-0 flex-1 overflow-y-auto"
       : "max-h-[min(45dvh,320px)] overflow-y-auto",
   )
 
+  /** Reverb-like panel: white, hairline border, soft shadow, field-matched radius. */
   const dropdownShellClassName = cn(
-    "overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md",
+    "overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-[0_4px_16px_rgba(15,23,42,0.08)]",
     anchoredBelowInputMobile
-      ? "absolute left-0 right-0 top-full z-[200] mt-2 flex max-h-[min(42dvh,280px)] w-full flex-col"
+      ? "absolute left-0 right-0 top-full z-[200] mt-0.5 flex max-h-[min(42dvh,280px)] w-full flex-col"
       : "fixed z-[200]",
   )
 
@@ -350,11 +354,8 @@ export function SurfboardTitleIndexInput({
           : undefined
       }
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2">
-        <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">Brands</span>
-      </div>
       {showSearching ? (
-        <div className="px-3 py-8 text-center text-sm text-muted-foreground">Searching brands…</div>
+        <div className="px-3 py-6 text-center text-sm text-muted-foreground">Searching brands…</div>
       ) : showNoMatches && !showResultsList ? (
         <div className="px-3 py-4 text-sm">
           <p className="text-muted-foreground">
@@ -380,62 +381,27 @@ export function SurfboardTitleIndexInput({
         </div>
       ) : (
         <ul className={suggestListClassName}>
-          {brandRows.map((item, i) => {
-            const lineMeta = [item.location_label, item.lead_shaper_name]
-              .map((s) => (typeof s === "string" ? s.trim() : ""))
-              .filter(Boolean)
-              .join(" · ")
-            const desc = item.short_description?.trim()
-            const meta =
-              lineMeta ||
-              (desc ? (desc.length > 120 ? `${desc.slice(0, 117)}…` : desc) : "Brand profile")
-            return (
-              <li key={item.id} role="option">
-                <button
-                  type="button"
-                  className={cn(
-                    "mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-2 text-left text-sm outline-none min-h-touch transition-colors sm:gap-3 sm:rounded-xl sm:py-2.5",
-                    i === highlight ? "bg-muted/90" : "hover:bg-muted/80",
-                  )}
-                  aria-selected={i === highlight}
-                  onMouseEnter={() => setHighlight(i)}
-                  onMouseDown={(ev) => {
-                    ev.preventDefault()
-                    commitCatalogPick(item)
-                  }}
-                >
-                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted sm:h-12 sm:w-12 sm:rounded-lg">
-                    {item.logo_url ? (
-                      <Image
-                        src={brandLogoDisplaySrc(item.logo_url)}
-                        alt=""
-                        fill
-                        className="object-contain p-1"
-                        sizes="(max-width:640px) 40px, 48px"
-                        unoptimized={listingImageShouldBypassOptimization(
-                          brandLogoDisplaySrc(item.logo_url),
-                        )}
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs font-bold text-cerulean sm:text-sm">
-                        {item.name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
-                      {item.name}
-                    </p>
-                    <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">{meta}</p>
-                  </div>
-                  <SlidersHorizontal
-                    className="h-4 w-4 shrink-0 self-center text-muted-foreground/80"
-                    aria-hidden
-                  />
-                </button>
-              </li>
-            )
-          })}
+          {brandRows.map((item, i) => (
+            <li key={item.id} role="option">
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full cursor-pointer select-none items-center px-3 py-3.5 text-left outline-none min-h-touch transition-colors",
+                  i === highlight ? "bg-muted" : "hover:bg-muted/60",
+                )}
+                aria-selected={i === highlight}
+                onMouseEnter={() => setHighlight(i)}
+                onMouseDown={(ev) => {
+                  ev.preventDefault()
+                  commitCatalogPick(item)
+                }}
+              >
+                <span className="truncate text-[15px] font-bold leading-snug text-foreground">
+                  {item.name}
+                </span>
+              </button>
+            </li>
+          ))}
         </ul>
       )}
     </div>

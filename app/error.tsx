@@ -4,8 +4,12 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { isAndroidWebViewBridgeNoise } from "@/lib/utils/is-android-webview-bridge-noise"
+import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 import { reportClientError } from "@/lib/utils/reportClientError"
+import posthog from "posthog-js"
 
 /**
  * Root route error boundary. Catches uncaught errors thrown while rendering any route
@@ -32,7 +36,11 @@ export default function RootError({
         return
       }
     }
+    if (isAndroidWebViewBridgeNoise(error)) return
+    if (isBenignClientFetchError(error)) return
+    if (isStaleFileNotFoundError(error)) return
     console.error("[app] route error:", error)
+    posthog.captureException(error)
     void reportClientError({
       name: error.name,
       message: error.message || "Route error",

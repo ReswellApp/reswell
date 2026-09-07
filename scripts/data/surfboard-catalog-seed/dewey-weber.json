@@ -1,0 +1,74 @@
+{
+  "generated_for": "Dewey Weber official named standup catalog",
+  "source": "https://www.deweyweber.com (Shopify surfboard products)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dewey-weber",
+      "name": "Dewey Weber",
+      "website_url": "https://www.deweyweber.com",
+      "location_label": "Hermosa Beach, California",
+      "founder_name": "Dewey Weber",
+      "lead_shaper_name": null,
+      "short_description": "Hermosa Beach classic — Performer heritage longboards and Weber shapes.",
+      "logo_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/logos/dewey-weber.png",
+      "models": [
+        {
+          "name": "Champion",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-c28acceafd97fb5cb81b.webp",
+          "description": "Dimensions Length Width Thickness 9'4\" 22 7/8\" 3 1/18\" Features 3 Stringer, Soft Mango Orange Resin Tint, Gloss Finish, Single Fin, Made in USA Construction: PU/Polyester Rails: 60/40 Tail: Moon Fin Setup: Single Ideal Wave Size: 1 - 6ft Ability: Intermediate - Expert The WEBER CHAMPION is without a doubt one of our most cutting-edge designs. The Champion is a special collaboration between our head shaper, Jerry O'Keefe, and some of our team riders. It's a hybrid traditional single fin bred from"
+        },
+        {
+          "name": "Easy Rider",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-558370f8c54afea3ee71.webp",
+          "description": "Dimensions Length Width Thickness 6'0\" 21 3/4\" 2 11/16\" Features 5/32” Bass stringer, Soft Mango Orangish-Yellow tint top &amp; bottom, sanded gloss (matte finish), 5-fin, Made in USA Rails: Hard Tail: Thumb Fin Setup: 5 Fin Ideal Wave Size: 1 - 6ft Ability: Beginner - Expert Dewey designed this single fin as the perfect retro shortboard. In fact, almost every original EASY RIDER made in the 70’s was shaped by Dewey, as Iggy had moved back to Hawaii. With its width, this board will give you grea"
+        },
+        {
+          "name": "Feather Fastback",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-a303c35f9e02da08291e.webp",
+          "description": "Dimensions Length Width Thickness 7'4\" 22 5/8\" 3 1/4\" Features 5/32” Bass stringer, Coke Bottle Green tint top &amp; bottom, Gloss finish, Single fin, Made in USA Rails: Hard Tail: Pin Fin Setup: 1 Fin Ideal Wave Size: 1 - 6ft+ (Most) Ability: Beginner - Advanced A transition era shape, designed by Dewey and Nat Young in the early '70s, The FEATHER FASTBACK is a pintail built for speed in the pocket &amp; large carving cutbacks. This single fin offers the versatility &amp; maneuverability of a s"
+        },
+        {
+          "name": "Performer Squareback",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-71bd43d294982fe9f52a.webp",
+          "description": "Dimensions Length Width Thickness 7'8\" 22 7/8\" 3 1/8\" Features 1/4\" Bass stringer, Deep golden yellow tint with black pin lines, Gloss Finish, Single Fin, Made in USA Rails: Hard Tail: Squash Fin Setup: 1 Fin Ideal Wave Size: 1 - 4ft+ (Most) Ability: Intermediate - Advanced With a progressive move in the late '60s, Dewey pushed the envelope with all of his sub 9ft. transition shapes. The PERFORMER SQUAREBACK was grouped with a solid line-up that included the Strato Mini-Feather, Feather Fastback"
+        },
+        {
+          "name": "Planer",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-f5bfd17c89037807beb9.webp",
+          "description": "Dimensions Length Width Thickness 9'4\" 23 3/8\"\" 3 3/16\" Features 6” Wedge Foam T-Band stringer, Half Lime Green tint &amp; Half Golden Yellow tint, Black stripe, Volan Fiberglass, Made in USA Rails: 60/40 Tail: Square Fin Setup: Single Ideal Wave Size: 1 - 6ft Ability: Intermediate - Expert The Planer was conceptualized and designed by our shaper, Jerry O'Keefe with the nose riding enthusiast in mind. Jerry had been playing around with the idea of a 'reverse' rocker and thought the Performer out"
+        },
+        {
+          "name": "Quantum",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-5ea2a8a0d95b66d8309b.webp",
+          "description": "Dimensions Length Width Thickness 9'2\" 22 1/2\" 3\" Features ¼” Bass stringer, ½ Emerald Green tint &amp; ½ Coke Bottle Green tint, 1” Black band, 2+1 fins, Made in USA Rails: Square Tail: Pin Fin Setup: 2 + 1 Ideal Wave Size: 1 - 6ft (Fast) Ability: Beginner - Advanced We have our traditional single fins &amp; our high performance Strato Series, but the Quantum is probably the most versatile board in our line-up. It has a similar volume to some of our traditional boards but we've integrated many"
+        },
+        {
+          "name": "Ski",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-dd2eecffb1884da0ce96.webp",
+          "description": "Dimensions Length Width Thickness 7'8\" 22 1/2\" 3\" Features 5/32\" Bass stringer, Red rails, Yellow Tint Oval Inlay, Black Pin Lines, Gloss &amp; polish, Single Fin, Made in USA Rails: Hard Tail: Thumb Fin Setup: Single Ideal Wave Size: 1 - 6ft+ (Most) Ability: Beginner - Advanced A throwback to a different time, this mid-length board has its own look and feel. SKI stands for Synthetic Kinetic Instinct &amp; it was one of the first planing hulls of the transition era. At the time, this board combi"
+        },
+        {
+          "name": "Strato Mini Feather",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-927c0930b26975667c71.webp",
+          "description": "Dimensions Length Width Thickness 7'6\" 22 1/2\" 2 11/16\" Features 1/4\" Bass stringer, Bright royal blue tint with red band, single fin, Made in USA Rails: Hard Tail: Pin Fin Setup: Single Ideal Wave Size: 1 - 6ft Ability: Beginner - Expert With a progressive move in the late '60s, Dewey pushed the envelope with this sub 9ft. transition shape. The STRATO SERIES always encompassed the R&amp;D division for Weber, &amp; the STRATO MINI FEATHER certainly challenged conventional thinking at that time."
+        },
+        {
+          "name": "Stylist",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-65fb8fa6e5039bfbe148.webp",
+          "description": "Dimensions Length Width Thickness 10'0\" 24 1/2\" 3 3/8\" Features ¼” Bass stringer, Deep golden yellow resin tint, Gloss finish, Single fin, Made in USA Rails: 60/40 Tail: Round Pin Fin Setup: Single Ideal Wave Size: 1 - 4ft (Slow) Ability: Beginner - Advanced Although this is not the original STYLIST that graced the Weber line-up in the 60's, it does utilize its name. To put it simply, this is a PERFORMER with a wide round pin-tail... Everything other than the shape of the tail is identical to th"
+        },
+        {
+          "name": "Swish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-974ae7820d0c76c3026c.webp",
+          "description": "Dimensions Length Width Thickness 6'0\" 21 5/8\" 2 5/8\" Features 5/32” Bass stringer, Royal blue tint top &amp; bottom, sanded gloss (matte finish), Made in USA Rails: Hard Tail: Swallow Fin Setup: Quad Ideal Wave Size: 2 - 4ft (Fast) Ability: Intermediate - Advanced Did you say twin-fin? The Weber swallow tail series of the 1970’s produced 3 models; the Fish, the Swish, &amp; the Swallow Tail. The Fish was short &amp; wide. The Swallow Tail was slim &amp; sleek. THE SWISH is the perfect combinati"
+        },
+        {
+          "name": "Weber Performer",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-de96f579bbd42424012d.webp",
+          "description": "Dimensions Length Width Thickness 9'10\" 24 1/2\" 3 1/2\" Features 1” FTB stringer, 2/3 Mango Orange resin tint &amp; 1/3 Pale Yellow nose dip resin tint, 3” White band, Gloss finish, Volan Fiberglass, Gloss finish, Single fin, Made in USA Rails: 60/40 Tail: Square Fin Setup: Single Ideal Wave Size: 1 - 6ft Ability: Beginner - Expert The Weber Performer is the most popular longboard model of all time. We’ve used Dewey’s original template to make an exact replica of the 1967 design. Dewey &amp; Haro"
+        }
+      ]
+    }
+  ]
+}

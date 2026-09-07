@@ -1,3 +1,7 @@
+import { isAndroidWebViewBridgeNoise } from "@/lib/utils/is-android-webview-bridge-noise"
+import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
+
 export type ReportClientErrorInput = {
   name?: string
   message: string
@@ -30,6 +34,15 @@ export async function reportClientError(
   input: ReportClientErrorInput,
 ): Promise<ReportClientErrorResult> {
   if (typeof window === "undefined") return null
+  if (isAndroidWebViewBridgeNoise({ name: input.name, message: input.message, stack: input.stack })) {
+    return null
+  }
+  if (isBenignClientFetchError({ name: input.name, message: input.message })) {
+    return null
+  }
+  if (isStaleFileNotFoundError({ name: input.name, message: input.message, stack: input.stack })) {
+    return null
+  }
 
   const key = dedupeKey(input)
   const now = Date.now()

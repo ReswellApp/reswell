@@ -15,6 +15,7 @@ export type FetchOwnedListingForSellEditResult =
 const OWNED_EDIT_LISTING_SELECT = `
   *,
   listing_images (id, url, thumbnail_url, is_primary, sort_order),
+  listing_videos (id, url, thumbnail_url, content_type, duration_seconds, byte_size, sort_order),
   user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug ),
   brand_models ( id, name, brands ( slug ) )
 `

@@ -7,6 +7,7 @@ export type PdpRecentStripListing = {
   user_id: string
   title: string
   price: number
+  compare_at_price?: number | string | null
   condition: string | null
   board_type: string | null
   brand: string | null
@@ -30,6 +31,7 @@ export function pdpRecentStripListingFromRow(row: Record<string, unknown>): PdpR
     user_id: String(row.user_id ?? ""),
     title: typeof row.title === "string" ? row.title : "",
     price,
+    compare_at_price: row.compare_at_price as number | string | null | undefined,
     condition: typeof row.condition === "string" ? row.condition : null,
     board_type: typeof row.board_type === "string" ? row.board_type : null,
     brand: typeof row.brand === "string" ? row.brand : null,

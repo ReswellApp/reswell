@@ -266,7 +266,7 @@ export function AdminBulkListingClient() {
           Bulk listing is available to full admins only.
         </p>
         <Button variant="outline" className="mt-4" asChild>
-          <Link href="/admin">Back to admin</Link>
+          <Link href="/admin/home">Back to admin</Link>
         </Button>
       </div>
     )

@@ -7,6 +7,7 @@ import {
   isMarketplaceSectionOnlyQuery,
   marketplaceSectionBrowseHref,
 } from "@/lib/utils/marketplace-brand-query"
+import { marketplaceBoardStyleBrowseHref } from "@/lib/utils/marketplace-style-query"
 import { SearchPageView } from "./search-page-view"
 
 interface SearchParams {
@@ -47,6 +48,12 @@ export default async function SearchPage(props: {
   if (rawQuery && !brandSlugFromUrl && isMarketplaceSectionOnlyQuery(rawQuery)) {
     const browseHref = marketplaceSectionBrowseHref(extractMarketplaceSectionIntent(rawQuery))
     if (browseHref) redirect(browseHref)
+  }
+
+  // Bare "fish" / "shortboard" / etc. → board-type browse, not Fish Stix / similar.
+  if (rawQuery && !brandSlugFromUrl) {
+    const styleHref = marketplaceBoardStyleBrowseHref(rawQuery)
+    if (styleHref) redirect(styleHref)
   }
 
   return (

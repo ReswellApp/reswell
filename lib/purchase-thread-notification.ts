@@ -1,13 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import type { OrderPlacedMessagePayload } from "@/lib/validations/order-placed-message-metadata"
 
 function shippingLines(shipping: Record<string, unknown> | null): string[] {
   if (!shipping) return []
   const name = typeof shipping.name === "string" ? shipping.name.trim() : ""
-  const phone = typeof shipping.phone === "string" ? shipping.phone.trim() : ""
-  const email = typeof shipping.email === "string" ? shipping.email.trim() : ""
   const rawAddr = shipping.address
   const addr =
     rawAddr && typeof rawAddr === "object" && !Array.isArray(rawAddr)
@@ -21,14 +18,13 @@ function shippingLines(shipping: Record<string, unknown> | null): string[] {
   const cityState = [addr?.city, addr?.state, addr?.postal_code].filter(Boolean).join(", ").trim()
   if (cityState) lines.push(cityState)
   if (addr?.country?.trim()) lines.push(addr.country.trim().toUpperCase())
-  if (phone) lines.push(`Phone: ${phone}`)
-  if (email) lines.push(`Email: ${email}`)
   return lines
 }
 
 /**
  * Opens or reuses the listing thread and posts a buyer message with payment + fulfillment details
- * so the seller sees the order in Messages without emailing infrastructure.
+ * so the seller sees the order in Messages. Does not fire Klaviyo "Message Sent" — sale emails
+ * use Shipping Sale Received / New Sale Received / Buyer Order Confirmed instead.
  */
 function paymentPhrase(method: OrderPlacedMessagePayload["paymentMethod"]): string {
   if (method === "reswell_bucks") return "wallet"
@@ -158,16 +154,6 @@ export async function postPurchaseThreadNotification(
     console.error("[purchase notification] message insert failed:", msgError)
     return
   }
-
-  void trackKlaviyoMessageSent({
-    senderUserId: buyerId,
-    receiverUserId: sellerId,
-    message: content,
-    conversationId: conversation.id,
-    listingId: primaryListingId,
-    messageId: inserted.id,
-    sentAt: inserted.created_at,
-  })
 
   await supabase
     .from("conversations")

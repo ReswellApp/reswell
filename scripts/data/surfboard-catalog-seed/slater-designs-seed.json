@@ -1,0 +1,88 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "slater-designs-surfboards",
+      "name": "Slater Designs",
+      "website_url": "https://www.firewiresurfboards.com",
+      "short_description": "Kelly Slater signature shapes built with Firewire.",
+      "models": [
+        {
+          "name": "Boss Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/658236912_18372009799167429_1523779520249845951_n.png",
+          "description": null
+        },
+        {
+          "name": "Cymatic LFT",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/568553820_18348706237167429_6974.jpg",
+          "description": null
+        },
+        {
+          "name": "DRK",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-Mannkine-DRK-I-Bolic-2-0-Surfboard-Deck.jpg",
+          "description": null
+        },
+        {
+          "name": "FRK Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-Mannkine-FRK-Swallow-IBolic-2-0-Surfboard-Deck.jpg",
+          "description": null
+        },
+        {
+          "name": "FRK+",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-Mannkine-FRK-Plus-I-Bolic-2-0-Surfboard-Deck.jpg",
+          "description": null
+        },
+        {
+          "name": "Great White Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-Great-White-Twin-Woo-I-Bolic-Volcanic-Surfboard-Deck.jpg",
+          "description": null
+        },
+        {
+          "name": "Houdini",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/slater-designs-houdini-tokoro-i-bolic-volcanic-surfboard-deck.jpg",
+          "description": null
+        },
+        {
+          "name": "Mindcraft",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-Tomo-Mindcraft-I-Bolic-2-0-Surfboard-Deck.jpg",
+          "description": null
+        },
+        {
+          "name": "Mindcraft Grom",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-Tomo-Mindcraft-G-Flex-Surfboard-Deck.jpg",
+          "description": null
+        },
+        {
+          "name": "No Brainer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/602189617_18357850081167429_8342116240518973161_n.jpg",
+          "description": null
+        },
+        {
+          "name": "OMNI",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/671011944_18374226940167429_4989604878846646663_n.png",
+          "description": null
+        },
+        {
+          "name": "S Boss",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-S-Boss-I-Bolic-Surfboard-Deck.jpg",
+          "description": null
+        },
+        {
+          "name": "Sci-Fi",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/637707697_18366403549167429_7207387566767298819_n.png",
+          "description": null
+        },
+        {
+          "name": "Sci-Fi 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-Tomo-Sci-Fi-2-0-I-Bolic-2-0-Surfboard-Deck.jpg",
+          "description": null
+        },
+        {
+          "name": "Spaceship",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Slater-Designs-Spaceship-I-Bolic-Surfboard-Deck.jpg",
+          "description": null
+        }
+      ]
+    }
+  ]
+}

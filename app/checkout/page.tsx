@@ -34,10 +34,11 @@ import {
   inferPeerCartSellerIdFromBuyerCart,
 } from "@/lib/db/checkout-cart-bundle"
 import {
+  acceptedOfferMatchesListingIds,
   fetchAcceptedOfferById,
   findAcceptedOfferMatchingListings,
   loadAcceptedOfferCheckoutListings,
-  lockedFulfillmentFromOfferAndListings,
+  suggestedFulfillmentFromOfferAndListings,
 } from "@/lib/services/acceptedOfferCheckout"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import {
@@ -47,6 +48,10 @@ import {
 import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
 import { assertBuyerMayPurchaseListingsExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { peerCheckoutCopyFromSections } from "@/lib/peer-listing-item-nouns"
+import {
+  countSurfboardListings,
+  peerCheckoutSurfboardCountError,
+} from "@/lib/surfboard-multi-board-parcel"
 
 export const dynamic = "force-dynamic"
 
@@ -112,6 +117,10 @@ export default async function CheckoutPage(props: {
 
     const checkoutListings = loaded.listings.map(rowToCheckoutListing)
 
+    if (peerCheckoutSurfboardCountError(countSurfboardListings(checkoutListings))) {
+      redirect("/messages/offers")
+    }
+
     if (checkoutListings.some((l) => l.user_id === user.id)) {
       redirect("/messages/offers")
     }
@@ -175,7 +184,7 @@ export default async function CheckoutPage(props: {
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
             offerId={offer.id}
-            lockedFulfillment={loaded.fulfillment}
+            suggestedFulfillment={loaded.fulfillment}
           />
         </div>
       </main>
@@ -210,7 +219,14 @@ export default async function CheckoutPage(props: {
     }
 
     const qtyById = new Map(bundle.lines.map((l) => [l.listing.id, l.quantity]))
+    const listPriceById = new Map(
+      bundle.lines.map((l) => [l.listing.id, Number(l.listing.price)] as const),
+    )
     let checkoutListings = bundle.lines.map((l) => rowToCheckoutListing(l.listing, l.quantity))
+
+    if (peerCheckoutSurfboardCountError(countSurfboardListings(checkoutListings))) {
+      redirect("/cart")
+    }
 
     const pricedRows = await applyAcceptedOfferToPeerCheckoutListings(
       supabase,
@@ -220,6 +236,18 @@ export default async function CheckoutPage(props: {
     checkoutListings = pricedRows.map((row) =>
       rowToCheckoutListing(row as unknown as Record<string, unknown>, qtyById.get(row.id) ?? 1),
     )
+    const acceptedOfferListingIds = checkoutListings
+      .filter((listing) => {
+        const listPrice = listPriceById.get(listing.id)
+        const charged = Number(listing.price)
+        return (
+          listPrice != null &&
+          Number.isFinite(listPrice) &&
+          Number.isFinite(charged) &&
+          charged !== listPrice
+        )
+      })
+      .map((listing) => listing.id)
 
     const mixedSeller = resolveMixedCheckoutSellerId(
       checkoutListings.map((l) => ({
@@ -301,10 +329,15 @@ export default async function CheckoutPage(props: {
             legalFullName={legalFullName}
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
-            offerId={matchedOffer?.id ?? null}
-            lockedFulfillment={
-              matchedOffer
-                ? lockedFulfillmentFromOfferAndListings(
+            offerId={
+              matchedOffer && acceptedOfferMatchesListingIds(matchedOffer, checkoutListings.map((l) => l.id))
+                ? matchedOffer.id
+                : null
+            }
+            acceptedOfferListingIds={acceptedOfferListingIds}
+            suggestedFulfillment={
+              matchedOffer && acceptedOfferMatchesListingIds(matchedOffer, checkoutListings.map((l) => l.id))
+                ? suggestedFulfillmentFromOfferAndListings(
                     matchedOffer.fulfillment,
                     checkoutListings,
                   )
@@ -405,7 +438,7 @@ export default async function CheckoutPage(props: {
     }
     matchedOfferId = matchedOffer?.id ?? null
     matchedOfferFulfillment = matchedOffer
-      ? lockedFulfillmentFromOfferAndListings(matchedOffer.fulfillment, [
+      ? suggestedFulfillmentFromOfferAndListings(matchedOffer.fulfillment, [
           checkoutListing,
         ])
       : null
@@ -537,7 +570,7 @@ export default async function CheckoutPage(props: {
           initialAddresses={addressesError ? [] : initialAddresses}
           seller={seller}
           offerId={matchedOfferId}
-          lockedFulfillment={matchedOfferFulfillment}
+          suggestedFulfillment={matchedOfferFulfillment}
         />
       </div>
     </main>

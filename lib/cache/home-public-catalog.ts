@@ -5,7 +5,11 @@ import {
 } from "@/lib/home-hero-slide-urls"
 import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
 import type { HomeTrendingBrandRow } from "@/lib/db/home-trending-brands"
-import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  listingHeroSlideSrc,
+  listingImagesFromPrimaryFields,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import type { HomePeerScrollListing } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrendingBrands"
 import {
@@ -16,10 +20,21 @@ import { loadHomeMostViewedMosaic, type HomeMostViewedMosaicLayout } from "@/lib
 import { loadHomeRecentlyListedGridRows } from "@/lib/services/homeRecentlyListedGridSection"
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { brandLogoStorageRef } from "@/lib/brand-media-proxy-url"
+import {
+  getCachedPublicStorageObject,
+  type PublicStorageBucket,
+} from "@/lib/cache/public-storage-object"
 
-/** Admin-curated + stable homepage sections (hero, new gear, shops, brands). */
+/** Admin-curated + stable homepage sections (hero, new gear, shops). */
 export const HOME_STABLE_CATALOG_CACHE_TAG = "home-public-catalog-stable"
 export const HOME_STABLE_CATALOG_REVALIDATE_SECONDS = 60 * 60 * 24 * 7
+
+/**
+ * Homepage “Trending brands” strip. No time-based TTL — `revalidateTag` only
+ * when the curation changes or a featured brand’s logo/name/slug is updated.
+ */
+export const HOME_TRENDING_BRANDS_CACHE_TAG = "home-public-catalog-trending-brands"
 
 /** Auto-generated recently sold strip — refreshes on a short TTL. */
 export const HOME_RECENTLY_SOLD_CACHE_TAG = "home-public-catalog-recently-sold"
@@ -49,7 +64,9 @@ const featuredNewSelect = `
   slug,
   title,
   price,
-  listing_images (url, thumbnail_url, sort_order, is_primary),
+  compare_at_price,
+  primary_image_url,
+  primary_thumbnail_url,
   stock_quantity,
   categories (name)
 `
@@ -86,6 +103,7 @@ export type HomeFeaturedNewItem = {
     slug: string
     title: string
     price: number
+    compare_at_price?: number | null
     listing_images: unknown
   }
   stockQuantity: number
@@ -94,10 +112,13 @@ export type HomeFeaturedNewItem = {
 
 export type HomeStableCatalog = {
   heroSlideUrls: string[]
-  homeTrendingBrandRows: HomeTrendingBrandRow[]
   featuredShops: HomeFeaturedShop[] | null
   featuredNew: HomeFeaturedNewItem[]
   featuredListingIds: string[]
+}
+
+export type HomeTrendingBrandsCatalog = {
+  homeTrendingBrandRows: HomeTrendingBrandRow[]
 }
 
 export type HomeRecentlyAddedSurfboardsCatalog = {
@@ -127,7 +148,7 @@ export type HomeRecentlyListedGridCatalog = {
 
 function buildHeroSlideUrls(
   curatedHeroUrls: string[],
-  heroListingCandidates: { listing_images: unknown }[] | null,
+  heroListingCandidates: { primary_image_url?: string | null }[] | null,
 ): string[] {
   const heroSlideUrls: string[] = []
   const heroSeen = new Set<string>()
@@ -141,7 +162,8 @@ function buildHeroSlideUrls(
     }
   } else {
     for (const row of heroListingCandidates ?? []) {
-      const src = listingHeroSlideSrc(row.listing_images as ListingImageForCard[] | null)
+      const images = listingImagesFromPrimaryFields(row.primary_image_url, null)
+      const src = listingHeroSlideSrc(images as ListingImageForCard[] | null)
       if (!src) continue
       const key = normalizeHeroSlideUrl(src)
       if (!key || heroSeen.has(key)) continue
@@ -163,12 +185,10 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
 
   const [
     curatedHeroUrls,
-    homeTrendingBrandRows,
     featuredShopsRes,
     newGearRes,
   ] = await Promise.all([
     listHomeHeroCuratedSlideUrls(supabase),
-    listHomeTrendingBrandsForPublicService(supabase),
     supabase
       .from("profiles")
       .select(profilePublicFields)
@@ -190,10 +210,10 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
 
   const useCuratedHeroOnly = curatedHeroUrls.length > 0
   const heroListingsRes = useCuratedHeroOnly
-    ? { data: null as { listing_images: unknown }[] | null }
+    ? { data: null as { primary_image_url?: string | null }[] | null }
     : await supabase
         .from("listings")
-        .select("listing_images (url, is_primary)")
+        .select("primary_image_url")
         .eq("status", "active")
         .eq("section", "surfboards")
         .eq("hidden_from_site", false)
@@ -207,13 +227,24 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
         const qty = Number((l as { stock_quantity?: number }).stock_quantity) || 0
         const cat = l.categories as { name?: string | null } | { name?: string | null }[] | null | undefined
         const catRow = Array.isArray(cat) ? cat[0] : cat
+        const row = l as {
+          id: string
+          slug: string
+          title: string
+          price: number
+          primary_image_url?: string | null
+          primary_thumbnail_url?: string | null
+        }
         return {
           listing: {
-            id: l.id,
-            slug: l.slug,
-            title: l.title,
-            price: Number(l.price),
-            listing_images: l.listing_images,
+            id: row.id,
+            slug: row.slug,
+            title: row.title,
+            price: Number(row.price),
+            listing_images: listingImagesFromPrimaryFields(
+              row.primary_image_url,
+              row.primary_thumbnail_url,
+            ),
           },
           stockQuantity: qty,
           categoryName: catRow?.name ?? null,
@@ -226,11 +257,47 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
 
   return {
     heroSlideUrls: buildHeroSlideUrls(curatedHeroUrls, heroListingsRes.data),
-    homeTrendingBrandRows,
     featuredShops: (featuredShopsRes.data as HomeFeaturedShop[] | null) ?? null,
     featuredNew,
     featuredListingIds,
   }
+}
+
+const TRENDING_BRAND_LOGO_PUBLIC_MARKER: Record<
+  Extract<PublicStorageBucket, "brand-assets" | "brand-request-logos">,
+  string
+> = {
+  "brand-assets": "/storage/v1/object/public/brand-assets/",
+  "brand-request-logos": "/storage/v1/object/public/brand-request-logos/",
+}
+
+/** Prime tag-only Data Cache for `/media/brands` so homepage logos skip Supabase until a brand update. */
+async function warmTrendingBrandLogo(logoUrl: string | null): Promise<void> {
+  const resolved = brandLogoStorageRef(logoUrl)
+  if (!resolved) return
+
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")
+  if (!base) return
+
+  const encodedPath = resolved.objectPath
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/")
+  const upstreamUrl = `${base}${TRENDING_BRAND_LOGO_PUBLIC_MARKER[resolved.bucket]}${encodedPath}`
+
+  try {
+    await getCachedPublicStorageObject(resolved.bucket, resolved.objectPath, upstreamUrl)
+  } catch (e) {
+    console.error("warmTrendingBrandLogo:", e)
+  }
+}
+
+async function loadHomeTrendingBrandsCatalogUncached(): Promise<HomeTrendingBrandsCatalog> {
+  const supabase = createAnonSupabaseClient()
+  const homeTrendingBrandRows = await listHomeTrendingBrandsForPublicService(supabase)
+  await Promise.all(homeTrendingBrandRows.map((row) => warmTrendingBrandLogo(row.brand.logo_url)))
+  return { homeTrendingBrandRows }
 }
 
 async function loadHomeRecentlyAddedSurfboardsCatalogUncached(): Promise<HomeRecentlyAddedSurfboardsCatalog> {
@@ -270,10 +337,19 @@ async function loadHomeRecentlySoldCatalogUncached(): Promise<HomeRecentlySoldCa
 
 export const getCachedHomeStableCatalog = unstable_cache(
   loadHomeStableCatalogUncached,
-  ["home-stable-catalog-v5"],
+  ["home-stable-catalog-v6"],
   {
     revalidate: HOME_STABLE_CATALOG_REVALIDATE_SECONDS,
     tags: [HOME_STABLE_CATALOG_CACHE_TAG],
+  },
+)
+
+export const getCachedHomeTrendingBrandsCatalog = unstable_cache(
+  loadHomeTrendingBrandsCatalogUncached,
+  ["home-trending-brands-catalog-v1"],
+  {
+    revalidate: false,
+    tags: [HOME_TRENDING_BRANDS_CACHE_TAG],
   },
 )
 

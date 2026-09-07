@@ -1,12 +1,10 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
-import { ArrowUpRight, MapPin, Package } from "lucide-react"
+import { ArrowUpRight, MapPin } from "lucide-react"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
-import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { BrandLogoMark } from "@/components/brands/brand-logo-mark"
 import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
@@ -18,7 +16,6 @@ function BrandDirectoryTile({
   entry: BrandRow
   availableCount: number
 }) {
-  const logoSrc = entry.logo_url ? brandLogoDisplaySrc(entry.logo_url) : null
   const availableLabel =
     availableCount === 1 ? "1 available" : `${availableCount} available`
 
@@ -28,25 +25,12 @@ function BrandDirectoryTile({
       className="group flex h-full flex-col rounded-xl border border-border/80 bg-card p-3 shadow-soft transition-colors hover:border-foreground/20 hover:shadow-soft-hover sm:rounded-2xl sm:p-6"
     >
       <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-4 sm:text-left">
-        {logoSrc ? (
-          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background p-1.5 sm:h-[72px] sm:w-[72px] sm:rounded-xl sm:p-2">
-            <Image
-              src={logoSrc}
-              alt={`${entry.name} logo`}
-              fill
-              className="object-contain object-center"
-              sizes="(max-width: 640px) 56px, 72px"
-              unoptimized={listingImageShouldBypassOptimization(logoSrc)}
-            />
-          </div>
-        ) : (
-          <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-muted-foreground sm:h-[72px] sm:w-[72px] sm:rounded-xl"
-            aria-hidden
-          >
-            <Package className="h-6 w-6 sm:h-8 sm:w-8" />
-          </div>
-        )}
+        <BrandLogoMark
+          name={entry.name}
+          logoUrl={entry.logo_url}
+          className="h-14 w-14 rounded-lg text-lg sm:h-[72px] sm:w-[72px] sm:rounded-xl sm:text-2xl"
+          imageSizes="(max-width: 640px) 56px, 72px"
+        />
         <div className="mt-2.5 min-w-0 flex-1 sm:mt-0 sm:pt-0.5">
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground group-hover:underline sm:text-lg">
             {entry.name}

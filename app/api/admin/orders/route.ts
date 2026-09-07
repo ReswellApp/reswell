@@ -6,6 +6,7 @@ import { z } from "zod"
 
 const querySchema = z.object({
   status: z.enum(["all", "confirmed", "refunding", "refunded", "pending"]).optional().default("all"),
+  open: z.enum(["all", "shipping", "pickup", "none"]).optional().default("none"),
   payment: z.enum(["all", "stripe", "reswell_bucks"]).optional().default("all"),
   test: z.enum(["all", "real", "test"]).optional().default("all"),
   q: z.string().optional(),
@@ -20,9 +21,9 @@ type PartyLabel = { display_name: string | null; email: string | null; avatar_ur
 /**
  * GET /api/admin/orders
  *
- * Paginated order list for admin / support staff. Supports status + payment filters, text search
- * (order_num or full order id as UUID), and sort by date or amount. Buyer/seller labels are
- * batch-resolved (single query — no N+1).
+ * Paginated order list for admin / support staff. Supports payment-status, open-fulfillment
+ * (same buckets as the home tiles), payment method, text search (order_num or full order id as
+ * UUID), and sort by date or amount. Buyer/seller labels are batch-resolved (single query — no N+1).
  */
 export async function GET(request: NextRequest) {
   const gate = await requireAdminOrEmployee()
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid params" }, { status: 400 })
   }
 
-  const { status, payment, test, q, sort, dir, limit, offset } = parsed.data
+  const { status, open, payment, test, q, sort, dir, limit, offset } = parsed.data
   const serviceSupabase = createServiceRoleClient()
 
   let query = serviceSupabase
@@ -48,7 +49,26 @@ export async function GET(request: NextRequest) {
     .order(sort, { ascending: dir === "asc" })
     .range(offset, offset + limit - 1)
 
-  if (status !== "all") {
+  if (open === "shipping") {
+    query = query
+      .eq("status", "confirmed")
+      .eq("is_admin_test", false)
+      .eq("fulfillment_method", "shipping")
+      .in("delivery_status", ["pending", "shipped"])
+  } else if (open === "pickup") {
+    query = query
+      .eq("status", "confirmed")
+      .eq("is_admin_test", false)
+      .eq("fulfillment_method", "pickup")
+      .neq("delivery_status", "picked_up")
+  } else if (open === "all") {
+    query = query
+      .eq("status", "confirmed")
+      .eq("is_admin_test", false)
+      .or(
+        "and(fulfillment_method.eq.shipping,delivery_status.in.(pending,shipped)),and(fulfillment_method.eq.pickup,delivery_status.neq.picked_up)",
+      )
+  } else if (status !== "all") {
     query = query.eq("status", status)
   }
 
@@ -56,10 +76,13 @@ export async function GET(request: NextRequest) {
     query = query.eq("payment_method", payment)
   }
 
-  if (test === "test") {
-    query = query.eq("is_admin_test", true)
-  } else if (test === "real") {
-    query = query.eq("is_admin_test", false)
+  // Open-fulfillment buckets already exclude test seeds — don't re-apply test.
+  if (open === "none") {
+    if (test === "test") {
+      query = query.eq("is_admin_test", true)
+    } else if (test === "real") {
+      query = query.eq("is_admin_test", false)
+    }
   }
 
   if (q?.trim()) {

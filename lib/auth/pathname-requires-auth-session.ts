@@ -2,7 +2,10 @@
  * Pathnames where middleware requires a Supabase session (mirrors {@link updateSession}
  * in lib/supabase/proxy.ts). Keep in sync when adding protected routes.
  *
- * `/sell`, `/cart`, and `/favorites` are gated in the client via sign-in gates (modal).
+ * `/sell` is public — guests fill forms; sign-in is required at publish (client gate).
+ * `/favorites` is gated by the server session in the layout. Guests see a
+ * client sign-in gate (modal) so a just-signed-in tab can recover from cookie lag.
+ * `/cart` is public — guests see an empty cart.
  * Do not use pathname.startsWith("/sell") here — that would also match "/sellers".
  */
 export function pathnameRequiresAuthSession(pathname: string): boolean {

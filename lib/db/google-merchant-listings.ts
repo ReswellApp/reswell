@@ -4,6 +4,7 @@ import type { GoogleMerchantListingRow } from "@/lib/google-merchant/map-listing
 
 const GOOGLE_MERCHANT_LISTING_SELECT = `
   id,
+  user_id,
   slug,
   title,
   description,
@@ -24,11 +25,14 @@ const GOOGLE_MERCHANT_LISTING_SELECT = `
   fin_system,
   fin_size,
   wetsuit_size,
+  apparel_kind,
+  apparel_size,
   magazine_year,
   city,
   state,
   local_pickup,
-  listing_images ( url, thumbnail_url, is_primary, sort_order )
+  listing_images ( url, thumbnail_url, is_primary, sort_order ),
+  listing_videos ( url, thumbnail_url, sort_order, duration_seconds )
 `
 
 export async function getGoogleMerchantListingById(

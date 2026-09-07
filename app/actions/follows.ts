@@ -2,6 +2,7 @@
 
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { notifyShopFollowKlaviyo } from "@/lib/services/notifyShopFollowKlaviyo"
 import { createClient } from "@/lib/supabase/server"
 
 export async function followSeller(
@@ -34,12 +35,29 @@ export async function followSeller(
     return { error: "Seller not found." }
   }
 
-  const { error } = await supabase.from("seller_follows").upsert(
-    { follower_id: user.id, seller_id: sellerId },
-    { onConflict: "follower_id,seller_id", ignoreDuplicates: true },
-  )
+  const { data: existingFollow } = await supabase
+    .from("seller_follows")
+    .select("id")
+    .eq("follower_id", user.id)
+    .eq("seller_id", sellerId)
+    .maybeSingle()
 
-  if (error) {
+  if (existingFollow) {
+    const { data: updated } = await supabase
+      .from("profiles")
+      .select("follower_count")
+      .eq("id", sellerId)
+      .single()
+    return { following: true, followerCount: updated?.follower_count ?? seller.follower_count ?? 0 }
+  }
+
+  const { data: inserted, error } = await supabase
+    .from("seller_follows")
+    .insert({ follower_id: user.id, seller_id: sellerId })
+    .select("id, created_at")
+    .single()
+
+  if (error || !inserted) {
     console.error("[follows] insert error:", error)
     return { error: "Failed to follow seller." }
   }
@@ -51,6 +69,14 @@ export async function followSeller(
     .single()
 
   await revalidateSellerProfileAndDirectoryCatalog(supabase, sellerId)
+
+  void notifyShopFollowKlaviyo({
+    followId: inserted.id,
+    followedAt: inserted.created_at,
+    sellerUserId: sellerId,
+    followerUserId: user.id,
+    followerEmail: user.email?.trim() ?? null,
+  })
 
   return { following: true, followerCount: updated?.follower_count ?? 0 }
 }

@@ -208,7 +208,7 @@ export function NewsletterPromoPopup({ serverUser = null }: { serverUser?: User 
 
               <p className="mt-5 text-[11px] leading-relaxed text-black/40">
                 By entering your email and tapping &ldquo;Get my code,&rdquo; you opt in to marketing emails from
-                Reswell. One code per email. Item price only. Unsubscribe anytime.
+                Reswell. One active code per email. Item price only. Unsubscribe anytime.
               </p>
             </>
           )}

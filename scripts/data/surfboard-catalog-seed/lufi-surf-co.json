@@ -1,0 +1,90 @@
+{
+  "generated_for": "Lufi Surf Co. official named standup catalog",
+  "source": "https://www.lufisurf.com/pranchas and per-model pages (Squarespace — longboards and mid-lengths only; excludes merch and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "lufi-surf-co",
+      "name": "Lufi Surf Co.",
+      "website_url": "https://www.lufisurf.com/",
+      "location_label": "Costa da Caparica, Portugal",
+      "founder_name": "Luís Filipe \"Lufi\" Bento",
+      "lead_shaper_name": "Luís Filipe \"Lufi\" Bento",
+      "short_description": "Founded in 1987 in Costa da Caparica, Portugal by Luís Filipe \"Lufi\" Bento — athlete, shaper, and the lead shaper behind Lufi Surf Co. longboards and mid-lengths.",
+      "models": [
+        {
+          "name": "Blackbird",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/89f309e7-667a-4831-9142-ad04ef451b95/DSC06768.jpg?format=2500w",
+          "description": "O nosso modelo single fin que proporciona um surf mais progressivo. Prancha muito versátil para os mais radicais amantes de single fin Tail diamond. Bastante edge, até ao início da quilha 60/40. Proporciona curvas com muita velocidade e boa estabilidade no bico. A Blackbird tem uma curva mais acentuada, por isso é mais fácil de manobrar do que a California, especialmente para quem já sabe virar com o pé de trás. A largura do nose é maior do que a da Noosa, e dá mais conforto para caminhar até ao nose, sendo ótima para ondas pequenas.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "California Dream",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/fb736ffc-c627-490e-aa9e-582ff3f89c86/DSC09937.jpg?format=2500w",
+          "description": "Criado após uma viagem para Califórnia. Uma das pranchas clássicas mais fáceis de manusear. Funciona bem com o balanço do corpo sem precisar de fazer muita pressão. Bem concave no bico, sai para um v suave e termina com um v suave que permite curvas bem seguras e faceis. Rail 60/40",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Easy Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/c19c9084-bec4-41ab-b359-6ffdf203ec85/DSC06742.jpg?format=2500w",
+          "description": "Prancha para um estilo mais clássico feita especialmente para os gliders. Um outline que te conecta mais com o flow da onda. Menos velocidade e mais suave nas transições com um estilo mais pivot. Perfeita para expressar o estilo com uma boa performance. Criada especificamente para surfistas de nível médio/alto e para enfrentar ondas de até 1 metro de altura, esta prancha combina design refinado com materiais de alta qualidade para lhe entregar um desempenho excepcional. 50/50 rails.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gladiator",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/8c00fd8f-1556-40e1-9ff6-06ffe489ce59/gladiator_1903.png?format=2500w",
+          "description": "Este modelo é derivado do The One. Excelente prancha para noseriding, com boas curvas, ideal para ondas até 2 metros. O estreitamento do tail em relação à The One garante maior controlo e resposta nas curvas. Facilita as curvas de fundo e passagem de rail para rail sem perder as qualidades no nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Magic Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/e9c0b1c4-f685-41fb-a932-ce310de3ffe4/IMG_5933.jpg?format=2500w",
+          "description": "Uma das primeiras pranchas de longboard feitas pelo Lufi. Usada pelo próprio ainda na época em que competia, esta prancha já passou pela mão de vários atletas internacionais, trazendo vários títulos mundiais para casa. Foi nomeada \"magic model\" pelo facto de sempre se referirem a este modelo como uma prancha mágica. Prancha all around, que se adapta a todo tipo de condições. Perfeita todos os níveis de surf e a mais recomendada para pessoas que estão a iniciar no mundo do longboard pois é a prancha mais fácil para poder evoluir",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Magic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/8c2e5b0a-94cc-4b9d-abeb-d4e5400d2ee1/minimagic.png?format=2500w",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Minidisk",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/2ac45ddf-5d7f-4d7c-9b94-c0b0171751da/DSC09637.jpg?format=2500w",
+          "description": "Um mini longboard, mais versátil e agressivo criado após inspirações na Austrália. Prancha com muita estabilidade que a torna muito fácil de manusear e com remada parecida com longboard, que possibilita entrar nas ondas com mais tranquilidade. Volume concentrado no meio. Tail Round pin, adapta-se bem em todas condições, nose redondo, estabilidade em pé na prancha e na remada. A Minidisk varia de 5.6” a 6.10”. É uma prancha híbrida de tamanho reduzido, adequada para todas as condições e todos os tipos de surfistas.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Noosa Secret",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/e0f8e224-7a3c-45f2-b515-5a608a9977fe/DSC06700.jpg?format=2500w",
+          "description": "Prancha criada em parceria com Kevin Conley após uma temporada que passaram juntos em Noosa, na Austrália. Modelo single fin perfeito para ondas maiores e mais fortes. Round pin com tail mais fechado. Segura muito bem no bico e o melhor modelo single fin para realizar boas curvas.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "One Piece",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/7c44e124-8aef-4df9-b4f4-600e78d88416/onepiece_1131.png?format=2500w",
+          "description": "Este modelo é derivado do The One. A largura reduzida do tail permite transições mais rápidas rail-to-rail. Alguns ajustes no nose da prancha proporcionam uma estabilidade excecional em noseriding. Largura do nose mais reduzida em relação ao modelo The One. Ajustes no nose para proporcionar uma maior estabilidade em noseriding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sea Devil",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/e4199a5f-e5b2-4f3a-bac8-fc6b3757a2b1/IMG_4439.JPG?format=2500w",
+          "description": "Conhecida como o demónio dos mares devido à radicalidade que proporciona, a Sea Devil foi criada depois da magic para ser uma prancha que se encaixa melhor em ondas grandes e ser mais progressiva, funcionar como shortboard. Balance para ir até ao bico. Aguenta muito bem no bico devido à velocidade que apanha na onda. Prancha favorita e mais usada pelo mestre Lufi. Tail bem estreito, 3.5 de tail, 22 ou 23.5 quilhas mais para a frente, fundo de shortboard, concave no bico, e passa para double no centro de gravidade. Escoamento da água dá velocidade extra. Longboard progressivo, com manobras similares a shortboard. É uma prancha que tem vantagem em mares difíceis e onshore, que se adapta às adversidades do mar devido à sua velocidade.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Super Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/1709744723860-CVH87GSX0N4OERYIEC5F/superglidertras_0894.png?format=2500w",
+          "description": "Nova versão da \"minidisk\" para condições de mar maiores e mais fortes. Prancha que proporciona um surf mais progressivo, com uma remada boa e menos área de bico, para dar curvas mais apertadas e duck dive. Perfeita para condições mais difíceis, mas que te ajuda a pegar mais ondas sem prejudicar. A Super Glider varia de 6.6” a 7.8”. Menos área de bico, tail round pin mais estreito, mais rocker e passagem de água mais rápida. Rail 40/60 com edge bem pronunciado",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The One",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/65576a4c85d6ef1eb3f21597/1555bc12-0553-404f-b4c0-10471c849c06/DSC06901.jpg?format=2500w",
+          "description": "Uma das nossas pranchas mais especiais. Foi criada após ver os melhores noseriders de single fin em Malibu. A sua principal função é dar hang tens mais longos possíveis, nas partes mais críticas por mais tempo e atravessar sessões. Para o hang five então, nem precisamos de falar. Pessoas que desejam aprimorar as habilidades no bico, esta é a prancha. Tem um tail especialmente largo, com uma saída de muita passagem de água no fundo, double concave a sair do tail. Meio da prancha mais flat, mais curva no tail e nose. Uma verdadeira obra de arte.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}

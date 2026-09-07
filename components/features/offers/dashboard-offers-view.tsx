@@ -17,6 +17,8 @@ import { SellerOfferResponseDialog, type OfferRowLite } from "@/components/featu
 import { BuyerCounterOfferDialog } from "@/components/features/offers/buyer-counter-offer-dialog"
 import { OfferRow } from "@/components/features/offers/offer-row"
 import { OffersEmptyState } from "@/components/features/offers/offers-empty-state"
+import { SellerCartOfferProspects } from "@/components/features/offers/seller-cart-offer-prospects"
+import type { ListingCartOfferProspect } from "@/lib/types/listing-cart-holders"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 import {
@@ -115,6 +117,8 @@ export interface DashboardOffersViewProps {
   activeOnlyDefault?: boolean
   /** Base path for tab URL sync (default /dashboard/offers). */
   basePath?: string
+  /** Seller listings that currently have buyers in cart. */
+  cartOfferProspects?: ListingCartOfferProspect[]
 }
 
 export function DashboardOffersView({
@@ -126,6 +130,7 @@ export function DashboardOffersView({
   defaultTab = "seller",
   activeOnlyDefault = false,
   basePath = "/dashboard/offers",
+  cartOfferProspects = [],
 }: DashboardOffersViewProps) {
   const router = useRouter()
   const [tab, setTab] = useState<OffersRoleTab>(defaultTab)
@@ -286,7 +291,9 @@ export function DashboardOffersView({
             Buyer tab.
           </p>
         </div>
-      ) : null}
+      ) : (
+        <SellerCartOfferProspects sellerUserId={userId} prospects={cartOfferProspects} />
+      )}
 
       <div className="mt-6 flex flex-col gap-4 border-b border-border/60 pb-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

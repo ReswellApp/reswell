@@ -5,7 +5,7 @@ import { FadeInSection } from "@/components/fade-in-section"
 import { HomeTrendingBrandsAdminBar } from "@/components/features/home/home-trending-brands-admin-bar"
 import { TrendingBrandsStrip, type TrendingStripBrand } from "@/components/features/home/trending-brands-strip"
 import { BRANDS_BASE } from "@/lib/brands/routes"
-import type { HomeTrendingBrandRow } from "@/lib/services/homeTrendingBrands"
+import type { HomeTrendingBrandRow } from "@/lib/db/home-trending-brands"
 
 function toStripBrands(rows: HomeTrendingBrandRow[]): TrendingStripBrand[] {
   return rows.map((r) => ({

@@ -1,0 +1,67 @@
+{
+  "generated_for": "XO Coco Surfboards official named standup catalog",
+  "source": "https://xococosurf.com/collections/all (Shopify surfboard lineup only — excludes in-stock one-offs, used boards, fins, merch, and gift cards)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "xo-coco-surfboards",
+      "name": "XO Coco Surfboards",
+      "website_url": "https://xococosurf.com",
+      "location_label": "San Clemente, California, USA",
+      "founder_name": "Coco Ho",
+      "lead_shaper_name": "Matt Parker",
+      "short_description": "Women-forward surfboards from pro surfer Coco Ho and shaper Matt Parker — playful California fish, mid-lengths, and longboards built for self-expression in the water.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/4992e6a1-9d62-4749-a5be-67794c9119c3.webp?t=1775446469914",
+      "models": [
+        {
+          "name": "Aurora",
+          "image_url": "https://cdn.shopify.com/s/files/1/0817/8126/0584/files/5_0aurora.png?v=1702589432",
+          "description": "An all-rounder shortboard for travel or home. Features modern rails with a shortboard foil through the nose and tail and a performance rocker. The narrow outline contributes to drive and eases rail-to-rail transitions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bliss",
+          "image_url": "https://cdn.shopify.com/s/files/1/0817/8126/0584/files/bliss.png?v=1702589432",
+          "description": "A blend of tradition and progression. All the speed and fun of a twin fin combined with the progressiveness and performance of a modern shortboard. Compared with standard shortboards, Bliss gives you what you need to generate and maintain speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Halcyon",
+          "image_url": "https://cdn.shopify.com/s/files/1/0817/8126/0584/files/70_65e539a2-5be5-4860-8347-48ab0ce9064d.png?v=1766189646",
+          "description": "A collision of forms, Halcyon features mid-length paddle and the speed and maneuverability of a twin fin. This is the board that will help you improve your surfing or keep you in the water every day. Its wide outline and twin fin setup pick up speed quickly, and the pulled-in wing round tail offers greater control.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Serendipity Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0817/8126/0584/files/92_1377f3d7-c5d0-49c4-8d8b-699939439f21.png?v=1711759642",
+          "description": "Inspired by the endless rolling waves of Waikiki, this classic longboard design can stand up to a variety of conditions. With its wide nose and pulled in tail, Serendipity was designed to turn and nose ride equally well. Great for any level of surfer.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Serendipity Square",
+          "image_url": "https://cdn.shopify.com/s/files/1/0817/8126/0584/files/SerendipitySqr.png?v=1702938696",
+          "description": "Inspired by the endless rolling waves of Waikiki, this classic longboard design can stand up to a variety of conditions. With its wide nose and pulled in tail, Serendipity was designed to turn and nose ride equally well. Great for any level of surfer.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Silhouette",
+          "image_url": "https://cdn.shopify.com/s/files/1/0817/8126/0584/files/62_5cebb304-2f06-42af-876b-4f10a1bae3b9.png?v=1749072642",
+          "description": "An ode to the silhouettes of the '70s. This simple and functional design features a wide point forward for ease of paddling and acceleration. The pulled-in pin tail with a channel bottom gives you hold when you need it most.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sunburst",
+          "image_url": "https://cdn.shopify.com/s/files/1/0817/8126/0584/files/8_0Sunburst.png?v=1772136487",
+          "description": "Rosy calls this one the quickest, most responsive board she's ever ridden. It's a fish with just the right amount of foam under the chest for easy paddling and glide, tapering through the tail for smooth, effortless turns. The rails are nice and forgiving, making it a super fun, easy board to ride in all kinds of conditions. Fast, fluid, and full of life. This board just wants to go.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tryst",
+          "image_url": "https://cdn.shopify.com/s/files/1/0817/8126/0584/files/511.png?v=1766189026",
+          "description": "An incredibly fast and playful fish that makes poor waves fun and fun waves even more fun. The flat rocker and wide outline allow for paddle speed regardless of conditions. The hip in the tail creates a break in the rail, allowing for more pivot and release.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "generated_for": "A Mano official named standup catalog",
+  "source": "https://www.amanosurf.com",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "a-mano-surf",
+      "name": "A Mano",
+      "website_url": "https://www.amanosurf.com",
+      "location_label": "Ewingsdale, Byron Bay, New South Wales, Australia",
+      "founder_name": "Simon",
+      "lead_shaper_name": "Simon",
+      "short_description": "Hand-shaped twin pins, fishes, eggs, and single fins from Simon's Byron Hinterland bay — every A Mano board is shaped start to finish in-house.",
+      "models": [
+        {
+          "name": "Asym",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/e4eac83d-b7d6-403c-a26b-4c9324871503/Web+43+Image+%281%29.jpg",
+          "description": "Based on the obvious difference between forehand and backhand surfing, the Asym lets you get steep and deep whichever way you go. Designed around your stance, it will perform equally well frontside and backside. It offers an intuitive flow that'll help you connect explosive turns with style. Enjoy the reliability and control of your favourite thruster with the inherent speed and flow of a twin.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "California Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/15d887b0-95d9-4343-ace0-a3a9e9e6d461/Web+43+Image+%281%29+%281%29.jpg",
+          "description": "The California Log is built for maximum trim and flow. A more traditional longboard than our Noserider, the California Log is wider, flatter and thicker. It paddles like a beast, is stable while cross stepping and has the ability to noseride even in tiny waves. This design is a product of many years of research and development, a longboard made for trimming and noseriding in softer waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Single",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/e840b442-3784-4294-a3b9-efcc36f9e11e/2.jpg",
+          "description": "Rooted in surfings history, the Classic Single is our take on the nostalgic single fins of the 70's. Made famous by north shore surfers like Gerry Lopez, this design still proves relevant in a range of conditions. Plan your line, set the rail and draw long carving arcs on big point break faces. The extra length and volume will help you get into bigger surf early and also works for intermediate surfers looking to carve in smaller to medium sized waves. This board holds a solid line in hollow waves and gives you stability when you need it most.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/9fc9a7f3-58a6-45e3-914c-29fe88525723/Web+43+Image+%281%29.jpg",
+          "description": "Our most versatile and user friendly mid length, the Egg is the Cadillac of surfboards. A smooth ride from the take-off, you'll be stroking in early and flowing down the line with ease. For those surfers who want to simplify their surfing without sacrificing the ability to surf from the tail, the Egg is the board you can always have stashed in your car and surf every day of the year.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/9510a1b5-89cd-4720-b469-68c19d144b14/Web+11+Image+%281%29.jpg",
+          "description": "This template is all about speed in an efficient package. Our take on the traditional twin fin fish, this board has loads of foam squeezed in for excellent paddle power, featuring a beak nose combined with low refined rails. The flatter rocker makes this board a dream to paddle and gives you plenty of go down the line. The perfect blend of bite and glide.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/eca94b27-955d-4480-b247-62dbcfea2274/3.jpg",
+          "description": "For those unfamiliar with this style of surfboard, the Glider is an heirloom piece of surf craft. A must have for anyone serious about building a quiver of surfboards for all conditions. Riding the glider is an addictive experience from pop up to stepping off on the sand 800m down the point. The closest thing us surfers can experience to the ocean birds soaring along a swell line, the Glider taps into the same open water energy and pulls the rider along for the ride.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lady Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/8802851a-d4e9-45a9-b482-58685329021a/4.jpg",
+          "description": "Our classic Noserider template made more manageable for slighter surfers. Designed as a smaller, lighter log that's easier to paddle and manoeuvre in busy line ups, easy to transport, and still offers trim, plenty of paddle power and a classic nose ride. The Lady Log is perfect as a step-up from a foamy, great for groms who want to log, and designed for women who want a lighter log to surf in smaller waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Long Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/e538bedd-1536-4ce2-a250-f99d3a326ad7/Web+43+Image+%281%29.jpg",
+          "description": "The Long Fish is our most dynamic and exciting mid length. Low refined rails combine with the twin fin set up to maintain sensitivity in a bigger board, allowing manoeuvrability off the tail and an addicting burst of speed on the take off. This design will allow even the most hardcore shortboarder to enjoy the simple pleasures of a waist high point break, or take your mid length cruising to a whole new level.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mini Simmons",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/38c4a230-5684-44e7-be80-c2a0764f101e/Web+43+Image.jpg",
+          "description": "A nod of appreciation to one of surfing's greatest pioneers, Bob Simmons. This template has all the speed and spark you need to liven up your quiver. Get the most out of your time in the water in marginal conditions, because we all know that no one is surfing perfect waves every day of the year. The single barrel channel through the tail, puts this thing into overdrive and compliments the short yet parallel rail line and wide tail.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/7a5d4dbc-aab3-4922-bcf0-792838f7e745/Web+43+Image+%281%29.jpg",
+          "description": "Our Noserider log is the base of our longboard stable, the log that will do everything you'd ever want from a longboard. Made for long nose rides on longer point break waves. A flat rocker and deep nose concave combine with a lifted tail to set you up for effortless nose rides. Step back to the tail to glide through graceful turns. Trim along ankle biters or flow through point breaks with style.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Stage Two Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/b3ddcde4-41fb-4260-8987-69882449e0e4/5.jpg",
+          "description": "The next generation of our all time favourite surfboard, this trimmed down and performance orientated template takes the things we love about the old faithful Twin Pin and brings it to a whole other level for experienced surfers. With the ability to be surfed more vertically and in the pocket than the original, the Stage 2 Twin Pin is a fast and reactive everyday shortboard that won't let you down.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Step Up Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/c8e4b333-c17f-47c4-a9f8-0084f3146cb5/1.jpg",
+          "description": "Our answer to those session when the surf gets serious, or you're just after a little extra paddle power. This is the step up version of our high performance Stage Two Twin Pin. Paddle against the crowd at Kirra, bring along for a boat trip in the Mentawai's or just use the extra volume to chip in early. You'll still maintaining the ability to surf more vertically and in the pocket without changing your approach, a trustworthy Twin Pin for when the waves demand reliability.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e8c0a572c2c9840f7db0b98/bfd685b5-6946-4a45-a4c1-98143dcce98d/1.jpg",
+          "description": "Our most popular and versatile template, the Twin Pin is a crowd favourite for a reason. This mid length twin fin offers the perfect combination of speed, control and manoeuvrability. The Twin Pin is designed as an everyday rider and excels in chest-high surf and bigger. Longer rail lines open up powerful rail surfing in critical waves, stepping further away from the looseness of a twin fin fish. Enjoy a huge squirt of speed off the bottom and through turns for unparalleled speed and surprising control in good quality waves.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}

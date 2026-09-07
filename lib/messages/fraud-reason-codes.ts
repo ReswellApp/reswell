@@ -33,3 +33,24 @@ export function messagePolicyReasonLabel(code: MessagePolicyReasonCode): string 
     }
   }
 }
+
+/**
+ * Phone sharing is captured for staff review but still delivered.
+ * Every other reason code still blocks the send and shows the sender an error.
+ */
+export function messagePolicyBlocksDelivery(code: MessagePolicyReasonCode): boolean {
+  switch (code) {
+    case "phone_like":
+    case "phone_fragment":
+      return false
+    case "email_like":
+    case "off_platform_payment":
+    case "phishing_like":
+    case "external_link":
+      return true
+    default: {
+      const _exhaustive: never = code
+      return _exhaustive
+    }
+  }
+}

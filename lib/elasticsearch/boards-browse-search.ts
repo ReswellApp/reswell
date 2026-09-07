@@ -3,7 +3,7 @@
  * `geo_distance` radius/nearest sorting, and faceted availability counts via
  * aggregations — replacing the in-memory haversine sort and the lean-row facet scan.
  *
- * This module is pure ES (ids / totals / counts). Row hydration + top-picks
+ * This module is pure ES (ids / totals / counts). Row hydration + daily-rotate
  * orchestration live in `lib/db/boards-browse-listings-es.ts`.
  */
 
@@ -14,7 +14,7 @@ import {
   buildListingsRankBoostShouldClauses,
   buildListingsSearchQueryBody,
   buildListingsTypoFallbackQueryBody,
-  ensureListingsIndex,
+  listingBrandIdFilterClause,
 } from "./listings-index"
 import {
   BOARD_STYLE_OPTIONS,
@@ -30,14 +30,22 @@ import {
 import {
   boardTypeForDbFromBrowseParam,
   browseTypeParamFromBoardType,
+  BOARDS_BROWSE_TOP_PICKS_SORT,
 } from "@/lib/marketplace-slug-metadata"
 import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import type { BoardsBrowseFacetCounts } from "@/lib/services/boardsBrowseFacetCounts"
 import { isUuidString } from "@/lib/utils/isUuid"
 import {
+  boardsBrowseDailyRotateSeed,
+  boardsBrowseDailyRotateWindowStartMs,
+  hashStringCyrb53,
+} from "@/lib/utils/boards-browse-daily-rotate"
+import {
   TAIL_SHAPE_LABELS,
   type TailShapeTagSlug,
 } from "@/lib/listing-tail-shape-tags"
+import { parseBrowseLocationLabel } from "@/lib/listing-location-or-filter"
+import { usStateTitleCaseName } from "@/lib/us-state-name-to-code"
 
 /** Attach `must_not` to a listings bool query body (keyword builders already set filter/must/should). */
 function withMustNot(queryBody: object, mustNot: object[]): object {
@@ -225,7 +233,7 @@ function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
     return [{ term: { brand_model_id: brandModelId } }]
   }
   if (brandId && isUuidString(brandId)) {
-    return [{ term: { brand_id: brandId } }]
+    return [listingBrandIdFilterClause(brandId, ctx.expansions)]
   }
   const out: object[] = []
   const brand = ctx.brand?.trim()
@@ -245,16 +253,45 @@ function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
 function locationTextClauses(locationText: string | undefined): object[] {
   const loc = locationText?.trim()
   if (!loc) return []
-  return [
-    {
-      multi_match: {
-        query: loc,
-        fields: ["city", "state"],
-        type: "best_fields",
-        operator: "or",
+
+  const { city, stateCode, stateRaw } = parseBrowseLocationLabel(loc)
+  const filters: object[] = []
+
+  if (city) {
+    filters.push({
+      match: {
+        city: {
+          query: city,
+          operator: "and",
+        },
       },
-    },
-  ]
+    })
+  }
+
+  if (stateCode) {
+    const should: object[] = [{ match: { state: stateCode } }]
+    const title = usStateTitleCaseName(stateCode)
+    if (title) should.push({ match: { state: title } })
+    filters.push({ bool: { should, minimum_should_match: 1 } })
+  } else if (stateRaw) {
+    filters.push({
+      match: {
+        state: { query: stateRaw, operator: "and" },
+      },
+    })
+  }
+
+  if (filters.length === 0) {
+    return [
+      {
+        match: {
+          city: { query: loc, operator: "and" },
+        },
+      },
+    ]
+  }
+
+  return filters
 }
 
 function lengthInchesClause(lengthInches: number | undefined): object | null {
@@ -344,7 +381,7 @@ export type BoardsBrowseEsSearchParams = BoardsBrowseEsContext & {
   facets?: BoardsBrowseFacetSelections
   dimensionTokens?: string[]
   geo?: { lat: number; lng: number; radiusMi?: number }
-  /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest`. */
+  /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest` | `top-picks` (24h rotate). */
   sort: string
   useSuppressionSort?: boolean
   restrictToIds?: string[]
@@ -410,6 +447,10 @@ function buildListingsFilters(params: BoardsBrowseEsSearchParams): object[] {
   return filters
 }
 
+function hashRotateSeedForEs(seed: string): number {
+  return hashStringCyrb53(seed) | 0
+}
+
 function buildSort(params: BoardsBrowseEsSearchParams): object[] {
   const sort: object[] = []
   if (params.useSuppressionSort) {
@@ -429,6 +470,36 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
   }
 
   const hasKeyword = Boolean(params.query?.trim() || params.rankQuery?.trim())
+
+  if (params.sort === BOARDS_BROWSE_TOP_PICKS_SORT) {
+    const seed = boardsBrowseDailyRotateSeed()
+    const windowStart = boardsBrowseDailyRotateWindowStartMs(seed)
+    const createdMsPainless =
+      "long created = 0L; if (doc.containsKey('created_at') && doc['created_at'].size() != 0) { created = doc['created_at'].value.toInstant().toEpochMilli(); }"
+    sort.push({
+      _script: {
+        type: "number",
+        script: {
+          lang: "painless",
+          source: `${createdMsPainless} return created >= params.windowStart ? 0 : 1;`,
+          params: { windowStart },
+        },
+        order: "asc",
+      },
+    })
+    sort.push({
+      _script: {
+        type: "number",
+        script: {
+          lang: "painless",
+          source: `${createdMsPainless} if (created >= params.windowStart) { return -created; } return doc['id'].value.hashCode() ^ params.seed;`,
+          params: { windowStart, seed: hashRotateSeedForEs(seed) },
+        },
+        order: "asc",
+      },
+    })
+    return sort
+  }
 
   if (params.sort === "price-low") {
     sort.push({ price: { order: "asc", missing: "_last" } })
@@ -465,8 +536,6 @@ export async function searchBoardsBrowse(
   const es = getElasticsearchClient()
   if (!es) return null
 
-  await ensureListingsIndex()
-
   const filter = buildListingsFilters(params)
   const mustNot: object[] = []
   const exclude = params.excludeIds?.filter(Boolean) ?? []
@@ -494,7 +563,7 @@ export async function searchBoardsBrowse(
     from,
     size,
     _source: false,
-    track_total_hits: true,
+    track_total_hits: 10_000,
     query: keywordQuery as estypes.QueryDslQueryContainer,
     sort,
   })
@@ -519,7 +588,7 @@ export async function searchBoardsBrowse(
     from,
     size,
     _source: false,
-    track_total_hits: true,
+    track_total_hits: 10_000,
     query: typoQuery as estypes.QueryDslQueryContainer,
     sort,
   })
@@ -632,8 +701,6 @@ export async function boardsBrowseFacetCountsFromEs(
 ): Promise<BoardsBrowseFacetCounts | null> {
   const es = getElasticsearchClient()
   if (!es) return null
-
-  await ensureListingsIndex()
 
   const selectionClauses = facetSelectionClauses(sel)
   const aggs: Record<string, estypes.AggregationsAggregationContainer> = {}

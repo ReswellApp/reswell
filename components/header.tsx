@@ -30,13 +30,13 @@ import {
   Search,
   User,
   Heart,
-  Plus,
   ChevronDown,
   Clock,
   LogOut,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
+import { SELL_HUB_HREF } from "@/components/features/sell/sell-type-chooser"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { forceReleaseBodyScrollLock, useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
@@ -94,22 +94,52 @@ const listYourBoardNavButtonClassName = cn(
   "shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-5 text-[14px] font-medium",
 )
 
+/** Mobile header actions: compact Reverb-like targets (32px / 20px icons). */
+const mobileActionStrokeWidth = 1.5
+const mobileActionIconClassName = "h-5 w-5"
+const mobileActionIconButtonClassName =
+  "h-8 w-8 text-foreground hover:bg-black/5 [&_svg]:size-5"
+const mobileActionRowClassName = "flex shrink-0 items-center justify-end gap-1.5"
+const mobileSellButtonClassName =
+  "h-8 shrink-0 whitespace-nowrap rounded-full border border-foreground px-3 py-0 text-[13px] font-medium leading-none text-foreground shadow-none hover:bg-muted/50 md:h-9 md:px-3.5 md:text-[14px]"
+
 /** Guest “Recently sold” nav control — larger tap target (Clock icon, links to `/sold`). */
 const recentlySoldNavButtonClassName =
   "h-11 w-14 shrink-0 px-0 text-foreground hover:bg-muted sm:h-12 sm:w-[3.75rem]"
 const recentlySoldNavIconClassName = "h-8 w-8 sm:h-9 sm:w-9"
 
+function HeaderSellButton({ className }: { className?: string }) {
+  return (
+    <Button asChild variant="outline" className={cn(mobileSellButtonClassName, className)}>
+      <Link href={SELL_HUB_HREF}>Sell</Link>
+    </Button>
+  )
+}
+
+function HeaderMobileLogInLink({ onLogIn }: { onLogIn: () => void }) {
+  return (
+    <Link
+      href={authLandingHref("/auth/login")}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+        e.preventDefault()
+        onLogIn()
+      }}
+      className="shrink-0 px-1.5 py-1.5 text-[13px] font-medium text-foreground/80 transition-colors hover:text-cerulean"
+    >
+      Log in
+    </Link>
+  )
+}
+
 function HeaderMobileNavActionsSkeleton() {
   return (
-    <div
-      className="flex shrink-0 items-center justify-end gap-1.5"
-      aria-busy="true"
-      aria-label="Loading navigation"
-    >
-      <Skeleton className="h-4 w-14 shrink-0 rounded" />
-      <Skeleton className="h-4 w-8 shrink-0 rounded" />
-      <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
-    </div>
+    <>
+      <Skeleton className="h-8 w-12 shrink-0 rounded-full" />
+      <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+      <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+      <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+    </>
   )
 }
 
@@ -120,13 +150,13 @@ function HeaderDesktopNavActionsSkeleton() {
       aria-busy="true"
       aria-label="Loading navigation"
     >
-      <Skeleton className="hidden h-12 w-[9.5rem] shrink-0 rounded-full lg:mr-10 lg:block" />
+      <Skeleton className="hidden h-10 w-14 shrink-0 rounded-full lg:mr-10 lg:block" />
       <Skeleton className="hidden h-4 w-11 shrink-0 rounded lg:block" />
       <Skeleton className="hidden h-11 w-14 shrink-0 rounded-lg lg:block" />
       <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg lg:block" />
       <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg lg:block" />
       <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg sm:block" />
-      <Skeleton className="hidden h-12 w-36 shrink-0 rounded-full sm:block lg:hidden" />
+      <Skeleton className="hidden h-10 w-14 shrink-0 rounded-full sm:block lg:hidden" />
       <Skeleton className="hidden h-4 w-14 shrink-0 rounded sm:block lg:hidden" />
       <Skeleton className="h-9 w-9 shrink-0 rounded-full sm:ml-2 md:ml-4" />
     </div>
@@ -1002,13 +1032,45 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     ) : null
 
   /** Sell flow and checkout: logo + account only (no main nav / search / cart). */
+  const isSellFlowPath =
+    pathname !== null && (pathname === "/sell" || pathname.startsWith("/sell/"))
   const isMinimalNavChrome =
-    pathname !== null &&
-    (pathname === "/sell" ||
-      pathname.startsWith("/sell/") ||
-      pathname === "/checkout" ||
-      pathname.startsWith("/checkout/"))
+    isSellFlowPath ||
+    (pathname !== null && (pathname === "/checkout" || pathname.startsWith("/checkout/")))
 
+  const isAdminChrome =
+    pathname !== null && (pathname === "/admin" || pathname.startsWith("/admin/"))
+
+  if (isAdminChrome) {
+    return (
+      <header
+        ref={headerShellRef}
+        onClick={onHeaderShellClick}
+        className="relative z-50 w-full border-b border-border bg-background shadow-sm"
+      >
+        <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
+          <SiteWordmarkLink href="/admin/home" />
+          <div className="flex shrink-0 items-center justify-end">
+            {!authLoaded ? (
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
+            ) : user && accountMenu ? (
+              accountMenu
+            ) : authLoaded ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 text-foreground"
+                onClick={() => openLogin()}
+                aria-label="Log in or sign up"
+              >
+                <User className="h-6 w-6" />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </header>
+    )
+  }
 
   if (isMinimalNavChrome) {
     return (
@@ -1033,15 +1095,30 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 {accountMenu}
               </>
             ) : authLoaded ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 shrink-0 text-foreground"
-                onClick={() => openLogin()}
-                aria-label="Log in or sign up"
-              >
-                <User className="h-6 w-6" />
-              </Button>
+              isSellFlowPath ? (
+                <Button asChild variant="outline" className={listYourBoardNavButtonClassName}>
+                  <Link
+                    href={authLandingHref("/auth/sign-up", pathname)}
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                      e.preventDefault()
+                      openSignUp(pathname)
+                    }}
+                  >
+                    Sign up
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 text-foreground"
+                  onClick={() => openLogin()}
+                  aria-label="Log in or sign up"
+                >
+                  <User className="h-6 w-6" />
+                </Button>
+              )
             ) : null}
           </div>
         </div>
@@ -1069,75 +1146,49 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         >
           {isMobileViewport ? (
             <>
-              <div className="flex min-h-[48px] min-w-0 items-center gap-2">
+              <div className="flex min-h-10 min-w-0 items-center gap-2">
                 <div className="min-w-0 flex-1">
                   <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
                 </div>
-                <div className="flex shrink-0 items-center justify-end gap-0.5">
+                <div
+                  className={mobileActionRowClassName}
+                  aria-busy={!authLoaded}
+                  aria-label={!authLoaded ? "Loading navigation" : undefined}
+                >
                   {!authLoaded ? (
                     <HeaderMobileNavActionsSkeleton />
                   ) : user ? (
                     <>
-                      <Link href="/favorites" className="inline-flex shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 text-foreground hover:bg-black/5"
-                          aria-label="Favorites"
-                        >
-                          <Heart className="h-[22px] w-[22px]" />
-                        </Button>
-                      </Link>
+                      <HeaderSellButton />
                       <NavMessagesDropdown
                         userId={user.id}
                         unreadMessages={unreadMessages}
-                        triggerClassName="h-10 w-10 shrink-0"
-                        iconClassName="h-[22px] w-[22px]"
+                        triggerClassName={cn(mobileActionIconButtonClassName, "shrink-0")}
+                        iconClassName={mobileActionIconClassName}
+                        iconStrokeWidth={mobileActionStrokeWidth}
                       />
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        className="h-10 w-10 shrink-0 text-foreground hover:bg-black/5"
-                      >
-                        <Link
-                          href="/sell?new=1"
-                          aria-label="Create listing"
-                        >
-                          <Plus className="h-[22px] w-[22px]" aria-hidden />
-                        </Link>
-                      </Button>
                       <div className="shrink-0">{accountMenu}</div>
                       <CartHeaderLink
                         showOnNarrowScreens
                         authResolved={authLoaded}
                         userId={user?.id ?? null}
+                        className={mobileActionIconButtonClassName}
+                        iconClassName={mobileActionIconClassName}
+                        iconStrokeWidth={mobileActionStrokeWidth}
                       />
                     </>
                   ) : (
                     <>
-                      <Link
-                        href="/auth/login"
-                        onClick={(e) => {
-                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                          e.preventDefault()
-                          openLogin()
-                        }}
-                        className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
-                      >
-                        Log in
-                      </Link>
-                      <Link
-                        href={authLandingHref("/auth/sign-up", "/sell?new=1")}
-                        className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
-                      >
-                        Sell
-                      </Link>
+                      <HeaderSellButton />
                       <CartHeaderLink
                         showOnNarrowScreens
                         authResolved={authLoaded}
                         userId={user?.id ?? null}
+                        className={mobileActionIconButtonClassName}
+                        iconClassName={mobileActionIconClassName}
+                        iconStrokeWidth={mobileActionStrokeWidth}
                       />
+                      <HeaderMobileLogInLink onLogIn={() => openLogin()} />
                     </>
                   )}
                 </div>
@@ -1175,7 +1226,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           {!headerRowCompact ? (
             <Suspense
               fallback={
-                <div className="hidden min-w-0 flex-1 px-2 md:block" aria-hidden>
+                <div className="hidden min-w-0 flex-1 px-2 md:block lg:max-w-xl xl:max-w-2xl" aria-hidden>
                   <Skeleton className="h-10 min-h-[2.5rem] w-full rounded-full" />
                 </div>
               }
@@ -1220,36 +1271,10 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               <HeaderDesktopNavActionsSkeleton />
             ) : (
               <>
-            {user ? (
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 shrink-0 text-foreground hover:bg-muted"
-              >
-                <Link href="/sell?new=1" aria-label="Create listing">
-                  <Plus className="h-[22px] w-[22px]" aria-hidden />
-                </Link>
-              </Button>
-            ) : null}
+            {user ? <HeaderSellButton className="lg:mr-2" /> : null}
 
             {!user ? (
-              <Button
-                asChild
-                variant="outline"
-                className={cn(listYourBoardNavButtonClassName, "hidden lg:mr-10 lg:inline-flex")}
-              >
-                <Link
-                  href={authLandingHref("/auth/sign-up", "/sell?new=1")}
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    openSignUp("/sell?new=1")
-                  }}
-                >
-                  List your gear
-                </Link>
-              </Button>
+              <HeaderSellButton className="hidden lg:mr-10 lg:inline-flex" />
             ) : null}
 
             {!user ? (
@@ -1273,8 +1298,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             <Link
               href={
                 user
-                  ? "/favorites"
-                  : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
+                  ? "/dashboard/favorites"
+                  : `/auth/login?redirect=${encodeURIComponent("/dashboard/favorites")}`
               }
               className="hidden lg:inline-flex"
               onClick={
@@ -1283,7 +1308,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   : (e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                       e.preventDefault()
-                      openLogin("/favorites")
+                      openLogin("/dashboard/favorites")
                     }
               }
             >
@@ -1310,22 +1335,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </div>
             ) : (
               <div className="flex items-center gap-0">
-                <Button
-                  asChild
-                  variant="outline"
-                  className={cn(listYourBoardNavButtonClassName, "hidden sm:inline-flex lg:hidden")}
-                >
-                  <Link
-                    href={authLandingHref("/auth/sign-up", "/sell?new=1")}
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                      e.preventDefault()
-                      openSignUp("/sell?new=1")
-                    }}
-                  >
-                    List your gear
-                  </Link>
-                </Button>
+                <HeaderSellButton className="hidden sm:inline-flex lg:hidden" />
                 <div className="hidden items-center gap-2 lg:flex">
                   <Button
                     asChild
@@ -1414,18 +1424,32 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Button>
             </div>
             {!user && authLoaded && (
-              <Link
-                href="/auth/login"
-                onClick={(e) => {
-                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                  e.preventDefault()
-                  openLogin()
-                  setMobileMenuOpen(false)
-                }}
-                className="mb-6 flex min-h-touch items-center justify-center rounded-lg bg-primary px-4 py-3 text-base font-medium text-primary-foreground no-underline transition-colors hover:bg-primary/90 hover:no-underline"
-              >
-                Sign in or create account
-              </Link>
+              <div className="mb-6 flex flex-col gap-2">
+                <Link
+                  href={authLandingHref("/auth/sign-up")}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openSignUp()
+                    setMobileMenuOpen(false)
+                  }}
+                  className="flex min-h-touch items-center justify-center rounded-lg bg-primary px-4 py-3 text-base font-medium text-primary-foreground no-underline transition-colors hover:bg-primary/90 hover:no-underline"
+                >
+                  Sign up
+                </Link>
+                <Link
+                  href={authLandingHref("/auth/login")}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openLogin()
+                    setMobileMenuOpen(false)
+                  }}
+                  className="flex min-h-touch items-center justify-center rounded-lg border border-border bg-background px-4 py-3 text-base font-medium text-foreground no-underline transition-colors hover:bg-muted hover:no-underline"
+                >
+                  Log in
+                </Link>
+              </div>
             )}
             {user && authLoaded && (
               <>
@@ -1506,7 +1530,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     title: "Marketplace",
                     links: siteFooterNavLinks.marketplace.filter((link) => link.href !== "/boards"),
                   },
-                  { title: "Support", links: siteFooterNavLinks.support },
+                  { title: "Help", links: siteFooterNavLinks.help },
+                  { title: "Careers", links: siteFooterNavLinks.careers },
                   { title: "Legal", links: siteFooterNavLinks.legal },
                 ] as const
               ).map((section, sectionIndex) => (

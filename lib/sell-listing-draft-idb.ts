@@ -6,6 +6,8 @@
  * Guest snapshots migrate to the signed-in user on auth so login redirects do not wipe progress.
  */
 
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
+
 const DB_NAME = "reswell-sell-draft"
 const STORE = "draft"
 /** Legacy single-slot key (pre–user-scoped drafts) — cleared on DB upgrade. */
@@ -17,7 +19,16 @@ const DB_VERSION = 3
 
 export const SELL_LISTING_DRAFT_VERSION = 7
 
-export type SellListingDraftListingType = "board" | "fins"
+export type SellListingDraftListingType =
+  | "board"
+  | "fins"
+  | "wetsuits"
+  | "magazines"
+  | "apparel"
+  | "boardbags"
+  | "surfpacks"
+  | "leashes"
+  | "accessories"
 
 export type SellListingDraftFormSnapshot = Record<string, unknown>
 
@@ -75,6 +86,15 @@ function sellDraftFormLooksFilledForFins(formData: SellListingDraftFormSnapshot)
   return false
 }
 
+/** Accessory-style sell forms (wetsuits, apparel, bags, …) share a flat title/brand/model shape. */
+function sellDraftFormLooksFilledForAccessory(formData: SellListingDraftFormSnapshot): boolean {
+  if (str(formData, "title") || str(formData, "description")) return true
+  if (str(formData, "brand")) return true
+  if (str(formData, "model")) return true
+  if (str(formData, "price")) return true
+  return false
+}
+
 /**
  * True when the user entered at least one “substantive” listing field worth persisting drafts.
  */
@@ -82,9 +102,9 @@ export function sellDraftFormLooksFilled(
   listingType: SellListingDraftListingType,
   formData: SellListingDraftFormSnapshot,
 ): boolean {
-  return listingType === "fins"
-    ? sellDraftFormLooksFilledForFins(formData)
-    : sellDraftFormLooksFilledForBoard(formData)
+  if (listingType === "board") return sellDraftFormLooksFilledForBoard(formData)
+  if (listingType === "fins") return sellDraftFormLooksFilledForFins(formData)
+  return sellDraftFormLooksFilledForAccessory(formData)
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -234,12 +254,19 @@ export async function buildSellListingDraft(
   const imageBlobs: SellListingDraftImageBlob[] = []
   for (const im of images) {
     if (!im.file) continue
-    const buffer = await im.file.arrayBuffer()
-    imageBlobs.push({
-      name: im.file.name,
-      type: im.file.type || "image/jpeg",
-      buffer,
-    })
+    try {
+      const buffer = await im.file.arrayBuffer()
+      imageBlobs.push({
+        name: im.file.name,
+        type: im.file.type || "image/jpeg",
+        buffer,
+      })
+    } catch (e) {
+      // Picker Files can lose their OS backing path after camera-roll / WebView
+      // suspension — skip that photo so the rest of the draft still persists.
+      if (isStaleFileNotFoundError(e)) continue
+      throw e
+    }
   }
   const formSnapshot = JSON.parse(JSON.stringify(formData)) as SellListingDraftFormSnapshot
   if (imageBlobs.length === 0 && !sellDraftFormLooksFilled(listingType, formSnapshot)) return null

@@ -48,7 +48,8 @@ export async function GET(
   }
 
   const serviceSupabase = createServiceRoleClient()
-  const label = await resolveOrderShippingLabelPaperless(serviceSupabase, orderId)
+  const labelId = request.nextUrl.searchParams.get("label_id")?.trim() || null
+  const label = await resolveOrderShippingLabelPaperless(serviceSupabase, orderId, labelId)
   if (!label) {
     return NextResponse.json({ error: "No paperless QR for this order" }, { status: 404 })
   }

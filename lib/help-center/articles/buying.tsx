@@ -35,9 +35,11 @@ export const buyingHelpArticles: HelpArticle[] = [
           <>
             <p>
               Start on {helpLink("/boards", "Surfboards")} or browse other categories like fins and
-              wetsuits. Use search and filters to narrow by brand, size, and price. Tap any active
-              listing to see photos, details, condition notes, and how the seller can get the item to
-              you.
+              wetsuits. Use search and filters to narrow by brand, size, and price. Looking for a
+              specific board that is not listed yet? Save it on{" "}
+              {helpLink("/board-finder", "Board Finder")} and we will email you when a match is listed.
+              Tap any active listing to see photos, details, condition notes, and how the seller can
+              get the item to you.
             </p>
             <p>
               See something you like? Tap the heart to save it to {helpLink("/favorites", "Favorites")}{" "}
@@ -188,8 +190,8 @@ export const buyingHelpArticles: HelpArticle[] = [
               ]}
             />
             <p>
-              If they counter, open the thread and tap <strong>Review counteroffer</strong> to{" "}
-              <strong>Accept</strong> or <strong>Decline</strong>. Accepting saves the agreed price for
+              If they counter, open the thread and tap <strong>Accept</strong> or{" "}
+              <strong>Decline</strong> on the counteroffer message. Accepting saves the agreed price for
               checkout. You are not charged until you actually pay.
             </p>
           </>
@@ -320,8 +322,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Open {helpLink("/favorites", "Favorites")} from the header to see everything you have saved.
-              Tap a listing to go back to it, or tap the heart again to remove it.
+              Open {helpLink("/dashboard/favorites", "Favorites")} from your profile menu or dashboard
+              to see everything you have saved. Tap a listing to go back to it, or tap the heart again
+              to remove it.
             </p>
             <BulletList
               items={[
@@ -353,8 +356,8 @@ export const buyingHelpArticles: HelpArticle[] = [
     groupTitle: "Paying at checkout",
     title: "How do I pay for a purchase?",
     description:
-      "Pay securely at checkout with your card through Stripe. We also support Link and Klarna. Off platform payments are not accepted.",
-    keywords: ["pay", "card", "checkout", "stripe"],
+      "Pay securely at checkout through Stripe with card, Link, Apple Pay, Google Pay, or Klarna. Off platform payments are not accepted.",
+    keywords: ["pay", "card", "checkout", "stripe", "apple pay", "google pay", "link"],
     relatedSlugs: ["wallet-balance-at-checkout", "how-do-i-buy-a-board", "why-charged-tax"],
     sections: [
       {
@@ -368,6 +371,8 @@ export const buyingHelpArticles: HelpArticle[] = [
               items={[
                 <>Debit or credit card</>,
                 <>Link (Stripe&apos;s saved payment experience)</>,
+                <>Apple Pay (Safari and supported Apple devices)</>,
+                <>Google Pay (Chrome and supported Android devices)</>,
                 <>Klarna (where available)</>,
               ]}
             />
@@ -489,7 +494,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     relatedSlugs: ["purchase-protection-claim", "how-to-contact-a-seller", "package-delayed-or-lost"],
     quickAnswer: (
       <>
-        For covered problems on shipped orders, tap <strong>Refund help</strong> on your purchase page
+        For covered problems on shipped orders, tap <strong>Get help</strong> on your purchase page
         or file a {helpLink("/protection-policy", "Purchase Protection")} claim. Qualifying returns
         need to start within 7 calendar days of delivery for U.S. buyers.
       </>
@@ -549,22 +554,23 @@ export const buyingHelpArticles: HelpArticle[] = [
                 ),
               },
               {
-                title: "Open Refund help",
+                title: "Open Get help",
                 body: (
                   <>
                     Go to {helpLink("/dashboard/purchases", "Purchases")}, open your order, and tap{" "}
-                    <strong>Refund help</strong>. Tell us if you already contacted the seller, then
-                    describe what happened.
+                    <strong>Get help</strong>. Choose a Purchase Protection claim (or another issue),
+                    tell us if you already contacted the seller when asked, then describe what happened.
                   </>
                 ),
               },
               {
-                title: "Submit to support",
+                title: "Submit your case",
                 body: (
                   <>
-                    Tap <strong>Submit to support</strong>. We usually review Purchase Protection
-                    claims within <strong>3 business days</strong>. Include tracking numbers, delivery
-                    dates, and photos when you have them.
+                    Submit from Help Hub. We usually review Purchase Protection claims within{" "}
+                    <strong>3 business days</strong>. Include tracking numbers, delivery dates, and
+                    photos when you have them. Track replies under{" "}
+                    {helpLink("/dashboard/support", "Support")}.
                   </>
                 ),
               },
@@ -654,8 +660,8 @@ export const buyingHelpArticles: HelpArticle[] = [
                 ),
               },
               {
-                title: "Tap Refund help",
-                body: "Tell us if you already messaged the seller, then describe the issue with as much detail as you can: tracking numbers, delivery dates, and what is different from the listing.",
+                title: "Tap Get help",
+                body: "Choose a Purchase Protection claim, tell us if you already messaged the seller when asked, then describe the issue with as much detail as you can: tracking numbers, delivery dates, and what is different from the listing.",
               },
               {
                 title: "Wait for review",
@@ -728,8 +734,8 @@ export const buyingHelpArticles: HelpArticle[] = [
                 body: (
                   <>
                     If tracking shows the package is lost or has not moved in a long time, open{" "}
-                    <strong>Refund help</strong> on your purchase page. Eligible non delivery claims on
-                    tracked shipments are covered by{" "}
+                    <strong>Get help</strong> on your purchase page and start a claim. Eligible non
+                    delivery claims on tracked shipments are covered by{" "}
                     {helpLink("/protection-policy", "Purchase Protection")}. Our{" "}
                     {helpLink("/shipping", "Shipping guide")} has more detail.
                   </>

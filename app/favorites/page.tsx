@@ -1,5 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
-import { SavedListContent } from "@/components/saved-list-content"
+import { redirect } from "next/navigation"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 export const metadata = pageSeoMetadata({
@@ -9,19 +8,7 @@ export const metadata = pageSeoMetadata({
   robots: { index: false, follow: false },
 })
 
-export default async function FavoritesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return null
-  }
-
-  return (
-      <main className="flex-1">
-        <section className="container mx-auto py-8">
-          <SavedListContent />
-        </section>
-      </main>
-  )
+/** Bookmarks and emails still use `/favorites`; the list now lives in the dashboard. */
+export default function FavoritesRedirectPage() {
+  redirect("/dashboard/favorites")
 }

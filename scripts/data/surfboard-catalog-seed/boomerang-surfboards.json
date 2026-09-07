@@ -1,0 +1,47 @@
+{
+  "generated_for": "Boomerang Boards official named standup catalog",
+  "source": "https://boomerangsurfboards.com/products.json (Shopify board products only — excludes fin sets and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "boomerang-surfboards",
+      "name": "Boomerang Boards",
+      "website_url": "https://boomerangsurfboards.com/",
+      "location_label": "San Diego, California",
+      "founder_name": "John Hromin",
+      "lead_shaper_name": "John Hromin",
+      "short_description": "Handmade surfboards by San Diego shaper John Hromin, with over 30 years of shaping experience.",
+      "models": [
+        {
+          "name": "Fuze - recycled",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/fuzerecycle_surfbaord_top_webimg_boomerang.jpg?v=1712253611",
+          "description": "Fuze model made from recyclable foam blank cut offs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Go.2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/Go2_surfbaord_top_webimg_boomerang.jpg?v=1709857874",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Majic Fish Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/majic_Fishegg_Boomerang_half_webimg.jpg?v=1709182126",
+          "description": "Four fin with channel through quad fins — one of the most versatile boards. EPS and epoxy gives it a shortboard feel with a longer rail line and tons of speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blob Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/Blob_fish_webimage.jpg?v=1698620808",
+          "description": "Small to medium waves. Premium hand-shaped EPS/epoxy fish from Boomerang's San Diego shaping bay.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Jelly Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/jelly_fish_webimage.jpg?v=1698620870",
+          "description": "Shortboard for small waves. The icon of the Boomerang brand and an entry model for surfers starting out on hand-shaped boards. Developed in 1994 for the everyday surfer — from small performance surfing to expert shredding.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

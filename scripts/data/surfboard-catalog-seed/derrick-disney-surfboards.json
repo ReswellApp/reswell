@@ -1,0 +1,72 @@
+{
+  "generated_for": "Derrick Disney official named standup catalog",
+  "source": "https://www.derrickdisney.com/models (official model lineup — excludes custom deposits and one-off dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "derrick-disney-surfboards",
+      "name": "Derrick Disney",
+      "website_url": "https://www.derrickdisney.com",
+      "location_label": "San Diego, California",
+      "founder_name": "Derrick Disney",
+      "lead_shaper_name": "Derrick Disney",
+      "short_description": "Twinzer-focused surfboards by Derrick Disney in San Diego — fishes, shortboards, eggs, and long gliders built around the twinzer fin system.",
+      "models": [
+        {
+          "name": "OG Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/6bcabc15-7ac1-485f-bec6-79f93d00422c/og+fish+01.png",
+          "description": "An updated traditional fish. Double foil 8\"x5\" slant back keels paired with a single concave allow for a responsive smooth speedy fish. Simple outline with slight accentuation points to improve liveliness and tighter turning radius. A notable factor when sizing these fishes is that there is plenty of planing surface and a long rail line in the bottom 2/3rds of the board. It is helpful to have a shorter length that you can over power to be able break the forward momentum and fit the curve of the wave. Personal favorite dimensions are 5'3\"- 20 1/2\"- 2 7/16\". Best sized in the 4'11\"- 5'9\" range.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinzr Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/fef1580f-c3cf-49d8-92c0-b67824f193a6/Frame+36426.png",
+          "description": "In relation to a keel fish, the TWINZR FISH maintains a similar stability but is geared a little higher. The leading canard, with the trailing high aspect rear side fins, break up the length of a keel allowing for a narrower tail block. It translates to maneuverability in a tight spaces while still providing plenty of drive. New places on the wave are unlocked. The bottom contour is rolled in the top end and transitions to a hourglass shaped single concave under the front foot and through the fins. Slow in fast out. Go to size is 5'4\"-19 7/8\"-2 7/16\". Best range is from 5'0\" to 5'9\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Zorn Twinzr Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/7e9a6579-14d1-40c3-ae8a-2bbe2b4ee329/Zorn+Twinzer-min.png",
+          "description": "The Zorn twinzer fish is a modified version of the twinzer fish. It has quite a lot of tail rocker and a narower outline. The bottom is a single concave. Made for steeper waves than the original twinzer fish. You can really match the curve of a tight transition with the Zorn. Go to size 5'4 x 19 3/8 x 2 3/8. Good in the 5'2\" to 5'11\" range.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinzr Good Wave Short Board",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/54d73817-5cec-4f6f-91f8-7e14149828fd/twinzr+good+wave+short+board+01.png",
+          "description": "This is a stretched out version of the Twinzr Shortboard with less curve between the feet and with more forward volume flow. It is meant for when the waves require a higher speed and power threshold. This semi step up is fast, and smooth with a lot of hold. My personal favorite for good waves is 6'1\" -18 7/8\"- 2 3/8\" and can jump up into the 6'11\" range for bigger waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Twinzr Shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/26ef1c56-5415-4240-beda-f978d03bd66a/twinzr+shortboard+01.png",
+          "description": "Once I found the love for the reinsert I wanted to apply the set up to all of my boards. The twinzer short board accommodates the system while maintaining a narrower tail and outline. The glide and effortlessness of a twinzer combined with a more shortboard outline for rippable surf. My go to is 5'7\" -19 1/8 -2 7/16\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Midzr Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/b26dfc3a-f825-4856-87b7-4ef5eda8bb5c/midzr+egg01.png",
+          "description": "The pocket knife for the average day. Lots of volume for stability and a wide threshold of wave size. The bottom contour is fairly neutral and simple throughout with a slight vee in the tail. Simple egg outline juiced up with the twinzer set up. The fin set up allows for spring and projection yet references a single fin approach. Personal go to for the void in the quiver is 7'0\"-21 1/2\"- 2 3/4\". Ranging from 6'6\" - 7'7\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twinzr Roe Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/8dc13600-0588-47c3-9736-e4550378d972/twinzr+roe+fish+01.png",
+          "description": "Long fish in nature, the ROE FISH provides a bigger platform. It is foiled out to balance the surface area. The bottom has reverse vee in the nose to slight single concave to slight vee out the tail. An extension to the TWINZR FISH size limitations for more glide and possibly a bigger rider. More foiled and fishlike than the MIDZR, it lands in between the TWINZR FISH and the MIDZR taking aspects from both designs. Personal favorite size is 6'5\"- 21 1/8\"- 2 5/8\". This design can be applied from 5'11\"- 7'7\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinzr Zaru",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/a303f72e-d0eb-4722-b8d2-258a044b8eec/twinzr+zaru+01.png",
+          "description": "The high performance slightly asymmetrical twinzer. The design intention is to take the twinzer set up and relate it to a smaller wave short board that can access any part of the wave and critical maneuvers. Twinzer benefits for a ripping approach. Best ridden in the waist to head high energy, the ZARU gives you the speed so you have time to place maneuvers. Go to is 5'5\"-19 1/2\"- 2 5/16\". Best between 5'3\"- 5'9\".",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Farm Board",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/159b119a-7961-4645-a48e-29f021380dac/farm+board+01.png",
+          "description": "Mini glider in theory, this design is intended to trim quickly and maneuver easily for a lengthier board. Arriving in the 8'3\" - 10'3\" size range, the Farm Board is featured with a rolled up nose, to flat in the middle, to spiral vee in the tail with edge. This helps free up the front end from catching and transitions smoothly rail to rail. The wide point is behind center allowing for more curve to turn off of the back third of the board. Favorite size 9'6\"- 22 3/4\"- 3\".",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}

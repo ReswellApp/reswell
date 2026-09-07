@@ -100,6 +100,7 @@ async function MagazineListings({
               user_id: magazine.user_id,
               title: magazine.title,
               price: magazine.price,
+              compare_at_price: magazine.compare_at_price,
               status: magazine.status,
               section: "magazines",
               shipping_available: magazine.shipping_available,

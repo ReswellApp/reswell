@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { SellerReviewDialog } from "@/components/features/messages/seller-review-dialog"
+import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
+import type { ExistingMarketplaceReview } from "@/lib/types/marketplace-review"
 
 const STAR_FILLED = ratingStarFilledClassName
 const STAR_EMPTY = ratingStarEmptyClassName
@@ -32,12 +34,7 @@ function StarRow({ value }: { value: number }) {
   )
 }
 
-export type ExistingSellerReview = {
-  id: string
-  rating: number
-  comment: string | null
-  created_at: string
-}
+export type ExistingSellerReview = ExistingMarketplaceReview
 
 type ReviewSellerControlsProps = {
   orderId: string
@@ -83,6 +80,11 @@ export function ReviewSellerControls({
           ) : (
             <p className="text-sm text-muted-foreground italic">No written comment.</p>
           )}
+          <MarketplaceReviewPhotos
+            reviewId={existingReview.id}
+            photos={existingReview.photos}
+            size={compact ? "sm" : "md"}
+          />
         </CardContent>
       </Card>
     )

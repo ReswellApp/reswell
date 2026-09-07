@@ -1,5 +1,9 @@
 import { z } from "zod"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
+import {
+  listingRemovedVideoIdsSchema,
+  listingVideosFieldSchema,
+} from "@/lib/validations/listing-video"
 import { SURFPACK_SIZE_OPTIONS } from "@/lib/surfpack-listing-config"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -69,6 +73,7 @@ const surfpackListingBaseSchema = z.object({
     .array(surfpackListingImageSchema)
     .min(SURFPACK_LISTING_MIN_PHOTOS, "Add at least one photo")
     .max(SURFPACK_LISTING_MAX_PHOTOS),
+  videos: listingVideosFieldSchema,
 })
 
 function withSurfpackListingRefinements<T extends z.ZodType>(schema: T) {
@@ -114,6 +119,7 @@ function withSurfpackListingRefinements<T extends z.ZodType>(schema: T) {
 const surfpackListingUpdateBaseSchema = surfpackListingBaseSchema.extend({
   listingId: z.string().uuid(),
   removedImageIds: z.array(z.string().uuid()).optional().default([]),
+  removedVideoIds: listingRemovedVideoIdsSchema,
 })
 
 export const createSurfpackListingSchema = withSurfpackListingRefinements(surfpackListingBaseSchema)

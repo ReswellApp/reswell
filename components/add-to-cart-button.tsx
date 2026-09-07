@@ -10,6 +10,7 @@ import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { cn } from "@/lib/utils"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
@@ -39,6 +40,7 @@ export function AddToCartButton({
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
   const authModal = useOptionalAuthModal()
+  const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
@@ -83,7 +85,7 @@ export function AddToCartButton({
         eventId: r.metaEventId,
       })
       setAdded(true)
-      window.dispatchEvent(new CustomEvent("cartUpdated"))
+      reportAddedToCart(r)
       setTimeout(() => setAdded(false), 2000)
     } finally {
       setLoading(false)

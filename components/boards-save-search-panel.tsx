@@ -229,7 +229,7 @@ export function BoardsSaveSearchPanel({
           ) : !isSignedIn ? (
             "Sign in to save"
           ) : atSavedLimit ? (
-            "3 saved max"
+            `${BOARD_SAVED_SEARCHES_MAX} saved max`
           ) : (
             "Save search"
           )}
@@ -306,8 +306,11 @@ export function BoardsSaveSearchPanel({
           </h3>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Save up to {BOARD_SAVED_SEARCHES_MAX} searches to revisit later or get emailed when new
-            boards match. Alerts are nationwide — location filters above only affect results on this
-            page.
+            boards match. Or set one up on{" "}
+            <Link href="/board-finder" className="underline underline-offset-2 hover:text-foreground">
+              Board Finder
+            </Link>
+            . Alerts are nationwide — location filters above only affect results on this page.
           </p>
           <p className="text-xs text-foreground/80 pt-0.5">{summary}</p>
         </div>
@@ -368,7 +371,7 @@ export function BoardsSaveSearchPanel({
           ) : !isSignedIn ? (
             "Sign in to save"
           ) : atSavedLimit ? (
-            "3 saved — remove one"
+            `${BOARD_SAVED_SEARCHES_MAX} saved — remove one`
           ) : (
             "Save search"
           )}

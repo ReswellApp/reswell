@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listingStorageObjectPathFromUrl } from "@/lib/listing-media-proxy-url"
+import {
+  listingStorageObjectPathFromUrl,
+  persistableListingThumbnailUrl,
+} from "@/lib/listing-media-proxy-url"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 
 export type ListingImageUpdateOp = {
@@ -18,8 +21,11 @@ type ExistingListingImageRow = {
   thumbnail_url: string | null
 }
 
-function normalizedThumbnailUrl(thumbnailUrl: string | null | undefined): string | null {
-  return typeof thumbnailUrl === "string" && thumbnailUrl.trim() ? thumbnailUrl.trim() : null
+function normalizedThumbnailUrl(
+  thumbnailUrl: string | null | undefined,
+  fullUrl?: string | null,
+): string | null {
+  return persistableListingThumbnailUrl(thumbnailUrl, fullUrl)
 }
 
 function listingImageUrlsEquivalent(a: string, b: string): boolean {
@@ -39,8 +45,10 @@ function listingImageThumbnailsEquivalent(
   existing: ExistingListingImageRow,
   img: ListingImageUpdateOp,
 ): boolean {
-  const existingThumb = normalizedThumbnailUrl(existing.thumbnail_url)
-  const nextThumb = normalizedThumbnailUrl(img.thumbnailUrl)
+  const existingThumb = typeof existing.thumbnail_url === "string" && existing.thumbnail_url.trim()
+    ? existing.thumbnail_url.trim()
+    : null
+  const nextThumb = normalizedThumbnailUrl(img.thumbnailUrl, img.url)
   if (existingThumb === nextThumb) return true
   if (existingThumb == null && nextThumb && listingImageUrlsEquivalent(existing.url, nextThumb)) {
     return true
@@ -161,7 +169,7 @@ export async function syncListingImages(
       const { error } = await supabase.from("listing_images").insert({
         listing_id: listingId,
         url: img.url.trim(),
-        thumbnail_url: normalizedThumbnailUrl(img.thumbnailUrl),
+        thumbnail_url: normalizedThumbnailUrl(img.thumbnailUrl, img.url),
         is_primary: img.isPrimary,
         sort_order: img.sortOrder,
       })
@@ -183,7 +191,7 @@ export async function syncListingImages(
       const url = img.url.trim()
       if (url) {
         rowUpdate.url = url
-        rowUpdate.thumbnail_url = normalizedThumbnailUrl(img.thumbnailUrl)
+        rowUpdate.thumbnail_url = normalizedThumbnailUrl(img.thumbnailUrl, img.url)
       }
 
       const { error } = await supabase

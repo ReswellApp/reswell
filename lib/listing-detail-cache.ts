@@ -1,4 +1,4 @@
-import { createAnonSupabaseClient } from "@/lib/supabase/server"
+import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 
 export {
   LISTING_META_SELECT,

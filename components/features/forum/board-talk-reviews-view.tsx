@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { ArrowUpDown, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -209,9 +209,11 @@ export function BoardTalkReviewsView({ reviews }: BoardTalkReviewsViewProps) {
                         </Badge>
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
-                    </span>
+                    <RelativeTime
+                      iso={review.createdAt}
+                      formatLabel={formatDistanceToNowLabel}
+                      className="text-xs text-muted-foreground"
+                    />
                   </div>
                   {review.comment ? (
                     <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{review.comment}</p>

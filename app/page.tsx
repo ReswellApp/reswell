@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { ProfileBannerImage } from "@/components/features/dashboard/profile-banner-image"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import {
@@ -36,35 +37,35 @@ import {
   getCachedHomeRecentlySoldCatalog,
   getCachedHomeRecentlyListedGridCatalog,
   getCachedHomeStableCatalog,
+  getCachedHomeTrendingBrandsCatalog,
 } from "@/lib/cache/home-public-catalog"
 
 export async function generateMetadata() {
   return resolvePageMetadata("home")
 }
 
-/** Page ISR matches recently sold strip TTL; stable sections use a longer `unstable_cache` TTL. */
+/** Page ISR matches recently sold strip TTL; stable sections use a longer `unstable_cache` TTL. Trending brands are tag-only. */
 export const revalidate = 3600
 
 export default async function HomePage() {
   const [
     stableCatalog,
+    trendingBrandsCatalog,
     recentlyAddedSurfboardsCatalog,
     recentlyAddedFinsCatalog,
     recentlySoldCatalog,
     recentlyListedGridCatalog,
   ] = await Promise.all([
     getCachedHomeStableCatalog(),
+    getCachedHomeTrendingBrandsCatalog(),
     getCachedHomeRecentlyAddedSurfboardsCatalog(),
     getCachedHomeRecentlyAddedFinsCatalog(),
     getCachedHomeRecentlySoldCatalog(),
     getCachedHomeRecentlyListedGridCatalog(),
   ])
 
-  const {
-    homeTrendingBrandRows,
-    featuredShops,
-    featuredNew,
-  } = stableCatalog
+  const { featuredShops, featuredNew } = stableCatalog
+  const { homeTrendingBrandRows } = trendingBrandsCatalog
 
   const { featuredBoards } = recentlyAddedSurfboardsCatalog
   const { featuredFins } = recentlyAddedFinsCatalog
@@ -129,20 +130,32 @@ export default async function HomePage() {
                 Used surfboard marketplace
               </Badge>
               <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight text-foreground text-balance sm:text-4xl md:text-[2.375rem] lg:text-4xl lg:leading-tight xl:text-[2.625rem]">
-                Buy and Sell Surfboards
+                The marketplace for surfers
               </h1>
               <p className="mt-4 text-base text-muted-foreground text-pretty sm:mt-5 sm:text-lg lg:mt-4 lg:text-base">
-                Find surfboards locally or from sellers that offer shipping, list your own boards with photos and dimensions, and buy straight from surfers.
+                Join surfers buying and selling surf gear.
               </p>
               <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:mt-7 sm:gap-3.5 lg:mt-6 lg:justify-start">
-                <Button size="lg" className="w-full" asChild>
+                {user ? (
+                  <Button size="lg" className="w-full" asChild>
+                    <Link href="/sell">Start Selling</Link>
+                  </Button>
+                ) : (
+                  <Button size="lg" className="w-full" asChild>
+                    <Link href={authLandingHref("/auth/sign-up")}>Sign up</Link>
+                  </Button>
+                )}
+                <Button size="lg" variant="outline" className="w-full lg:w-full" asChild>
                   <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                     Browse surfboards
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="w-full lg:w-full" asChild>
-                  <Link href="/sell">Start Selling</Link>
+                  <Link href="/cities">
+                    Browse by city
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -153,6 +166,9 @@ export default async function HomePage() {
           <FadeInSection>
             <section className="max-lg:pt-6 max-lg:pb-12 lg:py-16">
               <div className="container mx-auto max-lg:px-4 sm:max-lg:px-6">
+                <div className="mb-4 flex min-w-0 items-center justify-between lg:mb-8">
+                  <h2 className="text-2xl font-bold">Recently listed</h2>
+                </div>
                 <HomeRecentlyListedGrid
                   listings={recentlyListedGrid}
                   userId={user?.id ?? null}
@@ -164,28 +180,28 @@ export default async function HomePage() {
         ) : null}
         </div>
 
-        {featuredRecentlySold && featuredRecentlySold.length > 0 && (
+        {featuredFins && featuredFins.length > 0 && (
           <FadeInSection>
             <section className="py-16">
               <div className="container mx-auto">
                 <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <h2 className="text-2xl font-bold">Recently sold surfboards</h2>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h2 className="text-2xl font-bold">Recently added fins</h2>
                   </div>
                   <Button variant="outline" asChild>
-                    <Link href="/sold">
+                    <Link href="/fins">
                       Find More
                       <ArrowRight className="ml-1 h-4 w-4" />
                     </Link>
                   </Button>
                 </div>
                 <HomeListingScrollRow uniformCardHeights>
-                  {featuredRecentlySold.map((board) => (
+                  {featuredFins.map((fin) => (
                     <HomePeerListingScrollTile
-                      key={board.id}
-                      listing={board}
+                      key={fin.id}
+                      listing={fin}
                       userId={user?.id ?? null}
-                      isFavorited={favoritedIds.includes(board.id)}
+                      isFavorited={favoritedIds.includes(fin.id)}
                     />
                   ))}
                 </HomeListingScrollRow>
@@ -199,7 +215,7 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/sell" className={marketingCtaBannerLinkClassName}>
               <div>
-                <p className={marketingCtaBannerTitleClassName}>Gear that deserves another session</p>
+                <h2 className={marketingCtaBannerTitleClassName}>Gear that deserves another session</h2>
                 <p className={marketingCtaBannerDescriptionClassName}>
                   A community of surfers buying, selling, and passing along the boards and gear they love. Find your
                   next setup, or send one off to its next owner.
@@ -252,7 +268,7 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/contact" className={marketingCtaBannerLinkClassName}>
               <div>
-                <p className={marketingCtaBannerTitleClassName}>We&apos;re here whenever you need us</p>
+                <h2 className={marketingCtaBannerTitleClassName}>We&apos;re here whenever you need us</h2>
                 <p className={marketingCtaBannerDescriptionClassName}>
                   Real people, real surfers, happy to help with a listing, a question, or just pointing you toward the
                   right board. Say hi anytime.
@@ -266,28 +282,28 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {featuredFins && featuredFins.length > 0 && (
+        {featuredRecentlySold && featuredRecentlySold.length > 0 && (
           <FadeInSection>
             <section className="py-16">
               <div className="container mx-auto">
                 <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <h2 className="text-2xl font-bold">Recently added fins</h2>
+                  <div className="min-w-0">
+                    <h2 className="text-2xl font-bold">Recently sold surfboards</h2>
                   </div>
                   <Button variant="outline" asChild>
-                    <Link href="/fins">
+                    <Link href="/sold">
                       Find More
                       <ArrowRight className="ml-1 h-4 w-4" />
                     </Link>
                   </Button>
                 </div>
                 <HomeListingScrollRow uniformCardHeights>
-                  {featuredFins.map((fin) => (
+                  {featuredRecentlySold.map((board) => (
                     <HomePeerListingScrollTile
-                      key={fin.id}
-                      listing={fin}
+                      key={board.id}
+                      listing={board}
                       userId={user?.id ?? null}
-                      isFavorited={favoritedIds.includes(fin.id)}
+                      isFavorited={favoritedIds.includes(board.id)}
                     />
                   ))}
                 </HomeListingScrollRow>
@@ -302,10 +318,9 @@ export default async function HomePage() {
             <div className={marketingCtaBannerPanelClassName}>
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
-                  <p className={marketingCtaBannerTitleClassName}>Ready to get started?</p>
+                  <h2 className={marketingCtaBannerTitleClassName}>Come find a board</h2>
                   <p className={marketingCtaBannerDescriptionClassName}>
-                    Browse boards, fins, wetsuits, and more from locals and shops — or list yours with photos and
-                    pickup options in a few minutes.
+                    Browse used boards and gear from surfers — or list one and send it on its next session.
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">

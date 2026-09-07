@@ -1,5 +1,9 @@
 import { z } from "zod"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
+import {
+  listingRemovedVideoIdsSchema,
+  listingVideosFieldSchema,
+} from "@/lib/validations/listing-video"
 import { ACCESSORY_SIZE_OPTIONS } from "@/lib/accessory-listing-config"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -69,6 +73,7 @@ const accessoryListingBaseSchema = z.object({
     .array(accessoryListingImageSchema)
     .min(ACCESSORY_LISTING_MIN_PHOTOS, "Add at least one photo")
     .max(ACCESSORY_LISTING_MAX_PHOTOS),
+  videos: listingVideosFieldSchema,
 })
 
 function withAccessoryListingRefinements<T extends z.ZodType>(schema: T) {
@@ -114,6 +119,7 @@ function withAccessoryListingRefinements<T extends z.ZodType>(schema: T) {
 const accessoryListingUpdateBaseSchema = accessoryListingBaseSchema.extend({
   listingId: z.string().uuid(),
   removedImageIds: z.array(z.string().uuid()).optional().default([]),
+  removedVideoIds: listingRemovedVideoIdsSchema,
 })
 
 export const createAccessoryListingSchema = withAccessoryListingRefinements(accessoryListingBaseSchema)

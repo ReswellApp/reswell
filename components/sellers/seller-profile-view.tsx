@@ -16,6 +16,8 @@ import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { sellerProfileShellClassName } from "@/lib/sellers/seller-profile-layout"
+import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
+import type { MarketplaceReviewPhotoRef } from "@/lib/types/marketplace-review"
 import { cn } from "@/lib/utils"
 
 type SellerProfileReview = {
@@ -24,6 +26,7 @@ type SellerProfileReview = {
   comment: string | null
   created_at: string
   reviewerLabel: string
+  photos: MarketplaceReviewPhotoRef[]
 }
 
 type SellerProfileViewProps = {
@@ -91,6 +94,7 @@ function ReviewsSection({
                 {review.comment?.trim() ? (
                   <p className="text-sm text-muted-foreground">{review.comment}</p>
                 ) : null}
+                <MarketplaceReviewPhotos reviewId={review.id} photos={review.photos} size="md" />
               </CardContent>
             </Card>
           ))}

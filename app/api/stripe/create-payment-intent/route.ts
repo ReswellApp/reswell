@@ -9,6 +9,10 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 import {
+  countSurfboardListings,
+  peerCheckoutSurfboardCountError,
+} from "@/lib/surfboard-multi-board-parcel"
+import {
   applyAcceptedOfferToPeerCheckoutListings,
   priceListingsFromAcceptedOffer,
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
@@ -34,8 +38,17 @@ import {
 } from "@/lib/services/checkoutPromo"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
-import { verifyCheckoutShippingQuoteToken, type CheckoutShippingQuoteTokenPayload } from "@/lib/services/checkoutShippingQuoteToken"
+import { verifyCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
+import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
 import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
+import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
+import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
+import {
+  checkoutOffersShippingPackagingChoice,
+  DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveShippingPackagingMode,
+  type ShippingPackagingMode,
+} from "@/lib/shipping/packaging-mode"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -97,6 +110,7 @@ export async function POST(request: NextRequest) {
     offer_id?: string | null
     promo_code?: string | null
     quote_token?: string | null
+    packaging_mode?: string | null
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -147,6 +161,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
+  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
+  if (surfboardCapError) {
+    return NextResponse.json({ error: surfboardCapError }, { status: 422 })
+  }
+
   for (const listing of listingsOrdered) {
     if (!isPeerListingSection(listing.section) && !isReswellShopListing(listing.section)) {
       return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
@@ -176,7 +195,6 @@ export async function POST(request: NextRequest) {
    * unless paying via an accepted offer bundle (`offer_id`). */
   const offerIdParam = body.offer_id?.trim() || null
   let validatedOfferId: string | null = null
-  let offerFulfillmentLock: "pickup" | "shipping" | null = null
   const quantityByListingId: Record<string, number> = {}
   for (const id of listingIdsOrdered) quantityByListingId[id] = 1
 
@@ -194,7 +212,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: offerCheck.error }, { status: 400 })
     }
     validatedOfferId = offerIdParam
-    offerFulfillmentLock = offerCheck.fulfillment
     listingsForTotals = priceListingsFromAcceptedOffer(
       listingsOrdered,
       offerCheck.offer,
@@ -329,18 +346,6 @@ export async function POST(request: NextRequest) {
       lp && sa ? (fulfillment === "shipping" ? "shipping" : "pickup") : !lp && sa ? "shipping" : "pickup"
   }
 
-  if (offerFulfillmentLock && impliedFulfillment !== offerFulfillmentLock) {
-    return NextResponse.json(
-      {
-        error:
-          offerFulfillmentLock === "pickup"
-            ? "This accepted offer is for local pickup."
-            : "This accepted offer is for shipping.",
-      },
-      { status: 400 },
-    )
-  }
-
   const addressId = body.address_id?.trim() || null
   let buyerAddress: ProfileAddressRow | null = null
   if (impliedFulfillment === "shipping") {
@@ -365,8 +370,29 @@ export async function POST(request: NextRequest) {
   }
   buyerAddress = phoneCheck.address
 
-  let preverifiedShipping: { shippingUsd: number; usedReswellQuote: boolean } | undefined
-  let verifiedQuotePayload: CheckoutShippingQuoteTokenPayload | null = null
+  let preverifiedShipping:
+    | {
+        shippingUsd: number
+        usedReswellQuote: boolean
+        rateId?: string | null
+        serviceCode?: string | null
+        packageRates?: CheckoutShippingPackageRate[] | null
+      }
+    | undefined
+  let packagingMode: ShippingPackagingMode = DEFAULT_SHIPPING_PACKAGING_MODE
+  const packagingFromBody = resolveShippingPackagingMode(
+    body.packaging_mode,
+    DEFAULT_SHIPPING_PACKAGING_MODE,
+  )
+  if (
+    impliedFulfillment === "shipping" &&
+    listingIdsOrdered.length > 1 &&
+    checkoutOffersShippingPackagingChoice(listingsOrdered) &&
+    packagingFromBody === "separate"
+  ) {
+    packagingMode = "separate"
+  }
+
   const quoteTokenRaw = body.quote_token?.trim()
   if (impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
     const verified = verifyCheckoutShippingQuoteToken(quoteTokenRaw, {
@@ -380,10 +406,22 @@ export async function POST(request: NextRequest) {
     if (!verified.payload.usedReswellQuote) {
       return NextResponse.json({ error: "Invalid shipping quote token." }, { status: 400, headers: JSON_NO_STORE_HEADERS })
     }
-    verifiedQuotePayload = verified.payload
+    const tokenPackaging = resolveShippingPackagingMode(
+      verified.payload.packagingMode,
+      DEFAULT_SHIPPING_PACKAGING_MODE,
+    )
+    if (tokenPackaging !== packagingMode) {
+      return NextResponse.json(
+        { error: "Shipping quote does not match packaging choice. Refresh shipping and try again." },
+        { status: 400, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
     preverifiedShipping = {
       shippingUsd: verified.payload.shippingCents / 100,
       usedReswellQuote: true,
+      rateId: verified.payload.rateId?.trim() || null,
+      serviceCode: verified.payload.serviceCode?.trim() || null,
+      packageRates: verified.payload.packageRates ?? null,
     }
   }
 
@@ -393,28 +431,13 @@ export async function POST(request: NextRequest) {
     fulfillment: impliedFulfillment,
     buyerAddress,
     diagnosticTagPrefix: "payment-intent",
+    packagingMode,
     preverifiedShipping,
     quantityByListingId,
   })
 
   if (!bundle.ok) {
     return NextResponse.json({ error: bundle.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
-  }
-
-  if (verifiedQuotePayload) {
-    const itemCents = Math.round(bundle.totalItemPriceUsd * 100)
-    const shippingCents = Math.round(bundle.totalShippingUsd * 100)
-    const totalCents = Math.round(bundle.totalUsd * 100)
-    if (
-      itemCents !== verifiedQuotePayload.itemSubtotalCents ||
-      shippingCents !== verifiedQuotePayload.shippingCents ||
-      totalCents !== verifiedQuotePayload.totalCents
-    ) {
-      return NextResponse.json(
-        { error: "Shipping quote no longer matches this order — refresh your shipping total." },
-        { status: 409, headers: JSON_NO_STORE_HEADERS },
-      )
-    }
   }
 
   const promoCodeRaw = body.promo_code?.trim()
@@ -494,6 +517,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const adAttribution = await readAdAttributionFromCookies()
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountCents,
       currency: "usd",
@@ -507,6 +532,7 @@ export async function POST(request: NextRequest) {
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
         bundle_line_count: String(listingIdsOrdered.length),
+        ...stripeAdAttributionMetadata(adAttribution),
         ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),
         ...(promoCodeId && promoKind
@@ -520,20 +546,31 @@ export async function POST(request: NextRequest) {
           : {}),
         ...(bundle.anyUsedReswellQuote
           ? {
-              reswell_shipping_cents: String(
-                Math.round(
-                  bundle.lines.filter((l) => l.usedReswellQuote).reduce((s, l) => s + l.shippingUsd, 0) * 100,
-                ),
-              ),
-              ...(verifiedQuotePayload?.rateId
+              reswell_shipping_cents: String(Math.round(bundle.totalShippingUsd * 100)),
+              ...(bundle.reswellQuote?.rateId && packagingMode === "together"
                 ? {
-                    shipengine_rate_id: verifiedQuotePayload.rateId,
-                    ...(verifiedQuotePayload.serviceCode
-                      ? { shipengine_service_code: verifiedQuotePayload.serviceCode }
+                    shipengine_rate_id: bundle.reswellQuote.rateId,
+                    ...(bundle.reswellQuote.serviceCode
+                      ? { shipengine_service_code: bundle.reswellQuote.serviceCode }
                       : {}),
                   }
                 : {}),
+              ...(packagingMode === "separate" && bundle.packageRates.length > 0
+                ? {
+                    shipengine_package_rates: JSON.stringify(
+                      bundle.packageRates.map((r) => ({
+                        listingId: r.listingId,
+                        rateId: r.rateId,
+                        shippingCents: r.shippingCents,
+                        serviceCode: r.serviceCode ?? null,
+                      })),
+                    ),
+                  }
+                : {}),
             }
+          : {}),
+        ...(impliedFulfillment === "shipping" && listingIdsOrdered.length > 1
+          ? { shipping_packaging_mode: packagingMode }
           : {}),
       },
       description: stripeDescription.slice(0, 1000),
@@ -570,6 +607,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         clientSecret: paymentIntent.client_secret,
+        shippingUsd: bundle.totalShippingUsd,
+        totalUsd: chargedTotalUsd,
       },
       { headers: JSON_NO_STORE_HEADERS },
     )

@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ChevronLeft, Minus, Plus, ShoppingCart, X } from "lucide-react"
+import { ChevronLeft, Minus, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   clearCart,
@@ -23,11 +23,14 @@ import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-displ
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { CartBuyingFaq } from "@/components/features/cart/cart-buying-faq"
+import { CartEmptyState } from "@/components/features/cart/cart-empty-state"
 import {
   CartFavoritesCarousel,
   type CartCarouselFavoriteListing,
 } from "@/components/features/cart/cart-favorites-carousel"
+import { CartSellerAddonsCarousel } from "@/components/features/cart/cart-seller-addons-carousel"
 import { CartOrderSummary } from "@/components/features/cart/cart-order-summary"
+import type { CartSellerAddonCarouselItem } from "@/lib/services/cartSellerAddons"
 import { cn } from "@/lib/utils"
 import { FavoriteButton } from "@/components/favorite-button"
 
@@ -66,12 +69,20 @@ export function CartPageView({
   loadError,
   favoritedListingIds,
   favoriteCarouselListings,
+  sellerAddonListings,
+  sellerAddonSubtitle,
+  sellerAddonViewAllHref,
+  sellerAddonViewAllLabel,
   buyerId,
 }: {
   initialItems: CartPageItem[]
   loadError: string | null
   favoritedListingIds: string[]
   favoriteCarouselListings: CartCarouselFavoriteListing[]
+  sellerAddonListings: CartSellerAddonCarouselItem[]
+  sellerAddonSubtitle: string
+  sellerAddonViewAllHref: string | null
+  sellerAddonViewAllLabel: string
   buyerId: string
 }) {
   const router = useRouter()
@@ -91,7 +102,11 @@ export function CartPageView({
     for (const row of initialItems) {
       if (listingAvailable(row.listing)) {
         const qty = Math.max(1, row.quantity || 1)
-        total += Number(row.listing.price) * qty
+        const unit =
+          row.agreedPriceUsd != null && row.agreedPriceUsd > 0
+            ? row.agreedPriceUsd
+            : Number(row.listing.price)
+        total += unit * qty
         availUnits += qty
       } else {
         unavail += 1
@@ -154,14 +169,23 @@ export function CartPageView({
 
     const sellerGroupCount = peerSellerGroups.size
 
+    const maxSurfboardsInSellerGroup = Math.max(
+      0,
+      ...[...peerSellerGroups.values()].map(
+        (rows) => rows.filter(({ listing }) => listing.section === "surfboards").length,
+      ),
+    )
+
     const note =
       sellerGroupCount > 1
         ? "Multiple sellers — checkout each group separately. Reswell shop items are included with whichever seller group you check out first."
-        : shopRows.length > 0 && peerRows.length > 0
-          ? "Peer listings and Reswell shop items check out together in one payment."
-          : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
-            ? "Shipping cost and delivery timing are finalized at checkout."
-            : "Pickup or shipping details are confirmed when you check out."
+        : maxSurfboardsInSellerGroup >= 2
+          ? "These surfboards can ship together in one box or separately — choose at checkout. Live shipping is quoted from your address."
+          : shopRows.length > 0 && peerRows.length > 0
+            ? "Peer listings and Reswell shop items check out together in one payment."
+            : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
+              ? "Shipping cost and delivery timing are finalized at checkout."
+              : "Pickup or shipping details are confirmed when you check out."
 
     return {
       availableTotal: total,
@@ -225,28 +249,7 @@ export function CartPageView({
   }
 
   if (initialItems.length === 0) {
-    return (
-      <main className="flex-1 bg-white antialiased dark:bg-background">
-        <div className="mx-auto flex min-h-[55vh] max-w-lg flex-col justify-center px-6 py-24 text-center sm:px-8">
-          <div className="mx-auto mb-10 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100/90 ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/10">
-            <ShoppingCart className="h-6 w-6 text-neutral-400" strokeWidth={1} />
-          </div>
-          <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-foreground md:text-[32px]">
-            Your cart is empty
-          </h1>
-          <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-neutral-600 dark:text-muted-foreground">
-            Save listings here while you browse. You can check out when you&apos;re ready.
-          </p>
-          <Button
-            asChild
-            className="mx-auto mt-10 h-11 min-w-[11rem] rounded-lg bg-[#5574AD] px-7 text-[15px] font-medium text-white shadow-sm hover:bg-[#466091]"
-            size="lg"
-          >
-            <Link href="/boards">Continue shopping</Link>
-          </Button>
-        </div>
-      </main>
-    )
+    return <CartEmptyState />
   }
 
   const productCount = initialItems.length
@@ -280,7 +283,7 @@ export function CartPageView({
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-start lg:gap-10">
           <div className="rounded-lg border border-neutral-200 bg-white p-4 sm:p-6 dark:border-white/10 dark:bg-background">
             <ul className="divide-y divide-neutral-200 dark:divide-white/10">
-              {initialItems.map(({ cartCreatedAt, listing, quantity }) => {
+              {initialItems.map(({ cartCreatedAt, listing, quantity, agreedPriceUsd }) => {
                 const img = listingTitleThumbnailSrc(listing.listing_images ?? null)
                 const seller = listing.profiles
                 const isShop = isReswellShopListing(listing.section)
@@ -289,7 +292,9 @@ export function CartPageView({
                 const available = listingAvailable(listing)
                 const href = listingDetailHref(listing)
                 const title = listing.title
-                const unitPrice = Number(listing.price)
+                const listPrice = Number(listing.price)
+                const hasAcceptedOffer = agreedPriceUsd != null && agreedPriceUsd > 0
+                const unitPrice = hasAcceptedOffer ? agreedPriceUsd : listPrice
                 const qty = Math.max(1, quantity || 1)
                 const lineTotal = unitPrice * qty
                 const stockMax = Math.max(1, Math.floor(Number(listing.stock_quantity) || qty))
@@ -336,7 +341,12 @@ export function CartPageView({
                           >
                             {title}
                           </Link>
-                          <p className="shrink-0 text-[16px] font-semibold tabular-nums text-foreground">
+                          <p className="shrink-0 text-right text-[16px] font-semibold tabular-nums text-foreground">
+                            {hasAcceptedOffer && listPrice !== unitPrice ? (
+                              <span className="mr-2 text-[13px] font-normal text-neutral-400 line-through">
+                                ${formatMoney(listPrice)}
+                              </span>
+                            ) : null}
                             ${formatMoney(lineTotal)}
                           </p>
                         </div>
@@ -345,6 +355,11 @@ export function CartPageView({
                           {attrParts.length > 0 ? `${attrParts.join(" · ")} · ` : null}
                           Price: ${formatMoney(unitPrice)} USD / per item
                         </p>
+                        {hasAcceptedOffer ? (
+                          <p className="mt-1 text-[13px] font-medium text-emerald-700 dark:text-emerald-400">
+                            Your accepted price: ${formatMoney(unitPrice)} at checkout
+                          </p>
+                        ) : null}
 
                         <div className="mt-2 flex flex-wrap items-center gap-x-2 text-[12px] text-neutral-500 dark:text-neutral-400">
                           <span>Sold by</span>
@@ -439,6 +454,15 @@ export function CartPageView({
             />
           </aside>
         </div>
+
+        <CartSellerAddonsCarousel
+          initialListings={sellerAddonListings}
+          subtitle={sellerAddonSubtitle}
+          viewAllHref={sellerAddonViewAllHref}
+          viewAllLabel={sellerAddonViewAllLabel}
+          buyerId={buyerId}
+          favoritedListingIds={favoritedListingIds}
+        />
 
         <CartBuyingFaq className="mt-16 border-t border-neutral-200 pt-12 dark:border-white/10" />
 

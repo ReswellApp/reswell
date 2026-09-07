@@ -1,20 +1,21 @@
-/** Shipping cost modes sellers may pick. Flat/free are admin-only. */
+/** Shipping cost modes sellers may pick on a listing. */
 export type SellShippingCostMode = "reswell" | "flat" | "free"
 
 export type ListingPersistShippingOptions = {
-  /** When true, free/flat modes are kept. Default false → Reswell only. */
+  /**
+   * @deprecated Free/flat are available to all sellers. Kept for call-site compat; ignored.
+   */
   allowPrivilegedShippingModes?: boolean
 }
 
 /**
- * Non-admins may only use Reswell-calculated shipping.
- * Admins (and admin impersonation edits) may set flat dollar rates or free shipping.
+ * Resolve listing shipping cost mode. Defaults to Reswell when unset/invalid.
+ * Free and flat are available to all sellers.
  */
 export function normalizeSellShippingCostMode(
   mode: SellShippingCostMode | null | undefined,
-  allowPrivilegedModes: boolean,
+  _allowPrivilegedModes?: boolean,
 ): SellShippingCostMode {
-  const resolved = mode === "flat" || mode === "free" || mode === "reswell" ? mode : "reswell"
-  if (allowPrivilegedModes) return resolved
+  if (mode === "flat" || mode === "free" || mode === "reswell") return mode
   return "reswell"
 }

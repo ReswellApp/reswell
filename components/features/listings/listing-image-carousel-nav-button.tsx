@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 const ICON_CLASS = "h-4 w-4 shrink-0"
 
-export type ListingImageCarouselNavVariant = "embed" | "lightbox"
+export type ListingImageCarouselNavVariant = "embed" | "lightbox" | "chrome"
 
 export interface ListingImageCarouselNavButtonProps {
   direction: "prev" | "next"
@@ -45,6 +45,8 @@ export function ListingImageCarouselNavButton({
           "z-10 opacity-80 hover:opacity-100",
         variant === "lightbox" &&
           "z-20 border border-white/80 bg-white/75 text-neutral-800 shadow-[0_2px_12px_rgba(0,0,0,0.14)] backdrop-blur-md transition-[background-color,transform,color] hover:bg-white/95 hover:text-black active:scale-[0.98] [&_svg]:stroke-[2]",
+        variant === "chrome" &&
+          "z-30 h-11 w-11 border border-border/55 bg-background/90 text-foreground shadow-sm backdrop-blur-md hover:bg-muted/40 [&_svg]:size-[18px] [&_svg]:stroke-[2]",
       )}
     >
       <Icon className={ICON_CLASS} aria-hidden />

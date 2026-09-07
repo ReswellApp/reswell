@@ -1,10 +1,13 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { insertOrderSupportRequest } from "@/lib/db/order-support"
+import { insertSupportCaseAttachments } from "@/lib/db/supportCaseAttachments"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { validateBuyerSupportForOrder } from "@/lib/services/orderBuyerSupport"
 import { orderBuyerSupportRequestSchema } from "@/lib/validations/order-buyer-support"
+import { orderRequestTypeSubject, orderRequestTypeToKind } from "@/lib/utils/support-case-display"
 
 export const dynamic = "force-dynamic"
 
@@ -65,6 +68,7 @@ export async function POST(
     body: parsed.data.body.trim(),
     contacted_seller_first: contacted,
     order_ref: orderRef,
+    requester_role: "buyer",
   })
 
   if (error || !data) {
@@ -72,8 +76,40 @@ export async function POST(
     return NextResponse.json({ error: "Could not submit request" }, { status: 500 })
   }
 
+  const kind = orderRequestTypeToKind(parsed.data.request_type)
+  const subject = orderRequestTypeSubject(parsed.data.request_type, orderRef)
+  const service = createServiceRoleClient()
+  const opened = await createSupportCaseWithOpeningMessage(service, {
+    kind,
+    subject,
+    preview: parsed.data.body.trim(),
+    requester_user_id: user.id,
+    requester_email: user.email ?? null,
+    requester_role: "buyer",
+    order_id: orderId,
+    order_ref: orderRef,
+    order_support_request_id: data.id,
+    source_channel: "order_buyer",
+    priority: kind === "protection_claim" ? "high" : "normal",
+    body: parsed.data.body.trim(),
+    authorUserId: user.id,
+  })
+
+  if (parsed.data.request_type === "refund_help" && parsed.data.evidence?.length) {
+    const attached = await insertSupportCaseAttachments(service, {
+      orderSupportRequestId: data.id,
+      supportCaseId: opened?.id ?? null,
+      uploadedBy: user.id,
+      attachments: parsed.data.evidence,
+    })
+    if (attached.error) {
+      console.warn("[buyer-support] evidence:", attached.error.message)
+    }
+  }
+
+  const caseId = opened?.id ?? data.id
   await trackKlaviyoSupportTicketCreated({
-    supportTicketId: data.id,
+    supportTicketId: caseId,
     email: user.email ?? "",
     externalId: user.id,
     source: "order_buyer_support",
@@ -82,5 +118,5 @@ export async function POST(
     orderRef: orderRef,
   })
 
-  return NextResponse.json({ success: true, id: data.id })
+  return NextResponse.json({ success: true, id: caseId })
 }

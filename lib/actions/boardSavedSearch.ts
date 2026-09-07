@@ -106,6 +106,7 @@ export async function createBoardSavedSearchAction(raw: unknown) {
     return { error: "Could not save search. Try again." as const }
   }
 
+  revalidatePath("/board-finder")
   revalidatePath("/boards")
   revalidatePath("/fins")
   revalidatePath("/wetsuits")
@@ -144,6 +145,7 @@ export async function deleteBoardSavedSearchAction(raw: unknown) {
     return { error: "Could not remove saved search." as const }
   }
 
+  revalidatePath("/board-finder")
   revalidatePath("/boards")
 
   return { success: true as const }

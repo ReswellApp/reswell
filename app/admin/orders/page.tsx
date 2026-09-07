@@ -62,6 +62,7 @@ import {
 import { toast } from 'sonner'
 import { format, formatDistanceToNow } from 'date-fns'
 import { AdminOrdersDashboard } from '@/components/features/admin/admin-orders-dashboard'
+import { AdminOpenOrdersSection } from '@/components/features/admin/admin-open-orders-section'
 import { profileMediaDisplaySrc } from '@/lib/public-media-display-src'
 import type { AdminOrdersDashboardPayload } from '@/lib/services/adminOrdersStats'
 import { cn } from '@/lib/utils'
@@ -206,6 +207,7 @@ export default function AdminOrdersPage() {
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [openFilter, setOpenFilter] = useState('none')
   const [paymentFilter, setPaymentFilter] = useState('all')
   const [testFilter, setTestFilter] = useState('all')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
@@ -222,8 +224,16 @@ export default function AdminOrdersPage() {
   }, [searchInput])
 
   useEffect(() => {
+    const open = new URLSearchParams(window.location.search).get('open')
+    if (open === 'shipping' || open === 'pickup' || open === 'all') {
+      setOpenFilter(open)
+      setStatusFilter('all')
+    }
+  }, [])
+
+  useEffect(() => {
     setOffset(0)
-  }, [search, statusFilter, paymentFilter, testFilter, sortKey, sortDir, pageSize])
+  }, [search, statusFilter, openFilter, paymentFilter, testFilter, sortKey, sortDir, pageSize])
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true)
@@ -243,7 +253,8 @@ export default function AdminOrdersPage() {
     setError(null)
     try {
       const params = new URLSearchParams()
-      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (openFilter !== 'none') params.set('open', openFilter)
+      else if (statusFilter !== 'all') params.set('status', statusFilter)
       if (paymentFilter !== 'all') params.set('payment', paymentFilter)
       if (testFilter !== 'all') params.set('test', testFilter)
       if (search) params.set('q', search)
@@ -266,7 +277,7 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, paymentFilter, testFilter, search, sortKey, sortDir, pageSize, offset])
+  }, [statusFilter, openFilter, paymentFilter, testFilter, search, sortKey, sortDir, pageSize, offset])
 
   useEffect(() => {
     void fetchOrders()
@@ -342,7 +353,11 @@ export default function AdminOrdersPage() {
   }
 
   const hasFilters =
-    statusFilter !== 'all' || paymentFilter !== 'all' || testFilter !== 'all' || search !== ''
+    statusFilter !== 'all' ||
+    openFilter !== 'none' ||
+    paymentFilter !== 'all' ||
+    testFilter !== 'all' ||
+    search !== ''
 
   return (
     <div className="space-y-6">
@@ -384,6 +399,12 @@ export default function AdminOrdersPage() {
 
       <AdminOrdersDashboard data={dashboard} loading={statsLoading} />
 
+      <AdminOpenOrdersSection
+        shipping={dashboard?.openLists.shipping ?? []}
+        pickup={dashboard?.openLists.pickup ?? []}
+        loading={statsLoading}
+      />
+
       {/* Toolbar */}
       <div className="rounded-2xl border border-border bg-card p-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -396,14 +417,37 @@ export default function AdminOrdersPage() {
             />
           </SiteSearchBar>
           <div className="grid grid-cols-2 gap-2 sm:flex lg:shrink-0">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="lg:w-40">
-                <SelectValue placeholder="Status" />
+            <Select
+              value={openFilter}
+              onValueChange={(v) => {
+                setOpenFilter(v)
+                if (v !== 'none') setStatusFilter('all')
+              }}
+            >
+              <SelectTrigger className="lg:w-44">
+                <SelectValue placeholder="Fulfillment" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="none">All fulfillment</SelectItem>
+                <SelectItem value="shipping">Open shipping</SelectItem>
+                <SelectItem value="pickup">Open pickup</SelectItem>
+                <SelectItem value="all">All open</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                setStatusFilter(v)
+                if (v !== 'all') setOpenFilter('none')
+              }}
+            >
+              <SelectTrigger className="lg:w-44">
+                <SelectValue placeholder="Payment status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All payment statuses</SelectItem>
                 <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="pending">Pending payment</SelectItem>
                 <SelectItem value="refunding">Refunding</SelectItem>
                 <SelectItem value="refunded">Refunded</SelectItem>
               </SelectContent>
@@ -494,7 +538,9 @@ export default function AdminOrdersPage() {
                 onClick={() => {
                   setSearchInput('')
                   setStatusFilter('all')
+                  setOpenFilter('none')
                   setPaymentFilter('all')
+                  setTestFilter('all')
                 }}
               >
                 Reset filters

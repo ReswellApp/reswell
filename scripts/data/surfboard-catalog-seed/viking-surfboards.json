@@ -1,0 +1,109 @@
+{
+  "generated_for": "Viking Surfboards official named standup catalog",
+  "source": "https://vikingsurfboards.com/surfboards/ (Futhark, Performance, CAT Bottom collections)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "viking-surfboards",
+      "name": "Viking Surfboards",
+      "website_url": "https://vikingsurfboards.com",
+      "location_label": "Fort Lauderdale, Florida",
+      "founder_name": "Christian Wolthers",
+      "lead_shaper_name": "Christian Wolthers",
+      "short_description": "South Florida surfboard label founded by Christian Wolthers — Futhark retro shapes, CAT Bottom channels, and performance shortboards shaped in Fort Lauderdale.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-09-01-99623c13f3fe28156f63.jpg",
+      "models": [
+        {
+          "name": "Catbottom Longboard",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/03/surfboards-landing-catbottom.jpg",
+          "description": "This is a true performance channel. The outbound flow of water and the CAT Bottom provides the thruster effect of maneuverability while performing with added speed. Bottom belly convex channel cut compresses inbound water flow, producing up to 15% more speed on outbound water at a widening angle of flow from board tail. An overall performance board for experienced surfers — a mostly small- to head-high hybrid with speed, fun, and maneuverability. The Cat Bottom can be applied to many different shapes with the purpose to create more speed and flow, adding more power and dynamic to your maneuver.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Catbottom Short",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/03/surfboards-landing-catbottom.jpg",
+          "description": "This is a true performance channel. The outbound flow of water and the CAT Bottom provides the thruster effect of maneuverability while performing with added speed. Bottom belly convex channel cut compresses inbound water flow, producing up to 15% more speed on outbound water at a widening angle of flow from board tail. An overall performance board for experienced surfers — a mostly small- to head-high hybrid with speed, fun, and maneuverability. The Cat Bottom can be applied to many different shapes with the purpose to create more speed and flow, adding more power and dynamic to your maneuver.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Change",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-change28.jpg",
+          "description": "In the early 70’s, The Campbell Brother’s revolutionized surfboard design by adding side fins to the traditional single fin being used at the time. Driven by the need to stabilize the speed on the popular and newly designed single fin shortboards, the brothers looked into alternative boat designs to come up with a solution for their problem and so created the Bonzer fin system. This changed the history of surfboard design forever, as they were the first ever to have three fins on a board, almost a decade before the Simon Anderson’s famous thrusters. Furthermore, the brothers made a thorough study behind the hydrodynamics of surfboards on waves, coming up with unique arrangement of board concave and side-fins angle alignment with the sole purpose of efficiently organize water flow. The angle of the fins, combined with their shallow depth allows easier rail-to- transition, with less resistance, which in turn allows the surfer to keep the board on the rail with much less effort. The Bonzer Change Model is available in any board-outline and size range. The “Bonzer 3” is ideal for gun-type outlines, whereas the “Bonzer 5” will be optimal for head high surf and wider board outlines. The bonzer-fins are hand crafted by Japanese-Brazilian master-craftsman Rodrigo Matsuda, based on the Campbell Brother’s original design.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Energy",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-energy12.jpg",
+          "description": "Twin Fin Energy Model is a modern-day look at the 1967 Classic Twin fin design. The rails are sharper and the tail is narrower, in comparison to the Classic Twin fin Goddess model. However, the low rocker is maintained for greater glide and momentum. All in all, this is a versatile board design that goes well from small and mushy wave conditions to large and hollow surf. The surfer will be able to attack the wave with modern approach as well as draw classic rail turns, always maintaining energy between moves. The Energy Model comes as twin-fin set-up and may come with an additional central plug for a thruster set-up, making this one of the most versatile board of the Selection. Furthermore, all boards on this model receive 4 ounces fiberglass: 1 layer on top and 2 layers on the bottom for optimal weight and strength.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Generous",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-generous20.jpg",
+          "description": "The Generous model can be defined in one word: simplicity. Continuous curves and minimum rocker are central characteristics of the Generous Model. The Generous Models come either as single fins or as 2 + 1 fin setups; the latter having a more precise and versatile personality. The rounded tail outline will provide and easy glide on the wave while its rounded nose gives good paddling power for the lazy paddlers. The wide point on this model is further back, approximately 2/5 of the boards’ length from the tail. This translates into …. The rails are rounded, except on the tail, where some edge is applied to create added drive. The bottom is flat for simplicity. Expect easy lines and refined wave approach when taking the Generous Model for a spin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Goddess",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-goddess9.jpg",
+          "description": "The classic twin fin Goddess model is inspired on the 1967 revolutionary fish-board design developed by Steve Lis and Jeff Ching. Wide and blunt outline with minimum rocker translated into unprecedented speed and traction. This board provides stability, speed and maneuverability. The extra tail width results in more flotation while still producing a fast, loose and responsive performance from the twin fin set up. This allows the surfer to attack the wave, while maintaining style and flow. All Goddess Models receive 6 ounces fiberglass: one layer on top and 2 layers on the bottom, ensuring strength and durability. Despite generally being the go-to board for weaker wave conditions, this model will work well on waves up to 6ft+, depending on the surfer’s ability.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Grom Series",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/performance-board5.jpg",
+          "description": "Team Choice Epoxy Grom Series great for intermediate kids and light weight advanced surfers. This model was made to shred the waves by allowing you to explore all maneuvers in any condition.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Honor",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-honor32.jpg",
+          "description": "In the late 60’s and early 70′, founders of Viking Surfboards, John Olav Wolthers (JOW) and Christian Benz Wolthers (CBW), took charge of the shortboard revolution in Brazil on single fin shortboards. The Honor Model pays tribute to that golden era of surfing while adding a contemporary finish on its design. This Model is a great board option for down the line surfing and barreling conditions. Hard edged rails and smooth curve transactions will generate precise directional stability. The Honor Model boards are glassed with three layers of 6 ounces fiberglass, one on top and two on the bottom for optimal strength and stability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Iztapa",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/performance-iztapa.jpg",
+          "description": "High Performance works great in powerful beach break, point break and hollow waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Journey",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-journey1.jpg",
+          "description": "The Journey Model is a proper classic log, a design that I have been working on with Neco Carbone for more than a decade. This model is inspired on the timeless Nuuhiwa outline, and is ideal for small waves: ankle to chest high. The slight nose concave, step deck and 50/50 rails will enable maximized nasal time, which is the distinctive characteristic of the Journey Model. The square tail will be optimal for shifting, beach-break conditions, while the diamond tail will be slightly better on down-the-line waves. In comparison to the Log-Pin model, this board is wider and thinner. In order to have the correct weight, the Journey Logs receives two layers of 6 ounces fiberglass on each side. All in all, the Journey Model is a heavy, classic board which will translate into light, effortless surf and long noserides.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mush Glider",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/performance-mushglider.jpg",
+          "description": "Mush Glider created for kids in transition from foamy surfboards to fiberglass, it has a lot of volume so kids can go from beginners to intermediate. It’s also a great choice for intermediate and advanced surfers in the summer times and weak waves providing you a rail to rail performance.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Power",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-power18.jpg",
+          "description": "In 1967 Steve Lis and Jeff Ching designed the revolutionary fish board, inspired on the Paipo and Knee-boards their elderlies were riding at the time. Similarly, on a recent trip to Peru, I got the chance to prone-ride a knee-board that I borrowed from a veteran Californian surfer I had just met. The outline of that particular board was awkward and so was the angle and fin placement of the quad-fin set-up. Nonetheless, that was the fastest and most stable shortboard I had ever ridden. Based on that particular experience we design the Quad Fish Strength Model: a knee-board outline adapted to prone riding. The Strength model is suitable for virtually any type of wave; in fact the defining factor on taking this board out will be the surfer’s mood. The quad-fin setup, low rocker and advanced wide point will provide an agile, fast and stable platform, allowing the surfer to perform smooth transitions between maneuvers while gaining with speed and momentum. All boards on this model receive 4 ounces fiberglass, 1 layer on top and 2 layers on the bottom for optimal weight and strength.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Shield",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-shield29.jpg",
+          "description": "The Shield Model is inspired on the timeless Mini Simmons board design. In 1948 Bob Simmons obtained a copy of a military study made on planning crafts as an effort to improve power boat performances. Adapting that study to surfboard design, Bob Simmons eventually came out with the Mini Simmons model. Mr. Simmons realized that using minimum rocker; drag would be reduced and with minimal curve in the outlines, trim and speed would be maximized. The result was a short, wide and flat board which provided great speed, glide and maneuverability. The key feature of the mini Simmons board model is its high width to length aspect-ratio. Hydrodynamically speaking, this translates into lower resistance, which together with the minimum rocker, results in maximized speed. In order to control all that speed and give the board directional stability, the fins are placed as far back as they possibly can. Speaking of fins, all Shield Model boards com with glassed on fins hand-crafted by Japanese-Brazilian master-craftsman Rodrigo Matsuda. The fins are inspired on the original Bob Simmons fin outline, while the leash-plug has been designed by Mr. Matsuda himself, as an eco-friendly solution for the left over pieces of wood in his garage. The wood choice for this model is XXX, extracted from the SE region of Brazil, from a reforestation farm project.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Superfish Catbottom",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/03/surfboards-landing-catbottom.jpg",
+          "description": "This is a true performance channel. The outbound flow of water and the CAT Bottom provides the thruster effect of maneuverability while performing with added speed. Bottom belly convex channel cut compresses inbound water flow, producing up to 15% more speed on outbound water at a widening angle of flow from board tail. An overall performance board for experienced surfers — a mostly small- to head-high hybrid with speed, fun, and maneuverability. The Cat Bottom can be applied to many different shapes with the purpose to create more speed and flow, adding more power and dynamic to your maneuver.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wisdom",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-wisdom5.jpg",
+          "description": "The Wisdom Model is yet another classic log, however the pin tail and slight rail edge (55/45) on the tail grants more drive and maneuverability than the traditional Journey Model. This model is optimal on waves up to head high and most suited for point-breaks or long waves. The 2 + 1 fin set-up is recommended for larger or hollower surf conditions. The pin outline and slight rail edge on the tail will enable the surfer to perform long, drawn-out turns without losing the traditional Log approach. In general, this board has a decisive personality: refined turns and great noserides. To provide the correct weight that a log requires, the Journey Log Models receive two layers of 6 ounces fiberglass on each side.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}

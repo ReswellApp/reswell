@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import {
+  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
+  hydrateHomePeerListingRows,
+} from "@/lib/db/home-peer-listing-feed"
 
 /** Reverb-style mosaic: 7 tiles (hero + 6 satellites), ~50/50 surfboards and fins. */
 export const HOME_MOST_VIEWED_MOSAIC_TILE_COUNT = 7
@@ -30,7 +33,7 @@ async function fetchMostViewedListingRowsForSection(
     return []
   }
 
-  return data ?? []
+  return hydrateHomePeerListingRows((data ?? []) as Record<string, unknown>[])
 }
 
 export async function fetchHomeMostViewedSurfboardRows(

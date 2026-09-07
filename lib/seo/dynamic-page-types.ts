@@ -52,8 +52,20 @@ export const DYNAMIC_PAGE_TYPES: DynamicPageType[] = [
       { token: "tagline", label: "Short description", sample: "Performance surfboards from Santa Barbara" },
     ],
     defaultTitleTemplate: "{name} · Surf brand — Reswell",
+    defaultDescriptionTemplate: "{tagline}",
+  },
+  {
+    key: "type:city",
+    label: "City landing pages",
+    note: "Every local inventory page at /reswell/[slug] (e.g. /reswell/santa-barbara).",
+    samplePath: "/reswell/santa-barbara",
+    variables: [
+      { token: "city", label: "City label", sample: "Santa Barbara, CA" },
+      { token: "count", label: "Listing count label", sample: "153 listings" },
+    ],
+    defaultTitleTemplate: "Used surfboards in {city} — Reswell",
     defaultDescriptionTemplate:
-      "Explore {name} on Reswell — models, stories, and where to find their boards.",
+      "Browse {count} of used surfboards and gear in {city}. Buy local and pick up in person on Reswell.",
   },
   {
     key: "type:seller",
@@ -67,6 +79,19 @@ export const DYNAMIC_PAGE_TYPES: DynamicPageType[] = [
     defaultTitleTemplate: "{name} · Reswell",
     defaultDescriptionTemplate:
       "{name} on Reswell. Shop surf gear and boards — {location}.",
+  },
+  {
+    key: "type:surf-shop",
+    label: "Surf shop pages",
+    note: "Hardcoded local surf shop landings at /surf-shops/[slug].",
+    samplePath: "/surf-shops/rincon-designs",
+    variables: [
+      { token: "name", label: "Shop name", sample: "Rincon Designs Surf Shop" },
+      { token: "location", label: "Location", sample: "Carpinteria, CA" },
+    ],
+    defaultTitleTemplate: "{name} — Reswell",
+    defaultDescriptionTemplate:
+      "{name} in {location}. Independent surf shop featured on Reswell.",
   },
 ]
 

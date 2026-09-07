@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { revalidateHomeTrendingBrandsCatalog } from "@/lib/cache/revalidate-home-public-catalog"
+import { revalidateBrandLogoMedia } from "@/lib/cache/revalidate-public-storage-object"
+import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
+import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -119,6 +123,16 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
     productCategoriesUpdate = parsedCategories
   }
 
+  let previousLogoUrl: string | null = null
+  if (body.logo_url !== undefined) {
+    const { data: current } = await supabase
+      .from("brands")
+      .select("logo_url")
+      .eq("slug", currentSlug)
+      .maybeSingle()
+    previousLogoUrl = typeof current?.logo_url === "string" ? current.logo_url : null
+  }
+
   const { data, error } = await supabase
     .from("brands")
     .update(updates)
@@ -151,7 +165,20 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
   revalidatePath(BRANDS_BASE)
   revalidatePath(`${BRANDS_BASE}/${currentSlug}`)
   revalidatePath(`${BRANDS_BASE}/${data.slug}`)
+  if (
+    body.logo_url !== undefined ||
+    body.name !== undefined ||
+    body.slug !== undefined
+  ) {
+    revalidateHomeTrendingBrandsCatalog()
+  }
+  if (body.logo_url !== undefined) {
+    const nextLogo = typeof updates.logo_url === "string" ? updates.logo_url : null
+    revalidateBrandLogoMedia(previousLogoUrl, nextLogo)
+  }
   void syncBrandToIndex(supabase, data.id)
   void syncFinCatalogBrandToIndex(supabase, data.id)
+  void syncSellCatalogBrandToIndex(supabase, data.id)
+  revalidateSellCatalogSearch()
   return NextResponse.json({ slug: data.slug })
 }

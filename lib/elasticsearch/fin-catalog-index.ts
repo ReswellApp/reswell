@@ -333,8 +333,6 @@ export async function searchFinCatalogHitsFromElasticsearch(
   const compactW = escapeElasticsearchWildcard(compact)
 
   try {
-    await ensureFinCatalogIndex()
-
     const should: object[] = []
 
     if (compact.length >= 2) {
@@ -415,6 +413,7 @@ export async function searchFinCatalogHitsFromElasticsearch(
       index: ELASTICSEARCH_FIN_CATALOG_INDEX,
       size: limit,
       _source: ["kind", "entity_id"],
+      track_total_hits: false,
       query: {
         bool: {
           filter,

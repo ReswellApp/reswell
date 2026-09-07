@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { resizeListingImageBufferToTileVariant } from "@/lib/media/listing-tile-variant-resize"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import { isAbortError } from "@/lib/utils/is-abort-error"
 
@@ -25,11 +26,11 @@ export async function mirrorExternalListingImagesToStorage(opts: {
   supabase: SupabaseClient
   userId: string
   imageUrls: string[]
-}): Promise<Array<{ url: string; thumbnail_url: string }>> {
+}): Promise<Array<{ url: string; thumbnail_url: string | null }>> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   if (!supabaseUrl) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL")
 
-  const results: Array<{ url: string; thumbnail_url: string }> = []
+  const results: Array<{ url: string; thumbnail_url: string | null }> = []
 
   for (let i = 0; i < opts.imageUrls.length; i++) {
     const sourceUrl = opts.imageUrls[i]?.trim()
@@ -48,8 +49,9 @@ export async function mirrorExternalListingImagesToStorage(opts: {
       const bytes = Buffer.from(await res.arrayBuffer())
       if (bytes.byteLength < 512) continue
 
-      const path = `${opts.userId}/import-${Date.now()}-${i}.${ext}`
-      const { error } = await opts.supabase.storage.from("listings").upload(path, bytes, {
+      const stamp = Date.now()
+      const fullPath = `${opts.userId}/import-${stamp}-${i}-full.${ext}`
+      const { error } = await opts.supabase.storage.from("listings").upload(fullPath, bytes, {
         upsert: false,
         contentType: contentType?.split(";")[0]?.trim() || "image/jpeg",
         cacheControl: "31536000",
@@ -59,8 +61,28 @@ export async function mirrorExternalListingImagesToStorage(opts: {
         continue
       }
 
-      const publicUrl = listingObjectPublicUrl(supabaseUrl, path)
-      results.push({ url: publicUrl, thumbnail_url: publicUrl })
+      const publicUrl = listingObjectPublicUrl(supabaseUrl, fullPath)
+      let thumbnailUrl: string | null = null
+      try {
+        const thumbBuffer = await resizeListingImageBufferToTileVariant(bytes)
+        const thumbPath = `${opts.userId}/import-${stamp}-${i}-thumb.webp`
+        const { error: thumbError } = await opts.supabase.storage
+          .from("listings")
+          .upload(thumbPath, thumbBuffer, {
+            upsert: false,
+            contentType: "image/webp",
+            cacheControl: "31536000",
+          })
+        if (thumbError) {
+          console.warn("[import listing images] thumb upload:", thumbError.message)
+        } else {
+          thumbnailUrl = listingObjectPublicUrl(supabaseUrl, thumbPath)
+        }
+      } catch (thumbErr) {
+        console.warn("[import listing images] thumb resize:", thumbErr)
+      }
+
+      results.push({ url: publicUrl, thumbnail_url: thumbnailUrl })
     } catch (err) {
       if (!isAbortError(err)) {
         console.warn("[import listing images] fetch:", err)

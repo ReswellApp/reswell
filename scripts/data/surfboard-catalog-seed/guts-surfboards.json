@@ -1,0 +1,72 @@
+{
+  "generated_for": "Guts Surfboards official named standup catalog",
+  "source": "https://gutssurfboards.com/collections/surfboards (Shopify surfboards collection only — excludes Kelp Wear apparel and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "guts-surfboards",
+      "name": "Guts Surfboards",
+      "website_url": "https://gutssurfboards.com",
+      "location_label": "Bishopston, Gower, Wales",
+      "founder_name": "Chris 'Guts' Griffiths",
+      "lead_shaper_name": "Chris 'Guts' Griffiths",
+      "short_description": "Gower, Wales surfboards hand-shaped by two-time European professional surfing champion Chris 'Guts' Griffiths.",
+      "models": [
+        {
+          "name": "Pro model",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/Screenshot_2025-02-13_124959.avif?v=1771669831",
+          "description": "All-round performance longboard developed over five years with low volume and progressive rocker — ridden to five European titles and countless national and international wins. 9'1\" x 22\" with thruster or 10\" box and side fin options.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "White Walker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/White_Walker_Boards.avif?v=1771668571",
+          "description": "Versatile mid-length diamond-tailed quad fin performer from 2 ft to 10 ft with generous volume and a chamfered deck line for smooth carving. 7'6\" x 22\" with custom sizing available.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Evil Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/Evil_Twin_Boards.avif?v=1771678369",
+          "description": "Best-selling mid-length twin fin with exceptional paddling, wave catching, and manoeuvrable performance. 7' x 21.5\" with custom sizing available.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "UFO",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_44045768a78a4c28b3d992bf63901483.avif?v=1771629194",
+          "description": "Next-generation hybrid with extra-wide nose and tail for planing area in a compact length — paddles like a fish with straight rails for critical turns. Blended single concave channel bottom with 4 or 5 fin setup; sizes from 5'6\" through 7'.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro Performer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_01f32370a1924fcea00be64edeb5ba11.avif?v=1771670449",
+          "description": "Classic old-style mal with 50-50 rails, lower rocker, and a 1960s template for traditional logging.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pro Nose",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_6a10dffb636b4e9496c0751dcc27471d.avif?v=1771670236",
+          "description": "Performance noserider developed with Sam Bleakley, Elliot Dudley, and Joe and Grace Davies to maximize time on the tip in small waves and competition.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Elfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/Elfish_board.avif?v=1771668832",
+          "description": "Classic old-school fish — short, fat, and flat with a beak nose and front-loaded volume. Perfect summer groveller that stays fun in more juice. 5'10 x 21\" with custom sizing available.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mule",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_8c7f805f270645958555d229fb912d15_ee74044e-2d34-4ecf-ac66-84bf1c9cdfa9.avif?v=1771629674",
+          "description": "Versatile hybrid shortboard with a diamond tail, full template, single concave, relaxed entry rocker, and quad fin setup — from 2 ft slop to 6 ft barrels. Sizes 6' to 6'10\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mullet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0954/3886/4757/files/a38822_8c7f805f270645958555d229fb912d15.avif?v=1771629491",
+          "description": "Wide-tailed high-volume board for fish conditions with a straighter tail for more drive and less drift — a performance board under 7' for longboarders. Sizes 6'0 to 6'10\" in box and side, twin, or quad setups.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

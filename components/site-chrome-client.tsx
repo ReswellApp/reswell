@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { Header } from "@/components/header"
@@ -13,10 +13,17 @@ import { Footer } from "@/components/footer"
 import { NavigationPageGate } from "@/components/navigation-page-gate"
 import { RouteProgressBar } from "@/components/route-progress-bar"
 import { AuthModalProvider } from "@/components/auth/auth-modal-context"
+import { AddedToCartProvider } from "@/components/features/cart/added-to-cart-context"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
-import { ProfileCompletionRequiredDialog } from "@/components/auth/profile-completion-required-dialog"
 import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
+import { GiveawayEntryBootstrap } from "@/components/features/giveaways/giveaway-entry-bootstrap"
+import {
+  GiveawayMarquee,
+  isGiveawayMarqueeActive,
+} from "@/components/features/giveaways/giveaway-marquee"
+import { GiveawaySignupPopup } from "@/components/features/giveaways/giveaway-signup-popup"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
+import type { ImpersonationData } from "@/lib/impersonation"
 import {
   isMessageThreadDetailRoute,
   isMessagesDesktopShellRoute,
@@ -49,7 +56,9 @@ function hideFooter(pathname: string | null): boolean {
     pathname.startsWith("/messages/") ||
     pathname === "/sell" ||
     pathname.startsWith("/sell/") ||
-    pathname.startsWith("/import/")
+    pathname.startsWith("/import/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
   )
 }
 
@@ -59,9 +68,11 @@ function hideFooter(pathname: string | null): boolean {
 export function SiteChromeClient({
   children,
   headerAuth,
+  initialImpersonation = null,
 }: {
   children: React.ReactNode
   headerAuth: SiteChromeAuthPayload
+  initialImpersonation?: ImpersonationData | null
 }) {
   const pathname = usePathname()
   const flatMobileMessagesInbox = useFlatMobileMessagesInbox()
@@ -90,48 +101,67 @@ export function SiteChromeClient({
     return <>{children}</>
   }
 
+  const showTopCategoryBar = shouldShowSiteTopCategoryBar(pathname)
+  const showGiveawayMarquee =
+    showTopCategoryBar &&
+    !pathname?.startsWith("/giveaways") &&
+    !headerAuth.user &&
+    isGiveawayMarqueeActive()
+
   if (hideSiteChrome(pathname)) {
     return (
       <AuthModalProvider>
-        <div className="flex min-h-dvh flex-col">
-          <ProfileCompletionRequiredDialog />
-          <NewsletterPromoPopup serverUser={headerAuth.user} />
-          <RouteProgressBar />
-          <NavigationPageGate>{children}</NavigationPageGate>
-        </div>
+        <AddedToCartProvider>
+          <div className="flex min-h-dvh flex-col">
+            <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
+            <GiveawaySignupPopup serverUser={headerAuth.user} />
+            <NewsletterPromoPopup serverUser={headerAuth.user} />
+            <RouteProgressBar />
+            <NavigationPageGate>{children}</NavigationPageGate>
+          </div>
+        </AddedToCartProvider>
       </AuthModalProvider>
     )
   }
   return (
     <AuthModalProvider>
-      <ProfileCompletionRequiredDialog />
-      <NewsletterPromoPopup serverUser={headerAuth.user} />
-      <div
-        className={cn(
-          "flex flex-col",
-          lockViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh",
-        )}
-      >
-        <RouteProgressBar />
-        <SiteHeaderShell>
-          <ImpersonationBanner />
-          <Header serverHeaderAuth={headerAuth} />
-        </SiteHeaderShell>
+      <AddedToCartProvider>
+        <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
+        <GiveawaySignupPopup serverUser={headerAuth.user} />
+        <NewsletterPromoPopup serverUser={headerAuth.user} />
         <div
           className={cn(
-            "flex flex-col pt-[var(--site-header-height,4rem)]",
-            flatMobileMessagesInbox ? "flex-none" : "min-h-0 flex-1",
-            lockViewport && "overflow-hidden",
-            hideFooter(pathname)
-              ? "pb-[env(safe-area-inset-bottom)]"
-              : "pb-10 sm:pb-12 md:pb-16",
+            "flex flex-col",
+            lockViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh",
           )}
         >
-          {shouldShowSiteTopCategoryBar(pathname) ? <SiteTopCategoryBar /> : null}
-          <NavigationPageGate>{children}</NavigationPageGate>
+          <RouteProgressBar />
+          <SiteHeaderShell>
+            <Suspense fallback={null}>
+              <ImpersonationBanner
+                initialIsAdmin={headerAuth.bootstrap?.profile?.is_admin === true}
+                initialTarget={initialImpersonation}
+              />
+            </Suspense>
+            <Header serverHeaderAuth={headerAuth} />
+          </SiteHeaderShell>
+          <div
+            className={cn(
+              "flex flex-col pt-[var(--site-header-height,4rem)]",
+              flatMobileMessagesInbox ? "flex-none" : "min-h-0 flex-1",
+              lockViewport && "overflow-hidden",
+              hideFooter(pathname)
+                ? "pb-[env(safe-area-inset-bottom)]"
+                : "pb-10 sm:pb-12 md:pb-16",
+            )}
+          >
+            {showTopCategoryBar ? <SiteTopCategoryBar /> : null}
+            {showGiveawayMarquee ? <GiveawayMarquee /> : null}
+            <NavigationPageGate>{children}</NavigationPageGate>
+          </div>
+          {!hideFooter(pathname) ? <Footer /> : null}
         </div>
-        {!hideFooter(pathname) ? <Footer /> : null}
-      </div>
+      </AddedToCartProvider>
     </AuthModalProvider>
   )
 }

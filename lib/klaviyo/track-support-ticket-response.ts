@@ -20,6 +20,7 @@
 
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
+import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 
 const RESPONSE_PROP_MAX = 4000
 
@@ -33,6 +34,8 @@ export type KlaviyoSupportTicketResponsePayload = {
   responseType: KlaviyoSupportTicketResponseType
   /** Set when `responseType` is `status_update`. */
   supportStatus?: string
+  /** Override deep link (defaults to /support/:id). */
+  ticketUrl?: string | null
   /** Dedupe — e.g. message id when available. */
   uniqueId: string
 }
@@ -82,7 +85,9 @@ export async function trackKlaviyoSupportTicketResponse(
       response,
       response_type: payload.responseType,
       support_status: payload.supportStatus?.trim() ?? "",
-      ticket_url: `${publicSiteOriginForEmail()}/dashboard/support/${supportTicketId}`,
+      ticket_url:
+        payload.ticketUrl?.trim() ||
+        supportCaseResponseAbsoluteUrl(publicSiteOriginForEmail(), supportTicketId),
     },
     uniqueId: payload.uniqueId.trim() || `support-ticket-response-${supportTicketId}-${time}`,
   })

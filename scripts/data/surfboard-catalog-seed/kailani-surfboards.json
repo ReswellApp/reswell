@@ -1,0 +1,82 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "kailani-surfboards",
+      "name": "Kailani Surfboards",
+      "website_url": "https://kailanisurfboards.com/",
+      "location_label": "Oceanside, California",
+      "founder_name": "Julio Nurse",
+      "lead_shaper_name": "Julio Nurse",
+      "short_description": "Oceanside, California surfboards founded in 2011 by Julio Nurse and manufactured 100% in-house.",
+      "models": [
+        {
+          "name": "Black Mamba",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2019/02/black_mamba_menu-1.jpg",
+          "description": "The Black Mamba is one of our best selling boards and was co-created with team rider Francisco Bellorin. The board has a medium nose rocker with a single concave and a super shard edge in the back of the tail. The board is famous for holding the rails well on big carves and tail release.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Metallica",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2019/02/metallica_menu.jpg",
+          "description": "The Metallica model is made with a medium nose and tail rocker with a single concave and straight edge in the back of the tail. The Metallica is a perfect board for point break waves, it holds good bottom turn and creates a lot of speed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "CBD Model",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/CBD_menu-2.jpg",
+          "description": "While staying true to our brand's high perfomance line of surfboards we thought it would be fun to do our own take on a more classic fish. The CBD model comes with a light single concave with a little v in the tail, giving the board the necessary drive. It is designed with a flat deck with high performance low rails from nose to tail. It can come in either a twin fin or quad set up. The perfect summer quiver board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "El Huevo",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/huevo_menu-1.jpg",
+          "description": "This board looks like an egg with a round nose and flat deck with full rails and a single concave. This is a super skatey feeling board, you will be surprised how much fun you can have on this model. The 5 fin set up allows you to play with fin options making it even more versitile. We also recommend this board to young beginners because of the flotation and safeness with the round nose. A great board for both dad and kids!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Click",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/click_menu.jpg",
+          "description": "The Click model is one of our best sellers. It responds well in both beach break and point break waves. The board is super lose and provides easy surfing. It is created with a single concave, nice round rails and a smooth nose and tail rocker.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Click 2",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/Click_menu-1.jpg",
+          "description": "Julio designed the Click 2 with a couple of changes from the original Click Model. Putting a little more area in the nose and tail, looking for the kind of board you can surf in really small conditions to shoulder high waves. The board comes in a 4.1 nose rocker and a 2.1 tail rocker with a deep single concave and finished with a 'V' in the back of the tail. This model comes with a squash tail and either a thruster or 5 fin set up.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Katana",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/katana_menu.jpg",
+          "description": "Julio has had a long term relationship with Magnum Martinez creating this board model. They were looking to create a board that worked good in really small surf. They ended up designing this board with a really low nose rocker of 3 7/8\" and a 2.1 tail rocker, this allows the board to generate more speed in the flat section. The Katana Pro Model is complimented with your choice of a wide round tail or a diamond tail. We recommend this model in X-Flex Technology.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Flying Diamond",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/Flying_diamond_Kailani_Surfboards_3.jpg",
+          "description": "Julio created this model looking to compliment the surfing flow of team rider Rafael \"Nono\" Pereira. This model features a diamond tail with a single concave and a light 'V' in the middle of the fins, continuing all the way back to the end of the board. This board also has nice round rails keeping the high performance flow for this pro model.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Player",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/player_menu.jpg",
+          "description": "This stable board has a wide nose and carries its volume all hte way through to the tail. We pulled in the tail a little bit to make the board looser and better respond to turns, making it a good board for beginers all the way until they are ready for a more high performance board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "El Capo",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/Capo_kailani_surfboards_menu.jpg",
+          "description": "Julio designed this board with the vision to make the surfer feel good in the barrel. Creating the board with a nice 5.5 nose rocker, round pin tail, a very pronounced concave with decent volume in the nose area. The board has really round rails with a super sharp edge in the back.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Twin Flash",
+          "image_url": "https://kailanisurfboards.com/wp-content/uploads/2025/08/twin_menu.jpg",
+          "description": "The Twin Flash is a high-performance twin fin surfboard designed for speed, flow, and maneuverability in medium to powerful waves. Built to excel in conditions from 3 to 8 ft, it offers effortless drive down the line with a smooth rail-to-rail transition, while the swallow tail adds extra hold and control in steeper sections.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

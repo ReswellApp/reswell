@@ -1,6 +1,6 @@
 import Image from "next/image"
 import { wideShimmer } from "@/lib/image-shimmer"
-import heroBackdrop from "@/public/images/home/hero-backdrop-mesa-v2.jpg"
+import heroBackdrop from "@/public/images/home/hero-backdrop-tahiti.jpg"
 
 /** Full-bleed static hero background — backdrop only; copy and CTAs live in the page shell. */
 export function HeroBackdrop() {
@@ -17,7 +17,7 @@ export function HeroBackdrop() {
         fetchPriority="high"
         quality={95}
         sizes="100vw"
-        className="object-cover object-[center_45%] max-lg:object-[60%_50%] lg:object-[center_40%]"
+        className="object-cover object-[center_42%] max-lg:object-[58%_68%] lg:object-[center_38%]"
         placeholder="blur"
         blurDataURL={wideShimmer}
       />

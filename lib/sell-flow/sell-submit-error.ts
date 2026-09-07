@@ -9,6 +9,28 @@ export function isSellSubmitAbortError(error: unknown): boolean {
   return false
 }
 
+/**
+ * One retry after a cancelled fetch / token-refresh abort.
+ * Owner listing saves were toasting "Save was interrupted" on the first abort;
+ * admin impersonation already retries this class of error once.
+ */
+export async function retryOnceOnSellSubmitAbort<T>(
+  fn: () => Promise<T>,
+  options?: { delayMs?: number; onRetry?: () => Promise<void> },
+): Promise<T> {
+  try {
+    return await fn()
+  } catch (error) {
+    if (!isSellSubmitAbortError(error)) throw error
+    const delayMs = options?.delayMs ?? 280
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+    await options?.onRetry?.()
+    return await fn()
+  }
+}
+
 /** Map thrown / PostgREST errors to a seller-safe string (never raw AbortSignal text). */
 export function sellSubmitErrorMessage(error: unknown, fallback: string): string {
   if (isSellSubmitAbortError(error)) return SELL_SUBMIT_INTERRUPTED_MESSAGE

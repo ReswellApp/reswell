@@ -88,7 +88,7 @@ export function SupportTicketsList({ tickets, activeFilter, openCount }: Support
             return (
               <Link
                 key={ticket.id}
-                href={`/dashboard/support/${ticket.id}`}
+                href={`/support/${ticket.id}`}
                 className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <Card

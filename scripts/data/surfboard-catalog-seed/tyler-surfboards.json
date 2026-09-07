@@ -1,0 +1,73 @@
+{
+  "generated_for": "Tyler Surfboards official named standup catalog",
+  "source": "https://www.tylersurfboards.com/board-catalogue (Wix board catalogue — excludes merchandise, used stock, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "tyler-surfboards",
+      "name": "Tyler Surfboards",
+      "website_url": "https://www.tylersurfboards.com/board-catalogue",
+      "location_label": "San Marcos, California",
+      "founder_name": "Tyler Hatzikian",
+      "lead_shaper_name": "Tyler Hatzikian",
+      "short_description": "Traditional longboards shaped by Tyler Hatzikian since 1984, advancing late-1960s design and performance.",
+      "models": [
+        {
+          "name": "Double Deuce",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_06e7495c035a4b67b3766cb5672da3ca~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_06e7495c035a4b67b3766cb5672da3ca~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Craftsman Noserider",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_3ee1026598404df5bbbb330a1dab7d10~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_3ee1026598404df5bbbb330a1dab7d10~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wingnose",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_d3ee126449e74593b26bce1042427cae~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_d3ee126449e74593b26bce1042427cae~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Balsa Z Chip",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_bb6a577f8cc946eb86b98aa9a1bfdee0~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_bb6a577f8cc946eb86b98aa9a1bfdee0~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Riddler",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_ce5acfbf1b0f480fa97b34c3fa2a729b~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_ce5acfbf1b0f480fa97b34c3fa2a729b~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Point",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_181ce92adfad4da1a93b154b2369a5f0~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_181ce92adfad4da1a93b154b2369a5f0~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Minizeke",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_c02595fa6462408cbbee60352d5e988a~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_c02595fa6462408cbbee60352d5e988a~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Magneato",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_b236cc707c7045fa8515177b1105bca3~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_b236cc707c7045fa8515177b1105bca3~mv2.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "777",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_d1c465f5147f47199f0a025bfeead3d5~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_d1c465f5147f47199f0a025bfeead3d5~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Double Step Deck",
+          "image_url": "https://static.wixstatic.com/media/d6d12b_3054cc813231444fa43833e333441f29~mv2.png/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/d6d12b_3054cc813231444fa43833e333441f29~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Twin Fin Deuce",
+          "image_url": "https://static.wixstatic.com/media/0e237d_bf4841455c624c9eab3a6ae26b2f689e~mv2_d_4032_3024_s_4_2.jpg/v1/fill/w_800,h_1067,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/0e237d_bf4841455c624c9eab3a6ae26b2f689e~mv2_d_4032_3024_s_4_2.jpg",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

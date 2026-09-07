@@ -69,8 +69,13 @@ export type BoardsFilterState = {
 
 export function useBoardsFilterState(
   transitionStart?: (cb: () => void) => void,
+  options?: {
+    /** Fired after a filter URL update is applied (optimistic + router.replace). */
+    onAfterNavigate?: () => void
+  },
 ): BoardsFilterState {
   const liveSearchParams = useSearchParams()
+  const onAfterNavigate = options?.onAfterNavigate
 
   // The selection UI (checkboxes, chips, count) is driven entirely by the URL, but a
   // filtered navigation keeps `useSearchParams()` pinned to the old URL until the server
@@ -88,7 +93,10 @@ export function useBoardsFilterState(
   const { navigate } = useBoardsBrowseRouter({
     transitionStart,
     baseParams: searchParams,
-    onNavigate: applyOptimisticParams,
+    onNavigate: (next) => {
+      applyOptimisticParams(next)
+      onAfterNavigate?.()
+    },
   })
 
   const selections = useMemo(
@@ -256,8 +264,12 @@ export function useBoardsFilterState(
         detail: trimmed ? "set" : "clear",
       })
       navigate((params) => {
-        if (trimmed) params.set("location", trimmed)
-        else {
+        if (trimmed) {
+          params.set("location", trimmed)
+          // Text-only updates must not keep a previous place's coordinates.
+          params.delete("lat")
+          params.delete("lng")
+        } else {
           params.delete("location")
           params.delete("lat")
           params.delete("lng")

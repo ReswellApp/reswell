@@ -1,7 +1,7 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import {
   createSurfpackListingSchema,
@@ -47,8 +47,7 @@ export async function createSurfpackListingAction(
 
   try {
     const result = await createSurfpackListing(supabase, user.id, parsed.data)
-    revalidatePath("/surfpacks")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/surfpacks", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
     console.error("createSurfpackListingAction:", error instanceof Error ? error.message : error)
@@ -79,8 +78,7 @@ export async function updateSurfpackListingAction(
 
   try {
     const result = await updateSurfpackListing(supabase, parsed.data.listingId, user.id, parsed.data)
-    revalidatePath("/surfpacks")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/surfpacks", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {
     console.error("updateSurfpackListingAction:", error instanceof Error ? error.message : error)

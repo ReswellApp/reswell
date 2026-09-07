@@ -1,0 +1,84 @@
+{
+  "generated_for": "M10 Surfboards official named standup catalog",
+  "source": "https://m10surfboards.com (Shopify board models \u2014 excludes delivery fees, rush processing, and Shape3d custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "m10-surfboards",
+      "name": "M10 Surfboards",
+      "website_url": "https://m10surfboards.com/",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Geoff Rashe",
+      "lead_shaper_name": "Randy Bonds",
+      "short_description": "Santa Cruz performance shortboards founded by Geoff Rashe in 1996 \u2014 flagship Tomahawk and Magic Carpet designs shaped by Randy Bonds for Northern California power surf.",
+      "models": [
+        {
+          "name": "Magic Carpet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/Mill.jpg?v=1708895087",
+          "description": "If you're new to M10, start here. This is your basic all-around California shortboard; medium rocker, medium concaves, balanced nose to tail, works for the front or back foot oriented surfer, isn't overly dependent on perfect foot placement; fast, loose, holds a line, etc... People love this board and we've been making it for a very long time, with little adjustments all along the way. It generally works better in softer waves than the Tomahawk or Millennial. Everybody has so many models you don't even know what to get. How do you pick? We try to keep it simple by limiting the choices. To make it even easier, if you aren't sure what to get, just order a Magic Carpet.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tomahawk",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/Tomahawk.jpg?v=1708890737",
+          "description": "Fast and loose high performance shortboard. Back foot orientation, but works best when surfed with both feet. Loves a good wave, but goes in slop too. Proven in California, Hawaii, and Indonesia, among other places. The Tomahawk is the direct descendant of 25 years of R&D. It's our flagship performance shortboard that has grown up next to the Magic Carpet (which is a little flatter). Concaves are medium, rocker is continuous from front to back foot with a lifted entry for vertical attack and moderate tail rocker for driving and carving. You really can't go wrong here, unless if you regularly surf shitty waves or prefer to ride the nose.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Millennial",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/Millennial.jpg?v=1708894903",
+          "description": "Driving and carving, vertical attack, tight radius turns. The Millennial is our most high performance offering for the engaged surfer who keeps it on rail. There is a fair bit of middle rocker and deep single concave, so you surf off the tail, especially driving with your back foot as you build speed by pushing off the deep concave scoop and fins. This board likes to surf up and down in the pocket of a good wave. This is our model for maximal shredding by the surfer who can seriously link turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hogfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/HogFish.jpg?v=1708794246",
+          "description": "Hogfish Fast. Loose. Glides. Paddles. Holds. Magic board. The Hogfish has been a best-seller for about 20 years. I guess that makes it a classic! Why do people like it so much? It's because it's really three boards in one; a fish, an all around shortboard, and a step-up. \"How can that be\", you ask? It's simple; it's short and wide with lots of glide like a fish; when you step behind the wing with your back foot, it's fast, snappy and loose off the tail like your favorite shortboard; and with all the volume, it paddles great into meaty waves, and has a straight rail line that enables you to make any section and hold a line through huge carves. It just needs a bigger fin when used as a step-up. Many people like it as a quad too! Create A Custom",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Agent Smith",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/IMG_1558.jpg?v=1708559330",
+          "description": "Inspired by one of Tyler Smith's favorite boards.He helped develop the Hogfish so he knows his way around this type of board.It has characteristics of a fish but surfs like a shortboard.Made some adjustments to turn tighter in better surf.Available with double micro wing.(Recommended)",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Puck",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/PuckImage.png?v=1589566465",
+          "description": "The Puck was born as an alternative to the Hogfish for people who didn't want as much width in the nose and tail. The nose is pulled in and the wing is higher than the Hogfish, making it surf more like a regular shortboard than a fish. Ozzie Wright got one many years ago and it was his favorite for a long time until it finally broke. Lots of people have called it their best board ever. It works well as a full-volume all-around shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flatso",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/FlatsoImage.png?v=1589479985",
+          "description": "The Flatso is so flat, a little fat, and crazy fast. When the waves are kinda fat and flat you need a board to match. It has a deep single concave bottom and should be ordered 4\"-6\" shorter than you regular shortboard and about an inch wider. It's designed to be a twin-fin, but I suggest getting the trailing fin box (2+1 setup) to have a mini-trailer option. four and five fins are available too.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mini Thick",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/IMG_1557.jpg?v=1708559379",
+          "description": "A great step down for the smaller days.Order this board a little shorter,wider and thicker then your shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Slabslayer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/SlabslayerImage.png?v=1589502273",
+          "description": "Richie Schmidt wanted a shortboard that he could tackle some slabs on, so this board was born and dubbed the \"Slabslayer\". Its rocker is like the Magic Carpet, but with a lower entry. The thickness flow is a good bit fuller under the chest relative to the tail, as compared to a regular board (for easy wave entry when you really need it). Concaves are somewhat shallow for seamless rail to rail transitions. It turned out to be a great all-around board that can be ridden in a wide range of conditions, but is best described as a contemporary step-up. Round tail only for tight turns. Testing",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TRP",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/TRPImage.png?v=1589502345",
+          "description": "The TRP is our step-up based on the Tomahawk rocker. We kicked the tail a bit, lowered and added volume to the entry, relaxed the concave, and put a hint of vee in the tali. It can be customized to the individual for shallow or deep water reefs and beach breaks. Typically, it would be ordered in the 6'6\"-7'6\" range.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "99",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/RatboyImage.png?v=1589567546",
+          "description": "This is what Ratboy and Flea were riding in 1999 when Rat was world airshow champ and Flea was riding M10's before his head-to-toe Rusty sponsorship took him away. I designed it specifically for airs, but it's really just a great all around shortboard. It has a fast rocker with a shallow single to double concave from the middle back, and a little vee in the entry, to make for a fast, loose and forgiving board.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}

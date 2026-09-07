@@ -19,6 +19,15 @@ export type PublicStorageBucket =
   | "brand-request-logos"
   | "seo-assets"
 
+/**
+ * Brand logos stay cached until an admin replaces them (`revalidateBrandLogoMedia`).
+ * Other buckets keep a long TTL because filenames are content-addressed.
+ */
+function publicStorageObjectRevalidate(bucket: PublicStorageBucket): number | false {
+  if (bucket === "brand-assets" || bucket === "brand-request-logos") return false
+  return PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS
+}
+
 export type CachedPublicStorageObject = {
   bodyBase64: string
   contentType: string
@@ -31,6 +40,13 @@ export function publicStorageObjectCacheTag(
   return `${PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX}:${bucket}:${objectPath}`
 }
 
+function publicStorageFetchNext(bucket: PublicStorageBucket, objectPath: string) {
+  return {
+    revalidate: publicStorageObjectRevalidate(bucket),
+    tags: [publicStorageObjectCacheTag(bucket, objectPath)],
+  }
+}
+
 function upstreamObjectExceedsDataCacheLimit(contentLengthHeader: string | null): boolean {
   if (!contentLengthHeader) return true
   const bytes = Number.parseInt(contentLengthHeader, 10)
@@ -38,13 +54,17 @@ function upstreamObjectExceedsDataCacheLimit(contentLengthHeader: string | null)
   return bytes > PUBLIC_STORAGE_DATA_CACHE_MAX_RAW_BYTES
 }
 
-async function shouldBypassPublicStorageDataCache(upstreamUrl: string): Promise<boolean> {
+async function shouldBypassPublicStorageDataCache(
+  bucket: PublicStorageBucket,
+  objectPath: string,
+  upstreamUrl: string,
+): Promise<boolean> {
   try {
     const res = await fetch(upstreamUrl, {
       method: "HEAD",
       headers: { Accept: "image/*" },
       cache: "force-cache",
-      next: { revalidate: PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS },
+      next: publicStorageFetchNext(bucket, objectPath),
     })
     if (!res.ok) return true
     return upstreamObjectExceedsDataCacheLimit(res.headers.get("content-length"))
@@ -54,6 +74,8 @@ async function shouldBypassPublicStorageDataCache(upstreamUrl: string): Promise<
 }
 
 async function fetchPublicStorageObjectUpstream(
+  bucket: PublicStorageBucket,
+  objectPath: string,
   upstreamUrl: string,
   options?: { bypassDataCache?: boolean },
 ): Promise<CachedPublicStorageObject | null> {
@@ -69,7 +91,7 @@ async function fetchPublicStorageObjectUpstream(
         : {
             headers: { Accept: "image/*" },
             cache: "force-cache",
-            next: { revalidate: PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS },
+            next: publicStorageFetchNext(bucket, objectPath),
           },
     )
   } catch {
@@ -92,11 +114,14 @@ function getCachedPublicStorageObjectLoader(
   objectPath: string,
   upstreamUrl: string,
 ): () => Promise<CachedPublicStorageObject | null> {
+  const revalidate = publicStorageObjectRevalidate(bucket)
   return unstable_cache(
-    () => fetchPublicStorageObjectUpstream(upstreamUrl),
-    [PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX, bucket, objectPath],
+    () => fetchPublicStorageObjectUpstream(bucket, objectPath, upstreamUrl),
+    revalidate === false
+      ? [PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX, bucket, objectPath, "until-revalidate"]
+      : [PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX, bucket, objectPath],
     {
-      revalidate: PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS,
+      revalidate,
       tags: [publicStorageObjectCacheTag(bucket, objectPath)],
     },
   )
@@ -105,14 +130,17 @@ function getCachedPublicStorageObjectLoader(
 /**
  * Next.js Data Cache for objects under ~1.5MB raw; larger files fetch upstream each origin
  * miss (Vercel CDN still caches the `/media/*` response via `PUBLIC_MEDIA_CACHE_CONTROL`).
+ * Brand logos use tag-only cache (`revalidate: false`) until `revalidateBrandLogoMedia`.
  */
 export async function getCachedPublicStorageObject(
   bucket: PublicStorageBucket,
   objectPath: string,
   upstreamUrl: string,
 ): Promise<CachedPublicStorageObject | null> {
-  if (await shouldBypassPublicStorageDataCache(upstreamUrl)) {
-    return fetchPublicStorageObjectUpstream(upstreamUrl, { bypassDataCache: true })
+  if (await shouldBypassPublicStorageDataCache(bucket, objectPath, upstreamUrl)) {
+    return fetchPublicStorageObjectUpstream(bucket, objectPath, upstreamUrl, {
+      bypassDataCache: true,
+    })
   }
   return getCachedPublicStorageObjectLoader(bucket, objectPath, upstreamUrl)()
 }

@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { ReviewRequestMessagePayload } from "@/lib/validations/review-request-message-metadata"
+import { existingMarketplaceReviewFromRow, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
+import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
 import type { ExistingSellerReview } from "@/components/review-seller-controls"
 import { SellerReviewDialog } from "@/components/features/messages/seller-review-dialog"
 import { LocalDateTime } from "@/components/ui/local-datetime"
@@ -66,12 +68,21 @@ export function ReviewRequestMessageCard({
     } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data: row } = await supabase
+    let { data: row, error } = await supabase
       .from("reviews")
-      .select("id, rating, comment, created_at")
+      .select("id, rating, comment, created_at, metadata")
       .eq("order_id", orderId)
       .eq("reviewer_id", user.id)
       .maybeSingle()
+
+    if (error && isReviewsMetadataColumnMissing(error)) {
+      ;({ data: row } = await supabase
+        .from("reviews")
+        .select("id, rating, comment, created_at")
+        .eq("order_id", orderId)
+        .eq("reviewer_id", user.id)
+        .maybeSingle())
+    }
 
     if (
       row &&
@@ -79,12 +90,13 @@ export function ReviewRequestMessageCard({
       typeof row.rating === "number" &&
       typeof row.created_at === "string"
     ) {
-      setExisting({
+      setExisting(existingMarketplaceReviewFromRow({
         id: row.id,
         rating: row.rating,
         comment: typeof row.comment === "string" ? row.comment : null,
         created_at: row.created_at,
-      })
+        metadata: row.metadata,
+      }))
     } else {
       setExisting(null)
     }
@@ -137,6 +149,7 @@ export function ReviewRequestMessageCard({
                   {existing.comment}
                 </p>
               ) : null}
+              <MarketplaceReviewPhotos reviewId={existing.id} photos={existing.photos} size="sm" />
             </div>
           ) : (
             <Button

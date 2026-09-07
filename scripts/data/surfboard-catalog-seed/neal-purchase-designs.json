@@ -1,0 +1,90 @@
+{
+  "generated_for": "Neal Purchase Designs official named standup catalog",
+  "source": "https://www.nealpurchasedesigns.com/custom (Squarespace custom board lineup \u2014 excludes deposits, merch, and one-off stock SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "neal-purchase-designs",
+      "name": "Neal Purchase Designs",
+      "website_url": "https://www.nealpurchasedesigns.com",
+      "location_label": "Northern New South Wales, Australia",
+      "founder_name": "Neal Purchase Jnr",
+      "lead_shaper_name": "Neal Purchase Jnr",
+      "short_description": "Low-production Northern NSW performance boards from Neal Purchase Jnr \u2014 twins, duos, quads, and classic single-fin templates.",
+      "models": [
+        {
+          "name": "Apex Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1614753992530-3CVL5KXDUN23O761L2EH/custom-apex.jpg",
+          "description": "This is a new Twin fin I\u2019ve been working on to get away from the skatey / fishy feel some Twins have but with the same get up and go. To achieve this I have pulled the tail in drastically with a wing at the same point as the front edge of the fins, combining a soft panel curved channel to act like a vee and allowing water out through the rails easier. With the pulled in tail, the fins are closer together at around 9 inches apart, producing a smoother feel from rail to rail. The mid section of the board has quite a bit of planing area still, to get up and go quickly and is complimented by a subtle single running into a bonzer double concave out the back. All of this with a pulled in nose around 13\u201d and a low entry creates a dynamic, yet smooth performance twin, that loves a good hack in the pocket with zing. Best surfed a little longer than your height and width threshold around 20 inches wide. The Apex Twins are designed for 2-5ft conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Cluster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/74045248-f20b-4fbf-be48-99ffd893f720/Untitled+design.png",
+          "description": "The Cluster is very similar to my Twin plus One model with a few updates. This design is an all-round utility board for general east coast conditions in Oz. The outline has elements of the Quartet template, like a lot of my designs, with a sensible fuller outline at around 15 inches in the Nose and a 15 \u00bd inch Tail. Surf it about an inch or two above your height and I mostly use Twin side fin sides with a small centre stabiliser fin but you can also surf with a large Thruster set as well. Ive added a \u00bd inch of Nose and Tail rocker with a subtle single concave and refined the extremities to fit nicely in the pocket. The Flax / Epoxy / Styrofoam materials add more paddle power and performance to this design. She comes standard as a Squash tail but is open to customisation with different tail shapes if you are feeling creative.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/b6e054d4-73b9-44d9-8838-881a3904d8fe/CUSTOMArtboard+1.jpg",
+          "description": "This is another new Twin fin I\u2019ve been working on. It has slightly more area in the outline and an even modern rocker though the board, complimented by a single concave for fast driving turns in the pocket and on the face. Designed as a fuller bodied Egg with plenty of volume, but very refined modern rails. Again, the flyers give you bite and the straighter rail line leading to the wider Diamond Tail gives plenty of drive and squirt. Designed for 2-6ft conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Duo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1613275728783-VPS7MBMPPCASIEP5B1N9/custom-stage-2-duo.jpg",
+          "description": "I created my version of two straight single fins or a Duo in April of 2015. Merging feelings of splitting a single fin out to a point where you don\u2019t have to tow them in, as opposed to having a twin fin and their single foiled fin close to the rail with tow. I looked into the grey areas and refined the fins to make em' feel right. \"The Duo blends variables of Singles and Twin Fins but it produces a smooth deep drive unlike anything else I have ridden.\u201c Most Duos are now Stage 2. This is the next and final stage of pushing boundaries of this fin configuration. I decided to take the fins from 6 inches apart to 7 inches apart with slightly different tail widths and rockers to compensate. I finally went 8 inches apart with a 70 / 30 flat inner foil and found I had hit a dead end and became sticky through turns, this placement therefor requires tow and cant. So Stage 2 it is, and as you go closer to the rail, the depth of the fin needs to decrease. These are my latest incarnation of the smoothest pivotal drive in surfing and I personally prefer them to the Single fins due to their hold and release and also the 2+1\u2019s because they are faster. The fins are now 6 3/4 in height and set at 7 1/4 from the tail x 7 inches apart with 4 degrees cant and no tow\u2026 They come in all sorts of shapes and sizes, and a custom order is usually preferred.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Duoza",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1657684653838-4OBSD1LLJMF3TOGQFW9F/duozer.jpg",
+          "description": "I\u2019ve been working on these side bites with the Duo set up for a while now, with an interest in added hold, and drive out of the second half off the turn. I\u2019m totally confident now this works perfectly with the Duo or Stingfish Duo design, adding more bite and release with the option of riding as a straight Duo as well.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Pineal Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/e5e4ea03-6897-464f-994d-8084a0362e89/CUSTOMArtboard+2.jpg",
+          "description": "The Pineal Twin Fish is a longer fish with mixed elements of Hawaiian designers such as Aipa and co, utilising a flyer level with the front edge of the fins to giving added control. It has a low entry rocker with a touch more tail lift and flyers to pull the tail in. This is combined with a modern single to double bottom shape and low soft rails coming off a semi flat deck. Made to trim and glide and then hit hard in the pocket at will. Especially friendly on your backside unlike traditional versions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quartet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1613271943301-1HQ6YOR4IFIEL5CYG61R/custom-quartet.jpg",
+          "description": "The Quartet could be described as a Split Keel or a Twin fin with Trailers, to form a Quad. The synergy of the larger fronts and smaller back fins work together to create a natural turning curve when pressure is applied. This design is obviously drivier than a Twin and generates a ton of speed. The fins are placed in a similar position to a Split Keel design and tend to be looser than thruster based Quads. Great for power based carves at high speed and best surfed in small to medium sized waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1613272662678-O79DCE49NTPEC2RFQ67P/custom-single.jpg",
+          "description": "I have spent a lot of time riding Single Fins and have a whole variety of shapes, templates and sizes. Like the small, wide \u2018stubby like\u2019 the M.P. model or \u2018Sea of Joy\u2019 , inspired by Wayne Lynch\u2019s surfing around 71\u2019 to the speedier more refined models for good waves including channel bottoms like the Angourie and Teardrop model. The Single Fins are designed to suit specific conditions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Stingfish Duo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1613274023633-KYM3OQUUMP0WD4PE7PUF/custom-stingfish-duo.jpg",
+          "description": "Up to the minute design principles thanks to the inspiration of Ben Aipa. This works perfectly with the Duo design. Still completely relative, reducing the plaining surface in between the feet to a lesser surface on the back foot position and abruptly creates pivot and control.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stingfish Twin Keel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1613276473479-PHRN7RE8OYDWZNX7Y38F/custom-stingfish-twin-keel.jpg",
+          "description": "The Stingfish Twin Keel is my latest version of the San Diego fish with mixed elements of Hawaiian designers such as Aipa and co. It has a low entry rocker with a touch more tail lift and the winged flutes to pull the tail in, giving more control and pivot on the back foot. This is combined with a modern single to double bottom shape and low soft rails coming off a semi flat deck. Made to trim and glide and then hit hard in the pocket at will. Especially friendly on your backside unlike traditional versions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Two Plus One",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1613276690020-PFSS55JKPTYNZ7QWEEXY/custom-two-plus-1.jpg",
+          "description": "2 + 1 = fun. Here is my general 2 + 1 or Widow Maker set up. It was originally influenced by Dave Parmenter\u2019s Widow Maker Gun design, based on a deeper thruster back fin moved forward with smaller side fins. Just like everything they work with a combination of tail width, rocker, rail shape and bottom contours. My fins are 4 1/4 sides and 6 3/4 backs and are a smoother option to a Thruster. I would definitely recommend for longer boards. \"It is a smooth and stable good all-round design and can hold some serious rail in solid conditions. Probably best described as a marriage between a single fin and thruster.\"",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Whales Tongue",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d12a8db8045fa0001854883/1614754963333-EGTYVH2W89GASX9O5GQS/custom-whales-tongue.jpg",
+          "description": "Aptly named by Dave \u201cRasta\u201d Rastovich, the Whales Tongue is a 2+1 with a fuller outline influenced by early Stubby designs. A relaxed ocean vehicle with low entry, wide point 3\u201d forward, and enough curve in the tail to perform in the pocket. Extremely user friendly, yet enough \u201czing\u201d for a competent rider to give it a good whip.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}

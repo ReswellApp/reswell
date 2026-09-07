@@ -2,9 +2,9 @@
 
 import * as React from "react"
 import { createPortal } from "react-dom"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
+import { BrandLogoMark } from "@/components/brands/brand-logo-mark"
 import {
   SiteSearchFormSubmitButton,
   SiteSearchShell,
@@ -16,8 +16,6 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { searchBrandsCatalogSuggest } from "@/app/actions/marketplace"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { recordBrandDirectorySearchAnalytics } from "@/app/actions/brand-directory-search-analytics"
-import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 const BROWSE_LIMIT = 36
 const SUGGEST_DEBOUNCE_MS = 280
@@ -33,7 +31,7 @@ type BrandsDirectorySearchProps = {
 
 /**
  * Brand-directory typeahead: uses the same `searchBrandsCatalogSuggest` pipeline as nav/sell
- * (Elasticsearch when configured). Logs to `reswell_search_analytics` with `search_surface: brand_directory`.
+ * (Elasticsearch when configured). Logs brand-directory analytics on commit (select / submit), not per keystroke.
  */
 export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySearchProps) {
   const router = useRouter()
@@ -53,6 +51,10 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
   const [suggestLoading, setSuggestLoading] = React.useState(false)
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const suggestGen = React.useRef(0)
+  const lastSuggestMetaRef = React.useRef<{
+    backend: "elasticsearch" | "supabase"
+    count: number
+  } | null>(null)
 
   const q = value.trim()
   const browseList = React.useMemo(() => browseBrands(brands), [brands])
@@ -94,11 +96,7 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
           const { rows, meta } = await searchBrandsCatalogSuggest(q)
           if (gen !== suggestGen.current) return
           setSuggestedRows(rows)
-          void recordBrandDirectorySearchAnalytics({
-            queryRaw: q,
-            resultCount: rows.length,
-            backend: meta.backend,
-          })
+          lastSuggestMetaRef.current = { backend: meta.backend, count: rows.length }
         } finally {
           if (gen === suggestGen.current) setSuggestLoading(false)
         }
@@ -147,7 +145,19 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  function logCommittedBrandDirectorySearch(queryRaw: string) {
+    const t = queryRaw.trim()
+    if (!t) return
+    const meta = lastSuggestMetaRef.current
+    void recordBrandDirectorySearchAnalytics({
+      queryRaw: t,
+      resultCount: meta?.count ?? 0,
+      backend: meta?.backend ?? "supabase",
+    })
+  }
+
   function goToBrand(slug: string) {
+    logCommittedBrandDirectorySearch(value)
     router.push(`${BRANDS_BASE}/${encodeURIComponent(slug)}`)
     setOpen(false)
     setValue("")
@@ -156,6 +166,7 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
   function searchMarketplaceForQuery(query: string) {
     const t = query.trim()
     if (!t) return
+    logCommittedBrandDirectorySearch(t)
     router.push(`/search?q=${encodeURIComponent(t)}`)
     setOpen(false)
     setValue("")
@@ -220,27 +231,13 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
                     goToBrand(b.slug)
                   }}
                 >
-                  {b.logo_url ? (
-                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background">
-                      <Image
-                        src={brandLogoDisplaySrc(b.logo_url)}
-                        alt=""
-                        fill
-                        className="object-contain p-1"
-                        sizes="40px"
-                        unoptimized={listingImageShouldBypassOptimization(
-                          brandLogoDisplaySrc(b.logo_url),
-                        )}
-                      />
-                    </span>
-                  ) : (
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-sm font-semibold text-cerulean"
-                      aria-hidden
-                    >
-                      {b.name.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
+                  <BrandLogoMark
+                    name={b.name}
+                    logoUrl={b.logo_url}
+                    className="h-10 w-10 rounded-lg text-sm"
+                    imageSizes="40px"
+                    decorative
+                  />
                   <span className="min-w-0 flex-1 truncate font-semibold text-foreground">
                     {b.name}
                   </span>
@@ -288,27 +285,13 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
                     goToBrand(b.slug)
                   }}
                 >
-                  {b.logo_url ? (
-                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background">
-                      <Image
-                        src={brandLogoDisplaySrc(b.logo_url)}
-                        alt=""
-                        fill
-                        className="object-contain p-1"
-                        sizes="40px"
-                        unoptimized={listingImageShouldBypassOptimization(
-                          brandLogoDisplaySrc(b.logo_url),
-                        )}
-                      />
-                    </span>
-                  ) : (
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-sm font-semibold text-cerulean"
-                      aria-hidden
-                    >
-                      {b.name.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
+                  <BrandLogoMark
+                    name={b.name}
+                    logoUrl={b.logo_url}
+                    className="h-10 w-10 rounded-lg text-sm"
+                    imageSizes="40px"
+                    decorative
+                  />
                   <span className="min-w-0 flex-1 truncate font-semibold text-foreground">
                     {b.name}
                   </span>

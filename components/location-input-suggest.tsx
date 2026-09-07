@@ -243,6 +243,8 @@ export function LocationInputSuggest({
   const abortRef = useRef<AbortController | null>(null)
   const generationRef = useRef(0)
   const suppressOpenUntilTypingRef = useRef(false)
+  const blurCloseTimerRef = useRef<number | null>(null)
+  const pickLockRef = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const shellRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -261,10 +263,13 @@ export function LocationInputSuggest({
 
   const listHasResults = useGoogleLocationPath ? googleRows.length > 0 : suggestions.length > 0
 
-  /** Address mode: dropdown opens once we have a response (keeps focus on the field while loading). */
+  /**
+   * Do not gate on input focus. On mobile, tapping a suggestion blurs the field before click;
+   * requiring focus unmounted the portaled list and the pick never applied.
+   * Close via pick, Escape, or the document pointerdown-outside handler instead.
+   */
   const panelOpen =
     open &&
-    inputFocused &&
     qTrim.length >= minLength &&
     !suppressOpenUntilTypingRef.current &&
     !mapsBootPending &&
@@ -284,6 +289,14 @@ export function LocationInputSuggest({
 
   const isInputFocused = () =>
     Boolean(inputRef.current && document.activeElement === inputRef.current)
+
+  /** Keep an already-open panel open through mobile blur→tap; only open fresh when focused. */
+  const setOpenAfterFetch = (allowOpen: boolean) => {
+    setOpen((prev) => {
+      if (!allowOpen) return false
+      return isInputFocused() || prev
+    })
+  }
 
   useEffect(() => {
     if (!preferGoogleLocation) {
@@ -412,13 +425,13 @@ export function LocationInputSuggest({
                 setFetchEmpty(false)
                 setActiveIndex(0)
                 const allowOpen = !suppressOpenUntilTypingRef.current
-                setOpen(isInputFocused() && allowOpen)
+                setOpenAfterFetch(allowOpen)
               } else {
                 setGoogleRows([])
                 setFetchEmpty(true)
                 setActiveIndex(-1)
                 const allowOpen = !suppressOpenUntilTypingRef.current
-                setOpen(isInputFocused() && allowOpen)
+                setOpenAfterFetch(allowOpen)
               }
               return
             }
@@ -458,13 +471,13 @@ export function LocationInputSuggest({
               setFetchEmpty(false)
               setActiveIndex(0)
               const allowOpen = !suppressOpenUntilTypingRef.current
-              setOpen(isInputFocused() && allowOpen)
+              setOpenAfterFetch(allowOpen)
             } else {
               setGoogleRows([])
               setFetchEmpty(true)
               setActiveIndex(-1)
               const allowOpen = !suppressOpenUntilTypingRef.current
-              setOpen(isInputFocused() && allowOpen)
+              setOpenAfterFetch(allowOpen)
             }
           } catch {
             if (googlePredictHangTimerRef.current) {
@@ -492,20 +505,20 @@ export function LocationInputSuggest({
                 setFetchEmpty(false)
                 setActiveIndex(0)
                 const allowOpen = !suppressOpenUntilTypingRef.current
-                setOpen(isInputFocused() && allowOpen)
+                setOpenAfterFetch(allowOpen)
               } else {
                 setGoogleRows([])
                 setFetchEmpty(true)
                 setActiveIndex(-1)
                 const allowOpen = !suppressOpenUntilTypingRef.current
-                setOpen(isInputFocused() && allowOpen)
+                setOpenAfterFetch(allowOpen)
               }
             } catch {
               setGoogleRows([])
               setFetchEmpty(true)
               setActiveIndex(-1)
               const allowOpen = !suppressOpenUntilTypingRef.current
-              setOpen(isInputFocused() && allowOpen)
+              setOpenAfterFetch(allowOpen)
             }
           } finally {
             if (runId === generationRef.current) setLoading(false)
@@ -535,7 +548,7 @@ export function LocationInputSuggest({
       setActiveIndex(cachedImmediate.length > 0 ? 0 : -1)
       setLoading(false)
       const allowOpen = !suppressOpenUntilTypingRef.current
-      setOpen(isInputFocused() && allowOpen)
+      setOpenAfterFetch(allowOpen)
       return
     }
 
@@ -553,7 +566,7 @@ export function LocationInputSuggest({
         setFetchEmpty(cached.length === 0)
         setActiveIndex(cached.length > 0 ? 0 : -1)
         const allowOpen = !suppressOpenUntilTypingRef.current
-        setOpen(isInputFocused() && allowOpen)
+        setOpenAfterFetch(allowOpen)
         setLoading(false)
         return
       }
@@ -571,7 +584,7 @@ export function LocationInputSuggest({
           setFetchEmpty(list.length === 0)
           setActiveIndex(list.length > 0 ? 0 : -1)
           const allowOpen = !suppressOpenUntilTypingRef.current
-          setOpen(isInputFocused() && allowOpen)
+          setOpenAfterFetch(allowOpen)
         } catch (err) {
           if (err instanceof Error && err.name === "AbortError") return
         } finally {
@@ -648,7 +661,7 @@ export function LocationInputSuggest({
   }, [activeIndex, showListbox, listboxId])
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handlePointerOutside(e: PointerEvent) {
       const target = e.target as Node
       if (containerRef.current?.contains(target)) return
       if (dropdownRef.current?.contains(target)) return
@@ -656,12 +669,24 @@ export function LocationInputSuggest({
       setOpen(false)
       setActiveIndex(-1)
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
+    // pointerdown covers touch + mouse; mousedown-only misses iOS taps that blur the field first
+    document.addEventListener("pointerdown", handlePointerOutside)
+    return () => document.removeEventListener("pointerdown", handlePointerOutside)
   }, [invalidatePending])
+
+  useEffect(() => {
+    return () => {
+      if (blurCloseTimerRef.current) {
+        window.clearTimeout(blurCloseTimerRef.current)
+        blurCloseTimerRef.current = null
+      }
+    }
+  }, [])
 
   const pickHttp = useCallback(
     (item: LocationSuggestion) => {
+      if (pickLockRef.current) return
+      pickLockRef.current = true
       invalidatePending()
       suppressOpenUntilTypingRef.current = true
       setFetchEmpty(false)
@@ -673,12 +698,15 @@ export function LocationInputSuggest({
       setSuggestions([])
       setGoogleRows([])
       setActiveIndex(-1)
+      pickLockRef.current = false
     },
     [invalidatePending, onChange, onPickSuggestion, pickSetsInputValue],
   )
 
   const pickGoogleRow = useCallback(
     (row: GoogleLocationRow) => {
+      if (pickLockRef.current) return
+      pickLockRef.current = true
       invalidatePending()
       suppressOpenUntilTypingRef.current = true
       setFetchEmpty(false)
@@ -688,6 +716,10 @@ export function LocationInputSuggest({
       setActiveIndex(-1)
       setResolvingPick(true)
 
+      const releasePickLock = () => {
+        pickLockRef.current = false
+      }
+
       if (placeDetailsHangTimerRef.current) {
         clearTimeout(placeDetailsHangTimerRef.current)
         placeDetailsHangTimerRef.current = null
@@ -695,6 +727,7 @@ export function LocationInputSuggest({
       placeDetailsHangTimerRef.current = window.setTimeout(() => {
         placeDetailsHangTimerRef.current = null
         setResolvingPick(false)
+        releasePickLock()
       }, GOOGLE_PLACE_DETAILS_HANG_MS)
 
       void loadGoogleMapsWithPlaces()
@@ -807,6 +840,8 @@ export function LocationInputSuggest({
               return
             }
             if (pickSetsInputValue) onChange(row.description.trim())
+          } finally {
+            releasePickLock()
           }
         })
         .catch(() => {
@@ -815,6 +850,7 @@ export function LocationInputSuggest({
             placeDetailsHangTimerRef.current = null
           }
           setResolvingPick(false)
+          releasePickLock()
         })
     },
     [invalidatePending, onChange, onPickSuggestion, pickSetsInputValue],
@@ -879,6 +915,7 @@ export function LocationInputSuggest({
       <div
         ref={dropdownRef}
         id={listboxId}
+        data-location-suggest=""
         role={showListbox ? "listbox" : loading ? "status" : !fetchEmpty ? undefined : "status"}
         aria-label={
           showListbox
@@ -892,9 +929,16 @@ export function LocationInputSuggest({
                 : undefined
         }
         aria-busy={loading}
-        onMouseDown={(e) => e.preventDefault()}
+        // Mouse: keep input focused when clicking panel chrome. Touch: do not preventDefault here
+        // (that blocks list scrolling); option buttons handle preventDefault + pick themselves.
+        onPointerDown={(e) => {
+          if (e.target instanceof Element && e.target.closest("a")) return
+          if (e.pointerType === "mouse") e.preventDefault()
+        }}
         className={cn(
-          "fixed z-[100] overflow-hidden",
+          // pointer-events-auto: Radix modal Sheet/Dialog sets body { pointer-events: none }.
+          // Without this, the portaled list is visible but inert — taps hit filters underneath.
+          "fixed z-[160] overflow-hidden pointer-events-auto touch-pan-y",
           isAddress
             ? "origin-top rounded-[6px] border border-neutral-200 bg-white text-neutral-900 shadow-[0_10px_40px_-4px_rgba(0,0,0,0.12)]"
             : "origin-top rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-xl shadow-black/10 animate-in fade-in-0 slide-in-from-top-2 duration-200",
@@ -947,10 +991,12 @@ export function LocationInputSuggest({
                     "hover:bg-muted/70 active:bg-muted",
                     idx === activeIndex ? "bg-muted" : "",
                   )}
-                  onMouseDown={(ev) => {
-                    ev.preventDefault()
-                    pickGoogleRow(row)
+                  onPointerDown={(ev) => {
+                    // Mouse only: prevent input blur so the portaled list stays mounted.
+                    // Touch must not preventDefault here or the list cannot scroll.
+                    if (ev.pointerType === "mouse") ev.preventDefault()
                   }}
+                  onClick={() => pickGoogleRow(row)}
                   onMouseEnter={() => setActiveIndex(idx)}
                 >
                   <MapPin
@@ -1024,10 +1070,10 @@ export function LocationInputSuggest({
                             idx === activeIndex ? "bg-muted" : "",
                           ),
                     )}
-                    onMouseDown={(ev) => {
-                      ev.preventDefault()
-                      pickHttp(s)
+                    onPointerDown={(ev) => {
+                      if (ev.pointerType === "mouse") ev.preventDefault()
                     }}
+                    onClick={() => pickHttp(s)}
                     onMouseEnter={() => setActiveIndex(idx)}
                   >
                     {isAddress ? (
@@ -1131,6 +1177,10 @@ export function LocationInputSuggest({
         setOpen(true)
       }}
       onFocus={() => {
+        if (blurCloseTimerRef.current) {
+          window.clearTimeout(blurCloseTimerRef.current)
+          blurCloseTimerRef.current = null
+        }
         setInputFocused(true)
         const q = value.trim()
         if (q.length >= minLength) {
@@ -1148,7 +1198,18 @@ export function LocationInputSuggest({
       onBlur={(e) => {
         const next = e.relatedTarget as Node | null
         if (next && dropdownRef.current?.contains(next)) return
-        setInputFocused(false)
+        // Touch: blur often fires before the suggestion pointer handler. Delay closing so the
+        // pick can run; pointerdown preventDefault usually keeps focus anyway.
+        if (blurCloseTimerRef.current) {
+          window.clearTimeout(blurCloseTimerRef.current)
+        }
+        blurCloseTimerRef.current = window.setTimeout(() => {
+          blurCloseTimerRef.current = null
+          if (inputRef.current && document.activeElement === inputRef.current) return
+          if (dropdownRef.current?.contains(document.activeElement)) return
+          if (pickLockRef.current) return
+          setInputFocused(false)
+        }, 180)
       }}
       onKeyDown={onKeyDown}
       className={inputClass}

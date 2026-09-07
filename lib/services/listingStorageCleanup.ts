@@ -45,15 +45,25 @@ export async function fetchListingImageUrlsForListingIds(
 ): Promise<string[]> {
   if (listingIds.length === 0) return []
 
-  const { data, error } = await supabase
-    .from("listing_images")
-    .select("url, thumbnail_url")
-    .in("listing_id", listingIds)
+  const [{ data: imageData, error: imageError }, { data: videoData, error: videoError }] =
+    await Promise.all([
+      supabase.from("listing_images").select("url, thumbnail_url").in("listing_id", listingIds),
+      supabase.from("listing_videos").select("url, thumbnail_url").in("listing_id", listingIds),
+    ])
 
-  if (error || !data?.length) return []
+  if (imageError) {
+    console.warn("[listingStorageCleanup] listing_images fetch failed:", imageError.message)
+  }
+  if (videoError) {
+    console.warn("[listingStorageCleanup] listing_videos fetch failed:", videoError.message)
+  }
 
   const urls: string[] = []
-  for (const row of data as { url?: string | null; thumbnail_url?: string | null }[]) {
+  for (const row of (imageData ?? []) as { url?: string | null; thumbnail_url?: string | null }[]) {
+    if (row.url?.trim()) urls.push(row.url)
+    if (row.thumbnail_url?.trim()) urls.push(row.thumbnail_url)
+  }
+  for (const row of (videoData ?? []) as { url?: string | null; thumbnail_url?: string | null }[]) {
     if (row.url?.trim()) urls.push(row.url)
     if (row.thumbnail_url?.trim()) urls.push(row.thumbnail_url)
   }

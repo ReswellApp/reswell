@@ -1,0 +1,145 @@
+{
+  "generated_for": "Stewart Surfboards official named standup catalog",
+  "source": "https://stewartsurfboards.com (Shopify in-stock surfboard lineup only — excludes used boards, apparel, fins, skateboards, and third-party merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "stewart-surfboards",
+      "name": "Stewart Surfboards",
+      "website_url": "https://stewartsurfboards.com",
+      "location_label": "San Clemente, California",
+      "founder_name": "Bill Stewart",
+      "lead_shaper_name": "Bill Stewart",
+      "short_description": "San Clemente shaper Bill Stewart — Hydro Hull longboards, Redline 11 noseriders, and performance mid-lengths from one of California's most influential labels.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/stewart-surfboards.png",
+      "models": [
+        {
+          "name": "(949)",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/949-P-130076.jpg",
+          "description": "A High Speed, Performance Five Fin Fun Board. The (949) has low nose entry rocker for paddle power. A monstrous deep vee concave bottom which makes the board ride much smaller rail to rail. Designed to be surfed with the included Future Vector 2 Quad Scimitar fins and a center box trailer fin, which provide solid bite and insane drive. A great board for all conditions, from punchy beach breaks to playful point breaks. You're gonna want to have this board in your quiver! 5-fin set included. Board",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "(949) Comp",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/949-E-130054.jpg",
+          "description": "The (949) Comp is a modified (949) with a narrower, slightly more dramatically rockered nose for easier duck-diving and dropping in to steeper faced waves. It’s still got most of the longboard paddle-power of the original (949) and rides like a super responsive shortboard with its deep vee concave bottom, which makes it feel much smaller rail to rail. Designed to be surfed with the included Futures Vector 2 Quad Scimitar fins and a center 3.25” trailer fin, which give it solid bite and insane dr",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "2FUN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/2FUN-P-130130.jpg",
+          "description": "Can you have too much fun? We think not! Max out your fun with the newest addition to the Stewart mid-length offering, the 2FUN. With all the mind-blowing features of the Hydro Hull egg shape, just pumped up a notch. Lower entry rocker makes paddling a breeze and the beveled rails offer forgiveness on the drop-in and in your turns. The more-dramatic vee in the tail makes this mid-length go rail to rail better than ever. Adding to the versatility of the 2FUN, we gave it a 2+1 fin setup, with a me",
+          "board_category_slug": "mid-length"
+        },
+        {
+          "name": "Bird",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/BRD-P-130028.jpg",
+          "description": "Have you heard… about the Bird!?! Soaring on to the scene as Bill Stewart’s latest longboard creation, the Bird has the grace of a classic single fin, with the power, speed, and maneuverability of a more high-performance longboard. Created for our team riders to push the envelope of classic longboarding, Bill made sure that the Bird checks all the classic log boxes for those pesky contest rules while adding some key features to make it ride way better than your average single fin. The more tradi",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Clydesdale",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/CLY-P-130078.jpg",
+          "description": "The Clydesdale is a stable and supportive board that performs well in all conditions and is ideal for larger surfers. A fantastic paddler and wave catching machine, the Clydesdale will get you in to the wave earlier and easier than anything else out there. The template is designed to surf much shorter than it’s actual size and features the famed Hydro Hull bottom. 7.0\" Fiberglass center fin and Futures composite side byte fin set included. Board # 130078 2 + 1 Length - 9'6\" Width - 24\" Thickness",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "CMP",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/CMP-E-130013.jpg",
+          "description": "Our premiere high performance longboard, the CMP was the board ridden to win four world longboarding titles (and counting!) as well as countless other contests. The round pin template flows perfectly with the foil and rocker. It has low volume rails and a single to double concave bottom that ends in a hard edged flat panel V tail. Designed to go rail to rail with the ease and speed of a shortboard, the CMP's thin and narrow shape generates a perfect flex pattern that will shoot you out of every ",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fartknocker SBD",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/FSBD-P-130081.jpg",
+          "description": "The Fartknocker is BACK, baby! One of our most popular shortboards of all time has been reborn as a new and improved Silent But Deadly version. With the same wide outline as the original Fartknocker, the SBD takes it up a notch with a thinner, more pulled in nose and tuned up foiled rails. The result is a stealth little high-performance groveler that'll sneak up on you and surprise you with its potency - whew, this baby will turn some heads! Not only does it permeate in slop and medium size wave",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Funline 11",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/FNL-P-130134.jpg",
+          "description": "Take the Redline 11 and shrink it down and you get a really versatile mini longboard that you can run to the tip for a cheater five, then back to crank turns off the tail. The Funline 11 paddles really big, rides really small. It’s designed to easily catch waves in all conditions, for surfers from beginners to advanced. A mini version of our best-selling Redline 11 longboard, the Funline is super wide in the front for paddle power. It has a flat straight entry rocker with flip in the tip. An ext",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hydro Hull",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/HHL-E-129925.jpg",
+          "description": "The Hydro Hull, quite possibly the most famous high-performance longboard model of all time, was our top-selling longboard worldwide for decades. Designed to be an all-around amazing performance board, the Hydro Hull blew people’s minds with incredibly innovative features, like the modern trim rocker, single to double concave bottom, and beveled entry rail, which were revolutionary design features at the time. The Hydro Hull remains a great all purpose surfboard for any level of ability, but we ",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HydroCush 2FUN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/hc-2fun-80-deck-bottom-rocker-composite-color.jpg",
+          "description": "IN STOCK - NOW SHIPPING Stock Dimensions: 8'0\" x 23\" x 3 1/8\" Volume: 63.33 L Fins included! The HydroCush 2Fun boards take “maximizing fun” to a whole new level! Don’t call it a soft top - these boards are so much more. The HydroCush line combines a hard bottom including all of the high-performance features that Stewart shapes are known for with a user-friendly EVA foam deck. The result is a board that is more durable than a glassed board, safer than a hard board, and rides way better than a fo",
+          "board_category_slug": "mid-length"
+        },
+        {
+          "name": "HydroCush Clydesdale",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/hc-clydesdale-deck-bottom-rocker-composite-color.jpg",
+          "description": "IN STOCK - NOW SHIPPING Stock Dimensions: 10'0\" x 24 1/2\" x 4\" Volume: 106.24 L Fins included! The HydroCush Clydesdale board takes “maximizing fun” to a whole new level! Don’t call it a soft top - these boards are so much more. The HydroCush line combines a hard bottom including all of the high-performance features that Stewart shapes are known for with a user-friendly EVA foam deck. The result is a board that is more durable than a glassed board, safer than a hard board, and rides way better t",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HydroCush Funline 11",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/hc-funline-pink-80--deck-bottom-rocker-composite-color.png",
+          "description": "IN STOCK - NOW SHIPPING Stock Dimensions: 8'0\" x 23\" x 3 1/4\" Volume: 64.12 L Fins included! The HydroCush Funline board takes “maximizing fun” to a whole new level! Don’t call it a soft top - these boards are so much more. The HydroCush line combines a hard bottom including all of the high-performance features that Stewart shapes are known for with a user-friendly EVA foam deck. The result is a board that is more durable than a glassed board, safer than a hard board, and rides way better than a",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HydroCush Redline 11",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/Redline-HC-soft-top-90-23-3.jpg",
+          "description": "IN STOCK - NOW SHIPPING Stock Dimensions: 9'0\" x 23\" x 3\" Volume: 66.56 L Fins included! The HydroCush Redline boards take “maximizing fun” to a whole new level! Don’t call it a soft top - these boards are so much more. The HydroCush line combines a hard bottom including all of the high-performance features that Stewart shapes are known for with a user-friendly EVA foam deck. The result is a board that is more durable than a glassed board, safer than a hard board, and rides way better than a foa",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HydroCush Ripster",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/Ripster-HC-soft-top-96.jpg",
+          "description": "IN STOCK - NOW SHIPPING Stock Dimensions: 9'6\" x 23 1/2\" x 3 1/4\" Volume: 79.82 L Fin included! The HydroCush Ripster board takes “maximizing fun” to a whole new level! Don’t call it a soft top - these boards are so much more. The HydroCush line combines a hard bottom including all of the high-performance features that Stewart shapes are known for with a user-friendly EVA foam deck. The result is a board that is more durable than a glassed board, safer than a hard board, and rides way better tha",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HydroCush Wild Bill",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/hc-wild-bill-76-deck-bottom-rocker-composite-color.jpg",
+          "description": "SOLD OUT - PRE-ORDER FOR 11/1/26 SHIP DATE Stock Dimensions: 7'6\" x 22\" x 2 7/8\" Volume: 51.23 L Fins included! The HydroCush Wild Bill boards take “maximizing fun” to a whole new level! Don’t call it a soft top - these boards are so much more. The HydroCush line combines a hard bottom including all of the high-performance features that Stewart shapes are known for with a user-friendly EVA foam deck. The result is a board that is more durable than a glassed board, safer than a hard board, and ri",
+          "board_category_slug": "mid-length"
+        },
+        {
+          "name": "Redline 11",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/RDL-E-129789_4d7703d4-c9a1-4049-ba9c-ac7d80302ea7.jpg",
+          "description": "The Ultimate 9’0 Surfboard! The Redline11 turns like an 8’6”, Paddles like a 9’6”, Noserides like a 10’0”. Bill says this is the “best all-around longboard he’s ever designed”. The nose bottom has a deep single concave that continues back past the half way point. This concave is what makes the Redline 11 paddle, turn and nose ride exceptionally great. That single concave flows into a double concave with a heavy V in the rounded pin tail, which makes it loose, fast and easy to ride. Bill invented",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Regal",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/REG-128463-2up.jpg",
+          "description": "Board # 128463 Length - 9'8\" Width - 23 1/4\" Thickness - 3 1/4\"",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/RFS-P130110.jpg",
+          "description": "The Retro Fish is an updated version of a timeless classic. The ample volume throughout this board provides you with the paddle power, float, and speed you need to zip through flat sections in fatter waves. Because it's got so much volume, you wanna go about 4\"- 6\" shorter than your standard shortboard. Quad fin set included, which gives the Retro Fish more drive with a looser feel versus the drawn-out turns of the old standard keel fin fishes. This fun and classic design is a great addition to ",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Ripster",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/RIP-P-130105_dca323b5-a6b8-48a7-9ee8-48135ac35e34.jpg",
+          "description": "The best of both worlds, the Ripster combines classic styling with modern technical design features, making it the ultimate performance single fin! Nose A deep, long blended concave in the nose makes this board paddle with maximum glide to catch every wave. It also creates trim speed and lift down the line, beating sections like you won't believe! Rails The rails are down hard in the tail, then soften as they go forward, making this board turn incredibly well while also being forgiving. The hard",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tipster",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/TIP-P-130106.jpg",
+          "description": "The Tipster is hands-down the Best Stewart Noseriding Longboard ever! Tested by our world-class team riders who have been winning contests on it since Fall 2014. The Tipster has also been stylishly free surfed by our team on the East &amp; West coasts. Bill Stewart calls it “Beyond Clean, Beyond Classic.” The nose concave creates lift and holds you in the pocket. The bottom is flat for insane trim speed, to carry you through the flats. The huge square tail has rocker you won’t believe till you s",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wild Bill",
+          "image_url": "https://cdn.shopify.com/s/files/1/2146/1003/files/WBL-E-130060.jpg",
+          "description": "Bill has tapped into his wild side and created the Wild Bill, the ultimate high-performance mid-length surfboard. For intermediate to advanced surfers, this board is a perfect alternative to your shortboard for those days that you want a bit more paddle power but don’t want to sacrifice performance. The Wild Bill has the perfect rocker, hitting that magic balance between low entry rocker for paddle power while still having enough rocker to not stuff the nose on late drops. The long, impeccably b",
+          "board_category_slug": "mid-length"
+        }
+      ]
+    }
+  ]
+}

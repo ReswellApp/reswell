@@ -5,13 +5,21 @@ import {
   aggregateMarketplaceHourOfDay,
   aggregateSearchAnalytics,
   aggregateNavBarMarketplaceKeywordAnalytics,
+  countMarketplaceSearchesInRange,
   getMarketplaceOccurredAtBounds,
   indexSearchAnalyticsDocument,
+  listMarketplaceSearchEvents,
   listNavBarMarketplaceKeywordEvents,
+  lookupMarketplaceQueryAllTime,
   topQueriesInRange,
   type NavBarMarketplaceKeywordEventHit,
   type SearchAnalyticsDoc,
 } from "@/lib/elasticsearch/search-analytics-index"
+import {
+  addBusinessDays,
+  businessDayKeyFromMs,
+  businessDayStartMs,
+} from "@/lib/utils/business-timezone"
 import {
   aggregateSearchSuggestPicks,
   aggregateHeaderNavSuggestClickAnalytics,
@@ -113,6 +121,8 @@ export async function recordSearchSuggestPickEvent(
   if (!isElasticsearchConfigured()) return
   const q = payload.queryPrefix.trim()
   if (!q) return
+  // Hover dwell fires per row while typing — skip ES ingest (Serverless VCU).
+  if ((payload.interaction ?? "pick") === "hover") return
 
   const doc: SearchSuggestPickDoc = {
     occurred_at: new Date().toISOString(),
@@ -149,6 +159,27 @@ export type NavSearchBarEventLine = {
 
 const NAV_SEARCH_BAR_RECENT_PER_SOURCE = 120
 const NAV_SEARCH_BAR_RECENT_MERGED_CAP = 200
+/** Newest marketplace searches for the home-style pulse dropdown (past week). */
+const PULSE_RECENT_EVENT_LIMIT = 800
+
+/** One marketplace search event for the dashboard pulse dropdown. */
+export type SearchAnalyticsPulseEvent = {
+  id: string
+  occurredAt: string
+  query: string
+  resultCount: number
+}
+
+/** Today / past-week marketplace volume — same Pacific windows as `/admin/home`. */
+export type SearchAnalyticsPulse = {
+  todayCount: number
+  weekCount: number
+  tracked: boolean
+  todayFrom: string
+  weekFrom: string
+  recentEvents: SearchAnalyticsPulseEvent[]
+  recentEventsCapped: boolean
+}
 
 /** Priority ranking for sorting the insights feed (lower = more urgent). */
 export type SearchInsightSeverity = "critical" | "warning" | "opportunity" | "positive"
@@ -261,6 +292,8 @@ export type SearchAnalyticsDashboard = {
     uniquePeople: number
     byQuery: { query: string; count: number; people: number; lastAt: string }[]
   }
+  /** Today / past-week marketplace volume (Pacific), plus recent events for the header dropdown. */
+  pulse: SearchAnalyticsPulse
   /** "What matters most" derived headline metrics. */
   headline: SearchAnalyticsHeadline
   /** Prioritized, business-facing insights with recommended actions. */
@@ -315,6 +348,47 @@ const EMPTY_NAV_SEARCH_BAR: SearchAnalyticsDashboard["navSearchBar"] = {
   totalDropdownSelections: 0,
   topFreeFormQueries: [],
   recentEvents: [],
+}
+
+const EMPTY_PULSE: SearchAnalyticsPulse = {
+  todayCount: 0,
+  weekCount: 0,
+  tracked: false,
+  todayFrom: "",
+  weekFrom: "",
+  recentEvents: [],
+  recentEventsCapped: false,
+}
+
+async function fetchMarketplaceSearchPulse(): Promise<SearchAnalyticsPulse> {
+  if (!isElasticsearchConfigured()) return EMPTY_PULSE
+
+  const now = Date.now()
+  const todayKey = businessDayKeyFromMs(now)
+  const todayFrom = new Date(businessDayStartMs(todayKey)).toISOString()
+  const weekFrom = new Date(businessDayStartMs(addBusinessDays(todayKey, -6))).toISOString()
+  const nowIso = new Date(now).toISOString()
+
+  const [todayCount, weekCount, events] = await Promise.all([
+    countMarketplaceSearchesInRange(todayFrom, nowIso),
+    countMarketplaceSearchesInRange(weekFrom, nowIso),
+    listMarketplaceSearchEvents(weekFrom, nowIso, PULSE_RECENT_EVENT_LIMIT),
+  ])
+
+  return {
+    todayCount,
+    weekCount,
+    tracked: true,
+    todayFrom,
+    weekFrom,
+    recentEvents: events.map((row) => ({
+      id: row.id,
+      occurredAt: row.occurredAt,
+      query: row.queryDisplay,
+      resultCount: row.resultCount,
+    })),
+    recentEventsCapped: weekCount > events.length,
+  }
 }
 
 function mergeNavSearchBarRecentEvents(
@@ -954,6 +1028,7 @@ export async function getSearchAnalyticsDashboardService(
       brandDirectory: EMPTY_BRAND_DIRECTORY_DASH,
       navSearchBar: EMPTY_NAV_SEARCH_BAR,
       demandCapture: EMPTY_DEMAND_CAPTURE,
+      pulse: EMPTY_PULSE,
       fetchedAt,
     })
   }
@@ -963,7 +1038,7 @@ export async function getSearchAnalyticsDashboardService(
   const from = start.toISOString()
   const to = end.toISOString()
 
-  const [main, suggestPicks, navMp, navSuggest, navRecentEvents, hourOfDay, demandCapture] =
+  const [main, suggestPicks, navMp, navSuggest, navRecentEvents, hourOfDay, demandCapture, pulse] =
     await Promise.all([
       aggregateSearchAnalytics(from, to),
       aggregateSearchSuggestPicks(from, to),
@@ -972,6 +1047,7 @@ export async function getSearchAnalyticsDashboardService(
       fetchNavSearchBarRecentEvents(from, to),
       aggregateMarketplaceHourOfDay(from, to),
       fetchDemandCaptureSafe(from),
+      fetchMarketplaceSearchPulse(),
     ])
 
   const navSearchBar = buildNavSearchBarSlice(navMp, navSuggest, navRecentEvents)
@@ -1008,6 +1084,7 @@ export async function getSearchAnalyticsDashboardService(
       brandDirectory: EMPTY_BRAND_DIRECTORY_DASH,
       navSearchBar,
       demandCapture,
+      pulse,
       fetchedAt,
     })
   }
@@ -1077,6 +1154,52 @@ export async function getSearchAnalyticsDashboardService(
     },
     navSearchBar,
     demandCapture,
+    pulse,
     fetchedAt,
   })
+}
+
+export type SearchQueryLookupMatch = {
+  query: string
+  count: number
+}
+
+export type SearchQueryLookupResult = {
+  configured: boolean
+  query: string
+  queryNormalized: string
+  allTimeCount: number
+  firstOccurredAt: string | null
+  lastOccurredAt: string | null
+  related: SearchQueryLookupMatch[]
+}
+
+export async function lookupSearchQueryAllTimeService(
+  rawQuery: string,
+): Promise<SearchQueryLookupResult> {
+  const query = displayMarketplaceSearchQueryForAnalytics(rawQuery)
+  const queryNormalized = normalizeMarketplaceSearchQueryForAnalytics(rawQuery)
+
+  if (!isElasticsearchConfigured()) {
+    return {
+      configured: false,
+      query,
+      queryNormalized,
+      allTimeCount: 0,
+      firstOccurredAt: null,
+      lastOccurredAt: null,
+      related: [],
+    }
+  }
+
+  const hit = await lookupMarketplaceQueryAllTime(queryNormalized)
+  return {
+    configured: true,
+    query: hit?.queryDisplay ?? query,
+    queryNormalized,
+    allTimeCount: hit?.exactCount ?? 0,
+    firstOccurredAt: hit?.firstOccurredAt ?? null,
+    lastOccurredAt: hit?.lastOccurredAt ?? null,
+    related: hit?.matches ?? [],
+  }
 }

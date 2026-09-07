@@ -5,9 +5,18 @@ import {
   isLabelImagesNotSupportedError,
 } from "@/lib/shipengine/errors"
 import {
+  getShipEngineLabelInsuranceProvider,
+  isShipEngineLabelInsuranceEnabled,
+  pickInsuranceClaimUrl,
+  pickInsuranceCost,
+  pickShipEngineLabelIds,
+} from "@/lib/shipengine/insurance"
+import { curateLabelPurchaseRates } from "@/lib/shipping/label-purchase-rates"
+import {
   buildShipEngineRateShipment,
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
+import { RESIDENTIAL_DELIVERY_LABEL_MESSAGE } from "@/lib/shipping/shipengine-rate-helpers"
 import {
   extractRatesFromApiEnvelope,
   rateMoneyTotal,
@@ -41,6 +50,8 @@ export type ShipEngineRateOption = {
   serviceName: string
   amount: number
   currency: string
+  carrierCode?: string | null
+  serviceCode?: string | null
 }
 
 export function normalizeShipEngineRatesForUi(rates: Record<string, unknown>[]): ShipEngineRateOption[] {
@@ -48,6 +59,8 @@ export function normalizeShipEngineRatesForUi(rates: Record<string, unknown>[]):
   for (const r of rates) {
     const rateId = typeof r.rate_id === "string" ? r.rate_id : null
     if (!rateId) continue
+    const carrierCode = typeof r.carrier_code === "string" && r.carrier_code.trim() ? r.carrier_code.trim() : null
+    const serviceCode = typeof r.service_code === "string" && r.service_code.trim() ? r.service_code.trim() : null
     const carrierLabel =
       typeof r.carrier_friendly_name === "string"
         ? r.carrier_friendly_name
@@ -67,6 +80,8 @@ export function normalizeShipEngineRatesForUi(rates: Record<string, unknown>[]):
       serviceName,
       amount: total,
       currency: currency.toUpperCase(),
+      carrierCode,
+      serviceCode,
     })
   }
   out.sort((a, b) => a.amount - b.amount)
@@ -99,6 +114,10 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   tierId?: SurfboardShippingTierId | null
   /** Admin custom carton — skip tier max box length; UPS DIM is the ceiling for shortboard. */
   adminCustomCarton?: boolean
+  /** Listing section — Media Mail is only offered for magazines. */
+  listingSection?: string | null
+  /** Declared value for ParcelGuard / carrier insurance when enabled. */
+  insuredValueUsd?: number | null
 }): Promise<
   | { ok: true; rates: ShipEngineRateOption[] }
   | { ok: false; error: string; status: number }
@@ -142,7 +161,16 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     }
   }
 
-  const shipment = buildShipEngineRateShipment(params.shipFrom, params.shipTo, {
+  const insuranceEnabled = isShipEngineLabelInsuranceEnabled()
+  const insured =
+    insuranceEnabled &&
+    typeof params.insuredValueUsd === "number" &&
+    Number.isFinite(params.insuredValueUsd) &&
+    params.insuredValueUsd > 0
+      ? params.insuredValueUsd
+      : null
+
+  const shipment = buildShipEngineRateShipment(params.shipFrom, { ...params.shipTo, residential: "yes" }, {
     weightValue: params.parcel.weightLb,
     weightUnit: "pound",
     length: params.parcel.lengthIn,
@@ -151,6 +179,9 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     dimUnit: "inch",
     packageCode: "package",
     validateAddress: "no_validation",
+    insuranceProvider: insured != null ? getShipEngineLabelInsuranceProvider() : null,
+    insuredValueAmount: insured,
+    insuredValueCurrency: "usd",
   })
 
   const body = {
@@ -172,11 +203,15 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   }
 
   const rawRates = extractRatesFromApiEnvelope(data)
-  const rates = normalizeShipEngineRatesForUi(rawRates)
+  const rates = curateLabelPurchaseRates(
+    normalizeShipEngineRatesForUi(rawRates),
+    params.listingSection,
+  )
   if (!rates.length) {
     return {
       ok: false,
-      error: "No carrier rates returned for this route. Check addresses and parcel size.",
+      error:
+        "No USPS, UPS, or FedEx Ground or Priority rates for this shipment. Check addresses and parcel size.",
       status: 422,
     }
   }
@@ -247,6 +282,12 @@ export type PurchasedShipEngineLabelResult = {
   paperlessQrUrl: string | null
   paperlessInstructions: string | null
   paperlessHandoffCode: string | null
+  insuranceProvider: string | null
+  insuredValueAmount: number | null
+  insuranceCostAmount: number | null
+  insuranceClaimUrl: string | null
+  shipengineLabelId: string | null
+  shipengineShipmentId: string | null
 }
 
 /** ShipEngine returns the carrier charge as shipment_cost { amount, currency }. */
@@ -390,6 +431,9 @@ function buildShipEngineLabelPurchaseBody(opts: {
     label_format: "pdf",
     label_download_type: "url",
     label_layout: "4x6",
+    label_messages: {
+      reference1: RESIDENTIAL_DELIVERY_LABEL_MESSAGE,
+    },
   }
   if (opts.includePaperless) {
     body.display_scheme = "label_and_paperless"
@@ -481,6 +525,13 @@ function interpretShipEngineLabelPurchaseResponse(
 
   const cost = pickLabelCost(label)
   const paperless = pickPaperlessDownload(label)
+  const insuranceCost = pickInsuranceCost(label)
+  const ids = pickShipEngineLabelIds(label)
+  const insuranceClaimUrl = pickInsuranceClaimUrl(label)
+  const insuranceProvider =
+    typeof label.insurance_provider === "string" && label.insurance_provider.trim()
+      ? label.insurance_provider.trim()
+      : null
 
   return {
     ok: true,
@@ -493,6 +544,12 @@ function interpretShipEngineLabelPurchaseResponse(
       paperlessQrUrl: paperless.qrUrl,
       paperlessInstructions: paperless.instructions,
       paperlessHandoffCode: paperless.handoffCode,
+      insuranceProvider,
+      insuredValueAmount: null,
+      insuranceCostAmount: insuranceCost.amount,
+      insuranceClaimUrl,
+      shipengineLabelId: ids.labelId,
+      shipengineShipmentId: ids.shipmentId,
     },
   }
 }

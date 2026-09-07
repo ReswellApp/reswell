@@ -16,6 +16,7 @@ import { toast } from "sonner"
 import { BlogImageDropZone } from "@/components/features/admin/blog/blog-image-drop-zone"
 import type { ArticleBlock } from "@/lib/field-notes-articles"
 import type { FieldNoteArticle } from "@/lib/field-notes-articles"
+import { BlogTitleCover } from "@/components/field-notes/blog-title-cover"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -129,6 +130,44 @@ function articleToDraft(a: FieldNoteArticle): Draft {
 
 function blocksToRows(blocks: ArticleBlock[]): BlockRow[] {
   return blocks.map((block) => ({ cid: crypto.randomUUID(), block }))
+}
+
+function existingListingRef(block: ArticleBlock): string {
+  return block.kind === "listing" || block.kind === "listing-image" ? block.ref : ""
+}
+
+function blockForKind(kind: ArticleBlock["kind"], prev: ArticleBlock): ArticleBlock {
+  if (kind === "h2") return { kind: "h2", text: prev.kind === "h2" ? prev.text : "" }
+  if (kind === "p") return { kind: "p", text: prev.kind === "p" ? prev.text : "" }
+  if (kind === "image") {
+    const prevUrl = prev.kind === "image" ? prev.url : ""
+    return {
+      kind: "image",
+      url: prevUrl && /^https:\/\//i.test(prevUrl) ? prevUrl : "",
+      alt: prev.kind === "image" ? prev.alt ?? "" : "",
+      caption: prev.kind === "image" ? prev.caption ?? "" : "",
+      width: prev.kind === "image" ? prev.width : undefined,
+      height: prev.kind === "image" ? prev.height : undefined,
+    }
+  }
+  if (kind === "instagram") {
+    return {
+      kind: "instagram",
+      url: prev.kind === "instagram" ? prev.url : "https://www.instagram.com/reel/example-placeholder-replace-me/",
+    }
+  }
+  if (kind === "listing") return { kind: "listing", ref: existingListingRef(prev) }
+  if (kind === "listing-image") {
+    return {
+      kind: "listing-image",
+      ref: existingListingRef(prev),
+      caption: prev.kind === "listing-image" ? prev.caption ?? "" : "",
+    }
+  }
+  return {
+    kind: "sold-listings",
+    limit: prev.kind === "sold-listings" ? prev.limit ?? 6 : 6,
+  }
 }
 
 async function fetchJson(url: string, init?: RequestInit) {
@@ -322,29 +361,10 @@ function SortableBlockRow(props: {
             <Select
               value={block.kind}
               onValueChange={(kind) => {
-                if (kind === "h2") props.patch(props.row.cid, { kind: "h2", text: block.kind === "h2" ? block.text : "" })
-                if (kind === "p") props.patch(props.row.cid, { kind: "p", text: block.kind === "p" ? block.text : "" })
-                if (kind === "image") {
-                  const prev = block.kind === "image" ? block.url : ""
-                  props.patch(props.row.cid, {
-                    kind: "image",
-                    url: prev && /^https:\/\//i.test(prev) ? prev : "",
-                    alt: block.kind === "image" ? block.alt ?? "" : "",
-                    caption: block.kind === "image" ? block.caption ?? "" : "",
-                  })
-                }
-                if (kind === "instagram") {
-                  const prevIg = block.kind === "instagram" ? block.url : ""
-                  props.patch(props.row.cid, {
-                    kind: "instagram",
-                    url:
-                      prevIg.trim() ||
-                      "https://www.instagram.com/reel/example-placeholder-replace-me/",
-                  })
-                }
+                props.patch(props.row.cid, blockForKind(kind as ArticleBlock["kind"], block))
               }}
             >
-              <SelectTrigger className="h-9 w-[150px]" aria-label="Block type">
+              <SelectTrigger className="h-9 w-[200px]" aria-label="Block type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -352,6 +372,9 @@ function SortableBlockRow(props: {
                 <SelectItem value="p">Paragraph</SelectItem>
                 <SelectItem value="image">Image</SelectItem>
                 <SelectItem value="instagram">Instagram</SelectItem>
+                <SelectItem value="listing">Listing tile</SelectItem>
+                <SelectItem value="listing-image">Listing photos</SelectItem>
+                <SelectItem value="sold-listings">Recently sold</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -378,7 +401,7 @@ function SortableBlockRow(props: {
               value={block.text}
               onChange={(e) => props.patch(props.row.cid, { kind: "p", text: e.target.value })}
               rows={6}
-              placeholder="Paragraph…"
+              placeholder="Paragraph… Use [label](/path) or [label](https://…) for clickable links."
               className="min-h-[120px]"
             />
           ) : null}
@@ -388,7 +411,15 @@ function SortableBlockRow(props: {
                 compact
                 label="Image"
                 value={block.url}
-                onUrlChange={(u) => props.patch(props.row.cid, { ...block, url: u })}
+                onUrlChange={(u, dim) =>
+                  props.patch(props.row.cid, {
+                    ...block,
+                    url: u,
+                    width: dim?.width,
+                    height: dim?.height,
+                  })
+                }
+                hint="Unsplash, Pexels, Pixabay, Wikimedia Commons, or a photo you own. No brand or product-catalog shots."
               />
               <Input
                 value={block.alt ?? ""}
@@ -408,6 +439,44 @@ function SortableBlockRow(props: {
               onChange={(e) => props.patch(props.row.cid, { kind: "instagram", url: e.target.value })}
               placeholder="Instagram post or reel URL"
             />
+          ) : null}
+          {block.kind === "listing" ? (
+            <Input
+              value={block.ref}
+              onChange={(e) => props.patch(props.row.cid, { kind: "listing", ref: e.target.value })}
+              placeholder="Listing URL or slug — /l/…"
+            />
+          ) : null}
+          {block.kind === "listing-image" ? (
+            <div className="grid gap-2">
+              <Input
+                value={block.ref}
+                onChange={(e) => props.patch(props.row.cid, { ...block, ref: e.target.value })}
+                placeholder="Listing URL or slug — /l/…"
+              />
+              <Input
+                value={block.caption ?? ""}
+                onChange={(e) => props.patch(props.row.cid, { ...block, caption: e.target.value })}
+                placeholder="Caption (optional)"
+              />
+            </div>
+          ) : null}
+          {block.kind === "sold-listings" ? (
+            <div className="grid gap-1">
+              <Label className="text-xs text-muted-foreground">How many sold listings</Label>
+              <Input
+                type="number"
+                min={2}
+                max={12}
+                value={block.limit ?? 6}
+                onChange={(e) =>
+                  props.patch(props.row.cid, {
+                    kind: "sold-listings",
+                    limit: Number(e.target.value) || 6,
+                  })
+                }
+              />
+            </div>
           ) : null}
         </div>
       </div>
@@ -625,7 +694,10 @@ export function BlogCmsFloatingPanel() {
         <SheetContent side="left" className="flex h-full max-h-screen w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl md:max-w-2xl">
           <SheetHeader className="shrink-0 border-b px-6 py-5 text-left">
             <SheetTitle>Blog CMS</SheetTitle>
-            <SheetDescription>Manage posts shown on `/blog`: copy, imagery, ordering, URLs, SEO, and layout blocks.</SheetDescription>
+            <SheetDescription>
+              Manage posts on `/blog`. Covers are optional (a title card is generated when empty). Images must be
+              copyright-free.
+            </SheetDescription>
           </SheetHeader>
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-10 pt-4">
@@ -754,10 +826,23 @@ export function BlogCmsFloatingPanel() {
 
                   <div className="space-y-2 sm:col-span-2">
                     <BlogImageDropZone
-                      label="Cover image"
+                      label="Cover image (optional)"
                       value={draft.coverImage}
                       onUrlChange={(next) => setDraft((d) => ({ ...d, coverImage: next }))}
+                      hint="Leave empty to use a generated title card. Copyright-free images only — Unsplash, Pexels, Pixabay, Wikimedia Commons, or photos you own."
                     />
+                    {!draft.coverImage.trim() ? (
+                      <div className="overflow-hidden rounded-lg border border-border">
+                        <div className="relative aspect-[16/10] w-full">
+                          <div className="absolute inset-0">
+                            <BlogTitleCover
+                              title={draft.title.trim() || "Untitled post"}
+                              tag={draft.tag.trim() || "Blog"}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex flex-col gap-3 rounded-lg border p-4 sm:col-span-2">
@@ -821,6 +906,7 @@ export function BlogCmsFloatingPanel() {
                           label="Social share image (Open Graph)"
                           value={draft.ogImage}
                           onUrlChange={(next) => setDraft((d) => ({ ...d, ogImage: next }))}
+                          hint="Optional. If empty, shares use the cover photo or the generated title card. Same copyright-free rules as covers."
                         />
                       </AccordionContent>
                     </AccordionItem>
@@ -856,20 +942,26 @@ export function BlogCmsFloatingPanel() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 border-t pt-4">
-                  <Button type="button" disabled={working} onClick={() => persist()}>
-                    {working ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                        Saving…
-                      </>
-                    ) : (
-                      "Save"
-                    )}
-                  </Button>
-                  <Button type="button" variant="destructive" disabled={working || !editingId || creating} onClick={deleteCurrent}>
-                    Delete
-                  </Button>
+                <div className="space-y-3 border-t pt-4">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Cover and uploaded images must be copyright-free or owned by Reswell. Listing tiles and photos
+                    pull from live marketplace listings. Cover may be empty — the title card is used instead.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" disabled={working} onClick={() => persist()}>
+                      {working ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                          Saving…
+                        </>
+                      ) : (
+                        "Save"
+                      )}
+                    </Button>
+                    <Button type="button" variant="destructive" disabled={working || !editingId || creating} onClick={deleteCurrent}>
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </>
             )}

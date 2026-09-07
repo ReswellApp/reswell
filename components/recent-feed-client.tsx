@@ -11,6 +11,7 @@ export interface RecentListing {
   user_id: string
   title: string
   price: number
+  compare_at_price?: number | string | null
   condition?: string | null
   section: string
   status?: string
@@ -117,6 +118,7 @@ export function RecentFeedClient({
             user_id: listing.user_id,
             title: listing.title,
             price: listing.price,
+            compare_at_price: listing.compare_at_price,
             status: listing.status ?? (soldPresentation ? "sold" : "active"),
             section: listing.section,
             local_pickup: listing.local_pickup,

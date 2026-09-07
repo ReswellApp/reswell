@@ -1,0 +1,84 @@
+{
+  "generated_for": "Michel Junod Surfboards official named standup catalog",
+  "source": "https://surfboardsbymicheljunod.com/collections.json (Shopify board model collections — excludes apparel, fins, board bags, and used inventory)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "michel-junod-surfboards",
+      "name": "Michel Junod Surfboards",
+      "website_url": "https://surfboardsbymicheljunod.com",
+      "location_label": "Oceanside, California",
+      "founder_name": "Michel Junod",
+      "lead_shaper_name": "Michel Junod",
+      "short_description": "Michel Junod surfboard shaper from Santa Cruz, known for single-fin logs, quad fishes, performance boards, and collabs with Thomas Campbell. Boards are shaped at Global Glassing in Oceanside, California.",
+      "models": [
+        {
+          "name": "345 Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_flyingfish_yellow_bottom.png?v=1482333853",
+          "description": "345 refers to the fin options on this smooth swallow tail fish. It has relaxed rocker entry and a slight \"beak\" nose for a little extra volume under your chest, making take offs a breeze. The 5 boxes make it easy to switch out fin set ups in varying conditions so that you can really find the boards full potential in a broad variety of conditions. If you can only take one board on a surf trip, this would be a great choice.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big Five Diamond",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_big5diamond_rootbeer_bottom.png?v=1475287677",
+          "description": "An extra full volume short board for the surfer who wants to increase wave count significantly, yet at the same time, surf aggressively (speed and maneuverability). This design is a hit with XL and XXL surfers who can't seem to find a short board that will float them well and catch waves. It comes with 5 future fin boxes so you can ride it as a quad or a thruster.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Carver",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_carver_orange_bottom.png?v=1475030709",
+          "description": "Like it's name, this model is for turning hard and going fast in head high surf. The outline is streamlined, yet has enough volume to get around easily in the line up and catch plenty of waves. The 2 + 1 fin set up gives plenty of drive off the bottom and down the line, yet has the \"easy off the top\" characteristics of a thruster to gain speed and maintain momentum for your next turn.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Tail Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_diamondtailsinglefin__bottom.png?v=1475847180",
+          "description": "A modern twist on 70's single fins. Not a retro single fin. This design borrows from the 70's with a \"beak\" nose with slightly more volume in the chest area for easy paddling, but comes with modern tail rocker and double-barrel concave tail contours for added speed and maneuverability. This is the board Michel Junod took to West Africa and rode in Thomas Campbell's movie \"The Present\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Easy Rider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_9_4_easyrider_greenyellow_bottom.png?v=1482334133",
+          "description": "If you want just one long board in your quiver, this is the one. Designed to work in most conditions from 2' to 8'. This is not a log, but a medium weight long board that catches waves easily, and has a little more kick in the nose for handling bigger waves. Down rails in the tail with slight V and double barrel concave provide carving turns and acceleration down the line.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Flying Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_5_6_quadfish_yellow_bottomn.png?v=1478355871",
+          "description": "A super popular quad fish design with an ever growing reputation. This double wing swallow generates exhilarating speed and performance, if you are willing to punch it. Quick and turns on a dime. Works great in both slow or hollow waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Junod Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/DSCF2830.png?v=1482497978",
+          "description": "A mid range single fin design for glide and easy turning. Perfect for small to head high surf. This is not a hull design with soft rails, but a fast modern bottom with double-barrel concave and hard rails in the tail. Relaxed rocker makes for good paddling and easy take offs.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Pintail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_LB_lightblue_9_4_top.png?v=1482368436",
+          "description": "This is the fastest long board model Michel Junod makes. It really comes alive in 4' to 10' waves. It has more rocker than his other long boards, and can handle steep drops and fast, hollow waves. Available in single fin or 2 + 1 set up.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Speed Seed",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNO_speedseed_blue_top.png?v=1475847127",
+          "description": "A super-fun wider single fin round pin for easy take offs and speedy rides. With a \"beak\" nose and relaxed entry rocker along with slight V and double barrel concave tail, this board is in early and will fly around in average to hollow surf in the 2' to 8' range. The perfect short board to take on a road trip.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The R.O.N.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_Ron2014_bluebrown_bottom.png?v=1475287515",
+          "description": "Designed as an all around log with an emphasis on walking to the nose and spending time there. The nose has a blended concave for subtle lift and control. Shaped from US Blanks Classic density foam for extra strength and weight, providing a solid and stable feel of a 60's log. The 60/40 rails provide for easy turning and a smooth feeling when walking the board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Smooth Slider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/collections/JUNOD_nowski_blue_bottom.png?v=1475287321",
+          "description": "An all around log that features both aspects of glide and maneuverability. A joint design effort by Thomas Campbell and Michel Junod. The outline is slightly on the \"Pig\" side of the spectrum with the wide point slightly behind center. The nose is slightly narrower than a typical noserider, but still delivers a stable path for walking to the nose and good noseriding performance.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}

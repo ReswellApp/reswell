@@ -1,17 +1,26 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { PostgrestClientOptions, PostgrestFilterBuilder } from "@supabase/postgrest-js"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  hydrateCardListingImages,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import {
   boardTypeForDbFromBrowseParam,
   BOARDS_BROWSE_DEFAULT_SORT,
-  BOARDS_BROWSE_NEWEST_SORT,
   BOARDS_BROWSE_TOP_PICKS_SORT,
   normalizedBoardsBrowseTypeFromParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
-import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
 import { sortRecordsByIdOrder } from "@/lib/utils/sort-by-id-order"
+import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
+import {
+  boardsBrowseDailyRotateSeed,
+  compareRotateIdRowsForDailyRotate,
+  listingCreatedAtMs,
+  orderListingIdsForDailyRotate,
+  prependPinnedListingIds,
+} from "@/lib/utils/boards-browse-daily-rotate"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
 import {
   boardDimensionBrowseFieldsFromSearchParams,
@@ -48,12 +57,15 @@ export type BoardBrowseListingRow = {
   user_id: string
   title: string
   price: number | string
+  compare_at_price?: number | string | null
   status: string
   created_at?: string
   latitude?: number | null
   longitude?: number | null
   local_pickup?: boolean | null
   shipping_available?: boolean | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
   listing_images?: ListingImageForCard[] | null
   categories?: { name?: string | null } | null | { name?: string | null }[] | null
   board_type?: string | null
@@ -61,9 +73,12 @@ export type BoardBrowseListingRow = {
   suppressed_on_boards_browse?: boolean | null
 }
 
+/**
+ * Card cover comes from denormalized primary_* columns (no listing_images join).
+ * `*` still used for browse filters; nest removed to cut PostgREST lateral cost.
+ */
 export const SURFBOARD_BROWSE_LISTING_SELECT = `
   *,
-  listing_images (url, thumbnail_url, is_primary),
   categories (name),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, shop_verified)
 `
@@ -117,27 +132,30 @@ export function compareBoardBrowseRows(
   return tb - ta
 }
 
+/** Default unfiltered `/boards` sort: admin pins first, then 24h seeded shuffle (`sort=top-picks` kept for URL compat). */
 export function isBoardsBrowseTopPicksSort(sort: string): boolean {
   return sort === BOARDS_BROWSE_TOP_PICKS_SORT
 }
 
-/** Top picks first (curation order), then newest; suppressed listings sort last. */
-export function compareBoardBrowseRowsTopPicks(
+/** Seeded daily shuffle; new-this-window listings first; suppressed last. */
+export function compareBoardBrowseRowsDailyRotate(
   a: BoardBrowseListingRow,
   b: BoardBrowseListingRow,
-  curationIndex: Map<string, number>,
+  seed: string,
 ): number {
-  const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
-  if (supDiff !== 0) return supDiff
-
-  const aPick = curationIndex.has(a.id)
-  const bPick = curationIndex.has(b.id)
-  if (aPick && bPick) {
-    return (curationIndex.get(a.id) ?? 0) - (curationIndex.get(b.id) ?? 0)
-  }
-  if (aPick && !bPick) return -1
-  if (!aPick && bPick) return 1
-  return compareBoardBrowseRows(a, b, BOARDS_BROWSE_NEWEST_SORT)
+  return compareRotateIdRowsForDailyRotate(
+    {
+      id: a.id,
+      suppressed: a.suppressed_on_boards_browse === true,
+      createdAtMs: listingCreatedAtMs(a.created_at),
+    },
+    {
+      id: b.id,
+      suppressed: b.suppressed_on_boards_browse === true,
+      createdAtMs: listingCreatedAtMs(b.created_at),
+    },
+    seed,
+  )
 }
 
 export type SurfboardBrowseFilterParams = {
@@ -159,187 +177,109 @@ export type SurfboardBrowseFilterParams = {
   shippingAvailable?: boolean
 }
 
-async function fetchMatchingTopPickRows(
+const ROTATE_ID_PAGE_SIZE = 1000
+const ROTATE_ID_MAX = 20_000
+
+async function listSurfboardBrowseRotateIdRows(
   supabase: SupabaseClient,
-  filters: SurfboardBrowseFilterParams,
-  curatedIds: string[],
-  useSuppressionSort: boolean,
-): Promise<BoardBrowseListingRow[]> {
-  if (curatedIds.length === 0) return []
-
-  let picksChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-    ...filters,
-    useSuppressionSort,
-    restrictToListingIds: curatedIds,
-    withCount: false,
-  })) as unknown as SurfboardBrowseListingsQuery
-
-  let { data: rawPicks, error } = await picksChain
-
-  if (error && useSuppressionSort) {
-    console.error("fetchMatchingTopPickRows (suppression sort):", describeBrowseQueryError(error))
-    picksChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-      ...filters,
-      useSuppressionSort: false,
-      restrictToListingIds: curatedIds,
+  params: { boardType: string; condition: string },
+): Promise<{ id: string; suppressed: boolean }[]> {
+  const includeSuppressed = await isBoardsBrowseSuppressionSortAvailable(supabase)
+  const selectColumns = includeSuppressed
+    ? "id, created_at, suppressed_on_boards_browse"
+    : "id, created_at"
+  const rows: { id: string; suppressed: boolean; createdAtMs: number }[] = []
+  let from = 0
+  while (from < ROTATE_ID_MAX) {
+    const to = from + ROTATE_ID_PAGE_SIZE - 1
+    const chain = (await buildSurfboardBrowseBaseQuery(supabase, {
+      boardType: params.boardType,
+      condition: params.condition,
+      query: "",
+      selectColumns,
+      pagedSort: "id",
+      pagedRange: { from, to },
       withCount: false,
     })) as unknown as SurfboardBrowseListingsQuery
-    ;({ data: rawPicks, error } = await picksChain)
+
+    const { data, error } = await chain
+    if (error) {
+      console.error("listSurfboardBrowseRotateIdRows:", describeBrowseQueryError(error))
+      break
+    }
+
+    const batch = (data ?? []) as Array<{
+      id: string
+      created_at?: string | null
+      suppressed_on_boards_browse?: boolean | null
+    }>
+    for (const row of batch) {
+      rows.push({
+        id: row.id,
+        suppressed: row.suppressed_on_boards_browse === true,
+        createdAtMs: listingCreatedAtMs(row.created_at),
+      })
+    }
+    if (batch.length < ROTATE_ID_PAGE_SIZE) break
+    from += ROTATE_ID_PAGE_SIZE
   }
+  return rows
+}
+
+async function hydrateSurfboardBrowseRowsByIds(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<BoardBrowseListingRow[]> {
+  if (ids.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select(SURFBOARD_BROWSE_LISTING_SELECT)
+    .in("id", ids)
+    .eq("status", "active")
+    .eq("section", "surfboards")
+    .eq("hidden_from_site", false)
+    .is("archived_at", null)
 
   if (error) {
-    console.error("fetchMatchingTopPickRows:", describeBrowseQueryError(error))
+    console.error("hydrateSurfboardBrowseRowsByIds:", describeBrowseQueryError(error))
     return []
   }
 
-  return sortRecordsByIdOrder((rawPicks ?? []) as BoardBrowseListingRow[], curatedIds)
+  return hydrateCardListingImages(
+    sortRecordsByIdOrder((data ?? []) as unknown as BoardBrowseListingRow[], ids),
+  )
 }
 
-async function fetchNonTopPickBrowsePage(
+/** Paginated unfiltered browse: admin pins first, then 24h seeded random order. */
+export async function fetchBoardsBrowseDailyRotatePage(
   supabase: SupabaseClient,
-  filters: SurfboardBrowseFilterParams,
-  excludeIds: string[],
-  offset: number,
-  limit: number,
-  useSuppressionSort: boolean,
-): Promise<{ boards: BoardBrowseListingRow[]; totalCount: number }> {
-  let listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-    ...filters,
-    useSuppressionSort,
-    excludeListingIds: excludeIds,
-    pagedSort: BOARDS_BROWSE_NEWEST_SORT,
-    pagedRange: { from: offset, to: offset + limit - 1 },
-    withCount: false,
-  })) as unknown as SurfboardBrowseListingsQuery
-
-  let { data: rawBoards, count, error } = await listingsChain
-
-  if (error && useSuppressionSort) {
-    console.error(
-      "fetchNonTopPickBrowsePage (suppression sort):",
-      describeBrowseQueryError(error),
-    )
-    listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-      ...filters,
-      useSuppressionSort: false,
-      excludeListingIds: excludeIds,
-      pagedSort: BOARDS_BROWSE_NEWEST_SORT,
-      pagedRange: { from: offset, to: offset + limit - 1 },
-      withCount: false,
-    })) as unknown as SurfboardBrowseListingsQuery
-    ;({ data: rawBoards, count, error } = await listingsChain)
-  }
-
-  if (error) {
-    console.error("fetchNonTopPickBrowsePage:", describeBrowseQueryError(error))
-  }
-
-  return {
-    boards: (rawBoards ?? []) as BoardBrowseListingRow[],
-    totalCount: count ?? 0,
-  }
-}
-
-async function countNonTopPickBrowseMatches(
-  supabase: SupabaseClient,
-  filters: SurfboardBrowseFilterParams,
-  excludeIds: string[],
-): Promise<number> {
-  // Count-only: a single `id` column, no embedded joins, no sort, no range.
-  // Counts are order-independent, so the suppression-sort branch is unnecessary here.
-  const listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-    ...filters,
-    excludeListingIds: excludeIds,
-    headOnly: true,
-    selectColumns: "id",
-  })) as unknown as SurfboardBrowseListingsQuery
-
-  const { count, error } = await listingsChain
-
-  if (error) {
-    console.error("countNonTopPickBrowseMatches:", describeBrowseQueryError(error))
-    return 0
-  }
-
-  return count ?? 0
-}
-
-/** Paginated browse with admin Top Picks pinned first, then newest listings. */
-export async function fetchBoardsBrowseTopPicksPage(
-  supabase: SupabaseClient,
-  params: SurfboardBrowseFilterParams & {
+  params: {
+    boardType: string
+    condition: string
     page: number
-    curatedIds?: string[]
+    rotateSeed?: string
   },
 ): Promise<BoardsBrowseCategoryTypePage> {
   const limit = BOARDS_BROWSE_PAGE_SIZE
-  const offset = (params.page - 1) * limit
-  const curatedIds =
-    params.curatedIds ?? (await listBoardsBrowseTopPickListingIdsOrdered(supabase))
-
-  if (curatedIds.length === 0) {
-    return fetchBoardsBrowseCategoryTypePage(supabase, {
+  const page = Number.isFinite(params.page) && params.page >= 1 ? params.page : 1
+  const offset = (page - 1) * limit
+  const seed = params.rotateSeed ?? boardsBrowseDailyRotateSeed()
+  const [idRows, pinnedIds] = await Promise.all([
+    listSurfboardBrowseRotateIdRows(supabase, {
       boardType: params.boardType,
       condition: params.condition,
-      sort: BOARDS_BROWSE_NEWEST_SORT,
-      page: params.page,
-    })
-  }
-
-  let useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
-  const filters: SurfboardBrowseFilterParams = {
-    boardType: params.boardType,
-    condition: params.condition,
-    query: params.query,
-    brand: params.brand,
-    model: params.model,
-    brandId: params.brandId,
-    brandModelId: params.brandModelId,
-    dimensionFields: params.dimensionFields,
-    legacyDimensions: params.legacyDimensions,
-    facets: params.facets,
-    minPrice: params.minPrice,
-    maxPrice: params.maxPrice,
-    geoBbox: params.geoBbox,
-    locationTextFilter: params.locationTextFilter,
-    shippingAvailable: params.shippingAvailable,
-  }
-
-  const pickRows = await fetchMatchingTopPickRows(supabase, filters, curatedIds, useSuppressionSort)
-  const pickCount = pickRows.length
-  const nonPickCount = await countNonTopPickBrowseMatches(supabase, filters, curatedIds)
-  const totalItems = pickCount + nonPickCount
-  const totalPages = totalItems === 0 ? 0 : Math.max(1, Math.ceil(totalItems / limit))
-
-  if (offset >= pickCount) {
-    const nonPickOffset = offset - pickCount
-    const { boards } = await fetchNonTopPickBrowsePage(
-      supabase,
-      filters,
-      curatedIds,
-      nonPickOffset,
-      limit,
-      useSuppressionSort,
-    )
-    return { boards, totalPages }
-  }
-
-  if (offset + limit <= pickCount) {
-    return { boards: pickRows.slice(offset, offset + limit), totalPages }
-  }
-
-  const picksSlice = pickRows.slice(offset)
-  const need = limit - picksSlice.length
-  const { boards: restBoards } = await fetchNonTopPickBrowsePage(
-    supabase,
-    filters,
-    curatedIds,
-    0,
-    need,
-    useSuppressionSort,
-  )
-
-  return { boards: [...picksSlice, ...restBoards], totalPages }
+    }),
+    listBoardsBrowseTopPickListingIdsOrdered(supabase),
+  ])
+  const rotatedIds = orderListingIdsForDailyRotate(idRows, seed)
+  const suppressedIds = new Set(idRows.filter((row) => row.suppressed).map((row) => row.id))
+  const orderedIds = prependPinnedListingIds(rotatedIds, pinnedIds, { skipIds: suppressedIds })
+  const totalPages =
+    orderedIds.length === 0 ? 0 : Math.max(1, Math.ceil(orderedIds.length / limit))
+  const pageIds = orderedIds.slice(offset, offset + limit)
+  const boards = await hydrateSurfboardBrowseRowsByIds(supabase, pageIds)
+  return { boards, totalPages }
 }
 
 export function haversineMi(
@@ -593,6 +533,8 @@ export async function buildSurfboardBrowseBaseQuery(
       dbQuery = dbQuery
         .order("price", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
+    } else if (s === "id") {
+      dbQuery = dbQuery.order("id", { ascending: true })
     } else {
       dbQuery = dbQuery.order("created_at", { ascending: false })
     }
@@ -724,13 +666,12 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
 
   type Row = BoardBrowseListingRow & { _distance: number }
 
-  let rows: Row[] = (rawBoards || []).map((b) => {
-    const row = b as BoardBrowseListingRow
-    return {
+  let rows: Row[] = hydrateCardListingImages((rawBoards || []) as BoardBrowseListingRow[]).map(
+    (row) => ({
       ...row,
       _distance: haversineMi(params.anchorLat, params.anchorLng, row.latitude, row.longitude),
-    }
-  })
+    }),
+  )
   rows = rows.filter((b) => b._distance <= params.radiusCapMi)
   rows.sort((a, b) => a._distance - b._distance)
   const totalPages =
@@ -809,14 +750,20 @@ export type BoardsBrowseCategoryTypePage = {
 /** Default sort, no text/geo/brand filters — used by nav category pills and hourly cache. */
 export async function fetchBoardsBrowseCategoryTypePage(
   supabase: SupabaseClient,
-  params: { boardType: string; condition: string; sort: string; page: number },
+  params: {
+    boardType: string
+    condition: string
+    sort: string
+    page: number
+    rotateSeed?: string
+  },
 ): Promise<BoardsBrowseCategoryTypePage> {
   if (isBoardsBrowseTopPicksSort(params.sort)) {
-    return fetchBoardsBrowseTopPicksPage(supabase, {
+    return fetchBoardsBrowseDailyRotatePage(supabase, {
       boardType: params.boardType,
       condition: params.condition,
-      query: "",
       page: params.page,
+      rotateSeed: params.rotateSeed,
     })
   }
 
@@ -857,7 +804,7 @@ export async function fetchBoardsBrowseCategoryTypePage(
   }
 
   return {
-    boards: (rawBoards ?? []) as BoardBrowseListingRow[],
+    boards: hydrateCardListingImages((rawBoards ?? []) as BoardBrowseListingRow[]),
     totalPages: Math.ceil((count || 0) / limit),
   }
 }

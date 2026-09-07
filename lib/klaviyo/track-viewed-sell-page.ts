@@ -1,7 +1,10 @@
 /**
  * Server-only: Klaviyo **Viewed Sell Page** — signed-in sellers on `/sell`.
  *
- * **Abandoned listing flow (build in Klaviyo):**
+ * **Abandoned listing (preferred):** metric **Unfinished Listing** — see
+ * `track-unfinished-listing.ts` (draft row + captured fields + Resume_URL).
+ *
+ * **Abandoned listing flow (page-view fallback, build in Klaviyo):**
  * 1. Flows → Create flow → Metric → **Viewed Sell Page**.
  * 2. Trigger filter: `Logged in` equals **true** (all app events use `external_id`).
  * 3. Optional: `Needs listing nudge` equals **true** — skips sellers only editing a live listing

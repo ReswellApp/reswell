@@ -1,0 +1,96 @@
+{
+  "generated_for": "J7 Surf Designs official model catalog",
+  "source": "https://j7surfdesigns.com/boards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "j7",
+      "name": "J7 Surfboards",
+      "website_url": "https://j7surfdesigns.com/boards",
+      "location_label": "Santa Barbara, California",
+      "founder_name": "Jason Feist",
+      "lead_shaper_name": "Jason Feist",
+      "short_description": "Handcrafted surfboards by Jason Feist in Santa Barbara, California.",
+      "models": [
+        {
+          "name": "The Whatever",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425323673528-3CIBYAH8T1Z4SEM1M8Y2/image-asset.png",
+          "description": "The ultimate all-around board in waves waist high to overhead. The outline is moderately wider in the nose and tail area for projection and is combined with a moderate-to-low rocker profile. This formula produces a responsive performance board that does not sacrifice anything on the way to ripping. Ideal Conditions: Waist high to overhead Standard Lengths: 4'10”- 6’6” Standard Features: Squash Tail, Tri - Fin setup (FCS II or Futures), Carbon Tail Patches",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ugly Stick",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425323217423-B2BZKU02AX0CNMRGCQAP/image-asset.png",
+          "description": "Short, wide, and thick, with some serious junk in the trunk. Yep, that pretty much sums it up! Designed to be ridden several inches shorter than your height, the Ugly Stick features an extra full curve combined with an extreme hip in front of the fins. This little number is perfect for when the waves are small and not so pretty but you still have some people to impress. Ideal Conditions: Knee to head high Standard Lengths: 5’4”- 6’0” Standard Options: Wide Squash Tail, Five - Fin setup (FCS II or Futures)",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mad Max",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425321931394-6YQC5GVD0XS65DK6N3UJ/image-asset.png",
+          "description": "Designed for precise in-the-pocket surfing in all but the most minuscule of surfing conditions, The Mad Max is the epitome of a modern day high performance surfboard. The rocker, outline, and bottom contours are so balanced and clean this board has been known to call to people from the racks and beg to be held. Like the surfer you want to be, the Mad Max is explosive and refined. Ideal Conditions: Chest high to double-overhead Standard Lengths: 4'10”- 6’3” Standard Features: Squash Tail, Tri - Fin setup (FCS II or Futures), Carbon Tail Patches",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stag",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425322981278-HZIEJ76WEH19VI1ZYZLH/image-asset.png",
+          "description": "Single and ready to mingle! The J7 Stag is a modern single fin design that won’t give you the time of day if you say the word “retro”. Featuring a slightly foreword outline with a clean rounded pintail, mellow rocker, even foil, and a single to deep double concave, the Stag is purpose built for speed, creative lines, and high performance surfing. Ideal Conditions: Chest high to overhead Standard Lengths: 5’6”- 6’2” Standard Features: Pintail, Single fin box",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Classic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1434655266642-UQEKZ4VKLEACBSRDPO3V/image-asset.png",
+          "description": "Take a slide on the wild side with the J7 Classic Longboard! Whether you are looking to hang out with your toes on the nose or draw some stylish lines at your favorite logging spot, we are confident that you will feel the balance of performance and simplicity on one of these beauties! Ideal Conditions: Waist high to over head Standard lengths: 9'0 - 10' Standard Features: 10” single fin box, unique resin tints, pigments and color ways.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Werp",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425323586848-4Z0MVQ6IFSHYGZ44KHF6/WERP3.png",
+          "description": "This is an evolution of our trusty “Whatever” model combined with a rounded pintail. The outcome has proven to be a true all-in-one board with the glide and responsiveness of the traditional “Whatever” squash tail plus the added control and connectivity of the rounded pintail. Ideal Conditions: Waist high to overhead Standard Lengths: 5’5”- 6’6” Standard Features: Rounded Pin-Tail, Five - Fin setup (FCS II or Futures)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pill",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425322397154-LX5FUC8HMTJV1UT7OWR8/image-asset.png",
+          "description": "Addiction to the Pill is inevitable. Designed as a go-to board for high performance surfing antics in small to medium surf, the Pill boasts a wider foreword outline combined with a curvaceous rounded pintail. The end result is a board that paddles and glides with ease while also holding a smooth and connected rail when the wave steepens up. Ideal Conditions: Waist to Head High Standard Lengths: 5’5”- 6'8” Standard Features: Rounded Pin-Tail, Five - Fin Setup (FCS II or Futures),",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Situation",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425322879799-XZ5E58NBBO8PQJFPFEZF/image-asset.png",
+          "description": "This performance shape features a modern outline, single/double/vee bottom contours and a moderate entry to accelerated tail rocker. The finished product is a perfect all-around board that will shine in a wide range of salt water situations. Ideal Conditions: Waist high to overhead Standard Lengths: 5’6”- 6’6” Standard Options: Squash Tail, Tri - Fin setup (FCS II or Futures)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Conartist",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1424198137128-UU5BYV5UJ0X0451OF2CA/image-asset.png",
+          "description": "Created as a modern throwback, the Con Artist is designed for the surfer who seeks the paddle and glide of a hybrid but the high performance of a contemporary shortboard. This model features a moderate/low entry to moderate exit rocker and a slight vee bottom throughout that promotes smooth rail to rail surfing in all conditions. Ideal Conditions: Head high to double overhead Standard lengths: 6'6\" - 7'2\" Standard Features: Round Pin, Tri - Fin setup (FCS II or Futures)",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "OG",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425322319138-II39WNB7O812BOU22RK8/image-asset.png",
+          "description": "The “OG” is the original J7 design. The concept for this board was derived from untold hours spent in the long speedy point breaks that pepper the Santa Barbara County coastline. The OG’s clean and continuous outline is designed to drive fast and draw connected lines on open faced waves. Ideal Conditions: Shoulder high to double-overhead plus Standard Lengths: 5'10”- 6’8” Standard Features: Rounded Pin-Tail, Tri - Fin setup (FCS II or Futures)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Redline",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425322660900-EWX79WZ1XCZPZYSE23ZN/image-asset.png",
+          "description": "Speed, control, and drive, the Redline has it all. Just step on the gas pedal and you will know what we mean! An outline designed for flow is complimented by a swallow tail, allowing for precision and control regardless of what the ocean is throwing at you. Ideal Conditions: Waist high to overhead Standard Lengths: 5’8”- 6’2” Standard Features: Swallow Tail, Tri - Fin setup (FCS II or Futures)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "XL1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425323773125-74T8KN5XED1MBQIM20BO/image-asset.png",
+          "description": "When the surf goes into overdrive, so does the XL-1. Offering a clean and lengthened outline with a wide point pushed forward and pulled in tail, The XL-1 is the quintessential step-up board. With increased entry and exit rocker combined with a deeper single concave under the front foot and between the fins, it has been proven to sustain the perfect balance of paddle ability, drive, hold and control in critical conditions. Ideal Conditions: Overhead and beyond! Standard lengths: 6’6”- 7’0” Standard Features: Pintail, 5-fin setup (FCS II or Futures), additional glass",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Dragonfly",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54da8ecde4b0265603798449/1425320970390-7VAIYQIEPVVOY16GA7L0/image-asset.png",
+          "description": "Easy paddling and high wave counts is the name of the game with the “Dragon Fly.” This Hybrid shape has a significantly wider forward outline that is sure to crank the stoke meter of surfers of all ages. By combining a full and balanced foil with a performance rocker and bottom contour, this design offers plenty of glide and turn ability for the surfer looking to maximize their fun. Ideal Conditions: Waist high to overhead Standard lengths: 6'8\"-8'0\" Standard Features: Squash tail, tri-fin setup (FCS II or Futures)",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}

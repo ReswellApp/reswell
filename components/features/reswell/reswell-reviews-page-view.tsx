@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import {
   ChevronLeft,
   ChevronRight,
@@ -156,12 +156,11 @@ function FeedReviewCard({ review }: { review: ReswellPlatformReviewRow }) {
               <p className="font-semibold text-foreground">{review.full_name}</p>
               <p className="text-xs text-muted-foreground">Reswell member</p>
             </div>
-            <time
-              dateTime={review.created_at}
+            <RelativeTime
+              iso={review.created_at}
+              formatLabel={formatDistanceToNowLabel}
               className="text-xs text-muted-foreground"
-            >
-              {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
-            </time>
+            />
           </div>
 
           <div className="mt-3">

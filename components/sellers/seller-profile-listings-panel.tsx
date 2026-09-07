@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { LayoutGrid, List, Package, Search } from "lucide-react"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { FavoriteButton } from "@/components/favorite-button"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ import {
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { sellerProfileSectionSortRank } from "@/lib/peer-listing-sections"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import {
   sellerProfileListingsGridClassName,
@@ -36,13 +38,18 @@ export type SellerProfileListing = {
   user_id: string
   title: string
   price: string | number
+  compare_at_price?: number | string | null
   status: string | null
   section: string
   local_pickup?: boolean | null
   shipping_available?: boolean | null
   condition?: string | null
   created_at?: string | null
-  listing_images?: { url: string; is_primary?: boolean | null }[] | null
+  listing_images?: {
+    url: string
+    thumbnail_url?: string | null
+    is_primary?: boolean | null
+  }[] | null
   categories?: { name?: string | null; slug?: string | null } | null
   board_type?: string | null
 }
@@ -181,7 +188,14 @@ function SellerProfileListingListRow({
           {conditionLine ? (
             <p className="text-xs text-muted-foreground sm:text-sm">{conditionLine}</p>
           ) : null}
-          <p className="text-base font-bold tabular-nums text-foreground sm:text-lg">${price.toFixed(2)}</p>
+          <p className="text-base font-bold tabular-nums text-foreground sm:text-lg">
+            <ListingPriceWithMarkdown
+              priceUsd={price}
+              compareAtPriceUsd={listing.compare_at_price}
+              priceClassName="text-base font-bold tabular-nums text-foreground sm:text-lg"
+              compareClassName="text-sm font-medium text-muted-foreground line-through tabular-nums"
+            />
+          </p>
         </div>
       </Link>
 
@@ -241,6 +255,12 @@ export function SellerProfileListingsPanel({
     })
 
     result = [...result].sort((a, b) => {
+      if (sectionFilter === "all") {
+        const sectionRank =
+          sellerProfileSectionSortRank(a.section) -
+          sellerProfileSectionSortRank(b.section)
+        if (sectionRank !== 0) return sectionRank
+      }
       if (sort === "price_asc") return listingPrice(a) - listingPrice(b)
       if (sort === "price_desc") return listingPrice(b) - listingPrice(a)
       if (sort === "newest") {
@@ -387,6 +407,7 @@ export function SellerProfileListingsPanel({
                 user_id: listing.user_id,
                 title: listing.title,
                 price: listing.price,
+                compare_at_price: listing.compare_at_price,
                 status: listing.status ?? "active",
                 section: listing.section,
                 local_pickup: listing.local_pickup,

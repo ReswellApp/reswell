@@ -1,0 +1,154 @@
+{
+  "generated_for": "Arakawa Surfboards official named standup catalog",
+  "source": "https://arakawasurfboards.com/collections/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "arakawa-surfboards",
+      "name": "Arakawa Surfboards",
+      "website_url": "https://arakawasurfboards.com",
+      "location_label": "Hawaii",
+      "founder_name": "Eric Arakawa",
+      "lead_shaper_name": "Eric Arakawa",
+      "short_description": "Hawaiian progressive shortboards from Eric Arakawa.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/8b0f5050-9e07-45b4-8580-913851faf8c7.webp?t=1775442481608",
+      "models": [
+        {
+          "name": "Amplifire",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Animal",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-9dc663d0f66c755ed23a.webp",
+          "description": "The Animal is built for surfers who want the agility of a shortboard with a little extra paddle and stability. With generous volume and a relaxed entry rocker, it\u2019s an efficient wave catcher that gets you in early and often but still sharp as any blade when needed. This has found popularity amongst experienced surfers in the 200lb+ weight class. A rounded pin tail offers smooth, responsive turning, allowing you to drive hard off the bottom and hit tight, vertical top turns\u2014all with a forgiving,"
+        },
+        {
+          "name": "Avis",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-0c76a115eb0949e60a8d.webp",
+          "description": "This model began with a custom funboard we designed for our friend, Avis. She has a cool name and we just referred to the board as such ever since. It is essentially your performance thruster disguised as a mini tank\u2014longboard looks but a shortboard approach. Its design brings out elements of trim, glide, drive, carve, power, and smooth style. Effortless, loose, and surprisingly responsive, it is a funboard that will take you anywhere. There is a lot of curve in the shape that allows for a very"
+        },
+        {
+          "name": "Bandit",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-a6666eb51caea7e06767.webp",
+          "description": "If you know, you know. The Bandit was one of our most popular models back when Andy was on tour and he himself would order one every year. After Stab Magazine did an edit featuring one from Andy\u2019s last quiver, we got a lot of inquiries from old fans of the board. The original design files were unusable so our only choice was to find a reference board and draw a new file from scratch. Since the model itself existed in a few different variations, we had some options. Andy\u2019s personal was still in t"
+        },
+        {
+          "name": "Double Smoked",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Firecat",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-8608ed0f4f35b4db611f.webp",
+          "description": "\u201cIn the early 2000\u2019s I introduced a design called the Super Skate. It was a performance fish ridden primarily as a thruster. At the time, the typical shortboards on tour were these 6\u20192\u201d narrow, thin spears. I sized the Super Skate about two inches shorter with added width and thickness. As you can imagine, many surfers loved it because it was much better at gliding through fat sections and took a lot less effort to surf. After about a 5 year hiatus, we gave the Super Skate a refresh and called i"
+        },
+        {
+          "name": "Half Pint",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Holi Moli",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Holy Moli",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-7b0a9ae6d7f94253eb55.webp",
+          "description": "Draw old school lines across little peelers or thread a hefty barrel with this modern hybrid design. This is our take on the modern mid-length. The foil and tail of this design reveals its pedigree in the tradition of Hawaiian rounded pins, but its length and outline gives it an advantage in small surf. Pure glide in small waves, clean carving lines, and big barrels \u2014 this model is made for it all. The design was conceived back in 2016 after Sean Arakawa had fallen in love with his 8\u20190 Avis that"
+        },
+        {
+          "name": "HP Twin",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-af3e913a3f8b3e3b7c01.webp",
+          "description": "This is the old school high-performance twin fin adapted for modern surfing. None of the sliding and swivel of the twins of the 80s, the HP Twin is fast like its predecessor, but turns with more control and drive. If you want to skate around in small waves, go a little wider and thicker\u2014but if you want an exotic high-speed blade for fast barrels and Mach 10 cutbacks, keep it closer to your normal dimensions. The bottom starts with a mild concave through the mid-section, and finishes with vee out"
+        },
+        {
+          "name": "Jackpot",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Mango",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "MR-200",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Mysto",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-964f522b41cb0aef0032.webp",
+          "description": "This mid-length is a rail surfer\u02bbs dream: buttery carves with the speed and glide of a twin. A reverse vee bottom allows a smooth seamless transitions rail to rail despite its extra width, and pivots tight off the pin tail when sharp direction changes are necessary. It loves an open, carvable face on those mushy days, but fin placement and our refined performance rail give this board a remarkable reliability when it comes to hollow and critical waves. The reverse vee also gives the rider a smoot"
+        },
+        {
+          "name": "Niu",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-61bbb3781a157cdd29a5.webp",
+          "description": "The Niu was conceptualized to be a contemporary longboard for summer months on Oahu, something that had a classic aesthetic, but modernized and easy to ride. I started by pulling out templates and planer to handshape the initial design for this model. Some curves and foils are just easier to realize with hand tools in the shaping room than on the screen. Once I was satisfied with the look &amp; ride of the board, we locked in the digital design. It has medium/ low foiled rails for nose-riding an"
+        },
+        {
+          "name": "Peace Keeper",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-4c9482a32f8baf90afb2.webp",
+          "description": "These are the guns made for giants. Designed to glide in and maneuver out of trouble. They are dependable and proven performers in the most extreme conditions on the planet, and ridden by some of the best big wave chargers in surfing. Refined over decades of North Shore Winters, this model is more than just a paddle machine, it gives you the confidence you need to hold your rail and draw lines where you want to. We build surfboards, not paddle boards. Do not own one unless you plan to use it. St"
+        },
+        {
+          "name": "Performance LB",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-4fba5a17e5cddda6450e.webp",
+          "description": "This long board design features the most tail rocker of all the others in this class. The bottom contour creates exceptional responsiveness. The focus of this design is not so much on nose riding as it is turning. The Performer is a carver that responds when you step on its tail and push over the fins. When you get your feet in the sweet spot, you\u2019ll feel it take off."
+        },
+        {
+          "name": "Performer",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Prophet",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "Remedy",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-e2d7ec808a79b380b8d5.webp",
+          "description": "In the Spring of 2023, Shaydo came to the shop and asked for an all-purpose short board for playful and shreddable surf on the South Shore with more overall rocker. The challenge was to see how far we could push the rocker without compromising speed and flow. It seems a bit counter intuitive to take a high rocker approach to weak or small waves, but a long time ago I had a model called the Viper with a lot of rocker that was surprisingly quick and forgiving. It would self correct when you over c"
+        },
+        {
+          "name": "RP",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-7f64cd1103b83be28d40.webp",
+          "description": "Living, surfing, and shaping on the North shore of Oahu, EA has spent over 40 years tuning his boards under the feet of the world\u2019s best talent on and off the Tour. This particular design is all of EA\u2019s collected knowledge and experience boiled down into the pure and refined Hawaiian step up. No frills, no fat\u2014it doesn\u2019t even have a name. It is just the RP, shorthand for \u201crounded pin\u201d. No other board better embodies the phrase \u201cProven Boards from the Proving Grounds\u201d than this model. Our team ri"
+        },
+        {
+          "name": "RP Short",
+          "image_url": "https://cdn.shopify.com/s/files/1/0571/8074/9897/files/RPShort_60_1066871_DSC6031_29b1416a-7fcd-42b5-a0be-4790c217b15a.png?v=1764730313",
+          "description": "This one is pretty simple. We just took the RP model and tuned it for small waves. Raphael Castro was riding his RP in everything\u2014and loving it. After getting a taste for it in small conditions, he felt its potential to be just what he wanted in a shortboard. So he shot us a call and last year we got to work making just a few tweaks to his favorite 6\u20192 RP. He wanted to keep the drive and hold that he had grown to love, but add a little more pop and liveliness. Add a little width here, a little extra concave there, and in no time it was deadly sharp in small waves. Eric is constantly making these sorts of special adjustments in custom orders, but it ends up being a sort of secret menu within a model. This time round, the people deserve to know."
+        },
+        {
+          "name": "Silmaril",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-a83494de66c705535774.webp",
+          "description": "\"The Silmaril marks the beginning of an exciting time in our surfboard design journey. And like many worthwhile things, it was birthed out of adversity. We knew we needed to improve our lineup, so we spent 11 months in a head down, stroke till you croak focused effort with the whole factory team. The first step was finding a key team rider/point man to work closely with our two-man design team (Nat Woolley and myself) as we developed this new batch of shortboards. We called up Shayden Pacarro an"
+        },
+        {
+          "name": "Slingshot",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-42589abee898c82f431e.webp",
+          "description": "This short and wide twin blends a 70\u2019s outline with a 21st century bottom shape. The Sling Shot is faster and more maneuverable than its older cousin. It features more tail rocker with a single con- cave that runs deepest above the fin area for added lift and speed. For that retro style and sweeping lines, this board is a fun alternative for almost any wave. It's bred for long open faces and point breaks, but is also a trusty secret weapon when it comes to fast barrels on those playful days."
+        },
+        {
+          "name": "Solitude",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-39c0e068b5336bd85fa6.webp",
+          "description": "This is your dreamy cruiser designed for nose rides and smooth, buttery lines. Classic lines yet still on the modern end of the longboard spectrum, the Solitude has a familiar user-friendly rail and stable bottom contour. It features a low rocker and slight concave in the nose blending to a subtle vee in the tail. Its rail is elliptical in the nose and transitions into a down rail through the mid section and tail. All this creates easy, forgiving nose rides and exceptional drive when turning off"
+        },
+        {
+          "name": "Soop Bowl",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-a763cc7654d33ded84d6.webp",
+          "description": "After the Silmaril, our next goal was to work on a squash tail design that performed in weak, small waves. In November of 2022, Alonso Correa asked us to start developing a performance short board design for him to compete with in small waves for the 2023 season on the QS. After 3 months of testing and design modifications, we dialed this one in and sent it home with Alonso. Straight out of the gates, this board started reaping heat wins in South and Central America. The Soop Bowl is similar in"
+        },
+        {
+          "name": "Stun Gun",
+          "image_url": "https://app.reswell.app/storage/v1/object/public/brand-assets/board-models/mirror-64cc1237b63efcf603bb.webp",
+          "description": "Evan Valiere and maybe Reef McIntosh\u2014do not remember exactly who\u2014some team riders wanted more paddle power in a shorter package. This came as guys were riding their step ups shorter and shorter in bigger waves. Slabs like Teahupoo and first reef Pipe were definitely an inspiration since surfers wanted to get in as early as possible, but did not want a really long rail line once they were navigating a square barrel. We essentially just cut down their favorite RP about 3-4 inches and redrew the fr"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "generated_for": "McCoy Surfboards official named standup catalog",
+  "source": "https://mccoysurfboards.com/all-surfboard-models/ (official model lineup only — excludes fins, merch, collectors items, and custom order forms)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mccoy-surfboards",
+      "name": "McCoy Surfboards",
+      "website_url": "https://mccoysurfboards.com",
+      "location_label": "Byron Bay / Tweed Heads, New South Wales, Australia",
+      "founder_name": "Geoff McCoy",
+      "lead_shaper_name": "Geoff McCoy",
+      "short_description": "Geoff McCoy designs since 1970, including the Nugget, Lazor Zap, and Astron Zot.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/mirror-ddf32f1d6a532dbd0d75.png",
+      "models": [
+        {
+          "name": "Quazor Zip",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/QUAZOR_ZIP.jpg",
+          "description": "Quazor Zip surfboard model by Geoff McCoy — a custom design from the McCoy lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Astron Zot",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/astron_zot.jpg",
+          "description": "These designs range in length from 5′-7'6″ with widths between 21 ½″ ~ 22 1/2″ and vary in thickness.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nugget",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Geoff_McCoy_knowledge_tree_All_Round_nugget.jpg",
+          "description": "Wider, thicker & shorter, with more volume & buoyancy than you've had before. Easy to paddle, easy to catch waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "All Round Nugget",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/All_Round_Nugget2.jpg",
+          "description": "Wider, thicker & shorter, with more volume & buoyancy than you've had before. Easy to paddle, easy to catch waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Big Guy Nugget",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Big_Guy_Nugget_model2.jpg",
+          "description": "For big guys that don't want to ride Malibu. Will paddle well for guys up to 100kg.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Lady's Nugget",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Ladys_Nugget2.jpg",
+          "description": "A specifically adjusted version of our All Round Nuggets. They are slightly softer, finer, and easy to ride.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "8' Nugget",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Geoff_McCoy_knowledge_tree_All_Round_nugget.jpg",
+          "description": "A great board for anyone that wants to have fun, or bigger surfers that want a board they can rely on.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pot Belly",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/Pot_Belly_hero.jpg",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Lazor Zap",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/Lazor_Zap_hero.jpg",
+          "description": "In 1981 Geoff McCoy began a design revolution with the introduction of the Lazor Zap concept; with its wide area and innovative template.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lazor Zap Phase I",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/Lazor_Zap_model1.jpg",
+          "description": "The original design of the iconic Lazor Zap, the original template that later became the modern performance standard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lazor Zap Phase 2",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Lazor_Zap_2_small.jpg",
+          "description": "Now performing better than ever with Geoff's adjusted performance features, giving the design smooth flow and drive.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Double Ender",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/BalsaDouble_ender.jpeg",
+          "description": "The Double Ender is Geoff McCoy's very first design contribution to surfing. First released in 1967.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Chisel Tail Twin Fin Phase 1",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Balsa_twin_fin_phase1.jpg",
+          "description": "The original twin fin design created by Geoff McCoy, bringing area through the tail for speed and control.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Fin Phase 1",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/Balsa_twin_fin.jpeg",
+          "description": "A replica of the twin fin designed by Geoff McCoy in 1972 during the first twin fin era.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Double Ender 11",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/Balsa_range.jpg",
+          "description": "The Double Ender is Geoff McCoy's very first design contribution to surfing. First released in 1967.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Double Ender",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Double_ender_retro3.jpg",
+          "description": "The Double Ender design was the first design Geoff McCoy shaped on his own when he worked for Barry Bennett.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Chisel Tail Twin Fin Phase 1",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Chisel_Tail_twin_fin_phase_1.jpg",
+          "description": "The chisel tail McCoy design was the first twin fin Geoff shaped, inspired by a photo of Tom Curren.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Chisel Tail Twin Fin Phase II",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/Retro_THECHISELTAILPHASEII.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Phase II Twin Fin",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/retro_ThePhaseIITwinFin.jpg",
+          "description": "This design came later after learning the basic characteristics from the original chisel tail design.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Classic Pin Tail",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/RetroTheClassicPinTail.jpg",
+          "description": "The eternal design surfboard first introduced around 1973. Pulled nose, sleek narrow round pin tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dreamtime",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Dreamtime4.jpg",
+          "description": "Geoff's version of a traditional pintail design with wide point of plan shape forward of centre.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Frozen Dafodil F.D.",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/08/Frozen_dafodil2.jpg",
+          "description": "An early 70's design which Geoff named the Frozen Daffodil — a versatile design for its time.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "All Round Malibu",
+          "image_url": "https://mccoysurfboards.com/wp-content/uploads/2023/07/All_Round_Malibu.jpg",
+          "description": "A very versatile performer. Turns easily, runs well and is also a good nose rider.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}

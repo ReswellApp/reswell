@@ -12,6 +12,7 @@ import {
   removeListingImageFilesFromStorage,
 } from "@/lib/services/listingStorageCleanup"
 import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
+import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 
@@ -156,6 +157,32 @@ export async function deleteSellerDraftListing(
   return { ok: true }
 }
 
+async function archiveInsteadOfDelete(
+  supabase: SupabaseClient,
+  row: ListingEndRow,
+  listingId: string,
+  sellerUserId: string,
+): Promise<EndSellerListingResult> {
+  const applied = await applySellerArchive(supabase, row, listingId, sellerUserId)
+  if (!applied.ok) {
+    return applied
+  }
+  try {
+    await syncListingToIndex(supabase, listingId)
+  } catch {
+    // ES optional
+  }
+  await removeListingFromGoogleMerchantFeed(listingId)
+  revalidateListingDetailPage(listingId, row.slug)
+  revalidateBoardsBrowseCatalog()
+  await revalidateSellersAfterListingChange(supabase, sellerUserId)
+  return {
+    ok: true,
+    mode: "archive",
+    message: ORDER_HISTORY_DELETE_FALLBACK_MESSAGE,
+  }
+}
+
 /**
  * Seller ends a listing: archive (30-day retention) or permanent delete.
  */
@@ -194,6 +221,11 @@ export async function endSellerListing(
     return { ok: true, mode: "archive" }
   }
 
+  const canDelete = await listingCanBePermanentlyDeleted(supabase, listingId)
+  if (!canDelete) {
+    return archiveInsteadOfDelete(supabase, row, listingId, sellerUserId)
+  }
+
   const imageUrls = await fetchListingImageUrlsForListingIds(supabase, [listingId])
 
   const { error } = await supabase
@@ -204,24 +236,7 @@ export async function endSellerListing(
 
   if (error) {
     if (error.code === "23503") {
-      const applied = await applySellerArchive(supabase, row, listingId, sellerUserId)
-      if (!applied.ok) {
-        return applied
-      }
-      try {
-        await syncListingToIndex(supabase, listingId)
-      } catch {
-        // ES optional
-      }
-      await removeListingFromGoogleMerchantFeed(listingId)
-      revalidateListingDetailPage(listingId, row.slug)
-      revalidateBoardsBrowseCatalog()
-      await revalidateSellersAfterListingChange(supabase, sellerUserId)
-      return {
-        ok: true,
-        mode: "archive",
-        message: ORDER_HISTORY_DELETE_FALLBACK_MESSAGE,
-      }
+      return archiveInsteadOfDelete(supabase, row, listingId, sellerUserId)
     }
     return { ok: false, status: 500, error: "Failed to delete listing" }
   }

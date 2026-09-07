@@ -1,9 +1,13 @@
+import Image from "next/image"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContactForm } from "./contact-form"
+import { RESWELL_CONTACT_EMAIL, RESWELL_CONTACT_MAILTO } from "@/lib/constants/contact"
+import { wideShimmer } from "@/lib/image-shimmer"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { cn } from "@/lib/utils"
+import contactBackdrop from "@/public/images/brand/hawaii-aerial.jpg"
 
 export async function generateMetadata() {
   return resolvePageMetadata("contact")
@@ -50,18 +54,36 @@ export default function ContactPage() {
   return (
     <main className="flex-1">
       <section className="border-b border-border/70 bg-background">
-        <div className="container mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16 md:py-20 lg:px-8">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            Support
-          </p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Get in touch
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Whether it&apos;s about an order, your account, or something that just doesn&apos;t
-            feel right, we&apos;re on it. Email us or send a message from this page. Both land
-            with the same team.
-          </p>
+        <div className="container mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-16 md:py-20 lg:grid-cols-2 lg:gap-14 lg:px-8">
+          <div>
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              Help
+            </p>
+            <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+              Get in touch
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Signed in? Use{" "}
+              <Link href="/dashboard/support/new" className="text-primary underline underline-offset-2">
+                Get help
+              </Link>{" "}
+              for the fastest path — pick what you need and track your case. Or email us / send a
+              message from this page; both land with the same team.
+            </p>
+          </div>
+          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border/70 shadow-sm">
+            <Image
+              src={contactBackdrop}
+              alt="Aerial view of a barreling wave with surfers in the lineup"
+              fill
+              sizes="(max-width: 1024px) 100vw, 560px"
+              className="object-cover object-[center_45%]"
+              placeholder="blur"
+              blurDataURL={wideShimmer}
+              quality={90}
+              priority
+            />
+          </div>
         </div>
       </section>
 
@@ -80,10 +102,10 @@ export default function ContactPage() {
                 Good for attachments, forwarding receipts, or if you just prefer your inbox.
               </p>
               <a
-                href="mailto:help@reswell.app"
+                href={RESWELL_CONTACT_MAILTO}
                 className="mt-5 inline-flex min-h-touch min-w-0 items-center justify-center rounded-xl border border-border bg-background px-4 py-3 text-center text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                help@reswell.app
+                {RESWELL_CONTACT_EMAIL}
               </a>
             </CardContent>
           </Card>

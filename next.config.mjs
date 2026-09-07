@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'url'
 import bundleAnalyzer from '@next/bundle-analyzer'
+import { withPostHogConfig } from '@posthog/nextjs-config'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -52,12 +53,20 @@ const brandCatalogImageHosts = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  serverExternalPackages: ['exceljs', 'archiver'],
+  outputFileTracingIncludes: {
+    '/app/api/admin/facebook-marketplace-bulk/export/route': [
+      './lib/facebook-marketplace/templates/**',
+    ],
+  },
   env: {
     NEXT_PUBLIC_SITE_WORDMARK_USE_VECTOR_SVG,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Required to support PostHog trailing-slash API requests.
+  skipTrailingSlashRedirect: true,
   images: {
     // Default is 'attachment', which sets Content-Disposition on /_next/image so
     // opening or sharing those URLs downloads the file instead of showing it in-tab.
@@ -144,14 +153,42 @@ const nextConfig = {
     ],
   },
   async headers() {
-    const staticHeroCacheControl =
+    // Static marketing photos (content-hashed via next/image imports; public path
+    // still needs long Cache-Control for direct hits). Swap file → new deploy/hash busts cache.
+    const staticMarketingImageCacheControl =
       'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=86400'
+
+    const categoryBrowseAtmosphereImages = [
+      '/images/brand/boards-browse-barrel.jpg',
+      '/images/brand/fiji-underboard.jpg',
+      '/images/brand/wetsuits-browse-atmosphere.jpg',
+      '/images/brand/apparel-browse-atmosphere.jpg',
+    ]
+
+    const careersAtmosphereImages = [
+      '/images/careers/headline-barrel.jpg',
+      '/images/careers/role-packed.jpg',
+      '/images/careers/role-shop.jpg',
+      '/images/careers/role-break.jpg',
+    ]
 
     return [
       {
         source: '/images/home/hero-backdrop-mesa-v2.jpg',
-        headers: [{ key: 'Cache-Control', value: staticHeroCacheControl }],
+        headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
       },
+      {
+        source: '/images/home/hero-backdrop-tahiti.jpg',
+        headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
+      },
+      ...categoryBrowseAtmosphereImages.map((source) => ({
+        source,
+        headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
+      })),
+      ...careersAtmosphereImages.map((source) => ({
+        source,
+        headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
+      })),
       {
         source: '/embed/:path*',
         headers: [
@@ -165,19 +202,34 @@ const nextConfig = {
   },
   async rewrites() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")
-    if (!supabaseUrl) return []
+
+    // Derive PostHog asset host from the ingest host env var.
+    const posthogIngestHost = (process.env.NEXT_PUBLIC_POSTHOG_HOST ?? '').replace(/\/$/, '')
+    const posthogAssetsHost = posthogIngestHost
+      .replace('us.i.posthog.com', 'us-assets.i.posthog.com')
+      .replace('eu.i.posthog.com', 'eu-assets.i.posthog.com')
+    const posthogAfterFiles = posthogIngestHost
+      ? [
+          { source: '/ingest/static/:path*', destination: `${posthogAssetsHost}/static/:path*` },
+          { source: '/ingest/array/:path*', destination: `${posthogAssetsHost}/array/:path*` },
+          { source: '/ingest/:path*', destination: `${posthogIngestHost}/:path*` },
+        ]
+      : []
 
     // Static listing photos: edge-rewrite to Supabase public objects so Google Merchant /
     // Googlebot-Image fetch a direct image file instead of a serverless resize handler.
     // Requests with ?variant= still hit app/media/listings/[...path]/route.ts.
     return {
-      beforeFiles: [
-        {
-          source: "/media/listings/:path*",
-          missing: [{ type: "query", key: "variant" }],
-          destination: `${supabaseUrl}/storage/v1/object/public/listings/:path*`,
-        },
-      ],
+      beforeFiles: supabaseUrl
+        ? [
+            {
+              source: "/media/listings/:path*",
+              missing: [{ type: "query", key: "variant" }],
+              destination: `${supabaseUrl}/storage/v1/object/public/listings/:path*`,
+            },
+          ]
+        : [],
+      afterFiles: posthogAfterFiles,
     }
   },
   async redirects() {
@@ -224,6 +276,8 @@ const nextConfig = {
       { source: "/used/:path*", destination: "/boards", permanent: true },
       { source: "/gear", destination: "/boards", permanent: true },
       { source: "/gear/:path*", destination: "/boards", permanent: true },
+      { source: "/categories", destination: "/boards", permanent: true },
+      { source: "/categories/:path*", destination: "/boards", permanent: true },
       { source: "/board-bags", destination: "/boardbags", permanent: true },
       { source: "/board-bags/:path*", destination: "/boardbags", permanent: true },
       { source: "/backpacks", destination: "/surfpacks", permanent: true },
@@ -255,6 +309,8 @@ const nextConfig = {
       { source: "/wax-room/:slug", destination: "/threads/:slug", permanent: true },
       { source: "/wax-room", destination: "/threads", permanent: true },
       { source: "/threads/whats-new", destination: "/threads", permanent: true },
+      { source: "/sell/quick", destination: "/sell/boards", permanent: true },
+      { source: "/sell/quick/:path*", destination: "/sell/boards", permanent: true },
       { source: "/feed", destination: "/sold", permanent: true },
       { source: "/surfers", destination: "/", permanent: true },
       { source: "/surfers/:path*", destination: "/", permanent: true },
@@ -263,4 +319,17 @@ const nextConfig = {
   },
 }
 
-export default withBundleAnalyzer(nextConfig)
+const analyzed = withBundleAnalyzer(nextConfig)
+
+const posthogApiKey = process.env.POSTHOG_API_KEY
+const posthogProjectId = process.env.POSTHOG_PROJECT_ID
+
+// Source-map upload is production-only. Skip the wrapper when credentials
+// are missing so `next dev` still boots without POSTHOG_PROJECT_ID.
+export default posthogApiKey && posthogProjectId
+  ? withPostHogConfig(analyzed, {
+      personalApiKey: posthogApiKey,
+      projectId: posthogProjectId,
+      host: 'https://us.posthog.com',
+    })
+  : analyzed

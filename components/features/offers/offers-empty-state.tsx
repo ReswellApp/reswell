@@ -22,11 +22,11 @@ export function OffersEmptyState({ role, className }: OffersEmptyStateProps) {
       {role === "seller" ? (
         <>
           <h2 className="text-[17px] font-semibold text-foreground">
-            No offers available to send yet
+            No open offers yet
           </h2>
           <p className="mt-2 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-            Your eligible offers will show up here when buyers save your listings or add them to
-            cart. Make sure you have listings for sale to receive offers.
+            When buyers add your listings to cart, you can send them a private offer from this page,
+            your listing, or Listings. Incoming buyer offers will also appear here.
           </p>
         </>
       ) : (

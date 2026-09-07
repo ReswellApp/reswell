@@ -5,13 +5,12 @@ import {
   apparelSizeSlugForDb,
 } from "@/lib/apparel-listing-config"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
-import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateApparelListingInput } from "@/lib/validations/apparel-listing"
 
 export function apparelListingShippingFieldsFor(
   input: CreateApparelListingInput,
-  options?: ListingPersistShippingOptions,
+  _options?: ListingPersistShippingOptions,
 ): {
   shipping_available: boolean
   local_pickup: boolean
@@ -26,31 +25,11 @@ export function apparelListingShippingFieldsFor(
       board_shipping_cost_mode: null,
     }
   }
-  const mode = normalizeSellShippingCostMode(
-    input.shippingCostMode,
-    options?.allowPrivilegedShippingModes === true,
-  )
-  if (mode === "free") {
-    return {
-      shipping_available: true,
-      local_pickup: input.localPickup,
-      shipping_price: 0,
-      board_shipping_cost_mode: "free",
-    }
-  }
-  if (mode === "reswell") {
-    return {
-      shipping_available: true,
-      local_pickup: input.localPickup,
-      shipping_price: 0,
-      board_shipping_cost_mode: "reswell",
-    }
-  }
   return {
     shipping_available: true,
     local_pickup: input.localPickup,
-    shipping_price: input.shippingPrice ?? 0,
-    board_shipping_cost_mode: "flat",
+    shipping_price: 0,
+    board_shipping_cost_mode: "reswell",
   }
 }
 
@@ -60,12 +39,8 @@ export function buildApparelListingPersistFields(
   options?: ListingPersistShippingOptions,
 ): Record<string, unknown> {
   const shipping = apparelListingShippingFieldsFor(input, options)
-  const shippingMode = normalizeSellShippingCostMode(
-    input.shippingCostMode,
-    options?.allowPrivilegedShippingModes === true,
-  )
   const packedRow = reswellPackageFieldsToDb({
-    boardShippingCostMode: shippingMode,
+    boardShippingCostMode: "reswell",
     reswellPackageLengthIn: input.reswellPackageLengthIn,
     reswellPackageWidthIn: input.reswellPackageWidthIn,
     reswellPackageHeightIn: input.reswellPackageHeightIn,

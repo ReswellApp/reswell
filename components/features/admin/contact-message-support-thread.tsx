@@ -17,6 +17,7 @@ import {
   channelBadgeVariant,
   statusBadgeVariant,
 } from "@/components/features/admin/contact-messages-labels"
+import { SupportMacrosPicker } from "@/components/features/admin/support-macros-picker"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -187,7 +188,7 @@ export function ContactMessageSupportThread({
     })
   }
 
-  const memberDashboardHref = `/dashboard/support/${ticket.id}`
+  const memberDashboardHref = `/support/${ticket.id}`
 
   return (
     <div className="space-y-6">
@@ -355,7 +356,13 @@ export function ContactMessageSupportThread({
                   )}
                 </div>
 
-                <div className="border-t border-border/60 bg-muted/10 px-4 py-4">
+                <div className="border-t border-border/60 bg-muted/10 px-4 py-4 space-y-3">
+                  <SupportMacrosPicker
+                    vars={{ name: ticket.name }}
+                    onInsert={(text) =>
+                      setDraftReply((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))
+                    }
+                  />
                   <Label htmlFor="support-thread-reply" className="sr-only">
                     Reply to member
                   </Label>
@@ -363,7 +370,7 @@ export function ContactMessageSupportThread({
                     id="support-thread-reply"
                     value={draftReply}
                     onChange={(e) => setDraftReply(e.target.value)}
-                    placeholder="Write a message the member will see in Dashboard → Support…"
+                    placeholder="Write a message the member will see under Help…"
                     rows={3}
                     className="min-h-[88px] resize-y rounded-xl bg-background text-[15px]"
                   />

@@ -107,7 +107,8 @@ export async function GET(
   }
 
   const buf = await blob.arrayBuffer()
-  const inline = auth.attachmentKind === "image"
+  const forceDownload = request.nextUrl.searchParams.get("download") === "1"
+  const inline = auth.attachmentKind === "image" && !forceDownload
 
   return new NextResponse(buf, {
     status: 200,

@@ -9,6 +9,10 @@ import type { BoardBrowseListingRow } from "@/lib/db/boards-browse-listings"
 import { createClient } from "@/lib/supabase/server"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import {
+  brandLiveListingsHeading,
+  brandRecentlySoldHeading,
+} from "@/lib/brands/listings-copy"
 
 function boardRowToPeerListing(row: BoardBrowseListingRow): HomePeerScrollListing {
   return {
@@ -103,6 +107,16 @@ export async function UnavailableListingLandingPage({
                 viewerUserId={user?.id ?? null}
                 viewAllActiveHref={landing.viewAllActiveHref}
                 viewSoldHref={landing.viewSoldHref}
+                liveHeading={
+                  landing.brand
+                    ? brandLiveListingsHeading(landing.brand.name, ["surfboards"])
+                    : undefined
+                }
+                soldHeading={
+                  landing.brand
+                    ? brandRecentlySoldHeading(landing.brand.name, ["surfboards"])
+                    : "Recently sold"
+                }
               />
             ) : (
               <>

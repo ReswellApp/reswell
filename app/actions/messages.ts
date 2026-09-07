@@ -6,7 +6,6 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
-import { touchUserLastActive } from "@/lib/db/userActivity"
 import {
   getMessagePolicyViolationForSender,
   getMessagePolicyViolationForSenderInConversation,
@@ -14,7 +13,10 @@ import {
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
-import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import {
+  messagePolicyBlocksDelivery,
+  type MessagePolicyReasonCode,
+} from "@/lib/messages/fraud-reason-codes"
 import type { MessageSendRestrictionActionResult } from "@/lib/messages/send-restriction-errors"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
@@ -25,6 +27,7 @@ import {
 import { marketplaceMessageAttachmentInputSchema } from "@/lib/validations/marketplace-message-attachment"
 import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
 import { discardUnsentMessageAttachment } from "@/lib/services/discardUnsentMessageAttachment"
+import { captureServerEvent } from "@/lib/posthog-server"
 import {
   loadOtherPartyProfile,
   type OtherPartyProfileSummary,
@@ -202,6 +205,22 @@ function policyBlockedSendResult(reasonCode: MessagePolicyReasonCode) {
   return { error: MESSAGE_BLOCKED_POLICY_ERROR, policyReason: reasonCode } as const
 }
 
+/** Persist a fraud_messages row. Returns a blocked send result only for reasons that still stop delivery. */
+async function captureAndMaybeBlockPolicyViolation(row: {
+  conversationId: string
+  senderId: string
+  recipientId: string
+  listingId: string | null
+  content: string
+  reasonCode: MessagePolicyReasonCode
+}) {
+  await capturePolicyBlockedDmContent(row)
+  if (!messagePolicyBlocksDelivery(row.reasonCode)) {
+    return null
+  }
+  return policyBlockedSendResult(row.reasonCode)
+}
+
 function sendRestrictionBlockedResult(
   guard: Extract<Awaited<ReturnType<typeof evaluateUserMessageSend>>, { ok: false }>,
 ): MessageSendRestrictionActionResult {
@@ -354,7 +373,7 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     body,
   )
   if (policyViolation) {
-    await capturePolicyBlockedDmContent({
+    const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conversation.id,
       senderId: user.id,
       recipientId: receiverId,
@@ -362,7 +381,7 @@ export async function sendMarketplaceListingMessage(input: unknown) {
       content: body,
       reasonCode: policyViolation,
     })
-    return policyBlockedSendResult(policyViolation)
+    if (blocked) return blocked
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -385,11 +404,6 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
 
-  // Sending a message is real engagement — reset the inactivity clock so we don't
-  // treat an active conversationalist as "inactive" and so any prior winback
-  // milestone re-arms for a future streak.
-  void touchUserLastActive(supabase, user.id)
-
   revalidateMessagesInboxForParticipants(ctx.buyerId, ctx.sellerId)
 
   const { data: senderProfile } = await supabase
@@ -410,6 +424,11 @@ export async function sendMarketplaceListingMessage(input: unknown) {
       email: user.email ?? null,
       profile: senderProfile,
     },
+  })
+
+  await captureServerEvent(user.id, "message_sent", {
+    listing_id,
+    conversation_id: conversation.id,
   })
 
   return {
@@ -475,7 +494,7 @@ export async function sendListingMessage(input: {
     body,
   )
   if (policyViolation) {
-    await capturePolicyBlockedDmContent({
+    const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conversation.id,
       senderId: user.id,
       recipientId: seller_id,
@@ -483,7 +502,7 @@ export async function sendListingMessage(input: {
       content: body,
       reasonCode: policyViolation,
     })
-    return policyBlockedSendResult(policyViolation)
+    if (blocked) return blocked
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -577,7 +596,7 @@ export async function sendConversationReply(input: {
     body,
   )
   if (policyViolation) {
-    await capturePolicyBlockedDmContent({
+    const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conv.id,
       senderId: user.id,
       recipientId: receiverId,
@@ -585,7 +604,7 @@ export async function sendConversationReply(input: {
       content: body,
       reasonCode: policyViolation,
     })
-    return policyBlockedSendResult(policyViolation)
+    if (blocked) return blocked
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -761,7 +780,7 @@ export async function sendConversationLocationReply(input: unknown) {
     formattedAddress,
   )
   if (policyViolation) {
-    await capturePolicyBlockedDmContent({
+    const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conv.id,
       senderId: user.id,
       recipientId: receiverId,
@@ -769,7 +788,7 @@ export async function sendConversationLocationReply(input: unknown) {
       content: formattedAddress,
       reasonCode: policyViolation,
     })
-    return policyBlockedSendResult(policyViolation)
+    if (blocked) return blocked
   }
 
   const metadataPayload = messageLocationMetadataSchema.parse({
@@ -962,7 +981,7 @@ export async function loadCounterpartyThreads(
   const supportResolved = await resolveSupportRecipientUserId()
   const supportUserId = supportResolved.ok ? supportResolved.userId : null
 
-  // Drop ticketed support DMs; keep staff-outbound + unticketed general threads.
+  // Drop all Support DMs; marketplace threads with this person stay.
   const threads = await retainMarketplaceInboxConversations(
     filterConversationsWithMessages(
       (convData ?? []) as unknown as InboxConversationRow[],

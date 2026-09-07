@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { fetchListingForOffer, type ListingRowForOffer } from "@/lib/db/offers"
-import { offerShippingAmountFromListing } from "@/lib/offer-listing-shipping"
+import { offerShippingAmountForListings } from "@/lib/offer-listing-shipping"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { formatSellerOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
@@ -54,9 +54,6 @@ function validateListingForSellerOffer(
   }
   if (listing.status !== "active" && listing.status !== "pending_sale") {
     return { ok: false, error: "One or more listings are not accepting offers." }
-  }
-  if (listing.buyer_offers_enabled === false) {
-    return { ok: false, error: "You are not accepting offers on one or more items." }
   }
 
   const listPrice = roundMoney(parseFloat(String(listing.price)))
@@ -115,13 +112,6 @@ export async function createSellerInitiatedOffer(
   }
 
   const isBundle = normalizedLineItems.length > 1
-  if (isBundle && fulfillment !== "pickup") {
-    return {
-      ok: false,
-      status: 400,
-      error: "Bundled offers support local pickup only. Choose pickup or offer items separately for shipping.",
-    }
-  }
 
   const listingsById = new Map<string, ListingRowForOffer>()
   for (const row of normalizedLineItems) {
@@ -151,16 +141,18 @@ export async function createSellerInitiatedOffer(
   }
 
   if (fulfillment === "shipping") {
-    if (isBundle) {
+    const missingShipping = normalizedLineItems.find((row) => {
+      const listing = listingsById.get(row.listingId)
+      return listing && !listing.shipping_available
+    })
+    if (missingShipping) {
       return {
         ok: false,
         status: 400,
-        error: "Shipping offers support one item at a time.",
+        error: isBundle
+          ? "Every item in a shipping offer must allow shipping."
+          : "Shipping is not available for this listing.",
       }
-    }
-    const singleListing = listingsById.get(normalizedLineItems[0]!.listingId)
-    if (!singleListing?.shipping_available) {
-      return { ok: false, status: 400, error: "Shipping is not available for this listing." }
     }
   }
 
@@ -188,14 +180,11 @@ export async function createSellerInitiatedOffer(
 
   const itemsSubtotal = roundMoney(lineItems.reduce((sum, row) => sum + row.amount, 0))
 
-  /** Shipping is never negotiated — always take the listing’s terms. */
-  const shippingAmount =
-    fulfillment === "shipping"
-      ? offerShippingAmountFromListing(
-          listingsById.get(normalizedLineItems[0]!.listingId)!,
-          fulfillment,
-        )
-      : null
+  /** Shipping is never negotiated — listing terms, or quoted at checkout for bundles. */
+  const shippingAmount = offerShippingAmountForListings(
+    normalizedLineItems.map((row) => listingsById.get(row.listingId)!),
+    fulfillment,
+  )
 
   const primaryListingId = normalizedLineItems[0]!.listingId
   const primaryListing = listingsById.get(primaryListingId)!

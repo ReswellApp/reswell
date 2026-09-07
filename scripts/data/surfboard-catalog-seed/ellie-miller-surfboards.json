@@ -1,0 +1,84 @@
+{
+  "generated_for": "Ellie Miller Surfboards official named model catalog",
+  "source": "https://www.millersurfboards.co.uk/models (Squarespace models page — longboards, mid-lengths, and twin fins only)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ellie-miller-surfboards",
+      "name": "Ellie Miller Surfboards",
+      "website_url": "https://www.millersurfboards.co.uk/",
+      "location_label": "Swimbridge, North Devon, United Kingdom",
+      "founder_name": "Ellie Miller",
+      "lead_shaper_name": "Ellie Miller",
+      "short_description": "Handmade custom surfboards by Ellie Miller, individually handcrafted in a small workshop in Swimbridge, North Devon since 2012.",
+      "models": [
+        {
+          "name": "Slider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/82268e7a-a15d-414e-9fbc-4326dd78abb7/4ca5016b-e20c-40a3-ac33-7546a777ad42.jpeg",
+          "description": "Longboard model designed for maximum wave count, classic style, and endless trim on even the smallest days.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rev",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/3674728e-9443-42a5-8d87-fe985c9bad9d/FullSizeRender.jpeg",
+          "description": "Longboard model designed for maximum wave count, classic style, and endless trim on even the smallest days.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Styler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/d95bf8f5-a2e2-4251-af43-8b5b6523e3c4/491452085_18495835924053358_1638284934095851853_n.jpg",
+          "description": "Longboard model designed for maximum wave count, classic style, and endless trim on even the smallest days.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DB Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/e8991478-363a-470b-b6b5-b926104e236b/507253626_24015097124817686_3008546160062451041_n.jpg",
+          "description": "Longboard model designed for maximum wave count, classic style, and endless trim on even the smallest days.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Evo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/f330d8ad-6ac1-430d-9139-47b7d2f08032/513966163_24121958770798187_4574482528768631501_n.jpg",
+          "description": "Mid-length model combining speed and flow with versatility for a huge variety of British wave conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SVR",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/ae1f6ad8-7fae-4609-81f4-a228c4d7f82e/509363024_24055085117485553_6392952540294846656_n.jpg",
+          "description": "Mid-length model combining speed and flow with versatility for a huge variety of British wave conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "E-bowls",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/372471cd-2109-4b76-b532-dba2fe2aecf7/506410488_24012250135102385_5179554751207218644_n.jpg",
+          "description": "Mid-length model combining speed and flow with versatility for a huge variety of British wave conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Eggs",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/98e38329-97b4-4cfc-a9f3-33cbf1fa882f/511538325_24112334541760610_4419168985279060200_n.jpg",
+          "description": "Mid-length model combining speed and flow with versatility for a huge variety of British wave conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Blimp",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/c2cf28a6-1751-45ad-9198-b69d90ca6bfc/510909399_24092745437052854_7153037678533823507_n.jpg",
+          "description": "Twin-fin model for smooth carves, acceleration, and effortless glide on all but the tiniest of days.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Po'boy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/605ee5d4-f6cd-49b0-bd3d-7d5553c8dcd1/509361208_24055075004153231_2357967588128505123_n.jpg",
+          "description": "Twin-fin model for smooth carves, acceleration, and effortless glide on all but the tiniest of days.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "G-fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/696755af0303ec1fdb744ade/b4cad36f-feaf-4453-8c00-b41742d17042/514334901_24131649463162451_1207639746839219460_n.jpg",
+          "description": "Twin-fin model for smooth carves, acceleration, and effortless glide on all but the tiniest of days.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

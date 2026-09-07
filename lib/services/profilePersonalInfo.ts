@@ -5,7 +5,6 @@ import {
   updateProfilePersonalInfo,
 } from "@/lib/db/profilePersonalInfo"
 import { subscribeKlaviyoProfileSmsConsent } from "@/lib/klaviyo/subscribe-profile-sms-consent"
-import { subscribeKlaviyoProfileSmsMarketing } from "@/lib/klaviyo/subscribe-profile-sms-marketing"
 import {
   profilePersonalInfoInputSchema,
   profilePersonalPhoneInputSchema,
@@ -121,18 +120,19 @@ export async function saveProfilePersonalPhone(
     return { ok: false, error: "Unauthorized." }
   }
 
+  const phoneE164 = toE164UsPhone(parsed.data.phone)
   const saved = await updateProfilePersonalInfo(supabase, user.id, {
-    phone: parsed.data.phone,
+    phone: phoneE164 ?? parsed.data.phone,
+    transactional_sms_opt_in: phoneE164 != null,
   })
 
   if (!saved.ok) {
     return { ok: false, error: saved.error, code: saved.code }
   }
 
-  const phoneE164 = toE164UsPhone(parsed.data.phone)
   return {
     ok: true,
-    phone: parsed.data.phone.trim(),
+    phone: phoneE164 ?? parsed.data.phone.trim(),
     has_phone: phoneE164 != null,
   }
 }
@@ -162,14 +162,15 @@ export async function saveProfilePersonalPhoneAndSubscribeSms(
     return { ok: false, error: "Enter a valid US phone number.", code: "invalid_phone" }
   }
 
-  const subscribed = await subscribeKlaviyoProfileSmsMarketing({
+  const subscribed = await subscribeKlaviyoProfileSmsConsent({
     phoneNumber: phoneE164,
     email: user.email,
     externalId: user.id,
-    consent: "SUBSCRIBED",
+    transactional: "SUBSCRIBED",
+    marketing: "SUBSCRIBED",
   })
   if (!subscribed.ok && !subscribed.skipped) {
-    console.error("[profilePersonalInfo] Klaviyo SMS marketing subscribe failed:", subscribed.status, subscribed.detail)
+    console.error("[profilePersonalInfo] Klaviyo SMS subscribe failed:", subscribed.status, subscribed.detail)
     return {
       ok: false,
       error: "Could not register your number for text alerts. Try again in a moment.",

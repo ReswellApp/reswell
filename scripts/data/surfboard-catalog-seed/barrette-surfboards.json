@@ -1,0 +1,37 @@
+{
+  "generated_for": "Barrette Surfboards official named standup catalog",
+  "source": "https://www.barrettesurfboards.com (Shopify Surfboard product type only — excludes skimboards and wakesurf boards)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "barrette-surfboards",
+      "name": "Barrette Surfboards",
+      "website_url": "https://www.barrettesurfboards.com",
+      "location_label": "San Diego, California",
+      "founder_name": "Austin Barrette",
+      "lead_shaper_name": "Austin Barrette",
+      "short_description": "Hand-shaped custom surfboards by Austin Barrette in San Diego — a tight ocean lineup of twins, mid-lengths, and the original Single Wing.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/daily-2026-09-01-c82b9cae7acfc4c62574.webp",
+      "models": [
+        {
+          "name": "The Moonbeam",
+          "image_url": "https://cdn.shopify.com/s/files/1/0836/4523/5448/files/Product-MoonBeam.png?v=1784907302",
+          "description": "The number one best-selling board in our lineup, the Moonbeam is the ultimate midlength designed for versatility and pure fun. Whether you're chasing clean peelers or making the most of tricky conditions, this board delivers smooth, effortless performance in any wave. Offered with virtually any fin setup imaginable, the Moonbeam lets you fine-tune your ride to match your style. A fan-favorite since the COVID boom, the hype around this board hasn't faded—and for good reason. Features: Performance Midlength: The perfect balance of paddle power and maneuverability. Custom Fin Setups: Choose your preferred configuration for a tailored ride. Ultimate Versatility: A board that thrives in any wave, anywhere. Timeless Design: A crowd favorite that continues to deliver stoke.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Nova",
+          "image_url": "https://cdn.shopify.com/s/files/1/0836/4523/5448/files/Product-Nova.png?v=1784907352",
+          "description": "The Nova is everything you want in a high-performance twin, delivering effortless paddling and that signature twin-fin looseness for a fun, fast ride. Designed by its shaper for long days at Lowers, this board blends speed, flow, and control, making it the perfect choice for surfers who want to maximize every session. Whether you're trimming down the line or laying into stylish turns, the Nova keeps things smooth and playful. Features: Performance Twin Shape: Balances speed and maneuverability for ultimate flow. Effortless Paddling: Designed for easy entry into waves, so you can surf longer. Loose & Fun: Experience the freedom and glide that only a twin-fin setup can offer. Designed for Endless Sessions: Built for long days at Lowers and beyond.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Single Wing",
+          "image_url": "https://cdn.shopify.com/s/files/1/0836/4523/5448/files/Product-SingleWing.png?v=1784907363",
+          "description": "Meet the Single Wing, our original surfboard model that has stood the test of time. With over 100 variations tested and refined, this board is the definition of versatility. Whether you want a high-performance ride with a pulled-in tail and nose or prefer the original performance fish feel, the Single Wing delivers. Designed to handle everything from small slop to head-high waves, this board is an essential for every quiver. Features: Proven Versatility: Over 100 iterations perfected for all conditions. Customizable Shape: Ride it as a performance board or a classic fish. Wave-Ready Design: Handles anything from small slop to head-high surf. Optimized Sizing: Ride it an inch under your height for max performance or size up 2–5 inches as a step-up board.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}

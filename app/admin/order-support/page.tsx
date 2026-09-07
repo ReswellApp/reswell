@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
-/** Legacy URL; order support lives under Support inbox. */
+/** Legacy URL — order cases are filtered in the unified Case inbox. */
 export default function LegacyAdminOrderSupportRedirect() {
-  redirect('/admin/contact-messages?tab=order-support')
+  redirect('/admin/contact-messages?type=order')
 }
