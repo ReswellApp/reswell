@@ -1,0 +1,78 @@
+{
+  "generated_for": "Michael Miller Surfboards official named standup catalog",
+  "source": "http://www.michaelmillersurfboards.com (Squarespace model pages — excludes one-off stock boards and custom-order-only listings)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "michael-miller-surfboards",
+      "name": "Michael Miller Surfboards",
+      "website_url": "http://www.michaelmillersurfboards.com",
+      "location_label": "San Diego, California",
+      "founder_name": "Michael Miller",
+      "lead_shaper_name": "Michael Miller",
+      "short_description": "San Diego hand-shaped surfboards by Michael Miller — Simmons-inspired gliders, traditional fishes, and custom shortboards from 1165 Cushman Ave.",
+      "models": [
+        {
+          "name": "Drifter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/1664423967334-NIF7S1461Z65Z1URAGC8/IMG_1774.JPG",
+          "description": "Michael Miller's version of Skip's Fish Simmons with a single to deep double concave exiting the tail and fair V in the tail. Tail block stays at 10\" across sizes from 5'6\" up to almost 12' for smooth gliding trim.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/1664426620366-ZT1KO5N3J0FM7P105KJ6/IMG_9996.JPG",
+          "description": "Traditional style fish with a single concave and a 12\" tail-block.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quad Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/6b46ae0c-4f99-47f2-8766-2a2a36eb6013/IMG_2033.JPG",
+          "description": "Quad fish with double wing pulling in the tail and a single concave bottom.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Nozzle Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/1664425023165-6P316X3R0C7AW9XY6UHF/IMG_0006.JPG",
+          "description": "Nozzle style fish with a single concave, no beak on smaller versions, wider overall than the traditional fish, and added curve in the tail bringing the tail block to about 11\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Eagle",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/20f6c0f1-c8b2-4c38-bf69-a7a19d98f5fe/IMG_8642.JPG",
+          "description": "Single to double concave with vee — available from 8' through 12' in Michael Miller's San Diego shaping bay.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gypsy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/1664425444381-IK6XVUS2L91Q421STNVU/2DE8633A-CD8D-4081-9650-B74B0B466441.jpg",
+          "description": "Single to double concave with vee in the tail — sized from 6' through 11'+.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Coastal",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/1664425798782-JPURBT55Z2UIQ4U833Z7/601E2A8B-39EA-43E7-83CC-6B6C9A45DF57.jpg",
+          "description": "Single to double concave with vee — common sizes from 6'6\" x 21\" x 2 5/8\" through 7'6\" x 21 1/2\"+ x 2 3/4\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Magic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/40de2e47-552d-4902-8c29-a81d0860858e/F8EE8E04-469A-4C0C-9C65-A7AAC039C0D7.jpg",
+          "description": "Single to double concave with vee — offered from 7' through 11'+.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Swish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/1664426043452-11ZFLOAL837B3BCSK1Q6/4A03CBF3-0AA1-48F5-8A2E-B6C67F16433B.jpg",
+          "description": "Single to double concave with vee — sized from 7' through 11'+.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/52d20046e4b0d1fda0b1d34b/02529878-f1d7-4d59-b729-06bf4500f355/IMG_7290.JPG",
+          "description": "Egg outline with average dimensions from 5'10\" x 21\" x 2 3/8\" through 11' x 23\" x 3 3/8\" — custom dimensions available.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
