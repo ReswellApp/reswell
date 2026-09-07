@@ -1,0 +1,72 @@
+{
+  "generated_for": "Jimmy Lewis official named surfboard catalog",
+  "source": "https://jimmylewis.com/product-category/surfboards/ (WooCommerce surfboards category only \u2014 excludes SUPs, foil boards, kiteboards, and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jimmy-lewis-surfboards",
+      "name": "Jimmy Lewis",
+      "website_url": "https://jimmylewis.com/",
+      "location_label": "Maui, Hawaii",
+      "founder_name": "Jimmy Lewis",
+      "lead_shaper_name": "Jimmy Lewis",
+      "short_description": "Maui-based shaper Jimmy Lewis builds high-performance surfboards, longboards, and fish shapes \u2014 alongside his broader paddle and foil line.",
+      "models": [
+        {
+          "name": "Canary",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-canary-yellow-top.png",
+          "description": "The Canary\u2019s wider outline with its flatter rocker through the middle of the board gives it tons of drive and speed through any flat spot on weak waves. It\u2019s single to double concave with it\u2019s moderate tail rocker makes it very responsive and easy to fling around. Great board for any conditions from perfect to junk. 5 box fin set up. Includes 4.5\u2033 thruster set. Sizes 5\u20196\u2033 x 21.5\u2033 x 2.3\u2033 (34.5L.). 5\u201911\u201d x 22.25\u2033 x 2.3\u2033 (38.87L.). 6\u20193\u2033 x 22.75\u2033 x 2.3\u2033 (41L.).",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Destroyer",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/Destroyer-deck-magenta.jpg",
+          "description": "Maui\u2019s Favorite Board! The short longboard. This mini tanker is a great fun shape for beginners and advanced riders. Catches waves like a longboard but performs like a shortboard. Maui\u2019s favorite board! The Flat bottom through the front and center of the board going to a V near the fins makes this board very fast and responsive under your feet. Comes with 4.5\u2033 thruster set Sizes 6\u20190\u201d x 20 3/4\u201d x 2 1/2\u201d (37 Liters). 6\u20196\u201d x 21 1/4\u201d x 2 3/4\u201d (45.1 Liters). 7\u20190\u2033x21.25\u2033x2.75\u2033 (48.5 Liters.). 7\u20196\u201d x 21 1/2\u201d x 2 3/4\u201d (52.8 Liters). 8\u20190\u2033x21.5\u2033x2.75\u2033 (56.5 Liters.). Weight 6\u20190\u201d \u2013 6.72 lbs. 6\u20196\u201d \u2013 7.3 lbs. 7\u20190\u2033 \u2013 7.6 lbs. 7\u20196\u201d \u2013 8.5 lbs. 8\u20190\u2033 \u2013 9.8 lbs`.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HP",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/HP-deck-blue.jpg",
+          "description": "High performance longboard. Designed for riders looking to get the best speed and control from a longboard. Flat bottom with \u201cV\u201d in the tail. 8\u20196\u2033 comes with 4.5\u2033 thruster fins 9\u20191\u2033/9\u20198\u2033 come with 7\u2033 JL swept fin and 3.5\u2033 side bites Sizes 8\u20196\u2033x21 1/2\u2033x2 5/8\u2033 (57.5L.). 9\u20191\u2033x22 1/2\u2033x2 7/8\u2033 (70L.). 9\u20198\u2033x23\u2033x3 1/8\u2033 (83.4L.). Weight 8\u20196\u2033 \u2013 9.4 lbs. 9\u20191\u2033 \u2013 11.3 lbs. 9\u20198\u2033 \u2013 12 lbs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Kwad",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-kwad-maroon-top.png",
+          "description": "This high performance shortboard was built around the quad fin set up. It\u2019s wide point barely up from center gives it that front foot drive and allows it to keep its speed on the wave while it\u2019s clean rocker line and 4 fin set up allows it to hold through clean carving lines. Comes with quad fin set up (4.5\u2033 front, 4\u2033 back) Sizes 5\u20194\u2033x17.5\u2033x1.875\u2033, 19.5 liters. 5\u20197\u2033x18\u2033x2\u2033, 22.3 liters . 5\u201911\u2033x18.5\u2033x2.125\u2033, 25.3 liters . 6\u20192\u2033x19\u2033x2.25\u2033, 29.8 liters .",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Maui Model",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/Maui-Model-deck-red.jpg",
+          "description": "We started out with our HP longboard design and gave it some extra width, volume and small adjustments to create a very forgiving and easy to ride longboard. This board is ideal for beginners or somebody who just wants to cruise in small waves. Flat bottom in nose blending into a single concave in the center feeding into a double concave in the fin area and flat off the tail block. 2+1 fin box set up. Comes with 7\u2033 JL swept fin and 3.5\u2033 side bites. Sizes 8\u20190\u2033 (62L.). 8\u20196\u2033. 9\u20190\u2033x23.5\u2033 (72L.). 9\u20196\u2033. 10\u20190\u2033x24.5\u2033 (92L.). Weight 8\u20190\u2033 \u2013 9.8 lbs. 8\u20196\u2033 \u2013 10.7 lbs. 9\u20190\u2033 \u2013 11.8 lbs. 9\u20196\u2033 \u2013 12.4 lbs. 10\u20190\u2033 \u2013 13.4 lbs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rocket",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-rocket-maroon-top-1.png",
+          "description": "The classic fish shape combined with twin keel fins offers insane drive and down the line speed even in less than powerful waves. A paneled \u201cV\u201d bottom going from tip to tail makes for incredible rail to rail speed transitions. Twin fin box set up. Comes with 5\u2033 deep keel fins. Sizes 5\u201910\u2033x21.5\u2033x2.5\u2033 (39L.). 6\u20194\u2033x22.25\u2033x2.75\u2033 (45L.). 6\u20198\u2033x22.5\u2033x2.75\u2033 (48L.). Weight 5\u201910\u201d \u2013 6.5 lbs. 6\u20194\u2033 \u2013 7.3 lbs. 6\u20198\u2033 \u2013 7.8 lbs.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Shack",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-shack-top.png",
+          "description": "Our all around high performance shortboard. Designed with a clean flowing performance rocker and single to double concave for butter smooth turns and that alive responsive feel under your feet. Comes with 4.5\u2033 thruster set. Sizes 5\u20199\u2033x17.75\u2033x1.875\u2033 (21L.). 6\u20190\u2033x18.25\u2033x2\u2033 (26L.). 6\u20193\u2033 x 18.75\u2033x2.125\u2033 (31L.).",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tai Stick",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-thaistick-yellow-top-1.png",
+          "description": "The Tai Stick is a thinner performance long board. The thinness gives a more sensitive/alive feel on the wave and under your feet. This long board has a slight single concave in the center, much like shortboards, going into a double concave \u201cV\u201d in front of and through the three fin set up. This gives the board lift and quick planing with more drive in the turns. 2+1 fin box set up. Comes with 7\u2033 JL swept fin and 3.5\u2033 side bites. Sizes 9\u20191\u2033x22\u2033x2.4\u2033 (57.9L). 9\u20196\u2033x22.5\u2033x2.7\u2033 (69.7L). Weight 9\u20191\u2033 \u2013 10.7 lbs. 9\u20196 \u2013 11.8 lbs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ultimate Noserider",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-ultimatenoserider-maroon-top.png",
+          "description": "The classic nose riding longboard with concave nose, 50/50 rails, soft squash tail, and nose rider fin. Single fin box 9\u20199\u2033 comes with 10\u2033 nose rider fin, 10\u20194\u2033 and 10\u201910\u201d comes with 11\u2033 nose rider fin. Sizes 9\u20199\u2033x23\u2033x3 3/8\u2033 (88L.). 10\u20194\u2033x24 1/4\u2033x3 5/8\u2033 (106L.). 10\u201910\u2033x24 1/2\u2033x4\u2033 (124L.). Weight 9\u20199\u2033 \u2013 13.3 lbs. 10\u20194\u2033 \u2013 14.2 lbs. 10\u201910\u201d \u2013 15 lbs.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
