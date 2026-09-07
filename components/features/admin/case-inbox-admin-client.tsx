@@ -3,46 +3,45 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import {
-  CONTACT_MESSAGE_ADMIN_SELECT,
-  normalizeContactMessageRow,
   type ContactMessageSupportStatus,
 } from "@/lib/db/contactMessages"
 import {
-  normalizeOrderSupportRow,
-  ORDER_SUPPORT_SELECT,
   type OrderSupportOutcome,
   type OrderSupportStatus,
 } from "@/lib/db/order-support"
-import {
-  ensureSupportTicketThreadAdminAction,
-  sendSupportTicketAdminReplyAction,
-  updateContactMessageAdminAction,
-} from "@/lib/actions/contactMessagesAdmin"
+import { updateContactMessageAdminAction } from "@/lib/actions/contactMessagesAdmin"
 import { updateOrderSupportAdminAction } from "@/lib/actions/orderSupportAdmin"
+import { listAdminSupportInboxAction } from "@/lib/actions/adminSupportInbox"
+import { sendSupportCaseAdminReplyAction } from "@/lib/actions/supportCaseThread"
 import {
-  ensureOrderSupportThreadAdminAction,
-  sendOrderSupportAdminReplyAction,
-} from "@/lib/actions/orderSupportThread"
-import {
-  contactToInboxItem,
   filterInboxItems,
-  orderToInboxItem,
+  type CaseInboxAssigneeFilter,
   type CaseInboxItem,
   type CaseInboxStatusFilter,
   type CaseInboxTypeFilter,
 } from "@/lib/admin/case-inbox"
+import { SupportCaseThread } from "@/components/features/support/support-case-thread"
+import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
+import { getSupportCaseThreadAdminAction } from "@/lib/actions/supportCaseThread"
+import { CaseAssigneeSelect } from "@/components/features/admin/case-assignee-select"
+import { CaseIssueRefundPanel } from "@/components/features/admin/case-issue-refund-panel"
+import { listSupportStaffAction } from "@/lib/actions/supportCaseAssign"
+import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import { SupportMacrosPicker } from "@/components/features/admin/support-macros-picker"
 import { ProtectionClaimDesk } from "@/components/features/admin/protection-claim-desk"
-import { AdminEmbeddedSupportThread } from "@/components/features/admin/admin-embedded-support-thread"
 import {
   CaseOrderContextPanel,
   adminOrderParticipantDisplayName,
 } from "@/components/features/admin/case-order-context-panel"
 import { STATUS_LABEL, STATUS_LIST } from "@/components/features/admin/contact-messages-labels"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
-import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+import {
+  contactStatusToCaseStatus,
+  formatSupportCaseReference,
+  orderSupportStatusToCaseStatus,
+  SUPPORT_CASE_STATUS_LABEL,
+} from "@/lib/utils/support-case-display"
 import {
   adminSupportCaseHref,
   supportCaseResponseHref,
@@ -88,6 +87,12 @@ const TYPE_VIEWS: { id: CaseInboxTypeFilter; label: string }[] = [
   { id: "general", label: "General" },
   { id: "order", label: "Orders" },
   { id: "claims", label: "Claims" },
+]
+
+const ASSIGNEE_VIEWS: { id: CaseInboxAssigneeFilter; label: string }[] = [
+  { id: "anyone", label: "Anyone" },
+  { id: "mine", label: "Mine" },
+  { id: "unassigned", label: "Unassigned" },
 ]
 
 const ORDER_STATUS_OPTIONS: { value: OrderSupportStatus; label: string }[] = [
@@ -152,7 +157,15 @@ export function CaseInboxAdminClient() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<CaseInboxStatusFilter>(urlStatus)
   const [typeFilter, setTypeFilter] = useState<CaseInboxTypeFilter>(urlType)
+  const [assigneeFilter, setAssigneeFilter] = useState<CaseInboxAssigneeFilter>(
+    searchParams.get("assignee") === "mine" || searchParams.get("assignee") === "unassigned"
+      ? (searchParams.get("assignee") as CaseInboxAssigneeFilter)
+      : "anyone",
+  )
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [staff, setStaff] = useState<StaffAssigneeRow[]>([])
+  const [currentStaffId, setCurrentStaffId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const [cmStatus, setCmStatus] = useState<ContactMessageSupportStatus>("new")
   const [cmNotes, setCmNotes] = useState("")
@@ -163,21 +176,22 @@ export function CaseInboxAdminClient() {
   const [osReply, setOsReply] = useState("")
   const [orderContext, setOrderContext] = useState<AdminOrderDetail | null>(null)
   const [threadReloadToken, setThreadReloadToken] = useState(0)
+  const [threadMessages, setThreadMessages] = useState<SupportCaseThreadMessage[]>([])
+  const [threadCaseId, setThreadCaseId] = useState<string | null>(null)
 
   const [savePending, startSave] = useTransition()
   const [replyPending, startReply] = useTransition()
-  const supabase = createClient()
 
   const onOrderContextLoaded = useCallback((detail: AdminOrderDetail) => {
     setOrderContext(detail)
   }, [])
 
   const syncUrl = useCallback(
-    (status: CaseInboxStatusFilter, type: CaseInboxTypeFilter) => {
+    (status: CaseInboxStatusFilter, type: CaseInboxTypeFilter, assignee: CaseInboxAssigneeFilter) => {
       const q = new URLSearchParams()
       if (status !== "open") q.set("status", status)
       if (type !== "all") q.set("type", type)
-      // Drop legacy tab param
+      if (assignee !== "anyone") q.set("assignee", assignee)
       const qs = q.toString()
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
     },
@@ -189,75 +203,42 @@ export function CaseInboxAdminClient() {
       if (mode === "refresh") setRefreshing(true)
       else setLoading(true)
 
-      const [cmRes, osRes] = await Promise.all([
-        supabase
-          .from("contact_messages")
-          .select(CONTACT_MESSAGE_ADMIN_SELECT)
-          .order("created_at", { ascending: false })
-          .limit(400),
-        supabase
-          .from("order_support_requests")
-          .select(ORDER_SUPPORT_SELECT)
-          .order("created_at", { ascending: false })
-          .limit(400),
-      ])
-
-      const contactItems = (cmRes.data ?? []).map((r) =>
-        contactToInboxItem(normalizeContactMessageRow(r as Record<string, unknown>)),
-      )
-
-      let orderItems: CaseInboxItem[] = []
-      if (!osRes.error && osRes.data) {
-        orderItems = osRes.data.map((r) =>
-          orderToInboxItem(normalizeOrderSupportRow(r as Record<string, unknown>)),
-        )
+      const res = await listAdminSupportInboxAction()
+      if ("error" in res) {
+        toast.error(res.error)
+        setItems([])
       } else {
-        const legacy = await supabase
-          .from("order_support_requests")
-          .select(
-            "id, order_id, buyer_id, request_type, body, contacted_seller_first, order_ref, created_at",
-          )
-          .order("created_at", { ascending: false })
-          .limit(400)
-        if (legacy.data) {
-          orderItems = legacy.data.map((r) =>
-            orderToInboxItem(
-              normalizeOrderSupportRow({
-                ...(r as Record<string, unknown>),
-                support_status: "new",
-                requester_role: "buyer",
-                assignee_admin_id: null,
-                internal_notes: null,
-                outcome: null,
-                updated_at: (r as { created_at: string }).created_at,
-              }),
-            ),
-          )
-        }
+        setItems(res.items)
       }
-
-      if (cmRes.error) {
-        console.error(cmRes.error)
-        toast.error("Could not load general cases.")
-      }
-
-      const merged = [...contactItems, ...orderItems].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      )
-      setItems(merged)
       setLoading(false)
       setRefreshing(false)
     },
-    [supabase],
+    [],
   )
 
   useEffect(() => {
     void load("initial")
   }, [load])
 
+  useEffect(() => {
+    void listSupportStaffAction().then((res) => {
+      if ("error" in res && res.error) return
+      setStaff(res.rows)
+      setCurrentStaffId(res.currentUserId)
+      setIsAdmin(res.isAdmin === true)
+    })
+  }, [])
+
   const filtered = useMemo(
-    () => filterInboxItems(items, { status: statusFilter, type: typeFilter, search }),
-    [items, statusFilter, typeFilter, search],
+    () =>
+      filterInboxItems(items, {
+        status: statusFilter,
+        type: typeFilter,
+        assignee: assigneeFilter,
+        currentStaffId,
+        search,
+      }),
+    [items, statusFilter, typeFilter, assigneeFilter, currentStaffId, search],
   )
 
   const selected = useMemo(
@@ -294,21 +275,59 @@ export function CaseInboxAdminClient() {
     }
   }, [selected])
 
+  useEffect(() => {
+    if (!selected) {
+      setThreadMessages([])
+      setThreadCaseId(null)
+      return
+    }
+    void getSupportCaseThreadAdminAction(selected.id).then((res) => {
+      if ("error" in res) {
+        setThreadMessages([])
+        setThreadCaseId(selected.id)
+        return
+      }
+      setThreadCaseId(res.case.id)
+      setThreadMessages(res.messages)
+    })
+  }, [selected, threadReloadToken])
+
   const counts = useMemo(() => {
     const open = items.filter((i) => i.isOpen).length
     const neu = items.filter((i) => i.isNew).length
     const claims = items.filter((i) => i.kind === "protection_claim" && i.isOpen).length
-    return { open, neu, claims, total: items.length }
-  }, [items])
+    const mine = items.filter((i) => i.isOpen && i.assigneeAdminId === currentStaffId).length
+    const overdue = items.filter((i) => i.isOpen && i.slaState === "overdue").length
+    return { open, neu, claims, mine, overdue, total: items.length }
+  }, [items, currentStaffId])
 
   function setStatus(next: CaseInboxStatusFilter) {
     setStatusFilter(next)
-    syncUrl(next, typeFilter)
+    syncUrl(next, typeFilter, assigneeFilter)
   }
 
   function setType(next: CaseInboxTypeFilter) {
     setTypeFilter(next)
-    syncUrl(statusFilter, next)
+    syncUrl(statusFilter, next, assigneeFilter)
+  }
+
+  function setAssignee(next: CaseInboxAssigneeFilter) {
+    setAssigneeFilter(next)
+    syncUrl(statusFilter, typeFilter, next)
+  }
+
+  function applyAssignee(key: string, assigneeAdminId: string | null) {
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.key !== key) return i
+        return {
+          ...i,
+          assigneeAdminId,
+          contact: i.contact ? { ...i.contact, assignee_admin_id: assigneeAdminId } : null,
+          order: i.order ? { ...i.order, assignee_admin_id: assigneeAdminId } : null,
+        }
+      }),
+    )
   }
 
   function patchItem(key: string, patch: Partial<CaseInboxItem>) {
@@ -317,9 +336,10 @@ export function CaseInboxAdminClient() {
 
   function saveContact() {
     if (!selected?.contact) return
+    const contact = selected.contact
     startSave(async () => {
       const res = await updateContactMessageAdminAction({
-        id: selected.id,
+        id: contact.id,
         support_status: cmStatus,
         internal_notes: cmNotes,
       })
@@ -330,23 +350,29 @@ export function CaseInboxAdminClient() {
       toast.success("Saved")
       const now = new Date().toISOString()
       const updated = {
-        ...selected.contact!,
+        ...contact,
         support_status: cmStatus,
         internal_notes: cmNotes,
         updated_at: now,
       }
+      const status = contactStatusToCaseStatus(cmStatus)
       patchItem(selected.key, {
-        ...contactToInboxItem(updated),
         contact: updated,
+        status,
+        statusLabel: SUPPORT_CASE_STATUS_LABEL[status],
+        isOpen: status !== "resolved",
+        isNew: status === "submitted",
+        updatedAt: now,
       })
     })
   }
 
   function saveOrder() {
     if (!selected?.order) return
+    const order = selected.order
     startSave(async () => {
       const res = await updateOrderSupportAdminAction({
-        id: selected.id,
+        id: order.id,
         support_status: osStatus,
         internal_notes: osNotes.trim() || null,
         outcome: osOutcome === "none" ? null : (osOutcome as OrderSupportOutcome),
@@ -358,85 +384,32 @@ export function CaseInboxAdminClient() {
       toast.success("Saved")
       const now = new Date().toISOString()
       const updated = {
-        ...selected.order!,
+        ...order,
         support_status: osStatus,
         internal_notes: osNotes.trim() || null,
         outcome: (osOutcome === "none" ? null : osOutcome) as OrderSupportOutcome | null,
         updated_at: now,
       }
+      const status = orderSupportStatusToCaseStatus(osStatus)
       patchItem(selected.key, {
-        ...orderToInboxItem(updated),
         order: updated,
+        status,
+        statusLabel: SUPPORT_CASE_STATUS_LABEL[status],
+        isOpen: status !== "resolved",
+        isNew: status === "submitted",
+        updatedAt: now,
       })
     })
   }
 
-  function sendReply() {
-    if (!selected?.contact) return
-    const body = cmReply.trim()
+  function sendInboxReply(body: string) {
+    if (!selected) return
     if (!body) {
       toast.error("Write a message first.")
       return
     }
     startReply(async () => {
-      const res = await sendSupportTicketAdminReplyAction({
-        ticket_id: selected.id,
-        content: body,
-      })
-      if ("error" in res && res.error) {
-        toast.error(res.error)
-        return
-      }
-      toast.success("Sent to member")
-      setCmReply("")
-      setThreadReloadToken((n) => n + 1)
-      if (res.support_conversation_id && selected.contact) {
-        const updated = {
-          ...selected.contact,
-          support_conversation_id: res.support_conversation_id,
-          updated_at: new Date().toISOString(),
-        }
-        patchItem(selected.key, {
-          ...contactToInboxItem(updated),
-          contact: updated,
-        })
-      }
-    })
-  }
-
-  function openThread() {
-    if (!selected?.contact) return
-    startReply(async () => {
-      const res = await ensureSupportTicketThreadAdminAction({ ticket_id: selected.id })
-      if ("error" in res && res.error) {
-        toast.error(res.error)
-        return
-      }
-      toast.success("Thread linked")
-      setThreadReloadToken((n) => n + 1)
-      if (res.support_conversation_id && selected.contact) {
-        const updated = {
-          ...selected.contact,
-          support_conversation_id: res.support_conversation_id,
-          updated_at: new Date().toISOString(),
-        }
-        patchItem(selected.key, {
-          ...contactToInboxItem(updated),
-          contact: updated,
-        })
-      }
-    })
-  }
-
-  function sendOrderReply() {
-    if (!selected?.order) return
-    const body = osReply.trim()
-    if (!body) {
-      toast.error("Write a message first.")
-      return
-    }
-    startReply(async () => {
-      const res = await sendOrderSupportAdminReplyAction({
+      const res = await sendSupportCaseAdminReplyAction({
         case_id: selected.id,
         content: body,
       })
@@ -444,49 +417,19 @@ export function CaseInboxAdminClient() {
         toast.error(res.error)
         return
       }
-      toast.success("Sent to customer — they’ll get an email and can reply under Help.")
+      toast.success("Sent to customer")
+      setCmReply("")
       setOsReply("")
       setThreadReloadToken((n) => n + 1)
-      if (res.support_conversation_id && selected.order) {
-        const updated = {
-          ...selected.order,
-          support_conversation_id: res.support_conversation_id,
-          support_status:
-            selected.order.support_status === "new" || selected.order.support_status === "triaged"
-              ? ("investigating" as const)
-              : selected.order.support_status,
-          updated_at: new Date().toISOString(),
-        }
-        patchItem(selected.key, {
-          ...orderToInboxItem(updated),
-          order: updated,
-        })
-      }
     })
   }
 
-  function openOrderThread() {
-    if (!selected?.order) return
-    startReply(async () => {
-      const res = await ensureOrderSupportThreadAdminAction({ case_id: selected.id })
-      if ("error" in res && res.error) {
-        toast.error(res.error)
-        return
-      }
-      toast.success("Thread linked")
-      setThreadReloadToken((n) => n + 1)
-      if (res.support_conversation_id && selected.order) {
-        const updated = {
-          ...selected.order,
-          support_conversation_id: res.support_conversation_id,
-          updated_at: new Date().toISOString(),
-        }
-        patchItem(selected.key, {
-          ...orderToInboxItem(updated),
-          order: updated,
-        })
-      }
-    })
+  function sendReply() {
+    sendInboxReply(cmReply.trim())
+  }
+
+  function sendOrderReply() {
+    sendInboxReply(osReply.trim())
   }
 
   return (
@@ -508,6 +451,18 @@ export function CaseInboxAdminClient() {
           <span>
             <strong className="font-semibold text-foreground">{counts.claims}</strong> claims
           </span>
+          <span className="text-border">·</span>
+          <span>
+            <strong className="font-semibold text-foreground">{counts.mine}</strong> mine
+          </span>
+          {counts.overdue > 0 ? (
+            <>
+              <span className="text-border">·</span>
+              <span className="text-destructive">
+                <strong className="font-semibold">{counts.overdue}</strong> overdue
+              </span>
+            </>
+          ) : null}
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button
@@ -579,6 +534,24 @@ export function CaseInboxAdminClient() {
                   {v.label}
                 </button>
               ))}
+              <span className="mx-0.5 self-center text-border" aria-hidden>
+                |
+              </span>
+              {ASSIGNEE_VIEWS.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setAssignee(v.id)}
+                  className={cn(
+                    "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                    assigneeFilter === v.id
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  {v.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -635,6 +608,20 @@ export function CaseInboxAdminClient() {
                             <span className="text-[10px] text-muted-foreground/70">
                               {item.statusLabel}
                             </span>
+                            {item.slaLabel ? (
+                              <span
+                                className={cn(
+                                  "text-[10px]",
+                                  item.slaState === "overdue"
+                                    ? "font-medium text-destructive"
+                                    : item.slaState === "due_soon"
+                                      ? "text-amber-700 dark:text-amber-300"
+                                      : "text-muted-foreground/70",
+                                )}
+                              >
+                                {item.slaLabel}
+                              </span>
+                            ) : null}
                           </span>
                         </span>
                       </button>
@@ -752,163 +739,105 @@ export function CaseInboxAdminClient() {
                     {selected.orderId ? (
                       <CaseOrderContextPanel
                         orderId={selected.orderId}
-                        orderSupportRequestId={selected.order ? selected.id : null}
+                        orderSupportRequestId={selected.order?.id ?? null}
                         onLoaded={onOrderContextLoaded}
                       />
                     ) : null}
 
-                    {selected.contact ? (
-                      <div className="space-y-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          Reply to member
-                        </p>
-                        <AdminEmbeddedSupportThread
-                          conversationId={selected.contact.support_conversation_id}
-                          customerUserId={selected.userId}
-                          customerLabel={selected.fromName}
-                          reloadToken={threadReloadToken}
-                          emptyAction={
-                            selected.userId ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={openThread}
-                                disabled={replyPending}
-                              >
-                                Link thread
-                              </Button>
-                            ) : (
-                              <p className="text-xs text-muted-foreground">
-                                Guest submission — reply by email until linked to an account.
-                              </p>
-                            )
-                          }
+                    <div className="space-y-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Reply to customer
+                      </p>
+                      <div className="min-h-[16rem] rounded-[20px] border border-border/55 bg-background px-2">
+                        <SupportCaseThread
+                          caseId={threadCaseId ?? selected.id}
+                          messages={threadMessages}
+                          canReply={false}
+                          role="staff"
                         />
-                        {selected.userId ? (
-                          <>
-                            <SupportMacrosPicker
-                              vars={{ name: selected.fromName }}
-                              onInsert={(text) =>
-                                setCmReply((prev) =>
-                                  prev.trim() ? `${prev.trim()}\n\n${text}` : text,
-                                )
-                              }
-                            />
-                            <Textarea
-                              value={cmReply}
-                              onChange={(e) => setCmReply(e.target.value)}
-                              placeholder="Message the member will see under Help…"
-                              rows={4}
-                              className="resize-y text-sm"
-                            />
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={sendReply}
-                                disabled={replyPending || !cmReply.trim()}
-                              >
-                                {replyPending ? (
-                                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                ) : null}
-                                Send reply
-                              </Button>
-                              {selected.contact.support_conversation_id ? (
-                                <Button type="button" size="sm" variant="outline" asChild>
-                                  <Link href={adminSupportCaseHref(selected.id)} target="_blank">
-                                    Open thread desk
-                                  </Link>
-                                </Button>
-                              ) : null}
-                            </div>
-                          </>
-                        ) : null}
                       </div>
-                    ) : null}
-
-                    {selected.order ? (
-                      <div className="space-y-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          Reply to customer
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Same Help case thread the customer sees. Replies also trigger a Klaviyo
-                          email. Macros insert into this reply — not into internal notes.
-                        </p>
-                        <AdminEmbeddedSupportThread
-                          conversationId={selected.order.support_conversation_id}
-                          customerUserId={selected.userId}
-                          customerLabel={
-                            orderContext
-                              ? adminOrderParticipantDisplayName(orderContext.buyer)
-                              : selected.fromName
-                          }
-                          orderSupportRequestId={selected.id}
-                          reloadToken={threadReloadToken}
-                          emptyAction={
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={openOrderThread}
-                              disabled={replyPending}
-                            >
-                              Link thread
-                            </Button>
-                          }
-                        />
-                        <SupportMacrosPicker
-                          kindFilter={
-                            selected.kind === "protection_claim"
-                              ? "protection_claim"
-                              : selected.kind === "cancel_request"
-                                ? "cancel_request"
-                                : null
-                          }
-                          vars={{ order_ref: selected.orderRef ?? undefined }}
-                          onInsert={(text) =>
+                      <SupportMacrosPicker
+                        kindFilter={
+                          selected.kind === "protection_claim"
+                            ? "protection_claim"
+                            : selected.kind === "cancel_request"
+                              ? "cancel_request"
+                              : null
+                        }
+                        vars={{
+                          order_ref: selected.orderRef ?? undefined,
+                          name: selected.fromName,
+                        }}
+                        onInsert={(text) => {
+                          if (selected.order) {
                             setOsReply((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))
+                          } else {
+                            setCmReply((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))
                           }
-                        />
-                        <Textarea
-                          value={osReply}
-                          onChange={(e) => setOsReply(e.target.value)}
-                          placeholder="Message the customer will see under Help…"
-                          rows={4}
-                          className="resize-y text-sm"
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={sendOrderReply}
-                            disabled={replyPending || !osReply.trim()}
-                          >
-                            {replyPending ? (
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                            ) : null}
-                            Send to customer
-                          </Button>
-                          {selected.order.support_conversation_id ? (
-                            <Button type="button" size="sm" variant="outline" asChild>
-                              <Link href={adminSupportCaseHref(selected.id)} target="_blank">
-                                Open thread desk
-                              </Link>
-                            </Button>
+                        }}
+                      />
+                      <Textarea
+                        value={selected.order ? osReply : cmReply}
+                        onChange={(e) =>
+                          selected.order ? setOsReply(e.target.value) : setCmReply(e.target.value)
+                        }
+                        placeholder="Message the customer will see under Help…"
+                        rows={4}
+                        className="resize-y text-sm"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={selected.order ? sendOrderReply : sendReply}
+                          disabled={
+                            replyPending || !(selected.order ? osReply.trim() : cmReply.trim())
+                          }
+                        >
+                          {replyPending ? (
+                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                           ) : null}
-                          <Button type="button" size="sm" variant="ghost" asChild>
-                            <Link href={supportCaseResponseHref(selected.id)} target="_blank">
-                              Customer view
-                            </Link>
-                          </Button>
-                        </div>
+                          Send reply
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" asChild>
+                          <Link href={adminSupportCaseHref(selected.id)} target="_blank">
+                            Open thread desk
+                          </Link>
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" asChild>
+                          <Link href={supportCaseResponseHref(selected.id)} target="_blank">
+                            Customer view
+                          </Link>
+                        </Button>
                       </div>
-                    ) : null}
+                    </div>
                   </div>
 
                   {/* Right tools */}
                   <aside className="space-y-4 border-t border-border/50 bg-muted/10 px-4 py-5 lg:border-l lg:border-t-0">
+                    <CaseAssigneeSelect
+                      backend="support_case"
+                      caseId={selected.id}
+                      assigneeAdminId={selected.assigneeAdminId}
+                      staff={staff}
+                      currentUserId={currentStaffId}
+                      onAssigned={(id) => applyAssignee(selected.key, id)}
+                    />
+                    {selected.slaLabel ? (
+                      <p
+                        className={cn(
+                          "text-xs",
+                          selected.slaState === "overdue"
+                            ? "font-medium text-destructive"
+                            : selected.slaState === "due_soon"
+                              ? "text-amber-700 dark:text-amber-300"
+                              : "text-muted-foreground",
+                        )}
+                      >
+                        SLA {selected.slaLabel.toLowerCase()}
+                      </p>
+                    ) : null}
+
                     {selected.contact ? (
                       <>
                         <div className="space-y-2">
@@ -1022,9 +951,23 @@ export function CaseInboxAdminClient() {
                           {savePending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
                           Save status
                         </Button>
+                        {orderContext && selected.orderId === orderContext.id ? (
+                          <CaseIssueRefundPanel
+                            caseId={selected.id}
+                            orderId={orderContext.id}
+                            orderRef={selected.orderRef ?? orderContext.order_num ?? selected.id}
+                            orderStatus={orderContext.status}
+                            amount={orderContext.amount}
+                            shippingAmount={orderContext.shipping_amount}
+                            paymentMethod={orderContext.payment_method}
+                            repairCreditTotal={selected.order.repair_credit_total}
+                            canIssueRefund={isAdmin}
+                            onComplete={() => void load("refresh")}
+                          />
+                        ) : null}
                         {selected.kind === "protection_claim" && selected.orderId ? (
                           <ProtectionClaimDesk
-                            orderSupportRequestId={selected.id}
+                            orderSupportRequestId={selected.order.id}
                             orderId={selected.orderId}
                             initialCarrierClaimStatus={selected.order.carrier_claim_status}
                             initialCarrierClaimId={selected.order.carrier_claim_id}

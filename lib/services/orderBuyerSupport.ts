@@ -43,7 +43,7 @@ export function validateBuyerSupportForOrder(
       }
     }
     if (!canSubmitRefundHelpRequest(order)) {
-      return { ok: false, error: "Refund help is not available for this order state." }
+      return { ok: false, error: "A protection claim isn’t available for this order state." }
     }
   }
   return { ok: true }

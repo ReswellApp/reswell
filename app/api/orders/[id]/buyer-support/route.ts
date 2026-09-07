@@ -1,9 +1,8 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { insertOrderSupportRequest } from "@/lib/db/order-support"
-import { insertSupportCase, insertSupportCaseMessage } from "@/lib/db/supportCases"
 import { insertSupportCaseAttachments } from "@/lib/db/supportCaseAttachments"
-import { linkOrderSupportThread } from "@/lib/services/orderSupportThread"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { validateBuyerSupportForOrder } from "@/lib/services/orderBuyerSupport"
@@ -77,11 +76,10 @@ export async function POST(
     return NextResponse.json({ error: "Could not submit request" }, { status: 500 })
   }
 
-  // Dual-write into unified support_cases (soft-fail if migration not applied yet)
   const kind = orderRequestTypeToKind(parsed.data.request_type)
   const subject = orderRequestTypeSubject(parsed.data.request_type, orderRef)
   const service = createServiceRoleClient()
-  const dual = await insertSupportCase(service, {
+  const opened = await createSupportCaseWithOpeningMessage(service, {
     kind,
     subject,
     preview: parsed.data.body.trim(),
@@ -93,20 +91,14 @@ export async function POST(
     order_support_request_id: data.id,
     source_channel: "order_buyer",
     priority: kind === "protection_claim" ? "high" : "normal",
+    body: parsed.data.body.trim(),
+    authorUserId: user.id,
   })
-  if (dual.data) {
-    await insertSupportCaseMessage(service, {
-      case_id: dual.data.id,
-      author_user_id: user.id,
-      author_role: "customer",
-      body: parsed.data.body.trim(),
-    })
-  }
 
   if (parsed.data.request_type === "refund_help" && parsed.data.evidence?.length) {
     const attached = await insertSupportCaseAttachments(service, {
       orderSupportRequestId: data.id,
-      supportCaseId: dual.data?.id ?? null,
+      supportCaseId: opened?.id ?? null,
       uploadedBy: user.id,
       attachments: parsed.data.evidence,
     })
@@ -115,14 +107,9 @@ export async function POST(
     }
   }
 
-  // Open Help thread so the member can reply under Dashboard → Help
-  const linked = await linkOrderSupportThread(data)
-  if ("error" in linked) {
-    console.warn("[buyer-support] thread link:", linked.error)
-  }
-
+  const caseId = opened?.id ?? data.id
   await trackKlaviyoSupportTicketCreated({
-    supportTicketId: data.id,
+    supportTicketId: caseId,
     email: user.email ?? "",
     externalId: user.id,
     source: "order_buyer_support",
@@ -131,5 +118,5 @@ export async function POST(
     orderRef: orderRef,
   })
 
-  return NextResponse.json({ success: true, id: data.id })
+  return NextResponse.json({ success: true, id: caseId })
 }

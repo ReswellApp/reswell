@@ -1,19 +1,12 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
-import { userParticipatesInConversation, ensureConversationBetweenBuyerAndSeller } from "@/lib/db/conversations"
+import { userParticipatesInConversation } from "@/lib/db/conversations"
 import {
   submitMessagesSupportTicketSchema,
   messagesSupportTopicLabels,
 } from "@/lib/validations/messagesSupportTicket"
-import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
-import {
-  formatSupportCaseWelcomeMessage,
-  insertMemberMessageInConversation,
-  insertSupportStaffThreadMessage,
-} from "@/lib/services/supportTicketThreadNotifications"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
-import { insertSupportCase, insertSupportCaseMessage } from "@/lib/db/supportCases"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import type { SupportCaseKind } from "@/lib/types/supportCase"
-import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 
 function topicToKind(topic: string): SupportCaseKind {
   switch (topic) {
@@ -30,9 +23,7 @@ function topicToKind(topic: string): SupportCaseKind {
 
 export async function submitMessagesSupportTicketService(
   raw: unknown,
-): Promise<
-  { success: true; id: string; support_conversation_id: string | null } | { error: string }
-> {
+): Promise<{ success: true; id: string } | { error: string }> {
   const parsed = submitMessagesSupportTicketSchema.safeParse(raw)
   if (!parsed.success) {
     const first = parsed.error.flatten().fieldErrors
@@ -75,15 +66,7 @@ export async function submitMessagesSupportTicketService(
   }
 
   const subject = messagesSupportTopicLabels[parsed.data.topic]
-
-  let supportConversationId: string | null = null
-  const resolvedSupport = await resolveSupportRecipientUserId()
-  if (resolvedSupport.ok && resolvedSupport.userId !== user.id) {
-    const conv = await ensureConversationBetweenBuyerAndSeller(supabase, user.id, resolvedSupport.userId)
-    if (conv) {
-      supportConversationId = conv.id
-    }
-  }
+  const details = parsed.data.details.trim()
 
   const { data: row, error } = await supabase
     .from("contact_messages")
@@ -91,11 +74,10 @@ export async function submitMessagesSupportTicketService(
       name,
       email,
       subject,
-      message: parsed.data.details.trim(),
+      message: details,
       source: "messages_support",
       user_id: user.id,
       related_conversation_id: relatedId,
-      support_conversation_id: supportConversationId,
     })
     .select("id")
     .single()
@@ -105,63 +87,33 @@ export async function submitMessagesSupportTicketService(
     return { error: "Could not send your request. Try again in a moment." }
   }
 
-  const ticketId = row.id as string
-
-  if (supportConversationId) {
-    const details = parsed.data.details.trim()
-    const posted = await insertMemberMessageInConversation(supabase, {
-      conversationId: supportConversationId,
-      senderId: user.id,
-      content: details,
-    })
-    if (!posted) {
-      console.error("submitMessagesSupportTicketService: failed to post opening thread message")
-    } else if (resolvedSupport.ok) {
-      const welcome = await insertSupportStaffThreadMessage({
-        conversationId: supportConversationId,
-        supportUserId: resolvedSupport.userId,
-        content: formatSupportCaseWelcomeMessage({
-          topicLabel: subject,
-          caseRef: formatSupportCaseReference(ticketId),
-        }),
-      })
-      if (!welcome.ok) {
-        console.error("submitMessagesSupportTicketService: welcome message insert failed")
-      }
-    }
-  }
-
+  const sidecarId = row.id as string
   const service = createServiceRoleClient()
   const kind = topicToKind(parsed.data.topic)
-  const dual = await insertSupportCase(service, {
+  const opened = await createSupportCaseWithOpeningMessage(service, {
     kind,
     subject,
-    preview: parsed.data.details.trim(),
+    preview: details,
     requester_user_id: user.id,
     requester_email: email,
     requester_role: "member",
     conversation_id: relatedId,
-    contact_message_id: ticketId,
+    contact_message_id: sidecarId,
     source_channel: "help_hub",
     priority: kind === "safety" ? "urgent" : "normal",
+    body: details,
+    authorUserId: user.id,
   })
-  if (dual.data) {
-    await insertSupportCaseMessage(service, {
-      case_id: dual.data.id,
-      author_user_id: user.id,
-      author_role: "customer",
-      body: parsed.data.details.trim(),
-    })
-  }
 
+  const caseId = opened?.id ?? sidecarId
   await trackKlaviyoSupportTicketCreated({
-    supportTicketId: ticketId,
+    supportTicketId: caseId,
     email,
     externalId: user.id,
     source: "messages_support",
     subject,
-    message: parsed.data.details.trim(),
+    message: details,
   })
 
-  return { success: true, id: ticketId, support_conversation_id: supportConversationId }
+  return { success: true, id: caseId }
 }

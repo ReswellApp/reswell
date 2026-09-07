@@ -1,6 +1,6 @@
 /**
  * Unified support case model for the Help Hub + My Cases portal.
- * Phase 1 adapters map contact_messages + order_support_requests into this shape.
+ * Canonical store is support_cases. Legacy tables are sidecars / backfill sources.
  */
 
 export type SupportCaseKind =

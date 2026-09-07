@@ -10,7 +10,7 @@ import {
 } from "@/lib/db/supportCases"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { createClient } from "@/lib/supabase/server"
-import { sendOrderSupportAdminReplyService } from "@/lib/services/orderSupportThread"
+import { sendSupportCaseAdminReplyService } from "@/lib/services/supportCaseThread"
 import { grantProtectionRepairCreditSchema } from "@/lib/validations/protectionClaimDesk"
 import { PROTECTION_REPAIR_CREDIT_REFERENCE_TYPE } from "@/lib/types/protectionClaimDesk"
 
@@ -204,13 +204,13 @@ export async function grantProtectionRepairCreditService(
     })
   }
 
-  if (parsed.data.notify_customer !== false) {
+  if (parsed.data.notify_customer !== false && supportCase) {
     const msg = `We've added a $${amountUsd.toFixed(2)} Purchase Protection repair credit to your Reswell wallet for order ${request.order_ref}. You can spend it at checkout anytime.${
       parsed.data.note?.trim() ? `\n\nNote from our team: ${parsed.data.note.trim()}` : ""
     }`
-    const reply = await sendOrderSupportAdminReplyService({
-      order_support_request_id: request.id,
-      body: msg,
+    const reply = await sendSupportCaseAdminReplyService({
+      case_id: supportCase.id,
+      content: msg,
     })
     if ("error" in reply) {
       console.warn("[grantProtectionRepairCredit] notify:", reply.error)

@@ -8,7 +8,7 @@ import {
   insertSupportCaseEvent,
 } from "@/lib/db/supportCases"
 import { listOrderShippingLabelsForOrder } from "@/lib/db/orderShippingLabels"
-import { sendOrderSupportAdminReplyService } from "@/lib/services/orderSupportThread"
+import { sendSupportCaseAdminReplyService } from "@/lib/services/supportCaseThread"
 import { updateProtectionCarrierClaimSchema } from "@/lib/validations/protectionClaimDesk"
 import {
   CARRIER_CLAIM_STATUS_LABEL,
@@ -100,11 +100,11 @@ export async function updateProtectionCarrierClaimService(
     })
   }
 
-  if (parsed.data.notify_customer === true && patch.carrier_claim_status) {
+  if (parsed.data.notify_customer === true && patch.carrier_claim_status && supportCase) {
     const label = CARRIER_CLAIM_STATUS_LABEL[patch.carrier_claim_status]
-    const reply = await sendOrderSupportAdminReplyService({
-      order_support_request_id: request.id,
-      body: `Update on your shipping damage claim for order ${request.order_ref}: status is now “${label}”. Reply here if you have questions.`,
+    const reply = await sendSupportCaseAdminReplyService({
+      case_id: supportCase.id,
+      content: `Update on your shipping damage claim for order ${request.order_ref}: status is now “${label}”. Reply here if you have questions.`,
     })
     if ("error" in reply) {
       console.warn("[updateProtectionCarrierClaim] notify:", reply.error)

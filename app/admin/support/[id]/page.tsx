@@ -1,22 +1,11 @@
-import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
-import { createClient } from "@/lib/supabase/server"
-import {
-  getOrderSupportRequestById,
-} from "@/lib/db/order-support"
-import {
-  CONTACT_MESSAGE_ADMIN_SELECT,
-  normalizeContactMessageRow,
-} from "@/lib/db/contactMessages"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { getOrderSupportRequestById } from "@/lib/db/order-support"
+import { getSupportCaseThreadForStaff } from "@/lib/services/supportCaseThread"
 import { AdminSupportCaseDesk } from "@/components/features/admin/admin-support-case-desk"
 import { adminSupportCaseHref } from "@/lib/utils/support-case-paths"
-import {
-  formatSupportCaseReference,
-  orderRequestTypeSubject,
-  orderRequestTypeToKind,
-} from "@/lib/utils/support-case-display"
-import { supportTicketDisplaySubject } from "@/lib/utils/support-ticket-display"
+import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 
 export async function generateMetadata({
   params,
@@ -53,48 +42,78 @@ export default async function AdminSupportCasePage({
     redirect("/admin")
   }
 
-  const order = await getOrderSupportRequestById(supabase, id)
-  if (order) {
-    return (
-      <AdminSupportCaseDesk
-        backend="order_support"
-        caseId={order.id}
-        subject={orderRequestTypeSubject(order.request_type, order.order_ref)}
-        kind={orderRequestTypeToKind(order.request_type)}
-        customerUserId={order.buyer_id}
-        customerLabel={`Buyer ${order.buyer_id.slice(0, 8)}…`}
-        supportConversationId={order.support_conversation_id}
-        orderId={order.order_id}
-        orderRef={order.order_ref}
-        preview={order.body}
-        initialStatus={order.support_status}
-      />
-    )
+  const result = await getSupportCaseThreadForStaff(id)
+  if ("error" in result) notFound()
+
+  const row = result.case
+  let sidecar = row.order_support_request_id
+    ? await getOrderSupportRequestById(supabase, row.order_support_request_id)
+    : null
+  if (!sidecar && row.order_id) {
+    sidecar = await getOrderSupportRequestById(supabase, id)
   }
 
-  const { data: cmRaw } = await supabase
-    .from("contact_messages")
-    .select(CONTACT_MESSAGE_ADMIN_SELECT)
-    .eq("id", id)
-    .maybeSingle()
-
-  if (!cmRaw) notFound()
-
-  const ticket = normalizeContactMessageRow(cmRaw as Record<string, unknown>)
+  let money: {
+    status: string
+    amount: number
+    shippingAmount: number
+    paymentMethod: string
+  } | null = null
+  if (row.order_id) {
+    const service = createServiceRoleClient()
+    const { data } = await service
+      .from("orders")
+      .select("status, amount, shipping_amount, payment_method")
+      .eq("id", row.order_id)
+      .maybeSingle()
+    if (data) {
+      money = {
+        status: String(data.status ?? ""),
+        amount: Number(data.amount ?? 0),
+        shippingAmount: Number(data.shipping_amount ?? 0),
+        paymentMethod: String(data.payment_method ?? "wallet"),
+      }
+    }
+  }
 
   return (
     <AdminSupportCaseDesk
-      backend="contact_message"
-      caseId={ticket.id}
-      subject={supportTicketDisplaySubject(ticket.subject, ticket.source)}
-      kind="general"
-      customerUserId={ticket.user_id}
-      customerLabel={ticket.name}
-      supportConversationId={ticket.support_conversation_id}
-      orderId={null}
-      orderRef={null}
-      preview={ticket.message}
-      initialStatus={ticket.support_status}
+      caseId={row.id}
+      subject={row.subject}
+      kind={row.kind}
+      customerUserId={row.requester_user_id}
+      customerLabel={row.requester_email ?? `${row.requester_role} ${row.requester_user_id?.slice(0, 8) ?? ""}`}
+      orderId={row.order_id}
+      orderRef={row.order_ref}
+      preview={row.preview}
+      initialStatus={row.status}
+      assigneeAdminId={row.assignee_admin_id}
+      messages={result.messages}
+      closed={row.status === "resolved"}
+      refund={
+        money && row.order_id && row.order_ref
+          ? {
+              orderStatus: money.status,
+              amount: money.amount,
+              shippingAmount: money.shippingAmount,
+              paymentMethod: money.paymentMethod,
+              repairCreditTotal: sidecar?.repair_credit_total ?? 0,
+            }
+          : null
+      }
+      claimDesk={
+        sidecar && sidecar.request_type === "refund_help"
+          ? {
+              orderSupportRequestId: sidecar.id,
+              orderId: sidecar.order_id,
+              initialCarrierClaimStatus: sidecar.carrier_claim_status,
+              initialCarrierClaimId: sidecar.carrier_claim_id,
+              initialCarrierClaimUrl: sidecar.carrier_claim_url,
+              initialInsuranceClaimUrl: sidecar.insurance_claim_url,
+              initialRepairCreditTotal: sidecar.repair_credit_total,
+            }
+          : null
+      }
     />
   )
 }

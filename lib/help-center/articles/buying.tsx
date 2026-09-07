@@ -494,7 +494,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     relatedSlugs: ["purchase-protection-claim", "how-to-contact-a-seller", "package-delayed-or-lost"],
     quickAnswer: (
       <>
-        For covered problems on shipped orders, tap <strong>Refund help</strong> on your purchase page
+        For covered problems on shipped orders, tap <strong>Get help</strong> on your purchase page
         or file a {helpLink("/protection-policy", "Purchase Protection")} claim. Qualifying returns
         need to start within 7 calendar days of delivery for U.S. buyers.
       </>
@@ -554,22 +554,23 @@ export const buyingHelpArticles: HelpArticle[] = [
                 ),
               },
               {
-                title: "Open Refund help",
+                title: "Open Get help",
                 body: (
                   <>
                     Go to {helpLink("/dashboard/purchases", "Purchases")}, open your order, and tap{" "}
-                    <strong>Refund help</strong>. Tell us if you already contacted the seller, then
-                    describe what happened.
+                    <strong>Get help</strong>. Choose a Purchase Protection claim (or another issue),
+                    tell us if you already contacted the seller when asked, then describe what happened.
                   </>
                 ),
               },
               {
-                title: "Submit to support",
+                title: "Submit your case",
                 body: (
                   <>
-                    Tap <strong>Submit to support</strong>. We usually review Purchase Protection
-                    claims within <strong>3 business days</strong>. Include tracking numbers, delivery
-                    dates, and photos when you have them.
+                    Submit from Help Hub. We usually review Purchase Protection claims within{" "}
+                    <strong>3 business days</strong>. Include tracking numbers, delivery dates, and
+                    photos when you have them. Track replies under{" "}
+                    {helpLink("/dashboard/support", "Support")}.
                   </>
                 ),
               },
@@ -659,8 +660,8 @@ export const buyingHelpArticles: HelpArticle[] = [
                 ),
               },
               {
-                title: "Tap Refund help",
-                body: "Tell us if you already messaged the seller, then describe the issue with as much detail as you can: tracking numbers, delivery dates, and what is different from the listing.",
+                title: "Tap Get help",
+                body: "Choose a Purchase Protection claim, tell us if you already messaged the seller when asked, then describe the issue with as much detail as you can: tracking numbers, delivery dates, and what is different from the listing.",
               },
               {
                 title: "Wait for review",
@@ -733,8 +734,8 @@ export const buyingHelpArticles: HelpArticle[] = [
                 body: (
                   <>
                     If tracking shows the package is lost or has not moved in a long time, open{" "}
-                    <strong>Refund help</strong> on your purchase page. Eligible non delivery claims on
-                    tracked shipments are covered by{" "}
+                    <strong>Get help</strong> on your purchase page and start a claim. Eligible non
+                    delivery claims on tracked shipments are covered by{" "}
                     {helpLink("/protection-policy", "Purchase Protection")}. Our{" "}
                     {helpLink("/shipping", "Shipping guide")} has more detail.
                   </>

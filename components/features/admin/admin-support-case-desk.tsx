@@ -1,22 +1,17 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, ExternalLink, Loader2, Package, User } from "lucide-react"
-import { toast } from "sonner"
-import {
-  ensureOrderSupportThreadAdminAction,
-  sendOrderSupportAdminReplyAction,
-} from "@/lib/actions/orderSupportThread"
-import {
-  ensureSupportTicketThreadAdminAction,
-  sendSupportTicketAdminReplyAction,
-} from "@/lib/actions/contactMessagesAdmin"
-import { AdminEmbeddedSupportThread } from "@/components/features/admin/admin-embedded-support-thread"
+import { ArrowLeft, ExternalLink, Package, User } from "lucide-react"
+import { SupportCaseThread } from "@/components/features/support/support-case-thread"
+import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { SupportMacrosPicker } from "@/components/features/admin/support-macros-picker"
 import { ProtectionClaimDesk } from "@/components/features/admin/protection-claim-desk"
+import { CaseAssigneeSelect } from "@/components/features/admin/case-assignee-select"
+import { CaseIssueRefundPanel } from "@/components/features/admin/case-issue-refund-panel"
+import { listSupportStaffAction } from "@/lib/actions/supportCaseAssign"
+import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
   SUPPORT_CASE_KIND_LABEL,
@@ -24,96 +19,73 @@ import {
 } from "@/lib/utils/support-case-display"
 import type { SupportCaseKind } from "@/lib/types/supportCase"
 import { adminSupportCaseHref, supportCaseResponseHref } from "@/lib/utils/support-case-paths"
+import type { CarrierClaimStatus } from "@/lib/types/protectionClaimDesk"
 
 const CASES_INBOX_HREF = "/admin/contact-messages"
 
+type ClaimDeskInitials = {
+  orderSupportRequestId: string
+  orderId: string
+  initialCarrierClaimStatus: CarrierClaimStatus | null
+  initialCarrierClaimId: string | null
+  initialCarrierClaimUrl: string | null
+  initialInsuranceClaimUrl: string | null
+  initialRepairCreditTotal: number
+}
+
 type AdminSupportCaseDeskProps = {
-  backend: "order_support" | "contact_message"
   caseId: string
   subject: string
   kind: SupportCaseKind
   customerUserId: string | null
   customerLabel: string
-  supportConversationId: string | null
   orderId: string | null
   orderRef: string | null
   preview: string
   initialStatus: string
+  messages: SupportCaseThreadMessage[]
+  closed?: boolean
+  claimDesk?: ClaimDeskInitials | null
+  assigneeAdminId?: string | null
+  refund?: {
+    orderStatus: string
+    amount: number
+    shippingAmount: number
+    paymentMethod: string
+    repairCreditTotal: number
+  } | null
 }
 
 export function AdminSupportCaseDesk({
-  backend,
   caseId,
   subject,
   kind,
   customerUserId,
   customerLabel,
-  supportConversationId: initialConversationId,
   orderId,
   orderRef,
   preview,
   initialStatus,
+  messages,
+  closed = false,
+  claimDesk = null,
+  assigneeAdminId: initialAssignee = null,
+  refund = null,
 }: AdminSupportCaseDeskProps) {
-  const [conversationId, setConversationId] = useState(initialConversationId)
-  const [reply, setReply] = useState("")
-  const [reloadToken, setReloadToken] = useState(0)
-  const [pending, startTransition] = useTransition()
+  const [assigneeAdminId, setAssigneeAdminId] = useState(initialAssignee)
+  const [staff, setStaff] = useState<StaffAssigneeRow[]>([])
+  const [currentStaffId, setCurrentStaffId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [macroDraft, setMacroDraft] = useState("")
 
-  function linkThread() {
-    startTransition(async () => {
-      if (backend === "order_support") {
-        const res = await ensureOrderSupportThreadAdminAction({ case_id: caseId })
-        if ("error" in res && res.error) {
-          toast.error(res.error)
-          return
-        }
-        if (res.support_conversation_id) {
-          setConversationId(res.support_conversation_id)
-          setReloadToken((n) => n + 1)
-        }
-        toast.success("Thread linked")
-        return
-      }
-      const res = await ensureSupportTicketThreadAdminAction({ ticket_id: caseId })
-      if ("error" in res && res.error) {
-        toast.error(res.error)
-        return
-      }
-      if (res.support_conversation_id) {
-        setConversationId(res.support_conversation_id)
-        setReloadToken((n) => n + 1)
-      }
-      toast.success("Thread linked")
+  useEffect(() => {
+    void listSupportStaffAction().then((res) => {
+      if ("error" in res && res.error) return
+      setStaff(res.rows)
+      setCurrentStaffId(res.currentUserId)
+      setIsAdmin(res.isAdmin === true)
     })
-  }
-
-  function sendReply() {
-    const body = reply.trim()
-    if (!body) {
-      toast.error("Write a message first.")
-      return
-    }
-    startTransition(async () => {
-      if (backend === "order_support") {
-        const res = await sendOrderSupportAdminReplyAction({ case_id: caseId, content: body })
-        if ("error" in res && res.error) {
-          toast.error(res.error)
-          return
-        }
-        if (res.support_conversation_id) setConversationId(res.support_conversation_id)
-      } else {
-        const res = await sendSupportTicketAdminReplyAction({ ticket_id: caseId, content: body })
-        if ("error" in res && res.error) {
-          toast.error(res.error)
-          return
-        }
-        if (res.support_conversation_id) setConversationId(res.support_conversation_id)
-      }
-      setReply("")
-      setReloadToken((n) => n + 1)
-      toast.success("Sent to customer")
-    })
-  }
+  }, [])
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
@@ -173,51 +145,76 @@ export function AdminSupportCaseDesk({
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{preview}</p>
           </div>
 
-          <AdminEmbeddedSupportThread
-            conversationId={conversationId}
-            customerUserId={customerUserId}
-            customerLabel={customerLabel}
-            orderSupportRequestId={backend === "order_support" ? caseId : null}
-            reloadToken={reloadToken}
-            size="tall"
-            emptyAction={
-              <Button type="button" size="sm" variant="outline" onClick={linkThread} disabled={pending}>
-                Link thread
-              </Button>
-            }
-          />
-
-          <div className="space-y-3 rounded-[20px] border border-border/55 bg-background p-4 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Reply to customer
-            </p>
-            <SupportMacrosPicker
-              kindFilter={kind === "protection_claim" ? "protection_claim" : kind === "cancel_request" ? "cancel_request" : null}
-              vars={{ order_ref: orderRef ?? undefined, name: customerLabel }}
-              onInsert={(text) => setReply((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))}
-            />
-            <Textarea
-              value={reply}
-              onChange={(e) => setReply(e.target.value)}
-              placeholder="Message the customer will see under Help…"
-              rows={4}
-              className="resize-y text-sm"
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" onClick={sendReply} disabled={pending || !reply.trim()}>
-                {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-                Send to customer
-              </Button>
-              <Button asChild type="button" size="sm" variant="ghost">
-                <Link href={adminSupportCaseHref(caseId)}>Refresh</Link>
-              </Button>
+          <div className="flex min-h-[28rem] flex-col rounded-[20px] border border-border/55 bg-background px-3 shadow-sm">
+            {macroDraft ? (
+              <p className="sr-only">{macroDraft}</p>
+            ) : null}
+            <div className="shrink-0 border-b border-border/50 px-1 py-3">
+              <SupportMacrosPicker
+                kindFilter={
+                  kind === "protection_claim"
+                    ? "protection_claim"
+                    : kind === "cancel_request"
+                      ? "cancel_request"
+                      : null
+                }
+                vars={{ order_ref: orderRef ?? undefined, name: customerLabel }}
+                onInsert={(text) => setMacroDraft(text)}
+              />
+              {macroDraft ? (
+                <p className="mt-2 text-[12px] text-muted-foreground">
+                  Macro copied below — paste it into the reply, or type your own.
+                </p>
+              ) : null}
+              {macroDraft ? (
+                <p className="mt-2 whitespace-pre-wrap rounded-lg bg-muted/40 px-3 py-2 text-sm">
+                  {macroDraft}
+                </p>
+              ) : null}
             </div>
+            <SupportCaseThread
+              caseId={caseId}
+              messages={messages}
+              canReply
+              role="staff"
+              closed={closed}
+              seedText={macroDraft || undefined}
+            />
           </div>
         </div>
 
         <aside className="space-y-4">
-          {backend === "order_support" && kind === "protection_claim" ? (
-            <ProtectionClaimDesk orderSupportRequestId={caseId} />
+          <CaseAssigneeSelect
+            backend="support_case"
+            caseId={caseId}
+            assigneeAdminId={assigneeAdminId}
+            staff={staff}
+            currentUserId={currentStaffId}
+            onAssigned={setAssigneeAdminId}
+          />
+          {refund && orderId && orderRef ? (
+            <CaseIssueRefundPanel
+              caseId={caseId}
+              orderId={orderId}
+              orderRef={orderRef}
+              orderStatus={refund.orderStatus}
+              amount={refund.amount}
+              shippingAmount={refund.shippingAmount}
+              paymentMethod={refund.paymentMethod}
+              repairCreditTotal={refund.repairCreditTotal}
+              canIssueRefund={isAdmin}
+            />
+          ) : null}
+          {claimDesk ? (
+            <ProtectionClaimDesk
+              orderSupportRequestId={claimDesk.orderSupportRequestId}
+              orderId={claimDesk.orderId}
+              initialCarrierClaimStatus={claimDesk.initialCarrierClaimStatus}
+              initialCarrierClaimId={claimDesk.initialCarrierClaimId}
+              initialCarrierClaimUrl={claimDesk.initialCarrierClaimUrl}
+              initialInsuranceClaimUrl={claimDesk.initialInsuranceClaimUrl}
+              initialRepairCreditTotal={claimDesk.initialRepairCreditTotal}
+            />
           ) : null}
           <div className="rounded-xl border border-border/60 bg-muted/10 p-4 text-xs text-muted-foreground">
             <p className="font-medium text-foreground">Tip</p>
@@ -226,8 +223,11 @@ export function AdminSupportCaseDesk({
               <Link href={CASES_INBOX_HREF} className="underline underline-offset-2">
                 Cases
               </Link>
-              . This page is the full Help thread for a single case.
+              . Replies stay on this case — they never go to Messages.
             </p>
+            <Button asChild type="button" size="sm" variant="ghost" className="mt-2 h-8 px-0">
+              <Link href={adminSupportCaseHref(caseId)}>Refresh</Link>
+            </Button>
           </div>
         </aside>
       </div>

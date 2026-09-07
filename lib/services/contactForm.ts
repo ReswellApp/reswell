@@ -1,4 +1,5 @@
 import { insertContactFormMessage } from "@/lib/db/contactMessages"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -51,8 +52,22 @@ export async function submitContactFormMessageService(input: {
     return { error: "Failed to send message" }
   }
 
+  const opened = await createSupportCaseWithOpeningMessage(supabase, {
+    kind: "general",
+    subject: "Website contact",
+    preview: message,
+    requester_user_id: linkedUserId,
+    requester_email: email,
+    requester_role: linkedUserId ? "member" : "guest",
+    contact_message_id: inserted.id,
+    source_channel: "contact_form",
+    body: message,
+    authorUserId: linkedUserId,
+  })
+
+  const caseId = opened?.id ?? inserted.id
   await trackKlaviyoSupportTicketCreated({
-    supportTicketId: inserted.id,
+    supportTicketId: caseId,
     email,
     externalId: linkedUserId,
     source: "contact_form",
@@ -60,5 +75,5 @@ export async function submitContactFormMessageService(input: {
     message,
   })
 
-  return { success: true, ticketId: inserted.id }
+  return { success: true, ticketId: caseId }
 }

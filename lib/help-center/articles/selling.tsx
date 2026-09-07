@@ -718,7 +718,7 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Buyers can request help through <strong>Refund help</strong> on their purchase page for
+              Buyers can request help through <strong>Get help</strong> on their purchase page for
               covered problems: item not received, not as described, or transit damage. Reswell
               typically reviews claims within <strong>3 business days</strong>.
             </p>
@@ -798,8 +798,8 @@ export const sellingHelpArticles: HelpArticle[] = [
                 title: "Open the sale page",
                 body: (
                   <>
-                    Go to {helpLink("/dashboard/sales", "Sales")}, open the order, and look for{" "}
-                    <strong>Ask Reswell for a refund or cancellation</strong>.
+                    Go to {helpLink("/dashboard/sales", "Sales")}, open the order, and tap{" "}
+                    <strong>Get help with this sale</strong>.
                   </>
                 ),
               },
@@ -807,9 +807,9 @@ export const sellingHelpArticles: HelpArticle[] = [
                 title: "Submit a support request",
                 body: (
                   <>
-                    Choose <strong>Ask Reswell to cancel the order</strong> or{" "}
-                    <strong>Ask Reswell to issue a refund</strong>. Include a clear explanation (at
-                    least 10 characters). Our team will guide next steps.
+                    Choose cancel or another sale issue, then include a clear explanation (at least 10
+                    characters). Our team will guide next steps. Track the case under{" "}
+                    {helpLink("/dashboard/support", "Support")}.
                   </>
                 ),
               },

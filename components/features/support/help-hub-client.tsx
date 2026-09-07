@@ -44,6 +44,31 @@ import { ClaimEvidenceUploader } from "@/components/features/support/claim-evide
 import type { SupportCaseAttachmentInput } from "@/lib/validations/support-case-attachment"
 import { cn } from "@/lib/utils"
 
+/** Matches Zod `body` min on order + messages support tickets. */
+const DETAILS_MIN_CHARS = 10
+
+function detailsReady(value: string): boolean {
+  return value.trim().length >= DETAILS_MIN_CHARS
+}
+
+function DetailsLengthHint({ value }: { value: string }) {
+  const len = value.trim().length
+  if (len >= DETAILS_MIN_CHARS) {
+    return (
+      <p className="text-[12px] text-muted-foreground" aria-live="polite">
+        Ready to submit
+      </p>
+    )
+  }
+  const remaining = DETAILS_MIN_CHARS - len
+  return (
+    <p className="text-[12px] text-amber-800 dark:text-amber-200" aria-live="polite">
+      Add {remaining} more character{remaining === 1 ? "" : "s"} to submit (spaces at the ends don’t
+      count).
+    </p>
+  )
+}
+
 type Phase = "intents" | "order_pick" | "order_issue" | "order_form" | "topic_browse" | "resolution" | "freeform"
 
 type JourneyStackFrame =
@@ -234,6 +259,10 @@ export function HelpHubClient({
   }
 
   function submitGeneralTicket() {
+    if (!detailsReady(details)) {
+      toast.error(`Please add a bit more detail (at least ${DETAILS_MIN_CHARS} characters).`)
+      return
+    }
     const userPart = resolutionNode
       ? [`What we showed them first:`, resolutionNode.resolution, "", `Their message:`, details.trim()].join(
           "\n",
@@ -264,8 +293,8 @@ export function HelpHubClient({
       toast.error("Let us know whether you’ve already messaged the seller.")
       return
     }
-    if (details.trim().length < 10) {
-      toast.error("Please add a bit more detail (at least 10 characters).")
+    if (!detailsReady(details)) {
+      toast.error(`Please add a bit more detail (at least ${DETAILS_MIN_CHARS} characters).`)
       return
     }
 
@@ -285,7 +314,12 @@ export function HelpHubClient({
 
       const payload: Record<string, unknown> = isSeller
         ? {
-            request_type: issueSnapshot.id === "cancel" ? "cancel_request" : "refund_request",
+            request_type:
+              issueSnapshot.id === "cancel"
+                ? "cancel_request"
+                : issueSnapshot.id === "claim"
+                  ? "refund_request"
+                  : "help_request",
             body: bodyText,
           }
         : {
@@ -572,6 +606,7 @@ export function HelpHubClient({
               maxLength={8000}
             />
             <p className="text-[12px] text-muted-foreground">{formCopy.detailsHint}</p>
+            <DetailsLengthHint value={details} />
           </div>
 
           {issue.id === "claim" && selectedOrder.role === "buyer" ? (
@@ -609,7 +644,7 @@ export function HelpHubClient({
                 onClick={submitOrderHelp}
                 disabled={
                   pending ||
-                  details.trim().length < 10 ||
+                  !detailsReady(details) ||
                   (issue.asksContactedSeller &&
                     selectedOrder.role === "buyer" &&
                     contactedSeller !== "yes" &&
@@ -705,6 +740,7 @@ export function HelpHubClient({
               placeholder="Add order numbers, listing links, what you expected, and what happened instead."
               maxLength={10000}
             />
+            <DetailsLengthHint value={details} />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={goBack} disabled={pending}>
@@ -713,7 +749,7 @@ export function HelpHubClient({
             <Button
               type="button"
               onClick={submitGeneralTicket}
-              disabled={pending || details.trim().length < 10}
+              disabled={pending || !detailsReady(details)}
             >
               {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Open case

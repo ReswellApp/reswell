@@ -1,13 +1,29 @@
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
+import { findOrderSupportMetaByConversationId } from "@/lib/db/order-support"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import { isSupportInboxConversation } from "@/lib/utils/messages-inbox-grouping"
-import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
+import { adminSupportCaseHref, supportCaseResponseHref } from "@/lib/utils/support-case-paths"
+
+async function currentUserIsStaff(): Promise<boolean> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin, is_employee")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  return Boolean(profile && (profile.is_admin === true || profile.is_employee === true))
+}
 
 /**
- * If this conversation is a Reswell Support ticket thread (member buyer +
- * support seller, listing_id null), returns the member Support URL to redirect
- * marketplace `/messages` deep links. Staff-outbound DMs are not redirected.
+ * Support DMs do not live in marketplace `/messages`. Deep links go to the
+ * case thread (member) or the admin case desk (staff).
  */
 export async function resolveSupportRedirectForConversation(
   conversationId: string,
@@ -24,25 +40,28 @@ export async function resolveSupportRedirectForConversation(
 
   if (error || !conv) return null
 
-  if (
-    !isSupportInboxConversation(
-      {
-        listing_id: (conv.listing_id as string | null) ?? null,
-        buyer_id: conv.buyer_id as string,
-        seller_id: conv.seller_id as string,
-      },
-      supportResolved.userId,
-    )
-  ) {
-    return null
+  const [contactTicket, orderCase] = await Promise.all([
+    findMessagesSupportTicketMetaByConversationId(supabase, conversationId),
+    findOrderSupportMetaByConversationId(supabase, conversationId),
+  ])
+
+  const caseId = orderCase?.id ?? contactTicket?.id ?? null
+  const staff = await currentUserIsStaff()
+
+  if (caseId) {
+    return staff ? adminSupportCaseHref(caseId) : supportCaseResponseHref(caseId)
   }
 
-  const ticket = await findMessagesSupportTicketMetaByConversationId(supabase, conversationId)
-  if (ticket?.id) {
-    return supportCaseResponseHref(ticket.id)
-  }
+  const isSupportOrientation = isSupportInboxConversation(
+    {
+      listing_id: (conv.listing_id as string | null) ?? null,
+      buyer_id: conv.buyer_id as string,
+      seller_id: conv.seller_id as string,
+    },
+    supportResolved.userId,
+  )
 
-  // No ticket linked — keep the thread on `/messages` so staff-outbound / orphaned
-  // general DMs remain reachable instead of dumping users on an empty Support list.
-  return null
+  if (!isSupportOrientation) return null
+
+  return staff ? "/admin/contact-messages" : "/dashboard/support"
 }

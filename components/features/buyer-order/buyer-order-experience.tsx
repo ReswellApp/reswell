@@ -59,8 +59,6 @@ export type BuyerOrderExperienceProps = {
   listingTitle: string
   sellerName: string
   messagesHref: string
-  canRequestCancel: boolean
-  canRequestRefundHelp: boolean
   /** Set when buyer may rate the seller, or when they already left a review for this purchase. */
   sellerReview: {
     canSubmit: boolean
@@ -503,14 +501,12 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
           </Link>
         </Button>
 
-        {props.status === "confirmed" ? (
-          <Button type="button" variant="outline" className="gap-2" asChild>
-            <Link href={getHelpHref}>
-              <HelpCircle className="h-4 w-4" />
-              Get help
-            </Link>
-          </Button>
-        ) : null}
+        <Button type="button" variant="outline" className="gap-2" asChild>
+          <Link href={getHelpHref}>
+            <HelpCircle className="h-4 w-4" />
+            Get help
+          </Link>
+        </Button>
       </div>
 
       {isRefunding ? (
