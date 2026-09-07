@@ -1,6 +1,6 @@
 {
   "generated_for": "FUNNER Surf Craft official Shopify surfboard catalog",
-  "source": "https://funner.surf/products.json (Surfboard product_type only — excludes apparel, fins, and lumber)",
+  "source": "https://funner.surf/products.json (Surfboard product_type only — excludes apparel, fins, cloth, and lumber)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -30,8 +30,13 @@
         {
           "name": "The Clovis Twin",
           "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/IMG_0890.jpg?v=1780333902",
-          "description": "An alternative shortboard experience. The The Clovis Twin rips at warp speed. Super fast. Super responsive. The most high-performance surf craft in our lineup.",
+          "description": "An alternative shortboard experience. The Clovis rips at warp speed. Super fast. Super responsive. The most high-performance surf craft in our lineup.",
           "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Clovis Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/IMG_1458.heic?v=1788551983",
+          "board_category_slug": "fish"
         },
         {
           "name": "The Missing Link",
