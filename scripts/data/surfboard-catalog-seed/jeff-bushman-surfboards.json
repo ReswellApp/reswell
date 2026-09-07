@@ -1,0 +1,24 @@
+{
+  "generated_for": "Jeff Bushman Surfboards official named standup catalog",
+  "source": "https://bushmansurfboards.com/ (official site homepage — only named production model documented; excludes apparel and the /surfboards/ placeholder page)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jeff-bushman-surfboards",
+      "name": "Jeff Bushman Surfboards",
+      "website_url": "https://bushmansurfboards.com/",
+      "location_label": "North Shore, Oahu, Hawaii",
+      "founder_name": "Jeff Bushman",
+      "lead_shaper_name": "Jeff Bushman",
+      "short_description": "Handcrafted surfboards from master shaper Jeff \"Bushy\" Bushman — designing, shaping, and surfing on Hawaii's North Shore for more than 45 years.",
+      "models": [
+        {
+          "name": "Sunset Special",
+          "image_url": "https://bushmansurfboards.com/assets/img/carousel_4_PanchoTeahupoo_98_.jpg",
+          "description": "One of the signature designs developed and refined on the North Shore — shaped, glassed, and tested in a single turnaround, again and again.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
