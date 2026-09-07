@@ -1,0 +1,60 @@
+{
+  "generated_for": "Mainland Surfboards official named standup catalog",
+  "source": "https://www.mainlandsurfboards.com/board-models (Squarespace board model lineup — excludes Custom Shape deposits and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mainland-surfboards",
+      "name": "Mainland Surfboards",
+      "website_url": "https://www.mainlandsurfboards.com/",
+      "location_label": "Sayulita, Nayarit, Mexico",
+      "founder_name": "Javier Chavarria",
+      "lead_shaper_name": "Javier Chavarria",
+      "short_description": "Custom surfboards hand-built in Sayulita by Javier Chavarria — shaped in San Diego and Oceanside before opening the Mainland factory in Mexico's Bahía de Banderas.",
+      "models": [
+        {
+          "name": "Fishy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/61ba77d001790e1e39c3c975/1698540939206-ER9NJVA7C4D7LVK93PEJ/custom+surfboard+-+fish+fishy.png",
+          "description": "We call this our wave catching machine. Inspired by a classic outline from the 70s, our Fishy model comes with a deep single concave channeling the water from the front of the surfboard until it passes the fins and out the tail of the board making it a speedy little bugger perfect for knee to head high waves. Low entry rocker allows this board to be great for mushy, less powerful waves but performs on rolling waves too. 50/50 rails meaning you are less likely to catch an edge and bog the rails into sloppier wave faces. A perfect summer board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "4x4",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/61ba77d001790e1e39c3c975/1698541095817-G0ZCUJ3QRJEB2V8RT6HS/Custom+shortboard+-+rainbow+rails.png",
+          "description": "Perfect for most conditions. The wide outline increases the power of your paddle getting you into those rolling and pitchy waves. Single concave and thinner rails makes this board glide fast through the wave and enables tighter turns. You can play around with the tail on this one so depending if you want better control or more stability, you can choose a squash, diamond or swallow for this model.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Nef Mood",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/61ba77d001790e1e39c3c975/1640926701196-OGZGA4OYYA1YPI928J2V/boards-wide-color+white.jpg",
+          "description": "A performance shortboard model, Nef Mood comes with a low entry rocker to generate more speed when paddling and surfing. Single concave under the front foot that transitions to a double concave under the back foot to allow for a fast ride and a loose feel for more maneuverability. The vee tail allows for a quick response rail to rail. It's a fun board for waves from waist high to a little over head.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twinny Manta",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/61ba77d001790e1e39c3c975/1698540019806-K2XOS0Y8RBY4NTGCAKED/custom+surfboard+-+twinny+manta.png",
+          "description": "A Classic 70s outline, this board is great for those looking to graduate up to a shortboard or for those looking not to paddle as hard while surfing but still have that shortboard look. With most of the volume in the nose, it makes this board easy to paddle into the wave and feel stability under your feet. Twinny Manta transitions from a double concave to a vee tail which makes the tail area more responsive.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Creepy Butt",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/61ba77d001790e1e39c3c975/1698540969972-CHAZI932GJHXXL6L1Z5Q/custom+surfboard+-+creepy+butt.png",
+          "description": "Our Creepy Butt model has a fun, curvy outline recommended for those small, mushy to medium-power waves. A little bit less rocker to make it easier to paddle into the mush with double concave as you get to the rear to loosen up the board and channel the water through the fins and out the tail. Medium to full rails to allow for turning ability while still riding not so ideal conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Fun Shape",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/61ba77d001790e1e39c3c975/cace71ba-ff61-4a98-bf8c-ae9ca0901fce/fun+shape+-+best+surfboards+vallarta+punta+mita+sayulita+mexico.JPG",
+          "description": "Friendly shape for any type of surf level from beginner to the most advanced surfer. Easy to paddle with good flotation. Not as hard to turn as your average longboard giving you ease in riding from top to bottom of the wave. Best for waves 3–6 feet at beach breaks and point breaks.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nose Rider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/61ba77d001790e1e39c3c975/07b2ef9b-2bc1-4c01-b23b-7f2c3232523e/best+longboard+sayulita+vallarta.JPG",
+          "description": "A high-performance long board with a scoop nose concave for a lift in the face of the wave transitioning to a double concave to help with a bit more speed than a typical longboard. The Nose Rider comes with 50/50 soft rails which allows you to take full advantage of your fin's turning radius. Turning from near the tail will be much quicker and require less effort in smaller surf while maintaining glide.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
