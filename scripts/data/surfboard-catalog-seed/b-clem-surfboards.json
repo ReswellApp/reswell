@@ -1,0 +1,90 @@
+{
+  "generated_for": "B. Clem Surfboards official named standup catalog",
+  "source": "https://www.bclemsurfboards.com/surfboards (Squarespace model pages — excludes Pizza Pizza dimension SKUs and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "b-clem-surfboards",
+      "name": "B. Clem Surfboards",
+      "website_url": "https://www.bclemsurfboards.com/surfboards",
+      "location_label": "Honolulu, Hawaii",
+      "founder_name": "Brent Clem",
+      "lead_shaper_name": "Brent Clem",
+      "short_description": "Hand-shaped custom surfboards by Brent Clem in Honolulu — longboards, midlengths, fish, retro twins, and performance logs with high-gloss fiberglass finishing.",
+      "models": [
+        {
+          "name": "Abider Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5ebf988834cccfde855/1745095468048/abider+glider+top+updated.png",
+          "description": "A glider model for the ultimate single fin experience. Length: 10–12 ft. Width: 23\"+. Thickness: 3\"+. Fin(s): Single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Billy Duke",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5edf988834cccfde897/1745095388317/billy+duke.png",
+          "description": "The Billy Duke represents a contemporary evolution of the modern Pig model. Length: 9–10 ft. Width: +/- 23\". Thickness: 3\". Fin(s): Single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "El Cabrón",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5eaf988834cccfde850/1745095437959/el+cabron+updated+top.png",
+          "description": "A traditional log that rides shorter and faster. Length: 8–10 ft. Width: +/- 23\". Thickness: 3\". Fin(s): Single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "El Medio",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5ebf988834cccfde85a/1745095411147/el+medio+updated+top.png",
+          "description": "An easy-to-surf, modern midlength for intermediate surfers and mediocre surf conditions. Length: 6'10–8 ft. Width: +/- 21\". Thickness: 2.75\". Fin(s): 2+1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Log Jammin'",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5eaf988834cccfde835/1765404889566/Log+Jammin+Top+Updated.png",
+          "description": "Capable of tackling waves ranging from one-foot slop to overhead surf, the Log Jammin' stands out as a must-have midformance longboard. Length: 9–10 ft. Width: +/- 23\". Thickness: 3\". Fin(s): Single fin, 2+1.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Minutia",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5eaf988834cccfde84b/1775013152071/minutia.png",
+          "description": "The Minutia is built for surfers who want classic noseriding confidence without sacrificing agility. Length: 9–10 ft. Width: +/- 23\". Thickness: 3\". Fin(s): Single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "O'Dell Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5ebf988834cccfde860/1745095419523/odell+twin+updated+top.png",
+          "description": "Replica of a retro twin fin from the 80s era of surfing. Length: 6–7 ft. Width: +/- 20\". Thickness: +/- 2.5\". Fin(s): Twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pizza Pizza",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67c7313c01f1c1001013ccb4/1765404969836/pizza+pizza+new.png",
+          "description": "The Mini Simmons pays homage to surfing legend Bob Simmons, who pioneered hydrodynamic theory and speed in the sport. Length: 5–6 ft. Width: +/- 21\". Thickness: 2.75\". Fin(s): Twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5ebf988834cccfde867/1745095460516/retro+fish+top+updated.png",
+          "description": "Classic retro fish with updated curves and rocker. Length: 5–6 ft. Width: +/- 21\". Thickness: 2.75\". Fin(s): Twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Slacker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5ecf988834cccfde887/1746320920150/Tracker+Top.png",
+          "description": "A classic Tracker shape — the missing link in the evolution from long to shortboard. Length: 7–8 ft. Width: +/- 21\". Thickness: 2.75\". Fin(s): Single fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Townie",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5ecf988834cccfde86c/1745095373789/townie+updated+top.png",
+          "description": "This POG (performance log) will have you smiling as you cross step from nose to tail in all conditions. Length: 9–10 ft. Width: +/- 23\". Thickness: 3\". Fin(s): Single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Town Tooter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5eaf988834cccfde846/1745095428850/town+tooter+top+updated.png",
+          "description": "A midformance log with a really rolled back end and slightly pulled-in nose. Length: 9–10 ft. Width: +/- 23\". Thickness: 3\". Fin(s): Single fin.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
