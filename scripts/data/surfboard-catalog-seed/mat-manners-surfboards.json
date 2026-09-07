@@ -1,0 +1,67 @@
+{
+  "generated_for": "Mat Manners Surfboards official named standup catalog",
+  "source": "https://www.matmanners.com/shapes (official Squarespace shape list — excludes accessories, off-the-rack sized one-offs, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mat-manners-surfboards",
+      "name": "Mat Manners Surfboards",
+      "website_url": "https://www.matmanners.com",
+      "location_label": "Margaret River, Western Australia",
+      "founder_name": "Mat Manners",
+      "lead_shaper_name": "Mat Manners",
+      "short_description": "Hand-shaped performance and big-wave surfboards by Mat Manners in Margaret River, Western Australia — shortboards, grovelers, step-ups, and rhino chasers from the workshop on Auger Way West.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1529031091141-TMTKZCVFW5KD0BP1TD1B/Mat+Manners+logo.png",
+      "models": [
+        {
+          "name": "Best Mate",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534560791895-XX8B5TASDHVMYEH0RYKL/DSCF3437.png",
+          "description": "A super hi-performance all round short board, for all types of waves — your Best Mate. Offered from 4'10\" to 7'0\" as a thruster (FCS II / Futures) and best in 2–6ft waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Keeper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1539469483733-VWU2AE8LXNRE73WDMIKL/DSCF3439.png",
+          "description": "Hi-performance small wave board, with more volume and shorter than your all-rounder. Sizes 4'10\" to 7'0\", thruster or 5-fin (FCS II / Futures), built for smaller waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Droid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534563237945-SHX2AE2XKMO9TGYG0D3M/DSCF3485+copy.png",
+          "description": "Super quick board that drives hard and holds its lines. Sizes 4'10\" to 7'0\", thruster or 5-fin (FCS II / Futures), for small to medium surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "River",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534560922428-VS2YPPD2ELA341JN1B3O/DSCF3453.png",
+          "description": "The River is fast and smooth down the line, the flow-rider. Such a fun easy board to ride. Sizes 4'10\" to 7'0\", twin / thruster / 5-fin (FCS II / Futures), for small waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rondog",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534564998729-DJ5T2GFXUGLXUZWBYXA2/DSCF3517+copy.png",
+          "description": "Our big wave boards are tested in the heaviest waves Australia has to offer. Tried and proven over the last 30 years by the best big wave surfers around. Sizes 7'0\" to 10'6\", thruster or 5-fin (FCS II / Futures).",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Selamt Datang",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534562976840-5OJQZI670P3GJDY2RYEC/sel.png",
+          "description": "Our step up board has proven a winner all through Australia, Indo and the world. Ride it 3\" or more longer than your standard shortboard, thruster or 5-fin (FCS II / Futures), best in 4–6ft.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Magic Carpet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1534561102687-NE3S8QVDJLKPYXIVJIV4/DSCF3477.png",
+          "description": "This board will motivate you and get your stoke back when the swell drops. Very loose and fun to ride. PU or EPS available. Sizes 4'10\" to 6'6\", thruster or 5-fin (FCS II / Futures), for tiny to small waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Orc",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ae2a0e0b27e393b55d13900/1539470685907-V0MDF8NN2Q2V7C3AE7OO/ORDY1235.png",
+          "description": "The Ork is the answer to the big guy wanting a board he can shred on. Volume and curves in all the right places. Sizes 6'6\" to 7'6\", thruster or 5-fin (FCS II / Futures), for all-round conditions.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
