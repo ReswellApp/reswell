@@ -1,0 +1,78 @@
+{
+  "generated_for": "SJS Custom official named standup catalog",
+  "source": "https://sjscustom.com.au/ (Scott James Surfboards homepage model lineup — excludes sold stock dimension SKUs, display racks, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "sjs-custom-surfboards",
+      "name": "SJS Custom",
+      "website_url": "https://sjscustom.com.au",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Scotty James",
+      "lead_shaper_name": "Scotty James",
+      "short_description": "One-at-a-time Gold Coast performance and alternative shapes by Scotty James — twins, fishes, and mid-lengths built for speed, flow, and feel.",
+      "models": [
+        {
+          "name": "Private Jet",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/IMG_3841_480x480@2x.jpg",
+          "description": "Performance twin pin with a balanced outline and wide point at centre for a shortboard feel. Slight panel vee with double concave scoop inset, twin channels and dropped wings beside the fins. Run it as a straight twin or twin plus trailer.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Garage Find",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/IMG_2768_480x480@2x.jpg",
+          "description": "A performance twin with early 80s design theories and 2022 rockers and fin set ups. Flat/concave deck, vee bottom with scoop double concave, dropped wing channels and upright twin fins. Sits between a performance thruster and a fishy twin in the 2-5 foot range.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fresh Fish",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/IMG_4624_480x480@2x.jpg",
+          "description": "From the Lis Fish template with a traditional outline and rocker and a modern double concave deck. Scotty's signature scooped spiral-vee double-concave bottom delivers lift and speed in soft waves. Set up as a twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rock n Roller",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/Rock_n_TRoller_top_side_480x480@2x.jpg",
+          "description": "High-performance twin fin with wide point behind centre, triple wing tail, and double concave deck. Scooped concave with downturned fliers for lift and rail engagement. Loose and fast, ridden the same size as your shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grand Tourer",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/GT_top_side_480x480@2x.jpg",
+          "description": "Mid-length design that is loose for its size and paddles like a beast. Best in 2-4 foot slopey faces with plenty of glide. Flat deck, beveled rails, and scoop concave bottom for speed in softer surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Express",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/Express_nose_first_top_480x480@2x.jpg",
+          "description": "Step-up quad designed for overhead powerful waves and barrels. Flat deck with beveled rails and beak nose for paddle power. Generous rocker with scooped double concave in a deep single concave leading to downturned wings.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Rocket",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/mMkQ_G_DSfuIUgmIT_c31w_480x480@2x.jpg",
+          "description": "Scotty's best seller — a modern retro performance twin fin inspired by late 70s designs. Easy to ride, loose and fast in 2-5 foot surf with a little curve on the face. Flattish deck, beveled rails, and fluted fliers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hip Fish",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/hV_phDhkQhS_Q61HF77T8w_480x480@2x.jpg",
+          "description": "Derived from the Steve Lis fish with a hip behind the fins for extra whip. Medium to low rails, optional deep channels or double barrel to spiral vee tail. Suited to 1-4 foot waves but can handle bigger surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/knaBVCwyR1qthan1C0WApw_480x480@2x.jpg",
+          "description": "Classic outline that handles almost anything. Beak nose and beveled rails keep foam on the deck with low responsive rails. Double concave into vee under four channels with mellow entry rocker.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Disco Biscuit",
+          "image_url": "https://sjscustom.com.au/cdn/shop/files/IMG_0806_480x480@2x.jpg",
+          "description": "Fun small-wave twin fin for waist-high and under surf. Double concave deck, beveled rails, blunt nose, and double-winged diamond tail. Scoop concave bottom for instant speed and skatey feel.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}

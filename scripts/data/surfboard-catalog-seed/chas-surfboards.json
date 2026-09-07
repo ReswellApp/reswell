@@ -1,0 +1,102 @@
+{
+  "generated_for": "Chas Surfboards official named standup catalog",
+  "source": "https://www.chassurf.com/board-models (official board model lineup — excludes surf school, coaching, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "chas-surfboards",
+      "name": "Chas Surfboards",
+      "website_url": "https://www.chassurf.com/",
+      "location_label": "Seal Beach, California",
+      "founder_name": "Chas Wickwire",
+      "lead_shaper_name": "Chas Wickwire",
+      "short_description": "High-performance surfboards by Chas Wickwire in Seal Beach — former Harbour Surfboards head shaper shaping HP shortboards, step-downs, fish, and mid-lengths since 1989.",
+      "models": [
+        {
+          "name": "ProToo",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/656531f2a850dda1e2263a91_chas-pro-too-front-back2.webp",
+          "description": "Our latest True High Performance offering, also the first to implement our TnT philosophy. Thick and Thin, fuller foil through the centerline and hyper taper on the rail line couple up for more overall volume and a board that rides smaller than the volume number would suggest. Outline is slightly racier than our other HP offerings. End result is a true performance shortboard with extra paddle power and a more solid platform to push through critical maneuvering.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "XC Pro 25",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65de1c27206bc6300881d51b_xc-pro-24-front-back.webp",
+          "description": "The latest addition to the XC series. A racy HP outline, the tried and true universally well received XC rocker and bottom contours and the TnT design elements. Fuller centerline volume and finely foiled tapered rails create a responsive forgiving predictable feel.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BroToo",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65de6d482bc8b65d5200c610_chas-brotoo-front-back.webp",
+          "description": "The \"Too\" series Step Down. Same rocker and bottom contours as ProToo. A fuller outline coupled with our TnT design elements create the perfect performance daily driver. The fuller center foil and finely foiled rails give a nice responsive feel and plenty of paddle power and carry across less than ideal conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "XC Jaeger",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/6565327b774e2e030e36bda8_chas-xc-jaeger-front-back2.webp",
+          "description": "THE favorite High Performance Stepdown in our catalog the last couple years and the second offering built off the XC rocker/bottom contour. With a fullish outline, the XC bottom consists of my signature relaxed entry curve and continuous flowing moderate rocker creating easy wave entry, effortless speed generation and a freeness on the wave face.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "DubtrubToo",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e66c95a9c1e3ea6aa0bd86_DubTrubToo-front-back.webp",
+          "description": "The latest \"Too\" Series installment. I took the perennial daily driver favorite DubTrub outline and married it with the \"Too\" series rocker, bottom contours and TnT design elements. The end result is a fast and responsive step down that will perform at a high level in a great variety of conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Dubtrub OG",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65de75c36e70f69fe7cc43b3_DubTrub2-front-back.webp",
+          "description": "My original step down and a universally loved daily driver for a decade now. The fullish, not quite \"fishy\" outline with a throw back double bump swallow tail, coupled with a drivey, but forgiving bottom rocker give this model excellent wave entry qualities and a fast and loose ride. A true 300 day a year model.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spudnik",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/6565309b7307f8a233089a7b_chas-spudink-front-back-carbon.webp",
+          "description": "Maybe the most perfect surfboard I've ever designed. Fuller \"Fishy\" outline allows for effortless takeoffs and plenty of giddy up in smaller weak everyday conditions. A ProFormance rocker and bottom contour, coupled with a finely foiled rail volume allows for plentiful horsepower when the waves present spicier more rippable sections.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "XC Petrel",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e671070997c311d95062f1_xc-petrel-front-back.webp",
+          "description": "The Original XC model. A fullish fishy single wing swallow outline, coupled with a predictable and fast moderate smoothly flowing rocker make for a fantastic feel in everyday conditions. My signature relaxed entry curve enables easy wave entry and brilliant built in speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "XC Petrel 2+1",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e653571344e6f327665302_petrel-front-back.webp",
+          "description": "The Petrel was the first model in the XC series. Fuller outline with an even flowing rocker create a fast and fantastically maneuverable ride in anything from a couple feet overhead down. The fins are pushed back a bit in a traditional twin location to provide plentiful drive and built in speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gnarchotic",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65de24949b8c84aef4cfb785_gnarchotic-front-back.webp",
+          "description": "Originally designed for the curvaceous caverns of the now infamous South Side, Seal Beach, the Gnarchotic is a reliable partner in crime when encountering waves of consequence and quality. Extra flip in the tips fit nicely in hollow conditions and enable controlled drops in the steep and deep.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "XC Pro 25 RPT",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e676759b3313a5166b6bc8_xc-pro-24-RPT-front-back.webp",
+          "description": "Stretch up the reliable XC P25 a couple of inches, pull in the tail off the trailing fin into a sexy Round Pin and Wala! The perfect Step Up! TnT design elements with a fuller center foil and finely tapered rail profile make for plenty paddle power and a board that rides smaller than the liters would suggest.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Y2K Step Up",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/6605ff2b6fa41dfc68b3f45f_y2k-front-back2.webp",
+          "description": "I built some very well received and reliable hand shaped Step Ups and Semi Guns in the late 90's and early 2000's. One of my good friends had a well preserved version in his garage that he shared with some of the local rippers in recent years. The board was still so very well received that I got numerous requests to digitize it.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "OTL",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e64fa10c5094d5d4e8fa9d_otl-front-back.webp",
+          "description": "Originally a hand shaped copy of a Gerry Lopez model that my neighbor loved. Turns out the redo was MAGIC! I digitized my version and coined it the \"Ode to Lopez\" or OTL if you will. A versatile mid length that will continue to surprise with its inherent performance elements.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fun V25",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e74d8b87a5aa1d9dc9f16c_fun24-front-back.webp",
+          "description": "We took the magic foil, rocker and bottom contours of the OTL and threw a more traditional \"Fun Shape\" outline on it. End result is a versatile and forgiving board for the novice or lower intermediate level surfer and a fun small wave alternative for the more skilled with surprising performance elements.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
