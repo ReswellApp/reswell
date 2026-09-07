@@ -1,0 +1,51 @@
+{
+  "generated_for": "Velzy Surfboards official named standup catalog",
+  "source": "https://hobiesurfshop.com/collections/surfboards-by-velzy (Hobie Surf Shops Velzy heritage collection — named production models only, excludes dimension SKUs and freight listings)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "velzy-surfboards",
+      "name": "Velzy Surfboards",
+      "website_url": "https://hobiesurfshop.com/collections/surfboards-by-velzy",
+      "location_label": "Dana Point, California",
+      "founder_name": "Dale Velzy",
+      "short_description": "Heritage surfboards from Dale \"Hawk\" Velzy — the San Clemente shaper who opened the world's first surf shop in 1950 and invented the pig design that changed how the world rides waves.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/a23f33c2-f7ad-49ec-997a-9fbf2e05c032.webp?t=1775445336505",
+      "models": [
+        {
+          "name": "Pig",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-Pig-10-0-Longboard-__S_1.jpg?v=1784736112",
+          "description": "In the post-WWII surf scene, Dale Velzy narrowed the nose of a balsa blank, moved the wide point back from center/forward by 8–10 inches, and gave the aft end a major tail-block. The Pig was born — greater maneuverability in the pocket and increased hold for noseriding. Overnight, hotdogging entered the surfer's vernacular and riding waves would never be the same.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "422",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-422-9-6-Model__S_1.jpg?v=1784737468",
+          "description": "In 1966, the act of noseriding was the reason for the season. As a partnership, Hap Jacobs and Dale Velzy entered the fray with their own apparatus: the 422. This reverse-rocker tip time machine features a deep concave that extends almost three-quarters the length of the board, with a unique rail bump and step-tail that increases maneuverability in and out of steep sections.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Malibu Express",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-Malibu-Express-9-6-Longboard__S_1.jpg?v=1784740861",
+          "description": "\"Simmons made them light; I made them turn\" – Dale Velzy. The Malibu Express lives up to its moniker: a speed demon with flat, continuous rocker, a sleek pintail outline, subtle hull entry with roll, center, and vee in front of the fin, and pinched 50/50 rails from nose to tail. Dale always said surfboards work best closest to the living curl — the Express thrives in steep sections.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-9-8-Noserider__S_1.jpg?v=1785364405",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "V Foil",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-V-Foil-9-6-Longboard__S_1.jpg?v=1785186842",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Modern Classic",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-Modern-Classic-9-6-Longboard__S_1.jpg?v=1785186732",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
