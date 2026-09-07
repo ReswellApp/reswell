@@ -99,7 +99,7 @@ function requestTypeLabel(t: string): string {
     case "cancel_order":
       return "Cancel"
     case "refund_help":
-      return "Refund help"
+      return "Protection claim"
     default:
       return t
   }

@@ -981,7 +981,7 @@ export async function loadCounterpartyThreads(
   const supportResolved = await resolveSupportRecipientUserId()
   const supportUserId = supportResolved.ok ? supportResolved.userId : null
 
-  // Drop ticketed support DMs; keep staff-outbound + unticketed general threads.
+  // Drop all Support DMs; marketplace threads with this person stay.
   const threads = await retainMarketplaceInboxConversations(
     filterConversationsWithMessages(
       (convData ?? []) as unknown as InboxConversationRow[],

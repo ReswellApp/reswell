@@ -289,18 +289,22 @@ export default function ProtectionPolicyPage() {
               </>,
               <>Open the purchase you need help with.</>,
               <>
-                Tap <strong>Refund help</strong>. Say whether you&apos;ve already messaged the seller,
-                then describe what happened in <strong>What should we know?</strong> — include
-                tracking numbers, dates, and clear details. Our team may email you if we need photos
-                or more information (there isn&apos;t a separate upload step in the form today).
+                Tap <strong>Get help</strong>. Choose your issue (claim, cancel, or a question), say
+                whether you&apos;ve already messaged the seller when asked, then describe what happened —
+                include tracking numbers, dates, and clear details. You can add photos on claim flows.
               </>,
               <>
-                Tap <strong>Submit to support</strong>. We aim to review within{' '}
-                <strong>3 business days</strong>.
+                Submit the case. We aim to review within{' '}
+                <strong>3 business days</strong>. Track replies under{' '}
+                <Link href="/dashboard/support" className="font-medium text-foreground underline underline-offset-2">
+                  Support
+                </Link>
+                .
               </>,
               <>
-                For general questions to Reswell that aren&apos;t a refund issue on this purchase, use{' '}
-                <strong>Ask Reswell</strong> on the same purchase page instead.
+                The same <strong>Get help</strong> entry covers every purchase question — claims,
+                cancellations, and general order support — so you don&apos;t need a separate Ask Reswell
+                button.
               </>,
             ] as const
           ).map((step, i) => (
@@ -313,9 +317,9 @@ export default function ProtectionPolicyPage() {
           ))}
         </ol>
         <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-          <strong>Refund help</strong> and <strong>Ask Reswell</strong> show on the purchase page while
-          the purchase is <strong>confirmed</strong> and a refund isn&apos;t already processing or
-          completed.
+          <strong>Get help</strong> shows on the purchase page while the purchase is{' '}
+          <strong>confirmed</strong> and a refund isn&apos;t already processing or completed. All cases
+          live in one place under Support.
         </p>
         <div className="mt-4 pt-4 border-t">
           <Link

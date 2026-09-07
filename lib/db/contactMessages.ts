@@ -18,11 +18,12 @@ export type ContactMessageRow = {
   user_id: string | null
   related_conversation_id: string | null
   support_conversation_id: string | null
+  assignee_admin_id: string | null
 }
 
 /** Columns loaded by /admin/contact-messages (keep in sync with `normalizeRow`). */
 export const CONTACT_MESSAGE_ADMIN_SELECT =
-  "id, name, email, subject, message, created_at, support_status, internal_notes, updated_at, source, user_id, related_conversation_id, support_conversation_id"
+  "id, name, email, subject, message, created_at, support_status, internal_notes, updated_at, source, user_id, related_conversation_id, support_conversation_id, assignee_admin_id"
 
 /** Member portal — never expose internal_notes. */
 export const CONTACT_MESSAGE_USER_SELECT =
@@ -49,6 +50,8 @@ export function normalizeContactMessageRow(raw: Record<string, unknown>): Contac
       raw.related_conversation_id == null ? null : String(raw.related_conversation_id),
     support_conversation_id:
       raw.support_conversation_id == null ? null : String(raw.support_conversation_id),
+    assignee_admin_id:
+      raw.assignee_admin_id == null ? null : String(raw.assignee_admin_id),
   }
 }
 
@@ -95,6 +98,19 @@ export async function getContactMessageRowById(
     return null
   }
   return normalizeContactMessageRow(data as Record<string, unknown>)
+}
+
+export async function listContactMessagesByIds(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<ContactMessageRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select(CONTACT_MESSAGE_ADMIN_SELECT)
+    .in("id", ids)
+  if (error || !data) return []
+  return data.map((row) => normalizeContactMessageRow(row as Record<string, unknown>))
 }
 
 /** Admin or service-role client — not selectable by members under RLS. */
@@ -154,6 +170,7 @@ export async function updateContactMessageRow(
     support_status?: ContactMessageSupportStatus
     internal_notes?: string | null
     support_conversation_id?: string | null
+    assignee_admin_id?: string | null
   },
 ): Promise<{ error: Error | null }> {
   const patch: Record<string, unknown> = {}
@@ -161,6 +178,9 @@ export async function updateContactMessageRow(
   if (args.internal_notes !== undefined) patch.internal_notes = args.internal_notes
   if (args.support_conversation_id !== undefined) {
     patch.support_conversation_id = args.support_conversation_id
+  }
+  if (args.assignee_admin_id !== undefined) {
+    patch.assignee_admin_id = args.assignee_admin_id
   }
 
   const { error } = await supabase.from("contact_messages").update(patch).eq("id", args.id)

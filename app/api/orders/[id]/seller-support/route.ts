@@ -2,14 +2,13 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { insertOrderSupportRequest } from "@/lib/db/order-support"
-import { insertSupportCase, insertSupportCaseMessage } from "@/lib/db/supportCases"
-import { linkOrderSupportThread } from "@/lib/services/orderSupportThread"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { orderRequestTypeSubject, orderRequestTypeToKind } from "@/lib/utils/support-case-display"
 
 const schema = z.object({
-  request_type: z.enum(["refund_request", "cancel_request"]),
+  request_type: z.enum(["refund_request", "cancel_request", "help_request"]),
   body: z.string().min(10).max(8000),
 })
 
@@ -70,7 +69,11 @@ export async function POST(
   )
 
   const mappedType =
-    parsed.data.request_type === "cancel_request" ? "cancel_order" : "help"
+    parsed.data.request_type === "cancel_request"
+      ? "cancel_order"
+      : parsed.data.request_type === "refund_request"
+        ? "refund_help"
+        : "help"
 
   const serviceSupabase = createServiceRoleClient()
   const { data, error } = await insertOrderSupportRequest(serviceSupabase, {
@@ -90,7 +93,7 @@ export async function POST(
 
   const kind = orderRequestTypeToKind(mappedType)
   const subject = `[Seller] ${orderRequestTypeSubject(mappedType, orderRef)}`
-  const dual = await insertSupportCase(serviceSupabase, {
+  const opened = await createSupportCaseWithOpeningMessage(serviceSupabase, {
     kind,
     subject,
     preview: parsed.data.body.trim(),
@@ -102,23 +105,13 @@ export async function POST(
     order_support_request_id: data.id,
     source_channel: "order_seller",
     priority: "high",
+    body: parsed.data.body.trim(),
+    authorUserId: user.id,
   })
-  if (dual.data) {
-    await insertSupportCaseMessage(serviceSupabase, {
-      case_id: dual.data.id,
-      author_user_id: user.id,
-      author_role: "customer",
-      body: parsed.data.body.trim(),
-    })
-  }
 
-  const linked = await linkOrderSupportThread(data)
-  if ("error" in linked) {
-    console.warn("[seller-support] thread link:", linked.error)
-  }
-
+  const caseId = opened?.id ?? data.id
   await trackKlaviyoSupportTicketCreated({
-    supportTicketId: data.id,
+    supportTicketId: caseId,
     email: user.email ?? "",
     externalId: user.id,
     source: "order_seller_support",
@@ -127,5 +120,5 @@ export async function POST(
     orderRef: orderRef,
   })
 
-  return NextResponse.json({ success: true, id: data.id })
+  return NextResponse.json({ success: true, id: caseId })
 }

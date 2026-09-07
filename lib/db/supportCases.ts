@@ -107,6 +107,16 @@ export async function insertSupportCase(
   return { data: data as SupportCaseRow, error: null }
 }
 
+export type SupportCaseMessageRow = {
+  id: string
+  case_id: string
+  author_user_id: string | null
+  author_role: "customer" | "agent" | "system"
+  body: string
+  is_internal: boolean
+  created_at: string
+}
+
 export async function insertSupportCaseMessage(
   supabase: SupabaseClient,
   row: {
@@ -116,19 +126,118 @@ export async function insertSupportCaseMessage(
     body: string
     is_internal?: boolean
   },
-): Promise<{ error: Error | null }> {
-  const { error } = await supabase.from("support_case_messages").insert({
-    case_id: row.case_id,
-    author_user_id: row.author_user_id ?? null,
-    author_role: row.author_role,
-    body: row.body,
-    is_internal: row.is_internal ?? false,
-  })
+): Promise<{ id: string | null; error: Error | null }> {
+  const { data, error } = await supabase
+    .from("support_case_messages")
+    .insert({
+      case_id: row.case_id,
+      author_user_id: row.author_user_id ?? null,
+      author_role: row.author_role,
+      body: row.body,
+      is_internal: row.is_internal ?? false,
+    })
+    .select("id")
+    .single()
   if (error) {
     console.warn("[support_case_messages] insert skipped:", error.message)
-    return { error: new Error(error.message) }
+    return { id: null, error: new Error(error.message) }
   }
-  return { error: null }
+  return { id: data?.id ? String(data.id) : null, error: null }
+}
+
+export async function getSupportCaseById(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<SupportCaseRow | null> {
+  const { data, error } = await supabase.from("support_cases").select(CASE_SELECT).eq("id", id).maybeSingle()
+  if (error || !data) return null
+  return data as SupportCaseRow
+}
+
+/** Resolve a case by its id or a legacy ticket id. */
+export async function resolveSupportCaseByAnyId(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<SupportCaseRow | null> {
+  const direct = await getSupportCaseById(supabase, id)
+  if (direct) return direct
+  const byOrder = await getSupportCaseByOrderSupportId(supabase, id)
+  if (byOrder) return byOrder
+  return getSupportCaseByContactMessageId(supabase, id)
+}
+
+export async function listSupportCasesForRequester(
+  supabase: SupabaseClient,
+  userId: string,
+  filter: "all" | "open" | "resolved" = "all",
+): Promise<SupportCaseRow[]> {
+  let query = supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    .eq("requester_user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(200)
+
+  if (filter === "open") query = query.neq("status", "resolved")
+  if (filter === "resolved") query = query.eq("status", "resolved")
+
+  const { data, error } = await query
+  if (error) {
+    console.warn("[support_cases] member list skipped:", error.message)
+    return []
+  }
+  return (data ?? []) as SupportCaseRow[]
+}
+
+export async function countOpenSupportCasesForRequester(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("support_cases")
+    .select("id", { count: "exact", head: true })
+    .eq("requester_user_id", userId)
+    .neq("status", "resolved")
+  if (error) return 0
+  return count ?? 0
+}
+
+export async function listSupportCaseMessages(
+  supabase: SupabaseClient,
+  caseId: string,
+  opts?: { includeInternal?: boolean },
+): Promise<SupportCaseMessageRow[]> {
+  let query = supabase
+    .from("support_case_messages")
+    .select("id, case_id, author_user_id, author_role, body, is_internal, created_at")
+    .eq("case_id", caseId)
+    .order("created_at", { ascending: true })
+    .limit(500)
+
+  if (!opts?.includeInternal) query = query.eq("is_internal", false)
+
+  const { data, error } = await query
+  if (error) {
+    console.warn("[support_case_messages] list skipped:", error.message)
+    return []
+  }
+  return (data ?? []) as SupportCaseMessageRow[]
+}
+
+export async function touchSupportCaseAfterMessage(
+  supabase: SupabaseClient,
+  args: { id: string; preview: string; status?: SupportCaseStatus },
+): Promise<void> {
+  const patch: Record<string, unknown> = {
+    preview: args.preview.slice(0, 500),
+    updated_at: new Date().toISOString(),
+  }
+  if (args.status) {
+    patch.status = args.status
+    if (args.status === "resolved") patch.resolved_at = new Date().toISOString()
+  }
+  const { error } = await supabase.from("support_cases").update(patch).eq("id", args.id)
+  if (error) console.warn("[support_cases] touch skipped:", error.message)
 }
 
 export async function listSupportMacros(

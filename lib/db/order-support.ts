@@ -365,6 +365,19 @@ export async function updateOrderSupportRequestAdmin(
   return { error: null }
 }
 
+export async function listOrderSupportRequestsByIds(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<OrderSupportRequestRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from("order_support_requests")
+    .select(ORDER_SUPPORT_SELECT)
+    .in("id", ids)
+  if (error || !data) return []
+  return data.map((row) => normalizeOrderSupportRow(row as Record<string, unknown>))
+}
+
 export async function getOrderSupportRequestById(
   supabase: SupabaseClient,
   id: string,
@@ -397,6 +410,23 @@ export async function getOrderSupportRequestById(
   }
 
   return normalizeOrderSupportRow(data as Record<string, unknown>)
+}
+
+/** Latest order case linked to this support conversation (admin / redirect). */
+export async function findOrderSupportMetaByConversationId(
+  supabase: SupabaseClient,
+  supportConversationId: string,
+): Promise<{ id: string } | null> {
+  const { data, error } = await supabase
+    .from("order_support_requests")
+    .select("id")
+    .eq("support_conversation_id", supportConversationId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return { id: String(data.id) }
 }
 
 /** Conversation ids linked to order help / claim cases (exclude from marketplace Messages). */

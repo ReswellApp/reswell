@@ -1,6 +1,11 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { updateOrderSupportRequestAdmin } from "@/lib/db/order-support"
 import { updateOrderSupportAdminSchema } from "@/lib/validations/orderSupportAdmin"
+import {
+  getSupportCaseByOrderSupportId,
+  updateSupportCaseAdmin,
+} from "@/lib/db/supportCases"
+import { orderSupportStatusToCaseStatus } from "@/lib/utils/support-case-display"
 
 export async function updateOrderSupportAdminService(
   raw: unknown,
@@ -37,5 +42,23 @@ export async function updateOrderSupportAdminService(
   if (error) {
     return { error: error.message }
   }
+
+  try {
+    const service = createServiceRoleClient()
+    const shadow = await getSupportCaseByOrderSupportId(service, parsed.data.id)
+    if (shadow) {
+      await updateSupportCaseAdmin(service, {
+        id: shadow.id,
+        status: parsed.data.support_status
+          ? orderSupportStatusToCaseStatus(parsed.data.support_status)
+          : undefined,
+        internal_notes: parsed.data.internal_notes,
+        outcome: parsed.data.outcome,
+      })
+    }
+  } catch (err) {
+    console.warn("[updateOrderSupportAdminService] case sync skipped", err)
+  }
+
   return { success: true }
 }

@@ -1,22 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
+import type { UserSupportTicketFilter } from "@/lib/db/contactMessages"
+import { getOrderSupportRequestForUser } from "@/lib/db/order-support"
 import {
-  countOpenContactMessagesForUser,
-  listContactMessagesForUser,
-  type UserSupportTicketFilter,
-} from "@/lib/db/contactMessages"
-import {
-  countOpenOrderSupportForUser,
-  getOrderSupportRequestForUser,
-  listOrderSupportRequestsForUser,
-} from "@/lib/db/order-support"
+  countOpenSupportCasesForRequester,
+  listSupportCasesForRequester,
+} from "@/lib/db/supportCases"
+import { backfillUserLegacyCases } from "@/lib/services/supportCaseBackfill"
 import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
-import {
-  contactStatusToCaseStatus,
-  orderRequestTypeSubject,
-  orderRequestTypeToKind,
-  orderSupportStatusToCaseStatus,
-} from "@/lib/utils/support-case-display"
-import { supportTicketDisplaySubject as ticketSubject } from "@/lib/utils/support-ticket-display"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
 
@@ -25,54 +15,35 @@ export async function listUserSupportCasesService(
   filter: UserSupportTicketFilter = "all",
 ): Promise<UserSupportCaseListItem[]> {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await backfillUserLegacyCases(supabase, userId, user?.email ?? null)
 
-  const [tickets, orderRows] = await Promise.all([
-    listContactMessagesForUser(supabase, userId, filter),
-    listOrderSupportRequestsForUser(supabase, userId, filter),
-  ])
-
-  const fromTickets: UserSupportCaseListItem[] = tickets.map((t) => ({
-    id: t.id,
-    backend: "contact_message",
-    kind: "general",
-    status: contactStatusToCaseStatus(t.support_status),
-    subject: ticketSubject(t.subject, t.source),
-    preview: humanizeSupportCasePreview(t.message),
-    orderId: null,
-    orderRef: null,
-    createdAt: t.created_at,
-    updatedAt: t.updated_at,
-    hasThread: Boolean(t.support_conversation_id),
-    href: supportCaseResponseHref(t.id),
+  const rows = await listSupportCasesForRequester(supabase, userId, filter)
+  return rows.map((row) => ({
+    id: row.id,
+    backend: row.order_support_request_id ? "order_support" : "contact_message",
+    kind: row.kind,
+    status: row.status,
+    subject: row.subject,
+    preview: humanizeSupportCasePreview(row.preview),
+    orderId: row.order_id,
+    orderRef: row.order_ref,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    hasThread: true,
+    href: supportCaseResponseHref(row.id),
   }))
-
-  const fromOrders: UserSupportCaseListItem[] = orderRows.map((r) => ({
-    id: r.id,
-    backend: "order_support",
-    kind: orderRequestTypeToKind(r.request_type),
-    status: orderSupportStatusToCaseStatus(r.support_status),
-    subject: orderRequestTypeSubject(r.request_type, r.order_ref),
-    preview: humanizeSupportCasePreview(r.body),
-    orderId: r.order_id,
-    orderRef: r.order_ref,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-    hasThread: Boolean(r.support_conversation_id),
-    href: supportCaseResponseHref(r.id),
-  }))
-
-  return [...fromTickets, ...fromOrders].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-  )
 }
 
 export async function countOpenUserSupportCasesService(userId: string): Promise<number> {
   const supabase = await createClient()
-  const [tickets, orders] = await Promise.all([
-    countOpenContactMessagesForUser(supabase, userId),
-    countOpenOrderSupportForUser(supabase, userId),
-  ])
-  return tickets + orders
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await backfillUserLegacyCases(supabase, userId, user?.email ?? null)
+  return countOpenSupportCasesForRequester(supabase, userId)
 }
 
 export async function getUserOrderSupportCaseService(userId: string, requestId: string) {

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { formatDistanceToNowStrict } from "date-fns"
 import { LifeBuoy, Plus } from "lucide-react"
 import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
-import { isSupportCaseOpen } from "@/lib/utils/support-case-display"
+import { isSupportCaseOpen, SUPPORT_CASE_STATUS_LABEL } from "@/lib/utils/support-case-display"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -135,7 +135,9 @@ export function SupportCasesList({ cases, activeFilter }: SupportCasesListProps)
                         waiting && "font-medium text-foreground",
                       )}
                     >
-                      {waiting ? `Reply needed · ${line}` : line}
+                      {waiting
+                        ? `Reply needed · ${line}`
+                        : `${SUPPORT_CASE_STATUS_LABEL[item.status]} · ${line}`}
                     </p>
                     {waiting ? (
                       <span
