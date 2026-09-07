@@ -1,0 +1,96 @@
+{
+  "generated_for": "Trimcraft official named standup catalog",
+  "source": "https://www.trimcraftsurf.com/models (Squarespace model pages — excludes custom deposits and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "trimcraft",
+      "name": "Trimcraft",
+      "website_url": "https://www.trimcraftsurf.com",
+      "location_label": "California, Florida, New Jersey & Portugal",
+      "founder_name": "Collective",
+      "lead_shaper_name": "Alex Lopez, John Simon, John Oppito, Davey Smith, Michael Arenal, Mike Whisnant, Jacob Ells, Josh Peterson, Nico",
+      "short_description": "A collaborative crew of hand shapers formed in 2016, furthering the tradition of 100% hand-shaped surfboards across California, Florida, New Jersey, and Portugal.",
+      "models": [
+        {
+          "name": "Rich Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635716415139-8K99WZBN49LUCTDACCOG/DSC04364.JPG",
+          "description": "Based on the classic Keel Fish tradition championed by Rich Pavel — extreme down-the-line speed on less-than-impressive waves, with hidden curves and refined touches packed into roughly five feet of surfboard. More capable in real surf than you'd imagine.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sidecut Keel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635716527299-AY3XZTY4MZYVOGHPNKZH/IMG_3404-921x1024.jpg",
+          "description": "Classic keel paddle with a more seamless transition onto rail. Lots of projection and glide as expected from a fishy outline. The subtle acceleration of the outline curve reduces surface area under your back foot and modernizes the feel compared to a classic fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wills Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635716448748-TAW29CATZH6BK0HUPYJI/nk_20210817_5%276+wills+fish_055+3.jpg",
+          "description": "A high-performance twin developed by William Aliotti and Ryan Lovelace as a travel fish for Indo and beyond — comfortable in onshore European slop and standup Indo tubes. Plenty of volume with refined tips for softer, quicker waves between your shortboard and a keel fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Davey Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1d21ce59-ded6-4d44-9334-9c1af78a30b5/nk_20210925_75%278%2C+5%2710+davey+smith_007.jpg",
+          "description": "Modeled after Davey Smith's 1970s pro-model twins — a true-to-form channeled twin with modern rocker, fin placement, and bottom contour updates. Generates tons of speed over flats for mushy beach and reef breaks or shooting down the line at your local point.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Symmetrical Snake",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1630422470155-IH3D598A4BLV1QSF09UV/Sym-Snake-1-768x768.jpg",
+          "description": "A high-lift, low-drag vehicle with more surface area forward and slightly higher volume than a regular shortboard. Single concave nose to tail with modern shortboard rail line and rocker — far more appropriate for average-to-good days than the standard chip.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "T. Rev",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/4c5afd48-6b50-424c-9b15-d39655d4f73e/T.-Rev-1-768x733.png",
+          "description": "A Ryan Lovelace classic originally designed for Trevor Gordon — high-volume quad fish in the front two-thirds with a pulled-in round tail. Very flat rocker, flat deck with down rails and vee to double into single afterburner concave. Likes chunky beachbreaks and bowly reefs.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Haley Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635716700703-T7HKQ83FLRMD908TYLYP/nk_trimcraft+boards_009.jpg",
+          "description": "A classic double-ender mini glider vibe sent into hyperdrive with a technical triplane bottom — vee under the nose into double concave, spiral vee, and a signature flat spot behind the fin. Extremely versatile in small and average surf, based on the Lovelace ThickLizzy.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Lopez Single",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635720770384-2SPSOSTD1N4YRA0S6QLZ/lopez+1.jpg",
+          "description": "An extremely clean 70s-era outline that screams classic. The Lopez tradition is mired in clean, subtle curves and beautifully tucked edges — more rocker than the original old-school singles with an updated rail shape, fully in-step with classic 70s flow.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Power Cat",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635718375667-K34JXZI60RZULWB05QAK/nk20211031_7%272+power+cat_002.jpg",
+          "description": "A powered twin-hull displacement hull foil nose to tail — meant to scream with relative ease. The twin-fin variation gets them on rail quicker with more forgiveness than the average single-fin hull. Best between 6'10 and 8'.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635719655275-XMR0G6C4649RTY5IMWGQ/unnamed-2.jpg",
+          "description": "A middle ground between a mid-length for drawn-out smooth surfing and shorter boards for staying in the pocket. Longer rail line with a slightly pulled-in nose, accelerated tail rocker with V to keep the board agile under the back foot.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Burner",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635716874519-V4X7H4QFDMOAOZJSEFPV/nk_trimcraft+boards_001+2.jpg",
+          "description": "A shortboard for those who don't shortboard — extremely versatile for travel and daily driver use. A slightly forward wide-point gives tons of flow and glide, with modernized rocker curve and foil for a positive, responsive experience. Designed by Ryan Lovelace.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Re.bowls",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/f959ed90-fdff-4e75-a61d-3611a3ac4036/7-8-trimcraft-rebowls-1_2048x2048.jpg",
+          "description": "A versatile down-railed egg based on Ryan Lovelace's v.Bowls midlength — designed for average, shifty, mushy knee-to-head-high surf. Better for forward trim and making flat sections, offering accessibility to effortless single-fin glide with a kinder learning curve.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635719815319-3YWPALOOQ35HMLCVWJXC/7F4513C8-C594-42E5-805F-2CA3C92403CA.JPG",
+          "description": "Trimcraft's first longboard offering — a hybridized longboard and glider for the logger who thought they had everything. Suited for arcing carves and swooping around the face with connectivity usually lost on a traditional log, while still happy to keep you cheating-five all day.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
