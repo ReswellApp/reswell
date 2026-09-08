@@ -1,0 +1,88 @@
+{
+  "generated_for": "dUFEU Surfboards official named standup catalog",
+  "source": "https://www.sdfsurfboards.co.uk/models (Squarespace Models collection — 12 named production models; excludes stock dimension SKUs, clearance inventory, and ding repair)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dufeu-surfboards",
+      "name": "dUFEU Surfboards",
+      "website_url": "https://www.sdfsurfboards.co.uk",
+      "location_label": "Fforestfach, Swansea, Wales",
+      "short_description": "Premium Welsh surfboard brand since 2002 — performance shortboards, easyriders, fish, mid-lengths, and longboards from the official Fforestfach factory shop.",
+      "models": [
+        {
+          "name": "ULTRABOX",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/63f262eaa89e1f31641869bd/1787829479338/UBR+D.png",
+          "description": "Flagship shortboard built for fast, critical surfing. Lively and responsive with a three-staged rocker line, single concave under the front foot blending into double concave through the fins for manoeuvrability and control, plus hidden deck foam placement.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "KONEKILLA STEP-UP",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/63f2665ba8aee0736f8d6958/1788085639111/STEP+UP+.png",
+          "description": "Step-driver shortboard for heavier waves. Medium rocker line with subtle concaves, hidden volume, and tapered rails. Reinforced construction built stronger for heavy-wave impact and wipeouts.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "MIDLENGTH",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/63f27782be07cb3324c69c58/1787829486467/MID+D.png",
+          "description": "Fun and easy to ride mid-length for carves and speed in almost any conditions. Extra length adds natural glide for easy paddling and wave catching, with mid-to-low rails and an extended concave-vee hull for a light, responsive feel.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "REDUX",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/643c1459b0416817283671e4/1787835198377/RDEUX+DECK.png",
+          "description": "Performance groveler built for generating speed in weak everyday waves. Low entry rocker in the front transitions to accelerated tail rocker, with single concave blending into deep double concaves through the fin area for lift and drive.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "ASTRO FISH",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/692761a01c753c57a5feb5e8/1788117365273/P1090645.png",
+          "description": "Easyrider modern fish-funformance twin fin. Volumised outline with tapered, relatively thin down rails for manoeuvrability and response. Medium-to-low rocker paddles well and gets up to speed quickly with a loose, slidey twin-fin feel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "INFUSION",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/69b064638751967fafb577c6/1788174855669/INF+D.png",
+          "description": "Step-down shortboard from the Ultrabox series, built for hi-performance surfing in soft, weaker waves. An infusion of Ultrabox performance with altered features to ride fast yet familiar in weaker conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EQUALIZER",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/69b08079c5b76c29c05a99c2/1788174934240/EQUALISER+D.png",
+          "description": "Hi-performance shortboard with inflated dimensions for surfers wanting a fraction more foam. Shares the Ultrabox three-staged performance rocker with added width at the halfway mark and lowered rails for extra volume without sacrificing drive.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "ULTRABOX YOUTH",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/69b080ceb8ae945b0e9f7e7f/1788174935405/IMG_4531.jpeg",
+          "description": "Hi-performance shortboard in youth dimensions. Scaled-down version of the flagship Ultrabox, developed with some of the UK's most talented groms. Expect speed, control, and quick rail-to-rail transitions with adjusted volume proportions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "THE HERITAGE",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/6a01f6f2479e797cd043f0f0/1788209752159/P1090630.png",
+          "description": "Easyrider performance hybrid built for more waves and more flow. Packed with hidden volume for sensitivity and performance across wave types, with wide point at centre for a familiar, user-friendly shape that keeps you turning and going fast.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "TURBOSLUGZ",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/6a81b3208f84e405d87aca4a/1788261961581/IMG_7362.jpg",
+          "description": "Easyrider egg with voluminous outline, relaxed rocker, and thruster fin setup. Geared for smooth turns and cutbacks in small waves, with enough paddle power to get in early when the surf is bigger.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "LOG",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/5ff5df9a9ec0da1539d28ee5/1787766608362/9%271+orange+b.png",
+          "description": "Daily longboard for ease and flow. Low entry rocker matches the hull shape with concave in the top third for nose riding, blending into a rolled vee hull and flip in the tail. Rolled vee tips the forgiving 50/50 rails for effortless turning on a single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "PRO LOG",
+          "image_url": "https://static1.squarespace.com/static/5f91c2792aaa690d9b267082/5f91c9b0481ea36d7c1048b1/6a26bdf4a1561d403650488c/1788224720881/Pro+Log+B.png",
+          "description": "User-friendly high-performance longboard for nose riding, cutbacks, and turns. Nimble outline with performance rails and a three-fin setup for quicker turning. Light underfoot and versatile from knee-high to overhead surf.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
