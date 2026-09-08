@@ -1,0 +1,98 @@
+{
+  "generated_for": "Ashley Lloyd Surfboards official named standup catalog",
+  "source": "https://www.ashleylloydsurfboards.com/copy-of-surfboards (Wix model pages and surfboards gallery — excludes apparel, gift cards, surf instruction, and custom order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ashley-lloyd-surfboards",
+      "name": "Ashley Lloyd Surfboards",
+      "website_url": "https://www.ashleylloydsurfboards.com/",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Ashley Lloyd",
+      "lead_shaper_name": "Ashley Lloyd",
+      "short_description": "Santa Cruz surfboards shaped by Ashley Lloyd since 2002, drawing on a Malibu single-fin background and ECOBoard materials.",
+      "models": [
+        {
+          "name": "AAA",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_537775b43ff840edae355d58630c95b2~mv2.png/v1/fit/w_1200,h_1200,al_c/9fc68b_537775b43ff840edae355d58630c95b2~mv2.png",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Comfy Cruiser",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_512b46e20254452081b0444fab39483b~mv2.png/v1/fit/w_1200,h_1200,al_c/9fc68b_512b46e20254452081b0444fab39483b~mv2.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Duct Tape Pintail",
+          "image_url": "https://static.wixstatic.com/media/14443e_a0641ea455794183b042059908d7e112~mv2.jpg/v1/fit/w_1200,h_1200,al_c/14443e_a0641ea455794183b042059908d7e112~mv2.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Flowbird",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_a383d65e275e4dba8e64aa7f8b3599c7~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_a383d65e275e4dba8e64aa7f8b3599c7~mv2.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gordon's Egg",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_6b6ff9447bc642e68ec4174d4ee677e9~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_6b6ff9447bc642e68ec4174d4ee677e9~mv2.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Jane Reynolds",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_815611b17b014af09a58d7fc8fdca967~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_815611b17b014af09a58d7fc8fdca967~mv2.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Model A",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_d9c175afbcb2414480ee0bcf2252ec41~mv2.png/v1/fit/w_1200,h_1200,al_c/9fc68b_d9c175afbcb2414480ee0bcf2252ec41~mv2.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Peaches",
+          "image_url": "https://static.wixstatic.com/media/14443e_a1eedd6031094bb8975c7336e7a6622e~mv2.jpg/v1/fit/w_1200,h_1200,al_c/14443e_a1eedd6031094bb8975c7336e7a6622e~mv2.jpg",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Sea Squared",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_1143cf9b41b84bfa8fc5f355a7ff83e8~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_1143cf9b41b84bfa8fc5f355a7ff83e8~mv2.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SweetSpeed",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_da345bddfede4861ba8ad8304ed87c31~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_da345bddfede4861ba8ad8304ed87c31~mv2.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Swish Fish",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_e8cc8e9f9ea44513978cba6efb08c9ce~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_e8cc8e9f9ea44513978cba6efb08c9ce~mv2.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tessa Timmons",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_d27ba8919a69447da42ab003c546b05d~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_d27ba8919a69447da42ab003c546b05d~mv2.jpg",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "The Everything",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_e1810ed09c0044038df3b80a34bec0b8~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_e1810ed09c0044038df3b80a34bec0b8~mv2.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tip Timer",
+          "image_url": "https://static.wixstatic.com/media/9fc68b_b6394e05992a427e8137a93a56d4f7c9~mv2.jpg/v1/fit/w_1200,h_1200,al_c/9fc68b_b6394e05992a427e8137a93a56d4f7c9~mv2.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Unfurling",
+          "image_url": "https://static.wixstatic.com/media/14443e_f8e302600b574d8db7306edc803083e9~mv2.jpg/v1/fit/w_1200,h_1200,al_c/14443e_f8e302600b574d8db7306edc803083e9~mv2.jpg",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Zeufie Egg",
+          "image_url": "https://static.wixstatic.com/media/14443e_dbbbfdef63ce43349022a8fae7aac15c~mv2.jpg/v1/fit/w_1200,h_1200,al_c/14443e_dbbbfdef63ce43349022a8fae7aac15c~mv2.jpg",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
