@@ -1,0 +1,114 @@
+{
+  "generated_for": "Babel Surfboards official named standup catalog",
+  "source": "https://babelsurfboards.com/collections/surfboard-models (Shopify Our Lineup + babelmodel product pages; excludes stock dimension SKUs as separate models, apparel, and gift cards)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "babel-surfboards",
+      "name": "Babel Surfboards",
+      "website_url": "https://babelsurfboards.com",
+      "location_label": "Torquay, Victoria, Australia",
+      "founder_name": "Luca",
+      "lead_shaper_name": "Luca",
+      "short_description": "Designed and crafted in Torquay, Australia \u2014 Babel Surfboards builds refined fishes, eggs, mid-lengths, and logs refined through years of R&D on the Surf Coast.",
+      "models": [
+        {
+          "name": "Bar of Soap",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-04-28at1.18.49pm.png?v=1714274642",
+          "description": "The Bar of Soap is our re-interpretation of the classic Mini Simmons with a more performance twist. It\u2019s designed for surf in the 1ft - 4 ft range. It really catches every ripple and the wide tail is ideal to fly though flat sections in mushy surf. It generates speed effortlessly, but feels solid and reliable on the bottom turn with heaps of release off the top. Slight entry vee into double concave, which blends into a double channel for extra hold (channels normally recommended for a twin fin set up), domed deck and balanced shortboard rails. It is well suited to be ridden either as a twin keel or as a quad. The Bar of Soap is one of our favourite designs and we would recommend it to anyone who is looking for a fast little groveller to fly on the smaller days. Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 5'6\" ~ 20 3/4\" ~ 2 5/8\" @ 35.5 l .",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Blunt Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-05-01at10.30.21pm.png?v=1714566731",
+          "description": "The Blunt Fish is the latest addition to our line up and represents the culmination of years of research and development. We experimented with the Simmons planing hull concept and applied to a series of different bottom rockers/contours/aspect ratios. The resulting board is a fish with enhanced performance. It flies through flat sections thanks to the relaxed bottom rocker, flattened out in the single channel off the tail and it still retains enough curve in the rail line to be pushed hard for more vertical surfing. The flat deck allows for extra foam to be packed in a compact outline. A super fun little rocket for both beach and point breaks. Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 5'5\" ~ 20 1/2\" ~ 2 5/8\" @ 34.7 l .",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Butter Quad",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-05-02at9.16.31pm.png?v=1714648667",
+          "description": "The Butter Quad has the DNA of a fish morphing into a more performance craft. Recommended to be ridden a couple of inches shorter than your thruster shortboard. This fish model is ultimately a refined version of the Commuter Fish. Both nose and tail are narrower, with a more aggressive rocker line. Single concave to vee off the tail, lower rails and refined swallow allow increased performance and control in more powerful surf. Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 6'1\" ~ 20\" ~ 2 5/8\" @ 34.5 l.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Commuter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-04-30at12.03.04pm.png?v=1714443151",
+          "description": "5'10\" ~ 20 3/8\" ~ 2 1/2\" Acrylic stain on glass camo deck - Clear bottom 3/8\" red cedar stringer 6 + 4 oz deck - 6 oz bottom Our tribute to the classic fish. It shines in clean waves, especially if set up as a twin fin. To be ridden as short as possible for the classic design, a fun board for clean beaches and point breaks. Relaxed rocker and full outline allow for lots of speed and paddle power. Entry vee to double concave to spiral vee to vee, it is very well suited for both a twin keel fin or a quad set up for more control. Featuring low rails and a refined swallow tail, it handles surf in the 2 ft to solid 5 ft surf, effortlessly generating speed and drawing smooth lines.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flebo Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-05-22at10.58.27pm.png?v=1716382745",
+          "description": "The Flebo Twin is one for all (most) conditions, intuitive and forgiving. Not as fast as a keel fish, but easier to control thanks to the more pulled-in tail and the twin plus stabilizer set up option that adds extra grip. It has the foil of a modern short board (surfer used to rider thrusters will find it somewhat familiar) with a relaxed rocker and fuller rails. It can be surfed shorter to sit tight in the pocket or more drawn out to hold longer lines on open face surf. 3D model: 6'1\" ~ 19 5/8\" ~ 2 5/8\" @ 35.8 l.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flex-Tail Hull",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/products/fullsizeoutput_fe.jpg?v=1634627998",
+          "description": "6'6\" ~ 21\" ~ 2 3/4\" Conditions: 7/10 6+4 deck - 6 bottom - 11 layers of glass on flex tail FCS side plugs ~ 10 1/2\" single fin plug Displacement hull egg. Relaxed rocker, S-deck, entry roll to vee bottom. Smooth under foot, likes the pocket.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Goliath",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-07-23at3.53.17pm.png?v=1721715012",
+          "description": "6'8\" ~ 20\" ~ 2 3/4\" @ 39.5 litre Light buttery olive tint 6 + 4 oz deck - 6 oz bottom Designed for open-face, carvy, down-the-line surfing. It holds lines on steeper walls and it preforms at its best on the point breaks, especially on the good days . Single concave transitioning to double to vee. The flat deck and the homogeneous foil spreads out the sweet spot and allows to pack some extra foam under the chest. Available as a round pin (with or without flyers), it can be surfed as a twin, quad or as a twin plus stabilizer. It is also playful in smaller surf, especially with a diamond/square tail and if surfed a bit shorter.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Goliath Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-04-29at11.58.05pm.png?v=1714399274",
+          "description": "Designed for open-face, carvy, down-the-line surfing. It holds lines on steeper walls and it preforms at its best on the point breaks, especially on the good days . Single concave transitioning to slight double to vee. The flat deck and the homogeneous foil spreads out the sweet spot and allows to pack some extra foam under the chest. Available as a round pin (with or without flyers), it can be surfed as a twin, quad or as a twin plus stabilizer. It is also playful in smaller surf, especially with a diamond/square tail and if surfed a bit shorter. Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 6'4\" ~ 19 3/4\" ~ 2 5/8\" @ 37.7 l.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Herbie Hancock",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-05-04at8.55.46pm.png?v=1714820217",
+          "description": "The step up of our quiver, to charge on the bigger days. Designed for powerful and critical waves, the Herbie works well as a widow maker (diamond tail, up to 7' long) or as a quad (swallow tail, 7' plus). See the 3D renderings below. Clean outline with more aggressive rocker line, low rails and heaps of paddle power. Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 6'7\" ~ 20\" ~ 2 3/4\" @ 40.0 l. 3D model: 7'4\" ~ 20 1/4\" ~ 2 7/8\" @ 47.2 l.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Hull",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/products/fullsizeoutput_d6.jpg?v=1628926734",
+          "description": "5'10\" ~ 20 1/4\" ~ 2 1/2\" @ about 46 litres Conditions: brand new 4 + 4 + 4 patch - 6 bottom FCS2 plugs ~ 10 1/2\" single fin plug Displacement hull egg. Relaxed rocker, S-deck, entry roll to vee bottom. Smooth under foot, likes the pocket.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Jumbo Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-05-05at7.58.39pm.png?v=1714903139",
+          "description": "Ideal for down the line surfing, heaps of trim but with a performance twist. It really shines on the point breaks around the coast. We took everything we like about our fish and stretched to a longer rail line with more paddle power and hold in bigger surf. The latest edition of the design has a hip in the tail just behind the fins to help breaking the lines into sharper turns. Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 7'3\" ~ 21 5/8\" ~ 3\" @ 54 l.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-04-28at2.04.17pm.png?v=1714278445",
+          "description": "A tribute to the \"classic\" keel fish. It shines in clean waves, especially if set up as a twin fin. To be ridden as short as possible, a fun board for clean beaches and point breaks. Relaxed rocker and full outline allow for lots of speed and paddle power. Entry vee to double concave to spiral vee to vee, it is very well suited for both a twin keel fin or a quad set up for more control. Featuring low rails and a refined swallow tail, it handles surf in the 2 ft to solid 5 ft surf, effortlessly generating speed and drawing smooth lines. Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 5'8\" ~ 21\" ~ 2 5/8\" @ 35.5 l.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Narwhal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-05-04at9.11.59pm.png?v=1714821233",
+          "description": "Our mega classic nose rider log. We designed the Narwhal to be as easy as possible to surf, where all the curves are quite subtle and blend smoothly into each other. The results is a stable and forgiving board that doesn't bog rail, connects the flat sections and does all the work for you. Moderately rolled vee bottom all the way through, blending a single concave under the nose and a panel vee off the tail. Recommended to be surfed with a pivot fin to maximise the time on the nose or a dolphin-style fin for a smoother ride . Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 9'6\" ~ 23\" ~ 3\" @ 75.38 l.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rothler",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-04-30at9.55.59pm.png?v=1714478209",
+          "description": "The Rothler is a single fin egg in the mid-length range. Designed to be ridden in the 6\u2019 to 8\u2019 in length, this model works as a single fin, as a 1+2 fin set up or even as a twinny/quad. The glide and trim really come to life when ridder 7\u2019 or longer, while it is a fun and manoeuvrable egg design when ridden shorter. It can be tweaked to perform well from 1 to solid 6 ft. It features a mild entry roll under the nose transitioning into a single-to-double concave to spiral vee off the tail, soft round rails and lots of paddle power. The most versatile design in our range! Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 7'2\" ~ 21\" ~ 2 7/8\" @ 50.4 l.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sidecut Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/products/fullsizeoutput_da.jpg?v=1628843571",
+          "description": "5'6\" ~ 19 1/2\" ~ 2 1/2\" @ about 29 litres Conditions: brand new Clear skin and foam stain artwork 4+4 deck - 4 bottom Futures plugs Performance fish made having in mind speed to burn, good waves and a craft that allows to easily engage the rail and draw long lines in open-face surf. Relaxed rocker, flat to double to vee bottom, parabolic rails, low and thin rails.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Solis",
+          "image_url": "https://cdn.shopify.com/s/files/1/0532/1451/1300/files/ScreenShot2024-05-02at8.26.22am.png?v=1714602642",
+          "description": "Exploring the enigmatic high 7\u2019 to high 8\u2019 range. The Solis is ideal for anyone looking to downsize from a longboard, opening up new lines but without sacrificing trim and flow. We love it both as a single fin or as a twin fin set up if surfed a bit shorter. It rides well in big open faces. Locked in the face of the wave when walking to the nose for heaps of trim, drive and release when stepping back and engaging the hard rail, all diluted in a longer board but still more compact than a longboard. Slight roll vee to panel vee, 60/40 to hard rails. The challenge for this relatively simple design was to find the right balance and blend all the soft transitions to create a giant sweet spot but with a different feedback depending on which part of the board is engaged. Explore the price list here . Please use the custom surfboard order form for a detailed quote. 3D model: 7'10\" ~ 21 1/2\" ~ 3\" @ 58.9 l.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
