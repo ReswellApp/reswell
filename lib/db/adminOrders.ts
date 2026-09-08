@@ -3,6 +3,7 @@ import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { countOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
 import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingLabels"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { businessDayKeyFromMs, businessDayStartMs } from "@/lib/utils/business-timezone"
 
 export type AdminOrderShippingAddress = {
   name?: string | null
@@ -210,6 +211,8 @@ export type AdminOrdersDashboardStats = AdminOrderStatusCounts & {
   openLabels: number
   /** Automated label-purchase failures still open. */
   openLabelFailures: number
+  /** Real orders created since the start of the current Pacific business day. */
+  createdToday: number
 }
 
 export type AdminOrdersOpsParty = {
@@ -485,6 +488,7 @@ export async function dbGetAdminOrdersDashboardStats(
     needsLabelRes,
     openLabelsRes,
     openLabelFailures,
+    createdTodayRes,
     ...ageResults
   ] = await Promise.all([
     openOrdersBase(supabase).eq("delivery_status", "pending"),
@@ -495,6 +499,14 @@ export async function dbGetAdminOrdersDashboardStats(
     awaitingShipmentShippingBase(supabase).is("tracking_number", null),
     awaitingShipmentShippingBase(supabase).not("tracking_number", "is", null),
     countOpenOrderShippingLabelFailures(supabase),
+    supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("is_admin_test", false)
+      .gte(
+        "created_at",
+        new Date(businessDayStartMs(businessDayKeyFromMs(Date.now()))).toISOString(),
+      ),
     ...OPEN_AGE_BUCKETS.map((bucket) => {
       let q = openOrdersBase(supabase)
       if (bucket.minDaysAgo != null) {
@@ -517,6 +529,7 @@ export async function dbGetAdminOrdersDashboardStats(
     openPickupRes,
     needsLabelRes,
     openLabelsRes,
+    createdTodayRes,
     ...ageResults,
   ]
   for (const res of results) {
@@ -551,6 +564,7 @@ export async function dbGetAdminOrdersDashboardStats(
       needsLabel: needsLabelRes.count ?? 0,
       openLabels: openLabelsRes.count ?? 0,
       openLabelFailures,
+      createdToday: createdTodayRes.count ?? 0,
     },
     error: null,
   }

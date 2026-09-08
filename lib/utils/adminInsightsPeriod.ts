@@ -105,24 +105,27 @@ export function parseAdminInsightsPeriodSearch(params: {
   if (range.success) {
     return { yearMonth: null, range: range.data }
   }
-  return { yearMonth: null, range: 'ytd' }
+  return { yearMonth: businessDayKeyFromMs(Date.now()).slice(0, 7), range: '30d' }
 }
 
 function resolveYearToDatePeriod(now: number): AdminInsightsPeriodResolved {
   const todayKey = businessDayKeyFromMs(now)
   const year = todayKey.slice(0, 4)
+  const priorYear = String(Number(year) - 1)
   const periodStartMs = businessDayStartMs(`${year}-01-01`)
+  const prevStartMs = businessDayStartMs(`${priorYear}-01-01`)
+  const elapsedMs = now - periodStartMs
   const dayMs = 24 * 60 * 60 * 1000
   return {
     mode: 'rolling',
-    periodDays: Math.max(1, Math.round((now - periodStartMs) / dayMs)),
+    periodDays: Math.max(1, Math.round(elapsedMs / dayMs)),
     label: `Year to date ${year}`,
-    compareLabel: `prior year`,
+    compareLabel: `YTD ${priorYear}`,
     periodStartMs,
     periodEndMs: now,
-    prevStartMs: businessDayStartMs(`${Number(year) - 1}-01-01`),
-    prevEndMs: periodStartMs,
-    fetchSinceIso: new Date(periodStartMs).toISOString(),
+    prevStartMs,
+    prevEndMs: prevStartMs + elapsedMs,
+    fetchSinceIso: new Date(prevStartMs).toISOString(),
   }
 }
 
@@ -179,6 +182,7 @@ export function resolveAdminInsightsPeriod(
     const currentYm = businessDayKeyFromMs(now).slice(0, 7)
     const startYm = shiftYearMonth(currentYm, -2)
     const periodStartMs = businessDayStartMs(`${startYm}-01`)
+    const prevStartMs = businessDayStartMs(`${shiftYearMonth(startYm, -3)}-01`)
     const periodDays = Math.max(1, Math.round((now - periodStartMs) / dayMs))
     return {
       mode: 'rolling',
@@ -187,9 +191,9 @@ export function resolveAdminInsightsPeriod(
       compareLabel: 'prior 3 months',
       periodStartMs,
       periodEndMs: now,
-      prevStartMs: businessDayStartMs(`${shiftYearMonth(startYm, -3)}-01`),
+      prevStartMs,
       prevEndMs: periodStartMs,
-      fetchSinceIso: new Date(periodStartMs).toISOString(),
+      fetchSinceIso: new Date(prevStartMs).toISOString(),
     }
   }
 

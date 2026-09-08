@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  Area,
   CartesianGrid,
-  ComposedChart,
   Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,11 +24,14 @@ import type {
   AdminRevenueMonthlyPoint,
 } from '@/lib/types/adminBusinessInsights'
 import { AdminRevenueMonthlyBars } from '@/components/features/admin/admin-revenue-monthly-bars'
+import { monthlyChartDomain } from '@/lib/utils/adminRevenueMonthly'
 
 type Metric = 'gmv' | 'orders'
 
-const GRID_STROKE = '#e2e8f0'
-const TICK_FILL = '#64748b'
+const GRID_STROKE = '#e8e8e8'
+const TICK_FILL = '#94a3b8'
+const LINE_GMV = '#14b8a6'
+const LINE_ORDERS = '#38bdf8'
 
 function formatUsd(value: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -53,14 +55,14 @@ function ChartTooltip({
     typeof label === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(label)
       ? formatBusinessDayKeyLong(label)
       : String(label)
-  const gmvLabel = 'GMV'
+  const gmvLabel = 'GMS'
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
       <p className="mb-1.5 font-medium text-foreground">{dateLabel}</p>
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-6">
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="h-2 w-2 rounded-full bg-teal-500" />
             {gmvLabel}
           </span>
           <span className="font-semibold tabular-nums text-foreground">
@@ -70,7 +72,7 @@ function ChartTooltip({
         <div className="flex items-center justify-between gap-6">
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="h-2 w-2 rounded-full bg-sky-500" />
-            Platform fees
+            Platform revenue
           </span>
           <span className="font-semibold tabular-nums text-foreground">{formatUsd(point.fees)}</span>
         </div>
@@ -88,9 +90,11 @@ interface AdminRevenueChartProps {
   chartSubtitle: string
   totalGmv: number
   totalOrders: number
+  totalPlatformRevenue?: number
   periodFilter?: ReactNode
   monthly?: AdminRevenueMonthlyPoint[]
   insight?: string | null
+  layout?: 'default' | 'hero'
 }
 
 export function AdminRevenueChart({
@@ -98,15 +102,14 @@ export function AdminRevenueChart({
   chartSubtitle,
   totalGmv,
   totalOrders,
+  totalPlatformRevenue,
   periodFilter,
   monthly = [],
   insight = null,
+  layout = 'default',
 }: AdminRevenueChartProps) {
   const [metric, setMetric] = useState<Metric>('gmv')
   const [chartReady, setChartReady] = useState(false)
-  const chartInstanceId = useId().replace(/:/g, '')
-  const gmvFillId = `admin-revenue-gmv-${chartInstanceId}`
-  const ordersFillId = `admin-revenue-orders-${chartInstanceId}`
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setChartReady(true))
@@ -135,20 +138,26 @@ export function AdminRevenueChart({
         : points.some((d) => d.chartGmv > 0 || d.orders > 0),
     [monthly, points, useMonthly],
   )
-  const yMax = useMemo(() => {
-    if (metric === 'gmv') {
-      return Math.max(0, ...points.map((d) => Math.max(d.chartGmv, d.fees)))
-    }
-    return Math.max(0, ...points.map((d) => d.orders))
-  }, [metric, points])
+  const [yMin, yMax] = useMemo(
+    () =>
+      monthlyChartDomain(
+        points.map((point) => (metric === 'gmv' ? point.chartGmv : point.orders)),
+      ),
+    [metric, points],
+  )
 
   const displayGmv = totalGmv
+  const platformRevenue =
+    totalPlatformRevenue ?? points.reduce((sum, point) => sum + point.fees, 0)
+  const isHero = layout === 'hero'
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className={cn(isHero ? 'admin-surface p-5' : 'rounded-2xl border border-border bg-card p-5')}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="font-headline text-base font-semibold text-foreground">Revenue trend</h3>
+          <h3 className="font-headline text-base font-semibold text-foreground">
+            {isHero ? 'GMS' : 'Revenue trend'}
+          </h3>
           <p className="text-xs text-muted-foreground">{chartSubtitle}</p>
           {insight ? (
             <p className="mt-1.5 max-w-xl text-sm font-medium text-foreground">{insight}</p>
@@ -157,14 +166,20 @@ export function AdminRevenueChart({
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           {periodFilter}
           <div className="text-right">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">GMV</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">GMS</p>
             <p className="text-lg font-bold tabular-nums text-foreground">
               {formatCompactUsd(displayGmv)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Orders</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Sales</p>
             <p className="text-lg font-bold tabular-nums text-foreground">{totalOrders}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Platform</p>
+            <p className="text-lg font-bold tabular-nums text-foreground">
+              {formatCompactUsd(platformRevenue)}
+            </p>
           </div>
           <div className="flex flex-col items-end gap-1.5">
             <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
@@ -180,7 +195,7 @@ export function AdminRevenueChart({
                       : 'text-muted-foreground hover:text-foreground',
                   )}
                 >
-                  {m === 'gmv' ? 'GMV' : 'Orders'}
+                  {m === 'gmv' ? 'GMS' : 'Orders'}
                 </button>
               ))}
             </div>
@@ -188,7 +203,7 @@ export function AdminRevenueChart({
         </div>
       </div>
 
-      <div className={cn('mt-4 w-full min-w-0', useMonthly ? 'h-[300px]' : 'h-[240px]')}>
+      <div className={cn('mt-4 w-full min-w-0', 'h-[300px]')}>
         {!hasData ? (
           <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border">
             <p className="text-sm text-muted-foreground">No sales in this window yet.</p>
@@ -199,21 +214,8 @@ export function AdminRevenueChart({
           <AdminRevenueMonthlyBars data={monthly} metric={metric} />
         ) : (
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <ComposedChart
-              data={points}
-              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id={gmvFillId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id={ordersFillId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
+            <LineChart data={points} margin={{ top: 16, right: 24, left: 0, bottom: 0 }}>
+              <CartesianGrid stroke={GRID_STROKE} vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value: string) =>
@@ -221,14 +223,15 @@ export function AdminRevenueChart({
                 }
                 tickLine={false}
                 axisLine={false}
-                minTickGap={points.length > 45 ? 40 : 28}
+                padding={{ left: 28, right: 28 }}
+                minTickGap={points.length > 45 ? 40 : 16}
                 tick={{ fontSize: 11, fill: TICK_FILL }}
               />
               <YAxis
                 type="number"
-                domain={[0, yMax > 0 ? yMax * 1.08 : 1]}
+                domain={[yMin, yMax]}
                 tickFormatter={(value: number) =>
-                  metric === 'gmv' ? formatCompactUsd(value) : String(value)
+                  metric === 'gmv' ? formatCompactUsd(value) : String(Math.round(value))
                 }
                 tickLine={false}
                 axisLine={false}
@@ -238,28 +241,18 @@ export function AdminRevenueChart({
               />
               <Tooltip
                 content={<ChartTooltip />}
-                cursor={{ stroke: GRID_STROKE }}
+                cursor={{ stroke: GRID_STROKE, strokeWidth: 1 }}
               />
-              <Area
-                type="monotone"
+              <Line
+                type="linear"
                 dataKey={metric === 'gmv' ? 'chartGmv' : 'orders'}
-                stroke={metric === 'gmv' ? '#10b981' : '#0ea5e9'}
-                strokeWidth={2}
-                fill={`url(#${metric === 'gmv' ? gmvFillId : ordersFillId})`}
+                stroke={metric === 'gmv' ? LINE_GMV : LINE_ORDERS}
+                strokeWidth={3}
                 dot={false}
+                activeDot={{ r: 4, strokeWidth: 0 }}
                 isAnimationActive={false}
               />
-              {metric === 'gmv' ? (
-                <Line
-                  type="monotone"
-                  dataKey="fees"
-                  stroke="#0ea5e9"
-                  strokeWidth={1.5}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              ) : null}
-            </ComposedChart>
+            </LineChart>
           </ResponsiveContainer>
         )}
       </div>

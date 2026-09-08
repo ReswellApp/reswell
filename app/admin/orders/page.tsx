@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -29,6 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Dialog,
   DialogContent,
@@ -41,28 +43,32 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  CheckCircle2,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Copy,
   CreditCard,
   Eye,
   FlaskConical,
+  Filter,
   Hash,
   Loader2,
+  MoreHorizontal,
   MoreVertical,
   Package,
+  Plus,
   RefreshCw,
-  RotateCcw,
   ShoppingBag,
   Trash2,
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { format, formatDistanceToNow } from 'date-fns'
-import { AdminOrdersDashboard } from '@/components/features/admin/admin-orders-dashboard'
-import { AdminOpenOrdersSection } from '@/components/features/admin/admin-open-orders-section'
+import { format } from 'date-fns'
+import { AdminPageHeader } from '@/components/features/admin/admin-page-header'
+import { AdminStatStrip } from '@/components/features/admin/admin-stat-strip'
+import { AdminStatusPill } from '@/components/features/admin/admin-status-pill'
+import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
+import { capitalizeWords } from '@/lib/listing-labels'
 import { profileMediaDisplaySrc } from '@/lib/public-media-display-src'
 import type { AdminOrdersDashboardPayload } from '@/lib/services/adminOrdersStats'
 import { cn } from '@/lib/utils'
@@ -76,6 +82,9 @@ type OrderRow = {
   amount: number | string
   payment_method: string
   fulfillment_method: string | null
+  delivery_status: string | null
+  tracking_carrier: string | null
+  carrier_delivered_at: string | null
   created_at: string
   refunded_at: string | null
   buyer_id: string | null
@@ -83,12 +92,21 @@ type OrderRow = {
   is_admin_test: boolean
   buyer: PartyLabel | null
   seller: PartyLabel | null
+  listing: {
+    id: string
+    title: string | null
+    section: string | null
+    imageUrl: string | null
+  } | null
 }
 
 type SortKey = 'created_at' | 'amount'
 type SortDir = 'asc' | 'desc'
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
+
+/** Status dropdown stays on the fulfillment queues; payment states live on the top strip / More Filter. */
+const PRIMARY_OPEN_FILTERS = new Set(['awaiting_shipping', 'in_transit', 'pickup', 'delivered'])
 
 function formatUsd(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -106,13 +124,22 @@ function compactNumber(value: number): string {
   }).format(value)
 }
 
-function formatOrderDate(createdAt: string): { relative: string; title: string } | null {
+function formatOrderDate(createdAt: string): { display: string; title: string } | null {
   const date = new Date(createdAt)
   if (Number.isNaN(date.getTime())) return null
   return {
-    relative: formatDistanceToNow(date, { addSuffix: true }),
+    display: format(date, 'MMM dd, yyyy'),
     title: format(date, 'PPpp'),
   }
+}
+
+function formatRangeLabel(from: string, to: string): string {
+  const start = from ? format(new Date(`${from}T00:00:00`), 'dd MMM, yyyy') : null
+  const end = to ? format(new Date(`${to}T00:00:00`), 'dd MMM, yyyy') : null
+  if (start && end) return `${start} to ${end}`
+  if (start) return `From ${start}`
+  if (end) return `Until ${end}`
+  return 'All dates'
 }
 
 function userInitials(name: string | null, email: string | null): string {
@@ -134,35 +161,16 @@ function fulfillmentLabel(method: string | null): string {
   return method.charAt(0).toUpperCase() + method.slice(1)
 }
 
-function StatusBadge({ status }: { status: string }) {
-  switch (status) {
-    case 'confirmed':
-      return (
-        <Badge variant="outline" className="gap-1 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2 className="h-3 w-3" /> Confirmed
-        </Badge>
-      )
-    case 'refunding':
-      return (
-        <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400">
-          <RotateCcw className="h-3 w-3" /> Refunding
-        </Badge>
-      )
-    case 'refunded':
-      return (
-        <Badge variant="outline" className="gap-1 border-rose-500/30 text-rose-600 dark:text-rose-400">
-          <RotateCcw className="h-3 w-3" /> Refunded
-        </Badge>
-      )
-    case 'pending':
-      return (
-        <Badge variant="outline" className="gap-1 text-muted-foreground">
-          <Clock className="h-3 w-3" /> Pending
-        </Badge>
-      )
-    default:
-      return <Badge variant="outline">{status}</Badge>
-  }
+function pageItems(current: number, total: number): Array<number | 'ellipsis'> {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const items: Array<number | 'ellipsis'> = [1]
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  if (start > 2) items.push('ellipsis')
+  for (let i = start; i <= end; i += 1) items.push(i)
+  if (end < total - 1) items.push('ellipsis')
+  items.push(total)
+  return items
 }
 
 function PartyCell({
@@ -190,7 +198,10 @@ function PartyCell({
         </AvatarFallback>
       </Avatar>
       <span className="min-w-0">
-        <span className="line-clamp-1 max-w-[150px] text-sm text-foreground">{name}</span>
+        <span className="line-clamp-1 max-w-[160px] text-sm font-semibold text-foreground">{name}</span>
+        <span className="block text-xs text-muted-foreground">
+          {party?.email && party.display_name ? party.email : 'Customer'}
+        </span>
       </span>
     </div>
   )
@@ -202,7 +213,6 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dashboard, setDashboard] = useState<AdminOrdersDashboardPayload | null>(null)
-  const [statsLoading, setStatsLoading] = useState(true)
 
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -210,6 +220,8 @@ export default function AdminOrdersPage() {
   const [openFilter, setOpenFilter] = useState('none')
   const [paymentFilter, setPaymentFilter] = useState('all')
   const [testFilter, setTestFilter] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [pageSize, setPageSize] = useState(50)
@@ -225,7 +237,14 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     const open = new URLSearchParams(window.location.search).get('open')
-    if (open === 'shipping' || open === 'pickup' || open === 'all') {
+    if (
+      open === 'shipping' ||
+      open === 'pickup' ||
+      open === 'all' ||
+      open === 'awaiting_shipping' ||
+      open === 'in_transit' ||
+      open === 'delivered'
+    ) {
       setOpenFilter(open)
       setStatusFilter('all')
     }
@@ -233,18 +252,15 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     setOffset(0)
-  }, [search, statusFilter, openFilter, paymentFilter, testFilter, sortKey, sortDir, pageSize])
+  }, [search, statusFilter, openFilter, paymentFilter, testFilter, dateFrom, dateTo, sortKey, sortDir, pageSize])
 
   const fetchStats = useCallback(async () => {
-    setStatsLoading(true)
     try {
       const res = await fetch('/api/admin/orders/stats', { credentials: 'include' })
       const body = (await res.json()) as { data?: AdminOrdersDashboardPayload; error?: string }
       if (res.ok && body.data) setDashboard(body.data)
     } catch {
-      /* non-fatal — dashboard stays in loading / last-known state */
-    } finally {
-      setStatsLoading(false)
+      /* non-fatal — first-strip KPIs stay on last-known values */
     }
   }, [])
 
@@ -258,6 +274,8 @@ export default function AdminOrdersPage() {
       if (paymentFilter !== 'all') params.set('payment', paymentFilter)
       if (testFilter !== 'all') params.set('test', testFilter)
       if (search) params.set('q', search)
+      if (dateFrom) params.set('from', dateFrom)
+      if (dateTo) params.set('to', dateTo)
       params.set('sort', sortKey)
       params.set('dir', sortDir)
       params.set('limit', String(pageSize))
@@ -277,7 +295,7 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, openFilter, paymentFilter, testFilter, search, sortKey, sortDir, pageSize, offset])
+  }, [statusFilter, openFilter, paymentFilter, testFilter, dateFrom, dateTo, search, sortKey, sortDir, pageSize, offset])
 
   useEffect(() => {
     void fetchOrders()
@@ -357,145 +375,252 @@ export default function AdminOrdersPage() {
     openFilter !== 'none' ||
     paymentFilter !== 'all' ||
     testFilter !== 'all' ||
+    dateFrom !== '' ||
+    dateTo !== '' ||
     search !== ''
 
+  const stats = dashboard?.stats
+  const pages = pageItems(currentPage, totalPages)
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Orders</h1>
-            <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
-              {dashboard
-                ? `${compactNumber(dashboard.stats.total)} total`
-                : 'Loading…'}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Track open fulfillment, payments, and refunds. Open an order to refund, ship, or cancel.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button type="button" variant="outline" asChild>
-            <Link href="/admin/orders/test-purchase">
-              <ShoppingBag className="mr-2 h-4 w-4" /> Test purchase
-            </Link>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={loading}
-            onClick={() => {
-              void fetchOrders()
-              void fetchStats()
-            }}
-          >
-            <RefreshCw className={cn('mr-2 h-4 w-4', loading && 'animate-spin')} />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      <AdminOrdersDashboard data={dashboard} loading={statsLoading} />
-
-      <AdminOpenOrdersSection
-        shipping={dashboard?.openLists.shipping ?? []}
-        pickup={dashboard?.openLists.pickup ?? []}
-        loading={statsLoading}
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Orders List"
+        description="Here you can find all of your orders."
+        breadcrumbs={[
+          { label: 'Home', href: '/admin/home' },
+          { label: 'Orders List' },
+        ]}
+        actions={
+          <>
+            <Button type="button" className="admin-btn-primary hover:text-white" asChild>
+              <Link href="/admin/orders/test-purchase">
+                <Plus className="mr-2 h-4 w-4" /> Add Order
+              </Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" className="bg-white">
+                  More Actions
+                  <MoreHorizontal className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  disabled={loading}
+                  onClick={() => {
+                    void fetchOrders()
+                    void fetchStats()
+                  }}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/orders/terminal">
+                    <ShoppingBag className="mr-2 h-4 w-4" /> In-person checkout
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
       />
 
-      {/* Toolbar */}
-      <div className="rounded-2xl border border-border bg-card p-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+      <AdminStatStrip
+        items={[
+          {
+            label: 'Total Orders',
+            value: stats ? compactNumber(stats.total) : '—',
+            footnote: 'All marketplace orders',
+            tone: 'teal',
+            active: openFilter === 'none' && statusFilter === 'all',
+            onClick: () => {
+              setOpenFilter('none')
+              setStatusFilter('all')
+            },
+          },
+          {
+            label: 'New Orders',
+            value: stats ? compactNumber(stats.createdToday) : '—',
+            footnote: 'Placed today (Pacific)',
+            tone: 'amber',
+          },
+          {
+            label: 'Completed Orders',
+            value: stats ? compactNumber(stats.confirmed) : '—',
+            footnote: 'Confirmed and paid',
+            tone: 'green',
+            active: statusFilter === 'confirmed' && openFilter === 'none',
+            onClick: () => {
+              setOpenFilter('none')
+              setStatusFilter('confirmed')
+            },
+          },
+          {
+            label: 'Cancelled Orders',
+            value: stats ? compactNumber(stats.refunded) : '—',
+            footnote:
+              stats && stats.refunding > 0
+                ? `${compactNumber(stats.refunding)} still refunding`
+                : 'Refunded orders',
+            tone: 'red',
+            active: statusFilter === 'refunded' && openFilter === 'none',
+            onClick: () => {
+              setOpenFilter('none')
+              setStatusFilter('refunded')
+            },
+          },
+        ]}
+      />
+
+      <div className="admin-surface overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-border/70 p-4 lg:flex-row lg:items-center">
           <SiteSearchBar className="flex-1 lg:min-w-0" onSubmit={(e) => e.preventDefault()}>
             <Input
-              placeholder="Search by order # or paste an order ID…"
+              placeholder="Search by name, Order ID..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className={siteSearchInputClassName()}
+              className={cn(siteSearchInputClassName(), 'h-10 rounded-lg')}
             />
           </SiteSearchBar>
-          <div className="grid grid-cols-2 gap-2 sm:flex lg:shrink-0">
+          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
             <Select
-              value={openFilter}
+              value={PRIMARY_OPEN_FILTERS.has(openFilter) ? openFilter : 'view-all'}
               onValueChange={(v) => {
+                if (v === 'view-all') {
+                  setOpenFilter('none')
+                  setStatusFilter('all')
+                  return
+                }
+                setStatusFilter('all')
                 setOpenFilter(v)
-                if (v !== 'none') setStatusFilter('all')
               }}
             >
-              <SelectTrigger className="lg:w-44">
-                <SelectValue placeholder="Fulfillment" />
+              <SelectTrigger className="h-10 w-[200px] bg-white">
+                <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">All fulfillment</SelectItem>
-                <SelectItem value="shipping">Open shipping</SelectItem>
-                <SelectItem value="pickup">Open pickup</SelectItem>
-                <SelectItem value="all">All open</SelectItem>
+                <SelectItem value="view-all">All Status</SelectItem>
+                <SelectItem value="awaiting_shipping">Awaiting shipping</SelectItem>
+                <SelectItem value="in_transit">In transit</SelectItem>
+                <SelectItem value="pickup">Awaiting pickup</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
               </SelectContent>
             </Select>
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => {
-                setStatusFilter(v)
-                if (v !== 'all') setOpenFilter('none')
-              }}
-            >
-              <SelectTrigger className="lg:w-44">
-                <SelectValue placeholder="Payment status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All payment statuses</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="pending">Pending payment</SelectItem>
-                <SelectItem value="refunding">Refunding</SelectItem>
-                <SelectItem value="refunded">Refunded</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-              <SelectTrigger className="lg:w-36">
-                <SelectValue placeholder="Payment" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All payments</SelectItem>
-                <SelectItem value="stripe">Card</SelectItem>
-                <SelectItem value="reswell_bucks">Wallet</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={testFilter} onValueChange={setTestFilter}>
-              <SelectTrigger className="lg:w-36">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All orders</SelectItem>
-                <SelectItem value="real">Real only</SelectItem>
-                <SelectItem value="test">Test only</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={`${sortKey}:${sortDir}`}
-              onValueChange={(v) => {
-                const [k, d] = v.split(':') as [SortKey, SortDir]
-                setSortKey(k)
-                setSortDir(d)
-              }}
-            >
-              <SelectTrigger className="lg:w-44">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at:desc">Newest first</SelectItem>
-                <SelectItem value="created_at:asc">Oldest first</SelectItem>
-                <SelectItem value="amount:desc">Highest amount</SelectItem>
-                <SelectItem value="amount:asc">Lowest amount</SelectItem>
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" className="h-10 bg-white font-normal">
+                  <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                  {formatRangeLabel(dateFrom, dateTo)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground" htmlFor="orders-from">
+                    From
+                  </label>
+                  <Input id="orders-from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground" htmlFor="orders-to">
+                    To
+                  </label>
+                  <Input id="orders-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    setDateFrom('')
+                    setDateTo('')
+                  }}
+                >
+                  Clear dates
+                </Button>
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" className="h-10 bg-white">
+                  <Filter className="mr-2 h-4 w-4" />
+                  More Filter
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 space-y-3">
+                <Select
+                  value={openFilter === 'none' ? statusFilter : 'all'}
+                  onValueChange={(v) => {
+                    setOpenFilter('none')
+                    setStatusFilter(v)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Payment status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any payment status</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="refunding">Refunding</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Payment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All payments</SelectItem>
+                    <SelectItem value="stripe">Card</SelectItem>
+                    <SelectItem value="reswell_bucks">Wallet</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={testFilter} onValueChange={setTestFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All orders</SelectItem>
+                    <SelectItem value="real">Real only</SelectItem>
+                    <SelectItem value="test">Test only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={`${sortKey}:${sortDir}`}
+                  onValueChange={(v) => {
+                    const [k, d] = v.split(':') as [SortKey, SortDir]
+                    setSortKey(k)
+                    setSortDir(d)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at:desc">Newest first</SelectItem>
+                    <SelectItem value="created_at:asc">Oldest first</SelectItem>
+                    <SelectItem value="amount:desc">Highest amount</SelectItem>
+                    <SelectItem value="amount:asc">Lowest amount</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n} per page
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
         {loading ? (
           <div className="divide-y divide-border">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -541,6 +666,8 @@ export default function AdminOrdersPage() {
                   setOpenFilter('none')
                   setPaymentFilter('all')
                   setTestFilter('all')
+                  setDateFrom('')
+                  setDateTo('')
                 }}
               >
                 Reset filters
@@ -551,174 +678,192 @@ export default function AdminOrdersPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>Order</TableHead>
-                <TableHead>Buyer</TableHead>
-                <TableHead>Seller</TableHead>
-                <TableHead className="text-right">
-                  <SortHeader label="Amount" sortKey="amount" className="ml-auto" />
-                </TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Fulfillment</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Product Name</TableHead>
+                <TableHead>Customer Name</TableHead>
                 <TableHead>
-                  <SortHeader label="Date" sortKey="created_at" />
+                  <SortHeader label="Order ID" sortKey="created_at" />
                 </TableHead>
-                <TableHead className="w-12" />
+                <TableHead>
+                  <SortHeader label="Amount" sortKey="amount" />
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
+              {rows.map((r) => {
+                const created = formatOrderDate(r.created_at)
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {r.listing?.imageUrl ? (
+                          <Image
+                            src={r.listing.imageUrl}
+                            alt=""
+                            width={40}
+                            height={40}
+                            unoptimized={listingImageShouldBypassOptimization(r.listing.imageUrl)}
+                            className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-muted">
+                            <Package className="h-4 w-4" aria-hidden />
+                          </span>
+                        )}
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-2">
+                            <span className="line-clamp-1 text-sm font-semibold text-foreground">
+                              {capitalizeWords(r.listing?.title) ||
+                                r.seller?.display_name ||
+                                r.seller?.email ||
+                                'Marketplace order'}
+                            </span>
+                            {r.is_admin_test ? (
+                              <Badge
+                                variant="outline"
+                                className="gap-1 border-violet-500/30 text-violet-600 dark:text-violet-400"
+                              >
+                                <FlaskConical className="h-3 w-3" /> Test
+                              </Badge>
+                            ) : null}
+                          </span>
+                          <span className="block text-xs text-muted-foreground">
+                            {r.listing?.section
+                              ? capitalizeWords(r.listing.section.replace(/_/g, ' '))
+                              : `${fulfillmentLabel(r.fulfillment_method)} order`}
+                          </span>
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <PartyCell party={r.buyer} fallbackId={r.buyer_id} />
+                    </TableCell>
+                    <TableCell>
                       <Link href={`/admin/orders/${r.id}`} className="group flex flex-col">
-                        <span className="font-mono text-sm font-medium text-foreground group-hover:underline">
-                          {r.order_num ?? `#${r.id.slice(0, 8)}`}
+                        <span className="font-semibold text-foreground group-hover:underline">
+                          {r.order_num ? `#${r.order_num}` : `#${r.id.slice(0, 8)}`}
                         </span>
-                        <span className="font-mono text-[11px] text-muted-foreground">{r.id.slice(0, 8)}…</span>
+                        <span className="text-xs text-muted-foreground" title={created?.title}>
+                          {created?.display ?? '—'}
+                        </span>
                       </Link>
-                      {r.is_admin_test ? (
-                        <Badge
-                          variant="outline"
-                          className="gap-1 border-violet-500/30 text-violet-600 dark:text-violet-400"
-                        >
-                          <FlaskConical className="h-3 w-3" /> Test
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <PartyCell party={r.buyer} fallbackId={r.buyer_id} />
-                  </TableCell>
-                  <TableCell>
-                    <PartyCell party={r.seller} fallbackId={r.seller_id} />
-                  </TableCell>
-                  <TableCell className="text-right font-semibold tabular-nums text-foreground">
-                    {formatUsd(Number(r.amount))}
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                      {r.payment_method === 'reswell_bucks' ? (
-                        <Wallet className="h-3.5 w-3.5" />
-                      ) : (
-                        <CreditCard className="h-3.5 w-3.5" />
-                      )}
-                      {paymentLabel(r.payment_method)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {r.fulfillment_method ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Package className="h-3.5 w-3.5" />
-                        {fulfillmentLabel(r.fulfillment_method)}
-                      </span>
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={r.status} />
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                    {(() => {
-                      const created = formatOrderDate(r.created_at)
-                      if (!created) return '—'
-                      return (
-                        <span title={created.title} className="cursor-default">
-                          {created.relative}
-                        </span>
-                      )
-                    })()}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-semibold tabular-nums text-foreground">{formatUsd(Number(r.amount))}</p>
+                      <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        {r.payment_method === 'reswell_bucks' ? (
+                          <Wallet className="h-3 w-3" />
+                        ) : (
+                          <CreditCard className="h-3 w-3" />
+                        )}
+                        Paid by {paymentLabel(r.payment_method)}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <AdminStatusPill
+                        fulfillment={{
+                          status: r.status,
+                          fulfillment_method: r.fulfillment_method,
+                          delivery_status: r.delivery_status,
+                          tracking_carrier: r.tracking_carrier,
+                          carrier_delivered_at: r.carrier_delivered_at,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        <Button variant="outline" size="sm" className="h-8 bg-white" asChild>
                           <Link href={`/admin/orders/${r.id}`}>
-                            <Eye className="mr-2 h-4 w-4" /> View details
+                            <Eye className="mr-1.5 h-3.5 w-3.5" /> Details
                           </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => void copy(r.id, 'Order ID')}>
-                          <Copy className="mr-2 h-4 w-4" /> Copy order ID
-                        </DropdownMenuItem>
-                        {r.order_num ? (
-                          <DropdownMenuItem onClick={() => void copy(r.order_num as string, 'Order #')}>
-                            <Hash className="mr-2 h-4 w-4" /> Copy order #
-                          </DropdownMenuItem>
-                        ) : null}
-                        {r.is_admin_test ? (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-rose-600 focus:text-rose-600 dark:text-rose-400"
-                              onClick={() => setDeleteTarget(r)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete test order
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-8 w-8 bg-white">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/orders/${r.id}`}>
+                                <Eye className="mr-2 h-4 w-4" /> View details
+                              </Link>
                             </DropdownMenuItem>
-                          </>
-                        ) : null}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => void copy(r.id, 'Order ID')}>
+                              <Copy className="mr-2 h-4 w-4" /> Copy order ID
+                            </DropdownMenuItem>
+                            {r.order_num ? (
+                              <DropdownMenuItem onClick={() => void copy(r.order_num as string, 'Order #')}>
+                                <Hash className="mr-2 h-4 w-4" /> Copy order #
+                              </DropdownMenuItem>
+                            ) : null}
+                            {r.is_admin_test ? (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-rose-600 focus:text-rose-600 dark:text-rose-400"
+                                  onClick={() => setDeleteTarget(r)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete test order
+                                </DropdownMenuItem>
+                              </>
+                            ) : null}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         )}
 
-        {/* Pagination */}
         {!loading && !error && rows.length > 0 ? (
-          <div className="flex flex-col items-center justify-between gap-3 border-t border-border px-4 py-3 sm:flex-row">
-            <p className="text-xs text-muted-foreground">
-              Showing{' '}
-              <span className="font-medium tabular-nums text-foreground">
-                {offset + 1}–{Math.min(offset + pageSize, total)}
-              </span>{' '}
-              of <span className="font-medium tabular-nums text-foreground">{compactNumber(total)}</span>
-            </p>
-            <div className="flex items-center gap-3">
-              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-                <SelectTrigger className="h-8 w-[130px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZE_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n} per page
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={offset === 0}
-                  onClick={() => setOffset(Math.max(0, offset - pageSize))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="px-2 text-xs tabular-nums text-muted-foreground">
-                  {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={offset + pageSize >= total}
-                  onClick={() => setOffset(offset + pageSize)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-border/70 px-4 py-3 sm:flex-row">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 bg-white"
+              disabled={offset === 0}
+              onClick={() => setOffset(Math.max(0, offset - pageSize))}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-1">
+              {pages.map((page, index) =>
+                page === 'ellipsis' ? (
+                  <span key={`e-${index}`} className="px-2 text-xs text-muted-foreground">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setOffset((page - 1) * pageSize)}
+                    className={cn(
+                      'flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm tabular-nums',
+                      page === currentPage
+                        ? 'rounded-md bg-[hsl(var(--admin-teal))]/12 font-semibold text-[hsl(var(--admin-teal))]'
+                        : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground',
+                    )}
+                  >
+                    {page}
+                  </button>
+                ),
+              )}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 bg-white"
+              disabled={offset + pageSize >= total}
+              onClick={() => setOffset(offset + pageSize)}
+            >
+              Next <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
           </div>
         ) : null}
       </div>

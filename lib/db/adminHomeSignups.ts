@@ -25,3 +25,30 @@ export async function fetchProfileCreatedAtSince(
     })
     .filter((value): value is string => Boolean(value))
 }
+
+const LISTING_FETCH_CAP = 50000
+
+export async function fetchListingCreatedAtSince(
+  db: SupabaseClient,
+  sinceIso: string,
+): Promise<string[]> {
+  const { data, error } = await db
+    .from('listings')
+    .select('created_at')
+    .neq('status', 'draft')
+    .gte('created_at', sinceIso)
+    .order('created_at', { ascending: true })
+    .limit(LISTING_FETCH_CAP)
+
+  if (error) {
+    console.error('[adminHomeGrowth] listings fetch failed', error.message)
+    throw new Error('Could not load listing trend.')
+  }
+
+  return (data ?? [])
+    .map((row) => {
+      const createdAt = (row as { created_at?: unknown }).created_at
+      return typeof createdAt === 'string' ? createdAt : null
+    })
+    .filter((value): value is string => Boolean(value))
+}

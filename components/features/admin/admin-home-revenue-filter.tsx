@@ -49,7 +49,7 @@ export function AdminHomeRevenueFilter({
     const params = new URLSearchParams(searchParams.toString())
     if (next === RANGE_YTD) {
       params.delete('month')
-      params.delete('range')
+      params.set('range', RANGE_YTD)
     } else if (next === ROLLING_30 || next === ROLLING_90) {
       params.delete('month')
       params.set('range', next)
@@ -65,7 +65,7 @@ export function AdminHomeRevenueFilter({
     <Select value={value} onValueChange={onPeriodChange}>
       <SelectTrigger
         className="h-8 w-full min-w-[168px] sm:w-[200px]"
-        aria-label="Revenue period"
+        aria-label="Dashboard period"
       >
         <CalendarRange className="mr-2 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
         <SelectValue placeholder="Select period" />

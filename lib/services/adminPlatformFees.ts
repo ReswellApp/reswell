@@ -1,4 +1,5 @@
 import { isHiddenFromAdminOverviewReport } from '@/lib/admin/overview-report-orders'
+import { listSucceededSellerSaleTipRevenues } from '@/lib/db/sellerSaleTips'
 import { marketplaceGmvExcludingShippingUsd } from '@/lib/seller-fees'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
@@ -16,11 +17,14 @@ export async function loadAdminPlatformPurchaseFees(): Promise<
 > {
   try {
     const adminDb = createServiceRoleClient()
-    const { data: orderRows, error: ordersError } = await adminDb
-      .from('orders')
-      .select('platform_fee, amount, shipping_amount, delivery_status, created_at, status')
-      .eq('status', 'confirmed')
-      .eq('is_admin_test', false)
+    const [{ data: orderRows, error: ordersError }, tipRevenues] = await Promise.all([
+      adminDb
+        .from('orders')
+        .select('platform_fee, amount, shipping_amount, delivery_status, created_at, status')
+        .eq('status', 'confirmed')
+        .eq('is_admin_test', false),
+      listSucceededSellerSaleTipRevenues(adminDb),
+    ])
 
     if (ordersError) {
       return { ok: false, error: 'Could not load purchase fee totals.' }
@@ -30,12 +34,13 @@ export async function loadAdminPlatformPurchaseFees(): Promise<
     const fulfilled = rows.filter((r) =>
       r.delivery_status === 'delivered' || r.delivery_status === 'picked_up',
     )
+    const tipRevenueUsd = tipRevenues.reduce((sum, tip) => sum + tip.amountUsd, 0)
 
     return {
       ok: true,
       data: {
-        totalFees: rows.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0),
-        totalFeesFulfilled: fulfilled.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0),
+        totalFees: rows.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0) + tipRevenueUsd,
+        totalFeesFulfilled: fulfilled.reduce((s, r) => s + Number(r.platform_fee ?? 0), 0) + tipRevenueUsd,
         fulfilledOrderCount: fulfilled.length,
         confirmedCount: rows.length,
         totalSaleVolume: rows.reduce(

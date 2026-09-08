@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import { isHiddenFromAdminOverviewReport } from "@/lib/admin/overview-report-orders"
-import { listTippedMarkSoldGmsContributions } from "@/lib/db/sellerSaleTips"
+import { listSellerSaleTipAdminFacts } from "@/lib/db/sellerSaleTips"
 import type {
   IntelligenceCommerceSnapshot,
   IntelligenceDailyPoint,
@@ -61,7 +61,7 @@ export async function fetchIntelligenceCommerce(
   db: SupabaseClient,
   period: IntelligencePeriodResolved,
 ): Promise<IntelligenceCommerceSnapshot> {
-  const [{ data, error }, tippedGms] = await Promise.all([
+  const [{ data, error }, tipFacts] = await Promise.all([
     db
       .from("orders")
       .select(
@@ -72,7 +72,7 @@ export async function fetchIntelligenceCommerce(
       .lt("created_at", period.toIsoExclusive)
       .order("created_at", { ascending: false })
       .limit(ORDERS_FETCH_CAP),
-    listTippedMarkSoldGmsContributions(db),
+    listSellerSaleTipAdminFacts(db),
   ])
 
   if (error) {
@@ -150,18 +150,17 @@ export async function fetchIntelligenceCommerce(
     }
   }
 
-  const aovCur = ordersCur > 0 ? gmvCur / ordersCur : 0
-  const aovPrev = ordersPrev > 0 ? gmvPrev / ordersPrev : 0
-
-  for (const tip of tippedGms) {
+  for (const tip of tipFacts.gms) {
     const ts = new Date(tip.succeededAt).getTime()
     const inCurrent = ts >= periodStartMs && ts < periodEndMs
     const inPrevious = ts >= prevStartMs && ts < prevEndMs
     if (inCurrent) {
       gmvCur += tip.listingPriceUsd
+      ordersCur += 1
       const day = businessDayKey(tip.succeededAt)
       const bucket = dailyMap.get(day) ?? { date: day, gmv: 0, fees: 0, orders: 0 }
       bucket.gmv += tip.listingPriceUsd
+      bucket.orders += 1
       dailyMap.set(day, bucket)
       const l = listingAgg.get(tip.listingId) ?? { gmv: 0, orders: 0 }
       l.gmv += tip.listingPriceUsd
@@ -169,8 +168,29 @@ export async function fetchIntelligenceCommerce(
       listingAgg.set(tip.listingId, l)
     } else if (inPrevious) {
       gmvPrev += tip.listingPriceUsd
+      ordersPrev += 1
     }
   }
+
+  const takeRatePct = listingItemGmvCur > 0 ? (feesCur / listingItemGmvCur) * 100 : null
+
+  for (const tip of tipFacts.tipRevenues) {
+    const ts = new Date(tip.succeededAt).getTime()
+    const inCurrent = ts >= periodStartMs && ts < periodEndMs
+    const inPrevious = ts >= prevStartMs && ts < prevEndMs
+    if (inCurrent) {
+      feesCur += tip.amountUsd
+      const day = businessDayKey(tip.succeededAt)
+      const bucket = dailyMap.get(day) ?? { date: day, gmv: 0, fees: 0, orders: 0 }
+      bucket.fees += tip.amountUsd
+      dailyMap.set(day, bucket)
+    } else if (inPrevious) {
+      feesPrev += tip.amountUsd
+    }
+  }
+
+  const aovCur = ordersCur > 0 ? gmvCur / ordersCur : 0
+  const aovPrev = ordersPrev > 0 ? gmvPrev / ordersPrev : 0
 
   const listingMeta = await fetchListingMeta(db, Array.from(listingAgg.keys()))
   const brandAgg = new Map<string, { gmv: number; orders: number }>()
@@ -212,7 +232,7 @@ export async function fetchIntelligenceCommerce(
     marketingExpense: intelligenceTrend(promoCur, promoPrev),
     orders: intelligenceTrend(ordersCur, ordersPrev),
     aov: intelligenceTrend(aovCur, aovPrev),
-    takeRatePct: listingItemGmvCur > 0 ? (feesCur / listingItemGmvCur) * 100 : null,
+    takeRatePct,
     refundRatePct: refundDenom > 0 ? (refundedCur / refundDenom) * 100 : 0,
     refundCount: refundedCur,
     topBrands,
@@ -327,7 +347,7 @@ export async function fetchIntelligenceMonthlyHistory(
   const sinceIso = businessMonthStartIso(earliest)
   if (!sinceIso) return []
 
-  const [ordersRes, tippedGms, usersRes, listingsRes] = await Promise.all([
+  const [ordersRes, tipFacts, usersRes, listingsRes] = await Promise.all([
     db
       .from("orders")
       .select("amount, shipping_amount, platform_fee, promo_discount_usd, created_at, status")
@@ -335,7 +355,7 @@ export async function fetchIntelligenceMonthlyHistory(
       .eq("status", "confirmed")
       .gte("created_at", sinceIso)
       .limit(ORDERS_FETCH_CAP),
-    listTippedMarkSoldGmsContributions(db),
+    listSellerSaleTipAdminFacts(db),
     db.from("profiles").select("created_at").gte("created_at", sinceIso).limit(ORDERS_FETCH_CAP),
     db.from("listings").select("created_at").gte("created_at", sinceIso).limit(ORDERS_FETCH_CAP),
   ])
@@ -379,11 +399,18 @@ export async function fetchIntelligenceMonthlyHistory(
     })
     b.orders += 1
   }
-  for (const tip of tippedGms) {
+  for (const tip of tipFacts.gms) {
     const ym = businessDayKey(tip.succeededAt).slice(0, 7)
     const b = bucket.get(ym)
     if (!b) continue
     b.gmv += tip.listingPriceUsd
+    b.orders += 1
+  }
+  for (const tip of tipFacts.tipRevenues) {
+    const ym = businessDayKey(tip.succeededAt).slice(0, 7)
+    const b = bucket.get(ym)
+    if (!b) continue
+    b.platformRevenue += tip.amountUsd
   }
   for (const row of usersRes.data ?? []) {
     const ym = businessDayKey(String((row as { created_at?: string }).created_at ?? "")).slice(0, 7)

@@ -15,15 +15,17 @@ export function IntelligenceCharts({
 }) {
   const totalGmv = daily.reduce((sum, row) => sum + row.gmv, 0)
   const totalOrders = daily.reduce((sum, row) => sum + row.orders, 0)
+  const totalPlatformRevenue = daily.reduce((sum, row) => sum + row.fees, 0)
   const hasSales = monthly.some((row) => row.orders > 0)
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
       <AdminRevenueChart
         data={daily}
-        chartSubtitle={`Daily GMV and platform fees · ${periodLabel} (${BUSINESS_TIMEZONE_LABEL})`}
+        chartSubtitle={`Daily GMV and platform revenue · ${periodLabel} (${BUSINESS_TIMEZONE_LABEL})`}
         totalGmv={totalGmv}
         totalOrders={totalOrders}
+        totalPlatformRevenue={totalPlatformRevenue}
       />
       <div className="rounded-2xl border border-border bg-card">
         <div className="border-b border-border px-5 py-4">
