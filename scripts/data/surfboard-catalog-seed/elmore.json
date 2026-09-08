@@ -1,0 +1,107 @@
+{
+  "generated_for": "Elmore Surfboards official named standup catalog",
+  "source": "https://www.elmore.shop/surfboards (Squarespace Surfboard Models page — excludes stock dimension SKUs and custom order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "elmore",
+      "name": "Elmore Surfboards",
+      "website_url": "https://www.elmore.shop/",
+      "location_label": "Costa Mesa, California",
+      "founder_name": "Troy Elmore",
+      "lead_shaper_name": "Troy Elmore",
+      "short_description": "Troy Elmore is the rare shaper who surfs everything he builds — and it shows in every model he's made.",
+      "models": [
+        {
+          "name": "My Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/057b0589-57e7-4c9e-8433-ca32957a07ea/R0001651.jpg",
+          "description": "Previously known as the Frye'd fish but has evolved into something that I could only describe as MY FISH A classic San Diego inspired fish with updated concave and foil. This board has plenty of volume under your chest and low rocker to get you into waves early Effortless speed, and skatey feel. Holds on rail but will also bust loose when you want it too.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Re-Dialer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/12da1053-9bc9-4220-b386-863bbd8c613b/R0001649.jpg",
+          "description": "The Re-Dialer aka the unknown caller is inspired by Rich Pavel's split keel fish and my time shaping with him. This board is super fast with a crazy amount of control. Its been my go to board when I feel like need a little more reliability then my fish. The Re-Dialer has v in the nose that transitions to a deep single concave between the fins, giving you a straight stringer line and a nice curve in the rail line. I like to ride mine a little longer and narrower than my fish . Comes paired with future box true Ames Pavel speed dialer fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Punko Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/c7005efc-b4ca-486a-8cba-2a58b3484365/R0001580.jpg",
+          "description": "A favorite for the groveler short boarder. Great for pockety quick beach break surfing . Deep single concave with double built inside entering the fins. Lots of nose and tail flip. Subtle wing behind your back foot for an added release point. comes standard with a twin trailer set up",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Pusher",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/d5b49411-e59c-40c7-a7d9-48063bfcdbba/DANGER+MAN+RAND.jpg",
+          "description": "The Pusher will really sell you on surfing eggs, this is one bad machine. Nice foiled rail single into double, this board is super fast, smooth, and easy transitioning from rail to rail. The pusher is super lively but with all the characteristics of mid range boards you want, paddles into waves with ease and speeds down the line with out hopping around.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pusher 4",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/692e4821-ebd0-41ae-bd29-f336522dfce5/IMG_2115.JPG",
+          "description": "The Pusher 4 is a mid-ranged board that evolved after making shorter and shorter versions of the Pusher model. I found with these smaller planshapes, the single fin did not have the effortless trim speed I had been accustomed to with the longer shapes. Reducing the planshape size of the pusher and adding the quad fin set up allowed more versatility and ability to generate speed - still without having to hop around. This has become a popular model due to the broad range of waves it can surf and the ability to still get aggressive on a mid-ranged board. A true all terrain vehicle.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Submarine",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/3138a2c4-d0da-4309-bcd5-b30c55ee9466/DSC09004.jpg",
+          "description": "The Submarine is my take on boards people were surfing around 1969, the transition era between long and short. It has a low rocker, rolled bottom, and vee off the tail. This board glides into waves with ease offers big smooth bottom turns and effortless speed. This board works best in down the line waves with lots of room to redirect.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Eggman",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/d4f18fcc-5523-4c05-8ebb-e003fbfc7ebc/R0001629.jpg",
+          "description": "A simple classic Egg. Great all around single fin offering smooth bottom turns and cut backs. This boards great for someone looking to step down from a long board into their first shorter board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hawkwind",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/215464ba-da50-4a53-a4ea-0af4b1ff5e41/R0002169.jpg",
+          "description": "The hawkwind is my newest step up. A combination of high performance and comfort. A bit of a fun gun- with a slightly wider nose and center it lets you get in early and set your line. Made with larger surf in mind. I combined a healthy amount of rocker and foiled longer rail line. It goes great in hollower surf or for big turns on an open face. It's also been a board I've been grabbing when I feel like surfing something longer with a bit more glide but with more bite then my pusher 4.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Raven",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/1806ce75-eb5c-4323-ae54-31a86197e8ff/R0005871.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Uncle Al",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/b5b19b94-9d97-482e-a537-63ec86fdeaec/R0002465.jpg",
+          "description": "The Uncle Al started with a nose template from a friend of mine. It's a combination of that unique nose template and some of my own templates together to create an involvement era inspired longboard. The Uncle Al has a mellow blended nose concave transitioning into a rolled bottom with a little extra nose and tail rocker. This board is high energy and works great in beach break pocket surfing. Overall this board has a more compact wider profile in a smaller package. It's intended to be surfed a few inches shorter than your traditional longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sam's Club",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/12d7a434-b838-44fb-a13b-8688f6aeae5f/Screenshot+2024-07-09+at+5.33.45%E2%80%AFPM.png",
+          "description": "The Sam's Club is a rendition of Nat Young's infamous \"Magic Sam,\" the famous board that is responsible for an accelerated evolution of board design that changed the way surfers approached waves from 1966 onward. The Sam's Club is the perfect all-around log with a \"Sam-style\" outline. It has a slightly pulled in nose and tail block, yet a nice middle width. It has a gentle nose concave that transcends into a gentle roll through the middle and out the tail, allowing for a multifaceted longboard that turns well off the tail and provides stability on the nose. This is a versatile log that works great regardless of the style of wave you surf consistently (beach, point, reef, etc.).",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Step Deck",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/0f20d60f-0896-4728-837a-e347bb00ef0a/dsc09076.JPG",
+          "description": "This board is a 60s inspired step deck. It has a smooth rolled bottom throughout the board, wide point back, 50/50 rails, and step deck in the nose. This board is extremely speedy, offers smooth turns, and flex on the nose for a unique nose-ride experience.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hot Dog",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/59d6b621-e01a-40d1-ba99-9c6ac6951e1b/AN7U0283.jpg",
+          "description": "The Hot Dog is a traditional square tail hot-doggin longboard, flat nose rocker and deep blended concave, 50/50 rails and a little extra tail kick. This board provides stable nose rides, mid board trimming, and smooth pivoting turns.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Big Club",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/0019fcfa-0e61-4e7a-81d3-5050664f9ee1/holding+diagnoal.jpg",
+          "description": "The Big Club is a nose-rider with Nuuhiwa in mind. Bigger wider and heavier than my other logs, Flat nose rocker, deep long concave, 50/50 rails with a little extra tail kick. A stable plank that will pull through sections while on the nose. Offers smooth pivoting turns with lots of swing weight.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "S'eagle",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd9643d4ef85b79efa7fe9d/3eb1bcd4-60c7-481c-9dd7-d922ac9177a1/Screenshot+2024-07-09+at+5.41.10%E2%80%AFPM.png",
+          "description": "A speed shape inspired by the Eagle but a bit more user friendly for the waves I regularly surf. This board has been fun from 8'5” - 11 + just depends on the waves you're surfing and how'd you'd like to surf it.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
