@@ -1,0 +1,108 @@
+{
+  "generated_for": "Cooper Surfboards official named standup catalog",
+  "source": "https://coopersurfboards.com/ (WooCommerce official model shop pages; excludes apparel, stock dimension SKUs, and custom consultation deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cooper-surfboards",
+      "name": "Cooper Surfboards",
+      "website_url": "https://coopersurfboards.com/",
+      "location_label": "Cornwall, United Kingdom",
+      "founder_name": "Ollie Cooper",
+      "lead_shaper_name": "Ollie Cooper",
+      "short_description": "Progressive custom surfboards handmade by Ollie Cooper in Cornwall, UK since 2012.",
+      "models": [
+        {
+          "name": "Electric Twin",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Electric_Twin_Fish_56_Golden_Yellow_By_Cooper_Surfboard_Uk.jpg",
+          "description": "The Electric Twin is fast and responsive, while never sliding out. The modern fish outline works well with an XL upright twin fin and hybrid keel/uprights",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Zero",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Zero_Performance_Twin_by_Cooper_Surfboards.jpeg",
+          "description": "Founded on the principles of the Two.Five and Electric Twin, this little pocket rocket is our highest peformance twin fin. A board that carries incredible speed and surfs fast in the pocket. A pronounced flat deck and chine rail carries loads of volume allowing this board to be surfed very short, while a progressive rocker line and deep single to double concave make it ultra fast and lively underfoot.  Expect fast, lively, in the pocket surfing, for those enlightened surfers looking to push twin fins to their pinnacle of performance.  Ride the Zero the same length as your fish, or 3 to 4 inches shorter than your shortboard. Loads of volume in this one, dont be afraid to go short.  Pair it with the Captain Panda Upright Twin Fins, an XL upright twin set that let's this little ripper unleash its full potential.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sidekick",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Sidekick_Performance_Hybrid_Shortboard_Fish_by_Cooper_Surfboards_uk.jpg",
+          "description": "If you're looking for a board for steeper waves, that keeps loads of paddle power and allows you to push your surfing this is just the thing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "POG",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/POG_Mid_Length_Single_Fin_Cooper_Surfboards.jpg",
+          "description": "The next step in the mid length evolution, the POG is a more conservative approach to getting more foam under your feet, without the 'retro' drawbacks.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mono",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Mono_Modern_Performance_Single_Fin_8_foot_Surfboard_by_Cooper_uk.jpg",
+          "description": "Narrow, lightweight, and nimble, a performance-forward single fin that hovers between mid length and mini-glider territory.  Inspired by the lines drawn by Tudor, Knost et al.  Flat deck retains volume and paddles well for the size, teamed with a sensitive chined down rail.  Incredible range making this board an absolute swiss army knife, excels in good waves but makes easy work of anything waist high and up.  Push it as hard as you like, this board will challenge your perception of single fin possibilities.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Yonder Mini Mal",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Orange.jpg",
+          "description": "Designed in collaboration with my friends at Yonder, tuned and proven over hundreds of lessons and years of experience. Here’s what they have to say about the board:  “The first step off of a soft-top or a 'foamie' is a really important one in anyone's surfing journey. What we are looking for is a really nice neutral board that will offer us a good balance of stability and manoeuvrability for both paddling and surfing.  These boards are tried and tested; the outline, rocker, volume distribution and rails are designed specifically for solidifying the fundamentals of surfing. Nearly all of the women that have recently been on our intermediate coaching courses started, or are still surfing Yonder Mini-mals. We also use them on our surf lessons and camps too. A good Mini-mal will take a surfer from learning to get in trim, to performing some turning manoeuvres and drawing lines on the face of a wave. Great for learning the fundamental manoeuvres in surfing; bottom and top turns and up to re-directs and re-entries - this level of board will be useful for a good part of a surfers learning journey giving them a great starting chance.”  Stock dimensions - 7'6 x 22 x 2 3/4  We're spec'ing these with a three fin thruster setup with Futures fin plugs.  For every Yonder Mini Mal sold we're donating a portion of profits to the Yonder Surf Academy CIC, an initiative to inspire and support marginalised women and girls to build confidence, self-esteem and positive mental health.  Click below for the full write-up.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Perch",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/perch_single_fin_noserider_longboard_UK_surfboard_shaper.jpg",
+          "description": "To settle or rest in an elevated position, as if on a perch.  A contemporary noserider designed for classic logging, the Perch provides a stable platform for cross-stepping and noseriding.  Traditonal outlines tied with our modern understanding of lift and balance. Exaggerated tail rocker, no-edge pinched 50/50 rails, and rolled bottom shape. Encourages a slow and steady approach to surfing, drawing back into the pocket while you relax up front.  To be ridden with a high aspect pivot fin from 9.75\" to 10.5\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Two.Five",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Two_Five_Orange_Deck_45crop.jpg",
+          "description": "The Two.Five, named after it’s twin plus trailer fin setup, is a great hybrid style surfboard that’s guaranteed to improve your surfing in everyday waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hideaway",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Hideaway_One_Deck_Edit.jpg",
+          "description": "The Hideaway is a performance shortboard designed to make the most UK waves, modelled after our team riders performance board with extra volume for ease of",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Roundaway",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/roundaway_uk_shaper_good_wave_surfboard_cooper-1.jpg",
+          "description": "Our ultimate performance shortboard, dialled for UK waves. Find the finest collection of UK designed and made custom surfboards at Cooper Surfboards.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Nose Rider",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Mini-Noserider-Cooper_Surfboards_mid_Length_Single_Fin.jpg",
+          "description": "A wide round nose provides all the lift and paddle power you need while straightening the outline from nose to mid-way to retain glide. The tail end retains",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Pin",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/MiniPin_Midlength_Mini_Longboard_Cooper_Surfboards.jpg",
+          "description": "This shape retains all our Mini Noserider magic, allowing you to cross step and trim like a longboard, while allowing steeper take offs and faster rail work",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Semi Guns",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Semi_Gun_Step_Up_Cooper_Surfboards_UK_Portrait-1.jpg",
+          "description": "Semi guns, step ups, big wave boards. When the waves get serious and you need complete confidence in your board. Built for the waves you're surfing.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Fresh Fish",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Fresh_Fish_Performance_Twin_By_Cooper_Surfboards_Uk.jpg",
+          "description": "The fresh fish is a performance twin fin fish designed for knee to overhead waves. Developed with the Gilroy brothers, we wanted to create a fish that",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Cali Square Tail",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/Cali_Square_Tail_Single_Fin_Longboard_Cooper_Surfboards_uk.jpg",
+          "description": "Characterised by its wide round nose and hipped tail, the Cali Square Tail follows an infamous outline well-known for its hang time and easy riding.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
