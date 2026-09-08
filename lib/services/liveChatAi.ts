@@ -16,12 +16,16 @@ import {
   type LiveChatMessageRow,
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
+import { listRecentLiveChatAiListingsForMember } from "@/lib/db/liveChatAiListings"
 import {
   listRecentLiveChatAiOrdersForMember,
   lookupLiveChatAiOrderForMember,
+  splitLiveChatAiOrdersByRole,
 } from "@/lib/db/liveChatAiOrders"
 import {
   formatKnowledgeChunksForPrompt,
+  formatMemberActivityForPrompt,
+  RESWELL_SUPPORT_BRIEF,
   searchHelpArticles,
 } from "@/lib/services/liveChatAiKnowledge"
 import {
@@ -41,6 +45,12 @@ const MAX_AI_REPLIES_PER_SESSION = 40
 const MAX_HISTORY_MESSAGES = 16
 
 export const LIVE_CHAT_AI_WELCOME = "Great! How can I help?"
+
+export function liveChatAiWelcome(signedIn: boolean): string {
+  return signedIn
+    ? "You're signed in — I can look up your purchases and sales. What do you need help with?"
+    : LIVE_CHAT_AI_WELCOME
+}
 
 export const LIVE_CHAT_AI_HANDOFF_SYSTEM =
   "You've asked for a human teammate. We'll reply here — usually within one business day. Include an order number or listing link if you have one."
@@ -200,25 +210,39 @@ async function generateAiReply(options: {
   const { session, userId, history, latestUserText, offlineAssist } = options
   let handoffRequested = false
 
-  const seeded = searchHelpArticles(latestUserText, 4)
+  const seeded = searchHelpArticles(latestUserText, 5)
   const knowledgeBlock = formatKnowledgeChunksForPrompt(seeded)
 
-  const signedInNote = userId
-    ? "The visitor is signed in. You may use lookupOrder to fetch their order details."
-    : "The visitor is not signed in. Do not invent order details; ask them to sign in to look up orders, or offer handoffToHuman."
+  let memberActivityBlock = ""
+  if (userId) {
+    const svc = createServiceRoleClient()
+    const [orders, listings] = await Promise.all([
+      listRecentLiveChatAiOrdersForMember(svc, userId, 8),
+      listRecentLiveChatAiListingsForMember(svc, userId, 6),
+    ])
+    memberActivityBlock = formatMemberActivityForPrompt({ orders, listings })
+  }
 
-  const system = `You are ${RESEWELL_BOT_NAME}, Reswell's support assistant for a peer-to-peer surf marketplace (boards, wetsuits, fins, and more).
+  const signedInNote = userId
+    ? "The visitor is signed in. Use the member activity snapshot, lookupOrder, listMyOrders, and listMyListings for their purchases, sales, and listings. Never look up another account."
+    : "The visitor is not signed in. Do not invent order or listing details. Ask them to sign in to look those up, or offer handoffToHuman."
+
+  const system = `You are ${RESEWELL_BOT_NAME}, Reswell's support assistant for a peer-to-peer surf marketplace.
 
 Rules:
-- Answer ONLY from retrieved help/FAQ knowledge and tool results. Never invent policies, fees, timelines, or order facts.
+- Answer ONLY from the Reswell brief, retrieved help/FAQ knowledge, member activity, and tool results. Never invent policies, fees, timelines, tracking numbers, or order facts.
 - Prefer clear, friendly, concise answers (2–6 short paragraphs or bullets).
-- Cite helpful links when relevant (use the Source URLs from knowledge).
+- Cite helpful Reswell links when relevant (Help Center, FAQ, dashboard, listing URLs from tools).
+- If several of their orders could match, list them and ask which one.
 - If you are unsure, ask a clarifying question OR call handoffToHuman.
-- Never process refunds, change payouts, or claim you completed an admin action.
+- Never process refunds, change payouts, cancel orders, or claim you completed an admin action. Explain the correct page and offer a human for claims or disputes.
 - ${signedInNote}
 ${offlineAssist ? "- A human teammate is offline; still answer helpfully. Do NOT mention that a teammate will see the chat — the app adds that note separately." : ""}
 
-Relevant Reswell knowledge (may be incomplete — use searchHelpArticles for more):
+Reswell product brief:
+${RESWELL_SUPPORT_BRIEF}
+
+${memberActivityBlock ? `${memberActivityBlock}\n\n` : ""}Relevant Reswell knowledge (may be incomplete — use searchHelpArticles for more):
 ${knowledgeBlock}`
 
   const result = await generateText({
@@ -228,9 +252,9 @@ ${knowledgeBlock}`
       ...toModelMessages(history),
       { role: "user", content: latestUserText },
     ],
-    stopWhen: stepCountIs(3),
-    maxOutputTokens: 800,
-    temperature: 0.3,
+    stopWhen: stepCountIs(4),
+    maxOutputTokens: 900,
+    temperature: 0.25,
     tools: {
       searchHelpArticles: tool({
         description:
@@ -252,7 +276,7 @@ ${knowledgeBlock}`
       }),
       lookupOrder: tool({
         description:
-          "Look up the signed-in member's order by order number, or list their recent orders if no number is provided.",
+          "Look up one of the signed-in member's orders by order number (or list recent orders if no number is provided).",
         inputSchema: z.object({
           orderNum: z
             .string()
@@ -280,8 +304,49 @@ ${knowledgeBlock}`
             }
             return { ok: true as const, order }
           }
-          const recent = await listRecentLiveChatAiOrdersForMember(svc, userId, 5)
-          return { ok: true as const, recent_orders: recent }
+          const recent = await listRecentLiveChatAiOrdersForMember(svc, userId, 8)
+          const { purchases, sales } = splitLiveChatAiOrdersByRole(recent)
+          return { ok: true as const, purchases, sales }
+        },
+      }),
+      listMyOrders: tool({
+        description:
+          "List the signed-in member's recent purchases and/or sales. Use when they ask about orders without a number.",
+        inputSchema: z.object({
+          scope: z
+            .enum(["all", "purchases", "sales"])
+            .default("all")
+            .describe("Which side of the marketplace to list"),
+        }),
+        execute: async ({ scope }) => {
+          if (!userId) {
+            return {
+              ok: false as const,
+              error: "Visitor is not signed in. Ask them to sign in.",
+            }
+          }
+          const svc = createServiceRoleClient()
+          const recent = await listRecentLiveChatAiOrdersForMember(svc, userId, 8)
+          const { purchases, sales } = splitLiveChatAiOrdersByRole(recent)
+          if (scope === "purchases") return { ok: true as const, purchases }
+          if (scope === "sales") return { ok: true as const, sales }
+          return { ok: true as const, purchases, sales }
+        },
+      }),
+      listMyListings: tool({
+        description:
+          "List the signed-in member's own listings (title, status, price). Never returns other sellers' listings.",
+        inputSchema: z.object({}),
+        execute: async () => {
+          if (!userId) {
+            return {
+              ok: false as const,
+              error: "Visitor is not signed in. Ask them to sign in.",
+            }
+          }
+          const svc = createServiceRoleClient()
+          const listings = await listRecentLiveChatAiListingsForMember(svc, userId, 8)
+          return { ok: true as const, listings }
         },
       }),
       handoffToHuman: tool({
@@ -409,7 +474,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
     let bot_message: LiveChatMessageRow | null =
       alreadyActive || hasPriorBotReply
         ? null
-        : await persistBotMessage(svc, session.id, LIVE_CHAT_AI_WELCOME)
+        : await persistBotMessage(svc, session.id, liveChatAiWelcome(Boolean(userId)))
     let visitor_message: LiveChatMessageRow | null = null
 
     if (content) {

@@ -17,6 +17,7 @@ interface LiveChatComposerProps {
   emailError?: string | null
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
   emailInputRef?: React.RefObject<HTMLInputElement | null>
+  placeholder?: string
 }
 
 function resizeComposer(el: HTMLTextAreaElement) {
@@ -36,6 +37,7 @@ export function LiveChatComposer({
   emailError = null,
   inputRef,
   emailInputRef,
+  placeholder = "Write your message…",
 }: LiveChatComposerProps) {
   const canSend = draft.trim().length > 0 && !sending
 
@@ -73,7 +75,7 @@ export function LiveChatComposer({
             onDraftChange(e.target.value)
             resizeComposer(e.currentTarget)
           }}
-          placeholder="Write your message…"
+          placeholder={placeholder}
           rows={1}
           maxLength={10000}
           className="max-h-[120px] min-h-[44px] w-full resize-none border-0 bg-transparent px-4 py-3 pr-14 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-0"

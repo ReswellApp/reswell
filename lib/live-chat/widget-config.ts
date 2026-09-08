@@ -33,11 +33,35 @@ export const LIVE_CHAT_STARTER_TOPICS = [
 export const LIVE_CHAT_BOT_MISSION =
   "We're on a mission to build the best marketplace for surfers — boards, wetsuits, fins, and more. Ask us anything!"
 
-export const LIVE_CHAT_BOT_INTRO = `Hey there! I'm ${RESEWELL_BOT_NAME}, your friendly AI support assistant. My human teammates may not be readily available at the moment, but I'm here to help answer your questions.
+export const LIVE_CHAT_BOT_INTRO = `Hey — I'm ${RESEWELL_BOT_NAME}. I can help with buying and selling, shipping, fees, and Purchase Protection. If you're signed in, I can look up your purchases and sales.
 
-I can help with buying and selling on Reswell, shipping, fees, purchase protection, and looking up your orders when you're signed in. Just keep in mind that as an AI, I might occasionally make mistakes or have outdated information. If I can't answer your question or you need more assistance, a member of the Reswell team will be in touch as soon as possible!
+I might get something wrong. If you need a person, tap Wait for a Human.
 
-How can I assist you today?`
+What can I help with?`
+
+export const LIVE_CHAT_AI_STARTER_TOPICS_GUEST = [
+  { id: "buy" as const, label: "How do I buy?", starter: "How do I buy on Reswell?" },
+  { id: "fees" as const, label: "What are the fees?", starter: "What are Reswell's selling fees?" },
+  {
+    id: "protection" as const,
+    label: "Purchase Protection",
+    starter: "What does Purchase Protection cover?",
+  },
+]
+
+export const LIVE_CHAT_AI_STARTER_TOPICS_SIGNED_IN = [
+  {
+    id: "order" as const,
+    label: "Where is my order?",
+    starter: "Where is my most recent order?",
+  },
+  {
+    id: "paid" as const,
+    label: "When do I get paid?",
+    starter: "When do I get paid for my sale?",
+  },
+  { id: "fees" as const, label: "What are the fees?", starter: "What are Reswell's selling fees?" },
+]
 
 export const LIVE_CHAT_BOT_AI_READY = "Great! How can I help?"
 

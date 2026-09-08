@@ -15,6 +15,8 @@ import {
   LIVE_CHAT_AI_FOLLOW_UP_PROMPT,
   LIVE_CHAT_AI_HANDOFF_CTA,
   LIVE_CHAT_AI_OFFLINE_NOTE,
+  LIVE_CHAT_AI_STARTER_TOPICS_GUEST,
+  LIVE_CHAT_AI_STARTER_TOPICS_SIGNED_IN,
   LIVE_CHAT_BOT_HANDOFF,
   LIVE_CHAT_BOT_INTRO,
   LIVE_CHAT_BOT_MISSION,
@@ -298,6 +300,12 @@ export function LiveChatMessagesView({
     }
   }
 
+  async function handleAiStarterTopic(starter: string) {
+    if (!starter || activatingAi || composerLocked || sessionClosed) return
+    const ok = await onSendAiMessage(starter)
+    if (!ok) setDraft(starter)
+  }
+
   function handleDraftChange(value: string) {
     setDraft(value)
     if (mode === "human") {
@@ -322,8 +330,19 @@ export function LiveChatMessagesView({
     return message.sender_type !== "system" || index > 0
   })
   const showHumanEmptyState = mode === "human" && visibleThreadMessages.length === 0
+  const hasVisitorMessage = visibleThreadMessages.some((m) => m.sender_type === "visitor")
+  const showAiEmptyState = mode === "ai" && !hasVisitorMessage && !aiThinking && !activatingAi
+  const aiStarterTopics = isSignedIn
+    ? LIVE_CHAT_AI_STARTER_TOPICS_SIGNED_IN
+    : LIVE_CHAT_AI_STARTER_TOPICS_GUEST
   const showAiComposer = mode === "ai"
   const showHumanComposer = mode === "human"
+  const composerPlaceholder =
+    mode === "ai"
+      ? isSignedIn
+        ? "Ask about an order, sale, or how Reswell works…"
+        : "Ask about buying, selling, or policies…"
+      : "Write your message…"
   const hasConfirmedVisitorMessage = visibleThreadMessages.some(
     (m) => m.sender_type === "visitor" && !m.pending,
   )
@@ -383,7 +402,9 @@ export function LiveChatMessagesView({
           <LiveChatWordmark className="max-h-5" />
           <p className="truncate text-[11px] text-muted-foreground">
             {mode === "ai"
-              ? `${RESEWELL_BOT_NAME} · Ask about policies or orders`
+              ? isSignedIn
+                ? `${RESEWELL_BOT_NAME} · Signed in · I can look up your orders`
+                : `${RESEWELL_BOT_NAME} · Ask about buying, selling, or policies`
               : mode === "human"
                 ? LIVE_CHAT_MESSAGES_REPLY_NOTE
                 : "Browse guides or message our team"}
@@ -482,6 +503,29 @@ export function LiveChatMessagesView({
               )
             })
           : null}
+
+        {showAiEmptyState ? (
+          <div className="mx-1 rounded-2xl border border-border/50 bg-background px-4 py-4 text-center shadow-sm">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {isSignedIn
+                ? "I can look up this account's purchases and sales, or help with how Reswell works."
+                : "Ask about buying, selling, shipping, or policies. Sign in if you want help with a specific order."}
+            </p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {aiStarterTopics.map((topic) => (
+                <button
+                  key={topic.id}
+                  type="button"
+                  onClick={() => void handleAiStarterTopic(topic.starter)}
+                  disabled={sending || activatingAi}
+                  className="rounded-full border border-border/60 bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-listingHeart/40 hover:bg-listingHeart/5 disabled:opacity-50"
+                >
+                  {topic.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {showAiFollowUp ? (
           <div className="mx-1 mt-1 space-y-2 rounded-2xl border border-border/50 bg-background px-3 py-3">
@@ -602,6 +646,7 @@ export function LiveChatMessagesView({
             emailError={null}
             inputRef={inputRef}
             emailInputRef={emailInputRef}
+            placeholder={composerPlaceholder}
           />
           ) : null}
         </>
