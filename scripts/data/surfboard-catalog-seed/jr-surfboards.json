@@ -1,0 +1,108 @@
+{
+  "generated_for": "JR Surfboards official named standup catalog",
+  "source": "https://jrsurfboards.com.au/surfboard-models/ (WooCommerce Surfboard Models — excludes stock dimension SKUs, custom orders, fins, and hardware)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jr-surfboards",
+      "name": "JR Surfboards",
+      "website_url": "https://jrsurfboards.com.au",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Jason Rodd",
+      "lead_shaper_name": "Jason Rodd",
+      "short_description": "Gold Coast performance and alternative shapes from Jason Rodd, including Wade Carmichael models.",
+      "models": [
+        {
+          "name": "Bam Bam 2",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/bb2-roll-hover_2x.jpg",
+          "description": "Wade Carmichael’s go to for the 2019 World tour season… this model covers an extremely wide array of conditions and due to the forgiving shape suits all types of surfers. When comparing to the original Bam Bam model, The Bam Bam 2 has added rocker and increased volume equaling more flow and speed down the line without sacrificing any performance. The outline is exactly the same as the original model, which features a slightly wider plan shape for speed and flow, and a wider straighter tail block for drive. The BAM BAM 2 has the same single concave running from nose to tail as its predecessor, with the deepest point being between the feet and fin area. The same concave is used in majority of",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bam Bam 2 Round Tail",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/bb2rt-roll-hover_2x.jpg",
+          "description": "The Bam Bam 2 round tail model is designed specifically for any surfer wanting to take their performance in solid waves to the next level. Keeping the same rocker and concave as the BAM BAM 2 round square, we stretched this model by one inch, then pulled the nose and tail in slightly around the 12 inch marks and templated in a nice round pin tail. The rocker was naturally increased as we stretched, to keep the same feeling under foot as the original, as well as taking advantage of the hold given by the more streamline outline and pulled in tail. We kept the same rail profile through the middle but foiled them out nicely through the tail for added bite. The Bam Bam 2 is an extension of the Ba",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Bipolar",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/bipolar-roll-hover__2x.jpg",
+          "description": "You don’t need to be an alternative surfer to ride this Twin fin. It has been designed to allow the Bipolar Twin to sit perfectly alongside your short board range. The model suits a wide variety of surfers, from beginner to advanced, and is arguably one of the most fun boards in our Summer range. The idea for our Bipolar Twin started right back when we released the Sloth and brings with it an unrivalled ability to carry speed from section to section, without a hint of drag, allowing the natural Twin fin flow to really come to life. In the early stages of design we referenced the Wraptor model, and after a few subtle tweaks, we decided to run with a similar outline up front, but worked on wid",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Disco Bikky",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/disco-roll-hover_2x-1.jpg",
+          "description": "This is Zac McMahon’s second addition to his two board signature series. When we started working on this signature model with Zac we didn’t really expect it to perform the way it has. Built off similar bottom contours to the Voodoo Redux, using the same single to double to vee, we then took a unique approach using an abstract outline and rail curve we’ve not really tapped into before ! It has hints of the Wharfie and Sloth… but don’t be fooled… This little board is here for the Good times and the bad… Introducing you to the DISCO BIKKY. Packed with a bunch of volume this guy will have you hoping over flat sections and driving through the slop like nothing you have ever tried before. The DISC",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Donkey",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/donk-roll-hover_2x.jpg",
+          "description": "The Donkey takes it’s place in Dion’s Atkinson’s board rack as the perfect small wave, high-performance machine. The Donkey presents itself as your go-to high-performance board for average day-to-day conditions. With a single concave, boxy rails and an average-to-full rocker, The Donkey is fast, precise and built for critical surfing. These characteristics, however, are combined in a plan shape that is slightly more forgiving and compressed in length, with width added in just the right places to ensure that your high-performance goals are not encumbered by average waves. The Donkey is the board that will perform when the conditions don’t allow your good wave performance board to… instead it",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Punt Rocka 2",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/bb2rt-roll-hover_2x.jpg",
+          "description": "Before the release of the original Punt Rocka, Roddy worked intensively with surfers like Josh Kerr and Shaun Cansdell to refine every element. Designed to be a true all-rounder to take on tour or surf trips and work perfectly in most conditions. This time around though, Roddy has been working heavily with Dion Atkinson on the Punt Rocka 2 a board he now uses almost exclusively when travelling West and in South Oz. Donny finds the Punt Rocka 2 so versatile it can surf anything from 2 ft beachies to 8ft slabs. The small adjustments made since the original Punt Rocka have been made to suit Donny a little better, taking into account Dion’s rail game by slightly tweaking the rail line rocker for",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Punt Rocka 3",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/bb2rt-roll-hover_2x.jpg",
+          "description": "Introducing the third instalment in our Punt Rocka series. The Punt Rocka 3 has been added into the range to serve as a slight step up from your everyday shortboard or its predecessor the Punt Rocka 2. We have taken all your favourite attributes of the original and PR2 and refined them to make this model more tailored towards pumping waves. The PR3 offers a slightly more pulled in outline but still carries the signature area forward as in all of the Punt Rocka models, with a touch more thickness added under the chest and also a more refined rail. These three design attributes give the Punt Rocka 3 the ability to handle in more size than the PR2, paddle in a little earlier and lock into some",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Redux",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/redux-roll-hover_2x-1.jpg",
+          "description": "A new take on an old classic, the Redux is the 2nd instalment of our most notable model yet…The Voodoo. Sharing a lot of similar characteristics, the Redux is set apart by a couple of key changes. Created with a slightly wider middle point allowing for more stability through those flatter sections. This wide point is accentuated with a newly pulled in tail area, a design that we have not used for quite some time being a flyer to deep swallow tail. These characteristics combine to create a stable board through the flatter faced sections, but an insanely responsive and secure feel in those tight pockets. Carrying the same single to single double concave with a slight vee to exit. These bottom",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Redux Twinnr",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/reduxtwin-roll-hover_2x.jpg",
+          "description": "Since the release of the Voodoo Redux we have been interested in how the model would work as a twin fin, as its shape lends itself aesthetically to work as a Twin Fin. Many of our customers ride the Voodoo redux with twin plus trailer and love it. This inspired my curiosity to develop the model into a Twin specific model as we were laking this in our range of board designs. After 2 years of development and testing by our team and staff the REDUX TWNNR is here! Taking the rocker from the Voodoo Redux we flattened the curve 1/4 inch in the nose and 1/8 in the tail creating extra drive and more of a sweet spot, we left the bottom shape exactly the same as the Voodoo Redux (single concave throug",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sangria",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/sangria-roll-hover_2x.jpg",
+          "description": "The Sangria is our interpretation of a playful Mid-length adaptable enough to be surfed in most conditions. The Sangria has a very smooth gradual rocker with a rolled Vee in the nose transitioning quickly back towards a very slight single in the middle flowing seamlessly into Vee with double concave (or spiral vee) that gradually gets more aggressive towards the tail. This gives the Sangria an incredible responsive feel off the tail with plenty of spice and drive. The Sangria draws beautiful lines and trims effortlessly making this model such a joy to ride. Whether you are just starting out, or at an advanced level looking for a little more of a cruisey pace, you can choose to surf this boar",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Second Cousin",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/06/second-cous-front_2x.jpg",
+          "description": "I have worked on reviving one of my best performing Summer model’s to date, “The Step Cousin”, and adding in some key elements of one of my all-time favourite small wave boards, “The Boxsta”. We welcome to the family, “The Second Cousin”. The Second Cousin has slightly less curve in the rocker throughout the tail and a wider mid-point which then carries the added width subtly out the tail. The added width matched with the flatter rocker enhances the speed and glide feel of the board, the result making a more effortless ride while not sacrificing performance. By running with a similar depth single concave under the front foot, and using the same double concave from the Boxsta throughout the t",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Serpent",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/serpent-roll-hover_2x.jpg",
+          "description": "The Serpent model is our young gun team rider Zac McMahons signature model … Zac an explosive surfer in the water but a super chilled cat on land. He holds a keen eye for detail and a curiosity to board design and what he puts under his feet. The first board we threw under Zac’s feet that he gelled with straight away was the Donkey, hence why the Serpent model is heavily influenced by the Donkey model. Although trimmed down in key areas to create an all round high performance board for those surfers chasing a bit more bite and hold in punchy pockets. Showcasing a very similar rocker profile to the Donkey, the Serpent maintains the same versatility and is suited to a wide range of waves. The",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sloth",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/sloth-roll-hover_2x-2.jpg",
+          "description": "The Sloth brings with it an unrivalled ability to carry speed from section to section without a hint of drag, allowing the natural Twin fin flow to really come to life. Featuring a slight single concave under the front foot to single double concave and into a heavy vee out of the tail. A flatter deck roll with soft boxy rails and a full retro outline. The Sloth is a refined modern version of the classic old-school twin-fin, built for ripping in crummy Summer waves. The Sloth paddles easily has lots of flow in flat sections but is incredibly responsive off the tail. The Sloth can be ridden as a straight twin or also as a twin with a trailer option. If you are looking for the more traditional",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Zippo",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/08/zippo-roll-hover_2x-new.jpg",
+          "description": "The Zippo was specifically developed for Taj Burrow and the Surfing Life Tech board test. Pure and simply the Zippo was built for high performance surfing in mind. Based of Taj’s ideal day-to-day shortboard specs, The Zippo is performance oriented but forgiving enough for all surfers to excel with it under their feet. The Zippo features a combination of the best, most effective characteristics from two of our original favourite high-performance shapes (The Donny and The Grinder). The nose entry is medium to lower for performance design, with a slightly pulled in tail that features an increased tail rocker. This results in a lively, responsive board that favours critical rail-to-rail surfing",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Zippo Round Tail",
+          "image_url": "https://jrsurfboards.com.au/wp-content/uploads/2023/07/zippornd-roll-hover_2x.jpg",
+          "description": "The Zippo rounded pin is an extension of the Zippo model. We wanted to offer something a little more tuned up for when the waves are firing. Taking key features from the boards that made Wade Carmichael’s 2018 Hawaiian leg so damaging, we decided to combine these features creating an unrivalled performance board, built for pumping waves. This model caters to a huge variety of surfers looking for a board that handles good to excellent waves at home or on your surf trip. In addition to the Zippo’s signature medium entry rocker, and added tail lift, we have adjusted the rail thickness, making it lower for increased bite, hold and drive. We have also pulled the tail area in just slightly around",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
