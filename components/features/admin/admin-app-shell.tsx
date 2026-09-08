@@ -13,7 +13,11 @@ import type { AdminShellUser } from '@/lib/admin/admin-shell-user'
 import { cn } from '@/lib/utils'
 
 function isFullBleedAdminPath(pathname: string): boolean {
-  return pathname === '/admin/home' || pathname === '/admin/orders'
+  return (
+    pathname === '/admin/home' ||
+    pathname === '/admin/orders' ||
+    pathname.startsWith('/admin/users/')
+  )
 }
 
 interface AdminAppShellProps {

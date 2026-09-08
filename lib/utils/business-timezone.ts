@@ -102,3 +102,31 @@ export function formatBusinessDayKeyLong(dateKey: string): string {
 
 /** Human label for admin chart subtitles. */
 export const BUSINESS_TIMEZONE_LABEL = 'Pacific Time'
+
+/** Calendar date in Pacific Time, e.g. "Sep 3, 2026". */
+export function formatBusinessDate(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return '—'
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: BUSINESS_TIMEZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(ms))
+}
+
+/** Date and time in Pacific Time, e.g. "Sep 3, 2026, 8:12 PM". */
+export function formatBusinessDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return '—'
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: BUSINESS_TIMEZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(ms))
+}

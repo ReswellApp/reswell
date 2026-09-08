@@ -1,125 +1,101 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { VerifiedBadge, verifiedSellerBadgeClassName } from '@/components/verified-badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Lock, Unlock, MessageSquarePlus, Ban, Pencil } from 'lucide-react'
-import { listingDetailHref } from '@/lib/listing-href'
-import { peerListingEditHref } from '@/lib/peer-listing-sections'
-import { capitalizeWords } from '@/lib/listing-labels'
+import {
+  Copy,
+  ExternalLink,
+  Loader2,
+  MessageSquarePlus,
+  MoreHorizontal,
+  UserCog,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
-import { useRouter } from 'next/navigation'
 import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
 import { revalidateListingDetailAfterProfileUpdate } from '@/app/actions/listing-detail-cache'
 import { AdminSendUserMessageDialog } from '@/components/features/admin/admin-start-user-conversation-dialog'
-
-interface Profile {
-  id: string
-  email: string | null
-  display_name: string | null
-  avatar_url: string | null
-  city: string | null
-  location: string | null
-  bio: string | null
-  is_admin: boolean
-  shop_verified: boolean
-  sales_count: number
-  created_at: string
-  updated_at: string
-}
-
-interface ListingRow {
-  id: string
-  title: string
-  price: number
-  section: string
-  status: string
-  slug?: string | null
-  hidden_from_site?: boolean | null
-  created_at: string
-  listing_images: { url: string }[]
-}
-
-interface WalletSummary {
-  balance: number
-  pendingBalance: number
-  totalBalance: number
-  lifetime_earned: number
-  lifetime_spent: number
-  lifetime_cashed_out: number
-  walletId: string | null
-}
-
-interface AccountRestrictionState {
-  restrictedUntil: string | null
-  reason: string | null
-  messageRateLimitedUntil: string | null
-}
-
-interface SellerBanState {
-  banned: boolean
-  sellerBannedAt: string | null
-  sellerBannedReason: string | null
-}
-
-const RESTRICTION_PRESETS = [
-  { label: '30 minutes', minutes: 30 },
-  { label: '1 hour', minutes: 60 },
-  { label: '24 hours', minutes: 60 * 24 },
-  { label: '7 days', minutes: 60 * 24 * 7 },
-] as const
-
-function isFutureRestriction(iso: string | null | undefined): boolean {
-  if (!iso) return false
-  const ms = Date.parse(iso)
-  return Number.isFinite(ms) && ms > Date.now()
-}
+import { AdminPageHeader } from '@/components/features/admin/admin-page-header'
+import { AdminStatStrip } from '@/components/features/admin/admin-stat-strip'
+import { AdminUserDetailIdentity } from '@/components/features/admin/admin-user-detail-identity'
+import { AdminUserDetailAccount } from '@/components/features/admin/admin-user-detail-account'
+import { AdminUserDetailWallet } from '@/components/features/admin/admin-user-detail-wallet'
+import type { AdminUserWalletSummary } from '@/components/features/admin/admin-user-detail-wallet'
+import { AdminUserDetailAccess } from '@/components/features/admin/admin-user-detail-access'
+import {
+  AdminUserDetailRestriction,
+  type AdminAccountRestrictionState,
+} from '@/components/features/admin/admin-user-detail-restriction'
+import {
+  AdminUserDetailSellerBan,
+  type AdminSellerBanState,
+} from '@/components/features/admin/admin-user-detail-seller-ban'
+import {
+  AdminUserDetailListings,
+  type AdminUserListingFilter,
+} from '@/components/features/admin/admin-user-detail-listings'
+import { AdminUserDetailOrders } from '@/components/features/admin/admin-user-detail-orders'
+import { peerListingEditHref } from '@/lib/peer-listing-sections'
+import { withAdminListingEditEntry } from '@/lib/utils/admin-listing-edit-entry'
+import { sellerProfileHref } from '@/lib/seller-slug'
+import { formatAdminUsd } from '@/lib/admin/admin-user-detail-display'
+import type {
+  AdminUserAuthFacts,
+  AdminUserCommerce,
+  AdminUserDetail,
+  AdminUserDetailListingRow,
+  AdminUserDetailProfileRow,
+  AdminUserRecentOrder,
+} from '@/lib/services/adminUserDetail'
 
 export default function AdminUserDetailPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
   const supabase = createClient()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [listings, setListings] = useState<ListingRow[]>([])
+  const [profile, setProfile] = useState<AdminUserDetailProfileRow | null>(null)
+  const [listings, setListings] = useState<AdminUserDetailListingRow[]>([])
+  const [auth, setAuth] = useState<AdminUserAuthFacts | null>(null)
+  const [commerce, setCommerce] = useState<AdminUserCommerce | null>(null)
+  const [recentOrders, setRecentOrders] = useState<AdminUserRecentOrder[]>([])
   const [loading, setLoading] = useState(true)
-  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null)
+  const [listingFilter, setListingFilter] = useState<AdminUserListingFilter>('all')
+  const [walletSummary, setWalletSummary] = useState<AdminUserWalletSummary | null>(null)
   const [walletLoading, setWalletLoading] = useState(true)
   const [walletError, setWalletError] = useState<string | null>(null)
   const [walletResetting, setWalletResetting] = useState(false)
-  const [restriction, setRestriction] = useState<AccountRestrictionState | null>(null)
+  const [restriction, setRestriction] = useState<AdminAccountRestrictionState | null>(null)
   const [restrictionLoading, setRestrictionLoading] = useState(true)
   const [restrictionSaving, setRestrictionSaving] = useState(false)
   const [restrictionReason, setRestrictionReason] = useState('')
   const [selectedPresetMinutes, setSelectedPresetMinutes] = useState<number>(60 * 24)
-  const [sellerBan, setSellerBan] = useState<SellerBanState | null>(null)
+  const [sellerBan, setSellerBan] = useState<AdminSellerBanState | null>(null)
   const [sellerBanLoading, setSellerBanLoading] = useState(true)
   const [sellerBanSaving, setSellerBanSaving] = useState(false)
   const [sellerBanReason, setSellerBanReason] = useState('')
   const [messageDialogOpen, setMessageDialogOpen] = useState(false)
+
+  const listingCounts = useMemo(() => {
+    let active = 0
+    let sold = 0
+    let draft = 0
+    let hidden = 0
+    for (const listing of listings) {
+      if (listing.status === 'active') active += 1
+      if (listing.status === 'sold') sold += 1
+      if (listing.status === 'draft') draft += 1
+      if (listing.hidden_from_site || listing.status === 'removed') hidden += 1
+    }
+    return { total: listings.length, active, sold, draft, hidden }
+  }, [listings])
 
   useEffect(() => {
     let cancelled = false
@@ -128,20 +104,23 @@ export default function AdminUserDetailPage() {
       setLoading(true)
       try {
         const res = await fetch(`/api/admin/users/${id}`, { credentials: 'include' })
-        const body = (await res.json()) as {
-          data?: { profile: Profile; listings: ListingRow[] }
-          error?: string
-        }
-        if (!res.ok) {
+        const body = (await res.json()) as { data?: AdminUserDetail; error?: string }
+        if (!res.ok || !body.data) {
           if (!cancelled) {
             setProfile(null)
             setListings([])
+            setAuth(null)
+            setCommerce(null)
+            setRecentOrders([])
           }
           return
         }
-        if (!cancelled && body.data) {
+        if (!cancelled) {
           setProfile(body.data.profile)
           setListings(body.data.listings ?? [])
+          setAuth(body.data.auth)
+          setCommerce(body.data.commerce)
+          setRecentOrders(body.data.recentOrders ?? [])
         }
       } catch {
         if (!cancelled) {
@@ -163,13 +142,8 @@ export default function AdminUserDetailPage() {
     async function loadRestriction() {
       setRestrictionLoading(true)
       try {
-        const res = await fetch(`/api/admin/users/${id}/account-restriction`, {
-          credentials: 'include',
-        })
-        const body = (await res.json()) as {
-          data?: AccountRestrictionState
-          error?: string
-        }
+        const res = await fetch(`/api/admin/users/${id}/account-restriction`, { credentials: 'include' })
+        const body = (await res.json()) as { data?: AdminAccountRestrictionState; error?: string }
         if (!res.ok) {
           if (!cancelled) {
             setRestriction(null)
@@ -190,7 +164,71 @@ export default function AdminUserDetailPage() {
         if (!cancelled) setRestrictionLoading(false)
       }
     }
-    loadRestriction()
+    void loadRestriction()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadSellerBan() {
+      setSellerBanLoading(true)
+      try {
+        const res = await fetch(`/api/admin/users/${id}/seller-ban`, { credentials: 'include' })
+        const body = (await res.json()) as { data?: AdminSellerBanState; error?: string }
+        if (!res.ok) {
+          if (!cancelled) {
+            setSellerBan(null)
+            toast.error(body.error || 'Could not load seller ban status')
+          }
+          return
+        }
+        if (!cancelled && body.data) {
+          setSellerBan(body.data)
+          setSellerBanReason(body.data.sellerBannedReason ?? '')
+        }
+      } catch {
+        if (!cancelled) {
+          setSellerBan(null)
+          toast.error('Could not load seller ban status')
+        }
+      } finally {
+        if (!cancelled) setSellerBanLoading(false)
+      }
+    }
+    void loadSellerBan()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadWallet() {
+      setWalletLoading(true)
+      setWalletError(null)
+      try {
+        const res = await fetch(`/api/admin/users/${id}/wallet`)
+        const body = (await res.json()) as { data?: AdminUserWalletSummary; error?: string }
+        if (!res.ok) {
+          if (!cancelled) {
+            setWalletSummary(null)
+            setWalletError(body.error || 'Could not load wallet')
+          }
+          return
+        }
+        if (!cancelled && body.data) setWalletSummary(body.data)
+      } catch {
+        if (!cancelled) {
+          setWalletSummary(null)
+          setWalletError('Could not load wallet')
+        }
+      } finally {
+        if (!cancelled) setWalletLoading(false)
+      }
+    }
+    void loadWallet()
     return () => {
       cancelled = true
     }
@@ -214,8 +252,7 @@ export default function AdminUserDetailPage() {
         ),
       })
       const body = (await res.json()) as {
-        success?: boolean
-        data?: AccountRestrictionState
+        data?: AdminAccountRestrictionState
         error?: string
       }
       if (!res.ok) {
@@ -243,44 +280,6 @@ export default function AdminUserDetailPage() {
     }
   }
 
-  useEffect(() => {
-    let cancelled = false
-    async function loadSellerBan() {
-      setSellerBanLoading(true)
-      try {
-        const res = await fetch(`/api/admin/users/${id}/seller-ban`, {
-          credentials: 'include',
-        })
-        const body = (await res.json()) as {
-          data?: SellerBanState
-          error?: string
-        }
-        if (!res.ok) {
-          if (!cancelled) {
-            setSellerBan(null)
-            toast.error(body.error || 'Could not load seller ban status')
-          }
-          return
-        }
-        if (!cancelled && body.data) {
-          setSellerBan(body.data)
-          setSellerBanReason(body.data.sellerBannedReason ?? '')
-        }
-      } catch {
-        if (!cancelled) {
-          setSellerBan(null)
-          toast.error('Could not load seller ban status')
-        }
-      } finally {
-        if (!cancelled) setSellerBanLoading(false)
-      }
-    }
-    void loadSellerBan()
-    return () => {
-      cancelled = true
-    }
-  }, [id])
-
   async function applySellerBan(banned: boolean) {
     setSellerBanSaving(true)
     try {
@@ -288,15 +287,10 @@ export default function AdminUserDetailPage() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          banned
-            ? { banned: true, reason: sellerBanReason.trim() || null }
-            : { banned: false },
-        ),
+        body: JSON.stringify(banned ? { banned: true, reason: sellerBanReason.trim() || null } : { banned: false }),
       })
       const body = (await res.json()) as {
-        success?: boolean
-        data?: SellerBanState & { affectedListingCount?: number }
+        data?: AdminSellerBanState & { affectedListingCount?: number }
         error?: string
       }
       if (!res.ok) {
@@ -325,39 +319,6 @@ export default function AdminUserDetailPage() {
     }
   }
 
-  useEffect(() => {
-    let cancelled = false
-    async function loadWallet() {
-      setWalletLoading(true)
-      setWalletError(null)
-      try {
-        const res = await fetch(`/api/admin/users/${id}/wallet`)
-        const body = (await res.json()) as { data?: WalletSummary; error?: string }
-        if (!res.ok) {
-          if (!cancelled) {
-            setWalletSummary(null)
-            setWalletError(body.error || 'Could not load wallet')
-          }
-          return
-        }
-        if (!cancelled && body.data) {
-          setWalletSummary(body.data)
-        }
-      } catch {
-        if (!cancelled) {
-          setWalletSummary(null)
-          setWalletError('Could not load wallet')
-        }
-      } finally {
-        if (!cancelled) setWalletLoading(false)
-      }
-    }
-    loadWallet()
-    return () => {
-      cancelled = true
-    }
-  }, [id])
-
   async function startImpersonation(nextPath = '/') {
     if (!profile) return false
     const res = await fetch('/api/admin/impersonate', {
@@ -383,35 +344,67 @@ export default function AdminUserDetailPage() {
     return false
   }
 
-  function listingViewHref(listing: ListingRow): string {
-    return listingDetailHref({
-      id: listing.id,
-      slug: listing.slug,
-      section: listing.section,
-    })
-  }
-
-  function listingEditHref(listing: ListingRow): string {
-    return peerListingEditHref(listing.section, listing.id)
-  }
-
   async function toggleVerified() {
     if (!profile) return
     const next = !profile.shop_verified
+    const verifiedAt = next ? new Date().toISOString() : null
     const { error } = await supabase
       .from('profiles')
-      .update(
-        next
-          ? { shop_verified: true, shop_verified_at: new Date().toISOString() }
-          : { shop_verified: false, shop_verified_at: null }
-      )
+      .update(next ? { shop_verified: true, shop_verified_at: verifiedAt } : { shop_verified: false, shop_verified_at: null })
       .eq('id', id)
     if (!error) {
-      setProfile({ ...profile, shop_verified: next })
+      setProfile({ ...profile, shop_verified: next, shop_verified_at: verifiedAt })
       toast.success(next ? 'Verified seller badge granted' : 'Verified seller badge removed')
       void revalidateListingDetailAfterProfileUpdate({ profileId: id })
     } else {
       toast.error('Failed to update profile')
+    }
+  }
+
+  async function toggleReswellSeller() {
+    if (!profile) return
+    const next = !profile.is_reswell_seller
+    try {
+      const res = await fetch('/api/admin/users/reswell-seller', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id, grant: next }),
+      })
+      if (!res.ok) {
+        const json = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(json?.error ?? 'Failed to update user')
+        return
+      }
+      setProfile({ ...profile, is_reswell_seller: next })
+      toast.success(next ? 'Reswell Seller access granted (0% marketplace fee)' : 'Reswell Seller access removed')
+    } catch {
+      toast.error('Failed to update user')
+    }
+  }
+
+  async function toggleEmployee() {
+    if (!profile) return
+    const next = !profile.is_employee
+    const updates = next ? { is_employee: true, is_admin: false } : { is_employee: false }
+    const { error } = await supabase.from('profiles').update(updates).eq('id', id)
+    if (!error) {
+      setProfile({ ...profile, is_employee: next, is_admin: next ? false : profile.is_admin })
+      toast.success(next ? 'Employee access granted' : 'Employee access removed')
+    } else {
+      toast.error('Failed to update user')
+    }
+  }
+
+  async function toggleAdmin() {
+    if (!profile) return
+    const next = !profile.is_admin
+    const updates = next ? { is_admin: true, is_employee: false } : { is_admin: false }
+    const { error } = await supabase.from('profiles').update(updates).eq('id', id)
+    if (!error) {
+      setProfile({ ...profile, is_admin: next, is_employee: next ? false : profile.is_employee })
+      toast.success(next ? 'Admin access granted' : 'Admin access removed')
+    } else {
+      toast.error('Failed to update user')
     }
   }
 
@@ -426,11 +419,7 @@ export default function AdminUserDetailPage() {
     setWalletResetting(true)
     try {
       const res = await fetch(`/api/admin/users/${id}/wallet`, { method: 'POST' })
-      const body = (await res.json()) as {
-        success?: boolean
-        data?: WalletSummary
-        error?: string
-      }
+      const body = (await res.json()) as { data?: AdminUserWalletSummary; error?: string }
       if (!res.ok) {
         toast.error(body.error || 'Could not reset wallet')
         return
@@ -439,7 +428,7 @@ export default function AdminUserDetailPage() {
         setWalletSummary(body.data)
       } else {
         const r = await fetch(`/api/admin/users/${id}/wallet`)
-        const j = (await r.json()) as { data?: WalletSummary }
+        const j = (await r.json()) as { data?: AdminUserWalletSummary }
         if (r.ok && j.data) setWalletSummary(j.data)
       }
       toast.success('Wallet earnings reset to $0.00')
@@ -457,131 +446,214 @@ export default function AdminUserDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ listing_ids: [listingId], status: newStatus }),
     })
-    const json = (await res.json().catch(() => ({}))) as {
-      success?: boolean
-      error?: unknown
-    }
+    const json = (await res.json().catch(() => ({}))) as { error?: unknown }
     if (res.ok) {
       setListings((prev) =>
-        prev.map((l) =>
-          l.id === listingId
+        prev.map((listing) =>
+          listing.id === listingId
             ? {
-                ...l,
+                ...listing,
                 status: newStatus,
-                hidden_from_site: newStatus === 'removed' ? true : l.hidden_from_site,
+                hidden_from_site: newStatus === 'removed' ? true : listing.hidden_from_site,
               }
-            : l,
+            : listing,
         ),
       )
       toast.success(`Listing marked as ${newStatus}`)
     } else {
-      const errMsg =
-        typeof json.error === 'string'
-          ? json.error
-          : 'Failed to update listing'
-      toast.error(errMsg)
+      toast.error(typeof json.error === 'string' ? json.error : 'Failed to update listing')
+    }
+  }
+
+  async function copyValue(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value)
+      toast.success(`${label} copied`)
+    } catch {
+      toast.error(`Could not copy ${label.toLowerCase()}`)
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Loading user…
       </div>
     )
   }
 
-  if (!profile) {
+  if (!profile || !auth || !commerce) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/users">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <AdminPageHeader
+          title="User not found"
+          breadcrumbs={[
+            { label: 'Home', href: '/admin/home' },
+            { label: 'Users', href: '/admin/users' },
+            { label: 'Profile' },
+          ]}
+        />
+        <p className="text-sm text-muted-foreground">This user could not be loaded.</p>
+        <Button variant="outline" asChild>
+          <Link href="/admin/users">Back to users</Link>
         </Button>
-        <p className="text-muted-foreground">User not found.</p>
       </div>
     )
   }
+
+  const shopHref = profile.seller_slug ? sellerProfileHref(profile) : null
+  const displayName = profile.display_name || profile.email || 'User'
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/users">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">User details</h1>
-          <p className="text-muted-foreground">Profile and listings</p>
-        </div>
+      <AdminPageHeader
+        title={displayName}
+        description={profile.email ?? 'No email on file'}
+        breadcrumbs={[
+          { label: 'Home', href: '/admin/home' },
+          { label: 'Users', href: '/admin/users' },
+          { label: displayName },
+        ]}
+        actions={
+          <>
+            <Button type="button" className="admin-btn-primary gap-2" onClick={() => setMessageDialogOpen(true)}>
+              <MessageSquarePlus className="h-4 w-4" aria-hidden />
+              Message user
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" className="gap-2">
+                  <MoreHorizontal className="h-4 w-4" />
+                  More actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => void startImpersonation('/')}>
+                  <UserCog className="mr-2 h-4 w-4" />
+                  Act as user
+                </DropdownMenuItem>
+                {shopHref ? (
+                  <DropdownMenuItem asChild>
+                    <Link href={shopHref} target="_blank">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View public shop
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
+                {profile.email ? (
+                  <DropdownMenuItem onClick={() => void copyValue(profile.email ?? '', 'Email')}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy email
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem onClick={() => void copyValue(profile.id, 'User ID')}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy user ID
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
+
+      <AdminStatStrip
+        items={[
+          {
+            label: 'Listings',
+            value: String(listingCounts.total),
+            footnote: `${listingCounts.draft} draft · ${listingCounts.hidden} hidden`,
+            tone: 'teal',
+            active: listingFilter === 'all',
+            onClick: () => setListingFilter('all'),
+          },
+          {
+            label: 'Active',
+            value: String(listingCounts.active),
+            footnote: `${listingCounts.sold} sold`,
+            tone: 'green',
+            active: listingFilter === 'active',
+            onClick: () => setListingFilter('active'),
+          },
+          {
+            label: 'Seller GMS',
+            value: formatAdminUsd(commerce.sellerGms),
+            footnote: `${commerce.sellerSales} sale${commerce.sellerSales === 1 ? '' : 's'} · excl. shipping`,
+            tone: 'blue',
+            active: listingFilter === 'sold',
+            onClick: () => setListingFilter('sold'),
+          },
+          {
+            label: 'Wallet',
+            value: walletSummary ? formatAdminUsd(walletSummary.balance) : walletLoading ? '…' : '—',
+            footnote: walletSummary ? `${formatAdminUsd(walletSummary.pendingBalance)} pending` : 'Available balance',
+            tone: 'violet',
+          },
+        ]}
+      />
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <AdminUserDetailIdentity profile={profile} listingsCount={listingCounts.total} />
+        <AdminUserDetailAccount
+          userId={profile.id}
+          joinedAt={profile.created_at}
+          verifiedAt={profile.shop_verified_at}
+          auth={auth}
+          commerce={commerce}
+        />
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Profile
-          </CardTitle>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-2 shrink-0"
-            onClick={() => setMessageDialogOpen(true)}
-          >
-            <MessageSquarePlus className="h-4 w-4" aria-hidden />
-            Message user
-          </Button>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-6">
-          <div className="relative h-16 w-16 rounded-full bg-muted overflow-hidden">
-            {profile.avatar_url ? (
-              <Image src={profile.avatar_url} alt="" fill className="object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-muted-foreground">
-                {profile.display_name?.[0]?.toUpperCase() || '?'}
-              </div>
-            )}
-          </div>
-          <div className="space-y-1">
-            <p className="font-medium text-foreground">
-              {profile.display_name || 'No name'}
-            </p>
-            {profile.email && (
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <Mail className="h-3 w-3" />
-                {profile.email}
-              </p>
-            )}
-            {(profile.city || profile.location) && (
-              <p className="text-sm text-muted-foreground">
-                {[profile.city, profile.location].filter(Boolean).join(', ')}
-              </p>
-            )}
-            <div className="flex items-center gap-2 pt-1">
-              {profile.is_admin && (
-                <Badge className="bg-primary text-primary-foreground">Admin</Badge>
-              )}
-              {profile.shop_verified && (
-                <Badge variant="outline" className={verifiedSellerBadgeClassName}>
-                  <VerifiedBadge size="sm" className="-ml-0.5 mr-px" />
-                  Verified Seller
-                </Badge>
-              )}
-              <span className="text-xs text-muted-foreground">
-                Joined {format(new Date(profile.created_at), 'MMM d, yyyy')}
-              </span>
-            </div>
-            {profile.sales_count > 0 && (
-              <p className="text-xs text-muted-foreground pt-1">
-                {profile.sales_count} sale{profile.sales_count !== 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <AdminUserDetailWallet
+          loading={walletLoading}
+          error={walletError}
+          summary={walletSummary}
+          resetting={walletResetting}
+          onReset={resetWalletEarnings}
+        />
+        <AdminUserDetailAccess
+          profile={profile}
+          onToggleVerified={() => void toggleVerified()}
+          onToggleReswellSeller={() => void toggleReswellSeller()}
+          onToggleEmployee={() => void toggleEmployee()}
+          onToggleAdmin={() => void toggleAdmin()}
+        />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <AdminUserDetailRestriction
+          loading={restrictionLoading}
+          saving={restrictionSaving}
+          isAdminUser={profile.is_admin}
+          restriction={restriction}
+          reason={restrictionReason}
+          selectedMinutes={selectedPresetMinutes}
+          onReasonChange={setRestrictionReason}
+          onSelectMinutes={setSelectedPresetMinutes}
+          onApply={(restricted) => void applyAccountRestriction(restricted)}
+        />
+        <AdminUserDetailSellerBan
+          loading={sellerBanLoading}
+          saving={sellerBanSaving}
+          isAdminUser={profile.is_admin}
+          ban={sellerBan}
+          reason={sellerBanReason}
+          onReasonChange={setSellerBanReason}
+          onApply={(banned) => void applySellerBan(banned)}
+        />
+      </div>
+
+      <AdminUserDetailListings
+        listings={listings}
+        filter={listingFilter}
+        onFilterChange={setListingFilter}
+        onEdit={(listing) => {
+          void startImpersonation(withAdminListingEditEntry(peerListingEditHref(listing.section, listing.id)))
+        }}
+        onUpdateStatus={(listingId, status) => void updateListingStatus(listingId, status)}
+      />
+
+      <AdminUserDetailOrders orders={recentOrders} />
 
       <AdminSendUserMessageDialog
         open={messageDialogOpen}
@@ -594,429 +666,6 @@ export default function AdminUserDetailPage() {
         }}
         trigger={null}
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" />
-            Earnings (wallet)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {walletLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading wallet…
-            </div>
-          ) : walletError ? (
-            <p className="text-sm text-destructive">{walletError}</p>
-          ) : walletSummary ? (
-            <>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Total (incl. pending)</p>
-                  <p className="text-lg font-semibold tabular-nums">
-                    ${walletSummary.totalBalance.toFixed(2)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Available</p>
-                  <p className="text-lg font-semibold tabular-nums">
-                    ${walletSummary.balance.toFixed(2)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Pending</p>
-                  <p className="text-lg font-semibold tabular-nums">
-                    ${walletSummary.pendingBalance.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Lifetime earned ${walletSummary.lifetime_earned.toFixed(2)} · spent $
-                {walletSummary.lifetime_spent.toFixed(2)} · cashed out ${walletSummary.lifetime_cashed_out.toFixed(2)}
-              </p>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="gap-2"
-                disabled={walletResetting}
-                onClick={resetWalletEarnings}
-              >
-                {walletResetting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                Reset earnings to $0.00
-              </Button>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">No wallet data.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
-            Account restriction
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {restrictionLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading restriction status…
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                {isFutureRestriction(restriction?.restrictedUntil) ? (
-                  <Badge variant="destructive">Locked</Badge>
-                ) : (
-                  <Badge variant="outline">Active</Badge>
-                )}
-                {isFutureRestriction(restriction?.restrictedUntil) && restriction?.restrictedUntil ? (
-                  <span className="text-sm text-muted-foreground">
-                    Until {format(new Date(restriction.restrictedUntil), 'MMM d, yyyy h:mm a')}
-                  </span>
-                ) : restriction?.restrictedUntil ? (
-                  <span className="text-sm text-muted-foreground">Lock expired</span>
-                ) : null}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Locked users can still sign in, but they cannot send messages or complete purchases.
-              </p>
-              {isFutureRestriction(restriction?.messageRateLimitedUntil) &&
-              restriction?.messageRateLimitedUntil ? (
-                <p className="text-xs text-muted-foreground">
-                  Automated messaging cooldown until{' '}
-                  {format(new Date(restriction.messageRateLimitedUntil), 'MMM d, yyyy h:mm a')}
-                </p>
-              ) : null}
-              {!isFutureRestriction(restriction?.restrictedUntil) ? (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="restriction-duration">Lock duration</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {RESTRICTION_PRESETS.map((preset) => (
-                        <Button
-                          key={preset.minutes}
-                          type="button"
-                          size="sm"
-                          variant={
-                            selectedPresetMinutes === preset.minutes ? 'default' : 'outline'
-                          }
-                          onClick={() => setSelectedPresetMinutes(preset.minutes)}
-                        >
-                          {preset.label}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="restriction-reason">Internal note (optional)</Label>
-                    <Input
-                      id="restriction-reason"
-                      value={restrictionReason}
-                      onChange={(event) => setRestrictionReason(event.target.value)}
-                      placeholder="Reason for lock"
-                      maxLength={500}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="gap-2"
-                    disabled={restrictionSaving || profile.is_admin}
-                    onClick={() => void applyAccountRestriction(true)}
-                  >
-                    {restrictionSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Lock className="h-4 w-4" />
-                    )}
-                    Lock account
-                  </Button>
-                  {profile.is_admin ? (
-                    <p className="text-xs text-muted-foreground">
-                      Admin accounts cannot be locked from this screen.
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  disabled={restrictionSaving}
-                  onClick={() => void applyAccountRestriction(false)}
-                >
-                  {restrictionSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Unlock className="h-4 w-4" />
-                  )}
-                  Remove lock
-                </Button>
-              )}
-              {restriction?.reason ? (
-                <p className="text-xs text-muted-foreground">Note: {restriction.reason}</p>
-              ) : null}
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Ban className="h-5 w-5" />
-            Seller ban
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {sellerBanLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading seller ban status…
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                {sellerBan?.banned ? (
-                  <Badge variant="destructive">Seller banned</Badge>
-                ) : (
-                  <Badge variant="outline">Can sell</Badge>
-                )}
-                {sellerBan?.banned && sellerBan.sellerBannedAt ? (
-                  <span className="text-sm text-muted-foreground">
-                    Since {format(new Date(sellerBan.sellerBannedAt), 'MMM d, yyyy h:mm a')}
-                  </span>
-                ) : null}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Banned sellers can still buy and message, but all live listings move to delinquent
-                (hidden) and they cannot make listings live.
-              </p>
-              {!sellerBan?.banned ? (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="seller-ban-reason">Internal note (optional)</Label>
-                    <Input
-                      id="seller-ban-reason"
-                      value={sellerBanReason}
-                      onChange={(event) => setSellerBanReason(event.target.value)}
-                      placeholder="Reason for seller ban"
-                      maxLength={500}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="gap-2"
-                    disabled={sellerBanSaving || profile.is_admin}
-                    onClick={() => void applySellerBan(true)}
-                  >
-                    {sellerBanSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Ban className="h-4 w-4" />
-                    )}
-                    Ban seller
-                  </Button>
-                  {profile.is_admin ? (
-                    <p className="text-xs text-muted-foreground">
-                      Admin accounts cannot be seller-banned from this screen.
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  disabled={sellerBanSaving}
-                  onClick={() => void applySellerBan(false)}
-                >
-                  {sellerBanSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Unlock className="h-4 w-4" />
-                  )}
-                  Remove seller ban
-                </Button>
-              )}
-              {sellerBan?.sellerBannedReason ? (
-                <p className="text-xs text-muted-foreground">Note: {sellerBan.sellerBannedReason}</p>
-              ) : null}
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Verified Seller Badge */}
-      <Card>
-        <CardContent className="p-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            {profile.shop_verified ? (
-              <VerifiedBadge size="lg" className="shrink-0" />
-            ) : (
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-            )}
-            <div>
-              <p className="font-medium text-[#7F9DD5] text-sm">Verified Seller Badge</p>
-              <p className="text-xs text-muted-foreground">
-                {profile.shop_verified
-                  ? 'This user has a verified seller badge visible on their profile and listings.'
-                  : 'Grant a verified badge to indicate this is a trusted seller.'}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant={profile.shop_verified ? 'outline' : 'default'}
-            size="sm"
-            onClick={toggleVerified}
-            className="shrink-0"
-          >
-            {profile.shop_verified ? (
-              <>
-                <XCircle className="h-4 w-4 mr-1.5" />
-                Remove
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                Grant Badge
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Listings ({listings.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {listings.length === 0 ? (
-            <p className="p-6 text-muted-foreground text-center">No listings</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Listing</TableHead>
-                  <TableHead>Section</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {listings.map((l) => (
-                  <TableRow key={l.id}>
-                    <TableCell>
-                      <Link
-                        href={listingViewHref(l)}
-                        className="font-medium text-primary hover:underline line-clamp-1 max-w-[200px]"
-                      >
-                        {l.title?.trim() || 'Untitled draft'}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {l.section}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-semibold text-black dark:text-white">${l.price}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          l.status === 'active'
-                            ? 'default'
-                            : l.status === 'removed'
-                              ? 'destructive'
-                              : 'secondary'
-                        }
-                      >
-                        {l.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(l.created_at), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={listingViewHref(l)}>
-                              View
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              void startImpersonation(listingEditHref(l))
-                            }}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            {l.status === 'draft' ? 'Continue draft' : 'Edit listing'}
-                          </DropdownMenuItem>
-                          {l.status === 'active' && (
-                            <DropdownMenuItem
-                              onClick={() => updateListingStatus(l.id, 'removed')}
-                            >
-                              Remove
-                            </DropdownMenuItem>
-                          )}
-                          {l.status === 'removed' && (
-                            <DropdownMenuItem
-                              onClick={() => updateListingStatus(l.id, 'active')}
-                            >
-                              Restore
-                            </DropdownMenuItem>
-                          )}
-                          {l.status === 'sold' && (
-                            <DropdownMenuItem
-                              onClick={() => {
-                                if (
-                                  !confirm(
-                                    'Make this listing live again? It was marked sold—only do this if the sale was reversed or was a mistake.'
-                                  )
-                                )
-                                  return
-                                updateListingStatus(l.id, 'active')
-                              }}
-                            >
-                              <RotateCcw className="h-4 w-4 mr-2" /> Reactivate (make live)
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
     </div>
   )
 }
