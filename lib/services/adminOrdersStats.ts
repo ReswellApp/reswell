@@ -1,6 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
-  dbGetAdminOrdersDashboard,
+  dbGetAdminOrdersDashboardStats,
   isPostgrestSchemaStaleError,
   type AdminOrdersDashboardPayload,
   type AdminOrdersDashboardStats,
@@ -19,8 +19,12 @@ export type {
   AdminOrdersOpenLists,
 }
 
+export type AdminOrdersStatsPayload = {
+  stats: AdminOrdersDashboardStats
+}
+
 export type AdminOrdersStatsResult =
-  | { ok: true; data: AdminOrdersDashboardPayload }
+  | { ok: true; data: AdminOrdersStatsPayload }
   | { ok: false; message: string; status: number }
 
 function getServiceOrThrow(): ReturnType<typeof createServiceRoleClient> | null {
@@ -56,24 +60,14 @@ const EMPTY_STATS: AdminOrdersDashboardStats = {
   openLabelFailures: 0,
 }
 
-const EMPTY_QUEUES: AdminOrdersDashboardQueues = {
-  openOrders: [],
-  openLabels: [],
-}
-
-const EMPTY_OPEN_LISTS: AdminOrdersOpenLists = {
-  shipping: [],
-  pickup: [],
-}
-
-/** Dashboard KPIs, open-fulfillment breakdown, and attention queues for `/admin/orders`. */
+/** Counts for the `/admin/orders` work queues. */
 export async function getAdminOrdersStats(): Promise<AdminOrdersStatsResult> {
   const supabase = getServiceOrThrow()
   if (!supabase) {
     return { ok: false, message: "Server misconfigured", status: 500 }
   }
 
-  const { data, error } = await dbGetAdminOrdersDashboard(supabase)
+  const { data, error } = await dbGetAdminOrdersDashboardStats(supabase)
   if (error) {
     if (isPostgrestSchemaStaleError(error)) {
       return {
@@ -89,6 +83,6 @@ export async function getAdminOrdersStats(): Promise<AdminOrdersStatsResult> {
 
   return {
     ok: true,
-    data: data ?? { stats: EMPTY_STATS, queues: EMPTY_QUEUES, openLists: EMPTY_OPEN_LISTS },
+    data: { stats: data ?? EMPTY_STATS },
   }
 }

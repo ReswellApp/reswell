@@ -8,7 +8,7 @@ export async function generateMetadata(props: {
   const { id } = await props.params
   return privatePageMetadata({
     title: "Order — Admin — Reswell",
-    description: "Review payment, shipping, and support history for this Reswell marketplace order.",
+    description: "See what this order needs next — fulfillment, payment, and support.",
     path: `/admin/orders/${id}`,
   })
 }

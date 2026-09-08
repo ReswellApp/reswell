@@ -3,7 +3,7 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 
 export const metadata = privatePageMetadata({
   title: "Orders — Admin — Reswell",
-  description: "Search and inspect marketplace orders, payments, and fulfillment status.",
+  description: "Work through marketplace orders by what needs to happen next.",
   path: "/admin/orders",
 })
 

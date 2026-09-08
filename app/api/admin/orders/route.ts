@@ -5,8 +5,8 @@ import { isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
 import { z } from "zod"
 
 const querySchema = z.object({
-  status: z.enum(["all", "confirmed", "refunding", "refunded", "pending"]).optional().default("all"),
-  open: z.enum(["all", "shipping", "pickup", "none"]).optional().default("none"),
+  status: z.enum(["all", "confirmed", "refunding", "refunded", "pending", "refunds"]).optional().default("all"),
+  open: z.enum(["all", "shipping", "pickup", "none", "needs_label"]).optional().default("none"),
   payment: z.enum(["all", "stripe", "reswell_bucks"]).optional().default("all"),
   test: z.enum(["all", "real", "test"]).optional().default("all"),
   q: z.string().optional(),
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   let query = serviceSupabase
     .from("orders")
     .select(
-      "id, order_num, status, amount, payment_method, fulfillment_method, created_at, refunded_at, buyer_id, seller_id, is_admin_test",
+      "id, order_num, status, amount, payment_method, fulfillment_method, created_at, refunded_at, buyer_id, seller_id, is_admin_test, delivery_status, tracking_number, listing_id, listings ( title )",
       { count: "exact" },
     )
     .order(sort, { ascending: dir === "asc" })
@@ -55,6 +55,13 @@ export async function GET(request: NextRequest) {
       .eq("is_admin_test", false)
       .eq("fulfillment_method", "shipping")
       .in("delivery_status", ["pending", "shipped"])
+  } else if (open === "needs_label") {
+    query = query
+      .eq("status", "confirmed")
+      .eq("is_admin_test", false)
+      .eq("fulfillment_method", "shipping")
+      .eq("delivery_status", "pending")
+      .is("tracking_number", null)
   } else if (open === "pickup") {
     query = query
       .eq("status", "confirmed")
@@ -68,6 +75,8 @@ export async function GET(request: NextRequest) {
       .or(
         "and(fulfillment_method.eq.shipping,delivery_status.in.(pending,shipped)),and(fulfillment_method.eq.pickup,delivery_status.neq.picked_up)",
       )
+  } else if (status === "refunds") {
+    query = query.in("status", ["refunding", "refunded"])
   } else if (status !== "all") {
     query = query.eq("status", status)
   }
@@ -136,11 +145,19 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const enriched = rows.map((r) => ({
-    ...r,
-    buyer: partyById.get(r.buyer_id) ?? null,
-    seller: partyById.get(r.seller_id) ?? null,
-  }))
+  const enriched = rows.map((r) => {
+    const { listings, ...rest } = r as typeof r & {
+      listings?: { title?: string | null } | { title?: string | null }[] | null
+    }
+    const listing = Array.isArray(listings) ? listings[0] ?? null : listings
+    const listingTitle = typeof listing?.title === "string" ? listing.title.trim() : ""
+    return {
+      ...rest,
+      listing_title: listingTitle || null,
+      buyer: partyById.get(r.buyer_id) ?? null,
+      seller: partyById.get(r.seller_id) ?? null,
+    }
+  })
 
   return NextResponse.json({ data: enriched, total: count ?? 0 })
 }
