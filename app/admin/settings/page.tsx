@@ -131,7 +131,6 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/listings/bulk', label: 'Bulk list', description: 'Create many listings at once', icon: Layers },
       { href: '/admin/seo', label: 'SEO', description: 'Page metadata & sitemaps', icon: Search },
       { href: '/admin/wallets', label: 'Wallet balances', description: 'Balances & payouts', icon: Wallet },
-      { href: '/admin/orders/test-purchase', label: 'Test purchase', description: 'Run a test checkout', icon: ShoppingBag },
       { href: '/admin/fraud-messages', label: 'Fraud messages', description: 'Flagged conversations', icon: Shield },
       { href: '/admin/ops', label: 'Platform ops', description: 'Site errors and fix tickets', icon: Activity },
       { href: '/admin/reswelltickets', label: 'Reswell tickets', description: 'Admin progress and bug tracker — not customer support', icon: Ticket },
