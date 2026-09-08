@@ -67,7 +67,16 @@ export function AdminOrderMoneySection({
           </p>
         ) : null}
 
-        {o.payout ? (
+        {o.fulfillment_method === "pickup" && o.payout ? (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Payout ledger</p>
+            <p className="text-sm font-medium text-foreground">
+              {payoutStatusLabel(o.payout.status, o.payout.hold_reason)}
+            </p>
+          </div>
+        ) : null}
+
+        {o.fulfillment_method === "shipping" && o.status === "confirmed" && o.payout ? (
           <div className="rounded-lg border border-border/70 bg-muted/20 p-3 space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Seller payout</p>
             <p className="text-sm font-medium text-foreground">
