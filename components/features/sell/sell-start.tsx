@@ -8,6 +8,7 @@ import { SellContinueDrafts } from "@/components/features/sell/sell-continue-dra
 import { SellFaqSection } from "@/components/features/sell/sell-faq-section"
 import { SellHubTitleBar } from "@/components/features/sell/sell-hub-title-bar"
 import { SellWhySellSection } from "@/components/features/sell/sell-why-sell-section"
+import { SELL_TO_RESWELL_ENABLED } from "@/lib/board-buy/constants"
 import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
 /**
@@ -32,20 +33,22 @@ export function SellStart({
   return (
     <div className="flex-1 bg-background">
       <SellHubTitleBar />
-      <div className="mx-auto w-full max-w-2xl px-4 pt-4 sm:px-6">
-        <Link
-          href="/we-buy"
-          className="flex items-center justify-between gap-3 rounded-2xl border border-[#001A4A]/15 bg-[#F4F7FB] px-4 py-3 text-left transition hover:border-[#001A4A]/35"
-        >
-          <span>
-            <span className="block text-sm font-semibold text-[#001A4A]">We’ll buy your surfboard</span>
-            <span className="block text-xs text-[#5c6b89]">
-              Quote in under 30 minutes. Prepaid label. Paid to your wallet.
+      {SELL_TO_RESWELL_ENABLED ? (
+        <div className="mx-auto w-full max-w-2xl px-4 pt-4 sm:px-6">
+          <Link
+            href="/we-buy"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-[#001A4A]/15 bg-[#F4F7FB] px-4 py-3 text-left transition hover:border-[#001A4A]/35"
+          >
+            <span>
+              <span className="block text-sm font-semibold text-[#001A4A]">We’ll buy your surfboard</span>
+              <span className="block text-xs text-[#5c6b89]">
+                Quote in under 30 minutes. Prepaid label. Paid to your wallet.
+              </span>
             </span>
-          </span>
-          <span className="shrink-0 text-sm font-medium text-[#001A4A]">Get a quote →</span>
-        </Link>
-      </div>
+            <span className="shrink-0 text-sm font-medium text-[#001A4A]">Get a quote →</span>
+          </Link>
+        </div>
+      ) : null}
       <SellCatalogSearch
         isAdmin={isAdmin}
         trendingBrands={trendingBrands}

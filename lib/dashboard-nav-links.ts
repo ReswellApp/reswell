@@ -13,6 +13,7 @@ import {
   MessageSquare,
   LifeBuoy,
 } from "lucide-react"
+import { SELL_TO_RESWELL_ENABLED } from "@/lib/board-buy/constants"
 
 export interface DashboardNavChildLink {
   name: string
@@ -38,7 +39,15 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Offers", href: "/dashboard/offers", icon: Handshake },
-  { name: "Sell to Reswell", href: "/dashboard/we-buy", icon: BadgeDollarSign },
+  ...(SELL_TO_RESWELL_ENABLED
+    ? [
+        {
+          name: "Sell to Reswell",
+          href: "/dashboard/we-buy",
+          icon: BadgeDollarSign,
+        } satisfies DashboardNavLink,
+      ]
+    : []),
   DASHBOARD_MESSAGES_NAV,
   { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
   { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
