@@ -41,9 +41,9 @@ export function isMetaCapiEnabled(): boolean {
 }
 
 /**
- * True when `META_TEST_EVENT_CODE` is set. Callers that seed synthetic events (e.g. the admin
- * test-purchase tool) gate on this so those events only ever route to Events Manager → Test
- * Events and never count as live conversions.
+ * True when `META_TEST_EVENT_CODE` is set. Callers that seed synthetic events gate on this so
+ * those events only ever route to Events Manager → Test Events and never count as live
+ * conversions.
  */
 export function isMetaTestEventCodeConfigured(): boolean {
   return Boolean(getTestEventCode())

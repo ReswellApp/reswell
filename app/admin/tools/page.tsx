@@ -29,7 +29,6 @@ import {
   Map,
   RefreshCw,
   Search,
-  ShoppingBag,
   Sparkles,
   Wrench,
   Zap,
@@ -352,20 +351,6 @@ export default function AdminToolsPage() {
             </Button>
           </ToolCard>
 
-          <ToolCard
-            icon={ShoppingBag}
-            accent="neutral"
-            title="Test purchase"
-            description="Open the test checkout flow to validate payments, wallet credits, and order creation end-to-end."
-          >
-            <Button variant="outline" asChild>
-              <Link href="/admin/orders/test-purchase">
-                <ShoppingBag className="mr-2 h-4 w-4" />
-                Open test purchase
-                <ArrowUpRight className="ml-1.5 h-4 w-4" />
-              </Link>
-            </Button>
-          </ToolCard>
         </div>
       </section>
 

@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
 import {
   Select,
@@ -32,14 +31,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
@@ -49,17 +40,13 @@ import {
   Copy,
   CreditCard,
   Eye,
-  FlaskConical,
   Filter,
   Hash,
-  Loader2,
   MoreHorizontal,
   MoreVertical,
   Package,
-  Plus,
   RefreshCw,
   ShoppingBag,
-  Trash2,
   Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -89,7 +76,6 @@ type OrderRow = {
   refunded_at: string | null
   buyer_id: string | null
   seller_id: string
-  is_admin_test: boolean
   buyer: PartyLabel | null
   seller: PartyLabel | null
   listing: {
@@ -219,15 +205,12 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [openFilter, setOpenFilter] = useState('none')
   const [paymentFilter, setPaymentFilter] = useState('all')
-  const [testFilter, setTestFilter] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [pageSize, setPageSize] = useState(50)
   const [offset, setOffset] = useState(0)
-  const [deleteTarget, setDeleteTarget] = useState<OrderRow | null>(null)
-  const [deleting, setDeleting] = useState(false)
 
   // Debounce search input into the query trigger.
   useEffect(() => {
@@ -252,7 +235,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     setOffset(0)
-  }, [search, statusFilter, openFilter, paymentFilter, testFilter, dateFrom, dateTo, sortKey, sortDir, pageSize])
+  }, [search, statusFilter, openFilter, paymentFilter, dateFrom, dateTo, sortKey, sortDir, pageSize])
 
   const fetchStats = useCallback(async () => {
     try {
@@ -272,7 +255,6 @@ export default function AdminOrdersPage() {
       if (openFilter !== 'none') params.set('open', openFilter)
       else if (statusFilter !== 'all') params.set('status', statusFilter)
       if (paymentFilter !== 'all') params.set('payment', paymentFilter)
-      if (testFilter !== 'all') params.set('test', testFilter)
       if (search) params.set('q', search)
       if (dateFrom) params.set('from', dateFrom)
       if (dateTo) params.set('to', dateTo)
@@ -295,7 +277,7 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, openFilter, paymentFilter, testFilter, dateFrom, dateTo, search, sortKey, sortDir, pageSize, offset])
+  }, [statusFilter, openFilter, paymentFilter, dateFrom, dateTo, search, sortKey, sortDir, pageSize, offset])
 
   useEffect(() => {
     void fetchOrders()
@@ -345,36 +327,10 @@ export default function AdminOrdersPage() {
     }
   }
 
-  async function confirmDelete() {
-    if (!deleteTarget) return
-    setDeleting(true)
-    try {
-      const res = await fetch(`/api/admin/orders/${deleteTarget.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      const body = (await res.json().catch(() => null)) as { error?: string } | null
-      if (!res.ok) {
-        toast.error(body?.error ?? 'Could not delete order')
-        return
-      }
-      const label = deleteTarget.order_num ?? `#${deleteTarget.id.slice(0, 8)}`
-      setDeleteTarget(null)
-      toast.success(`Test order ${label} deleted`)
-      void fetchOrders()
-      void fetchStats()
-    } catch {
-      toast.error('Could not delete order')
-    } finally {
-      setDeleting(false)
-    }
-  }
-
   const hasFilters =
     statusFilter !== 'all' ||
     openFilter !== 'none' ||
     paymentFilter !== 'all' ||
-    testFilter !== 'all' ||
     dateFrom !== '' ||
     dateTo !== '' ||
     search !== ''
@@ -392,37 +348,30 @@ export default function AdminOrdersPage() {
           { label: 'Orders List' },
         ]}
         actions={
-          <>
-            <Button type="button" className="admin-btn-primary hover:text-white" asChild>
-              <Link href="/admin/orders/test-purchase">
-                <Plus className="mr-2 h-4 w-4" /> Add Order
-              </Link>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="bg-white">
-                  More Actions
-                  <MoreHorizontal className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  disabled={loading}
-                  onClick={() => {
-                    void fetchOrders()
-                    void fetchStats()
-                  }}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" /> Refresh
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/orders/terminal">
-                    <ShoppingBag className="mr-2 h-4 w-4" /> In-person checkout
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" className="bg-white">
+                More Actions
+                <MoreHorizontal className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                disabled={loading}
+                onClick={() => {
+                  void fetchOrders()
+                  void fetchStats()
+                }}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin/orders/terminal">
+                  <ShoppingBag className="mr-2 h-4 w-4" /> In-person checkout
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
       />
 
@@ -577,16 +526,6 @@ export default function AdminOrdersPage() {
                     <SelectItem value="reswell_bucks">Wallet</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={testFilter} onValueChange={setTestFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All orders</SelectItem>
-                    <SelectItem value="real">Real only</SelectItem>
-                    <SelectItem value="test">Test only</SelectItem>
-                  </SelectContent>
-                </Select>
                 <Select
                   value={`${sortKey}:${sortDir}`}
                   onValueChange={(v) => {
@@ -719,14 +658,6 @@ export default function AdminOrdersPage() {
                                 r.seller?.email ||
                                 'Marketplace order'}
                             </span>
-                            {r.is_admin_test ? (
-                              <Badge
-                                variant="outline"
-                                className="gap-1 border-violet-500/30 text-violet-600 dark:text-violet-400"
-                              >
-                                <FlaskConical className="h-3 w-3" /> Test
-                              </Badge>
-                            ) : null}
                           </span>
                           <span className="block text-xs text-muted-foreground">
                             {r.listing?.section
@@ -799,17 +730,6 @@ export default function AdminOrdersPage() {
                                 <Hash className="mr-2 h-4 w-4" /> Copy order #
                               </DropdownMenuItem>
                             ) : null}
-                            {r.is_admin_test ? (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-rose-600 focus:text-rose-600 dark:text-rose-400"
-                                  onClick={() => setDeleteTarget(r)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" /> Delete test order
-                                </DropdownMenuItem>
-                              </>
-                            ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -867,39 +787,6 @@ export default function AdminOrdersPage() {
           </div>
         ) : null}
       </div>
-
-      {/* Delete test order confirmation */}
-      <Dialog open={deleteTarget !== null} onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete test order?</DialogTitle>
-            <DialogDescription>
-              This permanently removes test order{' '}
-              <span className="font-medium text-foreground">
-                {deleteTarget?.order_num ?? `#${deleteTarget?.id.slice(0, 8)}`}
-              </span>{' '}
-              from the records. Only admin-seeded test orders can be deleted — real marketplace orders are never
-              affected. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={() => void confirmDelete()} disabled={deleting}>
-              {deleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting…
-                </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete order
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

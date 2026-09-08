@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { requireAdmin, requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
-import { deleteAdminTestOrderService } from "@/lib/services/adminOrderDelete"
 import {
   getLatestPreparedShippingLabelForOrder,
   preparedLabelHasPaperlessQr,
@@ -92,32 +91,4 @@ export async function GET(
       canReplaceShippingLabel,
     },
   })
-}
-
-/**
- * DELETE /api/admin/orders/:id
- *
- * Admin only — permanently remove an admin-seeded **test** order. Real orders are refused.
- */
-export async function DELETE(
-  _request: Request,
-  context: { params: Promise<{ id: string }> },
-) {
-  const gate = await requireAdmin()
-  if (!gate.ok) {
-    return gate.response
-  }
-
-  const rawId = (await context.params).id
-  const parsed = orderIdSchema.safeParse(rawId)
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid order id" }, { status: 400 })
-  }
-
-  const result = await deleteAdminTestOrderService(parsed.data, { adminId: gate.ctx.user.id })
-  if (!result.ok) {
-    return NextResponse.json({ error: result.message }, { status: result.status })
-  }
-
-  return NextResponse.json({ success: true, data: { orderNum: result.orderNum } }, { status: 200 })
 }

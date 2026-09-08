@@ -35,7 +35,6 @@ export function AdminGuard({
         pathname === '/admin/llm-usage' ||
         pathname === '/admin/intelligence' ||
         pathname === '/admin/listings/brand-model-autofills' ||
-        pathname === '/admin/orders/test-purchase' ||
         pathname === '/admin/orders/terminal' ||
         pathname === '/admin/promo-codes' ||
         pathname === '/admin/fbcatalog' ||

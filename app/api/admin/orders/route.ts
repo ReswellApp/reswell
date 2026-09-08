@@ -20,7 +20,6 @@ const querySchema = z.object({
     .optional()
     .default("none"),
   payment: z.enum(["all", "stripe", "reswell_bucks"]).optional().default("all"),
-  test: z.enum(["all", "real", "test"]).optional().default("all"),
   q: z.string().optional(),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -58,7 +57,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid params" }, { status: 400 })
   }
 
-  const { status, open, payment, test, q, from, to, sort, dir, limit, offset } = parsed.data
+  const { status, open, payment, q, from, to, sort, dir, limit, offset } = parsed.data
   const serviceSupabase = createServiceRoleClient()
 
   let query = serviceSupabase
@@ -67,25 +66,23 @@ export async function GET(request: NextRequest) {
       "id, order_num, status, amount, payment_method, fulfillment_method, delivery_status, tracking_carrier, carrier_delivered_at, created_at, refunded_at, buyer_id, seller_id, listing_id, is_admin_test",
       { count: "exact" },
     )
+    .eq("is_admin_test", false)
     .order(sort, { ascending: dir === "asc" })
     .range(offset, offset + limit - 1)
 
   if (open === "shipping") {
     query = query
       .eq("status", "confirmed")
-      .eq("is_admin_test", false)
       .eq("fulfillment_method", "shipping")
       .in("delivery_status", ["pending", "shipped"])
   } else if (open === "awaiting_shipping") {
     query = query
       .eq("status", "confirmed")
-      .eq("is_admin_test", false)
       .eq("fulfillment_method", "shipping")
       .eq("delivery_status", "pending")
   } else if (open === "in_transit") {
     query = query
       .eq("status", "confirmed")
-      .eq("is_admin_test", false)
       .eq("fulfillment_method", "shipping")
       .eq("delivery_status", "shipped")
   } else if (open === "delivered") {
@@ -95,13 +92,11 @@ export async function GET(request: NextRequest) {
   } else if (open === "pickup") {
     query = query
       .eq("status", "confirmed")
-      .eq("is_admin_test", false)
       .eq("fulfillment_method", "pickup")
       .neq("delivery_status", "picked_up")
   } else if (open === "all") {
     query = query
       .eq("status", "confirmed")
-      .eq("is_admin_test", false)
       .or(
         "and(fulfillment_method.eq.shipping,delivery_status.in.(pending,shipped)),and(fulfillment_method.eq.pickup,delivery_status.neq.picked_up)",
       )
@@ -111,15 +106,6 @@ export async function GET(request: NextRequest) {
 
   if (payment !== "all") {
     query = query.eq("payment_method", payment)
-  }
-
-  // Open-fulfillment buckets already exclude test seeds — don't re-apply test.
-  if (open === "none") {
-    if (test === "test") {
-      query = query.eq("is_admin_test", true)
-    } else if (test === "real") {
-      query = query.eq("is_admin_test", false)
-    }
   }
 
   if (q?.trim()) {
