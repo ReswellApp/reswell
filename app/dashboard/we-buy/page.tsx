@@ -3,6 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { boardBuyStatusLabel } from "@/components/features/board-buy/board-buy-status-label"
 import { boardBuyQuotePath, formatBoardBuyUsd } from "@/lib/board-buy/quote-href"
+import { SELL_TO_RESWELL_ENABLED } from "@/lib/board-buy/constants"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { listMyBoardBuysService } from "@/lib/services/boardBuy"
@@ -15,6 +16,10 @@ export const metadata = privatePageMetadata({
 })
 
 export default async function DashboardWeBuyPage() {
+  if (!SELL_TO_RESWELL_ENABLED) {
+    redirect("/dashboard")
+  }
+
   const { user } = await getCachedDashboardSession()
   if (!user) {
     redirect("/auth/login?redirect=/dashboard/we-buy")

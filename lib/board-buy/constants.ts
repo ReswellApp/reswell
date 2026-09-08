@@ -4,6 +4,12 @@ export const BOARD_BUY_MAX_PHOTOS = 8
 export const BOARD_BUY_MIN_PHOTOS = 1
 export const BOARD_BUY_MAX_PHOTO_BYTES = 10 * 1024 * 1024
 
+/**
+ * Seller-facing Sell to Reswell (we-buy) entry points on `/sell` and dashboard.
+ * Off until the program relaunches. Admin buy-program stays live.
+ */
+export const SELL_TO_RESWELL_ENABLED = false
+
 /** Packed-box limits for inbound We Buy labels (width × height). Length follows the board. */
 export const BOARD_BUY_MAX_BOX_WIDTH_IN = 22
 export const BOARD_BUY_MAX_BOX_HEIGHT_IN = 5
