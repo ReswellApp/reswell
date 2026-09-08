@@ -132,7 +132,7 @@ export async function getSupportCaseThreadForStaff(
     }
   }
   if (!row) return { error: "Case not found." }
-  const messages = await listSupportCaseMessages(service, row.id, { includeInternal: false })
+  const messages = await listSupportCaseMessages(service, row.id, { includeInternal: true })
   return { case: row, messages }
 }
 
@@ -194,13 +194,23 @@ export async function sendSupportCaseAdminReplyService(
   if (!row) return { error: "Case not found." }
 
   const body = parsed.data.content.trim()
+  const isInternal = parsed.data.is_internal === true
   const posted = await insertSupportCaseMessage(service, {
     case_id: row.id,
     author_user_id: staff.userId,
     author_role: "agent",
     body,
+    is_internal: isInternal,
   })
   if (posted.error) return { error: "Could not send the message." }
+
+  if (isInternal) {
+    await touchSupportCaseAfterMessage(service, {
+      id: row.id,
+      preview: `Note: ${body}`,
+    })
+    return { success: true, case_id: row.id }
+  }
 
   const nextStatus =
     row.status === "submitted" || row.status === "in_review" || row.status === "waiting_on_you"

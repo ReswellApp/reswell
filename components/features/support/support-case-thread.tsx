@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { format, formatDistanceToNow } from "date-fns"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -8,6 +9,7 @@ import {
   sendSupportCaseMemberReplyAction,
 } from "@/lib/actions/supportCaseThread"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
+import { isSupportStatusUpdateMessage } from "@/lib/messages/parse-support-thread-message"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
@@ -19,12 +21,28 @@ type SupportCaseThreadProps = {
   role: "member" | "staff"
   closed?: boolean
   seedText?: string
+  originalRequest?: { body: string; createdAt: string; name: string } | null
+  staffNames?: Record<string, string>
 }
 
 function bubbleAlign(authorRole: SupportCaseThreadMessage["author_role"], viewer: "member" | "staff") {
   if (authorRole === "system") return "center"
   if (viewer === "member") return authorRole === "customer" ? "end" : "start"
   return authorRole === "agent" ? "end" : "start"
+}
+
+function authorLabel(
+  message: SupportCaseThreadMessage,
+  viewer: "member" | "staff",
+  staffNames?: Record<string, string>,
+): string {
+  if (message.is_internal) return "Internal note"
+  if (message.author_role === "system") return "System"
+  if (message.author_role === "customer") return viewer === "member" ? "You" : "Customer"
+  if (message.author_user_id && staffNames?.[message.author_user_id]) {
+    return staffNames[message.author_user_id] ?? "Support"
+  }
+  return viewer === "staff" ? "You" : "Support"
 }
 
 export function SupportCaseThread({
@@ -34,19 +52,53 @@ export function SupportCaseThread({
   role,
   closed = false,
   seedText,
+  originalRequest = null,
+  staffNames,
 }: SupportCaseThreadProps) {
   const [messages, setMessages] = useState(initial)
   const [draft, setDraft] = useState("")
   const [pending, startTransition] = useTransition()
+  const endRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMessages(initial)
+  }, [initial])
 
   useEffect(() => {
     if (seedText) setDraft(seedText)
   }, [seedText])
 
-  const ordered = useMemo(
-    () => [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-    [messages],
-  )
+  const displayMessages = useMemo(() => {
+    const live = [...messages].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    )
+    const visible =
+      role === "staff"
+        ? live
+        : live.filter(
+            (message) =>
+              !message.is_internal &&
+              !(message.author_role === "system" && isSupportStatusUpdateMessage(message.body)),
+          )
+    const hasCustomer = visible.some((message) => message.author_role === "customer" && !message.is_internal)
+    if (hasCustomer || !originalRequest?.body.trim()) return visible
+    return [
+      {
+        id: `original-${caseId}`,
+        case_id: caseId,
+        author_user_id: null,
+        author_role: "customer" as const,
+        body: originalRequest.body,
+        is_internal: false,
+        created_at: originalRequest.createdAt,
+      },
+      ...visible,
+    ]
+  }, [messages, role, originalRequest, caseId])
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+  }, [displayMessages.length, caseId])
 
   function send() {
     const content = draft.trim()
@@ -82,12 +134,11 @@ export function SupportCaseThread({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-1 py-3">
-        {ordered.length === 0 ? (
+        {displayMessages.length === 0 ? (
           <p className="px-3 py-10 text-center text-sm text-muted-foreground">No messages yet.</p>
         ) : (
-          ordered.map((message) => {
-            const align = bubbleAlign(message.author_role, role)
-            if (align === "center") {
+          displayMessages.map((message) => {
+            if (message.author_role === "system") {
               return (
                 <p
                   key={message.id}
@@ -97,21 +148,51 @@ export function SupportCaseThread({
                 </p>
               )
             }
+
+            const align = bubbleAlign(message.author_role, role)
             const mine = align === "end"
+            const note = message.is_internal
+
             return (
-              <div key={message.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
+              <div key={message.id} className={cn("flex", mine && !note ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed",
-                    mine ? "bg-foreground text-background" : "bg-muted text-foreground",
+                    "max-w-[85%] space-y-1",
+                    note && "w-full max-w-none",
                   )}
                 >
-                  <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                  <p
+                    className={cn(
+                      "px-1 text-[11px] font-medium",
+                      note
+                        ? "text-amber-800 dark:text-amber-200"
+                        : "text-muted-foreground",
+                      mine && !note && "text-right",
+                    )}
+                  >
+                    {authorLabel(message, role, staffNames)}
+                    {" · "}
+                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                  </p>
+                  <div
+                    className={cn(
+                      "px-3.5 py-2.5 text-[15px] leading-relaxed",
+                      note
+                        ? "rounded-lg border border-amber-200/80 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-50"
+                        : mine
+                          ? "rounded-2xl bg-foreground text-background"
+                          : "rounded-2xl bg-muted text-foreground",
+                    )}
+                    title={format(new Date(message.created_at), "PPpp")}
+                  >
+                    <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                  </div>
                 </div>
               </div>
             )
           })
         )}
+        <div ref={endRef} />
       </div>
 
       {canReply && !closed ? (
@@ -131,7 +212,7 @@ export function SupportCaseThread({
             </Button>
           </div>
         </div>
-      ) : closed ? (
+      ) : closed && role === "staff" ? (
         <p className="shrink-0 border-t border-border/50 px-3 py-3 text-center text-[13px] text-muted-foreground">
           This case is closed.
         </p>

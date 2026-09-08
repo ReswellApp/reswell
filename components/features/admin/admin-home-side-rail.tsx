@@ -42,6 +42,12 @@ export function AdminHomeSideRail({
       tone: 'slate',
     },
     {
+      href: '/admin/careers',
+      label: 'Career applications',
+      value: badgeCounts['/admin/careers'] ?? 0,
+      tone: 'amber',
+    },
+    {
       href: '/admin/listings/hidden',
       label: 'Hidden listings',
       value: badgeCounts['/admin/listings/hidden'] ?? 0,

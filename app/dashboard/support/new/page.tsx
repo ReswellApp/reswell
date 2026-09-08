@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { listHelpHubOrdersService } from "@/lib/services/supportCases"
+import { getLatestOpenUserSupportCaseService } from "@/lib/services/supportCaseOpenLimit"
+import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 import { HelpHubClient } from "@/components/features/support/help-hub-client"
 import type { HelpHubIntentId, OrderHelpIssueId } from "@/lib/types/supportCase"
 import { HELP_HUB_INTENTS } from "@/lib/help/help-hub-intents"
@@ -41,6 +43,11 @@ export default async function HelpHubPage({
   const { user } = await getCachedDashboardSession()
   if (!user) {
     redirect("/auth/login?redirect=/dashboard/support/new")
+  }
+
+  const openCase = await getLatestOpenUserSupportCaseService(user.id)
+  if (openCase) {
+    redirect(supportCaseResponseHref(openCase.id))
   }
 
   const params = await searchParams

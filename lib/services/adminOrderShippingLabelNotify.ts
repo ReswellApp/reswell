@@ -5,6 +5,8 @@ import {
   type AdminShippingLabelSource,
 } from "@/lib/db/adminOrderShippingLabels"
 import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
+import { buildShippingLabelThreadPlainText } from "@/lib/messages/shipping-label-thread"
+import type { AdminShippingLabelMessagePayload } from "@/lib/validations/shipping-label-message-metadata"
 
 /**
  * Records admin-supplied label/tracking on the order without marking it shipped.
@@ -83,23 +85,23 @@ export async function attachAdminShippingLabelToOrder(params: {
     }
   }
 
-  const lines = [
-    `Reswell (admin): shipping materials for order #${params.displayOrderNum} — ${params.listingTitle}`,
-    "",
-    params.labelPdfUrl ? `Label (PDF): ${params.labelPdfUrl}` : null,
-    params.labelStoragePath
-      ? `Label file uploaded to Reswell (${params.labelStoragePath.split("/").pop() ?? "PDF"}). Open your sale page to download.`
-      : null,
-    track ? `Tracking: ${track}` : null,
-    car ? `Carrier: ${car}` : null,
-    "",
-    "Seller: print the label or open the USPS QR code on your sale page (when available), pack the item, and hand it to the carrier. Use your sale page to confirm when it’s dropped off.",
-    track
-      ? "Buyer: this tracking number is on your order page. The seller confirms shipment after drop-off; then delivery protection and payout timing follow the normal flow."
-      : "Buyer: the seller received the label here and on their sale page; tracking will appear on your order when it’s added.",
-  ]
-    .filter((l): l is string => l != null && l.length > 0)
-    .join("\n")
+  const labelPdfUrl = params.labelPdfUrl?.trim() || null
+  const content = buildShippingLabelThreadPlainText({
+    orderNum: params.displayOrderNum,
+    listingTitle: params.listingTitle,
+    trackingNumber: track,
+    trackingCarrier: car,
+  })
+  const metadata: AdminShippingLabelMessagePayload = {
+    kind: "admin_shipping_label",
+    orderId: u.id,
+    orderNum: params.displayOrderNum,
+    listingTitle: params.listingTitle,
+    trackingNumber: track,
+    trackingCarrier: car,
+    labelPdfUrl,
+    hasPaperlessQr: Boolean(params.paperlessQrUrl || params.paperlessQrStoragePath),
+  }
 
   let conv = await getConversationForBuyerSellerListing(
     params.supabase,
@@ -124,7 +126,8 @@ export async function attachAdminShippingLabelToOrder(params: {
     const { error: msgErr } = await params.supabase.from("messages").insert({
       conversation_id: conv.id,
       sender_id: params.adminUserId,
-      content: lines,
+      content,
+      metadata,
     })
     if (msgErr) {
       console.error("[attachAdminShippingLabelToOrder] message insert:", msgErr)

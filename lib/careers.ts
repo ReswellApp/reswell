@@ -1,5 +1,3 @@
-import { RESWELL_CONTACT_EMAIL, RESWELL_CONTACT_MAILTO } from "@/lib/constants/contact"
-
 export type CareerRoleType = "Full-time" | "Part-time" | "Contract"
 
 export type CareerRoleSection = {
@@ -89,7 +87,7 @@ export const careerRoles: readonly CareerRole[] = [
         ],
       },
     ],
-    applyIntro: "Email us with:",
+    applyIntro: "A couple of questions. We read every one.",
     applyItems: [
       "A short note on your surfing and any buying/reselling experience",
       "Your favorite board you've owned and why",
@@ -128,11 +126,17 @@ export function careerRoleHref(role: CareerRole): string {
   return `/careers/${role.slug}`
 }
 
-export const CAREERS_APPLY_EMAIL = RESWELL_CONTACT_EMAIL
-
-export function careerRoleApplyMailto(role: CareerRole): string {
-  return `${RESWELL_CONTACT_MAILTO}?subject=${encodeURIComponent(role.title)}`
+export function careerRoleApplyHref(role: CareerRole): string {
+  return `/careers/${role.slug}/apply`
 }
 
-export const CAREERS_APPLY_MAILTO =
-  `${RESWELL_CONTACT_MAILTO}?subject=${encodeURIComponent("Careers at Reswell")}` as const
+export const CAREERS_GENERAL_APPLY_HREF = "/careers/apply" as const
+
+export const CAREER_GENERAL_SURFING_PROMPT =
+  "A short note on your surfing and any buying/reselling experience"
+
+export const CAREER_GENERAL_FAVORITE_BOARD_PROMPT =
+  "Your favorite board you've owned and why"
+
+export const CAREER_GENERAL_APPLY_NOTE =
+  "No resume required. We care more about whether you know boards."

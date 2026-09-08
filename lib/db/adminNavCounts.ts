@@ -30,16 +30,21 @@ export async function fetchAdminNavBadgeCounts(
     labelFailuresRes,
     hiddenActiveRes,
     buyQueue,
+    careerNewRes,
   ] =
     await Promise.all([
       supabase
         .from('support_cases')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'submitted'),
+        .eq('status', 'submitted')
+        .neq('source_channel', 'live_chat')
+        .not('subject', 'like', 'Live chat%'),
       supabase
         .from('contact_messages')
         .select('*', { count: 'exact', head: true })
-        .eq('support_status', 'new'),
+        .eq('support_status', 'new')
+        .neq('source', 'live_chat')
+        .not('subject', 'like', 'Live chat%'),
       supabase.from('fraud_messages').select('*', { count: 'exact', head: true }),
       supabase
         .from('ops_groups')
@@ -59,6 +64,10 @@ export async function fetchAdminNavBadgeCounts(
         : Promise.resolve({ count: 0 as number | null, error: null }),
       fetchHiddenActiveCheckoutBlockedCount(),
       countSubmittedBoardBuys(supabase),
+      supabase
+        .from('career_applications')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'new'),
     ])
 
   const take = (res: { count: number | null; error: unknown }): number => {
@@ -74,6 +83,7 @@ export async function fetchAdminNavBadgeCounts(
     '/admin/ops': take(opsOpenRes),
     '/admin/listings/hidden': hiddenActiveRes,
     '/admin/we-buy': buyQueue,
+    '/admin/careers': take(careerNewRes),
   }
 
   if (options.includeBrandRequests) {

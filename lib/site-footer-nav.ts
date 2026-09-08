@@ -15,6 +15,7 @@ export const siteFooterNavLinks: {
     { name: "Board Finder", href: "/board-finder" },
     { name: "Recently sold", href: "/sold" },
     { name: "Sell your gear", href: "/sell" },
+    { name: "Seller Resources", href: "/seller-resources" },
     { name: "Sellers", href: "/sellers" },
     { name: "Cities", href: "/cities/top" },
     { name: "Surf shops", href: "/surf-shops" },

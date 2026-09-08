@@ -87,3 +87,13 @@ export function parseSupportThreadSystemMessage(
 ): ParsedSupportThreadSystemMessage | null {
   return parseSupportTicketOpeningContent(content) ?? parseSupportTicketStatusContent(content)
 }
+
+/** Internal status lines — hide these from the customer thread. */
+export function isSupportStatusUpdateMessage(body: string): boolean {
+  const trimmed = body.trim()
+  if (/^status updated\b/i.test(trimmed)) return true
+  if (/^this (case|conversation|request) (is|has been) (closed|resolved|marked resolved)\b/i.test(trimmed)) {
+    return true
+  }
+  return parseSupportTicketStatusContent(trimmed) != null
+}

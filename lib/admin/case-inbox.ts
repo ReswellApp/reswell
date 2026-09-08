@@ -16,6 +16,16 @@ import { caseSlaState, formatSlaHoursLeft, type CaseSlaState } from "@/lib/help/
 export type CaseInboxTypeFilter = "all" | "general" | "order" | "claims"
 export type CaseInboxStatusFilter = "open" | "new" | "resolved" | "all"
 export type CaseInboxAssigneeFilter = "anyone" | "mine" | "unassigned"
+export type CaseInboxView =
+  | "open"
+  | "mine"
+  | "unassigned"
+  | "new"
+  | "claims"
+  | "overdue"
+  | "resolved"
+  | "all"
+export type CaseInboxPriority = "low" | "normal" | "high" | "urgent"
 
 export type CaseInboxItem = {
   key: string
@@ -40,8 +50,88 @@ export type CaseInboxItem = {
   assigneeAdminId: string | null
   slaState: CaseSlaState
   slaLabel: string
+  priority: CaseInboxPriority
   contact: ContactMessageRow | null
   order: OrderSupportRequestRow | null
+}
+
+export function inboxPreviewSnippet(text: string, max = 88): string {
+  const compact = text.replace(/\s+/g, " ").trim()
+  if (compact.length <= max) return compact
+  return `${compact.slice(0, max - 1)}…`
+}
+
+export function inboxInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return `${parts[0]![0]}${parts[1]![0]}`.toUpperCase()
+}
+
+export function viewToFilters(view: CaseInboxView): {
+  status: CaseInboxStatusFilter
+  type: CaseInboxTypeFilter
+  assignee: CaseInboxAssigneeFilter
+  overdueOnly: boolean
+} {
+  switch (view) {
+    case "mine":
+      return { status: "open", type: "all", assignee: "mine", overdueOnly: false }
+    case "unassigned":
+      return { status: "open", type: "all", assignee: "unassigned", overdueOnly: false }
+    case "new":
+      return { status: "new", type: "all", assignee: "anyone", overdueOnly: false }
+    case "claims":
+      return { status: "open", type: "claims", assignee: "anyone", overdueOnly: false }
+    case "overdue":
+      return { status: "open", type: "all", assignee: "anyone", overdueOnly: true }
+    case "resolved":
+      return { status: "resolved", type: "all", assignee: "anyone", overdueOnly: false }
+    case "all":
+      return { status: "all", type: "all", assignee: "anyone", overdueOnly: false }
+    case "open":
+    default:
+      return { status: "open", type: "all", assignee: "anyone", overdueOnly: false }
+  }
+}
+
+export function inboxViewFromSearchParams(params: {
+  view: string | null
+  status: string | null
+  type: string | null
+  assignee: string | null
+  tab: string | null
+}): { view: CaseInboxView; typeOverlay: CaseInboxTypeFilter } {
+  const typeOverlay: CaseInboxTypeFilter =
+    params.type === "claims"
+      ? "claims"
+      : params.type === "general"
+        ? "general"
+        : params.type === "order" || params.tab === "order-support"
+          ? "order"
+          : "all"
+
+  const rawView = params.view
+  if (
+    rawView === "open" ||
+    rawView === "mine" ||
+    rawView === "unassigned" ||
+    rawView === "new" ||
+    rawView === "claims" ||
+    rawView === "overdue" ||
+    rawView === "resolved" ||
+    rawView === "all"
+  ) {
+    return { view: rawView, typeOverlay }
+  }
+
+  if (params.assignee === "mine") return { view: "mine", typeOverlay }
+  if (params.assignee === "unassigned") return { view: "unassigned", typeOverlay }
+  if (params.status === "new") return { view: "new", typeOverlay }
+  if (params.status === "resolved") return { view: "resolved", typeOverlay }
+  if (params.status === "all") return { view: "all", typeOverlay }
+  if (typeOverlay === "claims") return { view: "claims", typeOverlay: "all" }
+  return { view: "open", typeOverlay }
 }
 
 function slaFields(
@@ -94,6 +184,7 @@ export function contactToInboxItem(row: ContactMessageRow): CaseInboxItem {
     isNew: status === "submitted",
     assigneeAdminId: row.assignee_admin_id,
     ...slaFields(row.created_at, kind, isOpen),
+    priority: "normal",
     contact: row,
     order: null,
   }
@@ -128,6 +219,7 @@ export function orderToInboxItem(row: OrderSupportRequestRow): CaseInboxItem {
     isNew: status === "submitted",
     assigneeAdminId: row.assignee_admin_id,
     ...slaFields(row.created_at, kind, isOpen),
+    priority: "normal",
     contact: null,
     order: row,
   }
@@ -168,8 +260,49 @@ export function supportCaseToInboxItem(
     isNew: row.status === "submitted",
     assigneeAdminId: row.assignee_admin_id,
     ...slaFields(row.created_at, row.kind, isOpen),
+    priority: row.priority ?? "normal",
     contact: sidecar.contact,
     order: sidecar.order,
+  }
+}
+
+export function withInboxStatus(item: CaseInboxItem, status: SupportCaseStatus): CaseInboxItem {
+  const isOpen = status !== "resolved"
+  return {
+    ...item,
+    status,
+    statusLabel: SUPPORT_CASE_STATUS_LABEL[status],
+    isOpen,
+    isNew: status === "submitted",
+    ...slaFields(item.createdAt, item.kind, isOpen),
+    contact: item.contact
+      ? {
+          ...item.contact,
+          support_status:
+            status === "resolved"
+              ? "resolved"
+              : status === "in_review"
+                ? "triaged"
+                : status === "submitted"
+                  ? "new"
+                  : "ticket_created",
+        }
+      : null,
+    order: item.order
+      ? {
+          ...item.order,
+          support_status:
+            status === "resolved"
+              ? "resolved"
+              : status === "waiting_on_you"
+                ? "waiting_on_customer"
+                : status === "in_review"
+                  ? "triaged"
+                  : status === "in_progress"
+                    ? "investigating"
+                    : "new",
+        }
+      : null,
   }
 }
 
@@ -181,6 +314,7 @@ export function filterInboxItems(
     assignee: CaseInboxAssigneeFilter
     currentStaffId: string | null
     search: string
+    overdueOnly?: boolean
   },
 ): CaseInboxItem[] {
   const q = args.search.trim().toLowerCase()
@@ -188,6 +322,7 @@ export function filterInboxItems(
     if (args.status === "open" && !item.isOpen) return false
     if (args.status === "new" && !item.isNew) return false
     if (args.status === "resolved" && item.isOpen) return false
+    if (args.overdueOnly && item.slaState !== "overdue") return false
 
     if (args.type === "general" && item.backend !== "contact_message") return false
     if (args.type === "order" && item.backend !== "order_support") return false

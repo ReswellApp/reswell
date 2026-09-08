@@ -13,6 +13,7 @@ import {
   ensureCaseForContactMessage,
   ensureCaseForOrderSupport,
 } from "@/lib/services/supportCaseBackfill"
+import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
 
 async function requireStaff() {
   const supabase = await createClient()
@@ -69,9 +70,11 @@ export async function listAdminSupportInboxService(): Promise<
       .limit(400),
   ])
 
-  const missingContact = (cmRes.data ?? []).filter(
-    (raw) => !haveContact.has(String((raw as { id: string }).id)),
-  )
+  const missingContact = (cmRes.data ?? []).filter((raw) => {
+    const row = raw as { id: string; source?: string | null; subject?: string | null }
+    if (haveContact.has(String(row.id))) return false
+    return !isUnpublishedLiveChatTicket(row)
+  })
   const missingOrder = (osRes.data ?? []).filter(
     (raw) => !haveOrder.has(String((raw as { id: string }).id)),
   )
@@ -135,11 +138,15 @@ export async function listAdminSupportInboxService(): Promise<
   const orderById = new Map(orders.map((row) => [row.id, row]))
 
   return {
-    items: cases.map((row) =>
-      supportCaseToInboxItem(row, {
-        contact: row.contact_message_id ? contactById.get(row.contact_message_id) ?? null : null,
-        order: row.order_support_request_id ? orderById.get(row.order_support_request_id) ?? null : null,
-      }),
-    ),
+    items: cases
+      .filter((row) => !isUnpublishedLiveChatTicket(row))
+      .map((row) =>
+        supportCaseToInboxItem(row, {
+          contact: row.contact_message_id ? contactById.get(row.contact_message_id) ?? null : null,
+          order: row.order_support_request_id
+            ? orderById.get(row.order_support_request_id) ?? null
+            : null,
+        }),
+      ),
   }
 }

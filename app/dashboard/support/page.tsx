@@ -60,12 +60,14 @@ export default async function DashboardSupportPage({
           <h1 className="text-[22px] font-semibold tracking-tight text-foreground">Support</h1>
           <p className="text-[13px] text-muted-foreground">Chat with the Reswell team</p>
         </div>
-        <Button asChild size="sm" className="rounded-full px-3.5">
-          <Link href={helpHubHref()}>
-            <Plus className="mr-1 h-4 w-4" />
-            New
-          </Link>
-        </Button>
+        {openCount === 0 ? (
+          <Button asChild size="sm" className="rounded-full px-3.5">
+            <Link href={helpHubHref()}>
+              <Plus className="mr-1 h-4 w-4" />
+              New
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       <Suspense fallback={<DashboardPageSkeleton />}>

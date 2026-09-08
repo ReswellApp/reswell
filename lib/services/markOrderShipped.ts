@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { notifyOrderShippedKlaviyoIfMissing } from "@/lib/services/notifyOrderShippedKlaviyo"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
+import { buildOrderShippedPlainText } from "@/lib/messages/order-shipped-thread"
 import { parseOrderShippedMessageMetadata } from "@/lib/validations/order-shipped-message-metadata"
 import type { OrderShippedMessagePayload } from "@/lib/validations/order-shipped-message-metadata"
 
@@ -82,19 +83,18 @@ async function postOrderShippedNotification(
   if (alreadySent) return
 
   const carrier = trackingCarrier?.trim() || null
-  const msgContent = [
-    `Shipped — tracking for "${listingTitle}":`,
-    carrier ? `Carrier: ${carrier}` : null,
-    `Tracking #: ${trackingNumber}`,
-    "",
-    "Funds stay on hold until the carrier reports delivery on Reswell tracking, then release automatically after a 24-hour review window.",
-  ]
-    .filter((l) => l !== null)
-    .join("\n")
+  const msgContent = buildOrderShippedPlainText({
+    listingTitle,
+    trackingNumber,
+    trackingCarrier: carrier,
+  })
 
   const metadata: OrderShippedMessagePayload = {
     kind: "order_shipped",
     orderId: ctx.id,
+    listingTitle,
+    trackingNumber,
+    trackingCarrier: carrier,
   }
 
   await supabase.from("messages").insert({

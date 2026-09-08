@@ -1,9 +1,9 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
-  CAREERS_APPLY_EMAIL,
-  CAREERS_APPLY_MAILTO,
+  CAREERS_GENERAL_APPLY_HREF,
   careerRoleHref,
   careerRoleTypeLabel,
   careerRoles,
@@ -96,25 +96,23 @@ export function CareersPageContent() {
             </>
           ) : (
             <p className="mt-6 text-base leading-relaxed text-muted-foreground">
-              No listed opening right now. If you think you should be here anyway, send a short
-              note.
+              No listed opening right now. If you think you should be here anyway, apply below.
             </p>
           )}
 
-          <p className="mt-12 text-sm leading-relaxed text-muted-foreground">
-            Email{" "}
-            <a
-              href={CAREERS_APPLY_MAILTO}
-              className="font-medium text-foreground underline underline-offset-4"
-            >
-              {CAREERS_APPLY_EMAIL}
-            </a>{" "}
-            or use{" "}
-            <Link href="/contact" className="font-medium text-foreground underline underline-offset-4">
-              Contact
-            </Link>
-            .
-          </p>
+          <div className="mt-12 rounded-2xl border border-border/80 bg-card p-5 shadow-sm sm:p-6">
+            <p className="font-headline text-base font-semibold text-foreground">
+              {careerRoles.length > 0 ? "Apply" : "Introduce yourself"}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              {careerRoles.length > 0
+                ? "Open a role above for the full posting, or send a general application."
+                : "A couple of questions. We read every one."}
+            </p>
+            <Button className="mt-5 min-h-11 w-full sm:w-auto" asChild>
+              <Link href={CAREERS_GENERAL_APPLY_HREF}>Start application</Link>
+            </Button>
+          </div>
           <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
             Reswell is an equal opportunity employer.
           </p>

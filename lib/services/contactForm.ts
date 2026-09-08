@@ -1,5 +1,6 @@
 import { insertContactFormMessage } from "@/lib/db/contactMessages"
 import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
+import { rejectIfMemberHasOpenSupportCase } from "@/lib/services/supportCaseOpenLimit"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -7,7 +8,7 @@ export async function submitContactFormMessageService(input: {
   name: string
   email: string
   message: string
-}): Promise<{ success: true; ticketId?: string } | { error: string }> {
+}): Promise<{ success: true; ticketId?: string } | { error: string; existingId?: string }> {
   const name = typeof input.name === "string" ? input.name.trim() : ""
   const email = typeof input.email === "string" ? input.email.trim() : ""
   const message = typeof input.message === "string" ? input.message.trim() : ""
@@ -28,6 +29,10 @@ export async function submitContactFormMessageService(input: {
     } = await sessionClient.auth.getUser()
     if (user?.id && (user.email ?? "").trim().toLowerCase() === email.toLowerCase()) {
       linkedUserId = user.id
+      const openGate = await rejectIfMemberHasOpenSupportCase(user.id)
+      if (!openGate.ok) {
+        return { error: openGate.error, existingId: openGate.existingId }
+      }
     }
   } catch {
     // Anonymous submission — continue without linking.

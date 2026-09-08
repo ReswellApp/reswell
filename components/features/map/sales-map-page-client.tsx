@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState, useSyncExternalStore } from "react"
 import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { ArrowRight, MapPin, Package, TrendingUp } from "lucide-react"
@@ -386,7 +387,13 @@ export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
         <div className="mx-auto max-w-5xl">
           <div className="max-w-2xl">
             <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:text-xs">
-              Marketplace geography
+              <Link href="/seller-resources" className="hover:text-foreground">
+                Seller Resources
+              </Link>
+              <span aria-hidden className="px-1.5 text-border">
+                /
+              </span>
+              Sales map
             </p>
             <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
               Where Reswell orders flow

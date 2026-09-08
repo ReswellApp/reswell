@@ -54,9 +54,13 @@ import { parseOrderRefundedMessageMetadata } from '@/lib/validations/order-refun
 import { parseOrderExclusiveRepurchaseMessageMetadata } from '@/lib/validations/order-exclusive-repurchase-message-metadata'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
 import { parseMessageLocationMetadata } from '@/lib/validations/message-location-metadata'
+import { parseShippingLabelThreadMessage } from '@/lib/messages/shipping-label-thread'
+import { parseOrderShippedThreadMessage } from '@/lib/messages/order-shipped-thread'
 import { OrderCompletedMessageCard } from '@/components/features/messages/order-completed-message-card'
 import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
 import { OrderRefundedMessageCard } from '@/components/features/messages/order-refunded-message-card'
+import { OrderShippedMessageCard } from '@/components/features/messages/order-shipped-message-card'
+import { ShippingLabelMessageCard } from '@/components/features/messages/shipping-label-message-card'
 import { OrderExclusiveRepurchaseMessageCard } from '@/components/features/messages/order-exclusive-repurchase-message-card'
 import { ReviewRequestMessageCard } from '@/components/features/messages/review-request-message-card'
 import { MessageLocationCard } from '@/components/features/messages/message-location-card'
@@ -659,6 +663,8 @@ export function ConversationThreadClient({
       if (parseOrderCompletedMessageMetadata(m.metadata)) return false
       if (parseOrderRefundedMessageMetadata(m.metadata)) return false
       if (parseOrderExclusiveRepurchaseMessageMetadata(m.metadata)) return false
+      if (parseShippingLabelThreadMessage(m.content, m.metadata)) return false
+      if (parseOrderShippedThreadMessage(m.content, m.metadata)) return false
       if (parseReviewRequestMessageMetadata(m.metadata)) return false
       if (parseMessageLocationMetadata(m.metadata)) return false
       if (parseMarketplaceMessageAttachment(m.metadata)) return false
@@ -985,6 +991,38 @@ export function ConversationThreadClient({
                             payload={orderRefunded}
                             createdAt={message.created_at}
                             viewerIsSeller={isSeller}
+                          />
+                        </div>
+                      )
+                    }
+
+                    const shippingLabel = parseShippingLabelThreadMessage(
+                      message.content,
+                      message.metadata,
+                    )
+                    if (shippingLabel) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <ShippingLabelMessageCard
+                            payload={shippingLabel}
+                            createdAt={message.created_at}
+                            viewerRole={isSeller ? 'seller' : 'buyer'}
+                          />
+                        </div>
+                      )
+                    }
+
+                    const orderShipped = parseOrderShippedThreadMessage(
+                      message.content,
+                      message.metadata,
+                    )
+                    if (orderShipped) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <OrderShippedMessageCard
+                            payload={orderShipped}
+                            createdAt={message.created_at}
+                            viewerRole={isSeller ? 'seller' : 'buyer'}
                           />
                         </div>
                       )

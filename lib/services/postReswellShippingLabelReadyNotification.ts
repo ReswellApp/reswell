@@ -2,14 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { getSellerEmailForKlaviyo } from "@/lib/klaviyo/seller-sale-event-helpers"
 import { trackKlaviyoSellerShippingLabelReady } from "@/lib/klaviyo/track-seller-shipping-label-ready"
+import { buildShippingLabelThreadPlainText } from "@/lib/messages/shipping-label-thread"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import type { ShippingLabelReadyMessagePayload } from "@/lib/validations/shipping-label-message-metadata"
 
 const SHIPPING_LABEL_READY_KIND = "shipping_label_ready" as const
-
-type ShippingLabelReadyMetadata = {
-  kind: typeof SHIPPING_LABEL_READY_KIND
-  orderId: string
-}
 
 function isUniqueViolation(error: { code?: string } | null): boolean {
   return error?.code === "23505"
@@ -38,22 +35,12 @@ function buildShippingLabelReadyMessage(params: {
   trackingNumber: string | null
   trackingCarrier: string | null
 }): string {
-  const carrier = params.trackingCarrier?.trim() || null
-  const track = params.trackingNumber?.trim() || null
-
-  return [
-    `Reswell: shipping label ready for order #${params.displayOrderNum} — ${params.listingTitle}`,
-    "",
-    track ? `Tracking: ${track}` : null,
-    carrier ? `Carrier: ${carrier}` : null,
-    "",
-    "Seller: open your sale page to view or download the label PDF, print it, and drop the package with the carrier.",
-    track
-      ? "Buyer: this tracking number is on your purchase page. The seller confirms shipment after drop-off; delivery and payout timing follow the normal Reswell flow."
-      : "Buyer: the seller received the label on their sale page; tracking will appear on your purchase when it is added.",
-  ]
-    .filter((line): line is string => line != null && line.length > 0)
-    .join("\n")
+  return buildShippingLabelThreadPlainText({
+    orderNum: params.displayOrderNum,
+    listingTitle: params.listingTitle,
+    trackingNumber: params.trackingNumber,
+    trackingCarrier: params.trackingCarrier,
+  })
 }
 
 /**
@@ -106,9 +93,13 @@ export async function postReswellShippingLabelReadyThreadNotification(
     trackingCarrier: params.trackingCarrier,
   })
 
-  const metadata: ShippingLabelReadyMetadata = {
+  const metadata: ShippingLabelReadyMessagePayload = {
     kind: SHIPPING_LABEL_READY_KIND,
     orderId: params.orderId,
+    orderNum: displayOrderNum,
+    listingTitle: params.listingTitle,
+    trackingNumber: params.trackingNumber?.trim() || null,
+    trackingCarrier: params.trackingCarrier?.trim() || null,
   }
 
   const { error: msgErr } = await supabase.from("messages").insert({

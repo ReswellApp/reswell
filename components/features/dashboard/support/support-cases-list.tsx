@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { formatDistanceToNowStrict } from "date-fns"
 import { LifeBuoy, Plus } from "lucide-react"
 import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
-import { isSupportCaseOpen, SUPPORT_CASE_STATUS_LABEL } from "@/lib/utils/support-case-display"
+import { isSupportCaseOpen } from "@/lib/utils/support-case-display"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -46,7 +46,7 @@ function SupportAvatar({ muted }: { muted?: boolean }) {
   )
 }
 
-export function SupportCasesList({ cases, activeFilter }: SupportCasesListProps) {
+export function SupportCasesList({ cases, activeFilter, openCount }: SupportCasesListProps) {
   const pathname = usePathname() ?? "/dashboard/support"
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -82,14 +82,14 @@ export function SupportCasesList({ cases, activeFilter }: SupportCasesListProps)
           >
             Back to open
           </button>
-        ) : (
+        ) : openCount === 0 ? (
           <Button asChild className="mt-6 rounded-full px-5">
             <Link href={helpHubHref()}>
               <Plus className="mr-1.5 h-4 w-4" />
               Message Support
             </Link>
           </Button>
-        )}
+        ) : null}
       </div>
     )
   }
@@ -135,9 +135,7 @@ export function SupportCasesList({ cases, activeFilter }: SupportCasesListProps)
                         waiting && "font-medium text-foreground",
                       )}
                     >
-                      {waiting
-                        ? `Reply needed · ${line}`
-                        : `${SUPPORT_CASE_STATUS_LABEL[item.status]} · ${line}`}
+                      {waiting ? `Reply needed · ${line}` : line}
                     </p>
                     {waiting ? (
                       <span

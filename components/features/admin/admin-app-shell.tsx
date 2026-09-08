@@ -12,11 +12,16 @@ import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import type { AdminShellUser } from '@/lib/admin/admin-shell-user'
 import { cn } from '@/lib/utils'
 
+function isSupportInboxPath(pathname: string): boolean {
+  return pathname === '/admin/contact-messages'
+}
+
 function isFullBleedAdminPath(pathname: string): boolean {
   return (
     pathname === '/admin/home' ||
     pathname === '/admin/orders' ||
-    pathname.startsWith('/admin/users/')
+    pathname.startsWith('/admin/users/') ||
+    isSupportInboxPath(pathname)
   )
 }
 
@@ -38,18 +43,19 @@ export function AdminAppShell({
   const pathname = usePathname() ?? ''
   const [mobileOpen, setMobileOpen] = useState(false)
   const fullBleed = isFullBleedAdminPath(pathname)
+  const workspace = isSupportInboxPath(pathname)
 
   return (
-    <div className="admin-app flex min-h-dvh flex-col">
+    <div className={cn('admin-app flex flex-col', workspace ? 'h-dvh overflow-hidden' : 'min-h-dvh')}>
       <Suspense fallback={null}>
         <ImpersonationBanner initialIsAdmin={isAdmin} />
       </Suspense>
-      <div className="flex min-h-0 flex-1">
-        <aside className="sticky top-0 hidden h-dvh w-[260px] shrink-0 border-r border-border/70 bg-white dark:bg-card lg:flex lg:flex-col">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <aside className="hidden h-full w-[260px] shrink-0 border-r border-border/70 bg-white dark:bg-card lg:flex lg:flex-col">
           <AdminSidebarPanel groups={groups} badgeCounts={badgeCounts} user={user} isAdmin={isAdmin} />
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="flex items-center gap-3 border-b border-border/70 bg-white px-4 py-3 dark:bg-card lg:hidden">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <Button
@@ -76,8 +82,21 @@ export function AdminAppShell({
             <p className="font-headline text-sm font-semibold text-foreground">Reswell admin</p>
           </div>
 
-          <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-            <div className={cn(!fullBleed && 'admin-panel')}>{children}</div>
+          <main
+            className={cn(
+              'min-w-0 flex-1',
+              workspace
+                ? 'flex min-h-0 flex-col overflow-hidden p-0'
+                : 'px-4 py-5 sm:px-6 sm:py-6 lg:px-8',
+            )}
+          >
+            <div
+              className={cn(
+                workspace ? 'flex h-0 min-h-0 flex-1 flex-col overflow-hidden' : !fullBleed && 'admin-panel',
+              )}
+            >
+              {children}
+            </div>
           </main>
         </div>
       </div>

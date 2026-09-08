@@ -79,7 +79,7 @@ export function AdminHomeDashboard({
             <AdminHomeGreeting displayName={displayName} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            GMS, platform revenue, new listings, and new users on one clock.
+            GMS, platform revenue, AOV, new listings, and new users on one clock.
           </p>
         </div>
         <Suspense fallback={null}>

@@ -42,8 +42,11 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { forceReleaseBodyScrollLock, useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
+import { HeaderSellerResourcesNav } from "@/components/header-seller-resources-nav"
 import {
   boardBrowseNavItemIsActive,
+  sellerResourcesNavItemIsActive,
+  sellerResourcesNavLinks,
   siteHeaderDesktopCategoryNavLinks,
   siteHeaderDesktopSecondaryNavLinks,
   siteHeaderMobileCategoryNavLinks,
@@ -440,6 +443,8 @@ function HeaderDesktopCategoryBar({
             </DropdownMenu>
           ) : null}
         </div>
+
+        <HeaderSellerResourcesNav pathname={pathname} className="ml-6 self-center" />
 
         <nav
           className="ml-6 flex shrink-0 items-center gap-8 border-l border-border pl-8"
@@ -1510,6 +1515,25 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               <hr className="my-2 border-border" />
               {siteHeaderMobileSecondaryNavLinks.map((item) => {
                 const active = siteHeaderSecondaryNavItemIsActive(pathname, item.href)
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onMobileDrawerLinkClick}
+                    className={`cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center ${
+                      active ? "cat-link--active" : ""
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+              <hr className="my-2 border-border" />
+              <p className="px-2 pt-1 pb-1 text-sm font-semibold text-foreground">
+                Seller Resources
+              </p>
+              {sellerResourcesNavLinks.map((item) => {
+                const active = sellerResourcesNavItemIsActive(pathname, item.href)
                 return (
                   <Link
                     key={item.href}

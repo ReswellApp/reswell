@@ -60,6 +60,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Giveaway Entered": "lifecycle",
   "Giveaway Qualified": "lifecycle",
   "Giveaway Listing Reminder": "lifecycle",
+  "Career Application Submitted": "lifecycle",
   "Viewed Boards Page": "marketing",
   "Viewed Site Page": "marketing",
   "Search Insights Digest": "marketing",
