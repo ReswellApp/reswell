@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 import { formatCompactUsd } from '@/lib/utils/format-compact-usd'
 import type { AdminRevenueMonthlyPoint } from '@/lib/types/adminBusinessInsights'
+import { monthlyChartDomain } from '@/lib/utils/adminRevenueMonthly'
 
 type Metric = 'gmv' | 'orders'
 
@@ -56,7 +57,7 @@ function MonthlyTooltip({
         <div className="flex items-center justify-between gap-6">
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="h-2 w-2 rounded-full bg-teal-500" />
-            {point.isPartial ? 'MTD GMV' : 'GMV'}
+            {point.isPartial ? 'MTD GMS' : 'GMS'}
           </span>
           <span className="font-semibold tabular-nums text-foreground">{formatUsd(point.gmv)}</span>
         </div>
@@ -69,7 +70,7 @@ function MonthlyTooltip({
         <div className="flex items-center justify-between gap-6">
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="h-2 w-2 rounded-full bg-sky-500" />
-            Platform fees
+            Platform revenue
           </span>
           <span className="font-semibold tabular-nums text-foreground">{formatUsd(point.fees)}</span>
         </div>
@@ -106,16 +107,6 @@ function MomChip({ value }: { value: number | null }) {
   )
 }
 
-function monthlyDomain(values: number[]): [number, number] {
-  const positive = values.filter((value) => Number.isFinite(value) && value > 0)
-  if (positive.length === 0) return [0, 1]
-  const min = Math.min(...positive)
-  const max = Math.max(...positive)
-  const span = Math.max(max - min, max * 0.12)
-  const yMin = min > max * 0.4 ? Math.max(0, min - span * 0.45) : 0
-  return [yMin, max + span * 0.18]
-}
-
 interface AdminRevenueMonthlyBarsProps {
   data: AdminRevenueMonthlyPoint[]
   metric: Metric
@@ -140,7 +131,7 @@ export function AdminRevenueMonthlyBars({ data, metric }: AdminRevenueMonthlyBar
   )
   const [yMin, yMax] = useMemo(
     () =>
-      monthlyDomain(
+      monthlyChartDomain(
         chartData.flatMap((point) =>
           [point.actual, point.pace].filter((value): value is number => value != null),
         ),

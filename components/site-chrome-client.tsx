@@ -41,6 +41,9 @@ function hideSiteChrome(pathname: string | null): boolean {
   if (pathname.startsWith("/embed")) {
     return true
   }
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return true
+  }
   return isThreadsRoute(pathname)
 }
 

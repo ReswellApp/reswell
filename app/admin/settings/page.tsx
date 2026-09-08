@@ -74,8 +74,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     id: 'overview',
     label: 'Overview',
     items: [
-      { href: '/admin/home', label: 'Home', description: 'Jump to any admin page', icon: LayoutDashboard },
-      { href: '/admin/overview', label: 'Overview', description: 'Site stats & recent activity', icon: Activity },
+      { href: '/admin/home', label: 'Home', description: 'Marketplace KPIs and admin tools', icon: LayoutDashboard },
       { href: '/admin/listings', label: 'Listings', description: 'Search, moderate, restore', icon: Package },
       { href: '/admin/users', label: 'Users', description: 'Accounts, roles & access', icon: Users },
     ],

@@ -91,12 +91,27 @@ export type TippedMarkSoldGmsContribution = {
   listingId: string
   sellerUserId: string
   listingPriceUsd: number
+  /** Sum of succeeded tip amounts for this listing — 100% platform revenue. */
+  tipAmountUsd: number
   succeededAt: string
+}
+
+/** One succeeded seller tip. Always platform revenue; independent of GMV inclusion. */
+export type SellerSaleTipRevenue = {
+  listingId: string
+  amountUsd: number
+  succeededAt: string
+}
+
+export type SellerSaleTipAdminFacts = {
+  gms: TippedMarkSoldGmsContribution[]
+  tipRevenues: SellerSaleTipRevenue[]
 }
 
 type TipSourceRow = {
   listing_id: string
   seller_user_id: string
+  amount_cents: number
   succeeded_at: string | null
   created_at: string
 }
@@ -112,6 +127,12 @@ function numPrice(value: unknown): number {
   if (value == null) return 0
   const n = typeof value === "number" ? value : Number(value)
   return Number.isFinite(n) ? n : 0
+}
+
+function centsToUsd(cents: unknown): number {
+  const n = typeof cents === "number" ? cents : Number(cents)
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return n / 100
 }
 
 function tipSaleAtIso(row: TipSourceRow): string {
@@ -187,39 +208,38 @@ async function listingIdsWithConfirmedCheckout(
   return found
 }
 
-/**
- * Listing prices to add to GMS for off-platform mark-as-sold sales with a
- * succeeded seller tip. Listings that already have a confirmed checkout are
- * omitted so GMS is not double-counted.
- */
-export async function listTippedMarkSoldGmsContributions(
-  supabase: SupabaseClient,
-): Promise<TippedMarkSoldGmsContribution[]> {
+async function loadSucceededTipSources(supabase: SupabaseClient): Promise<TipSourceRow[]> {
   const { data, error } = await supabase
     .from("seller_sale_tips")
-    .select("listing_id, seller_user_id, succeeded_at, created_at")
+    .select("listing_id, seller_user_id, amount_cents, succeeded_at, created_at")
     .eq("status", "succeeded")
     .order("created_at", { ascending: false })
     .limit(TIPS_FETCH_CAP)
   if (error) {
-    console.error("[sellerSaleTips] tipped GMS load failed", error)
+    console.error("[sellerSaleTips] succeeded tips load failed", error)
     return []
   }
 
-  const earliestByListing = new Map<string, TipSourceRow>()
+  const rows: TipSourceRow[] = []
   for (const raw of data ?? []) {
     const row = raw as TipSourceRow
     if (typeof row.listing_id !== "string" || !row.listing_id) continue
-    const existing = earliestByListing.get(row.listing_id)
-    if (!existing || tipSaleAtIso(row) < tipSaleAtIso(existing)) {
-      earliestByListing.set(row.listing_id, row)
-    }
+    rows.push({
+      listing_id: row.listing_id,
+      seller_user_id: typeof row.seller_user_id === "string" ? row.seller_user_id : "",
+      amount_cents: numPrice(row.amount_cents),
+      succeeded_at: row.succeeded_at,
+      created_at: row.created_at,
+    })
   }
+  return rows
+}
 
-  const listingIds = [...earliestByListing.keys()]
-  if (listingIds.length === 0) return []
-
-  const listings: ListingGmsRow[] = []
+async function loadListingsForTipInsights(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<Map<string, ListingGmsRow>> {
+  const listingById = new Map<string, ListingGmsRow>()
   for (let i = 0; i < listingIds.length; i += ID_LOOKUP_CHUNK) {
     const chunk = listingIds.slice(i, i + ID_LOOKUP_CHUNK)
     const { data: listingRows, error: listingError } = await supabase
@@ -231,13 +251,55 @@ export async function listTippedMarkSoldGmsContributions(
       continue
     }
     for (const row of listingRows ?? []) {
-      listings.push(row as ListingGmsRow)
+      listingById.set((row as ListingGmsRow).id, row as ListingGmsRow)
     }
   }
+  return listingById
+}
 
-  const listingById = new Map(listings.map((row) => [row.id, row]))
+/**
+ * Succeeded seller tips plus the off-platform GMS those tips unlock.
+ * Tip dollars are always platform revenue. Listing prices are GMS only when the
+ * listing is sold and has no confirmed checkout (so checkout GMV is not doubled).
+ */
+export async function listSellerSaleTipAdminFacts(
+  supabase: SupabaseClient,
+): Promise<SellerSaleTipAdminFacts> {
+  const tipRows = await loadSucceededTipSources(supabase)
+  if (tipRows.length === 0) return { gms: [], tipRevenues: [] }
+
+  const listingIds = [...new Set(tipRows.map((row) => row.listing_id))]
+  const listingById = await loadListingsForTipInsights(supabase, listingIds)
+
+  const tipRevenues: SellerSaleTipRevenue[] = []
+  for (const tip of tipRows) {
+    const listing = listingById.get(tip.listing_id)
+    if (listing && ADMIN_SEED_TITLE.test(String(listing.title ?? ""))) continue
+    const amountUsd = centsToUsd(tip.amount_cents)
+    if (amountUsd <= 0) continue
+    tipRevenues.push({
+      listingId: tip.listing_id,
+      amountUsd,
+      succeededAt: tipSaleAtIso(tip),
+    })
+  }
+
+  const earliestByListing = new Map<string, TipSourceRow>()
+  for (const row of tipRows) {
+    const existing = earliestByListing.get(row.listing_id)
+    if (!existing) {
+      earliestByListing.set(row.listing_id, { ...row })
+      continue
+    }
+    const earlier = tipSaleAtIso(row) < tipSaleAtIso(existing) ? row : existing
+    earliestByListing.set(row.listing_id, {
+      ...earlier,
+      amount_cents: existing.amount_cents + row.amount_cents,
+    })
+  }
+
   const confirmedIds = await listingIdsWithConfirmedCheckout(supabase, listingIds)
-  const contributions: TippedMarkSoldGmsContribution[] = []
+  const gms: TippedMarkSoldGmsContribution[] = []
 
   for (const [listingId, tip] of earliestByListing.entries()) {
     if (confirmedIds.has(listingId)) continue
@@ -246,14 +308,35 @@ export async function listTippedMarkSoldGmsContributions(
     if (ADMIN_SEED_TITLE.test(String(listing.title ?? ""))) continue
     const listingPriceUsd = numPrice(listing.price)
     if (listingPriceUsd <= 0) continue
-    if (typeof tip.seller_user_id !== "string" || !tip.seller_user_id) continue
-    contributions.push({
+    if (!tip.seller_user_id) continue
+    gms.push({
       listingId,
       sellerUserId: tip.seller_user_id,
       listingPriceUsd,
+      tipAmountUsd: centsToUsd(tip.amount_cents),
       succeededAt: tipSaleAtIso(tip),
     })
   }
 
-  return contributions
+  return { gms, tipRevenues }
+}
+
+/**
+ * Listing prices to add to GMS for off-platform mark-as-sold sales with a
+ * succeeded seller tip. Listings that already have a confirmed checkout are
+ * omitted so GMS is not double-counted.
+ */
+export async function listTippedMarkSoldGmsContributions(
+  supabase: SupabaseClient,
+): Promise<TippedMarkSoldGmsContribution[]> {
+  const { gms } = await listSellerSaleTipAdminFacts(supabase)
+  return gms
+}
+
+/** Succeeded tip amounts to add to platform revenue (checkout fees stay separate). */
+export async function listSucceededSellerSaleTipRevenues(
+  supabase: SupabaseClient,
+): Promise<SellerSaleTipRevenue[]> {
+  const { tipRevenues } = await listSellerSaleTipAdminFacts(supabase)
+  return tipRevenues
 }

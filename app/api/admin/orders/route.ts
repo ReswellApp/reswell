@@ -2,14 +2,28 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { z } from "zod"
 
 const querySchema = z.object({
   status: z.enum(["all", "confirmed", "refunding", "refunded", "pending"]).optional().default("all"),
-  open: z.enum(["all", "shipping", "pickup", "none"]).optional().default("none"),
+  open: z
+    .enum([
+      "all",
+      "shipping",
+      "pickup",
+      "awaiting_shipping",
+      "in_transit",
+      "delivered",
+      "none",
+    ])
+    .optional()
+    .default("none"),
   payment: z.enum(["all", "stripe", "reswell_bucks"]).optional().default("all"),
   test: z.enum(["all", "real", "test"]).optional().default("all"),
   q: z.string().optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   sort: z.enum(["created_at", "amount"]).optional().default("created_at"),
   dir: z.enum(["asc", "desc"]).optional().default("desc"),
   limit: z.coerce.number().int().min(1).max(200).optional().default(50),
@@ -17,6 +31,13 @@ const querySchema = z.object({
 })
 
 type PartyLabel = { display_name: string | null; email: string | null; avatar_url: string | null }
+
+type ListingPreview = {
+  id: string
+  title: string | null
+  section: string | null
+  imageUrl: string | null
+}
 
 /**
  * GET /api/admin/orders
@@ -37,13 +58,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid params" }, { status: 400 })
   }
 
-  const { status, open, payment, test, q, sort, dir, limit, offset } = parsed.data
+  const { status, open, payment, test, q, from, to, sort, dir, limit, offset } = parsed.data
   const serviceSupabase = createServiceRoleClient()
 
   let query = serviceSupabase
     .from("orders")
     .select(
-      "id, order_num, status, amount, payment_method, fulfillment_method, created_at, refunded_at, buyer_id, seller_id, is_admin_test",
+      "id, order_num, status, amount, payment_method, fulfillment_method, delivery_status, tracking_carrier, carrier_delivered_at, created_at, refunded_at, buyer_id, seller_id, listing_id, is_admin_test",
       { count: "exact" },
     )
     .order(sort, { ascending: dir === "asc" })
@@ -55,6 +76,22 @@ export async function GET(request: NextRequest) {
       .eq("is_admin_test", false)
       .eq("fulfillment_method", "shipping")
       .in("delivery_status", ["pending", "shipped"])
+  } else if (open === "awaiting_shipping") {
+    query = query
+      .eq("status", "confirmed")
+      .eq("is_admin_test", false)
+      .eq("fulfillment_method", "shipping")
+      .eq("delivery_status", "pending")
+  } else if (open === "in_transit") {
+    query = query
+      .eq("status", "confirmed")
+      .eq("is_admin_test", false)
+      .eq("fulfillment_method", "shipping")
+      .eq("delivery_status", "shipped")
+  } else if (open === "delivered") {
+    query = query
+      .eq("status", "confirmed")
+      .in("delivery_status", ["delivered", "picked_up"])
   } else if (open === "pickup") {
     query = query
       .eq("status", "confirmed")
@@ -93,6 +130,13 @@ export async function GET(request: NextRequest) {
     } else {
       query = query.ilike("order_num", `%${term}%`)
     }
+  }
+
+  if (from) {
+    query = query.gte("created_at", `${from}T00:00:00.000Z`)
+  }
+  if (to) {
+    query = query.lte("created_at", `${to}T23:59:59.999Z`)
   }
 
   const { data, error, count } = await query
@@ -136,10 +180,55 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const listingIds = Array.from(
+    new Set(
+      rows
+        .map((r) => r.listing_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  )
+
+  const listingById = new Map<string, ListingPreview>()
+  if (listingIds.length > 0) {
+    const [{ data: listings }, { data: images }] = await Promise.all([
+      serviceSupabase.from("listings").select("id, title, section").in("id", listingIds),
+      serviceSupabase
+        .from("listing_images")
+        .select("listing_id, url, thumbnail_url, is_primary, sort_order")
+        .in("listing_id", listingIds),
+    ])
+
+    const imagesByListing = new Map<
+      string,
+      Array<{ url?: string | null; thumbnail_url?: string | null; is_primary?: boolean | null }>
+    >()
+    for (const image of images ?? []) {
+      const listingId = image.listing_id as string
+      const bucket = imagesByListing.get(listingId) ?? []
+      bucket.push({
+        url: image.url as string | null,
+        thumbnail_url: image.thumbnail_url as string | null,
+        is_primary: image.is_primary as boolean | null,
+      })
+      imagesByListing.set(listingId, bucket)
+    }
+
+    for (const listing of listings ?? []) {
+      const id = listing.id as string
+      listingById.set(id, {
+        id,
+        title: (listing.title as string | null) ?? null,
+        section: (listing.section as string | null) ?? null,
+        imageUrl: listingTitleThumbnailSrc(imagesByListing.get(id) ?? []) || null,
+      })
+    }
+  }
+
   const enriched = rows.map((r) => ({
     ...r,
     buyer: partyById.get(r.buyer_id) ?? null,
     seller: partyById.get(r.seller_id) ?? null,
+    listing: typeof r.listing_id === "string" ? listingById.get(r.listing_id) ?? null : null,
   }))
 
   return NextResponse.json({ data: enriched, total: count ?? 0 })

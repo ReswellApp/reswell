@@ -635,3 +635,52 @@ html[data-reswell-scroll-lock] body {
     );
   }
 }
+
+/* Admin dashboard chrome — scoped so the public marketplace is unchanged. */
+.admin-app {
+  --admin-canvas: 210 20% 97%;
+  --admin-teal: 174 72% 40%;
+  --admin-teal-hover: 174 68% 34%;
+  --admin-blue: 214 84% 46%;
+  --admin-orange: 24 94% 54%;
+  --admin-purple: 258 78% 62%;
+  --admin-green: 152 55% 40%;
+  --admin-red: 4 78% 58%;
+  background-color: hsl(var(--admin-canvas));
+}
+
+.dark .admin-app {
+  --admin-canvas: 222 16% 8%;
+  --admin-teal: 174 62% 42%;
+  --admin-teal-hover: 174 62% 36%;
+}
+
+.admin-panel {
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border) / 0.7);
+  background-color: hsl(var(--card));
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+@media (min-width: 640px) {
+  .admin-panel {
+    padding: 1.5rem;
+  }
+}
+
+.admin-surface {
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border) / 0.65);
+  background-color: hsl(var(--card));
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.admin-btn-primary {
+  background-color: hsl(var(--admin-teal));
+  color: white;
+}
+
+.admin-btn-primary:hover {
+  background-color: hsl(var(--admin-teal-hover));
+}

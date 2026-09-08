@@ -87,7 +87,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Overview',
     items: [
       { href: '/admin/home', label: 'Home', icon: 'layoutDashboard' },
-      { href: '/admin/overview', label: 'Overview', icon: 'activity' },
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
       { href: '/admin/users', label: 'Users', icon: 'users' },
     ],

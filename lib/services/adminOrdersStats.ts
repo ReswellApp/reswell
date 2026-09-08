@@ -54,6 +54,7 @@ const EMPTY_STATS: AdminOrdersDashboardStats = {
   needsLabel: 0,
   openLabels: 0,
   openLabelFailures: 0,
+  createdToday: 0,
 }
 
 const EMPTY_QUEUES: AdminOrdersDashboardQueues = {

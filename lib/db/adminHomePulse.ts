@@ -1,10 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export async function countNewUsersSince(db: SupabaseClient, sinceIso: string): Promise<number> {
-  const { count, error } = await db
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', sinceIso)
+export async function countNewUsersSince(
+  db: SupabaseClient,
+  sinceIso: string,
+  untilIso?: string,
+): Promise<number> {
+  let query = db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', sinceIso)
+  if (untilIso) query = query.lt('created_at', untilIso)
+  const { count, error } = await query
   if (error) {
     console.error('[adminHomePulse] profiles count failed', error.message)
     return 0
@@ -12,11 +15,43 @@ export async function countNewUsersSince(db: SupabaseClient, sinceIso: string): 
   return count ?? 0
 }
 
-export async function countNewListingsSince(db: SupabaseClient, sinceIso: string): Promise<number> {
-  const { count, error } = await db
-    .from('listings')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', sinceIso)
+export async function countActiveMarketplaceListings(db: SupabaseClient): Promise<{
+  listings: number
+  surfboards: number
+}> {
+  const [all, boards] = await Promise.all([
+    db
+      .from('listings')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .eq('hidden_from_site', false),
+    db
+      .from('listings')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .eq('hidden_from_site', false)
+      .eq('section', 'surfboards'),
+  ])
+  if (all.error) {
+    console.error('[adminHomePulse] active listings count failed', all.error.message)
+  }
+  if (boards.error) {
+    console.error('[adminHomePulse] active surfboards count failed', boards.error.message)
+  }
+  return {
+    listings: all.count ?? 0,
+    surfboards: boards.count ?? 0,
+  }
+}
+
+export async function countNewListingsSince(
+  db: SupabaseClient,
+  sinceIso: string,
+  untilIso?: string,
+): Promise<number> {
+  let query = db.from('listings').select('*', { count: 'exact', head: true }).gte('created_at', sinceIso)
+  if (untilIso) query = query.lt('created_at', untilIso)
+  const { count, error } = await query
   if (error) {
     console.error('[adminHomePulse] listings count failed', error.message)
     return 0
@@ -27,13 +62,16 @@ export async function countNewListingsSince(db: SupabaseClient, sinceIso: string
 export async function countConfirmedOrdersSince(
   db: SupabaseClient,
   sinceIso: string,
+  untilIso?: string,
 ): Promise<number> {
-  const { count, error } = await db
+  let query = db
     .from('orders')
     .select('*', { count: 'exact', head: true })
     .eq('is_admin_test', false)
     .eq('status', 'confirmed')
     .gte('created_at', sinceIso)
+  if (untilIso) query = query.lt('created_at', untilIso)
+  const { count, error } = await query
   if (error) {
     console.error('[adminHomePulse] orders count failed', error.message)
     return 0
@@ -44,11 +82,11 @@ export async function countConfirmedOrdersSince(
 export async function countMarketplaceMessagesSince(
   db: SupabaseClient,
   sinceIso: string,
+  untilIso?: string,
 ): Promise<number> {
-  const { count, error } = await db
-    .from('messages')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', sinceIso)
+  let query = db.from('messages').select('*', { count: 'exact', head: true }).gte('created_at', sinceIso)
+  if (untilIso) query = query.lt('created_at', untilIso)
+  const { count, error } = await query
   if (error) {
     console.error('[adminHomePulse] messages count failed', error.message)
     return 0

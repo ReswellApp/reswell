@@ -3,7 +3,10 @@ import type {
   AdminOverviewSupportPreview,
   AdminOverviewUserPreview,
 } from '@/lib/db/adminOverview'
-import type { AdminInsightsPeriodMode } from '@/lib/utils/adminInsightsPeriod'
+import type {
+  AdminHomeRevenueRange,
+  AdminInsightsPeriodMode,
+} from '@/lib/utils/adminInsightsPeriod'
 
 export type TrendMetric = {
   current: number
@@ -128,6 +131,8 @@ export type AdminBusinessInsights = {
 export type LoadAdminBusinessInsightsOptions = {
   /** `YYYY-MM` Pacific calendar month. Omit for the rolling window. */
   yearMonth?: string | null
+  /** Home range. Ignored when `yearMonth` is set. Defaults to last 30 days. */
+  range?: AdminHomeRevenueRange
 }
 
 export type LoadAdminRevenueTrendOptions = {
@@ -149,6 +154,8 @@ export type AdminRevenueTrend = {
   monthly: AdminRevenueMonthlyPoint[]
   totalGmv: number
   totalOrders: number
+  /** Checkout platform fees plus succeeded seller tips. */
+  totalPlatformRevenue: number
   /** Forward-looking pace line for monthly views. */
   insight: string | null
 }

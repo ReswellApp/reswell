@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { isHiddenFromAdminOverviewReport } from '@/lib/admin/overview-report-orders'
-import { listTippedMarkSoldGmsContributions } from '@/lib/db/sellerSaleTips'
+import { listSellerSaleTipAdminFacts } from '@/lib/db/sellerSaleTips'
 import { isElasticsearchConfigured } from '@/lib/elasticsearch/config'
 import { countMarketplaceSearchesInRange } from '@/lib/elasticsearch/search-analytics-index'
 import type {
@@ -31,7 +31,6 @@ import type {
 } from '@/lib/types/adminBusinessInsights'
 import {
   resolveAdminHomeRevenuePeriod,
-  resolveAdminInsightsPeriod,
   businessMonthStartIso,
   businessYearMonthChoices,
 } from '@/lib/utils/adminInsightsPeriod'
@@ -78,12 +77,13 @@ export type {
  * GMV is buyer-paid merchandise = `orders.amount` minus `orders.shipping_amount`
  * (net of Reswell promo), plus listing prices of off-platform mark-as-sold
  * sales with a succeeded seller tip. Shipping collected from buyers is not GMV.
- * Take rate uses listing item GMV from confirmed checkout only (seller earnings +
- * platform fee) — the 7% fee base — so promo codes and off-platform tips do
- * not dilute the rate.
+ * Platform revenue is checkout `platform_fee` plus succeeded seller-tip amounts
+ * (`seller_sale_tips.amount_cents`). Take rate uses listing item GMV from
+ * confirmed checkout only (seller earnings + platform fee) — the 7% fee base —
+ * so promo codes and tip dollars do not dilute the rate.
  * Promo discounts are reported as marketing expense. "Sale time" is
  * `orders.created_at` for checkouts and `seller_sale_tips.succeeded_at` for
- * tipped mark-as-sold GMS. Daily chart buckets use Pacific Time.
+ * tipped mark-as-sold GMS and tip revenue. Daily chart buckets use Pacific Time.
  */
 
 const ORDERS_FETCH_CAP = 20000
@@ -227,7 +227,10 @@ export async function loadAdminBusinessInsights(
     const db = createServiceRoleClient()
 
     const now = Date.now()
-    const period = resolveAdminInsightsPeriod(options?.yearMonth)
+    const period = resolveAdminHomeRevenuePeriod(
+      options?.yearMonth,
+      options?.range ?? '30d',
+    )
     const {
       periodStartMs,
       periodEndMs,
@@ -243,7 +246,7 @@ export async function loadAdminBusinessInsights(
 
     const [
       ordersRes,
-      tippedGms,
+      tipFacts,
       offersRes,
       activeListingsRes,
       activeSurfboardsRes,
@@ -266,7 +269,7 @@ export async function loadAdminBusinessInsights(
         .gte('created_at', sinceFetch)
         .order('created_at', { ascending: false })
         .limit(ORDERS_FETCH_CAP),
-      listTippedMarkSoldGmsContributions(db),
+      listSellerSaleTipAdminFacts(db),
       db.from('offers').select('status, created_at').gte('created_at', sinceFetch),
       db.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       db
@@ -288,11 +291,13 @@ export async function loadAdminBusinessInsights(
       db
         .from('listings')
         .select('*', { count: 'exact', head: true })
+        .neq('status', 'draft')
         .gte('created_at', growthSinceIso)
         .lt('created_at', new Date(periodEndMs).toISOString()),
       db
         .from('listings')
         .select('*', { count: 'exact', head: true })
+        .neq('status', 'draft')
         .gte('created_at', growthPrevSinceIso)
         .lt('created_at', growthPrevUntilIso),
       db
@@ -418,18 +423,17 @@ export async function loadAdminBusinessInsights(
       }
     }
 
-    const aovCur = ordersCur > 0 ? gmvCur / ordersCur : 0
-    const aovPrev = ordersPrev > 0 ? gmvPrev / ordersPrev : 0
-
-    for (const tip of tippedGms) {
+    for (const tip of tipFacts.gms) {
       const ts = new Date(tip.succeededAt).getTime()
       const inCurrent = ts >= periodStartMs && ts < periodEndMs
       const inPrevious = ts >= prevStartMs && ts < prevEndMs
       if (inCurrent) {
         gmvCur += tip.listingPriceUsd
+        ordersCur += 1
         const bucket = dailyMap.get(businessDayKey(tip.succeededAt))
         if (bucket) {
           bucket.gmv += tip.listingPriceUsd
+          bucket.orders += 1
         }
         const s = sellerAgg.get(tip.sellerUserId) ?? { gmv: 0, orders: 0 }
         s.gmv += tip.listingPriceUsd
@@ -441,6 +445,24 @@ export async function loadAdminBusinessInsights(
         listingAgg.set(tip.listingId, l)
       } else if (inPrevious) {
         gmvPrev += tip.listingPriceUsd
+        ordersPrev += 1
+      }
+    }
+
+    const aovCur = ordersCur > 0 ? gmvCur / ordersCur : 0
+    const aovPrev = ordersPrev > 0 ? gmvPrev / ordersPrev : 0
+    const takeRatePct = listingItemGmvCur > 0 ? (feesCur / listingItemGmvCur) * 100 : null
+
+    for (const tip of tipFacts.tipRevenues) {
+      const ts = new Date(tip.succeededAt).getTime()
+      const inCurrent = ts >= periodStartMs && ts < periodEndMs
+      const inPrevious = ts >= prevStartMs && ts < prevEndMs
+      if (inCurrent) {
+        feesCur += tip.amountUsd
+        const bucket = dailyMap.get(businessDayKey(tip.succeededAt))
+        if (bucket) bucket.fees += tip.amountUsd
+      } else if (inPrevious) {
+        feesPrev += tip.amountUsd
       }
     }
 
@@ -452,8 +474,6 @@ export async function loadAdminBusinessInsights(
         orders: v.orders,
       }),
     )
-
-    const takeRatePct = listingItemGmvCur > 0 ? (feesCur / listingItemGmvCur) * 100 : null
     const refundDenom = ordersCur + refundedCur
     const refundRatePct = refundDenom > 0 ? (refundedCur / refundDenom) * 100 : 0
 
@@ -617,7 +637,7 @@ export async function loadAdminRevenueTrend(
     const periodStartIso = new Date(period.periodStartMs).toISOString()
     const periodEndIso = new Date(period.periodEndMs).toISOString()
 
-    const [{ data: orderRows, error }, tippedGms] = await Promise.all([
+    const [{ data: orderRows, error }, tipFacts] = await Promise.all([
       db
         .from('orders')
         .select('id, amount, shipping_amount, platform_fee, status, created_at')
@@ -626,7 +646,7 @@ export async function loadAdminRevenueTrend(
         .lt('created_at', periodEndIso)
         .order('created_at', { ascending: false })
         .limit(ORDERS_FETCH_CAP),
-      listTippedMarkSoldGmsContributions(db),
+      listSellerSaleTipAdminFacts(db),
     ])
 
     if (error) {
@@ -640,6 +660,7 @@ export async function loadAdminRevenueTrend(
 
     let totalGmv = 0
     let totalOrders = 0
+    let totalPlatformRevenue = 0
 
     for (const row of orderRows ?? []) {
       const r = row as Record<string, unknown>
@@ -661,15 +682,27 @@ export async function loadAdminRevenueTrend(
       bucket.orders += 1
       totalGmv += gmv
       totalOrders += 1
+      totalPlatformRevenue += order.platform_fee
     }
 
-    for (const tip of tippedGms) {
+    for (const tip of tipFacts.gms) {
       const ts = new Date(tip.succeededAt).getTime()
       if (ts < period.periodStartMs || ts >= period.periodEndMs) continue
       const bucket = dailyMap.get(businessDayKey(tip.succeededAt))
       if (!bucket) continue
       bucket.gmv += tip.listingPriceUsd
+      bucket.orders += 1
       totalGmv += tip.listingPriceUsd
+      totalOrders += 1
+    }
+
+    for (const tip of tipFacts.tipRevenues) {
+      const ts = new Date(tip.succeededAt).getTime()
+      if (ts < period.periodStartMs || ts >= period.periodEndMs) continue
+      const bucket = dailyMap.get(businessDayKey(tip.succeededAt))
+      if (!bucket) continue
+      bucket.fees += tip.amountUsd
+      totalPlatformRevenue += tip.amountUsd
     }
 
     const daily: AdminInsightsDailyPoint[] = Array.from(dailyMap.entries()).map(
@@ -703,6 +736,7 @@ export async function loadAdminRevenueTrend(
         monthly,
         totalGmv,
         totalOrders,
+        totalPlatformRevenue,
         insight,
       },
     }
@@ -856,7 +890,7 @@ export async function loadAdminMomentumMatrix(): Promise<
     const now = Date.now()
     const sinceIso = new Date(now - MOMENTUM_LOOKBACK_DAYS * DAY_MS).toISOString()
 
-    const [ordersRes, tippedGms, usersRes, listingsRes, searchResult] = await Promise.all([
+    const [ordersRes, tipFacts, usersRes, listingsRes, searchResult] = await Promise.all([
       db
         .from('orders')
         .select('amount, shipping_amount, platform_fee, status, created_at')
@@ -864,7 +898,7 @@ export async function loadAdminMomentumMatrix(): Promise<
         .gte('created_at', sinceIso)
         .order('created_at', { ascending: false })
         .limit(MOMENTUM_ROW_FETCH_CAP),
-      listTippedMarkSoldGmsContributions(db),
+      listSellerSaleTipAdminFacts(db),
       db
         .from('profiles')
         .select('created_at')
@@ -904,9 +938,14 @@ export async function loadAdminMomentumMatrix(): Promise<
       revenueEvents.push({ ageMs, weight: num(r.platform_fee) })
     }
 
-    for (const tip of tippedGms) {
+    for (const tip of tipFacts.gms) {
       const ageMs = now - new Date(tip.succeededAt).getTime()
       gmvEvents.push({ ageMs, weight: tip.listingPriceUsd })
+      orderEvents.push({ ageMs, weight: 1 })
+    }
+    for (const tip of tipFacts.tipRevenues) {
+      const ageMs = now - new Date(tip.succeededAt).getTime()
+      revenueEvents.push({ ageMs, weight: tip.amountUsd })
     }
 
     const toAgeEvents = (rows: unknown[] | null): { ageMs: number; weight: number }[] =>
@@ -920,11 +959,17 @@ export async function loadAdminMomentumMatrix(): Promise<
       momentumMetric(
         'platformRevenue',
         'Reswell revenue',
-        'Platform fees earned',
+        'Checkout fees plus seller tips',
         'usd',
         revenueEvents,
       ),
-      momentumMetric('paidOrders', 'Paid orders', 'Confirmed checkouts', 'count', orderEvents),
+      momentumMetric(
+        'paidOrders',
+        'Paid sales',
+        'Confirmed checkouts plus tipped mark-as-sold',
+        'count',
+        orderEvents,
+      ),
       momentumMetric('newUsers', 'New users', 'Profiles created', 'count', toAgeEvents(usersRes.data)),
       momentumMetric(
         'newListings',
@@ -976,7 +1021,7 @@ export async function loadAdminMonthlyRevenueBreakdown(
       return { ok: true, data: [] }
     }
 
-    const [{ data: orderRows, error }, tippedGms] = await Promise.all([
+    const [{ data: orderRows, error }, tipFacts] = await Promise.all([
       db
         .from('orders')
         .select('amount, shipping_amount, platform_fee, promo_discount_usd, created_at, status')
@@ -985,7 +1030,7 @@ export async function loadAdminMonthlyRevenueBreakdown(
         .gte('created_at', sinceIso)
         .order('created_at', { ascending: false })
         .limit(ORDERS_FETCH_CAP),
-      listTippedMarkSoldGmsContributions(db),
+      listSellerSaleTipAdminFacts(db),
     ])
 
     if (error) {
@@ -1031,11 +1076,18 @@ export async function loadAdminMonthlyRevenueBreakdown(
       b.orders += 1
     }
 
-    for (const tip of tippedGms) {
+    for (const tip of tipFacts.gms) {
       const ym = businessDayKey(tip.succeededAt).slice(0, 7)
       const b = bucket.get(ym)
       if (!b) continue
       b.gmv += tip.listingPriceUsd
+      b.orders += 1
+    }
+    for (const tip of tipFacts.tipRevenues) {
+      const ym = businessDayKey(tip.succeededAt).slice(0, 7)
+      const b = bucket.get(ym)
+      if (!b) continue
+      b.platformRevenue += tip.amountUsd
     }
 
     const data: AdminMonthlyRevenueRow[] = months.map((yearMonth) => {

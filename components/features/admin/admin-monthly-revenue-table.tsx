@@ -33,7 +33,7 @@ export function AdminMonthlyRevenueTable({
           Revenue by month
         </h3>
         <p className="text-xs text-muted-foreground">
-          Confirmed orders in {BUSINESS_TIMEZONE_LABEL} calendar months · GMV excludes
+          Confirmed orders in {BUSINESS_TIMEZONE_LABEL} calendar months · GMS excludes
           shipping · 7% take on listing price · promo as marketing
         </p>
       </div>
@@ -47,7 +47,7 @@ export function AdminMonthlyRevenueTable({
             <thead>
               <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <th className="px-5 py-3">Month</th>
-                <th className="px-5 py-3 text-right">GMV</th>
+                <th className="px-5 py-3 text-right">GMS</th>
                 <th className="px-5 py-3 text-right">Platform revenue</th>
                 <th className="px-5 py-3 text-right">Promo (marketing)</th>
                 <th className="px-5 py-3 text-right">Orders</th>
@@ -56,7 +56,7 @@ export function AdminMonthlyRevenueTable({
             <tbody>
               {rows.map((row) => {
                 const active = selectedYearMonth === row.yearMonth
-                const href = `/admin/overview?month=${encodeURIComponent(row.yearMonth)}`
+                const href = `/admin/home?month=${encodeURIComponent(row.yearMonth)}`
                 return (
                   <tr
                     key={row.yearMonth}
