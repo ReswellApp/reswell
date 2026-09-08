@@ -441,6 +441,27 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/listyoursurfboard",
     ogImageUrl: "/images/marketing/list-your-surfboard-share.jpg",
   }),
+  page("seller-resources", "marketing", "Seller Resources", {
+    title: "Seller Resources — Reswell",
+    description:
+      "Guides for selling on Reswell: how to list, how to ship, the sales map, and more seller tools.",
+    path: "/seller-resources",
+    keywords: ["sell surfboard", "seller resources", "how to sell on Reswell"],
+  }),
+  page("seller-resources-how-to-sell", "marketing", "How to Sell", {
+    title: "How to Sell on Reswell",
+    description:
+      "List a surfboard or gear on Reswell — photos, details, pickup or shipping, and pricing. Free to post.",
+    path: "/seller-resources/how-to-sell",
+    keywords: ["how to sell a surfboard", "list surfboard", "sell used surfboard"],
+  }),
+  page("seller-resources-how-to-ship", "marketing", "How to Ship", {
+    title: "How to Ship on Reswell",
+    description:
+      "Offer shipping on a listing, pack a surfboard, print a label after the sale, or meet for local pickup.",
+    path: "/seller-resources/how-to-ship",
+    keywords: ["ship a surfboard", "surfboard shipping", "Reswell shipping label"],
+  }),
   page("shipping-estimator", "marketing", "Shipping estimator", {
     title: "Shipping label cost estimator — Reswell",
     description:

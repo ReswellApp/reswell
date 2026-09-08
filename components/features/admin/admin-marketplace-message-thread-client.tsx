@@ -31,6 +31,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { AdminMarketplaceMessageBody } from "@/components/features/admin/admin-marketplace-message-body"
+import { parseOrderShippedThreadMessage } from "@/lib/messages/order-shipped-thread"
+import { parseShippingLabelThreadMessage } from "@/lib/messages/shipping-label-thread"
 import {
   AdminSendUserMessageDialog,
   type AdminMessageParticipantOption,
@@ -402,6 +404,9 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
                 const party = resolveThreadParty(m.sender_id, header)
                 const align =
                   party === "buyer" ? "items-start" : party === "seller" ? "items-end" : "items-center"
+                const isSystemCard =
+                  parseShippingLabelThreadMessage(m.content, m.metadata) != null ||
+                  parseOrderShippedThreadMessage(m.content, m.metadata) != null
                 const bubbleTone =
                   party === "buyer"
                     ? "border-sky-500/25 bg-sky-500/[0.06]"
@@ -447,18 +452,26 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
                         </Button>
                       ) : null}
                     </div>
-                    <div
-                      className={cn(
-                        "max-w-[min(100%,36rem)] rounded-2xl border px-3.5 py-3",
-                        bubbleTone,
-                      )}
-                    >
+                    {isSystemCard ? (
                       <AdminMarketplaceMessageBody
                         messageId={m.id}
                         metadata={m.metadata}
                         content={m.content}
                       />
-                    </div>
+                    ) : (
+                      <div
+                        className={cn(
+                          "max-w-[min(100%,36rem)] rounded-2xl border px-3.5 py-3",
+                          bubbleTone,
+                        )}
+                      >
+                        <AdminMarketplaceMessageBody
+                          messageId={m.id}
+                          metadata={m.metadata}
+                          content={m.content}
+                        />
+                      </div>
+                    )}
                   </div>
                 )
               })}

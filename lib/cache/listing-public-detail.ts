@@ -11,6 +11,11 @@ import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 export const LISTING_PUBLIC_DETAIL_CACHE_TAG = "listing-public-detail"
 export const LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS = 60 * 60
 
+/** Per URL param (`id` or `slug`) so a hide can expire one listing without busting the catalog. */
+export function listingPublicDetailCacheTag(param: string): string {
+  return `${LISTING_PUBLIC_DETAIL_CACHE_TAG}:${param.trim()}`
+}
+
 type PublicListingLookupResult = Awaited<ReturnType<typeof findListingByParam>>
 
 async function loadPublicListingByParam(
@@ -26,24 +31,32 @@ async function loadPublicListingByParam(
   })
 }
 
-/** One hourly row per param — metadata, route shell, and peer PDP detail share this entry. */
-const getCachedPublicListingDetailRow = unstable_cache(
-  (param: string) => loadPublicListingByParam(param, SURFBOARD_LISTING_SELECT),
-  ["listing-public-detail"],
-  {
-    revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
-    tags: [LISTING_PUBLIC_DETAIL_CACHE_TAG],
-  },
-)
+function listingPublicDetailCacheTags(param: string): string[] {
+  return [LISTING_PUBLIC_DETAIL_CACHE_TAG, listingPublicDetailCacheTag(param)]
+}
 
-const getCachedPublicShopListingRow = unstable_cache(
-  (param: string) => loadPublicListingByParam(param, SHOP_LISTING_SELECT, "new"),
-  ["listing-public-shop-detail-v2"],
-  {
-    revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
-    tags: [LISTING_PUBLIC_DETAIL_CACHE_TAG],
-  },
-)
+/** One hourly row per param — metadata, route shell, and peer PDP detail share this entry. */
+function getCachedPublicListingDetailRow(param: string): Promise<PublicListingLookupResult> {
+  return unstable_cache(
+    () => loadPublicListingByParam(param, SURFBOARD_LISTING_SELECT),
+    ["listing-public-detail", param],
+    {
+      revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
+      tags: listingPublicDetailCacheTags(param),
+    },
+  )()
+}
+
+function getCachedPublicShopListingRow(param: string): Promise<PublicListingLookupResult> {
+  return unstable_cache(
+    () => loadPublicListingByParam(param, SHOP_LISTING_SELECT, "new"),
+    ["listing-public-shop-detail-v2", param],
+    {
+      revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
+      tags: listingPublicDetailCacheTags(param),
+    },
+  )()
+}
 
 /** Per-request dedupe across metadata, route shell, and detail in the same RSC tree. */
 export const getCachedPublicListingForMetadata = cache(async (param: string) => {

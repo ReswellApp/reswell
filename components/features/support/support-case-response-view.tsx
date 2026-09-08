@@ -1,10 +1,6 @@
 import Link from "next/link"
 import { ArrowLeft, LifeBuoy, Package } from "lucide-react"
-import {
-  formatSupportCaseReference,
-  SUPPORT_CASE_STATUS_DESCRIPTION,
-  SUPPORT_CASE_STATUS_LABEL,
-} from "@/lib/utils/support-case-display"
+import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
@@ -37,7 +33,6 @@ export function SupportCaseResponseView({
   const subtitleParts = [
     formatSupportCaseReference(caseId),
     orderRef ? `Order ${orderRef}` : null,
-    SUPPORT_CASE_STATUS_LABEL[status],
   ].filter(Boolean)
 
   return (
@@ -71,12 +66,6 @@ export function SupportCaseResponseView({
           </Button>
         ) : null}
       </header>
-
-      {status !== "resolved" ? (
-        <p className="shrink-0 border-b border-border/40 px-4 py-1.5 text-center text-[12px] text-muted-foreground sm:px-2">
-          {SUPPORT_CASE_STATUS_DESCRIPTION[status]}
-        </p>
-      ) : null}
 
       {repairCreditTotal > 0 ? (
         <p className="shrink-0 border-b border-border/40 px-4 py-2 text-center text-[12px] text-muted-foreground sm:px-2">

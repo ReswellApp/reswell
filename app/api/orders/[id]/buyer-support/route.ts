@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { insertOrderSupportRequest } from "@/lib/db/order-support"
 import { insertSupportCaseAttachments } from "@/lib/db/supportCaseAttachments"
 import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
+import { rejectIfMemberHasOpenSupportCase } from "@/lib/services/supportCaseOpenLimit"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { validateBuyerSupportForOrder } from "@/lib/services/orderBuyerSupport"
@@ -23,6 +24,14 @@ export async function POST(
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const openGate = await rejectIfMemberHasOpenSupportCase(user.id)
+  if (!openGate.ok) {
+    return NextResponse.json(
+      { error: openGate.error, existingId: openGate.existingId },
+      { status: 409 },
+    )
   }
 
   let json: unknown

@@ -58,3 +58,52 @@ export function formatCarrierDisplayName(
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ")
 }
+
+function titleCaseToken(part: string): string {
+  if (!part) return part
+  return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+}
+
+function humanizeCarrierServiceToken(token: string): string {
+  const words = token
+    .replace(/_/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  const drop = new Set(["ups", "usps", "fedex", "dhl", "stamps", "com"])
+  const rest = words.filter((w) => !drop.has(w.toLowerCase()))
+  return (rest.length > 0 ? rest : words).map(titleCaseToken).join(" ")
+}
+
+/**
+ * Turns stored carrier blobs (`ups · ups_ground`, `usps_priority_mail`) into
+ * a short customer-facing label (`UPS Ground`, `USPS Priority Mail`).
+ */
+export function formatCarrierServiceDisplay(raw: string | null | undefined): string {
+  const trimmed = (raw ?? "").trim()
+  if (!trimmed) return ""
+
+  const segments = trimmed
+    .split("·")
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const carrierHint = segments[0] ?? trimmed
+  const carrier = formatCarrierDisplayName(carrierHint, carrierHint)
+
+  if (segments.length >= 2) {
+    const service = humanizeCarrierServiceToken(segments[1] ?? "")
+    if (!service) return carrier
+    if (service.toLowerCase().startsWith(carrier.toLowerCase())) return service
+    return `${carrier} ${service}`
+  }
+
+  if (carrierHint.includes("_")) {
+    const service = humanizeCarrierServiceToken(carrierHint)
+    if (!service) return carrier
+    if (service.toLowerCase() === carrier.toLowerCase()) return carrier
+    if (service.toLowerCase().startsWith(carrier.toLowerCase())) return service
+    return `${carrier} ${service}`
+  }
+
+  return carrier
+}

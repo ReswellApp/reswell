@@ -97,6 +97,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/shop', label: 'Reswell inventory', icon: 'store' },
       { href: '/admin/shop/orders', label: 'Shop orders', icon: 'shoppingBag' },
       { href: '/admin/we-buy', label: 'Buy program', icon: 'handshake' },
+      { href: '/admin/careers', label: 'Career applications', icon: 'fileText' },
     ],
   },
   {

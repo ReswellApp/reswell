@@ -12,6 +12,7 @@ import { listOrderSupportRequestsForUser } from "@/lib/db/order-support"
 import { orderRequestTypeSubject, orderRequestTypeToKind } from "@/lib/utils/support-case-display"
 import { supportTicketDisplaySubject } from "@/lib/utils/support-ticket-display"
 import type { SupportCaseKind } from "@/lib/types/supportCase"
+import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
 
 /**
  * Create a support_cases row for a legacy ticket if one does not exist yet.
@@ -75,6 +76,7 @@ export async function ensureCaseForContactMessage(
 ): Promise<SupportCaseRow | null> {
   const existing = await getSupportCaseByContactMessageId(supabase, row.id)
   if (existing) return existing
+  if (isUnpublishedLiveChatTicket(row)) return null
 
   const subject = supportTicketDisplaySubject(
     row.subject,
@@ -148,7 +150,7 @@ export async function backfillUserLegacyCases(
         ),
       ),
     ...tickets
-      .filter((row) => !haveContact.has(row.id))
+      .filter((row) => !haveContact.has(row.id) && !isUnpublishedLiveChatTicket(row))
       .map((row) =>
         ensureCaseForContactMessage(supabase, {
           id: row.id,

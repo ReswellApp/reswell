@@ -154,6 +154,10 @@ export function MessagesSupportDialog({
       })
       if ("error" in res && res.error) {
         toast.error(res.error)
+        if ("existingId" in res && res.existingId) {
+          handleOpenChange(false)
+          router.push(`/support/${res.existingId}`)
+        }
         return
       }
       if ("success" in res && res.success) {

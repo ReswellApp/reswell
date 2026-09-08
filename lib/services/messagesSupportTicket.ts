@@ -6,6 +6,7 @@ import {
 } from "@/lib/validations/messagesSupportTicket"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
+import { rejectIfMemberHasOpenSupportCase } from "@/lib/services/supportCaseOpenLimit"
 import type { SupportCaseKind } from "@/lib/types/supportCase"
 
 function topicToKind(topic: string): SupportCaseKind {
@@ -23,7 +24,7 @@ function topicToKind(topic: string): SupportCaseKind {
 
 export async function submitMessagesSupportTicketService(
   raw: unknown,
-): Promise<{ success: true; id: string } | { error: string }> {
+): Promise<{ success: true; id: string } | { error: string; existingId?: string }> {
   const parsed = submitMessagesSupportTicketSchema.safeParse(raw)
   if (!parsed.success) {
     const first = parsed.error.flatten().fieldErrors
@@ -38,6 +39,11 @@ export async function submitMessagesSupportTicketService(
 
   if (!user) {
     return { error: "Sign in to contact support from Messages." }
+  }
+
+  const openGate = await rejectIfMemberHasOpenSupportCase(user.id)
+  if (!openGate.ok) {
+    return { error: openGate.error, existingId: openGate.existingId }
   }
 
   const email = (user.email ?? "").trim()

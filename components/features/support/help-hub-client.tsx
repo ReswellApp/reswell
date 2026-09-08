@@ -277,6 +277,9 @@ export function HelpHubClient({
       })
       if ("error" in res && res.error) {
         toast.error(res.error)
+        if ("existingId" in res && res.existingId) {
+          router.push(`/support/${res.existingId}`)
+        }
         return
       }
       if ("success" in res && res.success) {
@@ -341,9 +344,10 @@ export function HelpHubClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         })
-        const data = (await res.json()) as { error?: string; id?: string }
+        const data = (await res.json()) as { error?: string; id?: string; existingId?: string }
         if (!res.ok) {
           toast.error(data.error ?? "Could not submit request")
+          if (data.existingId) router.push(`/support/${data.existingId}`)
           return
         }
         toast.success(successMessage)

@@ -1,14 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
 import type { UserSupportTicketFilter } from "@/lib/db/contactMessages"
 import { getOrderSupportRequestForUser } from "@/lib/db/order-support"
-import {
-  countOpenSupportCasesForRequester,
-  listSupportCasesForRequester,
-} from "@/lib/db/supportCases"
+import { listSupportCasesForRequester } from "@/lib/db/supportCases"
 import { backfillUserLegacyCases } from "@/lib/services/supportCaseBackfill"
 import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
+import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
 
 export async function listUserSupportCasesService(
   userId: string,
@@ -21,7 +19,7 @@ export async function listUserSupportCasesService(
   await backfillUserLegacyCases(supabase, userId, user?.email ?? null)
 
   const rows = await listSupportCasesForRequester(supabase, userId, filter)
-  return rows.map((row) => ({
+  return rows.filter((row) => !isUnpublishedLiveChatTicket(row)).map((row) => ({
     id: row.id,
     backend: row.order_support_request_id ? "order_support" : "contact_message",
     kind: row.kind,
@@ -43,7 +41,8 @@ export async function countOpenUserSupportCasesService(userId: string): Promise<
     data: { user },
   } = await supabase.auth.getUser()
   await backfillUserLegacyCases(supabase, userId, user?.email ?? null)
-  return countOpenSupportCasesForRequester(supabase, userId)
+  const open = await listSupportCasesForRequester(supabase, userId, "open")
+  return open.filter((row) => !isUnpublishedLiveChatTicket(row)).length
 }
 
 export async function getUserOrderSupportCaseService(userId: string, requestId: string) {

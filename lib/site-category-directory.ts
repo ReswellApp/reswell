@@ -185,6 +185,13 @@ export const siteHeaderMobileSecondaryNavLinks: CategoryLink[] = [
   { label: "Sellers", href: "/sellers" },
   { label: "Sold", href: "/sold" },
 ]
+
+export {
+  sellerResourcesNavIsActive,
+  sellerResourcesNavItemIsActive,
+  sellerResourcesNavLinks,
+} from "@/lib/seller-resources"
+
 export function siteHeaderSecondaryNavItemIsActive(pathname: string | null, href: string): boolean {
   if (!pathname) return false
   const q = href.indexOf("?")

@@ -8,6 +8,8 @@ import type { AdminMarketplaceMessageListRow } from "@/lib/db/adminMarketplaceMe
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AdminMarketplaceMessageBody } from "@/components/features/admin/admin-marketplace-message-body"
+import { parseOrderShippedThreadMessage } from "@/lib/messages/order-shipped-thread"
+import { parseShippingLabelThreadMessage } from "@/lib/messages/shipping-label-thread"
 
 type AdminOrderMarketplaceMessagesPanelProps = {
   conversationId: string | null
@@ -111,6 +113,9 @@ export function AdminOrderMarketplaceMessagesPanel({
             {messages.map((message) => {
               const isBuyer = message.sender_id === buyerId
               const isSeller = message.sender_id === sellerId
+              const isSystemCard =
+                parseShippingLabelThreadMessage(message.content, message.metadata) != null ||
+                parseOrderShippedThreadMessage(message.content, message.metadata) != null
               const bubbleTone = isBuyer
                 ? "border-sky-500/25 bg-sky-500/[0.06]"
                 : isSeller
@@ -120,7 +125,11 @@ export function AdminOrderMarketplaceMessagesPanel({
               return (
                 <div
                   key={message.id}
-                  className={`rounded-xl border px-3 py-2.5 text-sm ${bubbleTone}`}
+                  className={
+                    isSystemCard
+                      ? "rounded-xl px-1 py-1 text-sm"
+                      : `rounded-xl border px-3 py-2.5 text-sm ${bubbleTone}`
+                  }
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2 pb-1.5 text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">

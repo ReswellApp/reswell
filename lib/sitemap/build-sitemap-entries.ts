@@ -17,7 +17,7 @@ import { getCachedTopCitiesDirectory } from "@/lib/cache/top-cities-directory"
 import { cityLandingHref } from "@/lib/city-landing-path"
 import { CITY_SURF_SHOPS, surfShopHref } from "@/lib/city-landing-surf-shops"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
-import { careerRoleHref, careerRoles } from "@/lib/careers"
+import { CAREERS_GENERAL_APPLY_HREF, careerRoleApplyHref, careerRoleHref, careerRoles } from "@/lib/careers"
 import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
@@ -155,6 +155,26 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/openapi.json`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
     { url: `${BASE}/careers`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
+    {
+      url: `${BASE}${CAREERS_GENERAL_APPLY_HREF}`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.25,
+    },
+    { url: `${BASE}/map`, lastModified: now, changeFrequency: "hourly", priority: 0.55 },
+    { url: `${BASE}/seller-resources`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
+    {
+      url: `${BASE}/seller-resources/how-to-sell`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
+      url: `${BASE}/seller-resources/how-to-ship`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
     { url: `${BASE}/shipping`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     {
       url: `${BASE}/shipping-estimator`,
@@ -215,12 +235,20 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: e.path === "/priceguide" ? 0.7 : 0.55,
   }))
 
-  const careerRolePages: SitemapUrlEntry[] = careerRoles.map((role) => ({
-    url: `${BASE}${careerRoleHref(role)}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.3,
-  }))
+  const careerRolePages: SitemapUrlEntry[] = careerRoles.flatMap((role) => [
+    {
+      url: `${BASE}${careerRoleHref(role)}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${BASE}${careerRoleApplyHref(role)}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.25,
+    },
+  ])
 
   const merged = [
     ...staticPages,

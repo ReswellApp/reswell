@@ -86,7 +86,7 @@ export function AdminHomeInsightsKpis({ insights }: AdminHomeInsightsKpisProps) 
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         {insights.periodLabel}
       </p>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiTile
           label="GMS"
           value={compactUsd(insights.revenue.gmv.current)}
@@ -98,6 +98,12 @@ export function AdminHomeInsightsKpis({ insights }: AdminHomeInsightsKpisProps) 
           value={compactUsd(insights.revenue.platformRevenue.current)}
           delta={insights.revenue.platformRevenue}
           footnote={`${take} · ${compare} · ${compactUsd(insights.revenue.platformRevenue.previous)}`}
+        />
+        <KpiTile
+          label="AOV"
+          value={compactUsd(insights.revenue.aov.current)}
+          delta={insights.revenue.aov}
+          footnote={`GMS ÷ sales · ${compare} · ${compactUsd(insights.revenue.aov.previous)}`}
         />
         <KpiTile
           label="New listings"

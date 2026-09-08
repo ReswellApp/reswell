@@ -138,8 +138,8 @@ export type KlaviyoMessageSentPayload = {
  *
  * Call only for person-to-person marketplace chat (and media). System thread cards
  * (`order_placed`, `order_refunded`, `order_shipped`, `order_completed`,
- * `order_exclusive_repurchase`, `review_requested`) must not call this — they have
- * their own Klaviyo metrics.
+ * `order_exclusive_repurchase`, `review_requested`, `shipping_label_ready`,
+ * `admin_shipping_label`) must not call this — they have their own Klaviyo metrics.
  */
 export async function trackKlaviyoMessageSent(
   payload: KlaviyoMessageSentPayload,

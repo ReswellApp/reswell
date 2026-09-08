@@ -1,3 +1,5 @@
+import { isSupportStatusUpdateMessage } from "@/lib/messages/parse-support-thread-message"
+
 /**
  * Turn stored ticket bodies (often journey metadata + customer text) into a
  * short, customer-friendly preview for Help lists and summaries.
@@ -5,6 +7,7 @@
 export function humanizeSupportCasePreview(raw: string, maxLen = 160): string {
   let text = raw.replace(/\r\n/g, "\n").trim()
   if (!text) return ""
+  if (isSupportStatusUpdateMessage(text)) return ""
 
   const theirMessage = text.match(/Their message:\s*([\s\S]+)$/i)
   if (theirMessage?.[1]?.trim()) {

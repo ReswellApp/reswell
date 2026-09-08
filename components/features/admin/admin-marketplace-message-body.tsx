@@ -10,7 +10,11 @@ import {
   MessageMediaVideoLightbox,
 } from "@/components/features/messages/message-media-video-lightbox"
 import { OpenMarketplacePdfButton } from "@/components/features/messages/open-marketplace-pdf-button"
+import { OrderShippedMessageCard } from "@/components/features/messages/order-shipped-message-card"
+import { ShippingLabelMessageCard } from "@/components/features/messages/shipping-label-message-card"
 import { attachMarketplaceMessageImageToSupportCaseAction } from "@/lib/actions/attachMarketplaceMessageImageToSupportCase"
+import { parseOrderShippedThreadMessage } from "@/lib/messages/order-shipped-thread"
+import { parseShippingLabelThreadMessage } from "@/lib/messages/shipping-label-thread"
 import {
   composeMediaAttachmentMessageBody,
   parseMarketplaceMessageImageAttachment,
@@ -224,6 +228,24 @@ export function AdminMarketplaceMessageBody({
   /** When set, image messages can be copied onto this Purchase Protection / order case. */
   orderSupportRequestId?: string | null
 }) {
+  const shippingLabel = parseShippingLabelThreadMessage(content, metadata)
+  if (shippingLabel) {
+    return (
+      <div className={className}>
+        <ShippingLabelMessageCard payload={shippingLabel} viewerRole="admin" />
+      </div>
+    )
+  }
+
+  const orderShipped = parseOrderShippedThreadMessage(content, metadata)
+  if (orderShipped) {
+    return (
+      <div className={className}>
+        <OrderShippedMessageCard payload={orderShipped} viewerRole="admin" />
+      </div>
+    )
+  }
+
   const imageAtt = parseMarketplaceMessageImageAttachment(metadata)
   const videoAtt = parseMarketplaceMessageVideoAttachment(metadata)
   const pdfAtt = parseMarketplaceMessagePdfAttachment(metadata)
