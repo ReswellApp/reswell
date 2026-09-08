@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { ArrowLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
@@ -14,7 +15,6 @@ import {
   LIVE_CHAT_AI_FOLLOW_UP_PROMPT,
   LIVE_CHAT_AI_HANDOFF_CTA,
   LIVE_CHAT_AI_OFFLINE_NOTE,
-  LIVE_CHAT_BOT_AI_READY,
   LIVE_CHAT_BOT_HANDOFF,
   LIVE_CHAT_BOT_INTRO,
   LIVE_CHAT_BOT_MISSION,
@@ -30,6 +30,8 @@ import {
 import { liveChatThreadSurfaceClass } from "@/lib/live-chat/widget-ui"
 import type { LiveChatUiMessage } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
 import type { LiveChatSupportTeamMember } from "@/lib/services/liveChatSupportTeamDisplay"
+import { resolveWorkingSupportAgent } from "@/lib/live-chat/support-lead-display"
+import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 
 export type BotUiMessage = {
   id: string
@@ -54,6 +56,9 @@ interface LiveChatMessagesViewProps {
   /** True while Reswell AI is generating a reply. */
   aiThinking?: boolean
   error: string | null
+  sessionClosed?: boolean
+  onStartNewConversation?: () => void
+  composerLocked?: boolean
   onSendHumanMessage: (content: string, email: string | null) => Promise<boolean>
   onSendAiMessage: (content: string) => Promise<boolean>
   onActivateAi: () => Promise<boolean>
@@ -67,6 +72,10 @@ interface LiveChatMessagesViewProps {
   emailLocked?: boolean
   isSupportOnline: boolean
   supportLead: LiveChatSupportTeamMember
+  supportTeam?: LiveChatSupportTeamMember[]
+  onlineMemberIds?: string[]
+  assignedAgentId?: string | null
+  supportCaseId?: string | null
 }
 
 function BotBubble({
@@ -153,6 +162,9 @@ export function LiveChatMessagesView({
   sending,
   aiThinking = false,
   error,
+  sessionClosed = false,
+  onStartNewConversation,
+  composerLocked = false,
   onSendHumanMessage,
   onSendAiMessage,
   onActivateAi,
@@ -166,6 +178,10 @@ export function LiveChatMessagesView({
   emailLocked = false,
   isSupportOnline,
   supportLead,
+  supportTeam = [],
+  onlineMemberIds = [],
+  assignedAgentId = null,
+  supportCaseId = null,
 }: LiveChatMessagesViewProps) {
   const [draft, setDraft] = useState("")
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -211,18 +227,10 @@ export function LiveChatMessagesView({
     appendBot({ kind: "user_choice", content: label })
     if (actionId === "ask_ai") {
       setAiFollowUpSuppressedForHandoff(false)
+      onModeChange("ai")
       setActivatingAi(true)
-      const ok = await onActivateAi()
+      await onActivateAi()
       setActivatingAi(false)
-      if (ok) {
-        onModeChange("ai")
-      } else {
-        appendBot({
-          kind: "ai_ready",
-          content: LIVE_CHAT_BOT_AI_READY,
-          helpLinks: LIVE_CHAT_HANDOFF_HELP_PREVIEW,
-        })
-      }
       return
     }
     onModeChange("human")
@@ -235,10 +243,11 @@ export function LiveChatMessagesView({
 
   async function handleSend() {
     const content = draft.trim()
-    if (!content || sending || activatingAi) return
+    if (!content || activatingAi || composerLocked || sessionClosed) return
 
     if (mode === "ai") {
       setDraft("")
+      if (inputRef.current) inputRef.current.style.height = "auto"
       const ok = await onSendAiMessage(content)
       if (!ok) setDraft(content)
       return
@@ -262,6 +271,9 @@ export function LiveChatMessagesView({
       }
 
       setDraft("")
+      if (inputRef.current) inputRef.current.style.height = "auto"
+      onPublishTyping(false)
+      inputRef.current?.focus()
       const result = await onSendHumanMessage(content, email)
       if (!result) setDraft(content)
     }
@@ -294,11 +306,21 @@ export function LiveChatMessagesView({
   }
 
   const showQuickActions =
-    mode === "bot" && !botMessages.some((m) => m.kind === "user_choice" || m.kind === "handoff")
+    mode === "bot" && !botMessages.some((m) => m.kind === "handoff")
 
-  const visibleThreadMessages = serverMessages.filter(
-    (m) => m.sender_type !== "system" || serverMessages.indexOf(m) > 0,
-  )
+  const visibleThreadMessages = serverMessages.filter((message, index, list) => {
+    if (list.findIndex((m) => m.id === message.id) !== index) return false
+    if (message.sender_type === "visitor") {
+      const sameVisitor = list.filter(
+        (item) => item.sender_type === "visitor" && item.content === message.content,
+      )
+      if (sameVisitor.length > 1) {
+        const confirmed = sameVisitor.find((item) => !item.pending) ?? sameVisitor[0]
+        return message.id === confirmed.id
+      }
+    }
+    return message.sender_type !== "system" || index > 0
+  })
   const showHumanEmptyState = mode === "human" && visibleThreadMessages.length === 0
   const showAiComposer = mode === "ai"
   const showHumanComposer = mode === "human"
@@ -306,6 +328,14 @@ export function LiveChatMessagesView({
     (m) => m.sender_type === "visitor" && !m.pending,
   )
   const replyEmail = isSignedIn ? visitorEmail : emailDraft.trim() || null
+  const assignedAgent = resolveWorkingSupportAgent(
+    serverMessages,
+    supportTeam.length > 0 ? supportTeam : [supportLead],
+    assignedAgentId,
+  )
+  const isAssignedAgentOnline = Boolean(
+    assignedAgent && onlineMemberIds.includes(assignedAgent.id),
+  )
 
   const lastThreadMessage = [...visibleThreadMessages].reverse().find(
     (m) => m.sender_type === "visitor" || m.sender_type === "bot" || m.sender_type === "agent",
@@ -477,7 +507,7 @@ export function LiveChatMessagesView({
           </div>
         ) : null}
 
-        {(aiThinking || activatingAi) && (mode === "ai" || mode === "human") ? (
+        {(aiThinking || activatingAi) && (mode === "ai" || mode === "human" || mode === "bot") ? (
           <div className="flex items-center gap-2" aria-live="polite" aria-label={`${RESEWELL_BOT_NAME} is typing`}>
             <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border/50 bg-background px-3 py-2.5 shadow-sm">
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
@@ -487,17 +517,6 @@ export function LiveChatMessagesView({
             <span className="text-[11px] text-muted-foreground">
               {RESEWELL_BOT_NAME} is typing…
             </span>
-          </div>
-        ) : null}
-
-        {sending && !aiThinking && !activatingAi && mode === "human" ? (
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border/50 bg-background px-3 py-2.5 shadow-sm">
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
-            </div>
-            <span className="text-[11px] text-muted-foreground">Sending…</span>
           </div>
         ) : null}
 
@@ -555,12 +574,28 @@ export function LiveChatMessagesView({
               </Button>
             </div>
           ) : null}
-          {error ? <p className="px-4 pt-1 text-xs text-destructive">{error}</p> : null}
+          {sessionClosed ? (
+            <div className="flex flex-col items-center gap-2 border-t border-border/60 px-4 py-3">
+              <p className="text-center text-xs text-muted-foreground">
+                This conversation is closed.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-full"
+                onClick={() => onStartNewConversation?.()}
+              >
+                Start a new conversation
+              </Button>
+            </div>
+          ) : null}
+          {error && !sessionClosed ? <p className="px-4 pt-1 text-xs text-destructive">{error}</p> : null}
+          {!sessionClosed ? (
           <LiveChatComposer
             draft={draft}
             onDraftChange={setDraft}
             onSend={() => void handleSend()}
-            sending={sending || activatingAi}
+            sending={sending || activatingAi || composerLocked}
             showEmailField={false}
             emailDraft=""
             onEmailDraftChange={() => {}}
@@ -568,18 +603,51 @@ export function LiveChatMessagesView({
             inputRef={inputRef}
             emailInputRef={emailInputRef}
           />
+          ) : null}
         </>
       ) : null}
 
       {showHumanComposer ? (
         <>
-          <LiveChatWaitingBanner lead={supportLead} isSupportOnline={isSupportOnline} />
-          {error ? <p className="px-4 pt-2 text-xs text-destructive">{error}</p> : null}
+          <LiveChatWaitingBanner
+            lead={supportLead}
+            assignedAgent={assignedAgent}
+            isAssignedAgentOnline={isAssignedAgentOnline}
+            isAssignedAgentTyping={Boolean(typingName)}
+            isSupportOnline={isSupportOnline}
+          />
+          {isSignedIn && supportCaseId ? (
+            <div className="px-4 pb-1">
+              <Link
+                href={supportCaseResponseHref(supportCaseId)}
+                className="text-xs font-medium text-foreground underline-offset-2 hover:underline"
+              >
+                View your case
+              </Link>
+            </div>
+          ) : null}
+          {sessionClosed ? (
+            <div className="flex flex-col items-center gap-2 px-4 pb-2">
+              <p className="text-center text-xs text-muted-foreground">
+                This conversation is closed.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-full"
+                onClick={() => onStartNewConversation?.()}
+              >
+                Start a new conversation
+              </Button>
+            </div>
+          ) : null}
+          {error && !sessionClosed ? <p className="px-4 pt-2 text-xs text-destructive">{error}</p> : null}
+          {!sessionClosed ? (
           <LiveChatComposer
             draft={draft}
             onDraftChange={handleDraftChange}
             onSend={() => void handleSend()}
-            sending={sending}
+            sending={composerLocked}
             showEmailField={showEmailField}
             emailDraft={emailDraft}
             emailLocked={emailLocked}
@@ -591,6 +659,7 @@ export function LiveChatMessagesView({
             inputRef={inputRef}
             emailInputRef={emailInputRef}
           />
+          ) : null}
         </>
       ) : null}
     </div>

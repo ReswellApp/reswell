@@ -24,10 +24,8 @@ import {
   useLiveChatTyping,
   type LiveChatUiMessage,
 } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
-import { useLiveChatSupportOnlineStatus } from "@/components/features/live-chat/hooks/use-live-chat-agent-presence"
-import { useLiveChatSupportLead } from "@/components/features/live-chat/hooks/use-live-chat-support-lead"
+import { useLiveChatSupportTeam } from "@/components/features/live-chat/hooks/use-live-chat-support-lead"
 import {
-  getStoredLiveChatSessionPublicId,
   getStoredLiveChatVisitorEmail,
   setStoredLiveChatVisitorEmail,
 } from "@/lib/live-chat/visitor-storage"
@@ -61,7 +59,8 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   const [helpReturnTab, setHelpReturnTab] = useState<LiveChatWidgetTab>("help")
   const messagesInitRef = useRef(false)
   const handoffBootstrapRef = useRef(false)
-  const broadcastRef = useRef<(message: LiveChatUiMessage) => void>(() => {})
+  const lastReadAtRef = useRef(Date.now())
+  const [lastReadAt, setLastReadAt] = useState(Date.now())
   const openRef = useRef(open)
   const isSupportOnlineRef = useRef(false)
   const messageModeRef = useRef<MessageMode>("bot")
@@ -73,22 +72,27 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
 
   const session = useLiveChatSession({
     onVisitorMessageConfirmed: (message) => {
-      broadcastRef.current(message)
       if (messageModeRef.current === "human" && !isSupportOnlineRef.current) {
         offlineAssistRef.current(message.content)
       }
     },
-    onRemoteWorthyMessage: (message) => broadcastRef.current(message),
   })
-  const { isSupportOnline } = useLiveChatSupportOnlineStatus(open || session.sessionReady)
+  const {
+    lead: supportLead,
+    members: supportTeam,
+    onlineMemberIds,
+    isSupportOnline,
+  } = useLiveChatSupportTeam(open || session.sessionReady)
   isSupportOnlineRef.current = isSupportOnline
   offlineAssistRef.current = (content: string) => {
+    if (session.supportCaseId) return
     void session.requestOfflineAiAssist(content, false)
   }
-  const supportLead = useLiveChatSupportLead(open)
 
   const handleRemoteMessage = useCallback(
     (message: Parameters<typeof session.appendMessage>[0]) => {
+      // Own visitor sends are already optimistic — skip the echo copy.
+      if (message.sender_type === "visitor") return
       session.appendMessage(message)
       if (
         (message.sender_type === "agent" || message.sender_type === "bot") &&
@@ -104,22 +108,26 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   )
 
   // Stays subscribed while the widget is closed so agent replies surface as a preview bubble.
-  const { broadcastMessage } = useLiveChatSessionRealtime(
+  useLiveChatSessionRealtime(
     session.sessionId,
     session.sessionReady,
     handleRemoteMessage,
   )
-  broadcastRef.current = (message) => void broadcastMessage(message)
 
-  const { typingName, publishTyping } = useLiveChatTyping(
-    session.sessionId,
-    open &&
+  const { typingName, publishTyping } = useLiveChatTyping({
+    sessionId: session.sessionId,
+    publicId: session.publicId,
+    enabled:
+      open &&
       tab === "messages" &&
       messageMode === "human" &&
       session.sessionReady &&
       !activeHelpArticle,
-    "agent",
-  )
+    watchParticipantType: "agent",
+    participantType: "visitor",
+    displayName: session.visitorDisplayName,
+    visitorToken: session.visitorToken,
+  })
 
   const resetLocalSession = session.resetLocalSession
 
@@ -161,40 +169,40 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     else if (hint === "human") setMessageMode("human")
   }, [])
 
-  const ensureMessagesViewState = useCallback(
+  const sessionReady = session.sessionReady
+  const sessionBootstrapping = session.bootstrapping
+  const bootstrapSession = session.bootstrapSession
+  const threadModeHint = session.threadModeHint
+
+  const ensureHumanQueue = useCallback(
     async (options?: { preserveMode?: boolean }) => {
-      const storedSession = getStoredLiveChatSessionPublicId()
-      if (storedSession && !session.sessionReady && !session.bootstrapping) {
-        const result = await session.bootstrapSession()
-        if (result.ok) {
-          if (!options?.preserveMode) applyThreadModeHint(result.threadModeHint)
-          return
-        }
+      if (sessionReady) {
+        if (!options?.preserveMode) applyThreadModeHint(threadModeHint)
+        return
       }
-      if (session.sessionReady && !options?.preserveMode) {
-        applyThreadModeHint(session.threadModeHint)
+      if (sessionBootstrapping || handoffBootstrapRef.current) return
+      handoffBootstrapRef.current = true
+      const result = await bootstrapSession({ prefer: "human" })
+      if (result.ok && !options?.preserveMode) {
+        applyThreadModeHint(result.threadModeHint)
       }
     },
-    [applyThreadModeHint, session],
+    [
+      applyThreadModeHint,
+      bootstrapSession,
+      sessionBootstrapping,
+      sessionReady,
+      threadModeHint,
+    ],
   )
 
   useEffect(() => {
-    if (!open || tab !== "messages" || messagesInitRef.current) return
-    messagesInitRef.current = true
-    void ensureMessagesViewState()
-  }, [open, tab, ensureMessagesViewState])
-
-  useEffect(() => {
-    if (
-      (messageMode !== "human" && messageMode !== "ai") ||
-      session.sessionReady ||
-      handoffBootstrapRef.current
-    ) {
+    if (messageMode !== "human" || sessionReady || handoffBootstrapRef.current) {
       return
     }
     handoffBootstrapRef.current = true
-    void session.bootstrapSession()
-  }, [messageMode, session])
+    void bootstrapSession({ prefer: "human" })
+  }, [bootstrapSession, messageMode, sessionReady])
 
   function clearHelpArticleStack() {
     setHelpArticleStack([])
@@ -226,23 +234,23 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     setHelpArticleStack((prev) => prev.slice(0, -1))
   }
 
+  function markMessagesRead() {
+    const now = Date.now()
+    lastReadAtRef.current = now
+    setLastReadAt(now)
+  }
+
   function openWidget() {
     setAgentPreview(null)
     setTab("messages")
-    // Resume existing threads; otherwise land on the bot first-prompt.
-    if (session.threadModeHint === "human" || session.threadModeHint === "ai") {
+    markMessagesRead()
+    // Stay on the bot landing unless this page load already has a live thread.
+    if (session.sessionReady && (session.threadModeHint === "human" || session.threadModeHint === "ai")) {
       applyThreadModeHint(session.threadModeHint)
     } else {
       setMessageMode("bot")
     }
     clearHelpArticleStack()
-    if (!messagesInitRef.current) {
-      messagesInitRef.current = true
-      void ensureMessagesViewState()
-    } else if (!session.sessionReady && !handoffBootstrapRef.current) {
-      handoffBootstrapRef.current = true
-      void session.bootstrapSession()
-    }
     setHasOpened(true)
     setOpen(true)
   }
@@ -262,38 +270,60 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   function openMessagesFromHome() {
     clearHelpArticleStack()
     setTab("messages")
-    // Explicit "Message the team" — keep human mode (email field) even if the
-    // resumed thread also has offline AI assist bot replies.
+    // Explicit "Message the team" — resume the human/case thread, not an AI chat.
     setMessageMode("human")
-    if (!messagesInitRef.current) {
-      messagesInitRef.current = true
-      void ensureMessagesViewState({ preserveMode: true })
-    } else if (!session.sessionReady && !handoffBootstrapRef.current) {
-      handoffBootstrapRef.current = true
-      void session.bootstrapSession()
-    }
+    void ensureHumanQueue({ preserveMode: true })
   }
 
   function changeTab(next: LiveChatWidgetTab) {
     clearHelpArticleStack()
     setTab(next)
     if (next === "messages") {
-      if (session.threadModeHint === "human" || session.threadModeHint === "ai") {
+      markMessagesRead()
+      if (session.sessionReady && (session.threadModeHint === "human" || session.threadModeHint === "ai")) {
         applyThreadModeHint(session.threadModeHint)
       } else {
         setMessageMode("bot")
       }
-      if (!messagesInitRef.current) {
-        messagesInitRef.current = true
-        void ensureMessagesViewState()
-      } else if (!session.sessionReady && !handoffBootstrapRef.current) {
-        handoffBootstrapRef.current = true
-        void session.bootstrapSession()
-      }
     }
   }
 
+  useEffect(() => {
+    if (open && tab === "messages" && !activeHelpArticle) {
+      markMessagesRead()
+    }
+  }, [activeHelpArticle, open, session.messages.length, tab])
+
+  useEffect(() => {
+    if (!open) return
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault()
+        closeWidget()
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [open])
+
   const isSignedIn = authStatus === "signed_in"
+  const composerLocked =
+    authStatus === "loading" || (session.bootstrapping && !session.sessionReady)
+
+  async function handleStartNewConversation() {
+    setMessageMode("bot")
+    setBotMessages(createInitialBotMessages())
+    setEmailDraft("")
+    setEmailLocked(false)
+    setAgentPreview(null)
+    messagesInitRef.current = false
+    handoffBootstrapRef.current = false
+    const result = await session.startNewConversation()
+    if (result.ok) {
+      messagesInitRef.current = true
+      setMessageMode("bot")
+    }
+  }
 
   async function handleSendHumanMessage(content: string, email: string | null): Promise<boolean> {
     const sent = await session.sendMessage(content, email)
@@ -357,6 +387,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
         <div
           className={liveChatShellClass}
           role="dialog"
+          aria-modal="true"
           aria-label="Reswell support"
         >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -394,13 +425,14 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
                 sending={session.sending}
                 aiThinking={session.aiThinking}
                 error={session.error}
+                sessionClosed={session.sessionClosed}
+                onStartNewConversation={() => void handleStartNewConversation()}
+                composerLocked={composerLocked}
                 onSendHumanMessage={handleSendHumanMessage}
                 onSendAiMessage={handleSendAiMessage}
                 onActivateAi={handleActivateAi}
                 onRequestHandoff={handleRequestHandoff}
-                onPublishTyping={(isTyping) =>
-                  void publishTyping("visitor", session.visitorDisplayName, isTyping)
-                }
+                onPublishTyping={(isTyping) => void publishTyping(isTyping)}
                 visitorEmail={signedInEmail}
                 isSignedIn={isSignedIn}
                 showEmailField={showEmailField}
@@ -409,6 +441,10 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
                 onEmailDraftChange={setEmailDraft}
                 isSupportOnline={isSupportOnline}
                 supportLead={supportLead}
+                supportTeam={supportTeam}
+                onlineMemberIds={onlineMemberIds}
+                assignedAgentId={session.assignedAgentId}
+                supportCaseId={session.supportCaseId}
               />
             ) : null}
 
@@ -431,8 +467,10 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
             onChange={changeTab}
             hasUnreadMessages={
               session.messages.some(
-                (m) => m.sender_type === "agent" || m.sender_type === "bot",
-              ) && tab !== "messages"
+                (m) =>
+                  (m.sender_type === "agent" || m.sender_type === "bot") &&
+                  new Date(m.created_at).getTime() > lastReadAt,
+              ) && !(open && tab === "messages")
             }
           />
         </div>
@@ -470,7 +508,17 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
         type="button"
         className="pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full bg-listingHeart text-white shadow-lg transition-transform duration-200 ease-out hover:scale-105 hover:bg-listingHeart/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-95"
         onClick={toggleWidget}
-        aria-label={open ? "Close Reswell support" : "Open Reswell support"}
+        aria-label={
+          open
+            ? "Close Reswell support"
+            : session.messages.some(
+                  (m) =>
+                    (m.sender_type === "agent" || m.sender_type === "bot") &&
+                    new Date(m.created_at).getTime() > lastReadAt,
+                )
+              ? "Open Reswell support, unread reply"
+              : "Open Reswell support"
+        }
         aria-expanded={open}
       >
         <span className="relative flex h-6 w-6 items-center justify-center">

@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getLiveChatSessionIdByPublicId, validateLiveChatSessionAccess } from "@/lib/services/liveChat"
+import { getLiveChatSessionByPublicId } from "@/lib/db/liveChat"
+import { validateLiveChatSessionAccess } from "@/lib/services/liveChat"
+import { getLiveChatStaffProfileService } from "@/lib/services/liveChatAdmin"
+import { broadcastLiveChatTyping } from "@/lib/services/liveChatRealtime"
 import { liveChatTypingSchema } from "@/lib/validations/liveChat"
+import { createClient } from "@/lib/supabase/server"
+import {
+  consumeLiveChatRateLimit,
+  liveChatClientIp,
+  liveChatRateLimitResponse,
+} from "@/lib/live-chat/rate-limit"
 
 type RouteContext = { params: Promise<{ publicId: string }> }
 
-/** Validates visitor typing requests; actual broadcast happens client-side on the session channel. */
+/** Validates the publisher, then fans typing out from the server. Never returns session UUIDs. */
 export async function POST(req: NextRequest, context: RouteContext) {
   try {
     const { publicId } = await context.params
@@ -14,6 +23,13 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Invalid typing payload" }, { status: 400 })
     }
 
+    const limit = consumeLiveChatRateLimit(
+      `typing:${liveChatClientIp(req)}:${parsed.data.visitor_token ?? "staff"}`,
+      40,
+      60_000,
+    )
+    if (!limit.ok) return liveChatRateLimitResponse(limit.retryAfterSec)
+
     if (parsed.data.participant_type === "visitor") {
       if (!parsed.data.visitor_token) {
         return NextResponse.json({ error: "Missing visitor token" }, { status: 401 })
@@ -22,14 +38,33 @@ export async function POST(req: NextRequest, context: RouteContext) {
       if (!session) {
         return NextResponse.json({ error: "Session not found" }, { status: 404 })
       }
-      return NextResponse.json({ data: { session_id: session.id } }, { status: 200 })
+      await broadcastLiveChatTyping({
+        sessionId: session.id,
+        participantType: "visitor",
+        displayName: parsed.data.display_name,
+        isTyping: parsed.data.is_typing,
+      })
+      return NextResponse.json({ data: { ok: true } }, { status: 200 })
     }
 
-    const sessionId = await getLiveChatSessionIdByPublicId(publicId)
-    if (!sessionId) {
+    const staff = await getLiveChatStaffProfileService()
+    if ("error" in staff) {
+      return NextResponse.json({ error: staff.error }, { status: 403 })
+    }
+
+    const supabase = await createClient()
+    const session = await getLiveChatSessionByPublicId(supabase, publicId)
+    if (!session) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 })
     }
-    return NextResponse.json({ data: { session_id: sessionId } }, { status: 200 })
+
+    await broadcastLiveChatTyping({
+      sessionId: session.id,
+      participantType: "agent",
+      displayName: staff.displayName,
+      isTyping: parsed.data.is_typing,
+    })
+    return NextResponse.json({ data: { ok: true } }, { status: 200 })
   } catch (error) {
     console.error("POST /api/live-chat/session/[publicId]/typing", error)
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 })

@@ -10,6 +10,7 @@ interface LiveChatSupportLeadAvatarProps {
   className?: string
   size?: "sm" | "md"
   imageAlt?: string
+  status?: "online" | "away" | "typing" | null
 }
 
 export function LiveChatSupportLeadAvatar({
@@ -17,41 +18,59 @@ export function LiveChatSupportLeadAvatar({
   className,
   size = "md",
   imageAlt,
+  status = null,
 }: LiveChatSupportLeadAvatarProps) {
   const dimension = size === "sm" ? "h-8 w-8" : "h-9 w-9"
   const textSize = size === "sm" ? "text-[10px]" : "text-xs"
+  const statusClass =
+    status === "online" || status === "typing"
+      ? "bg-emerald-500"
+      : status === "away"
+        ? "bg-amber-400"
+        : null
 
-  if (member.imageUrl) {
-    return (
-      <span
-        className={cn(
-          "relative inline-flex shrink-0 overflow-hidden rounded-full border-2 border-background bg-muted",
-          dimension,
-          className,
-        )}
-      >
-        <Image
-          src={member.imageUrl}
-          alt={imageAlt ?? member.name}
-          fill
-          className="object-cover"
-          sizes={size === "sm" ? "32px" : "36px"}
-          unoptimized={listingImageShouldBypassOptimization(member.imageUrl)}
-        />
-      </span>
-    )
-  }
-
-  return (
+  const face = member.imageUrl ? (
+    <span
+      className={cn(
+        "relative inline-flex shrink-0 overflow-hidden rounded-full border-2 border-background bg-muted",
+        dimension,
+      )}
+    >
+      <Image
+        src={member.imageUrl}
+        alt={imageAlt ?? member.name}
+        fill
+        className="object-cover"
+        sizes={size === "sm" ? "32px" : "36px"}
+        unoptimized={listingImageShouldBypassOptimization(member.imageUrl)}
+      />
+    </span>
+  ) : (
     <span
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-full border-2 border-background bg-sky-100 font-semibold text-sky-700",
         dimension,
         textSize,
-        className,
       )}
     >
       {member.initials}
+    </span>
+  )
+
+  if (!statusClass) {
+    return <span className={cn("relative inline-flex shrink-0", className)}>{face}</span>
+  }
+
+  return (
+    <span className={cn("relative inline-flex shrink-0", className)}>
+      {face}
+      <span
+        className={cn(
+          "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
+          statusClass,
+        )}
+        aria-hidden
+      />
     </span>
   )
 }

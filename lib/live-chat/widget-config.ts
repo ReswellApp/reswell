@@ -11,7 +11,7 @@ export const LIVE_CHAT_HOME_TAGLINE = "Real people at Reswell"
 export const LIVE_CHAT_HOME_HEADER_IMAGE = "/images/live-chat/home-header-barrel.jpg"
 
 export const LIVE_CHAT_HOME_MESSAGE_CTA = "Message the team"
-export const LIVE_CHAT_HOME_MESSAGE_SUBONLINE = "Someone from our team is online now"
+export const LIVE_CHAT_HOME_MESSAGE_SUBONLINE = "We'll reply here as soon as we can"
 export const LIVE_CHAT_HOME_MESSAGE_SUBOFFLINE = "We usually reply within one business day"
 
 export const LIVE_CHAT_HOME_HELP_CTA = "Browse help guides"

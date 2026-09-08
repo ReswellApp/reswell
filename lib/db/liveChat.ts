@@ -12,6 +12,7 @@ export type LiveChatSessionRow = {
   status: LiveChatSessionStatus
   assigned_agent_id: string | null
   contact_message_id: string | null
+  support_case_id: string | null
   last_message_at: string | null
   last_visitor_message_at: string | null
   last_agent_message_at: string | null
@@ -30,8 +31,36 @@ export type LiveChatMessageRow = {
   created_at: string
 }
 
-export const LIVE_CHAT_SESSION_SELECT =
+export const LIVE_CHAT_SESSION_SELECT_CORE =
   "id, public_id, visitor_token, user_id, visitor_name, visitor_email, status, assigned_agent_id, contact_message_id, last_message_at, last_visitor_message_at, last_agent_message_at, created_at, updated_at, resolved_at, metadata"
+
+export const LIVE_CHAT_SESSION_SELECT = `${LIVE_CHAT_SESSION_SELECT_CORE}, support_case_id`
+
+let liveChatSessionSelect = LIVE_CHAT_SESSION_SELECT
+
+function isMissingSupportCaseColumn(error: { message?: string } | null | undefined): boolean {
+  const message = error?.message ?? ""
+  return message.includes("support_case_id") && message.includes("does not exist")
+}
+
+function liveChatSessionSelectColumns(): string {
+  return liveChatSessionSelect
+}
+
+function noteMissingSupportCaseColumn(): void {
+  liveChatSessionSelect = LIVE_CHAT_SESSION_SELECT_CORE
+}
+
+async function withSessionSelect<T>(
+  run: (
+    select: string,
+  ) => PromiseLike<{ data: T; error: { message?: string } | null }>,
+): Promise<{ data: T; error: { message?: string } | null }> {
+  const first = await run(liveChatSessionSelectColumns())
+  if (!first.error || !isMissingSupportCaseColumn(first.error)) return first
+  noteMissingSupportCaseColumn()
+  return run(liveChatSessionSelectColumns())
+}
 
 export const LIVE_CHAT_MESSAGE_SELECT =
   "id, session_id, sender_type, sender_agent_id, content, created_at"
@@ -47,6 +76,7 @@ export function normalizeLiveChatSessionRow(raw: Record<string, unknown>): LiveC
     status: (raw.status as LiveChatSessionStatus) ?? "open",
     assigned_agent_id: raw.assigned_agent_id == null ? null : String(raw.assigned_agent_id),
     contact_message_id: raw.contact_message_id == null ? null : String(raw.contact_message_id),
+    support_case_id: raw.support_case_id == null ? null : String(raw.support_case_id),
     last_message_at: raw.last_message_at == null ? null : String(raw.last_message_at),
     last_visitor_message_at:
       raw.last_visitor_message_at == null ? null : String(raw.last_visitor_message_at),
@@ -77,11 +107,9 @@ export async function getLiveChatSessionByPublicId(
   supabase: SupabaseClient,
   publicId: string,
 ): Promise<LiveChatSessionRow | null> {
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .eq("public_id", publicId)
-    .maybeSingle()
+  const { data, error } = await withSessionSelect((select) =>
+    supabase.from("live_chat_sessions").select(select).eq("public_id", publicId).maybeSingle(),
+  )
 
   if (error || !data) return null
   return normalizeLiveChatSessionRow(data as Record<string, unknown>)
@@ -91,11 +119,9 @@ export async function getLiveChatSessionById(
   supabase: SupabaseClient,
   sessionId: string,
 ): Promise<LiveChatSessionRow | null> {
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .eq("id", sessionId)
-    .maybeSingle()
+  const { data, error } = await withSessionSelect((select) =>
+    supabase.from("live_chat_sessions").select(select).eq("id", sessionId).maybeSingle(),
+  )
 
   if (error || !data) return null
   return normalizeLiveChatSessionRow(data as Record<string, unknown>)
@@ -106,15 +132,33 @@ export async function getLiveChatSessionForVisitor(
   publicId: string,
   visitorToken: string,
 ): Promise<LiveChatSessionRow | null> {
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .eq("public_id", publicId)
-    .eq("visitor_token", visitorToken)
-    .maybeSingle()
+  const { data, error } = await withSessionSelect((select) =>
+    supabase
+      .from("live_chat_sessions")
+      .select(select)
+      .eq("public_id", publicId)
+      .eq("visitor_token", visitorToken)
+      .maybeSingle(),
+  )
 
   if (error || !data) return null
   return normalizeLiveChatSessionRow(data as Record<string, unknown>)
+}
+
+export async function closeOpenLiveChatSessionsForVisitor(
+  supabase: SupabaseClient,
+  args: { userId?: string | null; visitorToken: string },
+): Promise<void> {
+  const now = new Date().toISOString()
+  let query = supabase
+    .from("live_chat_sessions")
+    .update({ status: "closed", resolved_at: now })
+    .in("status", ["open", "assigned"])
+  query = args.userId
+    ? query.eq("user_id", args.userId)
+    : query.eq("visitor_token", args.visitorToken)
+  const { error } = await query
+  if (error) console.error("closeOpenLiveChatSessionsForVisitor", error)
 }
 
 /** Most recent open/assigned session for a signed-in member (cross-device resume). */
@@ -122,15 +166,17 @@ export async function getLatestOpenLiveChatSessionForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<LiveChatSessionRow | null> {
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .eq("user_id", userId)
-    .in("status", ["open", "assigned"])
-    .order("last_message_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  const { data, error } = await withSessionSelect((select) =>
+    supabase
+      .from("live_chat_sessions")
+      .select(select)
+      .eq("user_id", userId)
+      .in("status", ["open", "assigned"])
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  )
 
   if (error || !data) return null
   return normalizeLiveChatSessionRow(data as Record<string, unknown>)
@@ -145,21 +191,25 @@ export async function insertLiveChatSession(
     visitor_name: string
     visitor_email?: string | null
     contact_message_id?: string | null
+    metadata?: Record<string, unknown>
   },
 ): Promise<LiveChatSessionRow | null> {
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .insert({
-      public_id: row.public_id,
-      visitor_token: row.visitor_token,
-      user_id: row.user_id ?? null,
-      visitor_name: row.visitor_name,
-      visitor_email: row.visitor_email ?? null,
-      contact_message_id: row.contact_message_id ?? null,
-      status: "open",
-    })
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .single()
+  const { data, error } = await withSessionSelect((select) =>
+    supabase
+      .from("live_chat_sessions")
+      .insert({
+        public_id: row.public_id,
+        visitor_token: row.visitor_token,
+        user_id: row.user_id ?? null,
+        visitor_name: row.visitor_name,
+        visitor_email: row.visitor_email ?? null,
+        contact_message_id: row.contact_message_id ?? null,
+        status: "open",
+        ...(row.metadata ? { metadata: row.metadata } : {}),
+      })
+      .select(select)
+      .single(),
+  )
 
   if (error || !data) {
     console.error("insertLiveChatSession", error)
@@ -178,12 +228,22 @@ export async function updateLiveChatSessionRow(
     status: LiveChatSessionStatus
     assigned_agent_id: string | null
     contact_message_id: string | null
+    support_case_id: string | null
     resolved_at: string | null
     user_id: string | null
     metadata: Record<string, unknown>
   }>,
 ): Promise<boolean> {
   const { error } = await supabase.from("live_chat_sessions").update(patch).eq("id", sessionId)
+  if (error && isMissingSupportCaseColumn(error) && "support_case_id" in patch) {
+    noteMissingSupportCaseColumn()
+    const { support_case_id: _dropped, ...rest } = patch
+    if (Object.keys(rest).length === 0) return true
+    const retry = await supabase.from("live_chat_sessions").update(rest).eq("id", sessionId)
+    if (!retry.error) return true
+    console.error("updateLiveChatSessionRow", retry.error)
+    return false
+  }
   if (error) {
     console.error("updateLiveChatSessionRow", error)
     return false
@@ -205,18 +265,49 @@ export async function mergeLiveChatSessionMetadata(
 export async function listOpenLiveChatSessions(
   supabase: SupabaseClient,
 ): Promise<LiveChatSessionRow[]> {
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .in("status", ["open", "assigned"])
-    .order("last_message_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
+  const { data, error } = await withSessionSelect((select) =>
+    supabase
+      .from("live_chat_sessions")
+      .select(select)
+      .in("status", ["open", "assigned"])
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+  )
 
   if (error || !data) {
     console.error("listOpenLiveChatSessions", error)
     return []
   }
   return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
+}
+
+/** Latest message body per session — one query instead of N transcript loads. */
+export async function listLatestLiveChatMessagePreviews(
+  supabase: SupabaseClient,
+  sessionIds: string[],
+): Promise<Map<string, string>> {
+  const previews = new Map<string, string>()
+  if (sessionIds.length === 0) return previews
+
+  const { data, error } = await supabase
+    .from("live_chat_messages")
+    .select("session_id, content, created_at")
+    .in("session_id", sessionIds)
+    .order("created_at", { ascending: false })
+    .limit(Math.max(sessionIds.length * 8, 40))
+
+  if (error || !data) {
+    if (error) console.error("listLatestLiveChatMessagePreviews", error)
+    return previews
+  }
+
+  for (const row of data) {
+    const sessionId = String((row as { session_id?: unknown }).session_id ?? "")
+    const content = String((row as { content?: unknown }).content ?? "").trim()
+    if (!sessionId || previews.has(sessionId) || !content) continue
+    previews.set(sessionId, content)
+  }
+  return previews
 }
 
 /**
@@ -229,19 +320,49 @@ export async function listEscalationCandidateSessions(
   cutoffIso: string,
   limit = 100,
 ): Promise<LiveChatSessionRow[]> {
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .not("user_id", "is", null)
-    .is("contact_message_id", null)
-    .in("status", ["open", "assigned"])
-    .not("last_visitor_message_at", "is", null)
-    .lt("last_visitor_message_at", cutoffIso)
-    .order("last_visitor_message_at", { ascending: true })
-    .limit(limit)
+  const run = (select: string, filterCaseId: boolean) => {
+    let q = supabase
+      .from("live_chat_sessions")
+      .select(select)
+      .not("user_id", "is", null)
+      .is("contact_message_id", null)
+      .in("status", ["open", "assigned"])
+      .not("last_visitor_message_at", "is", null)
+      .lt("last_visitor_message_at", cutoffIso)
+      .order("last_visitor_message_at", { ascending: true })
+      .limit(limit)
+    if (filterCaseId) q = q.is("support_case_id", null)
+    return q
+  }
+
+  let { data, error } = await run(liveChatSessionSelectColumns(), liveChatSessionSelectColumns().includes("support_case_id"))
+  if (error && isMissingSupportCaseColumn(error)) {
+    noteMissingSupportCaseColumn()
+    ;({ data, error } = await run(liveChatSessionSelectColumns(), false))
+  }
 
   if (error || !data) {
     console.error("listEscalationCandidateSessions", error)
+    return []
+  }
+  return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
+}
+
+/** Open/assigned sessions linked to the given support cases. */
+export async function listOpenLiveChatSessionsForSupportCases(
+  supabase: SupabaseClient,
+  caseIds: string[],
+): Promise<LiveChatSessionRow[]> {
+  if (caseIds.length === 0) return []
+  if (!liveChatSessionSelectColumns().includes("support_case_id")) return []
+  const { data, error } = await supabase
+    .from("live_chat_sessions")
+    .select(liveChatSessionSelectColumns())
+    .in("support_case_id", caseIds)
+    .in("status", ["open", "assigned"])
+
+  if (error || !data) {
+    if (error) console.error("listOpenLiveChatSessionsForSupportCases", error)
     return []
   }
   return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
@@ -253,11 +374,13 @@ export async function listOpenLiveChatSessionsForContactMessages(
   contactMessageIds: string[],
 ): Promise<LiveChatSessionRow[]> {
   if (contactMessageIds.length === 0) return []
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .in("contact_message_id", contactMessageIds)
-    .in("status", ["open", "assigned"])
+  const { data, error } = await withSessionSelect((select) =>
+    supabase
+      .from("live_chat_sessions")
+      .select(select)
+      .in("contact_message_id", contactMessageIds)
+      .in("status", ["open", "assigned"]),
+  )
 
   if (error || !data) {
     if (error) console.error("listOpenLiveChatSessionsForContactMessages", error)
@@ -272,14 +395,16 @@ export async function listInactiveLiveChatSessions(
   cutoffIso: string,
   limit = 200,
 ): Promise<LiveChatSessionRow[]> {
-  const { data, error } = await supabase
-    .from("live_chat_sessions")
-    .select(LIVE_CHAT_SESSION_SELECT)
-    .in("status", ["open", "assigned"])
-    .not("last_message_at", "is", null)
-    .lt("last_message_at", cutoffIso)
-    .order("last_message_at", { ascending: true })
-    .limit(limit)
+  const { data, error } = await withSessionSelect((select) =>
+    supabase
+      .from("live_chat_sessions")
+      .select(select)
+      .in("status", ["open", "assigned"])
+      .not("last_message_at", "is", null)
+      .lt("last_message_at", cutoffIso)
+      .order("last_message_at", { ascending: true })
+      .limit(limit),
+  )
 
   if (error || !data) {
     if (error) console.error("listInactiveLiveChatSessions", error)
@@ -301,18 +426,27 @@ export async function countOpenLiveChatSessions(supabase: SupabaseClient): Promi
 export async function listLiveChatMessagesForSession(
   supabase: SupabaseClient,
   sessionId: string,
+  options?: { limit?: number },
 ): Promise<LiveChatMessageRow[]> {
-  const { data, error } = await supabase
+  const limit = options?.limit
+  let query = supabase
     .from("live_chat_messages")
     .select(LIVE_CHAT_MESSAGE_SELECT)
     .eq("session_id", sessionId)
-    .order("created_at", { ascending: true })
+
+  query =
+    limit && limit > 0
+      ? query.order("created_at", { ascending: false }).limit(limit)
+      : query.order("created_at", { ascending: true })
+
+  const { data, error } = await query
 
   if (error || !data) {
     console.error("listLiveChatMessagesForSession", error)
     return []
   }
-  return data.map((row) => normalizeLiveChatMessageRow(row as Record<string, unknown>))
+  const rows = data.map((row) => normalizeLiveChatMessageRow(row as Record<string, unknown>))
+  return limit && limit > 0 ? rows.reverse() : rows
 }
 
 export async function insertLiveChatMessage(
@@ -361,6 +495,30 @@ export async function hasAgentMessagedInSession(
     return false
   }
   return Boolean(data)
+}
+
+export async function getVisitorDisplayNamesByIds(
+  supabase: SupabaseClient,
+  userIds: string[],
+): Promise<Map<string, string>> {
+  if (userIds.length === 0) return new Map()
+  const unique = [...new Set(userIds)]
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name, first_name, last_name")
+    .in("id", unique)
+
+  if (error || !data) return new Map()
+  const map = new Map<string, string>()
+  for (const row of data) {
+    const name = formatPersonName(
+      row.first_name as string | null,
+      row.last_name as string | null,
+      String(row.display_name ?? "").trim(),
+    )
+    if (name) map.set(String(row.id), name)
+  }
+  return map
 }
 
 export async function getAgentDisplayNamesByIds(

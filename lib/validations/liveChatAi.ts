@@ -17,7 +17,7 @@ export const liveChatAiRequestSchema = z.object({
   visitor_token: z.string().uuid(),
   intent: liveChatAiIntentSchema,
   content: z.string().trim().min(1).max(10000).optional(),
-  /** Client-reported agent presence for hybrid offline assist. */
+  /** Ignored — agent presence is computed server-side. */
   agents_online: z.boolean().optional(),
 })
 

@@ -29,6 +29,13 @@ import {
   type LiveChatAiIntent,
 } from "@/lib/validations/liveChatAi"
 import { LIVE_CHAT_AI_OFFLINE_NOTE, RESEWELL_BOT_NAME } from "@/lib/live-chat/widget-config"
+import {
+  LIVE_CHAT_SESSION_CLOSED_CODE,
+  LIVE_CHAT_SESSION_CLOSED_MESSAGE,
+} from "@/lib/live-chat/errors"
+import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
+import { areLiveChatAgentsOnlineService } from "@/lib/services/liveChatPresence"
+import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
 
 const MAX_AI_REPLIES_PER_SESSION = 40
 const MAX_HISTORY_MESSAGES = 16
@@ -63,13 +70,46 @@ function isHandoffRequested(session: LiveChatSessionRow): boolean {
   return session.metadata.ai_handoff_requested === true
 }
 
+function decodeJwtPayload(token: string): { exp?: unknown } | null {
+  const parts = token.split(".")
+  if (parts.length < 2) return null
+  try {
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/")
+    const padded = b64.padEnd(Math.ceil(b64.length / 4) * 4, "=")
+    return JSON.parse(Buffer.from(padded, "base64").toString("utf8")) as { exp?: unknown }
+  } catch {
+    return null
+  }
+}
+
+/** Local `vercel env pull` OIDC tokens expire; an expired JWT is not usable auth. */
+function isOidcTokenUsable(token: string): boolean {
+  const payload = decodeJwtPayload(token)
+  return typeof payload?.exp === "number" && payload.exp * 1000 > Date.now() + 30_000
+}
+
+function hasUsableGatewayAuth(): boolean {
+  if (process.env.AI_GATEWAY_API_KEY?.trim()) return true
+  const oidc = process.env.VERCEL_OIDC_TOKEN?.trim()
+  return Boolean(oidc && isOidcTokenUsable(oidc))
+}
+
 export function isLiveChatAiEnabled(): boolean {
   if (process.env.LIVE_CHAT_AI_ENABLED === "false") return false
-  return (
-    process.env.LIVE_CHAT_AI_ENABLED === "true" ||
-    Boolean(process.env.AI_GATEWAY_API_KEY?.trim()) ||
-    Boolean(process.env.VERCEL_OIDC_TOKEN?.trim())
-  )
+  return hasUsableGatewayAuth()
+}
+
+function knowledgeFallbackReply(query: string): string {
+  const chunks = searchHelpArticles(query, 3)
+  if (chunks.length === 0) {
+    return "I couldn't pull a full answer just now. Try rephrasing, or wait for a teammate."
+  }
+  const lines = chunks.map((chunk) => {
+    const snippet =
+      chunk.body.length > 180 ? `${chunk.body.slice(0, 180).trim()}…` : chunk.body.trim()
+    return `• ${chunk.title}: ${snippet}`
+  })
+  return `Here's what I can share from our help guides:\n\n${lines.join("\n\n")}`
 }
 
 function liveChatAiModelId(): string {
@@ -102,11 +142,26 @@ async function persistBotMessage(
   sessionId: string,
   content: string,
 ): Promise<LiveChatMessageRow | null> {
-  return insertLiveChatMessage(svc, {
+  const message = await insertLiveChatMessage(svc, {
     session_id: sessionId,
     sender_type: "bot",
     content,
   })
+  if (message) {
+    void broadcastLiveChatMessage({
+      sessionId,
+      message: {
+        id: message.id,
+        session_id: sessionId,
+        sender_type: "bot",
+        sender_agent_id: null,
+        content: message.content,
+        created_at: message.created_at,
+        agent_display_name: "Reswell AI",
+      },
+    })
+  }
+  return message
 }
 
 async function persistSystemMessage(
@@ -114,11 +169,25 @@ async function persistSystemMessage(
   sessionId: string,
   content: string,
 ): Promise<LiveChatMessageRow | null> {
-  return insertLiveChatMessage(svc, {
+  const message = await insertLiveChatMessage(svc, {
     session_id: sessionId,
     sender_type: "system",
     content,
   })
+  if (message) {
+    void broadcastLiveChatMessage({
+      sessionId,
+      message: {
+        id: message.id,
+        session_id: sessionId,
+        sender_type: "system",
+        sender_agent_id: null,
+        content: message.content,
+        created_at: message.created_at,
+      },
+    })
+  }
+  return message
 }
 
 async function generateAiReply(options: {
@@ -256,17 +325,21 @@ export type LiveChatAiServiceResult =
       system_message: LiveChatMessageRow | null
       ai_mode: "active" | "off"
       handoff: boolean
+      support_case_id?: string | null
     }
-  | { error: string; status?: number }
+  | { error: string; status?: number; code?: string }
+
+async function ensureCaseOnHandoff(
+  svc: SupabaseClient,
+  session: LiveChatSessionRow,
+): Promise<string | null> {
+  if (session.support_case_id) return session.support_case_id
+  if (!session.visitor_email && !session.user_id) return null
+  const linked = await escalateLiveChatSessionToTicket(svc, session, "manual")
+  return "success" in linked ? linked.supportCaseId : null
+}
 
 export async function liveChatAiService(publicId: string, raw: unknown): Promise<LiveChatAiServiceResult> {
-  if (!isLiveChatAiEnabled()) {
-    return {
-      error: "Reswell AI is temporarily unavailable. Please message the team instead.",
-      status: 503,
-    }
-  }
-
   const parsed = liveChatAiRequestSchema.safeParse(raw)
   if (!parsed.success) {
     return { error: "Invalid AI chat request", status: 400 }
@@ -274,7 +347,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
 
   const intent: LiveChatAiIntent = parsed.data.intent
   const content = parsed.data.content?.trim()
-  const agentsOnline = parsed.data.agents_online === true
+  const aiEnabled = isLiveChatAiEnabled()
 
   const svc = createServiceRoleClient()
   let session = await getLiveChatSessionForVisitor(svc, publicId, parsed.data.visitor_token)
@@ -283,8 +356,9 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
   }
   if (session.status === "closed" || session.status === "resolved") {
     return {
-      error: "This chat is closed. Start a new conversation from the help button.",
-      status: 400,
+      error: LIVE_CHAT_SESSION_CLOSED_MESSAGE,
+      code: LIVE_CHAT_SESSION_CLOSED_CODE,
+      status: 409,
     }
   }
 
@@ -303,6 +377,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
       ai_mode: "off",
       ai_handoff_requested: true,
     })
+    const support_case_id = await ensureCaseOnHandoff(svc, session)
     const system_message = await persistSystemMessage(svc, session.id, LIVE_CHAT_AI_HANDOFF_SYSTEM)
     return {
       success: true,
@@ -312,6 +387,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
       system_message,
       ai_mode: "off",
       handoff: true,
+      support_case_id,
     }
   }
 
@@ -352,20 +428,26 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
       }
 
       try {
-        const started = Date.now()
-        const { text, handoffRequested } = await generateAiReply({
-          session,
-          userId,
-          history: history.filter((m) => m.id !== visitor_message!.id),
-          latestUserText: content,
-          offlineAssist: false,
-        })
-        console.info("[liveChatAi] reply", {
-          publicId: session.public_id,
-          intent,
-          ms: Date.now() - started,
-          handoffRequested,
-        })
+        let text = knowledgeFallbackReply(content)
+        let handoffRequested = false
+        if (aiEnabled) {
+          const started = Date.now()
+          const generated = await generateAiReply({
+            session,
+            userId,
+            history: history.filter((m) => m.id !== visitor_message!.id),
+            latestUserText: content,
+            offlineAssist: false,
+          })
+          text = generated.text
+          handoffRequested = generated.handoffRequested
+          console.info("[liveChatAi] reply", {
+            publicId: session.public_id,
+            intent,
+            ms: Date.now() - started,
+            handoffRequested,
+          })
+        }
         const reply = await persistBotMessage(svc, session.id, text)
         bot_message = reply ?? bot_message
         if (handoffRequested) {
@@ -373,6 +455,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
             ai_mode: "off",
             ai_handoff_requested: true,
           })
+          const support_case_id = await ensureCaseOnHandoff(svc, session)
           const system_message = await persistSystemMessage(
             svc,
             session.id,
@@ -386,6 +469,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
             system_message,
             ai_mode: "off",
             handoff: true,
+            support_case_id,
           }
         }
       } catch (err) {
@@ -393,7 +477,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
         const fallback = await persistBotMessage(
           svc,
           session.id,
-          "I hit a snag answering that. Try again in a moment, or tap Talk to a human.",
+          knowledgeFallbackReply(content),
         )
         bot_message = fallback ?? bot_message
       }
@@ -411,10 +495,16 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
   }
 
   if (intent === "offline_assist") {
+    const agentsOnline = await areLiveChatAgentsOnlineService()
     if (agentsOnline) {
       return { error: "Agents are online; offline assist skipped.", status: 409 }
     }
-    if (readAiMode(session) === "off" || isHandoffRequested(session)) {
+    if (
+      readAiMode(session) === "off" ||
+      isHandoffRequested(session) ||
+      session.support_case_id ||
+      session.contact_message_id
+    ) {
       return { error: "AI assist is off for this chat.", status: 409 }
     }
     if (!content) {
@@ -430,19 +520,25 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
     }
 
     try {
-      const started = Date.now()
-      const { text, handoffRequested } = await generateAiReply({
-        session,
-        userId,
-        history,
-        latestUserText: content,
-        offlineAssist: true,
-      })
-      console.info("[liveChatAi] offline_assist", {
-        publicId: session.public_id,
-        ms: Date.now() - started,
-        handoffRequested,
-      })
+      let text = knowledgeFallbackReply(content)
+      let handoffRequested = false
+      if (aiEnabled) {
+        const started = Date.now()
+        const generated = await generateAiReply({
+          session,
+          userId,
+          history,
+          latestUserText: content,
+          offlineAssist: true,
+        })
+        text = generated.text
+        handoffRequested = generated.handoffRequested
+        console.info("[liveChatAi] offline_assist", {
+          publicId: session.public_id,
+          ms: Date.now() - started,
+          handoffRequested,
+        })
+      }
       const bot_message = await persistBotMessage(svc, session.id, withOfflineAssistFooter(text))
       if (handoffRequested) {
         await mergeLiveChatSessionMetadata(svc, session, { ai_handoff_requested: true })
@@ -458,16 +554,34 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
       }
     } catch (err) {
       console.error("[liveChatAi] offline_assist failed", err)
-      return { error: "Could not generate AI assist.", status: 500 }
+      const bot_message = await persistBotMessage(
+        svc,
+        session.id,
+        withOfflineAssistFooter(knowledgeFallbackReply(content)),
+      )
+      return {
+        success: true,
+        session_id: session.id,
+        visitor_message: null,
+        bot_message,
+        system_message: null,
+        ai_mode: readAiMode(session) === "active" ? "active" : "off",
+        handoff: false,
+      }
     }
   }
 
   if (intent === "chat") {
-    if (readAiMode(session) !== "active") {
-      return { error: "AI mode is not active. Tap Talk to Reswell AI first.", status: 400 }
-    }
-    if (isHandoffRequested(session)) {
-      return { error: "This chat was handed off to the team.", status: 409 }
+    // Explicit AI send re-opens the bot unless a human teammate has already joined.
+    if (readAiMode(session) !== "active" || isHandoffRequested(session)) {
+      await mergeLiveChatSessionMetadata(svc, session, {
+        ai_mode: "active",
+        ai_handoff_requested: false,
+      })
+      session = {
+        ...session,
+        metadata: { ...session.metadata, ai_mode: "active", ai_handoff_requested: false },
+      }
     }
     if (!content) {
       return { error: "Missing message content", status: 400 }
@@ -492,25 +606,32 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
     }
 
     try {
-      const started = Date.now()
-      const { text, handoffRequested } = await generateAiReply({
-        session,
-        userId,
-        history: historyBefore,
-        latestUserText: content,
-        offlineAssist: false,
-      })
-      console.info("[liveChatAi] chat", {
-        publicId: session.public_id,
-        ms: Date.now() - started,
-        handoffRequested,
-      })
+      let text = knowledgeFallbackReply(content)
+      let handoffRequested = false
+      if (aiEnabled) {
+        const started = Date.now()
+        const generated = await generateAiReply({
+          session,
+          userId,
+          history: historyBefore,
+          latestUserText: content,
+          offlineAssist: false,
+        })
+        text = generated.text
+        handoffRequested = generated.handoffRequested
+        console.info("[liveChatAi] chat", {
+          publicId: session.public_id,
+          ms: Date.now() - started,
+          handoffRequested,
+        })
+      }
       const bot_message = await persistBotMessage(svc, session.id, text)
       if (handoffRequested) {
         await mergeLiveChatSessionMetadata(svc, session, {
           ai_mode: "off",
           ai_handoff_requested: true,
         })
+        const support_case_id = await ensureCaseOnHandoff(svc, session)
         const system_message = await persistSystemMessage(
           svc,
           session.id,
@@ -524,6 +645,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
           system_message,
           ai_mode: "off",
           handoff: true,
+          support_case_id,
         }
       }
       return {
@@ -540,7 +662,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
       const bot_message = await persistBotMessage(
         svc,
         session.id,
-        "I hit a snag answering that. Try again in a moment, or tap Talk to a human.",
+        knowledgeFallbackReply(content),
       )
       return {
         success: true,

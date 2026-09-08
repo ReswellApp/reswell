@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 function LiveChatWidgetPlaceholder() {
   return (
     <div
-      className="pointer-events-none fixed bottom-4 right-4 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
+      className="pointer-events-none fixed bottom-4 right-4 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-listingHeart text-white shadow-lg"
       aria-hidden
     >
       <MessageCircle className="h-6 w-6 opacity-80" />

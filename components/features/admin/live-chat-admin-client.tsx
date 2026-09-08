@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { formatDistanceToNow } from "date-fns"
 import { Circle, Loader2, MessageCircle, RefreshCw, User } from "lucide-react"
@@ -26,6 +28,7 @@ import {
   type LiveChatUiMessage,
 } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
 import { format } from "date-fns"
+import { adminSupportCaseHref } from "@/lib/utils/support-case-paths"
 
 interface LiveChatAdminClientProps {
   initialStaff: { userId: string; displayName: string }
@@ -34,6 +37,41 @@ interface LiveChatAdminClientProps {
 function sessionLabel(session: LiveChatAdminSession): string {
   if (session.user_id) return session.visitor_name
   return `${session.visitor_name} · ${session.public_id}`
+}
+
+function sessionSubline(session: LiveChatAdminSession): string {
+  const parts = [session.visitor_email?.trim() || null, session.public_id].filter(Boolean)
+  return parts.join(" · ")
+}
+
+function mergeAdminMessages(
+  prev: LiveChatAdminMessage[],
+  incoming: LiveChatAdminMessage[],
+): LiveChatAdminMessage[] {
+  if (incoming.length === 0) return prev
+  const byId = new Map(prev.map((message) => [message.id, message]))
+  for (const message of incoming) byId.set(message.id, message)
+  return [...byId.values()].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  )
+}
+
+function toAdminMessage(
+  message: LiveChatUiMessage,
+  sessionId: string,
+  fallbackAgentId: string | null,
+): LiveChatAdminMessage {
+  return {
+    id: message.id,
+    session_id: sessionId,
+    sender_type: message.sender_type,
+    sender_agent_id:
+      message.sender_agent_id ?? (message.sender_type === "agent" ? fallbackAgentId : null),
+    content: message.content,
+    created_at: message.created_at,
+    agent_display_name:
+      message.sender_type === "bot" ? "Reswell AI" : (message.agent_display_name ?? null),
+  }
 }
 
 function AgentsOnlineBar({
@@ -150,45 +188,48 @@ function ThreadPane({
   staff: { userId: string; displayName: string }
   onRefreshQueue: () => void
 }) {
+  const router = useRouter()
   const [draft, setDraft] = useState("")
   const [sending, setSending] = useState(false)
   const [resolving, startResolve] = useTransition()
   const [escalating, startEscalate] = useTransition()
-  const [ticketLinked, setTicketLinked] = useState(Boolean(session.contact_message_id))
+  const [ticketLinked, setTicketLinked] = useState(
+    Boolean(session.contact_message_id || session.support_case_id),
+  )
+  const [linkedCaseId, setLinkedCaseId] = useState<string | null>(session.support_case_id)
   const [escalateError, setEscalateError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [localMessages, setLocalMessages] = useState<LiveChatAdminMessage[]>(messages)
+  const loadedSessionIdRef = useRef(session.id)
 
   useEffect(() => {
-    setLocalMessages(messages)
-    setTicketLinked(Boolean(session.contact_message_id))
+    if (loadedSessionIdRef.current !== session.id) {
+      loadedSessionIdRef.current = session.id
+      setLocalMessages(messages)
+    } else {
+      setLocalMessages((prev) => mergeAdminMessages(prev, messages))
+    }
+    setTicketLinked(Boolean(session.contact_message_id || session.support_case_id))
+    setLinkedCaseId(session.support_case_id)
     setEscalateError(null)
-  }, [messages, session.id, session.contact_message_id])
+  }, [messages, session.id, session.contact_message_id, session.support_case_id])
 
   const appendRemote = useCallback((message: LiveChatUiMessage) => {
-    setLocalMessages((prev) => {
-      if (prev.some((m) => m.id === message.id)) return prev
-      return [
-        ...prev,
-        {
-          id: message.id,
-          session_id: session.id,
-          sender_type: message.sender_type,
-          sender_agent_id: message.sender_type === "agent" ? staff.userId : null,
-          content: message.content,
-          created_at: message.created_at,
-          agent_display_name:
-            message.sender_type === "bot"
-              ? "Reswell AI"
-              : (message.agent_display_name ?? null),
-        },
-      ]
-    })
+    setLocalMessages((prev) =>
+      mergeAdminMessages(prev, [toAdminMessage(message, session.id, staff.userId)]),
+    )
   }, [session.id, staff.userId])
 
-  const { broadcastMessage } = useLiveChatSessionRealtime(session.id, true, appendRemote)
-  const { typingName, publishTyping } = useLiveChatTyping(session.id, true, "visitor")
+  useLiveChatSessionRealtime(session.id, true, appendRemote)
+  const { typingName, publishTyping } = useLiveChatTyping({
+    sessionId: session.id,
+    publicId: session.public_id,
+    enabled: true,
+    watchParticipantType: "visitor",
+    participantType: "agent",
+    displayName: staff.displayName,
+  })
 
   useEffect(() => {
     const el = scrollRef.current
@@ -201,7 +242,7 @@ function ThreadPane({
     if (!content || sending) return
     setSending(true)
     setDraft("")
-    void publishTyping("agent", staff.displayName, false)
+    void publishTyping(false)
 
     const result = await sendLiveChatAgentMessageAction({
       session_id: session.id,
@@ -222,21 +263,6 @@ function ThreadPane({
         const additions = newMessages.filter((m) => !prev.some((p) => p.id === m.id))
         return additions.length > 0 ? [...prev, ...additions] : prev
       })
-      if (result.joined_message) {
-        void broadcastMessage({
-          id: result.joined_message.id,
-          sender_type: "system",
-          content: result.joined_message.content,
-          created_at: result.joined_message.created_at,
-        })
-      }
-      void broadcastMessage({
-        id: result.message.id,
-        sender_type: "agent",
-        content: result.message.content,
-        created_at: result.message.created_at,
-        agent_display_name: result.agent_display_name,
-      })
       onRefreshQueue()
     }
     setSending(false)
@@ -245,9 +271,9 @@ function ThreadPane({
   function handleDraftChange(value: string) {
     setDraft(value)
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
-    void publishTyping("agent", staff.displayName, true)
+    void publishTyping(true)
     typingTimeoutRef.current = setTimeout(() => {
-      void publishTyping("agent", staff.displayName, false)
+      void publishTyping(false)
     }, 1200)
   }
 
@@ -268,7 +294,11 @@ function ThreadPane({
       const result = await escalateLiveChatSessionAdminAction({ session_id: session.id })
       if ("success" in result && result.success) {
         setTicketLinked(true)
+        setLinkedCaseId(result.supportCaseId)
         onRefreshQueue()
+        if (result.supportCaseId) {
+          router.push(adminSupportCaseHref(result.supportCaseId))
+        }
       } else if ("error" in result) {
         setEscalateError(result.error)
       }
@@ -281,8 +311,8 @@ function ThreadPane({
         <div>
           <p className="text-sm font-semibold text-foreground">{sessionLabel(session)}</p>
           <p className="text-xs text-muted-foreground">
-            Session {session.public_id}
-            {ticketLinked ? ` · Ticket linked` : ""}
+            {sessionSubline(session)}
+            {ticketLinked ? ` · Case linked` : ""}
           </p>
           {escalateError ? <p className="text-xs text-destructive">{escalateError}</p> : null}
         </div>
@@ -290,22 +320,22 @@ function ThreadPane({
           <Badge variant="outline" className="rounded-full capitalize">
             {session.status}
           </Badge>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="rounded-full"
-            disabled={escalating || ticketLinked}
-            onClick={createTicket}
-          >
-            {escalating ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : ticketLinked ? (
-              "Ticket created"
-            ) : (
-              "Create ticket"
-            )}
-          </Button>
+          {linkedCaseId ? (
+            <Button asChild size="sm" variant="outline" className="rounded-full">
+              <Link href={adminSupportCaseHref(linkedCaseId)}>Open case</Link>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              disabled={escalating}
+              onClick={createTicket}
+            >
+              {escalating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : "Open case"}
+            </Button>
+          )}
           <Button
             type="button"
             size="sm"
@@ -413,24 +443,39 @@ export function LiveChatAdminClient({ initialStaff }: LiveChatAdminClientProps) 
     true,
   )
 
+  const queueLoadedRef = useRef(false)
+
   const refreshQueue = useCallback(async () => {
-    setLoadingQueue(true)
+    if (!queueLoadedRef.current) setLoadingQueue(true)
     const result = await listLiveChatAdminQueueAction()
     if ("success" in result && result.success) {
       setSessions(result.sessions)
-      if (activeSessionId && !result.sessions.some((s) => s.id === activeSessionId)) {
+      if (
+        activeSessionId &&
+        result.sessions.length > 0 &&
+        !result.sessions.some((s) => s.id === activeSessionId)
+      ) {
         setActiveSessionId(null)
         setActiveThread(null)
       }
     }
+    queueLoadedRef.current = true
     setLoadingQueue(false)
   }, [activeSessionId])
 
-  const loadThread = useCallback(async (sessionId: string) => {
-    setLoadingThread(true)
+  const loadThread = useCallback(async (sessionId: string, options?: { silent?: boolean }) => {
+    if (!options?.silent) setLoadingThread(true)
     const result = await loadLiveChatAdminThreadAction(sessionId)
     if ("success" in result && result.success) {
-      setActiveThread({ session: result.session, messages: result.messages })
+      setActiveThread((prev) => {
+        if (prev && prev.session.id === result.session.id) {
+          return {
+            session: result.session,
+            messages: mergeAdminMessages(prev.messages, result.messages),
+          }
+        }
+        return { session: result.session, messages: result.messages }
+      })
     }
     setLoadingThread(false)
   }, [])
@@ -458,9 +503,40 @@ export function LiveChatAdminClient({ initialStaff }: LiveChatAdminClientProps) 
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "live_chat_messages" },
         (payload) => {
-          const row = payload.new as { session_id?: string }
-          if (row.session_id && row.session_id === activeSessionId) {
-            void loadThread(row.session_id)
+          const row = payload.new as {
+            id?: string
+            session_id?: string
+            sender_type?: LiveChatAdminMessage["sender_type"]
+            sender_agent_id?: string | null
+            content?: string
+            created_at?: string
+          }
+          if (
+            row.id &&
+            row.session_id &&
+            row.session_id === activeSessionId &&
+            row.sender_type &&
+            row.content &&
+            row.created_at
+          ) {
+            setActiveThread((prev) => {
+              if (!prev || prev.session.id !== row.session_id) return prev
+              return {
+                ...prev,
+                messages: mergeAdminMessages(prev.messages, [
+                  {
+                    id: row.id,
+                    session_id: row.session_id,
+                    sender_type: row.sender_type,
+                    sender_agent_id: row.sender_agent_id ?? null,
+                    content: row.content,
+                    created_at: row.created_at,
+                    agent_display_name: row.sender_type === "bot" ? "Reswell AI" : null,
+                  },
+                ]),
+              }
+            })
+            void loadThread(row.session_id, { silent: true })
           }
           void refreshQueue()
         },
@@ -506,12 +582,13 @@ export function LiveChatAdminClient({ initialStaff }: LiveChatAdminClientProps) 
         </aside>
 
         <section className="min-h-[320px]">
-          {loadingThread ? (
+          {loadingThread && (!activeThread || activeThread.session.id !== activeSessionId) ? (
             <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-border/70 bg-card text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
             </div>
           ) : activeThread ? (
             <ThreadPane
+              key={activeThread.session.id}
               session={activeThread.session}
               messages={activeThread.messages}
               staff={initialStaff}

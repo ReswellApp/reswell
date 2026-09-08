@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client"
 import {
   liveChatSessionChannel,
   type LiveChatBroadcastEvent,
-  type LiveChatBroadcastMessage,
 } from "@/lib/live-chat/realtime-channels"
 
 export type LiveChatUiMessage = {
@@ -14,6 +13,7 @@ export type LiveChatUiMessage = {
   content: string
   created_at: string
   agent_display_name?: string | null
+  sender_agent_id?: string | null
   /** Optimistic outgoing message — replaced when the server confirms. */
   pending?: boolean
 }
@@ -25,6 +25,7 @@ function mergeMessages(prev: LiveChatUiMessage[], incoming: LiveChatUiMessage): 
   )
 }
 
+/** Subscribe-only. Message fanout is published by the server after auth. */
 export function useLiveChatSessionRealtime(
   sessionId: string | null,
   enabled: boolean,
@@ -33,33 +34,6 @@ export function useLiveChatSessionRealtime(
   const supabase = useMemo(() => createClient(), [])
   const onRemoteMessageRef = useRef(onRemoteMessage)
   onRemoteMessageRef.current = onRemoteMessage
-
-  const broadcastMessage = useCallback(
-    async (message: LiveChatUiMessage) => {
-      if (!sessionId || !enabled) return
-      const channel = supabase.channel(liveChatSessionChannel(sessionId))
-      const payload: LiveChatBroadcastMessage = {
-        type: "message",
-        message: {
-          id: message.id,
-          session_id: sessionId,
-          sender_type: message.sender_type,
-          sender_agent_id: null,
-          content: message.content,
-          created_at: message.created_at,
-          agent_display_name: message.agent_display_name ?? null,
-        },
-      }
-      await channel.subscribe()
-      await channel.send({
-        type: "broadcast",
-        event: "live_chat",
-        payload,
-      })
-      void supabase.removeChannel(channel)
-    },
-    [enabled, sessionId, supabase],
-  )
 
   useEffect(() => {
     if (!sessionId || !enabled) return
@@ -76,36 +50,16 @@ export function useLiveChatSessionRealtime(
           content: msg.content,
           created_at: msg.created_at,
           agent_display_name: msg.agent_display_name ?? null,
+          sender_agent_id: msg.sender_agent_id ?? null,
         }
         onRemoteMessageRef.current?.(ui)
       })
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "live_chat_messages",
-          filter: `session_id=eq.${sessionId}`,
-        },
-        (payload) => {
-          const row = payload.new as Record<string, unknown>
-          const ui: LiveChatUiMessage = {
-            id: String(row.id),
-            sender_type: row.sender_type as LiveChatUiMessage["sender_type"],
-            content: String(row.content ?? ""),
-            created_at: String(row.created_at ?? new Date().toISOString()),
-          }
-          onRemoteMessageRef.current?.(ui)
-        },
-      )
       .subscribe()
 
     return () => {
       void supabase.removeChannel(channel)
     }
   }, [enabled, sessionId, supabase])
-
-  return { broadcastMessage }
 }
 
 export function useLiveChatMessageList(initial: LiveChatUiMessage[] = []) {
@@ -122,33 +76,47 @@ export function useLiveChatMessageList(initial: LiveChatUiMessage[] = []) {
   return { messages, appendMessage, replaceAll }
 }
 
-export function useLiveChatTyping(
-  sessionId: string | null,
-  enabled: boolean,
-  watchParticipantType: "visitor" | "agent" = "agent",
-) {
+export function useLiveChatTyping(options: {
+  sessionId: string | null
+  publicId: string | null
+  enabled: boolean
+  watchParticipantType: "visitor" | "agent"
+  participantType: "visitor" | "agent"
+  displayName: string
+  visitorToken?: string | null
+}) {
+  const {
+    sessionId,
+    publicId,
+    enabled,
+    watchParticipantType,
+    participantType,
+    displayName,
+    visitorToken,
+  } = options
   const supabase = useMemo(() => createClient(), [])
   const [typingName, setTypingName] = useState<string | null>(null)
   const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const publishTyping = useCallback(
-    async (participantType: "visitor" | "agent", displayName: string, isTyping: boolean) => {
-      if (!sessionId || !enabled) return
-      const channel = supabase.channel(liveChatSessionChannel(sessionId))
-      await channel.subscribe()
-      await channel.send({
-        type: "broadcast",
-        event: "live_chat",
-        payload: {
-          type: "typing",
-          participant_type: participantType,
-          display_name: displayName,
-          is_typing: isTyping,
-        },
-      })
-      void supabase.removeChannel(channel)
+    async (isTyping: boolean) => {
+      if (!publicId || !enabled) return
+      try {
+        await fetch(`/api/live-chat/session/${encodeURIComponent(publicId)}/typing`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            visitor_token: visitorToken || undefined,
+            participant_type: participantType,
+            display_name: displayName,
+            is_typing: isTyping,
+          }),
+        })
+      } catch {
+        /* typing is best-effort */
+      }
     },
-    [enabled, sessionId, supabase],
+    [displayName, enabled, participantType, publicId, visitorToken],
   )
 
   useEffect(() => {

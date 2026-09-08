@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import {
   clearLiveChatBrowserState,
+  clearStoredLiveChatSessionPublicId,
   getOrCreateLiveChatVisitorToken,
   getStoredLiveChatSessionPublicId,
   setStoredLiveChatSessionPublicId,
 } from "@/lib/live-chat/visitor-storage"
 import type { LiveChatUiMessage } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
 import type { LiveChatAiIntent } from "@/lib/validations/liveChatAi"
+import { isLiveChatSessionClosedPayload } from "@/lib/live-chat/errors"
 
 const VISITOR_DISPLAY_NAME = "Guest"
 
@@ -20,6 +22,11 @@ type PendingSend = {
 
 type ThreadModeHint = "ai" | "human" | "none"
 
+export type LiveChatBootstrapOptions = {
+  forceNew?: boolean
+  prefer?: "ai" | "human" | "any"
+}
+
 function mapApiMessages(
   rows: Array<{
     id: string
@@ -27,6 +34,7 @@ function mapApiMessages(
     content: string
     created_at: string
     agent_display_name?: string | null
+    sender_agent_id?: string | null
   }>,
 ): LiveChatUiMessage[] {
   return rows.map((row) => ({
@@ -35,6 +43,7 @@ function mapApiMessages(
     content: row.content,
     created_at: row.created_at,
     agent_display_name: row.agent_display_name ?? null,
+    sender_agent_id: row.sender_agent_id ?? null,
   }))
 }
 
@@ -42,6 +51,27 @@ function sortMessages(messages: LiveChatUiMessage[]): LiveChatUiMessage[] {
   return [...messages].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )
+}
+
+function mergeIncomingMessage(
+  prev: LiveChatUiMessage[],
+  incoming: LiveChatUiMessage,
+): LiveChatUiMessage[] {
+  if (prev.some((message) => message.id === incoming.id)) return prev
+  if (incoming.sender_type === "visitor" && !incoming.pending) {
+    const pendingIndex = prev.findIndex(
+      (message) =>
+        message.pending &&
+        message.sender_type === "visitor" &&
+        message.content === incoming.content,
+    )
+    if (pendingIndex >= 0) {
+      const next = [...prev]
+      next[pendingIndex] = { ...incoming, pending: false }
+      return sortMessages(next)
+    }
+  }
+  return sortMessages([...prev, incoming])
 }
 
 function inferThreadMode(messages: LiveChatUiMessage[]): ThreadModeHint {
@@ -74,6 +104,7 @@ function toUiMessage(
     content: string
     created_at: string
     agent_display_name?: string | null
+    sender_agent_id?: string | null
   },
 ): LiveChatUiMessage {
   return {
@@ -83,6 +114,7 @@ function toUiMessage(
     created_at: row.created_at,
     agent_display_name:
       row.sender_type === "bot" ? "Reswell AI" : (row.agent_display_name ?? null),
+    sender_agent_id: row.sender_agent_id ?? null,
     pending: false,
   }
 }
@@ -93,6 +125,8 @@ export function useLiveChatSession(options?: {
 }) {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [publicId, setPublicId] = useState<string | null>(null)
+  const [supportCaseId, setSupportCaseId] = useState<string | null>(null)
+  const [assignedAgentId, setAssignedAgentId] = useState<string | null>(null)
   const [messages, setMessages] = useState<LiveChatUiMessage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [bootstrapping, startBootstrap] = useTransition()
@@ -100,10 +134,19 @@ export function useLiveChatSession(options?: {
   /** True while Reswell AI is generating a reply (separate from visitor send). */
   const [aiThinking, setAiThinking] = useState(false)
 
+  const [sessionClosed, setSessionClosed] = useState(false)
   const visitorTokenRef = useRef<string>("")
-  const pendingSendRef = useRef<PendingSend | null>(null)
+  const pendingSendRef = useRef<PendingSend[]>([])
+  const pendingAiRef = useRef<string[]>([])
+  const aiInFlightRef = useRef(false)
+  const sendAiMessageRef = useRef<(content: string) => Promise<{ ok: boolean; handoff: boolean }>>(
+    async () => ({ ok: false, handoff: false }),
+  )
   const publicIdRef = useRef<string | null>(null)
   const sessionReadyRef = useRef(false)
+  const supportCaseIdRef = useRef<string | null>(null)
+  const threadModeHintRef = useRef<ThreadModeHint>("none")
+  const flushingPendingRef = useRef(false)
   const onConfirmedRef = useRef(options?.onVisitorMessageConfirmed)
   const onRemoteWorthyRef = useRef(options?.onRemoteWorthyMessage)
   onConfirmedRef.current = options?.onVisitorMessageConfirmed
@@ -116,14 +159,36 @@ export function useLiveChatSession(options?: {
   const sessionReady = Boolean(sessionId && publicId)
   sessionReadyRef.current = sessionReady
   publicIdRef.current = publicId
+  supportCaseIdRef.current = supportCaseId
 
   const hasPersistedThread = messages.some(
     (m) =>
       m.sender_type === "visitor" || m.sender_type === "agent" || m.sender_type === "bot",
   )
   const threadModeHint = inferThreadMode(messages)
+  threadModeHintRef.current = threadModeHint
 
-  const bootstrapSession = useCallback(() => {
+  const detachThread = useCallback(() => {
+    clearStoredLiveChatSessionPublicId()
+    pendingSendRef.current = []
+    pendingAiRef.current = []
+    aiInFlightRef.current = false
+    flushingPendingRef.current = false
+    publicIdRef.current = null
+    sessionReadyRef.current = false
+    supportCaseIdRef.current = null
+    setSessionId(null)
+    setPublicId(null)
+    setSupportCaseId(null)
+    setAssignedAgentId(null)
+    setMessages([])
+    setError(null)
+    setSending(false)
+    setAiThinking(false)
+    setSessionClosed(false)
+  }, [])
+
+  const bootstrapSession = useCallback((options?: LiveChatBootstrapOptions) => {
     return new Promise<{
       ok: boolean
       hasPersistedThread: boolean
@@ -133,7 +198,7 @@ export function useLiveChatSession(options?: {
         setError(null)
         const token = visitorTokenRef.current || getOrCreateLiveChatVisitorToken()
         visitorTokenRef.current = token
-        const resumePublicId = getStoredLiveChatSessionPublicId()
+        const resumePublicId = options?.forceNew ? null : getStoredLiveChatSessionPublicId()
 
         try {
           const res = await fetch("/api/live-chat/session", {
@@ -143,17 +208,26 @@ export function useLiveChatSession(options?: {
               visitor_token: token,
               visitor_name: VISITOR_DISPLAY_NAME,
               resume_public_id: resumePublicId ?? undefined,
+              force_new: options?.forceNew === true ? true : undefined,
+              prefer: options?.prefer,
             }),
           })
           const json = (await res.json()) as {
             data?: {
-              session: { id: string; public_id: string; visitor_name: string }
+              session: {
+                id: string
+                public_id: string
+                visitor_name: string
+                support_case_id?: string | null
+                assigned_agent_id?: string | null
+              }
               messages: Array<{
                 id: string
                 sender_type: "visitor" | "agent" | "system" | "bot"
                 content: string
                 created_at: string
                 agent_display_name?: string | null
+                sender_agent_id?: string | null
               }>
             }
             error?: string
@@ -171,8 +245,14 @@ export function useLiveChatSession(options?: {
               : m,
           )
           setStoredLiveChatSessionPublicId(json.data.session.public_id)
+          setSessionClosed(false)
           setSessionId(json.data.session.id)
           setPublicId(json.data.session.public_id)
+          setSupportCaseId(json.data.session.support_case_id ?? null)
+          setAssignedAgentId(json.data.session.assigned_agent_id ?? null)
+          publicIdRef.current = json.data.session.public_id
+          sessionReadyRef.current = true
+          supportCaseIdRef.current = json.data.session.support_case_id ?? null
           setMessages((prev) => {
             const pending = prev.filter((m) => m.pending)
             const merged = [...mapped]
@@ -196,16 +276,30 @@ export function useLiveChatSession(options?: {
   }, [])
 
   const appendMessage = useCallback((message: LiveChatUiMessage) => {
-    setMessages((prev) => {
-      if (prev.some((m) => m.id === message.id)) return prev
-      return sortMessages([...prev, message])
-    })
+    if (message.sender_type === "agent" && message.sender_agent_id) {
+      setAssignedAgentId(message.sender_agent_id)
+    }
+    setMessages((prev) => mergeIncomingMessage(prev, message))
   }, [])
 
   const replaceMessage = useCallback((optimisticId: string, confirmed: LiveChatUiMessage) => {
-    setMessages((prev) =>
-      sortMessages(prev.map((m) => (m.id === optimisticId ? { ...confirmed, pending: false } : m))),
-    )
+    setMessages((prev) => {
+      const next = prev
+        .filter((m) => {
+          if (m.id === optimisticId || m.id === confirmed.id) return false
+          if (
+            m.pending &&
+            m.sender_type === "visitor" &&
+            confirmed.sender_type === "visitor" &&
+            m.content === confirmed.content
+          ) {
+            return false
+          }
+          return true
+        })
+        .concat({ ...confirmed, pending: false })
+      return sortMessages(next)
+    })
   }, [])
 
   const removeMessage = useCallback((messageId: string) => {
@@ -233,12 +327,21 @@ export function useLiveChatSession(options?: {
           }),
         })
         const json = (await res.json()) as {
-          data?: { message: LiveChatUiMessage; session_id: string }
+          data?: {
+            message: LiveChatUiMessage
+            session_id: string
+            support_case_id?: string | null
+          }
           error?: string
         }
 
         if (!res.ok || !json.data) {
-          setError(json.error ?? "Could not send message")
+          if (isLiveChatSessionClosedPayload(json)) {
+            setSessionClosed(true)
+            setError(json.error ?? "This chat is closed. Start a new conversation anytime.")
+          } else {
+            setError(json.error ?? "Could not send message")
+          }
           removeMessage(optimisticId)
           return null
         }
@@ -249,6 +352,9 @@ export function useLiveChatSession(options?: {
           content: json.data.message.content,
           created_at: json.data.message.created_at,
           pending: false,
+        }
+        if (json.data.support_case_id) {
+          setSupportCaseId(json.data.support_case_id)
         }
         replaceMessage(optimisticId, ui)
         onConfirmedRef.current?.(ui)
@@ -263,25 +369,28 @@ export function useLiveChatSession(options?: {
   )
 
   const flushPendingSend = useCallback(async () => {
-    const pending = pendingSendRef.current
-    if (!pending || !sessionReadyRef.current) return
-    pendingSendRef.current = null
+    if (flushingPendingRef.current || !sessionReadyRef.current) return
+    flushingPendingRef.current = true
     setSending(true)
     setError(null)
-    const result = await postMessage(pending.content, pending.email, pending.optimisticId)
+    while (pendingSendRef.current.length > 0 && sessionReadyRef.current) {
+      const pending = pendingSendRef.current.shift()
+      if (!pending) break
+      await postMessage(pending.content, pending.email, pending.optimisticId)
+    }
     setSending(false)
-    return result
+    flushingPendingRef.current = false
   }, [postMessage])
 
   useEffect(() => {
-    if (!sessionReady || !pendingSendRef.current) return
+    if (!sessionReady || pendingSendRef.current.length === 0) return
     void flushPendingSend()
   }, [sessionReady, flushPendingSend])
 
   const sendMessage = useCallback(
     async (content: string, visitorEmail?: string | null): Promise<LiveChatUiMessage | null> => {
       const trimmed = content.trim()
-      if (!trimmed || sending) return null
+      if (!trimmed) return null
 
       const optimisticId = `pending-${crypto.randomUUID()}`
       const optimistic: LiveChatUiMessage = {
@@ -296,16 +405,17 @@ export function useLiveChatSession(options?: {
       setError(null)
 
       if (!sessionReadyRef.current || !publicIdRef.current) {
-        pendingSendRef.current = { content: trimmed, email: visitorEmail, optimisticId }
+        pendingSendRef.current = [
+          ...pendingSendRef.current,
+          { content: trimmed, email: visitorEmail, optimisticId },
+        ]
         return optimistic
       }
 
-      setSending(true)
       const result = await postMessage(trimmed, visitorEmail, optimisticId)
-      setSending(false)
       return result ?? optimistic
     },
-    [appendMessage, postMessage, sending],
+    [appendMessage, postMessage],
   )
 
   const callAi = useCallback(
@@ -365,13 +475,25 @@ export function useLiveChatSession(options?: {
             } | null
             ai_mode: "active" | "off"
             handoff: boolean
+            support_case_id?: string | null
           }
           error?: string
+          code?: string
         }
 
         if (!res.ok || !json.data) {
           if (options.optimisticId) removeMessage(options.optimisticId)
-          if (options.intent === "offline_assist" && (res.status === 409 || res.status === 503)) {
+          if (isLiveChatSessionClosedPayload(json)) {
+            setSessionClosed(true)
+            setError(json.error ?? "This chat is closed. Start a new conversation anytime.")
+            setSending(false)
+            setAiThinking(false)
+            return { ok: false, handoff: false, aiMode: null }
+          }
+          if (
+            options.intent === "offline_assist" &&
+            (res.status === 409 || res.status === 503 || res.status === 500)
+          ) {
             setSending(false)
             setAiThinking(false)
             return { ok: false, handoff: false, aiMode: null }
@@ -399,6 +521,9 @@ export function useLiveChatSession(options?: {
         if (json.data.system_message) {
           appendMessage(toUiMessage(json.data.system_message))
         }
+        if (json.data.support_case_id) {
+          setSupportCaseId(json.data.support_case_id)
+        }
 
         setSending(false)
         setAiThinking(false)
@@ -422,27 +547,43 @@ export function useLiveChatSession(options?: {
 
   const activateAi = useCallback(
     async (firstMessage?: string) => {
-      if (!sessionReadyRef.current) {
-        const boot = await bootstrapSession()
+      const onHumanThread =
+        threadModeHintRef.current === "human" || Boolean(supportCaseIdRef.current)
+      if (!sessionReadyRef.current || onHumanThread) {
+        if (onHumanThread) detachThread()
+        const boot = await bootstrapSession({ prefer: "ai" })
         if (!boot.ok) return { ok: false as const, handoff: false }
       }
-      return callAi({ intent: "activate", content: firstMessage })
+      aiInFlightRef.current = true
+      try {
+        return await callAi({ intent: "activate", content: firstMessage })
+      } finally {
+        aiInFlightRef.current = false
+        const queued = pendingAiRef.current.shift()
+        if (queued) void sendAiMessageRef.current(queued)
+      }
     },
-    [bootstrapSession, callAi],
+    [bootstrapSession, callAi, detachThread],
   )
 
   const sendAiMessage = useCallback(
     async (content: string) => {
       const trimmed = content.trim()
-      if (!trimmed || sending || aiThinking) return { ok: false as const, handoff: false }
+      if (!trimmed) return { ok: false as const, handoff: false }
+
+      if (aiInFlightRef.current) {
+        pendingAiRef.current.push(trimmed)
+        return { ok: true as const, handoff: false }
+      }
 
       if (!sessionReadyRef.current) {
-        const boot = await bootstrapSession()
+        const boot = await bootstrapSession({ prefer: "ai" })
         if (!boot.ok) return { ok: false as const, handoff: false }
       }
 
       const optimisticId = `pending-${crypto.randomUUID()}`
       setAiThinking(true)
+      aiInFlightRef.current = true
       appendMessage({
         id: optimisticId,
         sender_type: "visitor",
@@ -451,14 +592,21 @@ export function useLiveChatSession(options?: {
         pending: true,
       })
 
-      return callAi({ intent: "chat", content: trimmed, optimisticId })
+      try {
+        return await callAi({ intent: "chat", content: trimmed, optimisticId })
+      } finally {
+        aiInFlightRef.current = false
+        const queued = pendingAiRef.current.shift()
+        if (queued) void sendAiMessage(queued)
+      }
     },
-    [aiThinking, appendMessage, bootstrapSession, callAi, sending],
+    [appendMessage, bootstrapSession, callAi],
   )
+  sendAiMessageRef.current = sendAiMessage
 
   const requestAiHandoff = useCallback(async () => {
     if (!sessionReadyRef.current) {
-      const boot = await bootstrapSession()
+      const boot = await bootstrapSession({ prefer: "human" })
       if (!boot.ok) return { ok: false as const }
     }
     return callAi({ intent: "handoff" })
@@ -468,6 +616,7 @@ export function useLiveChatSession(options?: {
     async (content: string, agentsOnline: boolean) => {
       if (agentsOnline) return { ok: false as const }
       if (!sessionReadyRef.current) return { ok: false as const }
+      if (supportCaseIdRef.current) return { ok: false as const }
       // Show typing immediately — before the visitor send path clears `sending`.
       setAiThinking(true)
       return callAi({ intent: "offline_assist", content, agentsOnline: false })
@@ -478,18 +627,35 @@ export function useLiveChatSession(options?: {
   const resetLocalSession = useCallback(() => {
     clearLiveChatBrowserState()
     visitorTokenRef.current = getOrCreateLiveChatVisitorToken()
-    pendingSendRef.current = null
+    pendingSendRef.current = []
+    pendingAiRef.current = []
+    aiInFlightRef.current = false
+    flushingPendingRef.current = false
+    publicIdRef.current = null
+    sessionReadyRef.current = false
+    supportCaseIdRef.current = null
     setSessionId(null)
     setPublicId(null)
+    setSupportCaseId(null)
+    setAssignedAgentId(null)
     setMessages([])
     setError(null)
     setSending(false)
     setAiThinking(false)
+    setSessionClosed(false)
   }, [])
+
+  const startNewConversation = useCallback(async () => {
+    resetLocalSession()
+    visitorTokenRef.current = getOrCreateLiveChatVisitorToken()
+    return bootstrapSession({ forceNew: true })
+  }, [bootstrapSession, resetLocalSession])
 
   return {
     sessionId,
     publicId,
+    supportCaseId,
+    assignedAgentId,
     messages,
     error,
     setError,
@@ -497,6 +663,7 @@ export function useLiveChatSession(options?: {
     sending,
     aiThinking,
     sessionReady,
+    sessionClosed,
     hasPersistedThread,
     /** @deprecated use hasPersistedThread / threadModeHint */
     hasHumanConversation: hasPersistedThread,
@@ -509,6 +676,7 @@ export function useLiveChatSession(options?: {
     requestAiHandoff,
     requestOfflineAiAssist,
     resetLocalSession,
+    startNewConversation,
     visitorToken: visitorTokenRef.current,
     visitorDisplayName: VISITOR_DISPLAY_NAME,
   }

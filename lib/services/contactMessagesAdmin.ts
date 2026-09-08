@@ -12,7 +12,10 @@ import {
   type UpdateContactMessageAdminInput,
 } from "@/lib/validations/contactMessagesAdmin"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
-import { resolveLiveChatSessionsForTickets } from "@/lib/services/liveChatEscalation"
+import {
+  resolveLiveChatSessionsForCases,
+  resolveLiveChatSessionsForTickets,
+} from "@/lib/services/liveChatEscalation"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import {
   insertSupportStaffThreadMessage,
@@ -100,6 +103,9 @@ export async function updateContactMessageAdminService(
     const service = createServiceRoleClient()
     const shadow = await getSupportCaseByContactMessageId(service, existing.id)
     if (shadow) {
+      if (statusChanged && payload.support_status === "resolved") {
+        await resolveLiveChatSessionsForCases([shadow.id])
+      }
       await updateSupportCaseAdmin(service, {
         id: shadow.id,
         status: payload.support_status

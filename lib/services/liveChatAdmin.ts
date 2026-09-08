@@ -1,12 +1,15 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
+import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
 import { formatPersonName } from "@/lib/utils/person-name"
 import {
   countOpenLiveChatSessions,
   getAgentDisplayNamesByIds,
   getLiveChatSessionById,
+  getVisitorDisplayNamesByIds,
   hasAgentMessagedInSession,
   insertLiveChatMessage,
+  listLatestLiveChatMessagePreviews,
   listLiveChatMessagesForSession,
   listOpenLiveChatSessions,
   updateLiveChatSessionRow,
@@ -55,6 +58,31 @@ export type LiveChatAdminSession = LiveChatSessionRow & {
   preview: string | null
 }
 
+function isPlaceholderVisitorName(name: string | null | undefined): boolean {
+  const trimmed = name?.trim() ?? ""
+  return trimmed.length === 0 || trimmed.toLowerCase() === "guest"
+}
+
+async function applyMemberVisitorNames(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  sessions: LiveChatSessionRow[],
+): Promise<LiveChatSessionRow[]> {
+  const userIds = sessions
+    .filter((session) => session.user_id && isPlaceholderVisitorName(session.visitor_name))
+    .map((session) => session.user_id as string)
+  if (userIds.length === 0) return sessions
+
+  const names = await getVisitorDisplayNamesByIds(supabase, userIds)
+  return Promise.all(
+    sessions.map(async (session) => {
+      const name = session.user_id ? names.get(session.user_id) : undefined
+      if (!name || !isPlaceholderVisitorName(session.visitor_name)) return session
+      await updateLiveChatSessionRow(supabase, session.id, { visitor_name: name })
+      return { ...session, visitor_name: name }
+    }),
+  )
+}
+
 export async function listLiveChatAdminQueueService(): Promise<
   { success: true; sessions: LiveChatAdminSession[] } | { error: string }
 > {
@@ -67,19 +95,19 @@ export async function listLiveChatAdminQueueService(): Promise<
     .map((s) => s.assigned_agent_id)
     .filter((id): id is string => Boolean(id))
   const agentNames = await getAgentDisplayNamesByIds(supabase, agentIds)
+  const namedSessions = await applyMemberVisitorNames(supabase, sessions)
+  const previews = await listLatestLiveChatMessagePreviews(
+    supabase,
+    namedSessions.map((session) => session.id),
+  )
 
-  const enriched: LiveChatAdminSession[] = []
-  for (const session of sessions) {
-    const messages = await listLiveChatMessagesForSession(supabase, session.id)
-    const lastContent = messages.length > 0 ? messages[messages.length - 1]?.content : null
-    enriched.push({
-      ...session,
-      assigned_agent_name: session.assigned_agent_id
-        ? (agentNames.get(session.assigned_agent_id) ?? "Support")
-        : null,
-      preview: lastContent,
-    })
-  }
+  const enriched: LiveChatAdminSession[] = namedSessions.map((session) => ({
+    ...session,
+    assigned_agent_name: session.assigned_agent_id
+      ? (agentNames.get(session.assigned_agent_id) ?? "Support")
+      : null,
+    preview: previews.get(session.id) ?? null,
+  }))
 
   return { success: true, sessions: enriched }
 }
@@ -96,10 +124,11 @@ export async function loadLiveChatAdminThreadService(sessionId: string): Promise
   if (!staff.ok) return { error: staff.error }
 
   const supabase = await createClient()
-  const session = await getLiveChatSessionById(supabase, sessionId)
-  if (!session) {
+  const loaded = await getLiveChatSessionById(supabase, sessionId)
+  if (!loaded) {
     return { error: "Session not found" }
   }
+  const [session] = await applyMemberVisitorNames(supabase, [loaded])
 
   const messages = await listLiveChatMessagesForSession(supabase, session.id)
   const agentIds = messages
@@ -155,7 +184,7 @@ export async function sendLiveChatAgentMessageService(raw: unknown): Promise<
   if (!session) {
     return { error: "Session not found" }
   }
-  if (session.status === "closed") {
+  if (session.status === "closed" || session.status === "resolved") {
     return { error: "This chat is closed" }
   }
 
@@ -194,6 +223,32 @@ export async function sendLiveChatAgentMessageService(raw: unknown): Promise<
   if (Object.keys(patch).length > 0) {
     await updateLiveChatSessionRow(supabase, session.id, patch)
   }
+
+  if (joinedMessage) {
+    void broadcastLiveChatMessage({
+      sessionId: session.id,
+      message: {
+        id: joinedMessage.id,
+        session_id: session.id,
+        sender_type: "system",
+        sender_agent_id: null,
+        content: joinedMessage.content,
+        created_at: joinedMessage.created_at,
+      },
+    })
+  }
+  void broadcastLiveChatMessage({
+    sessionId: session.id,
+    message: {
+      id: message.id,
+      session_id: session.id,
+      sender_type: "agent",
+      sender_agent_id: staff.userId,
+      content: message.content,
+      created_at: message.created_at,
+      agent_display_name: staff.displayName,
+    },
+  })
 
   return {
     success: true,
@@ -256,7 +311,7 @@ export async function updateLiveChatSessionAdminService(raw: unknown): Promise<
 
 /** Staff-initiated "open a case": converts a live chat into a support ticket. */
 export async function escalateLiveChatSessionAdminService(raw: unknown): Promise<
-  { success: true; contactMessageId: string } | { error: string }
+  { success: true; contactMessageId: string; supportCaseId: string | null } | { error: string }
 > {
   const parsed = escalateLiveChatSessionSchema.safeParse(raw)
   if (!parsed.success) {
@@ -271,16 +326,17 @@ export async function escalateLiveChatSessionAdminService(raw: unknown): Promise
   if (!session) {
     return { error: "Session not found" }
   }
-  if (session.contact_message_id) {
-    return { success: true, contactMessageId: session.contact_message_id }
-  }
 
   const svc = createServiceRoleClient()
   const result = await escalateLiveChatSessionToTicket(svc, session, "manual")
   if ("error" in result) {
     return { error: result.error }
   }
-  return { success: true, contactMessageId: result.contactMessageId }
+  return {
+    success: true,
+    contactMessageId: result.contactMessageId,
+    supportCaseId: result.supportCaseId,
+  }
 }
 
 export async function countOpenLiveChatSessionsForAdminNav(): Promise<number> {

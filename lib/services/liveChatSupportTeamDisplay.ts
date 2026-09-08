@@ -67,22 +67,16 @@ export async function getLiveChatSupportTeamDisplayService(): Promise<LiveChatSu
     const withImages = members.filter((m) => m.imageUrl.length > 0)
     const pool = withImages.length > 0 ? withImages : members
 
-    if (primaryId) {
-      const primary = pool.find((m) => m.id === primaryId)
-      if (primary) {
-        return [primary]
-      }
-    }
-
-    const haydenLike =
+    const lead =
+      (primaryId ? pool.find((m) => m.id === primaryId) : undefined) ??
       pool.find((m) => m.name.toLowerCase().includes("hayden")) ??
-      pool.find((m) => m.initials === "HG")
+      pool.find((m) => m.initials === "HG") ??
+      pool[0]
 
-    if (haydenLike) {
-      return [haydenLike]
-    }
+    if (!lead) return [LIVE_CHAT_SUPPORT_LEAD_FALLBACK]
 
-    return pool.slice(0, 1)
+    const rest = pool.filter((m) => m.id !== lead.id)
+    return [lead, ...rest].slice(0, 12)
   } catch {
     return [LIVE_CHAT_SUPPORT_LEAD_FALLBACK]
   }

@@ -1,38 +1,25 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { LIVE_CHAT_AGENTS_PRESENCE_CHANNEL } from "@/lib/live-chat/realtime-channels"
+import { useEffect, useState } from "react"
+import {
+  heartbeatLiveChatAgentPresenceAction,
+  listOnlineLiveChatAgentsAction,
+} from "@/lib/actions/liveChatAdmin"
 
 export type LiveChatAgentPresence = {
   userId: string
   displayName: string
 }
 
-type PresencePayload = {
-  userId: string
-  displayName: string
-}
+const HEARTBEAT_MS = 20_000
+const POLL_MS = 20_000
 
-function parseAgentPresence(state: Record<string, PresencePayload[]>): LiveChatAgentPresence[] {
-  const agents: LiveChatAgentPresence[] = []
-  for (const payloads of Object.values(state)) {
-    const latest = payloads[payloads.length - 1]
-    if (!latest?.userId) continue
-    agents.push({
-      userId: latest.userId,
-      displayName: latest.displayName?.trim() || "Support",
-    })
-  }
-  return agents
-}
-
+/** Staff desk: heartbeat so visitors see a real online signal, plus other agents in the queue. */
 export function useLiveChatAgentPresence(
   userId: string | null,
   displayName: string | null,
   enabled: boolean,
 ) {
-  const supabase = useMemo(() => createClient(), [])
   const [agentsOnline, setAgentsOnline] = useState<LiveChatAgentPresence[]>([])
 
   useEffect(() => {
@@ -41,51 +28,77 @@ export function useLiveChatAgentPresence(
       return
     }
 
-    const channel = supabase.channel(LIVE_CHAT_AGENTS_PRESENCE_CHANNEL, {
-      config: { presence: { key: userId } },
-    })
+    let cancelled = false
 
-    channel.on("presence", { event: "sync" }, () => {
-      setAgentsOnline(parseAgentPresence(channel.presenceState() as Record<string, PresencePayload[]>))
-    })
+    async function pulse() {
+      await heartbeatLiveChatAgentPresenceAction()
+      const result = await listOnlineLiveChatAgentsAction()
+      if (cancelled) return
+      if ("success" in result && result.success) {
+        setAgentsOnline(result.agents)
+        return
+      }
+      if (userId && displayName) {
+        setAgentsOnline([{ userId, displayName }])
+      }
+    }
 
-    channel.subscribe(async (status) => {
-      if (status !== "SUBSCRIBED") return
-      await channel.track({
-        userId,
-        displayName: displayName?.trim() || "Support",
-      })
-    })
+    void pulse()
+    const interval = setInterval(() => {
+      void pulse()
+    }, HEARTBEAT_MS)
 
     return () => {
-      void channel.untrack()
-      void supabase.removeChannel(channel)
+      cancelled = true
+      clearInterval(interval)
     }
-  }, [displayName, enabled, supabase, userId])
+  }, [displayName, enabled, userId])
 
   return { agentsOnline, isAnyoneOnline: agentsOnline.length > 0 }
 }
 
-/** Visitor-side: subscribe to agent presence without tracking. */
+type SupportTeamPayload = {
+  members?: unknown
+  agents_online?: boolean
+  agents_online_count?: number
+}
+
+/** Visitor-side: staff heartbeat count from the API, not a public presence channel. */
 export function useLiveChatSupportOnlineStatus(enabled: boolean) {
-  const supabase = useMemo(() => createClient(), [])
   const [onlineCount, setOnlineCount] = useState(0)
 
   useEffect(() => {
     if (!enabled) return
 
-    const channel = supabase.channel(LIVE_CHAT_AGENTS_PRESENCE_CHANNEL)
+    let cancelled = false
 
-    channel.on("presence", { event: "sync" }, () => {
-      setOnlineCount(parseAgentPresence(channel.presenceState() as Record<string, PresencePayload[]>).length)
-    })
+    async function refresh() {
+      try {
+        const res = await fetch("/api/live-chat/support-team")
+        const json = (await res.json()) as { data?: SupportTeamPayload | unknown[] }
+        if (cancelled || !json.data || Array.isArray(json.data)) return
+        const count =
+          typeof json.data.agents_online_count === "number"
+            ? json.data.agents_online_count
+            : json.data.agents_online
+              ? 1
+              : 0
+        setOnlineCount(count)
+      } catch {
+        /* keep last known */
+      }
+    }
 
-    channel.subscribe()
+    void refresh()
+    const interval = setInterval(() => {
+      void refresh()
+    }, POLL_MS)
 
     return () => {
-      void supabase.removeChannel(channel)
+      cancelled = true
+      clearInterval(interval)
     }
-  }, [enabled, supabase])
+  }, [enabled])
 
   return { isSupportOnline: onlineCount > 0, onlineCount }
 }

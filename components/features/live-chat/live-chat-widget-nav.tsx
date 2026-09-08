@@ -30,6 +30,7 @@ export function LiveChatWidgetNav({ active, onChange, hasUnreadMessages }: LiveC
             key={id}
             type="button"
             onClick={() => onChange(id)}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
               "relative flex flex-col items-center gap-0.5 px-2 py-2.5 text-[11px] font-medium transition-colors",
               isActive ? "text-listingHeart" : "text-muted-foreground hover:text-foreground",

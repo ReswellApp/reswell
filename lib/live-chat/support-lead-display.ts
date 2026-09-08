@@ -9,28 +9,47 @@ export const LIVE_CHAT_SUPPORT_LEAD_FALLBACK: LiveChatSupportTeamMember = {
 }
 
 export const LIVE_CHAT_SUPPORT_WAITING_COPY = {
-  waiting: "Waiting for the team",
-  online: "The team is online",
+  waiting: "We'll reply here, usually within one business day",
+  online: "We'll reply here as soon as we can",
 } as const
 
 export const LIVE_CHAT_SUPPORT_AVATAR_ALT = "Reswell customer support"
 
-/** Decorative faces shown beside the lead admin to suggest a larger support team. */
-export const LIVE_CHAT_ANONYMOUS_TEAM_AVATARS: Array<
-  LiveChatSupportTeamMember & { avatarClassName?: string }
-> = [
-  {
-    id: "support-team-a",
-    name: "Support team",
-    imageUrl: "",
-    initials: "RS",
-    avatarClassName: "bg-neutral-200 text-neutral-600",
-  },
-  {
-    id: "support-team-b",
-    name: "Support team",
-    imageUrl: "",
-    initials: "CS",
-    avatarClassName: "bg-emerald-100 text-emerald-700",
-  },
-]
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "RW"
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase()
+}
+
+/** The teammate currently working this thread, if one has joined. */
+export function resolveWorkingSupportAgent(
+  messages: Array<{
+    sender_type: string
+    sender_agent_id?: string | null
+    agent_display_name?: string | null
+  }>,
+  team: LiveChatSupportTeamMember[],
+  assignedAgentId?: string | null,
+): LiveChatSupportTeamMember | null {
+  const lastAgent = [...messages].reverse().find((message) => message.sender_type === "agent")
+  const agentId = lastAgent?.sender_agent_id ?? assignedAgentId ?? null
+  if (agentId) {
+    const match = team.find((member) => member.id === agentId)
+    if (match) return match
+  }
+
+  const name = lastAgent?.agent_display_name?.trim()
+  if (name) {
+    const match = team.find((member) => member.name.toLowerCase() === name.toLowerCase())
+    if (match) return match
+    return {
+      id: agentId ?? name,
+      name,
+      imageUrl: "",
+      initials: initialsFromName(name),
+    }
+  }
+
+  return null
+}

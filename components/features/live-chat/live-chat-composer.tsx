@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowUp, Loader2 } from "lucide-react"
+import { ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -17,6 +17,11 @@ interface LiveChatComposerProps {
   emailError?: string | null
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
   emailInputRef?: React.RefObject<HTMLInputElement | null>
+}
+
+function resizeComposer(el: HTMLTextAreaElement) {
+  el.style.height = "auto"
+  el.style.height = `${Math.min(el.scrollHeight, 120)}px`
 }
 
 export function LiveChatComposer({
@@ -48,6 +53,7 @@ export function LiveChatComposer({
               onEmailDraftChange?.(e.target.value)
             }}
             placeholder="Your email"
+            aria-label="Email for replies"
             autoComplete="email"
             readOnly={emailLocked}
             aria-readonly={emailLocked}
@@ -63,14 +69,14 @@ export function LiveChatComposer({
         <textarea
           ref={inputRef}
           value={draft}
-          onChange={(e) => onDraftChange(e.target.value)}
+          onChange={(e) => {
+            onDraftChange(e.target.value)
+            resizeComposer(e.currentTarget)
+          }}
           placeholder="Write your message…"
-          rows={3}
+          rows={1}
           maxLength={10000}
-          className={cn(
-            "w-full resize-none border-0 bg-transparent px-4 py-3 pr-14 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-0",
-            showEmailField ? "min-h-[84px]" : "min-h-[92px]",
-          )}
+          className="max-h-[120px] min-h-[44px] w-full resize-none border-0 bg-transparent px-4 py-3 pr-14 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-0"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault()
@@ -78,12 +84,12 @@ export function LiveChatComposer({
             }
           }}
         />
-        <div className="absolute bottom-2 right-2">
+        <div className="absolute bottom-1.5 right-1.5">
           <Button
             type="button"
             size="icon"
             className={cn(
-              "h-9 w-9 rounded-full shadow-sm transition-colors",
+              "h-8 w-8 rounded-full shadow-sm transition-colors",
               canSend
                 ? "bg-listingHeart text-white hover:bg-listingHeart/90"
                 : "bg-muted text-muted-foreground",
@@ -92,11 +98,7 @@ export function LiveChatComposer({
             onClick={onSend}
             aria-label="Send message"
           >
-            {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <ArrowUp className="h-4 w-4" aria-hidden />
-            )}
+            <ArrowUp className="h-4 w-4" aria-hidden />
           </Button>
         </div>
       </div>

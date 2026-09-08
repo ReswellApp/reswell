@@ -8,6 +8,10 @@ import {
   sendLiveChatAgentMessageService,
   updateLiveChatSessionAdminService,
 } from "@/lib/services/liveChatAdmin"
+import {
+  heartbeatLiveChatAgentPresenceService,
+  listOnlineLiveChatAgentsService,
+} from "@/lib/services/liveChatPresence"
 
 function revalidateLiveChatAdmin() {
   revalidatePath("/admin/live-chat")
@@ -42,6 +46,18 @@ export async function escalateLiveChatSessionAdminAction(raw: unknown) {
   if ("success" in result && result.success) {
     revalidateLiveChatAdmin()
     revalidatePath("/admin/contact-messages")
+    revalidatePath("/admin/support")
+    if (result.supportCaseId) {
+      revalidatePath(`/admin/support/${result.supportCaseId}`)
+    }
   }
   return result
+}
+
+export async function heartbeatLiveChatAgentPresenceAction() {
+  return heartbeatLiveChatAgentPresenceService()
+}
+
+export async function listOnlineLiveChatAgentsAction() {
+  return listOnlineLiveChatAgentsService()
 }

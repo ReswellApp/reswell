@@ -78,7 +78,11 @@ export async function ensureCaseForContactMessage(
 
   const subject = supportTicketDisplaySubject(
     row.subject,
-    row.source === "messages_support" ? "messages_support" : "contact_form",
+    row.source === "messages_support"
+      ? "messages_support"
+      : row.source === "live_chat"
+        ? "live_chat"
+        : "contact_form",
   )
   const kind: SupportCaseKind =
     subject.toLowerCase().includes("safety")
@@ -97,7 +101,12 @@ export async function ensureCaseForContactMessage(
     requester_email: row.email,
     requester_role: row.user_id ? "member" : "guest",
     contact_message_id: row.id,
-    source_channel: row.source === "messages_support" ? "help_hub" : "contact_form",
+    source_channel:
+      row.source === "messages_support"
+        ? "help_hub"
+        : row.source === "live_chat"
+          ? "live_chat"
+          : "contact_form",
     priority: kind === "safety" ? "urgent" : "normal",
   })
   if (!inserted.data) return null

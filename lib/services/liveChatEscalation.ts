@@ -6,9 +6,13 @@ import {
   listInactiveLiveChatSessions,
   listLiveChatMessagesForSession,
   listOpenLiveChatSessionsForContactMessages,
+  listOpenLiveChatSessionsForSupportCases,
   updateLiveChatSessionRow,
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
+import { ensureCaseForContactMessage } from "@/lib/services/supportCaseBackfill"
+import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 
 /** How long a signed-in chat can sit without an agent reply before it becomes a ticket. */
 const AUTO_ESCALATE_AFTER_HOURS = 24
@@ -28,7 +32,12 @@ const TRANSCRIPT_MESSAGE_LIMIT = 30
 type EscalationReason = "auto_unanswered" | "manual"
 
 type EscalationResult =
-  | { success: true; contactMessageId: string; alreadyLinked: boolean }
+  | {
+      success: true
+      contactMessageId: string
+      supportCaseId: string | null
+      alreadyLinked: boolean
+    }
   | { error: string }
 
 async function resolveMemberIdentity(
@@ -78,21 +87,46 @@ async function buildTranscript(svc: SupabaseClient, sessionId: string): Promise<
 }
 
 /**
- * Creates a support ticket (contact_messages) from a live chat session and links it back.
- * Idempotent: returns the existing ticket if the session is already linked.
+ * Opens (or resumes) the canonical support case for a live chat session.
+ * Dual-writes contact_messages as a sidecar, same as other channels.
  */
 export async function escalateLiveChatSessionToTicket(
   svc: SupabaseClient,
   session: LiveChatSessionRow,
   reason: EscalationReason,
 ): Promise<EscalationResult> {
-  if (session.contact_message_id) {
-    return { success: true, contactMessageId: session.contact_message_id, alreadyLinked: true }
+  if (session.support_case_id && session.contact_message_id) {
+    return {
+      success: true,
+      contactMessageId: session.contact_message_id,
+      supportCaseId: session.support_case_id,
+      alreadyLinked: true,
+    }
   }
 
   const { name, email } = await resolveMemberIdentity(svc, session)
   if (!email) {
     return { error: "No email on file for this chat — cannot create a ticket." }
+  }
+
+  if (session.contact_message_id && !session.support_case_id) {
+    const backfilled = await ensureCaseForContactMessage(svc, {
+      id: session.contact_message_id,
+      subject: "Live chat — support case",
+      message: (await buildTranscript(svc, session.id)) || "Live chat",
+      email,
+      user_id: session.user_id,
+      source: "live_chat",
+    })
+    if (backfilled) {
+      await updateLiveChatSessionRow(svc, session.id, { support_case_id: backfilled.id })
+    }
+    return {
+      success: true,
+      contactMessageId: session.contact_message_id,
+      supportCaseId: backfilled?.id ?? null,
+      alreadyLinked: true,
+    }
   }
 
   const transcript = await buildTranscript(svc, session.id)
@@ -125,7 +159,23 @@ export async function escalateLiveChatSessionToTicket(
   }
 
   const contactMessageId = String(ticket.id)
-  await updateLiveChatSessionRow(svc, session.id, { contact_message_id: contactMessageId })
+  const opened = await createSupportCaseWithOpeningMessage(svc, {
+    kind: "general",
+    subject,
+    preview: transcript,
+    requester_user_id: session.user_id,
+    requester_email: email,
+    requester_role: session.user_id ? "member" : "guest",
+    contact_message_id: contactMessageId,
+    source_channel: "live_chat",
+    body: transcript,
+    authorUserId: session.user_id,
+  })
+
+  await updateLiveChatSessionRow(svc, session.id, {
+    contact_message_id: contactMessageId,
+    support_case_id: opened?.id ?? null,
+  })
 
   await insertLiveChatMessage(svc, {
     session_id: session.id,
@@ -136,7 +186,22 @@ export async function escalateLiveChatSessionToTicket(
         : `We've opened a support case for this conversation. We'll follow up at ${email}.`,
   })
 
-  return { success: true, contactMessageId, alreadyLinked: false }
+  const caseId = opened?.id ?? contactMessageId
+  void trackKlaviyoSupportTicketCreated({
+    supportTicketId: caseId,
+    email,
+    externalId: session.user_id,
+    source: "live_chat",
+    subject,
+    message: transcript,
+  })
+
+  return {
+    success: true,
+    contactMessageId,
+    supportCaseId: opened?.id ?? null,
+    alreadyLinked: false,
+  }
 }
 
 async function resolveSessionWithNote(
@@ -177,6 +242,23 @@ export async function resolveLiveChatSessionsForTickets(
     return resolved
   } catch (error) {
     console.error("resolveLiveChatSessionsForTickets", { contactMessageIds, error })
+    return 0
+  }
+}
+
+export async function resolveLiveChatSessionsForCases(caseIds: string[]): Promise<number> {
+  try {
+    const svc = createServiceRoleClient()
+    const sessions = await listOpenLiveChatSessionsForSupportCases(svc, caseIds)
+    let resolved = 0
+    for (const session of sessions) {
+      if (await resolveSessionWithNote(svc, session.id, RESOLVED_SYSTEM_MESSAGE)) {
+        resolved += 1
+      }
+    }
+    return resolved
+  } catch (error) {
+    console.error("resolveLiveChatSessionsForCases", { caseIds, error })
     return 0
   }
 }
@@ -227,6 +309,13 @@ export async function escalateUnansweredLiveChatSessionsService(): Promise<{
       new Date(session.last_agent_message_at).getTime() >=
         new Date(session.last_visitor_message_at).getTime()
     if (answered) {
+      skipped += 1
+      continue
+    }
+
+    const aiActive = session.metadata.ai_mode === "active"
+    const handoffRequested = session.metadata.ai_handoff_requested === true
+    if (aiActive && !handoffRequested) {
       skipped += 1
       continue
     }

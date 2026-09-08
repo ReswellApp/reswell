@@ -10,6 +10,8 @@ export const createLiveChatSessionSchema = z.object({
   visitor_token: z.string().uuid(),
   visitor_name: z.string().trim().min(1).max(80).optional(),
   resume_public_id: z.string().trim().min(8).max(64).optional(),
+  force_new: z.boolean().optional(),
+  prefer: z.enum(["ai", "human", "any"]).optional(),
 })
 
 export const sendLiveChatVisitorMessageSchema = z.object({
