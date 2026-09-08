@@ -1,0 +1,108 @@
+{
+  "generated_for": "Jim Banks Surfboards official named standup catalog",
+  "source": "https://www.jimbanksurf.com/surfboards (Wix official model pages — excludes fins, apparel, and custom-only deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jim-banks-surfboards",
+      "name": "Jim Banks Surfboards",
+      "website_url": "https://www.jimbanksurf.com/",
+      "location_label": "Bali and Byron Bay",
+      "founder_name": "Jim Banks",
+      "lead_shaper_name": "Jim Banks",
+      "short_description": "Custom handcrafted surfboards by Jim Banks — legendary shaper crafting twin keels, Future Form designs, and performance boards from Bali and Byron Bay since 1971.",
+      "models": [
+        {
+          "name": "2+",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_6f8d642bbd414858a3294d16133f3a90~mv2.png",
+          "description": "A modern mid length with unique fin positioning that allows you to surf it equally well as a twin, single, or two plus one. Sizes 6'8–7'6.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hit the Road",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_8367027c43c94408af84cc7be2df2520~mv2.png",
+          "description": "Finely tuned, highly refined, easy-response high-performance machines for when the ocean gets going. Sizes 6'10–10'.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Indo Rocket",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_9d6aea19f9b3470198fb2e5e71256f00~mv2.png",
+          "description": "A daily rider built for speed and barrels but still super fun and responsive in smaller, softer waves. Sizes 5'8–6'10.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Magic Carpet",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_b8aa53e080054685813c035b6ae48891~mv2.png",
+          "description": "Recent mods to this smooth-riding, high-speed glider have taken it to a whole new level of control and stability. Sizes 5'6–6'10.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pan Fried",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_09c90aa961c24522b5637e47225443e1~mv2.png",
+          "description": "A pure-joy small-wave glider and puddle skimmer for those who like their fish short, powered by Future Form bottom contour. Sizes 5'4–6'4.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Revolution Cruiser",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_551b1804087a44a0a1d362c463bdc91b~mv2.png",
+          "description": "An easy-going, smooth-riding twin fin with lots of paddle power for relaxed surfing. Sizes 6'6–9'0.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Revolution Daily Rider",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_6a256571caaf42c9a29ca685811be30f~mv2.png",
+          "description": "Your all-round high-performance twin fin that puts an unbelievable amount of speed, drive, and control under your feet. Sizes 5'8–6'6.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Revolution Groveller",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_7df6681a5e9e4d03a4deadc81f33dc54~mv2.png",
+          "description": "The small-wave version of Jim Banks' high-performance twin fin with an unbelievable level of speed, drive, and control. Sizes 5'8–6'4.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Revolution Step Up",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_e4ebef4a23bb40e48d3de3884dfdc01e~mv2.png",
+          "description": "A powerful high-performance twin fin with a ton of speed, drive, and control for when the waves get serious. Sizes 6'0–9'0.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Sea Dart",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_a51fbf43c4844c54910ab3d298e401c6~mv2.png",
+          "description": "Lightning fast off the mark with quick response for exciting surfing in any sort of waves — equally at home as a quad or thruster. Sizes 5'8–6'6.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Supa Glide",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_4aca533c68dc407fa82fdc0f81484b99~mv2.png",
+          "description": "A classic longboard-styled mid length with modern performance and response. Sizes 6'10–8'1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Ultra Glide",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_4f3c53b0bf784bf5a89025ba15feb1f1~mv2.png",
+          "description": "The ultimate glide and response of a twin fin combined with the easy paddling of a mid length. Sizes 6'4–9'0.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wanderer",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_09df364aa8724a90a4787d433bd955d3~mv2.png",
+          "description": "A classic and super versatile single fin for waves from waist high to well overhead. Sizes 5'10–6'8.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Winged Pin",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_2599700db60b40d8a3a7f7de7f3572dd~mv2.png",
+          "description": "A lively single fin for a ton of fun in waves from knee high to slightly overhead. Sizes 5'6–6'4.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Zen Glide",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_d9b10da00cdc4c0699712ceb6577a3a3~mv2.png",
+          "description": "A smooth gliding limo for stylish surfing in almost any type and size of waves. Sizes 6'10–8'0.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
