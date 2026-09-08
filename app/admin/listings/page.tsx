@@ -48,37 +48,34 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Boxes,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Columns3,
-  DollarSign,
   Download,
   Eye,
   EyeOff,
   Globe,
+  Filter,
   Flag,
   Layers,
+  MoreHorizontal,
   MoreVertical,
   Package,
   Pencil,
   RotateCcw,
   Tag,
   Trash2,
-  TrendingUp,
   X,
 } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { toast } from 'sonner'
 import { format, formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { cn } from '@/lib/utils'
 import { getAdminSession } from '@/app/actions/account'
-import {
-  AdminListingsChart,
-  type MonthlyListingPoint,
-} from '@/components/features/admin/admin-listings-chart'
+import { AdminPageHeader } from '@/components/features/admin/admin-page-header'
+import { AdminStatStrip } from '@/components/features/admin/admin-stat-strip'
+import { AdminStatusPill } from '@/components/features/admin/admin-status-pill'
 
 function normalizeCategoryId(id: string | undefined | null): string {
   return (id ?? '').trim().toLowerCase()
@@ -92,36 +89,11 @@ function formatUsd(amount: number): string {
   }).format(amount)
 }
 
-function compactUsd(amount: number): string {
-  if (Math.abs(amount) >= 10000) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    }).format(amount)
-  }
-  return formatUsd(amount)
-}
-
 function compactNumber(value: number): string {
   return new Intl.NumberFormat('en-US', {
     notation: value >= 10000 ? 'compact' : 'standard',
     maximumFractionDigits: 1,
   }).format(value)
-}
-
-function mapMonthlyCreatedToChartPoints(
-  rows: { month_key: string; listing_count: number }[],
-): MonthlyListingPoint[] {
-  return rows.map((row) => {
-    const monthDate = new Date(`${row.month_key}-01T00:00:00`)
-    return {
-      month: row.month_key,
-      label: Number.isNaN(monthDate.getTime()) ? row.month_key : format(monthDate, 'MMM yyyy'),
-      count: row.listing_count,
-    }
-  })
 }
 
 function sellerInitials(name: string): string {
@@ -226,52 +198,40 @@ function formatListingSectionLabel(section: string): string {
 type SortKey = 'created_at' | 'price' | 'views' | 'title'
 type SortDir = 'asc' | 'desc'
 
-const STATUS_META: Record<string, { label: string; dot: string; badge: string }> = {
-  active: {
-    label: 'Active',
-    dot: 'bg-emerald-500',
-    badge: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-  },
-  sold: {
-    label: 'Sold',
-    dot: 'bg-sky-500',
-    badge: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400',
-  },
-  pending: {
-    label: 'Pending',
-    dot: 'bg-amber-500',
-    badge: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
-  },
-  pending_sale: {
-    label: 'Pending sale',
-    dot: 'bg-violet-500',
-    badge: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400',
-  },
-  draft: {
-    label: 'Draft',
-    dot: 'bg-muted-foreground/50',
-    badge: 'border-border bg-muted text-muted-foreground',
-  },
-  removed: {
-    label: 'Removed',
-    dot: 'bg-rose-500',
-    badge: 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400',
-  },
-  delinquent: {
-    label: 'Delinquent',
-    dot: 'bg-orange-500',
-    badge: 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400',
-  },
+function listingStatusPill(status: string): {
+  label: string
+  tone: 'green' | 'blue' | 'amber' | 'violet' | 'slate' | 'red'
+} {
+  switch (status) {
+    case 'active':
+      return { label: 'Active', tone: 'green' }
+    case 'sold':
+      return { label: 'Sold', tone: 'blue' }
+    case 'pending':
+      return { label: 'Pending', tone: 'amber' }
+    case 'pending_sale':
+      return { label: 'Pending sale', tone: 'violet' }
+    case 'draft':
+      return { label: 'Draft', tone: 'slate' }
+    case 'removed':
+      return { label: 'Removed', tone: 'red' }
+    case 'delinquent':
+      return { label: 'Delinquent', tone: 'amber' }
+    default:
+      return { label: capitalizeWords(status.replace(/_/g, ' ')), tone: 'slate' }
+  }
 }
 
-function statusMeta(status: string) {
-  return (
-    STATUS_META[status] ?? {
-      label: capitalizeWords(status.replace(/_/g, ' ')),
-      dot: 'bg-muted-foreground/50',
-      badge: 'border-border bg-muted text-muted-foreground',
-    }
-  )
+function pageItems(current: number, total: number): Array<number | 'ellipsis'> {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const items: Array<number | 'ellipsis'> = [1]
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  if (start > 2) items.push('ellipsis')
+  for (let i = start; i <= end; i += 1) items.push(i)
+  if (end < total - 1) items.push('ellipsis')
+  items.push(total)
+  return items
 }
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
@@ -347,44 +307,9 @@ function downloadListingsCsv(rows: Listing[]): void {
   URL.revokeObjectURL(url)
 }
 
-interface StatTileProps {
-  icon: typeof Package
-  accent: 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet'
-  label: string
-  value: string
-  hint?: string
-}
-
-const STAT_ACCENT: Record<StatTileProps['accent'], string> = {
-  neutral: 'bg-secondary text-foreground',
-  emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
-  violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
-}
-
-function StatTile({ icon: Icon, accent, label, value, hint }: StatTileProps) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/15 hover:shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {label}
-        </span>
-        <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', STAT_ACCENT[accent])}>
-          <Icon className="h-4 w-4" aria-hidden />
-        </span>
-      </div>
-      <p className="mt-3 text-2xl font-bold leading-none tabular-nums tracking-tight text-foreground">
-        {value}
-      </p>
-      {hint ? <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p> : null}
-    </div>
-  )
-}
 
 export default function AdminListingsPage() {
   const [listings, setListings] = useState<Listing[]>([])
-  const [monthlyListings, setMonthlyListings] = useState<MonthlyListingPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -501,15 +426,12 @@ export default function AdminListingsPage() {
       if (!res.ok) {
         toast.error(typeof json.error === 'string' ? json.error : 'Failed to load listings')
         setListings([])
-        setMonthlyListings([])
         return
       }
       setListings(json.listings ?? [])
-      setMonthlyListings(mapMonthlyCreatedToChartPoints(json.monthlyCreated ?? []))
     } catch {
       toast.error('Failed to load listings')
       setListings([])
-      setMonthlyListings([])
     } finally {
       setLoading(false)
     }
@@ -921,111 +843,133 @@ export default function AdminListingsPage() {
     )
   }
 
+  const pages = pageItems(currentPage, totalPages)
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Listings</h1>
-            <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
-              {loading ? 'Loading…' : `${stats.total} total`}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Search, moderate, and bulk-manage every listing across the marketplace.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/admin/listings/hidden">
-              <EyeOff className="mr-2 h-4 w-4" />
-              Hidden listings
-              {stats.hidden > 0 ? (
-                <span className="ml-1.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-amber-800 dark:text-amber-300">
-                  {stats.hidden}
-                </span>
-              ) : null}
-            </Link>
-          </Button>
-          {isAdminUser ? (
-            <>
-              <Button variant="outline" asChild>
-                <Link href="/admin/listings/bulk">
-                  <Layers className="mr-2 h-4 w-4" />
-                  Bulk list
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/admin/listings/brand-requests">
-                  <Tag className="mr-2 h-4 w-4" />
-                  Brand &amp; model requests
-                </Link>
-              </Button>
-            </>
-          ) : null}
-          <Button variant="outline" asChild>
-            <Link href="/admin/listings/add">
-              <Package className="mr-2 h-4 w-4" />
-              Add listing (for user)
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Listings List"
+        description="Search, moderate, and bulk-manage marketplace listings."
+        breadcrumbs={[
+          { label: 'Home', href: '/admin/home' },
+          { label: 'Listings List' },
+        ]}
+        actions={
+          <>
+            <Button type="button" className="admin-btn-primary hover:text-white" asChild>
+              <Link href="/admin/listings/add">
+                <Package className="mr-2 h-4 w-4" /> Add Listing
+              </Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" className="bg-white">
+                  More Actions
+                  <MoreHorizontal className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled={loading} onClick={() => void fetchListings()}>
+                  <RotateCcw className="mr-2 h-4 w-4" /> Refresh
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/listings/hidden">
+                    <EyeOff className="mr-2 h-4 w-4" /> Hidden listings
+                  </Link>
+                </DropdownMenuItem>
+                {isAdminUser ? (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/listings/bulk">
+                        <Layers className="mr-2 h-4 w-4" /> Bulk list
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/listings/brand-requests">
+                        <Tag className="mr-2 h-4 w-4" /> Brand &amp; model requests
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={loading || filtered.length === 0}
+                  onClick={() => downloadListingsCsv(filtered)}
+                >
+                  <Download className="mr-2 h-4 w-4" /> Export
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
 
-      {/* KPI strip */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatTile icon={Boxes} accent="neutral" label="Total" value={compactNumber(stats.total)} />
-        <StatTile
-          icon={Package}
-          accent="emerald"
-          label="Active"
-          value={compactNumber(stats.active)}
-          hint={stats.total > 0 ? `${Math.round((stats.active / stats.total) * 100)}% of catalog` : undefined}
-        />
-        <StatTile icon={Tag} accent="sky" label="Sold" value={compactNumber(stats.sold)} />
-        <StatTile
-          icon={EyeOff}
-          accent="amber"
-          label="Hidden"
-          value={compactNumber(stats.hidden)}
-          hint="From site"
-        />
-        <StatTile
-          icon={DollarSign}
-          accent="violet"
-          label="Active value"
-          value={compactUsd(stats.inventoryValue)}
-          hint="Live inventory"
-        />
-        <StatTile icon={TrendingUp} accent="neutral" label="Total views" value={compactNumber(stats.views)} />
-      </div>
+      <AdminStatStrip
+        items={[
+          {
+            label: 'Total Listings',
+            value: loading ? '—' : compactNumber(stats.total),
+            footnote: 'All marketplace listings',
+            tone: 'teal',
+            active: statusFilter === 'all' && visibilityFilter === 'all',
+            onClick: () => {
+              setStatusFilter('all')
+              setVisibilityFilter('all')
+            },
+          },
+          {
+            label: 'Active',
+            value: loading ? '—' : compactNumber(stats.active),
+            footnote: 'Live on the site',
+            tone: 'green',
+            active: statusFilter === 'active' && visibilityFilter === 'all',
+            onClick: () => {
+              setStatusFilter('active')
+              setVisibilityFilter('all')
+            },
+          },
+          {
+            label: 'Sold',
+            value: loading ? '—' : compactNumber(stats.sold),
+            footnote: 'Marked sold',
+            tone: 'blue',
+            active: statusFilter === 'sold',
+            onClick: () => {
+              setStatusFilter('sold')
+              setVisibilityFilter('all')
+            },
+          },
+          {
+            label: 'Hidden',
+            value: loading ? '—' : compactNumber(stats.hidden),
+            footnote: 'Hidden from the site',
+            tone: 'amber',
+            active: visibilityFilter === 'hidden',
+            onClick: () => {
+              setStatusFilter('all')
+              setVisibilityFilter('hidden')
+            },
+          },
+        ]}
+      />
 
-      {/* Listing trend */}
-      {loading ? (
-        <div className="h-[360px] animate-pulse rounded-2xl border border-border bg-card" />
-      ) : (
-        <AdminListingsChart data={monthlyListings} />
-      )}
-
-      {/* Toolbar */}
-      <div className="rounded-2xl border border-border bg-card p-3">
-        <div className="flex flex-col gap-3">
-          <SiteSearchBar className="w-full" onSubmit={(e) => e.preventDefault()}>
+      <div className="admin-surface overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-border/70 p-4 lg:flex-row lg:items-center">
+          <SiteSearchBar className="flex-1 lg:min-w-0" onSubmit={(e) => e.preventDefault()}>
             <Input
               placeholder="Search by title, seller, email, brand, or model…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={siteSearchInputClassName()}
+              className={cn(siteSearchInputClassName(), 'h-10 rounded-lg')}
             />
           </SiteSearchBar>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:flex md:flex-wrap">
+          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="lg:w-36">
-                <SelectValue placeholder="Status" />
+              <SelectTrigger className="h-10 w-[200px] bg-white">
+                <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="sold">Sold</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
@@ -1035,142 +979,101 @@ export default function AdminListingsPage() {
                 <SelectItem value="removed">Removed</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sectionFilter} onValueChange={setSectionFilter}>
-              <SelectTrigger className="lg:w-36">
-                <SelectValue placeholder="Section" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All sections</SelectItem>
-                <SelectItem value="surfboards">Surfboards</SelectItem>
-                <SelectItem value="fins">Fins</SelectItem>
-                <SelectItem value="wetsuits">Wetsuits</SelectItem>
-                <SelectItem value="boardbags">Boardbags</SelectItem>
-                <SelectItem value="surfpacks">Surfpacks</SelectItem>
-                <SelectItem value="leashes">Leashes</SelectItem>
-                <SelectItem value="apparel">Apparel</SelectItem>
-                <SelectItem value="accessories">Accessories</SelectItem>
-                <SelectItem value="magazines">Magazines</SelectItem>
-                <SelectItem value="new">New &amp; retail</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
-              <SelectTrigger className="lg:w-36">
-                <SelectValue placeholder="Visibility" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All visibility</SelectItem>
-                <SelectItem value="visible">Visible</SelectItem>
-                <SelectItem value="hidden">Hidden</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={`${sortKey}:${sortDir}`}
-              onValueChange={(v) => {
-                const [k, d] = v.split(':') as [SortKey, SortDir]
-                setSortKey(k)
-                setSortDir(d)
-              }}
-            >
-              <SelectTrigger className="lg:w-40">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at:desc">Newest first</SelectItem>
-                <SelectItem value="created_at:asc">Oldest first</SelectItem>
-                <SelectItem value="price:desc">Price: high → low</SelectItem>
-                <SelectItem value="price:asc">Price: low → high</SelectItem>
-                <SelectItem value="views:desc">Most viewed</SelectItem>
-                <SelectItem value="title:asc">Title A → Z</SelectItem>
-              </SelectContent>
-            </Select>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Columns3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Columns</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" className="h-10 bg-white">
+                  <Filter className="mr-2 h-4 w-4" />
+                  More Filter
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {TOGGLEABLE_COLUMNS.map((col) => (
-                  <DropdownMenuCheckboxItem
-                    key={col.key}
-                    checked={columns[col.key]}
-                    onCheckedChange={(checked) =>
-                      setColumns((prev) => ({ ...prev, [col.key]: checked === true }))
-                    }
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    {col.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              variant="outline"
-              className="gap-2"
-              disabled={loading || filtered.length === 0}
-              onClick={() => downloadListingsCsv(filtered)}
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 space-y-3">
+                <Select value={sectionFilter} onValueChange={setSectionFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All sections</SelectItem>
+                    <SelectItem value="surfboards">Surfboards</SelectItem>
+                    <SelectItem value="fins">Fins</SelectItem>
+                    <SelectItem value="wetsuits">Wetsuits</SelectItem>
+                    <SelectItem value="boardbags">Boardbags</SelectItem>
+                    <SelectItem value="surfpacks">Surfpacks</SelectItem>
+                    <SelectItem value="leashes">Leashes</SelectItem>
+                    <SelectItem value="apparel">Apparel</SelectItem>
+                    <SelectItem value="accessories">Accessories</SelectItem>
+                    <SelectItem value="magazines">Magazines</SelectItem>
+                    <SelectItem value="new">New &amp; retail</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Visibility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All visibility</SelectItem>
+                    <SelectItem value="visible">Visible</SelectItem>
+                    <SelectItem value="hidden">Hidden</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={`${sortKey}:${sortDir}`}
+                  onValueChange={(v) => {
+                    const [k, d] = v.split(':') as [SortKey, SortDir]
+                    setSortKey(k)
+                    setSortDir(d)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at:desc">Newest first</SelectItem>
+                    <SelectItem value="created_at:asc">Oldest first</SelectItem>
+                    <SelectItem value="price:desc">Price: high → low</SelectItem>
+                    <SelectItem value="price:asc">Price: low → high</SelectItem>
+                    <SelectItem value="views:desc">Most viewed</SelectItem>
+                    <SelectItem value="title:asc">Title A → Z</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n} per page
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-start">
+                      <Columns3 className="mr-2 h-4 w-4" /> Columns
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {TOGGLEABLE_COLUMNS.map((col) => (
+                      <DropdownMenuCheckboxItem
+                        key={col.key}
+                        checked={columns[col.key]}
+                        onCheckedChange={(checked) =>
+                          setColumns((prev) => ({ ...prev, [col.key]: checked === true }))
+                        }
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {col.label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
-        {!loading &&
-        (filtered.length !== listings.length ||
-          searchQuery ||
-          statusFilter !== 'all' ||
-          sectionFilter !== 'all' ||
-          visibilityFilter !== 'all') ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2 px-1">
-            <span className="text-xs text-muted-foreground">
-              {filtered.length} match{filtered.length === 1 ? '' : 'es'} of {listings.length} listings
-            </span>
-            {searchQuery ? (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs text-foreground transition-colors hover:border-foreground/20"
-              >
-                “{searchQuery}”
-                <X className="h-3 w-3" />
-              </button>
-            ) : null}
-            {statusFilter !== 'all' ? (
-              <button
-                type="button"
-                onClick={() => setStatusFilter('all')}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs capitalize text-foreground transition-colors hover:border-foreground/20"
-              >
-                {statusFilter.replace(/_/g, ' ')}
-                <X className="h-3 w-3" />
-              </button>
-            ) : null}
-            {sectionFilter !== 'all' ? (
-              <button
-                type="button"
-                onClick={() => setSectionFilter('all')}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs text-foreground transition-colors hover:border-foreground/20"
-              >
-                {formatListingSectionLabel(sectionFilter)}
-                <X className="h-3 w-3" />
-              </button>
-            ) : null}
-            {visibilityFilter !== 'all' ? (
-              <button
-                type="button"
-                onClick={() => setVisibilityFilter('all')}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs capitalize text-foreground transition-colors hover:border-foreground/20"
-              >
-                {visibilityFilter}
-                <X className="h-3 w-3" />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 ? (
@@ -1314,7 +1217,7 @@ export default function AdminListingsPage() {
       </Dialog>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div>
         {loading ? (
           <div className="divide-y divide-border">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -1392,7 +1295,7 @@ export default function AdminListingsPage() {
             </TableHeader>
             <TableBody>
               {pageRows.map((listing) => {
-                const meta = statusMeta(listing.status)
+                const status = listingStatusPill(listing.status)
                 const selected = selectedIds.has(listing.id)
                 return (
                   <TableRow key={listing.id} data-state={selected ? 'selected' : undefined}>
@@ -1475,15 +1378,7 @@ export default function AdminListingsPage() {
                       {formatUsd(Number(listing.price) || 0)}
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={cn(
-                          'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                          meta.badge,
-                        )}
-                      >
-                        <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-                        {meta.label}
-                      </span>
+                      <AdminStatusPill label={status.label} tone={status.tone} />
                     </TableCell>
                     {columns.views ? (
                       <TableCell className="hidden text-right tabular-nums text-muted-foreground sm:table-cell">
@@ -1503,7 +1398,7 @@ export default function AdminListingsPage() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="outline" size="icon" className="h-8 w-8 bg-white">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -1584,77 +1479,52 @@ export default function AdminListingsPage() {
           </Table>
         )}
 
-        {/* Pagination */}
         {!loading && filtered.length > 0 ? (
-          <div className="flex flex-col items-center justify-between gap-3 border-t border-border px-4 py-3 sm:flex-row">
-            <p className="text-xs text-muted-foreground">
-              Showing{' '}
-              <span className="font-medium tabular-nums text-foreground">
-                {pageStart + 1}–{Math.min(pageStart + pageSize, filtered.length)}
-              </span>{' '}
-              of <span className="font-medium tabular-nums text-foreground">{filtered.length}</span>
-            </p>
-            <div className="flex items-center gap-3">
-              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-                <SelectTrigger className="h-8 w-[130px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZE_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n} per page
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={currentPage <= 1}
-                  onClick={() => setPage(1)}
-                  aria-label="First page"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={currentPage <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="px-2 text-xs tabular-nums text-muted-foreground">
-                  {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setPage(totalPages)}
-                  aria-label="Last page"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="flex flex-col items-center justify-between gap-3 border-t border-border/70 px-4 py-3 sm:flex-row">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 bg-white"
+              disabled={currentPage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-1">
+              {pages.map((pageNum, index) =>
+                pageNum === 'ellipsis' ? (
+                  <span key={`e-${index}`} className="px-2 text-xs text-muted-foreground">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setPage(pageNum)}
+                    className={cn(
+                      'flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm tabular-nums',
+                      pageNum === currentPage
+                        ? 'rounded-md bg-[hsl(var(--admin-teal))]/12 font-semibold text-[hsl(var(--admin-teal))]'
+                        : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground',
+                    )}
+                  >
+                    {pageNum}
+                  </button>
+                ),
+              )}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 bg-white"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
           </div>
         ) : null}
+      </div>
       </div>
     </div>
   )

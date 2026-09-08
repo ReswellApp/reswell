@@ -6,7 +6,7 @@ import { adminWalletUserIdParamSchema } from "@/lib/validations/admin-user-walle
 /**
  * GET /api/admin/users/[userId]
  *
- * Profile + listings for the admin user detail screen (service role).
+ * Profile, auth signup facts, listings, and commerce for the admin user detail screen.
  */
 export async function GET(
   _request: NextRequest,
