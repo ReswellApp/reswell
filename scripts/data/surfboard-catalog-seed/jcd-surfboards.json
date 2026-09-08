@@ -1,0 +1,90 @@
+{
+  "generated_for": "JCD Surfboards official named standup catalog",
+  "source": "https://www.jcdsurfboards.com/collections/board-models/products.json (Shopify Board Models collection only — excludes New Boards stock dimension SKUs, apparel, fins, and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jcd-surfboards",
+      "name": "JCD Surfboards",
+      "website_url": "https://www.jcdsurfboards.com",
+      "location_label": "Wickham, Newcastle, New South Wales, Australia",
+      "founder_name": "Jamie Carr",
+      "lead_shaper_name": "Jamie Carr",
+      "short_description": "Australian-made custom shortboards, twins, and mid-lengths from Jamie Carr's Newcastle factory.",
+      "models": [
+        {
+          "name": "BA Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/BAtwindeck.jpg?v=1649911108",
+          "description": "Designed off the Black Apache thruster model with a slightly flattened deck to carry more volume toward the rail while keeping a performance rail. Less width overall with a tight tail for hold on rail; medium single to double concave. More volume than the original Black Apache for the same length, with fins set back for drive and speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Cali",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/cali.png?v=1649887044",
+          "description": "Old-school style mal with continual rocker and rolled vee bottom for easy turning longboard surfing with directional control from anywhere on the board. Squash tail with concave under the nose; configured for FCS II or Future thruster single box or 2+1 tri-fin setup. Wave size 1–6 ft.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "FG",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/FGdeck.png?v=1649805090",
+          "description": "Medium to full nose rocker for spicy performance with deep single concave from nose to tail — deepest point just in front of the leading fins for instant speed. Full outline with a mild hip forward of the fins for easy pivot off the single concave. Fast high-performance shortboard for intermediate to advanced surfers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gemini Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/geminitwindeck.jpg?v=1649911719",
+          "description": "A twin with a sleeker outline and foil — a fish twin for speed, tight arc carves, and lip attacks. Exclusively designed as a twin fin but can be surfed with a stabiliser. Spiral vee nose to double concave between the feet and spiral vee exit with contemporary low rails. Ridden 2–3 inches shorter than the BA Twin at the same thickness.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mid Six",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/mid6deck.png?v=1649805962",
+          "description": "Higher nose rocker performance mid-length for power carving turns and hitting lips. Designed as a quad or thruster with six slight channels running from 8 inches in front of the leading fins through the fin cluster. A mid-length design that surfs like a shortboard. Wave size 1–6 ft.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "New Lover",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/newloverdeck.png?v=1649806291",
+          "description": "Based on the all-time favourite Summer Lover — a great board for just about all conditions. Single to flat bottom for more control when it's bigger; wider forward outline for paddle power and instant squirt with a pulled-in thumb tail. Single to double concave mid-range performance model for learner to advanced surfers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Slab Hunter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/slabhunterdeck.png?v=1649806569",
+          "description": "Originally designed for Ryan Edmond for chasing slabbing waves — forward outline with volume under the chest for easy paddling and wave entry. Medium single to double concave for quick under-the-hood turns and pump through bowls. Also works on long point waves; an all-around step-up from 3 ft to 3× overhead.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "SS3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/ss3deck.png?v=1649806822",
+          "description": "Still one of JCD's biggest sellers and a go-to high-performance shortboard. Updated outline with the hip removed around the fins for more drive and a slightly boxier rail from centre to tail. Moderated single and slight double concaves between the fins for a neutral feeling board underfoot.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stump",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/stumpdeck.png?v=1649909020",
+          "description": "A very fun fast everyday hybrid performer for all levels. Fuller rail for a no-catch feel with lower entry rocker for instant speed. Medium single with slight double concaves between the fins; full outline with wide tail pod and template for flow and speed over flat spots.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Coupë",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/coupeDeck.png?v=1649805360",
+          "description": "High volume performance groveler with single to double to vee for speed, zing, and release. One of JCD's most versatile and popular boards — speed through a ride with vee exit for a responsive fast small-wave grovel machine. Volume and performance crammed into a small-wave go-to. Wave size 1–5 ft.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Twingle Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/twingledeck_bc22993c-9515-441c-b523-f7faef5fd6ea.png?v=1649807333",
+          "description": "A great board for just about all conditions and any ability. Designed as a full single fin for old-school point-style glide, a single with side bites for more drive, or a twin-only option for slide rail turns. Three fin options on one board for a wide variety of waves. Wave size 1–6 ft.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wave Slave",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/waveslavedeck.png?v=1649807441",
+          "description": "Designed for the JCD team as a small to medium wave competition machine that still holds in solid surf. JCD three-stage rocker with straight single concave throughout for speed and zing; wider tail and pod for planning speed over flats and landing spins. More volume with a performance rail and feel.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
