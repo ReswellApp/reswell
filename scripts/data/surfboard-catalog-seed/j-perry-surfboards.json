@@ -1,0 +1,67 @@
+{
+  "generated_for": "J. Perry Surfboards official named standup catalog",
+  "source": "https://jperrysurfboards.com/pages/board-models (Shopify official Board Models page — excludes board deposits, logs/custom-only category, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "j-perry-surfboards",
+      "name": "J. Perry Surfboards",
+      "website_url": "https://jperrysurfboards.com",
+      "location_label": "Long Branch, New Jersey",
+      "founder_name": "Justin Perry",
+      "lead_shaper_name": "Justin Perry",
+      "short_description": "Hand-shaped alternative surfboards by Justin Perry in Long Branch, New Jersey — fishes, twins, asyms, and everyday shortboards built at West Ave Glassing.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/j-perry-surfboards.png",
+      "models": [
+        {
+          "name": "Sidecut Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/2075/9537/files/IMG_3102.jpg",
+          "description": "Based off of Ryan Burch's Squit fish, this is a personal favorite. Has all the feels of a traditional fish, but can be pushed hard in very good waves. Wide point is far forward so surf this board as short as you can go. Loves an open powerful face. Side cuts between the feet reduce area making quicker transitions. Another hip around the fins lets the board corner a little tighter. The amount sidecut I add usually depends on the surfer and the waves being surfed. Generally ridden with keels. Sample dims: 5'3 x 20 1/2 x 2 3/8 for flatter waves or 5'5 x 20 x 2 3/8 for hollower surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Huf Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/2075/9537/files/E39F0F58-64FD-4439-AB24-A0A179EB7DD2.jpg",
+          "description": "Same nose template as the Huf, but with a wide fish tail instead of the RNF style swallow. Great beach break groveler fish. Great for the surfer who only wants to ride a fish in the small/shitty stuff. Where it lacks in down the line drive like the sidecut fish, it makes up for in small wave agility. Moves rail to rail quicker, and surfs a little closer to what most people are familiar with. Ride with keels or larger base uprights. Sample dims: 5'4 x 20 x 2 3/8.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Huf",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/2075/9537/files/IMG_4596.jpg",
+          "description": "A template regurgitated from the Compound days. A board Dave repeatedly made, the huf/compound board became a favorite passed around among us for a good bit of time. Later on was reborn when Luke Ditella asked for a 5'5 19 1/4 2 1/4 RNF. The board became a favorite of his, and many others I've shaped them for. Great board for smaller stuff especially for surfers who like sensitive reaction off the back foot. Usually ridden with big upright twins and a little nub trailer. Sample dims: 5'5 x 19 1/4 x 2 3/8.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "2+1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/2075/9537/files/50E22EC6-C5C1-4241-9FE1-BD6F3053E3CA.jpg",
+          "description": "My go to board for small and shitty surf when I want some more performance than the fish. Flat rocker and deep concaves make this board fly through small surf. Add in a small trailer fin and it really opens up the board to be pushed harder than a normal twin with more control. Great board for loose backside surfing. Loves to go above the lip. Ride a few inches shorter than your standard and a 1/2 wider or so. Go even shorter and wider for a more skatey feel. Can be ordered as a squash tail as well. Ride with uprights and small trailer. Sample dims: 5'7 x 19 1/2 x 2 3/8 or 5'4 x 19 3/4 x 2 1/2.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/2075/9537/files/IMG_4597.jpg",
+          "description": "One of the most popular boards I shape. Can be ridden/ordered as a step up or an everyday driver. An extremely reliable tube hound in the 6'6x19 range. In my opinion there's no easier board to get tubed on in NJ. Easy paddle entry and tons of speed and hold. Parallel outline and centered wide point make the board very drivey and a good paddler. Slight hip in front the fin cluster. At a size more similar to your shortboard dims, it'll still have the tube riding predictability while also having the ability to put it on rail in the pocket and fit in tight curves. Has proven itself in NJ, Mexico, Panama, France and more. Sample dims: 5'9 x 19 x 2 3/8 or 6'6 x 19 x 2 1/2.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Crusader",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/2075/9537/files/IMG_4601.jpg",
+          "description": "Your standard everyday thruster. Reliability comes from simplicity. Enough rocker for good waves, but not too much you'll lose steam in the small stuff. Single to double concave for a familiar feeling under feet, wide point back for tight turns. I make this in a squash, swallow, round or round pin. Ride it around your height or whatever your most accustomed to riding. Sample dims: 5'10 x 19 x 2 3/8.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Asymmetrical",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/2075/9537/files/IMG_4418.jpg",
+          "description": "My favorite boards to make, and some of the most exciting to surf. They're made to match the differences in pressure and sensitivity we have in our heel side and toe side. Generally a twin set up and a lower apex rail is used on the toe side rail. Sometimes a more forward wide point as well. This allows for smooth, drivey and responsive toe side hooks. On the heel side, where we don't have as much pressure control, I generally use a more forgiving rail and a quad setup for hold and control. This gives you the feeling of a rail you can really trust to take some weight through a turn. Basically you have the most optimal board on your toes and heels, whereas a symmetrical board you're compensating for this in one way or another. Sample dims: 5'10/5'8 x 19 or 5'9/5'7 x 18 1/4.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Mid Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/2075/9537/files/IMG_3103.jpg",
+          "description": "Wider and more round than the twin pin, this ones really meant for flowing. Could be fun in some perfect barrels or lined up waves. Usually mostly flat on the bottom with a panel vee in the back 1/3. Sample dims: 6'8 x 21 x 2 3/4.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
