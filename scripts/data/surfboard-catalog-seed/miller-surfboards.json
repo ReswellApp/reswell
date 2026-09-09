@@ -1,0 +1,89 @@
+{
+  "generated_for": "Miller Surfboards official named standup catalog",
+  "source": "http://www.millershapes.com (official model pages \u2014 excludes clothing, ding repair, and generic custom-only categories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "miller-surfboards",
+      "name": "Miller Surfboards",
+      "website_url": "https://millersurfboards.com",
+      "location_label": "Atlantic Beach, Florida",
+      "founder_name": "Josh Miller",
+      "lead_shaper_name": "Josh Miller",
+      "short_description": "Josh Miller shapes custom hand-shaped and 3DM CAD surfboards from Atlantic Beach, Florida.",
+      "models": [
+        {
+          "name": "Phantom",
+          "image_url": "http://www.millershapes.com/images/grovelers/phantomnew.png",
+          "description": "Missing link between your standard shortboard and your fish.  Ride the phantom 3-4 inches shorter than your normal shortboard.  Board has Fuller outline more volume, combined with a moderate single to double concave.  Quad+1 set up.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Red Label",
+          "image_url": "http://www.millershapes.com/images/grovelers/redlabelboard.png",
+          "description": "Enhanced volume, single to double concave.  Thruster set up.  Slightly more volume than your standard shortboard. Available in round-squash or swallow tail",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Black Label",
+          "image_url": "http://www.millershapes.com/images/grovelers/blacklabelboard.png",
+          "description": "Enhanced volume, single to double concave, and a quad+1 fin set up makes this board a very good all around board. Available in round-squash or swallow tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Gut Wagon",
+          "image_url": "http://www.millershapes.com/images/grovelers/gutwagonboard.png",
+          "description": "Short wide and thick. , Low rocker with a single to double concave with V off the tail. Board is a wave catching machine!  Best to order 4-6 inches shorter than your normal shortboard. . Available in round-squash or swallow tail,or rocket tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Zero",
+          "image_url": "http://www.millershapes.com/images/grovelers/zeroboard.png",
+          "description": "Low entry rocker with double to panel v out the tail. Board is a super versatile small wave board.  That comes as a Quad+1",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Miller Killer",
+          "image_url": "http://www.millershapes.com/images/shortboards/m1shorty.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "M-1",
+          "image_url": "http://www.millershapes.com/images/shortboards/m1theboard.png",
+          "description": "Fuller outline, wider tail block, all around more volume, combined with a moderate single to double concave makes this board a good groveler.  Best in knee to head high surf",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "M-2",
+          "image_url": "http://www.millershapes.com/images/shortboards/m2.png",
+          "description": "High performance go to shortboard for experienced surfers.  Single concave, available in round-squash or swallow tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grommet",
+          "image_url": "http://www.millershapes.com/images/shortboards/groometboard.png",
+          "description": "Slimmer version of the gutwagon, single to double concave. Quad+1. Slightly more volume than your standard shortboard. Available in round-squash or swallow tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Frank The Tank",
+          "image_url": "http://www.millershapes.com/images/longboards/frankthetankboardnew.png",
+          "description": "Slight single concave in the nose that flows out to rolled v off the tail.  Classic all a rounder that will work in most conditions .  Comes standard as a 2+1 setup",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Time Machine",
+          "image_url": "http://www.millershapes.com/images/longboards/timemachines.png",
+          "description": "Old school all the way!  50/50 rails with a spooned single concave in the nose that flows out to rolled belly of the tail.  This is the ultimate nose rider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Tanker",
+          "image_url": "http://www.millershapes.com/images/longboards/minitankerboard.png",
+          "description": "This is the frank the tank model shrunk down and compressed to a min mal shape. 7'4-8'6.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
