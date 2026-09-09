@@ -44,6 +44,36 @@
           "name": "Modern Classic",
           "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-Modern-Classic-9-6-Longboard__S_1.jpg?v=1785186732",
           "board_category_slug": "longboard"
+        },
+        {
+          "name": "60's Pig",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-60-s-Pig-9-10-Longboard-__S_1.jpg?v=1785186411",
+          "description": "Heritage 1960s Pig outline from the Velzy collection at Hobie Surf Shops — 9'10\" volan longboard shaped by Adam Davenport with a 3/4\" darkwood stringer and single long box fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "New Traditional",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-New-Traditional-9-4-Longboard__S_1.jpg?v=1785186840",
+          "description": "Velzy New Traditional 9'4\" longboard from the Hobie heritage collection — shaped by Nick Melanson with clear T&B glass, black offset pinlines, and blue candy-coat rail panels.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Double Ender",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Velzy-Double-Ender-9-8-Longboard-__S_1.jpg?v=1785186452",
+          "description": "Velzy Double Ender 9'8\" longboard from the Hobie heritage collection — shaped by Nick Melanson with ice-blue tint, deck and tail patches, and a single long box fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "711 Model",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Fantastic-Acid-x-Velzy-8-5-711-Model__S_1.jpg?v=1785363648",
+          "description": "Fantastic Acid x Velzy 711 Model — an 8'5\" heritage shape from the Velzy collection at Hobie Surf Shops, glassed by Tristan Mausse with custom glass-on fins and red gloss resin panels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Malibu Chip",
+          "image_url": "https://cdn.shopify.com/s/files/1/0789/1586/2755/files/Fantastic-Acid-x-Velzy-10-0-Malibu-Chip__S_1.jpg?v=1785186723",
+          "description": "Fantastic Acid x Velzy Malibu Chip — a 10'0\" volan longboard from the Velzy collection at Hobie Surf Shops, shaped by Tristan Mausse with a 1\" redwood stringer and custom glass-on fins.",
+          "board_category_slug": "longboard"
         }
       ]
     }
