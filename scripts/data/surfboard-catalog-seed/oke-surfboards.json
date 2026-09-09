@@ -1,0 +1,108 @@
+{
+  "generated_for": "Oke Surfboards official named standup catalog",
+  "source": "https://www.okesurfboards.com/our-boards/new-boards/ (WordPress model pages \u2014 excludes used boards, store merch, and Gut Sliders category page)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "oke-surfboards",
+      "name": "Oke Surfboards",
+      "website_url": "https://www.okesurfboards.com",
+      "location_label": "Mornington, Victoria, Australia",
+      "founder_name": "Alan Oke",
+      "lead_shaper_name": "Neil Oke",
+      "short_description": "Victorian surfboards from the Oke family \u2014 hand-shaped fishes, fun shapes, midlengths, and longboards from their Braeside factory since 1968.",
+      "models": [
+        {
+          "name": "Knucklehead",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2016/10/Knuckle.jpg",
+          "description": "LENGTH:\u00a05\u20194\u2033 \u2013 6\u20198\u2033 WIDTH: 19\u2033 \u2013 21\u2033 THICKNESS:\u00a02 1/8\u2033 \u2013 \u00a02 7/8\u2033 ABILITY: Intermediate \u2013 Pro WAVE SIZE:\u00a0up to 5ft FINS:\u00a03, 4 or 5 Wider outline than the Elevator, most noticeably in the tail. This helps to generate speed much easier in average waves, where other shortboards\u00a0can sometimes be tricky to get up and going. It has a low nose entry rocker, gradual through the centre with a little more tail kick, enabling the board to perform critical turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Gem",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2015/09/thegemoke.jpg",
+          "description": "LENGTH: 5\u20193\u2033 \u2013 6\u20191\u2033 WIDTH: 19\u2033 \u2013 20 1/4\u2033 THICKNESS: 2 1/8\u2033 \u2013 2 1/2\u2033 ABILITY: Intermediate \u2013 Pro WAVE SIZE: 1 \u2013 4ft FINS: 3, 4 or 5 The new small wave weapon! Sticking with the full nose, pulled in tail theme of the Pepita, we have gone even wider up front with the Gem. That enables you to surf this model even shorter, despite it being narrower in the centre. The triple flyer brings the tail width in and creates more edge for hold, giving you more control.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Meerkat",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2014/12/481903_10151385022347902_1174575486_n.jpg",
+          "description": "LENGTH: 5\u20194\u2033 \u2013 6\u20194\u2033 WIDTH: 18 3/4\u2033 \u2013 21\u2033 THICKNESS: 2 1/4\u2033 \u2013 2 3/4\u2033 ABILITY: Intermediate to Pro WAVE SIZE: 1 \u2013 4ft FINS: 3, 4 or 5 The Meerkat is our best performance groveller in small, mushy waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Midlength Single",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2014/12/MSF.jpg",
+          "description": "LENGTH: 7\u20190\u2033 \u2013 8\u20190\u2033 WIDTH: 21 1/2\u2033 \u2013 23\u2033 THICKNESS: 2 1/2\u2033 \u2013 3\u2033 ABILITY: All WAVE SIZE: 1 \u2013 4ft FINS: 1 This traditional looking shape features pinched rails running nose to tail and a soft rolled bottom for flow. A flatter section is kept along the centre to increase planing area and down the line speed. The Midlength Single is an old school looking board, with a modern twist.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Allround Longboard",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2014/12/ARLB.jpg",
+          "description": "LENGTH: 9\u20190\u2033 \u2013 9\u20196\u2033 WIDTH: 22 1/2\u2033 \u2013 23\u2033 THICKNESS: 2 5/8\u2033 \u2013 3 1/4\u2033 ABILITY: All WAVE SIZE: 1 \u2013 4ft FINS: Box & Sides The name speaks for itself.. Whether it be nose-riding or maneuverability you want out of your longboard, this model does it all! Available with a range of tail shapes.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Elevator",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2014/11/IMG_1125.jpg",
+          "description": "LENGTH: 5\u20194\u2033 \u2013 6\u20194\u2033 WIDTH: 18 1/2\u2033 \u2013 20 1/2\u2033 THICKNESS: 2 1/8\u2033 \u2013 2 5/8\u2033 ABILITY: Intermediate \u2013 Pro WAVE SIZE: up to 6 \u2013 8ft FINS: 3, 4 or 5 The Elevator combines the best elements from the Abalone and Pepita to become a perfect all in one shortboard. The wide point has been moved slightly forward to give more front foot drive while the pulled in rounded pin enables the board to be surfed tight in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Chok's Mal",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2014/11/CHOKM.jpg",
+          "description": "LENGTH: 9\u20190\u2033 \u2013 10\u20190\u2033 WIDTH: 23\u2033 \u2013 24\u2033 THICKNESS: 2 3/4\u2033 \u2013 3 3/8\u2033 ABILITY: All WAVE SIZE: 1 \u2013 3ft FINS: 1 Big One This model has been designed from Neil \u2018Chok\u2019 Oke\u2019s personal favourite longboard that he has had for nearly 30 years! It features a wider outline along with a soft, rolled bottom and pinched rails. Perfect for gliding with effortless style along even the tiniest of waves..",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Abalone",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2013/06/abalone.jpg",
+          "description": "LENGTH: 5\u20196\u2033 \u2013 6\u20196\u2033 WIDTH: 18 1/4\u2033 \u2013 20\u2033 THICKNESS: 2 1/8\u2033 \u2013 2 1/2\u2033 ABILITY: Intermediate \u2013 Pro WAVE SIZE: 2 \u2013 6ft FINS: 3 A slightly flatter rockered, wider nosed shortboard. This model is available as a squash, swallow or rounded pin tail. The Abalone has been the favourite board for the majority of our team riders.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ellipse",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2013/06/46701_10151385079622902_390537151_n.jpg",
+          "description": "LENGTH: 6\u20192\u2033 \u2013 7\u20196\u2033 WIDTH: 20 3/4\u2033 \u2013 22 1/2\u2033 THICKNESS: 2 1/2\u2033 \u2013 3\u2033 ABILITY: All WAVE SIZE: 1 \u2013 5ft FINS: 3,4 or 5 The Ellipse is a scaled up version of the Pepita with a few subtle tweaks. It features the same concept of the wide, curvy outline keeping area up front combined with a pulled in tail, but contains even more volume throughout.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "La Pepita",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2013/06/LAPEPITANEW.jpg",
+          "description": "LENGTH: 5\u20194\u2033 \u2013 6\u20196\u2033 WIDTH: 19 1/2\u2033 \u2013 21\u2033 THICKNESS: 2 1/8\u2033 \u2013 2 3/4\u2033 ABILITY: Intermediate and above WAVE SIZE: 1 \u2013 5ft FINS: 3,4 or 5 The endless curve created by the extra centre width pulled into a narrower makes for a board that can be surfed in the pocket, yet still generate plenty of speed through flat sections.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Funboard",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2011/01/FUNBOARD.jpg",
+          "description": "LENGTH: 6\u20196\u2033 \u2013 8\u20190\u2033 WIDTH: 20 1/2\u2033 \u2013 22 1/2\u2033 THICKNESS: 2 1/2\u2033 \u2013 3 1/4\u2033 ABILITY: All WAVE SIZE: 1 \u2013 4ft FINS: 3 With a nice wide, forgiving outline, the Funboard is perfect for the first time surfer. The extra nose area makes this design super stable and a great paddler, meaning more waves and most of all, more fun!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Frazfish",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2011/01/frazfish.jpg",
+          "description": "LENGTH: 5\u20192\u2033 \u2013 6\u20196\u2033 WIDTH: 19 1/2\u2033 \u2013 21 1/4\u2033 THICKNESS: 2 1/8\u2033 \u2013 2 3/4\u2033 ABILITY: Intermediate and above WAVE SIZE: 1 \u2013 5ft FINS: 3,4 or 5 The Frazfish was born through working with Fraser Ross and the rest of the team who were all after a small wave fish that would still perform and hold. By increasing the tail width, keeping the rocker low and running a deeper double concave through the tail, we have created a board that flies over flat sections yet can still be put on a rail. Order 4 \u2013 6\u2033 shorter than your standard shortboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big Fish",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2010/12/269392_10151384968567902_231836933_n.jpg",
+          "description": "LENGTH: 6\u20196\u2033 \u2013 8\u20190\u2033 WIDTH: 21\u2033 \u2013 23\u2033 THICKNESS: 2 1/2\u2033 \u2013 3 1/4\u2033 ABILITY: All WAVE SIZE: 1 \u2013 4ft FINS: 3, 4 or 5 The ultimate paddler and wave catcher, The Big Fish is ideal for those wanting more waves or the bigger bloke who\u2019s not ready for longboarding just yet! This model has the most volume of all the boards in our range, so therefore is more suited to smaller or weaker waves. A slight concave running to a scooped vee over the fins helps loosen up the board, making it easy to turn for such a wide outline, while the swallow tail prevents the board skipping out.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Jolly Pop",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2010/12/jollypopmodel.jpg",
+          "description": "LENGTH: 5\u20198\u2033 \u2013 6\u20196\u2033 WIDTH: 18\u2033 \u2013 19 1/4\u2033 THICKNESS: 2\u2033 \u2013 2 1/2\u2033 ABILITY: Intermediate \u2013 Pro WAVE SIZE: 3 \u2013 8ft FINS: 3 Team rider Liam Jolly\u2019s go to board in just about all conditions. Through working with Liam over several years, we have continually refined this high performance design to where it is today.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Popsicle",
+          "image_url": "https://www.okesurfboards.com/wp-content/uploads/2010/12/popsicle.jpg",
+          "description": "LENGTH: 5\u20194\u2033 \u2013 6\u20192\u2033 WIDTH: 18 1/2\u2033 \u2013 20\u2033 THICKNESS: 2 1/8\u2033 \u2013 2 1/2\u2033 ABILITY: Intermediate \u2013 Pro WAVE SIZE: 1 \u2013 4ft FINS: 3 The Popsicle Punters wider nose and low entry rocker combined with a pulled in squash tail, creates a board that generates plenty of speed in small, weaker waves, yet still has the drive and responsive feel of a performance shortboard.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
