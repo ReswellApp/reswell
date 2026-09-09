@@ -45,11 +45,11 @@ export function AddedToCartDialog({ preview, open, onOpenChange }: AddedToCartDi
       <DialogContent
         showCloseButton
         className={cn(
-          "flex w-[calc(100%-1rem)] max-h-[min(92dvh,44rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl md:max-w-4xl",
+          "flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-3xl flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-h-[min(92dvh,44rem)] sm:max-w-3xl md:max-w-4xl",
         )}
       >
-        <DialogHeader className="shrink-0 space-y-0 border-b border-border/70 px-4 py-4 pr-12 text-center sm:px-6">
-          <DialogTitle className="text-[15px] font-semibold leading-snug tracking-tight sm:text-base">
+        <DialogHeader className="shrink-0 space-y-0 border-b border-border/70 px-4 py-3.5 pr-12 text-center sm:px-6 sm:py-4">
+          <DialogTitle className="text-sm font-semibold leading-snug tracking-tight sm:text-base">
             {heading}
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -58,8 +58,8 @@ export function AddedToCartDialog({ preview, open, onOpenChange }: AddedToCartDi
         </DialogHeader>
 
         {preview ? (
-          <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(14rem,16rem)] sm:items-start sm:gap-6 sm:p-6">
-            <div className="relative mx-auto aspect-[3/4] w-full max-w-[16rem] overflow-hidden rounded-lg bg-neutral-100 sm:mx-0 sm:max-w-none dark:bg-neutral-900">
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(14rem,16rem)] sm:items-start sm:gap-6 sm:p-6">
+            <div className="relative mx-auto aspect-[3/4] w-[min(11rem,42vw)] shrink-0 overflow-hidden rounded-lg bg-neutral-100 sm:mx-0 sm:w-full dark:bg-neutral-900">
               {preview.imageUrl ? (
                 <Image
                   src={preview.imageUrl}
@@ -77,11 +77,11 @@ export function AddedToCartDialog({ preview, open, onOpenChange }: AddedToCartDi
             </div>
 
             <div className="min-w-0">
-              <h3 className="text-base font-semibold leading-snug tracking-tight text-foreground">
+              <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground sm:text-base">
                 {preview.title}
               </h3>
               {unitPrice != null ? (
-                <p className="mt-4 text-[15px] tabular-nums text-foreground">
+                <p className="mt-1.5 text-sm tabular-nums text-foreground sm:mt-4 sm:text-[15px]">
                   {qty} × ${formatAddedToCartMoney(unitPrice)}
                 </p>
               ) : null}
@@ -97,7 +97,7 @@ export function AddedToCartDialog({ preview, open, onOpenChange }: AddedToCartDi
                 Continue shopping
               </Button>
               {lineTotal != null ? (
-                <div className="mt-3 space-y-1 text-center">
+                <div className="mt-1 space-y-0.5 text-center sm:mt-3 sm:space-y-1">
                   <p className="text-sm text-muted-foreground">Order subtotal</p>
                   <p className="text-lg font-semibold tabular-nums text-foreground">
                     ${formatAddedToCartMoney(lineTotal)}
@@ -108,7 +108,7 @@ export function AddedToCartDialog({ preview, open, onOpenChange }: AddedToCartDi
                   </p>
                 </div>
               ) : (
-                <p className="mt-3 text-center text-sm text-muted-foreground">
+                <p className="mt-1 text-center text-sm text-muted-foreground sm:mt-3">
                   Your cart contains {preview.cartCount}{" "}
                   {preview.cartCount === 1 ? "item" : "items"}
                 </p>
