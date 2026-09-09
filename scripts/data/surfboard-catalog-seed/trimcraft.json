@@ -1,6 +1,6 @@
 {
   "generated_for": "Trimcraft official named standup catalog",
-  "source": "https://www.trimcraftsurf.com/models (Squarespace model pages — excludes custom deposits and merch)",
+  "source": "https://www.trimcraftsurf.com/models and https://www.trimcraftsurf.com/piggy-back (Squarespace model pages — excludes custom deposits and merch)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -65,6 +65,12 @@
           "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1635718375667-K34JXZI60RZULWB05QAK/nk20211031_7%272+power+cat_002.jpg",
           "description": "A powered twin-hull displacement hull foil nose to tail — meant to scream with relative ease. The twin-fin variation gets them on rail quicker with more forgiveness than the average single-fin hull. Best between 6'10 and 8'.",
           "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Piggyback",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6119587fead12509dd3427f8/1631137983027-JE9TJAAMVAMVWXNOEAI5/IMG_3007-768x960-1.jpg",
+          "description": "High performance shortboard with a fishy feel. Intended for moderate to advanced surfers and good waves, this performance twin has proven itself as one of the best designs for throaty reef and beachbreaks — and has also spent years in the barrel under the feet of the likes of Trevor Gordon and Sam Hammer on both the east and west coasts of the USA.",
+          "board_category_slug": "fish"
         },
         {
           "name": "Diamond Twin",
