@@ -36,6 +36,8 @@ export async function attachOrderShippingLabel(params: {
   insuranceClaimUrl?: string | null
   shipengineLabelId?: string | null
   shipengineShipmentId?: string | null
+  labelCostUsd?: number | null
+  labelCostCurrency?: string | null
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const track = normalizeTrackingNumberForCarrier(params.trackingNumber ?? "") || null
   const car = params.trackingCarrier?.trim() || null
@@ -62,6 +64,8 @@ export async function attachOrderShippingLabel(params: {
     insurance_claim_url: params.insuranceClaimUrl ?? null,
     shipengine_label_id: params.shipengineLabelId ?? null,
     shipengine_shipment_id: params.shipengineShipmentId ?? null,
+    label_cost_usd: params.labelCostUsd ?? null,
+    label_cost_currency: params.labelCostCurrency ?? null,
   })
 
   if (ins.error) {

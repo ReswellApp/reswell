@@ -3,20 +3,14 @@
 import { useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import {
-  ArrowLeft,
-  ChevronRight,
-  LifeBuoy,
-  Loader2,
-  MessageCircle,
-  Package,
-  ShieldAlert,
-} from "lucide-react"
+import { ArrowLeft, Loader2, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
 import { submitMessagesSupportTicketAction } from "@/lib/actions/messagesSupportTicket"
 import {
+  filterSupportHubCategories,
   HELP_HUB_INTENTS,
   type HelpHubIntent,
+  type SupportHubCategory,
 } from "@/lib/help/help-hub-intents"
 import {
   contextualOrderHelpIssues,
@@ -31,7 +25,7 @@ import {
   type SupportJourneyNode,
 } from "@/lib/messages/support-journey-config"
 import type { HelpHubOrderOption } from "@/lib/services/supportCases"
-import type { HelpHubIntentId, OrderHelpIssueId } from "@/lib/types/supportCase"
+import type { HelpHubIntentId, OrderHelpIssueId, UserSupportCaseListItem } from "@/lib/types/supportCase"
 import {
   messagesSupportTopicLabels,
   type MessagesSupportTopic,
@@ -41,8 +35,10 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { ClaimEvidenceUploader } from "@/components/features/support/claim-evidence-uploader"
+import { SupportHubChoiceCards } from "@/components/features/support/support-hub-choice-cards"
+import { SupportHubHome } from "@/components/features/support/support-hub-home"
+import { SupportHubOrderPicker } from "@/components/features/support/support-hub-order-picker"
 import type { SupportCaseAttachmentInput } from "@/lib/validations/support-case-attachment"
-import { cn } from "@/lib/utils"
 
 /** Matches Zod `body` min on order + messages support tickets. */
 const DETAILS_MIN_CHARS = 10
@@ -69,7 +65,15 @@ function DetailsLengthHint({ value }: { value: string }) {
   )
 }
 
-type Phase = "intents" | "order_pick" | "order_issue" | "order_form" | "topic_browse" | "resolution" | "freeform"
+type Phase =
+  | "intents"
+  | "order_pick"
+  | "order_issue"
+  | "order_form"
+  | "topic_browse"
+  | "resolution"
+  | "freeform"
+  | "sign_in"
 
 type JourneyStackFrame =
   | { kind: "options"; topic: MessagesSupportTopic; nodes: SupportJourneyNode[] }
@@ -77,6 +81,9 @@ type JourneyStackFrame =
 interface HelpHubClientProps {
   orders: HelpHubOrderOption[]
   userId: string
+  signedIn?: boolean
+  cases?: UserSupportCaseListItem[]
+  historyOpen?: boolean
   initialIntent?: HelpHubIntentId | null
   initialOrderId?: string | null
   initialIssue?: OrderHelpIssueId | null
@@ -87,6 +94,9 @@ interface HelpHubClientProps {
 export function HelpHubClient({
   orders,
   userId,
+  signedIn = true,
+  cases = [],
+  historyOpen = false,
   initialIntent = null,
   initialOrderId = null,
   initialIssue = null,
@@ -128,6 +138,9 @@ export function HelpHubClient({
   const [roleFilter, setRoleFilter] = useState<"all" | "buyer" | "seller">(
     initialRole ?? "all",
   )
+  const [preferredIssue, setPreferredIssue] = useState<OrderHelpIssueId | null>(initialIssue)
+  const [query, setQuery] = useState("")
+  const [lockRoleTabs, setLockRoleTabs] = useState(Boolean(initialRole))
 
   const [topic, setTopic] = useState<MessagesSupportTopic>(
     () => intent?.topic ?? "general",
@@ -161,6 +174,9 @@ export function HelpHubClient({
     setIntent(null)
     setSelectedOrder(null)
     setIssueId(null)
+    setPreferredIssue(null)
+    setLockRoleTabs(false)
+    setRoleFilter("all")
     setStack([])
     setPathTitles([])
     setResolutionNode(null)
@@ -170,6 +186,11 @@ export function HelpHubClient({
   }
 
   function pickIntent(next: HelpHubIntent) {
+    if (!signedIn && next.id === "order") {
+      setIntent(next)
+      setPhase("sign_in")
+      return
+    }
     setIntent(next)
     setPathTitles([])
     setResolutionNode(null)
@@ -185,12 +206,32 @@ export function HelpHubClient({
     }
   }
 
+  function pickCategory(category: SupportHubCategory) {
+    const next = HELP_HUB_INTENTS.find((item) => item.id === category.intent)
+    if (!next) return
+    setPreferredIssue(category.issue ?? null)
+    if (category.role) {
+      setRoleFilter(category.role)
+      setLockRoleTabs(true)
+    } else {
+      setRoleFilter("all")
+      setLockRoleTabs(false)
+    }
+    pickIntent(next)
+  }
+
   function pickOrder(order: HelpHubOrderOption) {
     setSelectedOrder(order)
-    setIssueId(null)
     setDetails("")
     setContactedSeller("")
     setClaimEvidence([])
+    const issues = contextualOrderHelpIssues(order)
+    if (preferredIssue && issues.some((item) => item.id === preferredIssue)) {
+      setIssueId(preferredIssue)
+      setPhase("order_form")
+      return
+    }
+    setIssueId(null)
     setPhase("order_issue")
   }
 
@@ -247,7 +288,7 @@ export function HelpHubClient({
       setPhase("order_pick")
       return
     }
-    if (phase === "order_pick" || phase === "topic_browse") {
+    if (phase === "sign_in" || phase === "order_pick" || phase === "topic_browse") {
       if (phase === "topic_browse" && stack.length > 1) {
         setStack((s) => s.slice(0, -1))
         setPathTitles((p) => p.slice(0, -1))
@@ -363,15 +404,67 @@ export function HelpHubClient({
     pathTitles.length > 0 ? `${messagesSupportTopicLabels[topic]} → ${pathTitles.join(" → ")}` : null
 
   const optionNodes = stack.length > 0 ? stack[stack.length - 1]!.nodes : []
+  const visibleCategories = useMemo(() => filterSupportHubCategories(query), [query])
+  const featuredId = useMemo(() => {
+    if (orders.some((order) => order.role === "seller") && !orders.some((order) => order.role === "buyer")) {
+      return "sale" as const
+    }
+    return "purchase" as const
+  }, [orders])
+  const signInHref = `/auth/login?redirect=${encodeURIComponent("/dashboard/support")}`
+
+  const heading =
+    phase === "intents"
+      ? "Customer support"
+      : phase === "order_form" && formCopy
+        ? formCopy.pageTitle
+        : intent?.id === "order" && selectedOrder
+          ? selectedOrder.role === "seller"
+            ? "Get help with a sale"
+            : "Get help with a purchase"
+          : intent?.id === "order"
+            ? roleFilter === "seller"
+              ? "Which sale?"
+              : roleFilter === "buyer"
+                ? "Which purchase?"
+                : "Which order?"
+            : phase === "sign_in"
+              ? "Sign in to continue"
+              : intent?.title ?? "Get help"
+
+  const subtitle =
+    phase === "intents"
+      ? "Choose a topic — we’ll ask a few questions, then you can add details."
+      : phase === "order_pick"
+        ? roleFilter === "seller"
+          ? "Pick the sale this is about."
+          : roleFilter === "buyer"
+            ? "Pick the purchase this is about."
+            : "Pick the purchase or sale this is about."
+        : phase === "order_issue"
+          ? selectedOrder
+            ? orderHelpIssuePrompt(selectedOrder)
+            : "What do you need for this order?"
+          : phase === "order_form" && formCopy
+            ? formCopy.pageSubtitle
+            : phase === "resolution"
+              ? "Try this first, or message our team."
+              : phase === "freeform"
+                ? signedIn
+                  ? "Tell us what happened. We’ll open a case under Support."
+                  : "Sign in to send this to the Reswell team."
+                : phase === "sign_in"
+                  ? "Orders and sales are on your account. Sign in to choose one."
+                  : "Pick the closest match, or ask our team below."
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6 xl:max-w-4xl">
       {phase !== "intents" ? (
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="-ml-2 gap-1 text-muted-foreground hover:text-foreground"
+          className="-ml-2 h-9 gap-1 text-muted-foreground hover:text-foreground"
           onClick={goBack}
         >
           <ArrowLeft className="h-4 w-4" aria-hidden />
@@ -380,36 +473,10 @@ export function HelpHubClient({
       ) : null}
 
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          {phase === "intents"
-            ? "How can we help?"
-            : phase === "order_form" && formCopy
-              ? formCopy.pageTitle
-              : intent?.id === "order" && selectedOrder
-                ? selectedOrder.role === "seller"
-                  ? "Get help with a sale"
-                  : "Get help with a purchase"
-                : intent?.id === "order"
-                  ? "Get help with an order"
-                  : intent?.title ?? "Get help"}
+        <h1 className="text-[22px] font-semibold tracking-tight text-foreground sm:text-2xl">
+          {heading}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {phase === "intents"
-            ? "Choose what you need — we’ll guide you, then open a case you can track."
-            : phase === "order_pick"
-              ? "Pick the purchase or sale this is about."
-              : phase === "order_issue"
-                ? selectedOrder
-                  ? orderHelpIssuePrompt(selectedOrder)
-                  : "What do you need for this order?"
-                : phase === "order_form" && formCopy
-                  ? formCopy.pageSubtitle
-                  : phase === "resolution"
-                    ? "Try this first, or message our team."
-                    : phase === "freeform"
-                      ? "Tell us what happened. We’ll open a case under Support."
-                      : "Pick the closest match, or ask our team below."}
-        </p>
+        <p className="text-[13px] text-muted-foreground sm:text-sm">{subtitle}</p>
       </div>
 
       {relatedConversationId ? (
@@ -424,91 +491,46 @@ export function HelpHubClient({
         </p>
       ) : null}
 
-      {/* Intent picker */}
       {phase === "intents" ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {HELP_HUB_INTENTS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => pickIntent(item)}
-              className={cn(
-                "flex flex-col items-start gap-0.5 rounded-2xl border border-border/70 bg-card px-4 py-3.5 text-left shadow-sm transition-colors",
-                "hover:border-foreground/15 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                item.priority && "border-amber-500/35 bg-amber-500/[0.04]",
-              )}
-            >
-              <span className="flex items-center gap-2 text-[15px] font-semibold text-foreground">
-                {item.id === "order" ? (
-                  <Package className="h-4 w-4 text-primary" aria-hidden />
-                ) : item.id === "safety" ? (
-                  <ShieldAlert className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden />
-                ) : (
-                  <LifeBuoy className="h-4 w-4 text-primary" aria-hidden />
-                )}
-                {item.title}
-              </span>
-              <span className="text-[13px] leading-snug text-muted-foreground">{item.hint}</span>
-            </button>
-          ))}
+        <SupportHubHome
+          cases={cases}
+          categories={visibleCategories}
+          featuredId={featuredId}
+          query={query}
+          onQueryChange={setQuery}
+          onPick={pickCategory}
+          historyOpen={historyOpen}
+          signedIn={signedIn}
+        />
+      ) : null}
+
+      {phase === "sign_in" ? (
+        <div className="rounded-2xl border border-border/70 bg-card px-5 py-8 text-center shadow-sm">
+          <p className="text-[15px] font-medium text-foreground">
+            Choose the exact purchase or sale after you sign in.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            That keeps your case in the same queue our team uses in customer service.
+          </p>
+          <Button asChild className="mt-6 rounded-full bg-listingHeart px-6 text-white hover:bg-listingHeart/90">
+            <Link href={signInHref}>Sign in</Link>
+          </Button>
         </div>
       ) : null}
 
-      {/* Order picker */}
       {phase === "order_pick" ? (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {(["all", "buyer", "seller"] as const).map((r) => (
-              <Button
-                key={r}
-                type="button"
-                size="sm"
-                variant={roleFilter === r ? "default" : "outline"}
-                className="rounded-full"
-                onClick={() => setRoleFilter(r)}
-              >
-                {r === "all" ? "All" : r === "buyer" ? "Purchases" : "Sales"}
-              </Button>
-            ))}
-          </div>
-          {filteredOrders.length === 0 ? (
-            <div className="rounded-xl border border-dashed px-4 py-10 text-center">
-              <p className="font-medium text-foreground">No orders found</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                If this isn’t about an order, go back and pick another topic.
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-2" role="list">
-              {filteredOrders.map((order) => (
-                <li key={`${order.role}-${order.id}`}>
-                  <button
-                    type="button"
-                    onClick={() => pickOrder(order)}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 text-left shadow-sm transition-colors hover:border-foreground/15 hover:bg-muted/40"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-semibold text-foreground">
-                        {order.title}
-                      </span>
-                      <span className="mt-0.5 block text-[13px] text-muted-foreground">
-                        {order.role === "buyer" ? "Purchase" : "Sale"} · {order.orderRef} ·{" "}
-                        {helpHubOrderStatusLine(order)}
-                      </span>
-                    </span>
-                    <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <SupportHubOrderPicker
+          orders={filteredOrders}
+          roleFilter={roleFilter}
+          onRoleFilter={setRoleFilter}
+          onPick={pickOrder}
+          showRoleTabs={!lockRoleTabs}
+        />
       ) : null}
 
-      {/* Order issue types */}
       {phase === "order_issue" && selectedOrder ? (
         <div className="space-y-3">
-          <div className="rounded-xl border border-border/60 bg-muted/25 px-3.5 py-3">
+          <div className="rounded-2xl border border-border/60 bg-muted/25 px-3.5 py-3">
             <p className="text-[15px] font-medium text-foreground">{selectedOrder.title}</p>
             <p className="mt-0.5 text-[13px] text-muted-foreground">
               {selectedOrder.orderRef}
@@ -518,23 +540,10 @@ export function HelpHubClient({
               {selectedOrder.role === "buyer" ? "Your purchase" : "Your sale"}
             </p>
           </div>
-          <ul className="space-y-2" role="list">
-            {visibleIssues.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => pickIssue(item.id)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 text-left shadow-sm transition-colors hover:border-foreground/15 hover:bg-muted/40"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-semibold text-foreground">{item.title}</span>
-                    <span className="mt-0.5 block text-[13px] text-muted-foreground">{item.hint}</span>
-                  </span>
-                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <SupportHubChoiceCards
+            choices={visibleIssues}
+            onPick={(id) => pickIssue(id as OrderHelpIssueId)}
+          />
           {selectedOrder.role === "buyer" &&
           (selectedOrder.deliveryStatus === "pending" ||
             selectedOrder.deliveryStatus === "pickup_ready" ||
@@ -645,6 +654,7 @@ export function HelpHubClient({
               </Button>
               <Button
                 type="button"
+                className="bg-listingHeart text-white hover:bg-listingHeart/90"
                 onClick={submitOrderHelp}
                 disabled={
                   pending ||
@@ -663,32 +673,19 @@ export function HelpHubClient({
         </div>
       ) : null}
 
-      {/* Topic journey */}
       {phase === "topic_browse" ? (
         <div className="space-y-4">
-          <ul className="space-y-2" role="list">
-            {optionNodes.map((node) => (
-              <li key={node.id}>
-                <button
-                  type="button"
-                  onClick={() => pickNode(node)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 text-left shadow-sm transition-colors hover:border-foreground/15 hover:bg-muted/40"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-semibold text-foreground">{node.title}</span>
-                    {node.hint ? (
-                      <span className="mt-0.5 block text-[13px] text-muted-foreground">{node.hint}</span>
-                    ) : null}
-                  </span>
-                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <SupportHubChoiceCards
+            choices={optionNodes}
+            onPick={(id) => {
+              const node = optionNodes.find((item) => item.id === id)
+              if (node) pickNode(node)
+            }}
+          />
           <Button
             type="button"
             size="sm"
-            className="gap-1.5 rounded-full"
+            className="gap-1.5 rounded-full bg-listingHeart text-white hover:bg-listingHeart/90"
             onClick={() => {
               setResolutionNode(null)
               setDetails("")
@@ -725,7 +722,11 @@ export function HelpHubClient({
             >
               That solved it
             </Button>
-            <Button type="button" className="rounded-full" onClick={() => setPhase("freeform")}>
+            <Button
+              type="button"
+              className="rounded-full bg-listingHeart text-white hover:bg-listingHeart/90"
+              onClick={() => setPhase("freeform")}
+            >
               I still need help
             </Button>
           </div>
@@ -750,28 +751,37 @@ export function HelpHubClient({
             <Button type="button" variant="ghost" onClick={goBack} disabled={pending}>
               Back
             </Button>
-            <Button
-              type="button"
-              onClick={submitGeneralTicket}
-              disabled={pending || !detailsReady(details)}
-            >
-              {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Open case
-            </Button>
+            {signedIn ? (
+              <Button
+                type="button"
+                className="bg-listingHeart text-white hover:bg-listingHeart/90"
+                onClick={submitGeneralTicket}
+                disabled={pending || !detailsReady(details)}
+              >
+                {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Open case
+              </Button>
+            ) : (
+              <Button asChild className="bg-listingHeart text-white hover:bg-listingHeart/90">
+                <Link href={signInHref}>Sign in to open a case</Link>
+              </Button>
+            )}
           </div>
         </div>
       ) : null}
 
-      <p className="text-center text-xs text-muted-foreground">
-        Prefer browsing first?{" "}
-        <Link href="/help" className="text-primary underline underline-offset-2">
-          Help Center
-        </Link>{" "}
-        ·{" "}
-        <Link href="/faq" className="text-primary underline underline-offset-2">
-          FAQ
-        </Link>
-      </p>
+      {phase !== "intents" ? (
+        <p className="text-center text-xs text-muted-foreground">
+          Prefer browsing first?{" "}
+          <Link href="/help" className="text-primary underline underline-offset-2">
+            Help Center
+          </Link>{" "}
+          ·{" "}
+          <Link href="/faq" className="text-primary underline underline-offset-2">
+            FAQ
+          </Link>
+        </p>
+      ) : null}
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { getMessagePolicyNotice } from "@/lib/messages/phone-policy-notice"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import { helpHubHref } from "@/lib/help/help-hub-intents"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -71,11 +72,10 @@ export function LocalPhonePolicyBlockBubble({
             className="h-8 border-amber-700/25 bg-background/80 text-[13px] text-foreground hover:bg-background dark:border-amber-400/25"
           >
             <Link
-              href={
-                relatedConversationId
-                  ? `/dashboard/support/new?intent=safety&conversationId=${encodeURIComponent(relatedConversationId)}`
-                  : "/dashboard/support/new?intent=safety"
-              }
+              href={helpHubHref({
+                intent: "safety",
+                conversationId: relatedConversationId ?? undefined,
+              })}
             >
               Get help
             </Link>

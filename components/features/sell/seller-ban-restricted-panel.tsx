@@ -42,7 +42,7 @@ export function SellerBanRestrictedPanel({
           size="sm"
           className="border-orange-600/40 bg-background/60 text-orange-950 hover:bg-background dark:text-orange-50"
         >
-          <Link href="/dashboard/support/new?intent=account">Get help</Link>
+          <Link href="/dashboard/support?intent=account">Get help</Link>
         </Button>
       </div>
     </div>

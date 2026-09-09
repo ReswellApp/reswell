@@ -219,6 +219,8 @@ async function purchaseAndAttachOneLabel(params: {
     insuranceClaimUrl: purchased.result.insuranceClaimUrl,
     shipengineLabelId: purchased.result.shipengineLabelId,
     shipengineShipmentId: purchased.result.shipengineShipmentId,
+    labelCostUsd: purchased.result.costAmount,
+    labelCostCurrency: purchased.result.costCurrency,
   })
 
   if (!attached.ok) {

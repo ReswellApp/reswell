@@ -138,6 +138,8 @@ export async function insertOrderShippingLabel(
     insurance_claim_url?: string | null
     shipengine_label_id?: string | null
     shipengine_shipment_id?: string | null
+    label_cost_usd?: number | null
+    label_cost_currency?: string | null
   },
 ): Promise<{ error: Error | null }> {
   const payload: Record<string, unknown> = {
@@ -175,12 +177,16 @@ export async function insertOrderShippingLabel(
   if (row.shipengine_shipment_id !== undefined) {
     payload.shipengine_shipment_id = row.shipengine_shipment_id
   }
+  if (row.label_cost_usd !== undefined) payload.label_cost_usd = row.label_cost_usd
+  if (row.label_cost_currency !== undefined) {
+    payload.label_cost_currency = row.label_cost_currency
+  }
 
   const { error } = await supabase.from("order_shipping_labels").insert(payload)
 
   if (!error) return { error: null }
   // Soft-fail: retry without insurance columns if migration not applied
-  if (/insurance_|shipengine_label_id|shipengine_shipment_id/i.test(error.message)) {
+  if (/insurance_|shipengine_label_id|shipengine_shipment_id|label_cost_/i.test(error.message)) {
     const { error: legacyErr } = await supabase.from("order_shipping_labels").insert({
       order_id: row.order_id,
       origin: row.origin,

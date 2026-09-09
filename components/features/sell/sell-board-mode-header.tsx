@@ -18,7 +18,7 @@ type SellBoardModeHeaderProps = {
 
 /**
  * Surfboard sell header for the full listing wizard.
- * Guided vs Advanced live in {@link BoardSellViewToolbar}.
+ * Guided / Advanced / Quick list live in {@link BoardSellViewToolbar}.
  */
 export function SellBoardModeHeader({
   leading,

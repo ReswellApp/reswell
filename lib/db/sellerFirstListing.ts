@@ -48,3 +48,36 @@ export async function sellerHasPriorPublishedListingInSection(
 
   return (count ?? 0) > 0
 }
+
+/**
+ * True when the seller has at least one non-draft listing in `section`.
+ * Guests / missing ids are first-timers. Query errors fail closed (treat as
+ * already published) so returning sellers are not dropped onto Quick list.
+ */
+export async function sellerHasPublishedListingInSection(
+  _supabase: SupabaseClient,
+  sellerUserId: string | null | undefined,
+  section: PeerListingSection,
+): Promise<boolean> {
+  const uid = sellerUserId?.trim() ?? ""
+  if (!uid) return false
+
+  const client = serviceOrFallback(_supabase)
+
+  const { count, error } = await client
+    .from("listings")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", uid)
+    .eq("section", section)
+    .neq("status", "draft")
+
+  if (error) {
+    console.error(
+      "[sellerFirstListing] published listing count failed:",
+      error.message,
+    )
+    return true
+  }
+
+  return (count ?? 0) > 0
+}

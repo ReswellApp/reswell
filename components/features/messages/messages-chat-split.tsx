@@ -9,6 +9,7 @@ import {
   dashboardPageSubtitleClass,
   dashboardPageTitleClass,
 } from "@/lib/utils/dashboard-display-styles"
+import { helpHubHref } from "@/lib/help/help-hub-intents"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -56,8 +57,8 @@ export function MessagesChatSplit({
           <Link
             href={
               activeConversationId
-                ? `/dashboard/support/new?conversationId=${encodeURIComponent(activeConversationId)}`
-                : "/dashboard/support/new"
+                ? helpHubHref({ conversationId: activeConversationId })
+                : helpHubHref()
             }
           >
             Get help

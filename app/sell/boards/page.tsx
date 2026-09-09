@@ -1,6 +1,9 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
+import { sellerHasPublishedListingInSection } from "@/lib/db/sellerFirstListing"
+import { resolveBoardSellCreateViewMode } from "@/lib/sell-flow/resolve-board-sell-create-view-mode"
+import type { BoardSellViewMode } from "@/lib/sell-flow/board-sell-view-mode"
 import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "../sell-flow-client"
 
@@ -39,6 +42,12 @@ function parseEditListingId(value: string | string[] | undefined): string | null
   return null
 }
 
+function firstSearchParam(value: string | string[] | undefined): string | undefined {
+  if (typeof value === "string") return value
+  if (Array.isArray(value)) return value[0]
+  return undefined
+}
+
 export default async function SellBoardsPage({
   searchParams,
 }: {
@@ -50,12 +59,25 @@ export default async function SellBoardsPage({
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
+  const fromGiveaway = firstSearchParam(qs.from) === "giveaway"
 
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const initialActorIsAdmin = user ? await fetchProfileIsAdmin(supabase, user.id) : false
+  const [initialActorIsAdmin, hasPublishedSurfboard] = user
+    ? await Promise.all([
+        fetchProfileIsAdmin(supabase, user.id),
+        sellerHasPublishedListingInSection(supabase, user.id, "surfboards"),
+      ])
+    : [false, false]
+
+  const initialViewMode: BoardSellViewMode = editId
+    ? "guided"
+    : resolveBoardSellCreateViewMode({
+        fromGiveaway,
+        hasPublishedSurfboard,
+      })
 
   // Null fallback: client owns editLoading; route skeleton was flashing on draft switches.
   return (
@@ -63,6 +85,9 @@ export default async function SellBoardsPage({
       <SellFlowShell
         urlEditListingId={editId}
         initialActorIsAdmin={initialActorIsAdmin}
+        hasPublishedSurfboard={hasPublishedSurfboard}
+        fromGiveaway={fromGiveaway}
+        initialViewMode={initialViewMode}
       />
     </Suspense>
   )

@@ -1,21 +1,21 @@
 import { listUserSupportCasesService } from "@/lib/services/supportCases"
+import {
+  isOpenSupportCaseLimitReached,
+  OPEN_SUPPORT_CASE_LIMIT_REACHED,
+} from "@/lib/utils/support-case-open-limit"
 
-export const ALREADY_HAS_OPEN_SUPPORT_CASE =
-  "You already have an open support request. Continue that conversation — you can start a new one after it’s closed."
-
-export async function getLatestOpenUserSupportCaseService(
-  userId: string,
-): Promise<{ id: string; subject: string } | null> {
-  const open = await listUserSupportCasesService(userId, "open")
-  const latest = open[0]
-  if (!latest) return null
-  return { id: latest.id, subject: latest.subject }
-}
+export {
+  MAX_OPEN_USER_SUPPORT_CASES,
+  OPEN_SUPPORT_CASE_LIMIT_REACHED,
+  isOpenSupportCaseLimitReached,
+} from "@/lib/utils/support-case-open-limit"
 
 export async function rejectIfMemberHasOpenSupportCase(
   userId: string,
 ): Promise<{ ok: true } | { ok: false; error: string; existingId: string }> {
-  const existing = await getLatestOpenUserSupportCaseService(userId)
+  const open = await listUserSupportCasesService(userId, "open")
+  if (!isOpenSupportCaseLimitReached(open.length)) return { ok: true }
+  const existing = open[0]
   if (!existing) return { ok: true }
-  return { ok: false, error: ALREADY_HAS_OPEN_SUPPORT_CASE, existingId: existing.id }
+  return { ok: false, error: OPEN_SUPPORT_CASE_LIMIT_REACHED, existingId: existing.id }
 }
