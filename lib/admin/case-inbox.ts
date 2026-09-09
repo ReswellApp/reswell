@@ -32,6 +32,7 @@ export type CaseInboxView =
   | "resolved"
   | "all"
 export type CaseInboxPriority = "low" | "normal" | "high" | "urgent"
+export type CaseInboxSort = "smart" | "recent" | "oldest"
 
 export type CaseInboxItem = {
   key: string
@@ -73,6 +74,44 @@ export function inboxInitials(name: string): string {
   if (parts.length === 0) return "?"
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
   return `${parts[0]![0]}${parts[1]![0]}`.toUpperCase()
+}
+
+function smartTriageScore(item: CaseInboxItem): number {
+  const priorityScore = {
+    low: 0,
+    normal: 100,
+    high: 300,
+    urgent: 500,
+  }[item.priority]
+  const slaScore =
+    item.slaState === "overdue"
+      ? 600
+      : item.slaState === "due_soon"
+        ? 350
+        : 0
+  const stateScore = item.isNew ? 180 : 0
+  const assignmentScore = item.assigneeAdminId ? 0 : 60
+  return priorityScore + slaScore + stateScore + assignmentScore
+}
+
+export function sortInboxItems(
+  items: CaseInboxItem[],
+  sort: CaseInboxSort,
+): CaseInboxItem[] {
+  return [...items].sort((a, b) => {
+    if (sort === "oldest") {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    }
+    if (sort === "smart") {
+      const scoreDifference = smartTriageScore(b) - smartTriageScore(a)
+      if (scoreDifference !== 0) return scoreDifference
+
+      const aDue = a.slaDueAt ? new Date(a.slaDueAt).getTime() : Number.POSITIVE_INFINITY
+      const bDue = b.slaDueAt ? new Date(b.slaDueAt).getTime() : Number.POSITIVE_INFINITY
+      if (aDue !== bDue) return aDue - bDue
+    }
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  })
 }
 
 export function viewToFilters(view: CaseInboxView): {

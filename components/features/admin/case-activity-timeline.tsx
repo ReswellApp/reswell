@@ -37,6 +37,18 @@ function eventDescription(event: SupportCaseEventRow): string {
       return "Resolved the conversation"
     case "order_refunded":
       return "Issued a refund"
+    case "order_linked": {
+      const orderRef = payloadText(event.payload, "order_ref")
+      return `Connected order${orderRef ? ` ${orderRef}` : ""}`
+    }
+    case "seller_outreach_sent":
+      return event.payload.reused
+        ? "Sent a Reswell Support follow-up to the seller"
+        : "Opened a Reswell Support case for the seller"
+    case "seller_outreach_opened":
+      return "Opened from a related customer case"
+    case "seller_follow_up_sent":
+      return "Sent another Reswell Support follow-up"
     case "protection_repair_credit":
       return typeof amount === "number"
         ? `Granted a $${amount.toFixed(2)} repair credit`

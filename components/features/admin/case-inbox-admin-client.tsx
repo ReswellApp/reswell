@@ -9,15 +9,20 @@ import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import { listAdminSupportInboxAction } from "@/lib/actions/adminSupportInbox"
 import { sendSupportCaseAdminReplyAction } from "@/lib/actions/supportCaseThread"
 import { getSupportCaseThreadAdminAction } from "@/lib/actions/supportCaseThread"
-import { listSupportStaffAction } from "@/lib/actions/supportCaseAssign"
+import {
+  assignSupportCaseAction,
+  listSupportStaffAction,
+} from "@/lib/actions/supportCaseAssign"
 import { updateSupportCaseInboxAction } from "@/lib/actions/supportCaseInbox"
 import {
   filterInboxItems,
   inboxViewFromSearchParams,
+  sortInboxItems,
   viewToFilters,
   withInboxStatus,
   type CaseInboxItem,
   type CaseInboxPriority,
+  type CaseInboxSort,
   type CaseInboxTypeFilter,
   type CaseInboxView,
 } from "@/lib/admin/case-inbox"
@@ -47,6 +52,29 @@ import { cn } from "@/lib/utils"
 /** Deep link for order-type filter (legacy tab redirects land here). */
 export const ADMIN_SUPPORT_INBOX_ORDER_SUPPORT_HREF = "/admin/contact-messages?type=order"
 
+const CASE_DRAFT_STORAGE_PREFIX = "reswell:support-draft:v1:"
+
+function readCaseDraft(caseId: string): { body: string; mode: ComposerMode } | null {
+  try {
+    const value: unknown = JSON.parse(
+      window.sessionStorage.getItem(`${CASE_DRAFT_STORAGE_PREFIX}${caseId}`) ?? "null",
+    )
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "body" in value &&
+      typeof value.body === "string" &&
+      "mode" in value &&
+      (value.mode === "reply" || value.mode === "note")
+    ) {
+      return { body: value.body, mode: value.mode }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 export function CaseInboxAdminClient() {
   const pathname = usePathname() ?? "/admin/contact-messages"
   const router = useRouter()
@@ -64,6 +92,7 @@ export function CaseInboxAdminClient() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState("")
+  const [sort, setSort] = useState<CaseInboxSort>("smart")
   const [view, setView] = useState<CaseInboxView>(parsed.view)
   const [typeOverlay, setTypeOverlay] = useState<CaseInboxTypeFilter>(parsed.typeOverlay)
   const [selectedKey, setSelectedKey] = useState<string | null>(searchParams.get("case"))
@@ -84,6 +113,7 @@ export function CaseInboxAdminClient() {
   const [threadCaseId, setThreadCaseId] = useState<string | null>(null)
   const [composerMode, setComposerMode] = useState<ComposerMode>("reply")
   const [draft, setDraft] = useState("")
+  const [draftCaseId, setDraftCaseId] = useState<string | null>(null)
 
   const [savePending, startSave] = useTransition()
   const [replyPending, startReply] = useTransition()
@@ -144,15 +174,18 @@ export function CaseInboxAdminClient() {
 
   const filtered = useMemo(
     () =>
-      filterInboxItems(items, {
-        status: viewFilters.status,
-        type: effectiveType,
-        assignee: viewFilters.assignee,
-        currentStaffId,
-        search,
-        overdueOnly: viewFilters.overdueOnly,
-      }),
-    [items, viewFilters, effectiveType, currentStaffId, search],
+      sortInboxItems(
+        filterInboxItems(items, {
+          status: viewFilters.status,
+          type: effectiveType,
+          assignee: viewFilters.assignee,
+          currentStaffId,
+          search,
+          overdueOnly: viewFilters.overdueOnly,
+        }),
+        sort,
+      ),
+    [items, viewFilters, effectiveType, currentStaffId, search, sort],
   )
 
   const selected = useMemo(
@@ -184,6 +217,7 @@ export function CaseInboxAdminClient() {
       setOrderExtras(null)
       setDraft("")
       setComposerMode("reply")
+      setDraftCaseId(null)
       return
     }
     skipNoteBlur.current = true
@@ -191,16 +225,30 @@ export function CaseInboxAdminClient() {
     setPinnedNote(note)
     setSavedNote(note)
     setOsOutcome(selected.order?.outcome ?? "none")
-    setDraft("")
-    setComposerMode("reply")
+    if (draftCaseId !== selected.id) {
+      const savedDraft = readCaseDraft(selected.id)
+      setDraft(savedDraft?.body ?? "")
+      setComposerMode(savedDraft?.mode ?? "reply")
+      setDraftCaseId(selected.id)
+    }
     if (!selected.orderId) {
       setOrderContext(null)
       setOrderExtras(null)
     }
-  }, [selected])
+  }, [selected, draftCaseId])
 
   const selectedId = selected?.id ?? null
   const loadedThreadIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!selectedId || draftCaseId !== selectedId) return
+    const key = `${CASE_DRAFT_STORAGE_PREFIX}${selectedId}`
+    if (!draft.trim()) {
+      window.sessionStorage.removeItem(key)
+      return
+    }
+    window.sessionStorage.setItem(key, JSON.stringify({ body: draft, mode: composerMode }))
+  }, [selectedId, draftCaseId, draft, composerMode])
 
   useEffect(() => {
     if (!selectedId) {
@@ -272,6 +320,26 @@ export function CaseInboxAdminClient() {
 
   function patchItem(key: string, patch: Partial<CaseInboxItem>) {
     setItems((prev) => prev.map((item) => (item.key === key ? { ...item, ...patch } : item)))
+  }
+
+  function takeSelected() {
+    if (!selected || !currentStaffId) return
+    const current = selected
+    applyAssignee(current.key, currentStaffId)
+    startSave(async () => {
+      const res = await assignSupportCaseAction({
+        backend: "support_case",
+        id: current.id,
+        assignee_admin_id: currentStaffId,
+      })
+      if ("error" in res) {
+        applyAssignee(current.key, current.assigneeAdminId)
+        toast.error(res.error)
+        return
+      }
+      setThreadReloadToken((n) => n + 1)
+      toast.success("Conversation assigned to you")
+    })
   }
 
   function nextOpenKey(fromKey: string): string | null {
@@ -539,14 +607,17 @@ export function CaseInboxAdminClient() {
           </div>
           <CaseInboxListPane
             items={filtered}
+            staffNames={staffNames}
             view={view}
             selectedKey={selectedKey}
             search={search}
+            sort={sort}
             typeFilter={typeOverlay}
             showTypeFilter={view !== "claims"}
             loading={loading}
             emptyLabel={emptyLabel}
             onSearch={setSearch}
+            onSort={setSort}
             onTypeFilter={setTypeOverlay}
             onSelect={setSelectedKey}
           />
@@ -578,11 +649,17 @@ export function CaseInboxAdminClient() {
                   messages={threadMessages}
                   threadCaseId={threadCaseId ?? selected.id}
                   staffNames={staffNames}
+                  currentStaffId={currentStaffId}
                   composerRef={composerRef}
                   mode={composerMode}
                   draft={draft}
                   pending={replyPending}
+                  savePending={savePending}
                   onBack={() => setSelectedKey(null)}
+                  onTake={takeSelected}
+                  onStatus={(status) => persistInbox({ status })}
+                  onPriority={(priority) => persistInbox({ priority })}
+                  onResolve={() => persistInbox({ status: "resolved" })}
                   onModeChange={setComposerMode}
                   onDraftChange={setDraft}
                   onInsertMacro={(text) =>
@@ -632,6 +709,21 @@ export function CaseInboxAdminClient() {
                     persistInbox({ notes: pinnedNote, silent: true })
                   }}
                   onOrderContextLoaded={onOrderContextLoaded}
+                  onOrderLinked={(order) => {
+                    patchItem(selected.key, {
+                      backend: "order_support",
+                      orderId: order.id,
+                      orderRef: order.orderRef,
+                    })
+                    setOrderContext(null)
+                    setOrderExtras(null)
+                    setThreadReloadToken((n) => n + 1)
+                    void load("refresh")
+                  }}
+                  onSellerOutreachSent={() => {
+                    setThreadReloadToken((n) => n + 1)
+                    void load("refresh")
+                  }}
                   onRefundComplete={() => {
                     void load("refresh")
                     setThreadReloadToken((n) => n + 1)

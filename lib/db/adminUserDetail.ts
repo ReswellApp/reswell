@@ -6,7 +6,6 @@ const ADMIN_USER_DETAIL_PROFILE_SELECT = [
   "display_name",
   "avatar_url",
   "city",
-  "state",
   "location",
   "bio",
   "first_name",
@@ -36,7 +35,6 @@ export type AdminUserDetailProfileRow = {
   display_name: string | null
   avatar_url: string | null
   city: string | null
-  state: string | null
   location: string | null
   bio: string | null
   first_name: string | null
@@ -116,7 +114,6 @@ function normalizeProfile(row: Record<string, unknown>): AdminUserDetailProfileR
     display_name: asText(row.display_name),
     avatar_url: asText(row.avatar_url),
     city: asText(row.city),
-    state: asText(row.state),
     location: asText(row.location),
     bio: asText(row.bio),
     first_name: asText(row.first_name),
@@ -158,6 +155,49 @@ export async function dbGetAdminUserDetailProfile(
   }
 
   return { ok: true, profile: normalizeProfile(data as unknown as Record<string, unknown>) }
+}
+
+export async function dbFindAdminUserDetailProfileByEmail(
+  supabase: SupabaseClient,
+  email: string,
+): Promise<AdminUserDetailProfileRow | null> {
+  const normalized = email.trim().toLowerCase()
+  if (!normalized) return null
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(ADMIN_USER_DETAIL_PROFILE_SELECT)
+    .eq("email", normalized)
+    .limit(1)
+    .maybeSingle()
+
+  if (error || !data) {
+    if (error) console.error("[admin user detail] profile by email", error)
+    return null
+  }
+  return normalizeProfile(data as unknown as Record<string, unknown>)
+}
+
+export async function dbGetAdminUserListingCounts(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ total: number; active: number; sold: number }> {
+  const base = () =>
+    supabase
+      .from("listings")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+
+  const [total, active, sold] = await Promise.all([
+    base(),
+    base().eq("status", "active"),
+    base().eq("status", "sold"),
+  ])
+  return {
+    total: total.error ? 0 : total.count ?? 0,
+    active: active.error ? 0 : active.count ?? 0,
+    sold: sold.error ? 0 : sold.count ?? 0,
+  }
 }
 
 export async function dbListAdminUserDetailListings(
@@ -215,6 +255,7 @@ export async function dbGetAdminUserAuthUser(
 export async function dbListAdminUserDetailOrders(
   supabase: SupabaseClient,
   userId: string,
+  limit = 500,
 ): Promise<AdminUserDetailOrderRow[]> {
   const { data, error } = await supabase
     .from("orders")
@@ -224,7 +265,7 @@ export async function dbListAdminUserDetailOrders(
     .or(`seller_id.eq.${userId},buyer_id.eq.${userId}`)
     .eq("is_admin_test", false)
     .order("created_at", { ascending: false })
-    .limit(500)
+    .limit(limit)
 
   if (error) {
     console.error("[admin user detail] orders", error)

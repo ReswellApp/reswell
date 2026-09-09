@@ -1,0 +1,65 @@
+<!--
+  Reswell · Klaviyo flow — Career application received
+  Paste into Flows → Email → Code / HTML (or a Custom HTML block).
+
+  Trigger metric: Career Application Submitted
+  Trigger filter: reswell_metric_seed is not true (if you use bootstrap seeds)
+
+  Suggested subject: Got it — thanks for applying
+  Suggested preview: We’ll take a look. If it’s a fit, you’ll hear from us.
+
+  Event properties (from track-career-application.ts):
+  - {{ event.first_name }}
+  - {{ event.role_title }}
+  - {{ event.careers_url }}
+
+  Leave Klaviyo’s unsubscribe / address footer in the template shell.
+  Do not use {% if %} / {% for %} — they often print as raw text in this workspace.
+-->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;background:#FFFFFF;">
+  <tr>
+    <td align="center" style="padding:28px 16px 40px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;max-width:560px;">
+
+        <tr>
+          <td align="center" style="padding:0 0 28px 0;">
+            <a href="https://www.reswell.app?utm_source=klaviyo&utm_medium=email&utm_campaign=career_application_submitted&utm_content=logo" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="140" height="35" style="display:block;width:140px;max-width:100%;height:auto;border:0;" />
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 0 12px 0;font-family:Arial, Helvetica, sans-serif;font-size:26px;font-weight:700;line-height:1.2;letter-spacing:-0.03em;color:#04070E;">
+            Hey {{ event|lookup:'first_name'|default:'there' }} —
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 16px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.55;color:#04070E;">
+            Got your application for {{ event|lookup:'role_title'|default:'Reswell' }}. We&rsquo;ll take a look. If it&rsquo;s a fit, you&rsquo;ll hear from us.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 28px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.55;color:#64748B;">
+            No need to follow up.
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td align="center" bgcolor="#5574AD" style="border-radius:8px;">
+                  <a href="https://www.reswell.app/boards?utm_source=klaviyo&utm_medium=email&utm_campaign=career_application_submitted&utm_content=browse_boards" style="display:inline-block;padding:14px 28px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.02em;">
+                    Browse boards
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

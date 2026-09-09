@@ -6,12 +6,15 @@ import { CheckCircle2, RotateCcw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import type { SupportCaseEventRow } from "@/lib/db/supportCases"
+import type { SupportCaseCustomerOrder } from "@/lib/services/supportCaseCustomerContext"
 import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { CaseInboxItem, CaseInboxPriority } from "@/lib/admin/case-inbox"
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import { CaseAssigneeSelect } from "@/components/features/admin/case-assignee-select"
 import { CaseActivityTimeline } from "@/components/features/admin/case-activity-timeline"
+import { CaseCustomerContext } from "@/components/features/admin/case-customer-context"
+import { CaseSellerContactCard } from "@/components/features/admin/case-seller-contact-card"
 import { AdminIssueItemReturnPanel } from "@/components/features/admin/admin-issue-item-return-panel"
 import { CaseIssueRefundPanel } from "@/components/features/admin/case-issue-refund-panel"
 import { CaseOrderContextPanel } from "@/components/features/admin/case-order-context-panel"
@@ -75,6 +78,8 @@ interface CaseInboxDetailsProps {
   onPinnedNote: (note: string) => void
   onPinnedNoteBlur: () => void
   onOrderContextLoaded: (detail: AdminOrderDetail, extras: CaseOrderLabelContext) => void
+  onOrderLinked: (order: SupportCaseCustomerOrder) => void
+  onSellerOutreachSent: () => void
   onRefundComplete: () => void
 }
 
@@ -98,6 +103,8 @@ export function CaseInboxDetails({
   onPinnedNote,
   onPinnedNoteBlur,
   onOrderContextLoaded,
+  onOrderLinked,
+  onSellerOutreachSent,
   onRefundComplete,
 }: CaseInboxDetailsProps) {
   return (
@@ -145,6 +152,17 @@ export function CaseInboxDetails({
                 ) : <p className="text-xs text-muted-foreground">Guest / no account</p>}
               </div>
             </div>
+          </section>
+
+          <section className="space-y-2 border-t border-border/50 pt-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Customer activity
+            </p>
+            <CaseCustomerContext
+              caseId={item.id}
+              linkedOrderId={item.orderId}
+              onOrderLinked={onOrderLinked}
+            />
           </section>
 
           <section className="space-y-3 border-t border-border/50 pt-4">
@@ -205,6 +223,17 @@ export function CaseInboxDetails({
                     </SelectContent>
                   </Select>
                 </div>
+              ) : null}
+              {orderContext && item.orderId === orderContext.id ? (
+                <CaseSellerContactCard
+                  key={orderContext.id}
+                  sourceCaseId={item.id}
+                  orderRef={item.orderRef ?? orderContext.order_num ?? orderContext.id.slice(0, 8)}
+                  caseKind={item.kind}
+                  issueSummary={item.order?.body ?? item.contact?.message ?? item.preview}
+                  seller={orderContext.seller}
+                  onOutreachSent={onSellerOutreachSent}
+                />
               ) : null}
               <CaseOrderContextPanel orderId={item.orderId} orderSupportRequestId={item.order?.id ?? null} onLoaded={onOrderContextLoaded} />
               <AdminIssueItemReturnPanel orderId={item.orderId} canIssue={isAdmin} variant="embedded" onComplete={onRefundComplete} />

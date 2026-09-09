@@ -72,14 +72,14 @@ export function SupportCaseThread({
     const live = [...messages].sort(
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     )
+    const withoutWorkflowEvents = live.filter(
+      (message) =>
+        !(message.author_role === "system" && isSupportStatusUpdateMessage(message.body)),
+    )
     const visible =
       role === "staff"
-        ? live
-        : live.filter(
-            (message) =>
-              !message.is_internal &&
-              !(message.author_role === "system" && isSupportStatusUpdateMessage(message.body)),
-          )
+        ? withoutWorkflowEvents
+        : withoutWorkflowEvents.filter((message) => !message.is_internal)
     const hasCustomer = visible.some((message) => message.author_role === "customer" && !message.is_internal)
     if (hasCustomer || !originalRequest?.body.trim()) return visible
     return [
@@ -135,7 +135,13 @@ export function SupportCaseThread({
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
-      <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-1 py-3">
+      <div
+        ref={listRef}
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto",
+          role === "staff" ? "space-y-4 px-2 py-4" : "space-y-3 px-1 py-3",
+        )}
+      >
         {displayMessages.length === 0 ? (
           <p className="px-3 py-10 text-center text-sm text-muted-foreground">No messages yet.</p>
         ) : (
@@ -159,7 +165,9 @@ export function SupportCaseThread({
               <div key={message.id} className={cn("flex", mine && !note ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
-                    "max-w-[85%] space-y-1",
+                    role === "staff"
+                      ? "max-w-[82%] space-y-1 lg:max-w-[72%]"
+                      : "max-w-[85%] space-y-1",
                     note && "w-full max-w-none",
                   )}
                 >
@@ -178,7 +186,8 @@ export function SupportCaseThread({
                   </p>
                   <div
                     className={cn(
-                      "px-3.5 py-2.5 text-[15px] leading-relaxed",
+                      "px-3.5 py-2.5 leading-relaxed",
+                      role === "staff" ? "text-sm" : "text-[15px]",
                       note
                         ? "rounded-lg border border-amber-200/80 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-50"
                         : mine
