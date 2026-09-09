@@ -1,0 +1,132 @@
+{
+  "generated_for": "Bryan Bates Surfboards official named standup catalog",
+  "source": "https://www.bryanbates.com.au/ (Squarespace model pages: single-fin-range, twin-fin-range, longboard-range, shortboard-range, and Drifter pages \u2014 excludes merch, ding repair, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "bryan-bates-surfboards",
+      "name": "Bryan Bates Surfboards",
+      "website_url": "https://www.bryanbates.com.au",
+      "location_label": "Sawtell / Arrawarra, New South Wales, Australia",
+      "founder_name": "Bryan Bates",
+      "lead_shaper_name": "Bryan Bates",
+      "short_description": "Hand-shaped, glassed, and finished custom surfboards from Bryan Bates on the NSW mid-north coast \u2014 single fins, twins, drifters, longboards, and shortboards built one at a time.",
+      "models": [
+        {
+          "name": "Wing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497756784442-UX4KDZKOR4IOECT3K3VP/Screen+Shot+2017-06-12+at+4.51.03+PM.png",
+          "description": "If you wanted to travel in the simplest way possible, light on gear and with the minimal amount of possessions, you'd want one surfboard that you could trust to excel in a variety of conditions and types of waves. That's a brief rundown of the concept for this \"Wing\" model. The feedback from Phil and Ryan has ranged from \"magic carpet\" to \"can't fault it\". One of the greatest challenges as a shaper is to create a board that will meet critical performance goals across the full spectrum of wave conditions, and this board does just that. What's really driving this design is a rolled hull entry feeding into single concave. It has a fine, crisp modern feel to the tail and strong edge tip to tail to really get on rail through turns. I've run this model out to 8' with great success but stock dimensions might be 6'6\" 21\" 2 1/2\"",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bonzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497699603042-91DCNAXA256FPVYPVID7/Bonzer+British+Racing+Green.png",
+          "description": "The bonzer is a hopped up single fin. Originally a design of the Campbell Brothers, it features a double concave through the fin area utilizing the Venturi principle that a fluid or air speeds up when compressed into a narrower channel. This creates forward propulsion and as a result the bonzer design has always been associated with down the line speed. The modern version is a five fin (bonzer 5) with a very contemporary single to double concave bottom, modern rails and a healthy rocker. It has an old school deck line and outline, packing heaps of foam in the flat deck and area in the nose and tail. Its a super paddling board and, due to the side fins being so out on the rail and splayed out, offers loads of grip on a steep wall is a terrific barrel riding board. If you would like a modern feeling board that can be pushed in bigger, steeper waves but has the sweet, easy flow of the single fin, this is the one. Makes an excellent travel board as well.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497700108427-B7LW657A6HZ65M4JBIW6/Egg+Denim+Blue+Tint.png",
+          "description": "The egg is a seriously versatile single fin with a bottom shape much like a longboard--light vee in the back and a little concave up front. It's very much like a mini Evolver with the wide point switched up so its narrower in the tail than the nose. This gives it a looser, more shortboard-like feel on the back foot. This model paddles amazing and can do a surprising amount of work in serious surf. Eggs can be run at almost any length from 5'6\" to 8'6\" and tick so many boxes its ridiculous. I do a lot of them at 6'6\" and 7'6\" and though they're really a single fin, the design can accept side fins or quad. A standard stock size might be 6'6\", 21 1/2\", 2 1/2\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Evolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497700343813-SO310CQHTT7D55VUGSJN/BATES_BOARDS6.png",
+          "description": "If I was limited to having only one board it would certainly be this one! This board is so versatile and so much fun. It's based on the \"Evolution\" style single fins of the late 60's when surfboards began to get shorter. The big difference between this and a \"Tracker\" is that the wide point is back and not forward of center. This puts the wide point (outline apex) and rocker apex between your feet to make a board that surfs easily and with great flow. Its paired with a Greenough 4A, with the wide base for drive and a fairly thin, flexy tip for projection and great direction changes. This is a great board for any ability or experience.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sunset Semigun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497704441007-35BHI1ZCCRS8R6DFPQRT/IMG_5907.JPG",
+          "description": "Sometimes you've got to step it up and this is the board for those occasions. A good semi-gun outline has that perennial sex appeal and also seems to hold the promise of memorable, adrenaline charged rides. I was taught how to make big wave boards by one of the best, Cort Gion. He was North Shore underground late 70's to early 90's and this was his favorite kind of board to shape and ride. I like to bring those old values into my sunset board, retaining volume and foil in the shape, reflective of that era. These days the rocker and bottoms are updated and the outline is a bit less pinny, making subtle but important changes to this classic. It makes a great thruster, widowmaker 2+1 or best, simply as a single fin.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Classic Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497674527656-BBEZUFYTUCPZ9NP8KDH7/Classic-Fish-Peach-Deck.png",
+          "description": "Been working on my Classic Lis Fish model, making it as authentic as possible to the original design. I did a good deal of research on the origins of the design by Steve Lis, but also had some great experience with fish designers like Rich Pavel to draw on. The rails of a classic fish are the defining characteristic. They're low, but soft and the bottom rolls up to meet them just slightly on the outer edge. Feels amazing when you hold the board and has a smooth, fast feel through the water. Flat deck, low rocker, great paddling and natural speed with this board. I've really enjoyed researching and honouring the roots of this timeless design. Always best with marine plywood glassed on keel fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Advanced Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497671791268-P96E0J1QIG9UJT9F77Q6/BATES_BOARDS12QUAD%2BFISH.png",
+          "description": "This board is a highly refined and updated version of one of the most functional designs ever created. I start with the Steve Lis platform and delete some of the overall curve, straightening the outline in front of the back foot and pulling the curve in more dramatically behind the fins and back foot. This makes it both looser and faster at the same time. It gets souped up bottom with a modern single to double concave within the panel vee. Finally, the Advanced Fish is available with just about any fin combination you could want, though my personal favourite is the Twinzer. This makes a fantastic Quad or 5 fin convertible.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Modern Keel Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497694407084-O2WOIAS87GOK05SK3M20/2016-11-20+19.30.07-1-2.jpg",
+          "description": "It's interesting how many times the classic fish shape has gone round: The original Steve Lis stand up kneeboard in the 70's, a substitute for a longboard in small waves, performance versions with tweaked rockers and bottom shapes, quad fishes, classic replicas, long versions. Today I'm enjoying reworking the most original form of my Classic Lis Fish and adding subtle modern refinements in concaves, rail shapes and edges without straying to far from the spirit of the animal. Been getting the most wonderful feedback on these boards from customers finding themselves surfing better, more fluidly and still with enough shred to satisfy that shortboard side of things. 5'6\" 21\" 2 1/2\" is the ideal dimensions for this model and there's heaps of volume contained in the flat deck so don't be afraid to go a little shorter than you might normally ride.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497695376045-L8NXMR9L4SM32XKX74AA/EC1_3550.jpg",
+          "description": "The Twinzer! Anything a twin fin can do, this can do better. Wil Jobson created this original fin design over 30 years ago and he spent some time down in Oregon and left us with our heads spun round about the efficiency and thoughtfulness of this design. The smaller leading fin organises the water flow so the back fin can operate in clean water, much like a jib sail fills the mainsail on a sailboat or drafting behind a vehicle on the highway. They absolutely sing on a wall and are far more positive than a twinny, meaning you can surf the board harder without spinning out and still have that rad skatey feel that makes twins so good. Fin placement is absolutely crucial for twinzers and is the probable reason you don't see more of them. I router and set the fins into the board so there's no fin fillet and a bulletproof attachment to the board. This model is somewhere inbetween fish and shortboard and is such a fantastic small wave weapon. I cannot recommend this design enough--it takes the fast, free feeling of the twin fin and adds horsepower and positive grip to the equation. You can square off bottom turns and go vertical yet still overpower and blow out the fins for that great drifting feel at the end of a turn. Best at 5'5\" to 6' and around 20\" wide.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Continental",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497669715437-V95IR1OXEL4QXJGU4AHC/2017-04-18+15.00.03-1.jpg",
+          "description": "The Continental is a new model with very old roots. I started with the 1\" redwood stringer I salvaged many years ago from an old 60's Jacobs 10'4\" longboard and got the boys at Burford Blanks to glue their 10'2\" blank up to that rocker. I've been studying old traditional logs and experimenting to get the perfect combination of that classic feel: that paddle, glide and run, blended with a more user-friendly turning and change of direction feel. I wanted to make a big board that could be safely ridden in a crowd, something that felt big but didn't \"ride you\". This is a really great board that is very traditional but with some subtle modern refinements that make it a joy to ride.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lady Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497670352296-RJVUFHZ1DNHTRR5L48BI/2017-04-26+15.20.28-1.jpg",
+          "description": "I've had so many requests for a scaled down Noserider from women that I decided to make a specific model: The Lady Log. Compared to my standard Noserider, it's a little thinner and narrower overall with a bit less rocker in the tail and a more continuous curve to the rocker. This makes it amazing to turn from anywhere on the board (not just right on the tail) It also has a more refined rail. That means that it's lighter weight, easier to handle and control and supremely user friendly. It also comes in the prettiest colours you can dream up!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497671319475-KYOY8G00DO7HPVLMEU5X/DRIFTER_TEST5.png",
+          "description": "My Noserider is a real class act, with roots from the famous Hansenn 50/50, The outline is fairly parallel with a lot of nose area but significant curve in the last 24\" of the tail. I favour a bit more relaxed but continuous rocker overall and loads in the tail and find it makes the board fit the wave really easily and noseride great. A deep nose concave or rolled entry are available; the roll helps for nose steering and the concave for flat out tip time. I prefer to concentrate the roll through the guts out to the rails, leaving the centre section fairly flat so the board is more stable, faster, and less sticky. This board, when paired with a 9\" pivot fin you just can't go wrong.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Traditional",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497671528993-5LKDEJRZN0GFM8U56BX1/BATES_BOARDS4.png",
+          "description": "The timeless template for this board has come through my shaping tree from two directions and places. Despite the different waves and styles the resulting form was surprisingly similar. I've been pleased to find the same form reflected here in Australia in Bob McTavish's late 60's Cords. It's a fine, refined and precision piece of equipment, not bulky or obtuse. Subtle hips, light roll throughout, fine round rails, flat deck with moderate tail rocker. The result is a board which is all class, has a beautiful flow and can be ridden in a variety of waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497670116869-DX2MDLTU4MISPE3N42PC/2017-05-06+08.20.54.jpg",
+          "description": "12 foot boards have a momentum quality all to their own, which is why we call them Gliders. There's nothing like paddling and cruising these boards; it's a totally addictive feeling of connecting with the underlying swell energy of the wave and the simple happiness of running a line at top speed while doing nothing at all, just enjoying the trim. They're immense and heavy, tricky in a crowd and not for everyone. You must have a sense of responsibility when riding one but when treated properly I think that 12 foot glide is one of the best experiences in surfing.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Thruster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497697595566-3OIYSNVVAJI318HR3LRT/2016-12-07+13.55.29.jpg",
+          "description": "My Thruster is 80's influenced and, like everything I do, a blend of classic and modern elements. It has a bit fuller outline than what you would see in a modern shortboard and is designed to surf fun waves in the 2 to 5 foot range. I integrate modern concaves in to the bottom shape so its fast across the water and has that familiar shortboard feel and quickness. I like to shape these with a flatter deck to make it easier to paddle and ride. If you're accustomed to thruster surfing and you want to stay with that feel than this is the model for you. It can really square off bottom and top turns and has predictable and crisp performance through all parts of the wave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tupira Special",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497859054158-EP0P2904ZZ35LK06GG84/Tupira+Mini+Blue+tint+deck+blue+and+purple+acid+bottom.png",
+          "description": "The Tupira Special is a quad shortboard that's designed to surf quality waves in the 2 to 5 foot range. It has a clean single concave and a bit more area in the outline to paddle in easy, create a lot of speed and a nice crisp loose feel on the water. It makes a fantastic everyday shortboard and can be stretched out for step up situations.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "5'5 Drifter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497667626640-J2GV4M2EER8QMGMNFTXS/5-5.png",
+          "description": "This board is the most dynamic of the Drifter range. Its geared for the most progressive surfing and demands some expertise of the rider. Its short rail line allows for total rotational freedom. You can whip 360s literally at will with this board. The challenge in a board this small comes in drawing long lines. That's where the recurve and straight bits in the tail outline come into their own. Finlets are positioned at the rear so they are primarily out of the water in spins but weighting the rear of the board heavily engages them solidly for surprising hold in late takeoffs and steep drops.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "6'4 Drifter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497668219271-0GZG33YTM2J89ZZ6KP8U/DRIFTER_TEST4.png",
+          "description": "This board is the workhorse and the most versatile of the Drifter range. It would suit the widest variety of surfers from shortboard rippers to longboard and single fin cruisers. I personally ride this board most often and it works beautifully from 5'8\" to 7'. This board draws incredible lines paddles beautifully and also has fantastic free sliding and spinning ability. You can really expand your horizons with this board in terms of where you can go on waves and how you get there. Massive drifts, backwards drifts, elevator slips, giant swipes, berts, snaps, pop shuvits, frontside and cutback 360s are just a few of the moves I've worked out so far. What will you come up with?",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "7'2 Drifter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497668986366-VURTD20OLBJZRQ49MVEW/7_2_DRIFTER.png",
+          "description": "This one is for all conditions and abilities, and it goes great on the points on a fun day. It's totally up for the bigger days and beach breaks too though and the extra length and thickness makes a super paddler. The outline is a bit pulled in at the nose and tail to create more hold in critical situations. Finlets are pushed up slightly to allow for more hold and control, and to accommodate trickier drops. This board has been tested in reef surf in the South Pacific with great results, and generally gets the nod when someone new to Drifting would like to have a go. 360s and all other fun moves are fully on the menu with this board. A great choice if you'll only have one drifter.",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
