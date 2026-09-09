@@ -15,6 +15,12 @@ import {
   User,
 } from "lucide-react"
 import type { AdminOrderDetail, AdminOrderParticipant } from "@/lib/db/adminOrders"
+import {
+  caseOrderLabelContextFromCapabilities,
+  type AdminOrderCapabilities,
+  type CaseOrderLabelContext,
+} from "@/lib/admin/admin-order-capabilities"
+import { AdminShippingLabelPreviewButton } from "@/components/features/admin/admin-shipping-label-preview-button"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import {
   deliveryStatusBadgeVariant,
@@ -131,7 +137,7 @@ interface CaseOrderContextPanelProps {
   orderId: string
   orderSupportRequestId?: string | null
   className?: string
-  onLoaded?: (detail: AdminOrderDetail) => void
+  onLoaded?: (detail: AdminOrderDetail, extras: CaseOrderLabelContext) => void
 }
 
 export function CaseOrderContextPanel({
@@ -141,6 +147,7 @@ export function CaseOrderContextPanel({
   onLoaded,
 }: CaseOrderContextPanelProps) {
   const [detail, setDetail] = useState<AdminOrderDetail | null>(null)
+  const [extras, setExtras] = useState<CaseOrderLabelContext | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [threadOpen, setThreadOpen] = useState(false)
@@ -150,6 +157,7 @@ export function CaseOrderContextPanel({
     setLoading(true)
     setError(null)
     setDetail(null)
+    setExtras(null)
     setThreadOpen(false)
 
     void (async () => {
@@ -157,15 +165,21 @@ export function CaseOrderContextPanel({
         const res = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
           credentials: "include",
         })
-        const json = (await res.json()) as { data?: AdminOrderDetail; error?: string }
+        const json = (await res.json()) as {
+          data?: AdminOrderDetail
+          capabilities?: Partial<AdminOrderCapabilities>
+          error?: string
+        }
         if (cancelled) return
         if (!res.ok || !json.data) {
           setError(json.error ?? "Could not load order")
           setLoading(false)
           return
         }
+        const labelContext = caseOrderLabelContextFromCapabilities(json.capabilities)
         setDetail(json.data)
-        onLoaded?.(json.data)
+        setExtras(labelContext)
+        onLoaded?.(json.data, labelContext)
         setLoading(false)
       } catch {
         if (!cancelled) {
@@ -301,7 +315,22 @@ export function CaseOrderContextPanel({
                 : ""}
           </span>
         </p>
+        {extras?.shipFromOnFile ? (
+          <p>
+            Ship from (on file): {extras.shipFromOnFile.name} · {extras.shipFromOnFile.oneLine}
+          </p>
+        ) : null}
+        {[detail.listing_city, detail.listing_state].filter(Boolean).length > 0 ? (
+          <p>
+            Listing location: {[detail.listing_city, detail.listing_state].filter(Boolean).join(", ")}
+          </p>
+        ) : null}
         {shipToLine ? <p>Ship to: {shipToLine}</p> : null}
+        {extras?.hasShippingLabel ? (
+          <AdminShippingLabelPreviewButton orderId={detail.id} className="pt-1" />
+        ) : detail.fulfillment_method === "shipping" ? (
+          <p>No shipping label on file for this order.</p>
+        ) : null}
         {detail.pickup_code ? <p>Pickup code: {detail.pickup_code}</p> : null}
         {detail.payout ? (
           <p>

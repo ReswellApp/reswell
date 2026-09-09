@@ -22,6 +22,7 @@ import {
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
+import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
 import { CaseInboxViews, type InboxViewCounts } from "@/components/features/admin/case-inbox-views"
 import { CaseInboxListPane } from "@/components/features/admin/case-inbox-list-pane"
 import { CaseInboxConversation } from "@/components/features/admin/case-inbox-conversation"
@@ -70,6 +71,7 @@ export function CaseInboxAdminClient() {
   const [pinnedNote, setPinnedNote] = useState("")
   const [savedNote, setSavedNote] = useState("")
   const [orderContext, setOrderContext] = useState<AdminOrderDetail | null>(null)
+  const [orderExtras, setOrderExtras] = useState<CaseOrderLabelContext | null>(null)
   const [threadReloadToken, setThreadReloadToken] = useState(0)
   const [threadMessages, setThreadMessages] = useState<SupportCaseThreadMessage[]>([])
   const [threadCaseId, setThreadCaseId] = useState<string | null>(null)
@@ -81,9 +83,13 @@ export function CaseInboxAdminClient() {
   const composerRef = useRef<CaseInboxComposerHandle>(null)
   const skipNoteBlur = useRef(false)
 
-  const onOrderContextLoaded = useCallback((detail: AdminOrderDetail) => {
-    setOrderContext(detail)
-  }, [])
+  const onOrderContextLoaded = useCallback(
+    (detail: AdminOrderDetail, extras: CaseOrderLabelContext) => {
+      setOrderContext(detail)
+      setOrderExtras(extras)
+    },
+    [],
+  )
 
   const syncUrl = useCallback(
     (nextView: CaseInboxView, nextType: CaseInboxTypeFilter, nextCase: string | null) => {
@@ -168,6 +174,7 @@ export function CaseInboxAdminClient() {
   useEffect(() => {
     if (!selected) {
       setOrderContext(null)
+      setOrderExtras(null)
       setDraft("")
       setComposerMode("reply")
       return
@@ -179,23 +186,34 @@ export function CaseInboxAdminClient() {
     setOsOutcome(selected.order?.outcome ?? "none")
     setDraft("")
     setComposerMode("reply")
-    if (!selected.orderId) setOrderContext(null)
+    if (!selected.orderId) {
+      setOrderContext(null)
+      setOrderExtras(null)
+    }
   }, [selected])
 
   const selectedId = selected?.id ?? null
+  const loadedThreadIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!selectedId) {
       setThreadMessages([])
       setThreadCaseId(null)
+      loadedThreadIdRef.current = null
       return
     }
-    setThreadMessages([])
+    if (loadedThreadIdRef.current !== selectedId) {
+      setThreadMessages([])
+      loadedThreadIdRef.current = selectedId
+    }
     setThreadCaseId(selectedId)
     let cancelled = false
     void getSupportCaseThreadAdminAction(selectedId).then((res) => {
       if (cancelled) return
-      if ("error" in res) return
+      if ("error" in res) {
+        toast.error(res.error)
+        return
+      }
       setThreadCaseId(res.case.id)
       setThreadMessages(res.messages)
     })
@@ -354,9 +372,22 @@ export function CaseInboxAdminClient() {
       }
       toast.success(composerMode === "note" ? "Note added" : "Sent to customer")
       setDraft("")
+      const sentMode = composerMode
+      setThreadMessages((prev) => [
+        ...prev,
+        {
+          id: `local-${Date.now()}`,
+          case_id: selected.id,
+          author_user_id: currentStaffId,
+          author_role: "agent",
+          body,
+          is_internal: sentMode === "note",
+          created_at: new Date().toISOString(),
+        },
+      ])
       setThreadReloadToken((n) => n + 1)
       patchItem(selected.key, {
-        preview: composerMode === "note" ? `Note: ${body}` : body,
+        preview: sentMode === "note" ? `Note: ${body}` : body,
         updatedAt: new Date().toISOString(),
       })
       if (closeAfter && composerMode === "reply") {
@@ -514,6 +545,8 @@ export function CaseInboxAdminClient() {
                     setDraft((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))
                   }
                   onSend={sendComposer}
+                  orderContext={orderContext}
+                  orderExtras={orderExtras}
                 />
               </div>
               <div

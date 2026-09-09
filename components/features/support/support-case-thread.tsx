@@ -58,7 +58,7 @@ export function SupportCaseThread({
   const [messages, setMessages] = useState(initial)
   const [draft, setDraft] = useState("")
   const [pending, startTransition] = useTransition()
-  const endRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMessages(initial)
@@ -97,7 +97,9 @@ export function SupportCaseThread({
   }, [messages, role, originalRequest, caseId])
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+    const el = listRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight
   }, [displayMessages.length, caseId])
 
   function send() {
@@ -132,8 +134,8 @@ export function SupportCaseThread({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-1 py-3">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-1 py-3">
         {displayMessages.length === 0 ? (
           <p className="px-3 py-10 text-center text-sm text-muted-foreground">No messages yet.</p>
         ) : (
@@ -192,7 +194,6 @@ export function SupportCaseThread({
             )
           })
         )}
-        <div ref={endRef} />
       </div>
 
       {canReply && !closed ? (

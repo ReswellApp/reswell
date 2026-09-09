@@ -5,10 +5,12 @@ import { format } from "date-fns"
 import { CheckCircle2, RotateCcw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
+import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { CaseInboxItem } from "@/lib/admin/case-inbox"
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import { CaseAssigneeSelect } from "@/components/features/admin/case-assignee-select"
+import { AdminIssueItemReturnPanel } from "@/components/features/admin/admin-issue-item-return-panel"
 import { CaseIssueRefundPanel } from "@/components/features/admin/case-issue-refund-panel"
 import { CaseOrderContextPanel } from "@/components/features/admin/case-order-context-panel"
 import { ProtectionClaimDesk } from "@/components/features/admin/protection-claim-desk"
@@ -59,7 +61,7 @@ interface CaseInboxDetailsProps {
   onOrderOutcome: (outcome: string) => void
   onPinnedNote: (note: string) => void
   onPinnedNoteBlur: () => void
-  onOrderContextLoaded: (detail: AdminOrderDetail) => void
+  onOrderContextLoaded: (detail: AdminOrderDetail, extras: CaseOrderLabelContext) => void
   onRefundComplete: () => void
 }
 
@@ -237,6 +239,15 @@ export function CaseInboxDetails({
           orderId={item.orderId}
           orderSupportRequestId={item.order?.id ?? null}
           onLoaded={onOrderContextLoaded}
+        />
+      ) : null}
+
+      {item.orderId ? (
+        <AdminIssueItemReturnPanel
+          orderId={item.orderId}
+          canIssue={isAdmin}
+          variant="embedded"
+          onComplete={onRefundComplete}
         />
       ) : null}
 

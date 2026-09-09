@@ -3,8 +3,11 @@
 import type { Ref } from "react"
 import Link from "next/link"
 import { ExternalLink, Package, User } from "lucide-react"
+import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import type { CaseInboxItem } from "@/lib/admin/case-inbox"
+import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
+import { CaseInboxBriefing } from "@/components/features/admin/case-inbox-briefing"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
 import {
   CaseInboxComposer,
@@ -26,6 +29,8 @@ interface CaseInboxConversationProps {
   mode: ComposerMode
   draft: string
   pending: boolean
+  orderContext: AdminOrderDetail | null
+  orderExtras: CaseOrderLabelContext | null
   onBack: () => void
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
@@ -54,6 +59,8 @@ export function CaseInboxConversation({
   onDraftChange,
   onInsertMacro,
   onSend,
+  orderContext,
+  orderExtras,
 }: CaseInboxConversationProps) {
   const kindFilter =
     item.kind === "protection_claim"
@@ -128,7 +135,13 @@ export function CaseInboxConversation({
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="min-h-0 flex-1 overflow-hidden px-3">
+        <CaseInboxBriefing
+          item={item}
+          messages={messages}
+          order={orderContext && item.orderId === orderContext.id ? orderContext : null}
+          extras={orderContext && item.orderId === orderContext.id ? orderExtras : null}
+        />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3">
           <SupportCaseThread
             key={item.key}
             caseId={threadCaseId}
