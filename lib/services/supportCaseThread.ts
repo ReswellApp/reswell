@@ -3,9 +3,11 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import {
   getSupportCaseById,
   insertSupportCaseMessage,
+  listSupportCaseEvents,
   listSupportCaseMessages,
   resolveSupportCaseByAnyId,
   touchSupportCaseAfterMessage,
+  type SupportCaseEventRow,
   type SupportCaseMessageRow,
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
@@ -92,7 +94,13 @@ export async function getSupportCaseThreadForMember(
 
 export async function getSupportCaseThreadForStaff(
   caseId: string,
-): Promise<{ case: SupportCaseRow; messages: SupportCaseThreadMessage[] } | { error: string }> {
+): Promise<
+  {
+    case: SupportCaseRow
+    messages: SupportCaseThreadMessage[]
+    events: SupportCaseEventRow[]
+  } | { error: string }
+> {
   const staff = await requireStaff()
   if (!staff.ok) return { error: staff.error }
 
@@ -132,8 +140,11 @@ export async function getSupportCaseThreadForStaff(
     }
   }
   if (!row) return { error: "Case not found." }
-  const messages = await listSupportCaseMessages(service, row.id, { includeInternal: true })
-  return { case: row, messages }
+  const [messages, events] = await Promise.all([
+    listSupportCaseMessages(service, row.id, { includeInternal: true }),
+    listSupportCaseEvents(service, row.id),
+  ])
+  return { case: row, messages, events }
 }
 
 export async function sendSupportCaseMemberReplyService(

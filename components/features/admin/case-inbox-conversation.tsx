@@ -12,6 +12,7 @@ import { SupportCaseThread } from "@/components/features/support/support-case-th
 import {
   CaseInboxComposer,
   type CaseInboxComposerHandle,
+  type ComposerDisposition,
   type ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
 import { Badge } from "@/components/ui/badge"
@@ -35,7 +36,7 @@ interface CaseInboxConversationProps {
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
   onInsertMacro: (text: string) => void
-  onSend: (closeAfter: boolean) => void
+  onSend: (disposition: ComposerDisposition) => void
 }
 
 function kindBadge(item: CaseInboxItem): string {
@@ -43,6 +44,10 @@ function kindBadge(item: CaseInboxItem): string {
   if (item.kind === "cancel_request") return "Cancel"
   if (item.backend === "order_support") return "Order"
   return item.channelLabel
+}
+
+function adminStatusLabel(item: CaseInboxItem): string {
+  return item.status === "waiting_on_you" ? "Waiting on customer" : item.statusLabel
 }
 
 export function CaseInboxConversation({
@@ -88,7 +93,7 @@ export function CaseInboxConversation({
               variant={item.isOpen ? "default" : "outline"}
               className={cn("font-normal", !item.isOpen && "text-muted-foreground")}
             >
-              {item.isOpen ? item.statusLabel : "Resolved"}
+              {item.isOpen ? adminStatusLabel(item) : "Resolved"}
             </Badge>
             {item.priority === "high" || item.priority === "urgent" ? (
               <Badge variant="outline" className="font-normal text-destructive">

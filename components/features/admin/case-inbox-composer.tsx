@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 export type ComposerMode = "reply" | "note"
+export type ComposerDisposition = "keep_open" | "waiting" | "resolve"
 
 export type CaseInboxComposerHandle = {
   focus: () => void
@@ -24,7 +25,7 @@ interface CaseInboxComposerProps {
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
   onInsertMacro: (text: string) => void
-  onSend: (closeAfter: boolean) => void
+  onSend: (disposition: ComposerDisposition) => void
 }
 
 export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxComposerProps>(
@@ -98,7 +99,7 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && draft.trim()) {
                 e.preventDefault()
-                onSend(false)
+                onSend("keep_open")
               }
             }}
             rows={3}
@@ -121,21 +122,20 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
             />
             <div className="ml-auto flex flex-wrap gap-2">
               {mode === "reply" && !closed ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={pending || !draft.trim()}
-                  onClick={() => onSend(true)}
-                >
-                  Send and close
-                </Button>
+                <>
+                  <Button type="button" size="sm" variant="outline" disabled={pending || !draft.trim()} onClick={() => onSend("waiting")}>
+                    Send &amp; wait
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" disabled={pending || !draft.trim()} onClick={() => onSend("resolve")}>
+                    Send &amp; resolve
+                  </Button>
+                </>
               ) : null}
               <Button
                 type="button"
                 size="sm"
                 disabled={pending || !draft.trim()}
-                onClick={() => onSend(false)}
+                onClick={() => onSend("keep_open")}
               >
                 {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
                 {mode === "note" ? "Add note" : "Send"}
