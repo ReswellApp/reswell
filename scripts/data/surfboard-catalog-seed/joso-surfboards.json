@@ -1,0 +1,126 @@
+{
+  "generated_for": "Joso Surfboards official named standup catalog",
+  "source": "https://jososurfboards.com/categoria-producto/ (official WooCommerce model pages — excludes custom order deposits and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "joso-surfboards",
+      "name": "Joso Surfboards",
+      "website_url": "https://jososurfboards.com/",
+      "location_label": "Punta Hermosa, Peru",
+      "founder_name": "Jose Luis Barboza Gubo",
+      "lead_shaper_name": "Jose Luis Barboza Gubo",
+      "short_description": "Hand-shaped high-performance, fun, mid-length, and big-wave surfboards by Jose Luis Barboza Gubo in Punta Hermosa, Peru.",
+      "models": [
+        {
+          "name": "1001",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_1001.png",
+          "description": "I have been working on the design of a good high performance board for small/medium waves for many years. In the 90’s the boards were super thin and a little bit longer. In the 2000’s they began to get smaller to look for a more progressive surfing. The idea of this model was to look for speed, looseness, and to allow you to maintain a line that keep the flow. This is how this design was created. It has been used by several surfers and all of them agreed with the idea for which it was designed.\nThe original measurements are 5.10 x 18.3 x 2.2 x 24.1 lt. and I have projected them in other dimensions for various free surfers and pro surfers. The tail is rounded squash, it has low and smooth rails, a single concave one foot from the nose which turns into a triple deep concave 1/3 from the tail; low/medium entry and exit rocker. A lot of work on the outline&#8230; years of work.\n1001 is a super recommended board as a your everyday board. A fast, loose and fluid board. Perfect for progressive and power surfing maneuvers on small and medium waves. Our rider Rafael Mosquera flies –literally- with a 5’8 board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "66A6",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_66A6.png",
+          "description": "I designed the 66A6 having as a starting point the work of a californian Shaper. The outline is interesting because it’s wide on the center of the board, it gets thinner towards the nose, and at the height of the lateral fins it has an inflection point and the line towards tha tail goes almost straight. This inflection point gives looseness to the board and the final straight line looks for speed. The tail is fish, wide and shallow. It has a natural rocker, soft rails, single deep concave on the bottom and boxes for 3 and 4 fins.\nThe original dimensions are: 5’10 x 2.5 x 19.5 x 29.8 lt.\n66A6 is a very good option to have fun on smalll waves. The board is loose and enters easily into the critical side of the wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Africa",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Africa.png",
+          "description": "AFRICA is a board that offers fluidity, ideal for a line surfing in medium heavy waves.\nIt is characterized by having an elongated outline, round pin tail, fine rails, low thickness and more weight. Regarding the bottom, it has a plane rocker on the center of the board and low/medium rocker on the extremes. The plane rocker on the center of the board gives you a better paddle and solidity on the wave, allowing you to use a smaller board on this type of waves. It has also a triple concave along the board.\nThe original dimensios are 6’0 x 18.19 x 2.19 X 25.06 lt.\nAFRICA is really good to surf medium and heavy waves. The board holds strong on the carving turns, it doesn’t lose speed and allows a fluid surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bells",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Bells.png",
+          "description": "I participated in the AkuShaper Bells contest organized by AKUSHAPER, the most important brand of shaping machines and software design in the world. The challenge was to design a board for the world surfing champion Italo Ferreira to surf the World Surf League (WSL) Bells Beach Australia event in 4-8 foot waves conditions. The evaluation of the designs was carried out by the great Hawaiian Shaper Wade Tokoro and the AKUSHAPER team. I won the first place in the contest and this is the board that I made for Italo Ferreira.\nBELLS is a round (elliptical) tail, with a dome deck and soft low/medium rails. It has a low entry rocker and medium exit rocker. A single concave that comes from the nose and makes a transition to a triple and deep concave at 2/3 of the bottom. The extra area one foot from the nose is very important also.\nThe dimensions of this design are 5'10 x 18.75 x 2.25 x 26.03 lt.\nI have personally seen Italo’s participation in several WSL events. His surfing is solid, fast and progressive. This model suits his surfing perfectly. I am super grateful to AKUSHAPER for giving me the opportunity to design a board for him.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Chita",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Chita.png",
+          "description": "CHITA was created from a hybrid model I designed years ago. In this case, I made it smaller and I fine-tuned it a bit on the rails and other variables.\nThe outline of the board has wings at the height of the lateral small fins. The fish tail is shallow. It has medium rails, good thickness along the stringer, low/medium entry and exit rocker, a single deep concave and a V concave on the tail. Plugs/boxes to use the board with 3 and 4 fins.\nThe most used dimensions are 6’0 x 20 x 2.56 x 34.3 lt. You can find more proportional dimensions in the chart down.\nCHITA is a very friendly board. Some intermediate level surfers use it as a transition board from a funboard to a shortboard. Other advanced level surfers use it to have fun on small waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fun8",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Fun8.png",
+          "description": "FUN8 is a super fun board for small waves. It’s confortable for paddling and catching waves; it’s stable on the wave and it’s easy to maneuver.\nThe outline is made of soft curves; the model has a lot of volumen; it’s wide on the center and one foot from the nose also. It has medium rails; it’s a round (thumb) tail with a low entry and exit rocker, and it has a single concave in almost the whole bottom.\nThe original dimensions are 5’10 x 19.5 x 2.38 x 27.4 lt. In the chart down you can see more proportional dimensions of this model.\nIf you want to have a good time, catching many waves and having fun on small waves, FUN8 is the best option.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Funboard RPIN",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_FunboardRPIN.png",
+          "description": "This is one of the most stylish funboards I have designed and shaped. It has a round pin tail, high entry and exit rocker, high rails, and the nose is round pin as welll as the tail.\nThe board has a lot of volume for a good flotation that allows you paddling, catching waves and standing up easily. Besides, because of the type of outline and rocker, this funboard is more maneuverable despite its size.\nThe original dimensions are 7’5 x 21.7 x 3 1/8 x 58.5 lt.\nFUNBOARD RPIN is a big board ideal for beginners and also for those intermediate/advanced level surfers who want to go out to have fun and catching many waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gun Ilufish",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2024/01/GunIluNue03.webp",
+          "description": "GUN ILUFISH is one of the most important projects I´ve had so far. It was born from the need of Roberto Ilufin, big wave surfer and Joso Surfboards rider, to have the ideal gun for riding El Buey wave with more control. We had long conversations about the variables of the board, references from other big wave surfers and big wave board shapers, as part of the project, before designing and manufacturing it.\nThe outline of the GUN ILUFISH has a significant area at 2 and 3 feet from the tip as well as good thickness in order to have a good paddle to enter the wave more easily. It is characterized by having a narrow fish tail; Roberto felt the board smaller than it really was, the board was easier to move and control in the drop, and especially if he went down close to the wall to look for the tube.\nIt has a beak nose and the entire tip area has quite a bit of volume including rails. From the center of the board towards the tail, the rails are tapered to have more control and the board does not bounce with the force of the wave. The deck of the board is slightly flat before beginning the curve of the rail. The bottom has a V concave at the tip that transitions to a flat area to once again enter the longest area of the board with a V concave to the tail. The board has a medium rocker despite the length. It has a four fins configutation; located in the right place to feel control and security on the board.\nIt is laminated so that it has considerable weight to ride down big waves.\nThe original measurements of the GUN ILUFISH are: 9.4 x 21 9/16 x 3 3/4 x 77.72 L.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Heavy",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Heavy.png",
+          "description": "HEAVY is a solid, fast and loose board, really good in several conditions. It was tested by various excelent free surfers and it had the best reviews.\nIt’s a high performance with rounded squash tail, wide on the center of the board and one foot from the nose too, medium and soft rails. It has a low entry rocker and medium exit rocker; single concave that turns into a triple deep concave on the bottom. The original dimensions of this model are 6’0 x 19.75 x 2.69 x 33.6 lt.\nHEAVY is the ideal everyday shortboard to be used in several conditions of the sea.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Longboard19",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Longboard.png",
+          "description": "LONGBOARD19 is a big board with a lot of volume. It’s ideal for beginners and also for intermediate and advanced level surfers who likes surfing on longboards.\nIt’s characterized by having a rounded nose, a rounded squash tail, and medium rocker. It has high rails and it’s used with a single big fin or with 3 fins.\nThe original dimensions of this model are 9’0 x 22.75 x 3 x 68.5 lt.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mero",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Mero.png",
+          "description": "I designed this model especially for our 9-year-old team rider, Santiago Tejerina. It is a high performance board for boys and girls. Santiago trains and competes with this model.\nSince he started using this board we have seen his evolution.\nThe board is super light, has a skinny rounded squash tail, skinny rails, low rocker, single concave in the bottom and boxes for use with 3 or 4 fins.\nThe original measurements of this model are: 5'0 x 17.5 x 2.13 x 18.7 lt. In the dimension box you can see the proportional dimensions.\nMERO was designed projecting several high performance boards used by professional surfers and recognized free surfers. It is a board with which a surfer boy or girl can feel light and free to be able to do the same maneuvers that the pros do.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mid90",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_MID90.png",
+          "description": "MID90 es una tabla mediana que se posiciona entre una tabla corta (categoría Super Fun) y el modelo Funboard Rpin (categoría Big Boards). Es la extensión de una tabla corta, con una mejor remada, más sólida y para tener un surfing con una buena línea, más pausado. Es muy rápida para pasar secciones y es suelta.  Tiene un volumen bastante menor que un Funboard Rpin del mismo largo, y se siente mucho más ligera y más maniobrable.\nTiene una cola round pin, área extra a un pie de la punta, dome deck, rieles echados, high rocker de entrada y salida, single concave a lo largo de toda la tabla, cajas para 3 y 4 quillas.\nLas medidas originales son: 7’0 x 20.5 x 2.6 x 40.8 lt.\nMID90 es una muy buena opción para surfers experimentados así como para aquellos que están haciendo la transición de un funboard a una tabla corta. Ideal para olas chicas y medianas con buen recorrido.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nueve1000",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Nueve1000.png",
+          "description": "NUEVE1000 is the round pin model ideal for tubes. It’s a heavier board that holds well on the wall of power and tubular waves. The perfect board to feel safe when you drop a heavy wave and go direct into the tube.\nIt’s a high pefrormance, round pin, with good volume, medium and sharp rails. It has a medium entry rocker and high exit rocker. I highlight the triple deep concave on 5/6 of the bottom.\nThe dimensions that use our rider Alessio Botteri are: 6’0 x 19 x 2.5 x 29.9 lt. Alessio uses this board on tubular and heavy waves; It doesn’t slide, it doesn’t shake. The board gives him the security he needs for this type of wave.\nNUEVE1000 is the high peformance round pin that you need to surf heavy waves of consequence.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Proto Tube",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Prototube.png",
+          "description": "PROTO TUBE is the new model I developed in collaboration with Jonathan Gubbins, one of the most recognized tube riders in the world. This board is designed to surf tubular and fast waves.\nThis board has a short and closed fish tail, keeping the outline as if the final part of a round pin tail board had been cut. This tail makes the board a little bit looser than the round pin tail and it keeps the line and security for this type of wave. Regarding the bottom, it has a low/medium entry rocker and a medium exit rocker, as well as a single concave that turns into a triple deep concave at 5/8 of the board and ends in a V concave in the tail. It has fine and sharp rails. What I highlight in this model is the extra area one foot from the nose to adapt the board to Jonathan’s standing in the tube.\nThe original measurements are 5’7 x 18.6 x 2.25 x 23.8 lt.\nA super board to surf the best tubes.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Robalo",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2026/03/NI_Roba.png",
+          "description": "ROBALO es un pez de la familia Moronidae. Habita en el norte peruano así como en el mar Mediterráneo y en el Océano Atlántico. Es un depredador típico. Tiene una estructura sólida y robusta, pero al mismo tiempo una línea alargada y elegante.\nROBALO es un modelo con cola fish y dos quillas. Es una fish más performance que la clásica fish de dos quillas diseñada en los 70’s. Menos área a lo largo de todo el outline, menos espesor, terminaciones más delgadas en la punta y cola, y, por lo tanto, menor volumen.\nEl outline tienen unos wings pronunciados debajo de las quillas y termina en una cola fish profunda y más angosta. Los rieles son low (bajos) y suaves contra el flat de la tabla. Tienen un low rocker de entrada y un medium rocker de salida que se acentúa con el VEE concave que tiene en la cola. Triple concave entre las quillas y una transición a un cóncavo simple hacia el centro, y hacia la punta otro VEE concave. Adicionalmente, tiene un ligero beak nose.\nComo parte del diseño, también, laminamos la tabla ligera para sentir mejor todas estas variables y que se sienta más performance que una fish tradicional.\nLas medidas de la tabla original son: 5’9 x 19 ¾ x 2 3/8 x 29.1 L.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Solida",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_Solida.png",
+          "description": "When The channels are shaped on the bottom of the right board, they are a symbol of power surfing. Great power surfers used them in the past and still use them now.\nI designed the original SOLIDA for our team rider Roberto Ilufin. Roberto was looking for a shortboard to push hard and make strong movements. The board doesn’t slide, it keeps the speed and solidity.\nThe model has a round tail, good thickness along the stringer, medium rails, low rocker on the bottom, and it has 4 deep parallel channels that occupy 3/8 of the bottom.\nThe original dimensions are 5’10 x 18.4 x 2.3 x 25.2 lt.\nThis model is pure speed, drive and solidity.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Styler",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_TheStyler.png",
+          "description": "I developed this model in collaboration with the Peruvian pro surfer Jonathan Gubbins. We were looking for designing his all-around board.\nTHE STYLER is a small high performance board, with a relatively rounded outline, low volume, round pin tail and low rails. Regarding the bottom, it has a single deep concave and a low rocker.\nThe original dimensions are 5’5 x 18.4 x 2.0 x 21.1 lt. Jonathan is 5’7 tall.\nTHE STYLER adapted perfectly to Jonathan’s surfing style. The result was a fast, loose and responsive board, solid on maneuvers. A good high performance board for your quiver.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin Clasica",
+          "image_url": "https://jososurfboards.com/wp-content/uploads/2023/05/NI_TwinClasica.png",
+          "description": "I designed TWIN with reference to one of Gerry Lopez's designs, one of the most renowned shapers and surfers in Hawaii.\nIt is a very flat board, with a lot of area and with a lot of volume. It is characterized by having a wide and deep fish tail, and by being used only with two keels with a wide base and a large area.\nThe board has a low rocker, single concave and V concave in the tail; medium/sharp rails.\nThe original measurements are: 5'8 x 20.75 x 2.63 x 33.6 lt.\nTWIN is the classic shortboard used in the 70s. A board for small waves with good paddling and super fun to ride with a classic style.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
