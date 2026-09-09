@@ -35,6 +35,17 @@ export function findMatchingProfileAddress(
   return addresses.find((row) => profileAddressesMatch(row, fields)) ?? null
 }
 
+export function preferredProfileAddress(
+  addresses: ProfileAddressRow[],
+): ProfileAddressRow | null {
+  return addresses.find((row) => row.is_default) ?? addresses[0] ?? null
+}
+
+export function profileAddressOneLine(addr: ProfileAddressRow): string {
+  const locality = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ")
+  return [addr.line1.trim(), locality].filter(Boolean).join(" · ")
+}
+
 export async function insertProfileAddress(
   supabase: SupabaseClient,
   profileId: string,

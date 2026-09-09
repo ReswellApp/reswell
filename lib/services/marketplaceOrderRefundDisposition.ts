@@ -8,6 +8,12 @@ import { z } from "zod"
 export const MARKETPLACE_ORDER_REFUND_DISPOSITIONS = [
   /** Existing default: public relist + 5-day exclusive + "buy again" thread card. */
   "exclusive_relist",
+  /**
+   * Wrong / not-as-described item the buyer is sending back: full item amount
+   * (item + shipping they paid), vacation hold, no repurchase message.
+   * Return label is created separately on the case / order Item returns panel.
+   */
+  "item_issue",
   /** Refund only for listing side effects: sold → active, vacation-hidden, no rebuy message. */
   "vacation_hold",
   /** Never-shipped cancel: best-effort void unused outbound label, then vacation hold. */
@@ -51,6 +57,7 @@ export function planMarketplaceOrderRefundSideEffects(
   disposition: MarketplaceOrderRefundDisposition,
 ): MarketplaceOrderRefundSideEffectPlan {
   switch (disposition) {
+    case "item_issue":
     case "vacation_hold":
       return {
         disposition,
@@ -102,6 +109,13 @@ export const ADMIN_REFUND_DISPOSITION_OPTIONS: readonly AdminRefundDispositionOp
     description:
       "Refund the buyer, reverse seller earnings, re-list publicly, and give the original buyer a 5-day exclusive “buy it again” window in Messages.",
     recommendedWhen: "Sale fell through but the item should stay sellable — buyer gets first dibs.",
+  },
+  {
+    value: "item_issue",
+    label: "Issue refund — item amount",
+    description:
+      "Refund the buyer the full item amount (item + the shipping they paid) after a wrong or not-as-described item. Reverse seller earnings. Listing goes on seller vacation — no “buy it again” message. Create and manage the prepaid return label in Item returns on this case. Does not void the outbound label.",
+    recommendedWhen: "Buyer received the wrong item and is sending it back.",
   },
   {
     value: "vacation_hold",

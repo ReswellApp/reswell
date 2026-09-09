@@ -60,14 +60,19 @@ export function AdminIssueItemReturnPanel({
   orderId,
   canIssue,
   onComplete,
+  variant = "page",
 }: {
   orderId: string
   canIssue: boolean
   onComplete?: () => void
+  /** `embedded` is the compact case-inbox sidebar. */
+  variant?: "page" | "embedded"
 }) {
+  const embedded = variant === "embedded"
   const [loading, setLoading] = useState(true)
   const [lines, setLines] = useState<ReturnableLine[]>([])
   const [returns, setReturns] = useState<ReturnRow[]>([])
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<string | null>(null)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [rates, setRates] = useState<RateOption[]>([])
   const [quoteMeta, setQuoteMeta] = useState<{
@@ -87,7 +92,11 @@ export function AdminIssueItemReturnPanel({
         credentials: "include",
       })
       const body = (await res.json()) as {
-        data?: { lines: ReturnableLine[]; returns: ReturnRow[] }
+        data?: {
+          lines: ReturnableLine[]
+          returns: ReturnRow[]
+          fulfillmentMethod?: string | null
+        }
         error?: string
       }
       if (!res.ok) {
@@ -96,6 +105,7 @@ export function AdminIssueItemReturnPanel({
       }
       setLines(body.data?.lines ?? [])
       setReturns(body.data?.returns ?? [])
+      setFulfillmentMethod(body.data?.fulfillmentMethod ?? null)
     } catch {
       toast.error("Could not load returns")
     } finally {
@@ -226,16 +236,25 @@ export function AdminIssueItemReturnPanel({
 
   if (lines.length === 0 && returns.length === 0) return null
 
+  const canCreateLabel = canIssue && fulfillmentMethod !== "local_pickup"
+
   return (
-    <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+    <div
+      className={
+        embedded
+          ? "space-y-3 rounded-xl border border-border/60 bg-muted/15 p-3"
+          : "space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4"
+      }
+    >
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
           <RotateCcw className="h-3.5 w-3.5" />
           Item returns
         </p>
-        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-          Authorize a return for one item: buy a prepaid return label (buyer → Reswell), mark the item
-          returned, and refund automatically 24 hours after return delivery.
+        <p className={embedded ? "mt-1 text-xs leading-relaxed text-muted-foreground" : "mt-1 text-sm text-muted-foreground leading-relaxed"}>
+          {embedded
+            ? "Create a prepaid return label (buyer → Reswell), track the inbound shipment, and confirm receipt. Refund the full item amount from Refund on this case — or it releases automatically ~24h after return delivery."
+            : "Authorize a return for one item: buy a prepaid return label (buyer → Reswell), mark the item returned, and refund automatically 24 hours after return delivery."}
         </p>
       </div>
 
@@ -262,7 +281,7 @@ export function AdminIssueItemReturnPanel({
                   <Badge variant={orderItemReturnBadgeVariant(active.status)}>
                     {orderItemReturnLabel(active.status)}
                   </Badge>
-                ) : canIssue && !line.alreadyReturned ? (
+                ) : canCreateLabel && !line.alreadyReturned ? (
                   <Button
                     type="button"
                     size="sm"
@@ -270,7 +289,7 @@ export function AdminIssueItemReturnPanel({
                     disabled={busy}
                     onClick={() => void fetchRates(line)}
                   >
-                    Issue return
+                    {embedded ? "Create return label" : "Issue return"}
                   </Button>
                 ) : null}
               </div>

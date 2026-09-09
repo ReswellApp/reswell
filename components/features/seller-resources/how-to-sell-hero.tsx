@@ -8,8 +8,8 @@ export function HowToSellHero({ examples }: { examples: HowToSellPhotoExample[] 
 
   return (
     <SellerResourcesHero
-      title="Turn your surfboard into cash"
-      description="List in minutes, reach surfers locally or nationwide, and get paid. Free to post — you only pay a fee when it sells."
+      title="Create your own surf shop"
+      description="Reach buyers nationwide who are looking for boards. List in minutes — free to post, you only pay a fee when it sells."
       primaryCta={{ href: SURFBOARD_SELL_BOARDS_CREATE_HREF, label: "Start a listing" }}
       secondaryCta={{ href: "/sell", label: "Go to Sell" }}
       aside={

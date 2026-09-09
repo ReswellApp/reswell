@@ -179,8 +179,8 @@ export function AdminIssueRefundButton({
           {shippingUsd > 0
             ? ` (item $${itemUsd.toFixed(2)} + shipping $${shippingUsd.toFixed(2)})`
             : ""}{" "}
-          and reverse seller earnings. None buy a return shipping label — use Item returns above only when
-          a physical return is needed.
+          and reverse seller earnings. None buy a return shipping label — use Item returns above when the
+          buyer is sending a wrong or not-as-described item back.
         </p>
       </div>
 

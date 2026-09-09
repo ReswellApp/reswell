@@ -161,6 +161,10 @@ async function loadListingForParcel(
   return data ? (data as unknown as ListingPackedParcelSource) : null
 }
 
+export function orderStatusAllowsReturnWork(status: string): boolean {
+  return status === "confirmed" || status === "refunding" || status === "refunded"
+}
+
 function resolveLine(
   lines: ReturnableOrderLine[],
   params: { orderItemId?: string | null; listingId?: string | null },
@@ -205,8 +209,8 @@ export async function quoteOrderItemReturnRates(params: {
   if ("error" in listed) return { ok: false, error: listed.error, status: listed.status }
 
   const { order, lines } = listed
-  if (order.status !== "confirmed") {
-    return { ok: false, error: "Only confirmed orders can start a return.", status: 400 }
+  if (!orderStatusAllowsReturnWork(order.status)) {
+    return { ok: false, error: "This order cannot start a return.", status: 400 }
   }
   if (order.fulfillment_method !== "shipping") {
     return { ok: false, error: "Returns with prepaid labels require shipping fulfillment.", status: 400 }
@@ -315,8 +319,8 @@ async function resolveEligibleReturnLine(params: {
   if ("error" in listed) return { ok: false, error: listed.error, status: listed.status }
 
   const { order, lines } = listed
-  if (order.status !== "confirmed") {
-    return { ok: false, error: "Only confirmed orders can start a return.", status: 400 }
+  if (!orderStatusAllowsReturnWork(order.status)) {
+    return { ok: false, error: "This order cannot start a return.", status: 400 }
   }
   if (order.fulfillment_method !== "shipping") {
     return { ok: false, error: "Returns with prepaid labels require shipping fulfillment.", status: 400 }

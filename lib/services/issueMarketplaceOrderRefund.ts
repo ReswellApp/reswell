@@ -87,6 +87,8 @@ function successMessageForDisposition(
   }
   if (refundType === "wallet") {
     switch (disposition) {
+      case "item_issue":
+        return "Refund complete — buyer credited the full item amount (item + shipping they paid); listing held on seller vacation. Create the prepaid return label in Item returns if they still need to ship the item back."
       case "vacation_hold":
         return "Refund complete — buyer credited for the full order (item + shipping); listing held on seller vacation (no repurchase message)."
       case "cancel_unshipped":
@@ -102,6 +104,8 @@ function successMessageForDisposition(
     }
   }
   switch (disposition) {
+    case "item_issue":
+      return "Refund issued — buyer’s card will be refunded the full item amount (item + shipping they paid); listing held on seller vacation. Create the prepaid return label in Item returns if they still need to ship the item back."
     case "vacation_hold":
       return "Refund issued — buyer’s card will be refunded for the full order (item + shipping); listing held on seller vacation (no repurchase message)."
     case "cancel_unshipped":

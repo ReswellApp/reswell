@@ -66,6 +66,9 @@ export type AdminOrderDetail = {
   listing_title: string | null
   /** Primary listing section — `new` means Reswell retail shop inventory. */
   listing_section: string | null
+  /** Listing city/state used when Reswell prints the label FROM. */
+  listing_city: string | null
+  listing_state: string | null
   /** True when the primary listing is Reswell shop (`section = new`). */
   is_reswell_shop: boolean
   buyer: AdminOrderParticipant
@@ -826,7 +829,7 @@ export async function getOrderDetailForAdmin(
   const isTerminalGuestOrder = !buyerId
 
   const [listingRes, buyerRes, sellerRes, payoutRes, conversation] = await Promise.all([
-    supabase.from("listings").select("title, section").eq("id", listingId).maybeSingle(),
+    supabase.from("listings").select("title, section, city, state").eq("id", listingId).maybeSingle(),
     isTerminalGuestOrder
       ? Promise.resolve({ data: null, error: null })
       : supabase.from("profiles").select(ADMIN_ORDER_PARTICIPANT_SELECT).eq("id", buyerId).maybeSingle(),
@@ -847,11 +850,24 @@ export async function getOrderDetailForAdmin(
     marketplaceMessageCount = count ?? 0
   }
 
-  const listingRow = listingRes.data as { title?: string; section?: string | null } | null
+  const listingRow = listingRes.data as {
+    title?: string
+    section?: string | null
+    city?: string | null
+    state?: string | null
+  } | null
   const listingTitle =
     listingRow && typeof listingRow.title === "string" ? listingRow.title : null
   const listingSection =
     listingRow && typeof listingRow.section === "string" ? listingRow.section : null
+  const listingCity =
+    listingRow && typeof listingRow.city === "string" && listingRow.city.trim()
+      ? listingRow.city.trim()
+      : null
+  const listingState =
+    listingRow && typeof listingRow.state === "string" && listingRow.state.trim()
+      ? listingRow.state.trim()
+      : null
   const isReswellShop = isReswellShopListing(listingSection)
 
   const buyer = isTerminalGuestOrder
@@ -926,6 +942,8 @@ export async function getOrderDetailForAdmin(
       listing_id: listingId,
       listing_title: listingTitle,
       listing_section: listingSection,
+      listing_city: listingCity,
+      listing_state: listingState,
       is_reswell_shop: isReswellShop,
       buyer,
       seller,

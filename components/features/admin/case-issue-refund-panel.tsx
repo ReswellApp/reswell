@@ -114,6 +114,9 @@ export function CaseIssueRefundPanel({
           {isCard ? "card" : "wallet"}
           {shippingUsd > 0 ? ` (includes $${shippingUsd.toFixed(2)} shipping)` : ""}. The buyer is
           notified on this Support thread — not Messages.
+          {disposition === "item_issue"
+            ? " Create and manage the prepaid return label in Item returns above — this refund does not buy a label."
+            : ""}
         </p>
       </div>
 

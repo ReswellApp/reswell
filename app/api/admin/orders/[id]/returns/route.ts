@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdmin, requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { listOrderItemReturnsForOrder } from "@/lib/db/orderItemReturns"
 import {
   listReturnableOrderLines,
@@ -22,7 +22,7 @@ export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   const parsed = orderIdSchema.safeParse((await context.params).id)

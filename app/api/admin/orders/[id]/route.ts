@@ -2,7 +2,13 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import type { AdminOrderCapabilities } from "@/lib/admin/admin-order-capabilities"
 import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
+import {
+  fetchProfileAddresses,
+  preferredProfileAddress,
+  profileAddressOneLine,
+} from "@/lib/db/profile-addresses"
 import {
   getLatestPreparedShippingLabelForOrder,
   preparedLabelHasPaperlessQr,
@@ -52,15 +58,22 @@ export async function GET(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  const hasShippingLabel = await orderHasAccessibleShippingLabelPdf(serviceSupabase, {
-    orderId: parsed.data,
-    trackingNumber: data.tracking_number,
-  })
-  const preparedShippingLabel = await getLatestPreparedShippingLabelForOrder(
-    serviceSupabase,
-    parsed.data,
-  )
+  const [hasShippingLabel, preparedShippingLabel, sellerAddresses] = await Promise.all([
+    orderHasAccessibleShippingLabelPdf(serviceSupabase, {
+      orderId: parsed.data,
+      trackingNumber: data.tracking_number,
+    }),
+    getLatestPreparedShippingLabelForOrder(serviceSupabase, parsed.data),
+    fetchProfileAddresses(serviceSupabase, data.seller_id),
+  ])
   const hasPaperlessQr = preparedLabelHasPaperlessQr(preparedShippingLabel)
+  const preferredShipFrom = preferredProfileAddress(sellerAddresses.addresses)
+  const shipFromOnFile = preferredShipFrom
+    ? {
+        name: preferredShipFrom.full_name.trim() || "Seller",
+        oneLine: profileAddressOneLine(preferredShipFrom),
+      }
+    : null
 
   const canFulfillReswellShop =
     gate.ctx.isAdmin &&
@@ -78,17 +91,20 @@ export async function GET(
     data.delivery_status !== "delivered" &&
     data.delivery_status !== "picked_up"
 
+  const capabilities: AdminOrderCapabilities = {
+    canRefund: gate.ctx.isAdmin,
+    canReleaseShippingSellerEarnings: gate.ctx.isAdmin && !data.is_reswell_shop,
+    hasShippingLabel,
+    hasPaperlessQr,
+    paperlessInstructions: preparedShippingLabel?.paperless_instructions ?? null,
+    paperlessHandoffCode: preparedShippingLabel?.paperless_handoff_code ?? null,
+    canFulfillReswellShop,
+    canReplaceShippingLabel,
+    shipFromOnFile,
+  }
+
   return NextResponse.json({
     data,
-    capabilities: {
-      canRefund: gate.ctx.isAdmin,
-      canReleaseShippingSellerEarnings: gate.ctx.isAdmin && !data.is_reswell_shop,
-      hasShippingLabel,
-      hasPaperlessQr,
-      paperlessInstructions: preparedShippingLabel?.paperless_instructions ?? null,
-      paperlessHandoffCode: preparedShippingLabel?.paperless_handoff_code ?? null,
-      canFulfillReswellShop,
-      canReplaceShippingLabel,
-    },
+    capabilities,
   })
 }

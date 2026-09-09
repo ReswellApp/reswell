@@ -560,11 +560,12 @@ export default function AdminOrderDetailPage() {
           )}
 
           {/* Per-item returns (label + delayed refund) */}
-          {o.fulfillment_method === "shipping" && (o.status === "confirmed" || o.status === "refunding") && (
+          {o.fulfillment_method === "shipping" &&
+            (o.status === "confirmed" || o.status === "refunding" || o.status === "refunded") && (
             <div className="border-t border-border/60 pt-4">
               <AdminIssueItemReturnPanel
                 orderId={o.id}
-                canIssue={canRefund && o.status === "confirmed"}
+                canIssue={canRefund}
                 onComplete={bumpRefetch}
               />
             </div>
