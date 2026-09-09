@@ -20,6 +20,7 @@ export interface SavedFavorite {
     title: string
     price: number
     compare_at_price?: number | string | null
+    is_good_deal?: boolean | null
     status: string
     section: string
     hidden_from_site?: boolean | null
@@ -94,7 +95,10 @@ export function SavedListContent({
                   title: listing.title,
                   price: listing.price,
                   compare_at_price: listing.compare_at_price,
+                  is_good_deal: listing.is_good_deal,
                   status: listing.status,
+                  hidden_from_site: listing.hidden_from_site,
+                  archived_at: listing.archived_at,
                   section: listing.section,
                   local_pickup: listing.local_pickup,
                   shipping_available: listing.shipping_available,

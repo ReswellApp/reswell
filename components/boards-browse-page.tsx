@@ -720,6 +720,7 @@ function BoardListingsTileGrid({
             title: board.title,
             price: board.price,
             compare_at_price: board.compare_at_price,
+            is_good_deal: board.is_good_deal,
             status: board.status,
             section: "surfboards",
             local_pickup: board.local_pickup,

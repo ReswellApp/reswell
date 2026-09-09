@@ -12,6 +12,7 @@ export interface RecentListing {
   title: string
   price: number
   compare_at_price?: number | string | null
+  is_good_deal?: boolean | null
   condition?: string | null
   section: string
   status?: string
@@ -119,6 +120,7 @@ export function RecentFeedClient({
             title: listing.title,
             price: listing.price,
             compare_at_price: listing.compare_at_price,
+            is_good_deal: listing.is_good_deal,
             status: listing.status ?? (soldPresentation ? "sold" : "active"),
             section: listing.section,
             local_pickup: listing.local_pickup,

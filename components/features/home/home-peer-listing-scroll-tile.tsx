@@ -4,13 +4,14 @@
  */
 import type { ReactNode } from "react"
 import { Truck } from "lucide-react"
-import { ListingTile } from "@/components/listing-tile"
+import { ListingTile, ListingTileGoodDealStamp } from "@/components/listing-tile"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
+import { shouldShowListingGoodDeal } from "@/lib/utils/listing-good-deal"
 import {
   homeListingScrollImageSizes,
   homeMostViewedCompactBodyClass,
@@ -41,8 +42,11 @@ export type HomePeerScrollListing = {
   title: string
   price: string | number
   compare_at_price?: number | string | null
+  is_good_deal?: boolean | null
   status: string
   section: string
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
   local_pickup?: boolean | null
   shipping_available?: boolean | null
   listing_images?: ListingImageForCard[] | null
@@ -110,6 +114,7 @@ export function HomePeerListingScrollTile({
   const ships = !!listing.shipping_available
 
   const conditionLine = formatHomePeerListingConditionLine(listing.condition)
+  const showGoodDeal = shouldShowListingGoodDeal(listing)
 
   const isGrid = layout === "grid"
   const imageSizes =
@@ -128,7 +133,9 @@ export function HomePeerListingScrollTile({
       imageAlt={capitalizeWords(listing.title)}
       listingImages={listing.listing_images}
       price={Number(listing.price)}
-      imageTopLeftOverlay={imageTopLeftOverlay}
+      imageTopLeftOverlay={
+        imageTopLeftOverlay ?? (showGoodDeal ? <ListingTileGoodDealStamp /> : undefined)
+      }
       imageSizes={imageSizes}
       imagePriority={imagePriority}
       linkLayout="unified"

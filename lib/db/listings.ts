@@ -130,6 +130,27 @@ export async function updateListingSuppressedOnBoardsBrowse(
   return { ok: true }
 }
 
+export async function updateListingIsGoodDeal(
+  client: SupabaseClient,
+  listingId: string,
+  isGoodDeal: boolean,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data, error } = await client
+    .from("listings")
+    .update({ is_good_deal: isGoodDeal })
+    .eq("id", listingId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    return { ok: false, message: error.message }
+  }
+  if (!data) {
+    return { ok: false, message: "Listing not found" }
+  }
+  return { ok: true }
+}
+
 export async function updateAdminListingSectionCategory(
   client: SupabaseClient,
   listingId: string,

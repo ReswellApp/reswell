@@ -39,6 +39,7 @@ export type SellerProfileListing = {
   title: string
   price: string | number
   compare_at_price?: number | string | null
+  is_good_deal?: boolean | null
   status: string | null
   section: string
   local_pickup?: boolean | null
@@ -408,6 +409,7 @@ export function SellerProfileListingsPanel({
                 title: listing.title,
                 price: listing.price,
                 compare_at_price: listing.compare_at_price,
+                is_good_deal: listing.is_good_deal,
                 status: listing.status ?? "active",
                 section: listing.section,
                 local_pickup: listing.local_pickup,

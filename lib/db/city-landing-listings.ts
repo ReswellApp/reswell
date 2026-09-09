@@ -12,6 +12,7 @@ const CITY_LANDING_LISTING_SELECT = `
   title,
   price,
   compare_at_price,
+  is_good_deal,
   condition,
   section,
   status,
@@ -44,6 +45,7 @@ type CityLandingListingRow = {
   title: string
   price: number
   compare_at_price?: number | string | null
+  is_good_deal?: boolean | null
   condition: string
   section: string
   status?: string
@@ -77,6 +79,7 @@ function mapRowToRecentListing(row: CityLandingListingRow): CityLandingListing {
     title: row.title,
     price: row.price,
     compare_at_price: row.compare_at_price ?? null,
+    is_good_deal: row.is_good_deal,
     condition: row.condition,
     section: row.section,
     status: row.status,
