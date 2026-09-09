@@ -94,6 +94,15 @@ export type SurfboardShippingEstimatorListingContext = {
   boardVolumeL: string
 }
 
+export type SurfboardShippingEstimatorPreset = {
+  id: string
+  label: string
+  lengthIn: string
+  widthIn: string
+  heightIn: string
+  weightLb?: string
+}
+
 export type SurfboardShippingEstimatorProps = {
   className?: string
   /** Prefix for input `id`s (must be unique per document). */
@@ -101,6 +110,12 @@ export type SurfboardShippingEstimatorProps = {
   /** When set, form resets whenever this becomes true (sell-flow dialog). */
   open?: boolean
   listingContext?: SurfboardShippingEstimatorListingContext
+  defaultLengthIn?: string
+  defaultWidthIn?: string
+  defaultHeightIn?: string
+  defaultWeightLb?: string
+  /** Quick-fill cartons shown above the dimension fields. */
+  presets?: SurfboardShippingEstimatorPreset[]
 }
 
 export function SurfboardShippingEstimator({
@@ -108,6 +123,11 @@ export function SurfboardShippingEstimator({
   idPrefix = "ship-est",
   open,
   listingContext,
+  defaultLengthIn = "72",
+  defaultWidthIn = "20",
+  defaultHeightIn = "6",
+  defaultWeightLb = "12",
+  presets = [],
 }: SurfboardShippingEstimatorProps) {
   const boardLength = listingContext?.boardLength ?? ""
   const boardWidthInches = listingContext?.boardWidthInches ?? ""
@@ -117,10 +137,10 @@ export function SurfboardShippingEstimator({
   const [originZipDraft, setOriginZipDraft] = useState("")
   const [destinationZipDraft, setDestinationZipDraft] = useState("")
   const [routeHint, setRouteHint] = useState<string | null>(null)
-  const [totalWeightLb, setTotalWeightLb] = useState("12")
-  const [lengthIn, setLengthIn] = useState("72")
-  const [widthIn, setWidthIn] = useState("20")
-  const [heightIn, setHeightIn] = useState("6")
+  const [totalWeightLb, setTotalWeightLb] = useState(defaultWeightLb)
+  const [lengthIn, setLengthIn] = useState(defaultLengthIn)
+  const [widthIn, setWidthIn] = useState(defaultWidthIn)
+  const [heightIn, setHeightIn] = useState(defaultHeightIn)
   const [busy, setBusy] = useState(false)
   const [rates, setRates] = useState<RateRow[] | null>(null)
   const openSignIn = useSignInGate()
@@ -353,6 +373,39 @@ export function SurfboardShippingEstimator({
 
             <div className="space-y-2">
               <p className={labelBold}>Package dimensions</p>
+              {presets.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {presets.map((preset) => {
+                    const active =
+                      lengthIn === preset.lengthIn &&
+                      widthIn === preset.widthIn &&
+                      heightIn === preset.heightIn
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        aria-pressed={active}
+                        className={cn(
+                          "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                          active
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-neutral-200 bg-white text-foreground hover:border-neutral-400",
+                        )}
+                        onClick={() => {
+                          setLengthIn(preset.lengthIn)
+                          setWidthIn(preset.widthIn)
+                          setHeightIn(preset.heightIn)
+                          if (preset.weightLb) setTotalWeightLb(preset.weightLb)
+                          setRates(null)
+                          setRouteHint(null)
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : null}
               <div className="grid grid-cols-3 gap-3">
                 {(
                   [

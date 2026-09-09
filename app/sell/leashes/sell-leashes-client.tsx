@@ -64,10 +64,11 @@ import {
   LEASH_LISTING_TITLE_MAX_LENGTH,
   type CreateLeashListingInput,
 } from "@/lib/validations/leash-listing"
+import { createLeashListingAction } from "@/lib/actions/leashListingActions"
 import {
-  createLeashListingAction,
-  updateLeashListingAction,
-} from "@/lib/actions/leashListingActions"
+  peerImagesToOwnedUpdateOps,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import { buildLeashListingPersistFields } from "@/lib/leash-listing-persist-fields"
 import { computeLeashSellSectionCompletion } from "@/lib/leash-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
@@ -856,14 +857,16 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
           return
         }
 
-        const result = await updateLeashListingAction({
-          ...payload,
+        const updated = await updateOwnedListingViaApi({
           listingId: editId,
+          listing: buildLeashListingPersistFields(payload),
           removedImageIds,
+          images: peerImagesToOwnedUpdateOps(payload.images),
           removedVideoIds,
+          videos: payload.videos,
         })
-        if ("error" in result) {
-          const message = sellActionErrorMessage(result.error)
+        if (!updated.ok) {
+          const message = sellActionErrorMessage(updated.error)
           logSellFunnelEvent({
             listingType: "leashes",
             event: "publish_failed",
@@ -881,7 +884,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        navigateAfterListingSave(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${updated.slug}`)
         return
       }
 

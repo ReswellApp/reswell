@@ -6,11 +6,14 @@ import {
   type MarketplaceSalesMapOrderWithListing,
   type MarketplaceSalesMapProfileRow,
 } from "@/lib/db/marketplaceSalesMap"
+import { sellerProfileHref } from "@/lib/seller-slug"
+import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
 import type {
   MarketplaceSalesMapFlow,
   MarketplaceSalesMapPayload,
   MarketplaceSalesMapSale,
   MarketplaceSalesMapStateStat,
+  MarketplaceSalesMapTopSeller,
 } from "@/lib/types/marketplace-sales-map"
 import {
   resolveProfileHomeState,
@@ -20,6 +23,50 @@ import { usStateDisplayName } from "@/lib/utils/us-state-names"
 import { buildUsaSalesMapGeometry } from "@/lib/utils/usa-sales-map-geometry"
 
 const RECENT_SALES_LIMIT = 48
+const TOP_SELLERS_LIMIT = 10
+
+function trimText(value: string | null | undefined): string | null {
+  const trimmed = typeof value === "string" ? value.trim() : ""
+  return trimmed.length > 0 ? trimmed : null
+}
+
+function sellerDisplayName(profile: MarketplaceSalesMapProfileRow): string {
+  return trimText(profile.shop_name) || trimText(profile.display_name) || "Seller"
+}
+
+export function buildMarketplaceSalesMapTopSellers(
+  orders: MarketplaceSalesMapOrderWithListing[],
+  profilesById: Map<string, MarketplaceSalesMapProfileRow>,
+  limit = TOP_SELLERS_LIMIT,
+): MarketplaceSalesMapTopSeller[] {
+  const buckets = new Map<string, { count: number; volumeUsd: number }>()
+
+  for (const order of orders) {
+    if (!order.seller_id) continue
+    const bucket = buckets.get(order.seller_id) ?? { count: 0, volumeUsd: 0 }
+    bucket.count += 1
+    bucket.volumeUsd += toAmount(order.amount)
+    buckets.set(order.seller_id, bucket)
+  }
+
+  return [...buckets.entries()]
+    .sort((a, b) => b[1].count - a[1].count || b[1].volumeUsd - a[1].volumeUsd)
+    .reduce<MarketplaceSalesMapTopSeller[]>((sellers, [sellerId, bucket]) => {
+      if (sellers.length >= limit) return sellers
+      const profile = profilesById.get(sellerId)
+      if (!profile || !trimText(profile.seller_slug)) return sellers
+
+      sellers.push({
+        id: sellerId,
+        href: sellerProfileHref(profile),
+        name: sellerDisplayName(profile),
+        imageSrc: resolveSellerProfileDisplayImageUrl(profile),
+        salesCount: bucket.count,
+        shopVerified: profile.shop_verified === true,
+      })
+      return sellers
+    }, [])
+}
 
 type ShippingAddressJson = {
   address?: {
@@ -187,6 +234,7 @@ export function buildMarketplaceSalesMapPayload(args: {
     flows,
     stateStats,
     recentSales,
+    topSellers: buildMarketplaceSalesMapTopSellers(args.orders, args.profilesById),
     userCountsByState,
     totals: {
       confirmedSales: args.orders.length,

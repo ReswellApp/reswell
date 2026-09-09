@@ -64,10 +64,11 @@ import {
   SURFPACK_LISTING_TITLE_MAX_LENGTH,
   type CreateSurfpackListingInput,
 } from "@/lib/validations/surfpack-listing"
+import { createSurfpackListingAction } from "@/lib/actions/surfpackListingActions"
 import {
-  createSurfpackListingAction,
-  updateSurfpackListingAction,
-} from "@/lib/actions/surfpackListingActions"
+  peerImagesToOwnedUpdateOps,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import { buildSurfpackListingPersistFields } from "@/lib/surfpack-listing-persist-fields"
 import { computeSurfpackSellSectionCompletion } from "@/lib/surfpack-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
@@ -856,14 +857,16 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
           return
         }
 
-        const result = await updateSurfpackListingAction({
-          ...payload,
+        const updated = await updateOwnedListingViaApi({
           listingId: editId,
+          listing: buildSurfpackListingPersistFields(payload),
           removedImageIds,
+          images: peerImagesToOwnedUpdateOps(payload.images),
           removedVideoIds,
+          videos: payload.videos,
         })
-        if ("error" in result) {
-          const message = sellActionErrorMessage(result.error)
+        if (!updated.ok) {
+          const message = sellActionErrorMessage(updated.error)
           logSellFunnelEvent({
             listingType: "surfpacks",
             event: "publish_failed",
@@ -881,7 +884,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        navigateAfterListingSave(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${updated.slug}`)
         return
       }
 

@@ -12,7 +12,7 @@ const getCachedMarketplaceSalesMapPayload = unstable_cache(
     const supabase = createServiceRoleClient()
     return loadMarketplaceSalesMap(supabase)
   },
-  ["marketplace-sales-map-v3"],
+  ["marketplace-sales-map-v4"],
   {
     revalidate: MARKETPLACE_SALES_MAP_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SALES_MAP_CACHE_TAG],

@@ -62,10 +62,11 @@ import {
   APPAREL_LISTING_TITLE_MAX_LENGTH,
   type CreateApparelListingInput,
 } from "@/lib/validations/apparel-listing"
+import { createApparelListingAction } from "@/lib/actions/apparelListingActions"
 import {
-  createApparelListingAction,
-  updateApparelListingAction,
-} from "@/lib/actions/apparelListingActions"
+  peerImagesToOwnedUpdateOps,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import { buildApparelListingPersistFields } from "@/lib/apparel-listing-persist-fields"
 import { computeApparelSellSectionCompletion } from "@/lib/apparel-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
@@ -837,14 +838,16 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           return
         }
 
-        const result = await updateApparelListingAction({
-          ...payload,
+        const updated = await updateOwnedListingViaApi({
           listingId: editId,
+          listing: buildApparelListingPersistFields(payload),
           removedImageIds,
+          images: peerImagesToOwnedUpdateOps(payload.images),
           removedVideoIds,
+          videos: payload.videos,
         })
-        if ("error" in result) {
-          const message = sellActionErrorMessage(result.error)
+        if (!updated.ok) {
+          const message = sellActionErrorMessage(updated.error)
           logSellFunnelEvent({
             listingType: "apparel",
             event: "publish_failed",
@@ -862,7 +865,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        navigateAfterListingSave(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${updated.slug}`)
         return
       }
 

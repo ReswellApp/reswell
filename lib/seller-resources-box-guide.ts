@@ -1,39 +1,18 @@
-import {
-  SURFBOARD_SHIPPING_DIM_FORMULA,
-  surfboardShippingDimIn,
-} from "@/lib/shipping/surfboard-label-limits"
-import { UPS_LARGE_PACKAGE_DIM_IN } from "@/lib/shipping/ups-parcel-surcharge-flags"
-import {
-  SURFBOARD_SHIPPING_PACK_BANDS,
-} from "@/lib/surfboard-shipping-pack-bands"
-import {
-  SURFBOARD_TIER_LONGBOARD_MAX_BOX_LENGTH_IN,
-  SURFBOARD_TIER_LONGBOARD_PROFILE_HEIGHT_IN,
-  SURFBOARD_TIER_LONGBOARD_PROFILE_WIDTH_IN,
-  SURFBOARD_TIER_MIDLENGTH_MAX_BOX_LENGTH_IN,
-  SURFBOARD_TIER_MIDLENGTH_PROFILE_HEIGHT_IN,
-  SURFBOARD_TIER_MIDLENGTH_PROFILE_WIDTH_IN,
-} from "@/lib/surfboard-shipping-tiers"
+import { SURFBOARD_SHIPPING_PACK_BANDS } from "@/lib/surfboard-shipping-pack-bands"
 
-export type HowToSellBoxGuideRateBand = "best" | "higher" | "freight"
-
-export type HowToSellBoxGuideSize = {
+export type HowToSellBoxCalculatorPreset = {
   id: string
-  name: string
+  label: string
   lengthIn: number
   widthIn: number
   heightIn: number
-  dimIn: number
-  rateBand: HowToSellBoxGuideRateBand
-  badge: string
-  fits: string
-  note: string
+  weightLb: number
 }
 
 /**
  * Seller-facing carton sizes for /seller-resources/how-to-sell.
- * Best-rate target is 76×22×5 (or smaller). Length at or under 76″ is the
- * line that keeps most shortboards in the cheap UPS parcel band.
+ * Best-rate target is 76×22×5 (or smaller). Crossing 77″ / 23″ / 6″ is the
+ * large-parcel cliff that typically adds about $100 to the buyer label.
  */
 export const HOW_TO_SELL_BEST_RATE_BOX = {
   lengthIn: 76,
@@ -43,79 +22,72 @@ export const HOW_TO_SELL_BEST_RATE_BOX = {
 
 export const HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN = HOW_TO_SELL_BEST_RATE_BOX.lengthIn
 
+/** First inch that leaves the cheap parcel band on each side. */
+export const HOW_TO_SELL_LARGE_PARCEL_CLIFF = {
+  lengthIn: 77,
+  widthIn: 23,
+  heightIn: 6,
+} as const
+
+/** Bare board length where a packed carton usually exceeds the best-rate box. */
+export const HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH = "6′0"
+
+export const HOW_TO_SELL_BEST_RATE_TYPICAL_USD = {
+  inStateLow: 40,
+  inStateHigh: 60,
+  crossCountry: 90,
+} as const
+
+export const HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD = {
+  low: 180,
+  high: 190,
+  jump: 100,
+} as const
+
 const compact = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact
 const medium = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium
 
-function boxSize(
-  input: Omit<HowToSellBoxGuideSize, "dimIn">,
-): HowToSellBoxGuideSize {
-  return {
-    ...input,
-    dimIn: surfboardShippingDimIn(input.lengthIn, input.widthIn, input.heightIn),
-  }
-}
-
-export const HOW_TO_SELL_BOX_GUIDE_SIZES: HowToSellBoxGuideSize[] = [
-  boxSize({
+export const HOW_TO_SELL_BOX_CALCULATOR_PRESETS: HowToSellBoxCalculatorPreset[] = [
+  {
     id: "best-rate",
-    name: "Best-rate shortboard box",
+    label: `${HOW_TO_SELL_BEST_RATE_BOX.lengthIn}×${HOW_TO_SELL_BEST_RATE_BOX.widthIn}×${HOW_TO_SELL_BEST_RATE_BOX.heightIn} · best rates`,
     lengthIn: HOW_TO_SELL_BEST_RATE_BOX.lengthIn,
     widthIn: HOW_TO_SELL_BEST_RATE_BOX.widthIn,
     heightIn: HOW_TO_SELL_BEST_RATE_BOX.heightIn,
-    rateBand: "best",
-    badge: "Best rates",
-    fits: "Most shortboards that pack at or under 76″",
-    note: "This is the carton to buy and enter on Sell. Stay at or below 76″ length with a 22×5 profile and buyers see the cheapest Reswell-calculated parcel rates.",
-  }),
-  boxSize({
+    weightLb: compact.weightLb,
+  },
+  {
     id: "compact",
-    name: compact.label,
+    label: `${compact.lengthIn}×${compact.widthIn}×${compact.heightIn} · tighter`,
     lengthIn: compact.lengthIn,
     widthIn: compact.widthIn,
     heightIn: compact.heightIn,
-    rateBand: "best",
-    badge: "Even tighter",
-    fits: "Shorter, narrower boards (about 5′11 and under)",
-    note: "Same 22×5 profile as the best-rate box, just shorter. Use it when the packed board truly fits — it stays under the UPS large-package DIM cliff.",
-  }),
-  boxSize({
-    id: "medium",
-    name: `${medium.label} shortboard`,
+    weightLb: compact.weightLb,
+  },
+  {
+    id: "large-parcel",
+    label: `${medium.lengthIn}×${medium.widthIn}×${medium.heightIn} · large parcel`,
     lengthIn: medium.lengthIn,
     widthIn: medium.widthIn,
     heightIn: medium.heightIn,
-    rateBand: "higher",
-    badge: "Higher parcel",
-    fits: "Packed boards that need more than 76″ of length",
-    note: "Still UPS/FedEx parcel, but this carton sits above the 130″ DIM trigger. Expect a jump in buyer shipping versus 76×22×5.",
-  }),
-  boxSize({
-    id: "midlength",
-    name: "Midlength freight",
-    lengthIn: SURFBOARD_TIER_MIDLENGTH_MAX_BOX_LENGTH_IN,
-    widthIn: SURFBOARD_TIER_MIDLENGTH_PROFILE_WIDTH_IN,
-    heightIn: SURFBOARD_TIER_MIDLENGTH_PROFILE_HEIGHT_IN,
-    rateBand: "freight",
-    badge: "Freight",
-    fits: "Mids and anything that will not fit a shortboard carton",
-    note: "Ships freight, not parcel. Use only when the board (or packing) will not stay in a 76–78″ shortboard box.",
-  }),
-  boxSize({
-    id: "longboard",
-    name: "Longboard freight",
-    lengthIn: SURFBOARD_TIER_LONGBOARD_MAX_BOX_LENGTH_IN,
-    widthIn: SURFBOARD_TIER_LONGBOARD_PROFILE_WIDTH_IN,
-    heightIn: SURFBOARD_TIER_LONGBOARD_PROFILE_HEIGHT_IN,
-    rateBand: "freight",
-    badge: "Freight",
-    fits: "Logs and the longest packs",
-    note: "Largest Reswell shipping size. Confirm the packed board stays within this ceiling before you offer shipping.",
-  }),
+    weightLb: medium.weightLb,
+  },
 ]
 
-export const HOW_TO_SELL_BOX_DIM_FORMULA = SURFBOARD_SHIPPING_DIM_FORMULA
-export const HOW_TO_SELL_BOX_LARGE_PACKAGE_DIM_IN = UPS_LARGE_PACKAGE_DIM_IN
-
-export function howToSellBoxDimLine(size: HowToSellBoxGuideSize): string {
-  return `${size.lengthIn} × ${size.widthIn} × ${size.heightIn} in · DIM ${size.dimIn}″`
+export function howToSellBoxPresetToEstimator(preset: HowToSellBoxCalculatorPreset): {
+  id: string
+  label: string
+  lengthIn: string
+  widthIn: string
+  heightIn: string
+  weightLb: string
+} {
+  return {
+    id: preset.id,
+    label: preset.label,
+    lengthIn: String(preset.lengthIn),
+    widthIn: String(preset.widthIn),
+    heightIn: String(preset.heightIn),
+    weightLb: String(preset.weightLb),
+  }
 }

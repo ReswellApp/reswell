@@ -56,6 +56,13 @@ export type MarketplaceSalesMapProfileRow = {
   city: string | null
   location: string | null
   default_listing_state: string | null
+  display_name: string | null
+  avatar_url: string | null
+  seller_slug: string | null
+  is_shop: boolean | null
+  shop_name: string | null
+  shop_logo_url: string | null
+  shop_verified: boolean | null
 }
 
 export type MarketplaceMapProfileLocalityRow = {
@@ -78,9 +85,44 @@ export type MarketplaceSalesMapOrderWithListing = MarketplaceSalesMapOrderRow & 
   listing: MarketplaceSalesMapListingRow
 }
 
+const MAP_PROFILE_SELECT =
+  "id, city, location, default_listing_state, display_name, avatar_url, seller_slug, is_shop, shop_name, shop_logo_url, shop_verified" as const
+
 function unwrapRelation<T>(raw: T | T[] | null | undefined): T | null {
   if (raw == null) return null
   return Array.isArray(raw) ? raw[0] ?? null : raw
+}
+
+function nullableString(value: unknown): string | null {
+  return value != null ? String(value) : null
+}
+
+function mapMarketplaceSalesMapProfileRow(profile: {
+  id: unknown
+  city?: unknown
+  location?: unknown
+  default_listing_state?: unknown
+  display_name?: unknown
+  avatar_url?: unknown
+  seller_slug?: unknown
+  is_shop?: unknown
+  shop_name?: unknown
+  shop_logo_url?: unknown
+  shop_verified?: unknown
+}): MarketplaceSalesMapProfileRow {
+  return {
+    id: String(profile.id),
+    city: nullableString(profile.city),
+    location: nullableString(profile.location),
+    default_listing_state: nullableString(profile.default_listing_state),
+    display_name: nullableString(profile.display_name),
+    avatar_url: nullableString(profile.avatar_url),
+    seller_slug: nullableString(profile.seller_slug),
+    is_shop: typeof profile.is_shop === "boolean" ? profile.is_shop : null,
+    shop_name: nullableString(profile.shop_name),
+    shop_logo_url: nullableString(profile.shop_logo_url),
+    shop_verified: typeof profile.shop_verified === "boolean" ? profile.shop_verified : null,
+  }
 }
 
 export function normalizeMarketplaceSalesMapOrderRows(
@@ -132,7 +174,7 @@ export async function fetchConfirmedMarketplaceSalesForMap(
   if (ids.length > 0) {
     const { data: profileRows, error: profileError } = await supabase
       .from("profiles")
-      .select("id, city, location, default_listing_state")
+      .select(MAP_PROFILE_SELECT)
       .in("id", ids)
 
     if (profileError) {
@@ -140,13 +182,8 @@ export async function fetchConfirmedMarketplaceSalesForMap(
     }
 
     for (const profile of profileRows ?? []) {
-      profilesById.set(String(profile.id), {
-        id: String(profile.id),
-        city: profile.city != null ? String(profile.city) : null,
-        location: profile.location != null ? String(profile.location) : null,
-        default_listing_state:
-          profile.default_listing_state != null ? String(profile.default_listing_state) : null,
-      })
+      const mapped = mapMarketplaceSalesMapProfileRow(profile)
+      profilesById.set(mapped.id, mapped)
     }
   }
 
