@@ -36,6 +36,15 @@ export function ListingTileSoldStamp() {
   )
 }
 
+/** Top-left editorial badge for purchasable surfboard listings. */
+export function ListingTileGoodDealStamp() {
+  return (
+    <div className="absolute left-2 top-2 z-10 rounded-full bg-listingHeart px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+      Good deal
+    </div>
+  )
+}
+
 const tilePriceActionRevealClass =
   "opacity-0 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 [@media(pointer:coarse)]:pointer-events-auto [@media(pointer:coarse)]:opacity-100 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100"
 

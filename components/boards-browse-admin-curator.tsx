@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   ArrowDownToLine,
+  BadgePercent,
   ChevronDown,
   ChevronUp,
   ChevronsUp,
@@ -43,6 +44,7 @@ type AdminListingRow = {
   status: string | null
   hidden_from_site: boolean | null
   suppressed_on_boards_browse: boolean | null
+  is_good_deal: boolean | null
   primary_image_url: string | null
 }
 
@@ -58,6 +60,7 @@ type TopPickRow = {
     board_type: string | null
     status: string | null
     hidden_from_site: boolean | null
+    is_good_deal: boolean | null
     primary_image_url: string | null
   }
 }
@@ -129,6 +132,7 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
   const [loadingSuppressed, setLoadingSuppressed] = React.useState(false)
   const [siteToggleId, setSiteToggleId] = React.useState<string | null>(null)
   const [suppressToggleId, setSuppressToggleId] = React.useState<string | null>(null)
+  const [dealToggleId, setDealToggleId] = React.useState<string | null>(null)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [searchHits, setSearchHits] = React.useState<AdminListingRow[]>([])
   const [inventoryTotal, setInventoryTotal] = React.useState(0)
@@ -371,6 +375,15 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
         .filter((r) => (patch.suppressed_on_boards_browse === false ? r.id !== listingId : true)),
     )
     setSearchHits((prev) => prev.map((h) => (h.id === listingId ? { ...h, ...patch } : h)))
+    if (patch.is_good_deal !== undefined) {
+      setTopPicks((prev) =>
+        prev.map((row) =>
+          row.listing_id === listingId
+            ? { ...row, listing: { ...row.listing, is_good_deal: patch.is_good_deal ?? false } }
+            : row,
+        ),
+      )
+    }
   }
 
   async function onToggleSiteHidden(listingId: string, currentlyHidden: boolean) {
@@ -430,6 +443,28 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
     }
   }
 
+  async function onToggleGoodDeal(listingId: string, currentlyGoodDeal: boolean) {
+    setDealToggleId(listingId)
+    try {
+      const res = await fetch(`/api/admin/listings/${encodeURIComponent(listingId)}/good-deal`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ is_good_deal: !currentlyGoodDeal }),
+      })
+      const json = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        toast.error(typeof json.error === "string" ? json.error : "Could not update deal badge")
+        return
+      }
+      toast.success(currentlyGoodDeal ? "Good deal badge removed" : "Good deal badge enabled")
+      patchLocalListing(listingId, { is_good_deal: !currentlyGoodDeal })
+      router.refresh()
+    } finally {
+      setDealToggleId(null)
+    }
+  }
+
   function siteHideButton(listingId: string, hidden: boolean, disabled?: boolean) {
     return (
       <Button
@@ -473,6 +508,35 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
               className={cn("h-4 w-4", suppressedFlag ? "text-amber-600" : "text-muted-foreground")}
             />
             {suppressedFlag ? <span>Restore</span> : null}
+          </>
+        )}
+      </Button>
+    )
+  }
+
+  function goodDealButton(listingId: string, isGoodDeal: boolean, disabled?: boolean) {
+    return (
+      <Button
+        type="button"
+        variant={isGoodDeal ? "outline" : "ghost"}
+        size={isGoodDeal ? "sm" : "icon"}
+        className={isGoodDeal ? "h-9 gap-1.5 px-2.5 text-xs" : "h-9 w-9"}
+        title={isGoodDeal ? "Remove Good deal badge" : "Mark as a Good deal"}
+        aria-label={isGoodDeal ? "Remove Good deal badge" : "Mark as a Good deal"}
+        disabled={dealToggleId === listingId || disabled}
+        onClick={() => void onToggleGoodDeal(listingId, isGoodDeal)}
+      >
+        {dealToggleId === listingId ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          <>
+            <BadgePercent
+              className={cn(
+                "h-4 w-4",
+                isGoodDeal ? "fill-emerald-100 text-emerald-700" : "text-muted-foreground",
+              )}
+            />
+            {isGoodDeal ? <span>Deal</span> : null}
           </>
         )}
       </Button>
@@ -535,7 +599,8 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
             <DialogDescription className="text-pretty [overflow-wrap:anywhere]">
               Pin listings to the top of /boards at all times. Everything else shuffles every 24
               hours — boards listed during the current window still appear next, without
-              reshuffling the rest. Suppress to the bottom, or hide from the site entirely.
+              reshuffling the rest. Mark good deals, suppress to the bottom, or hide from the site
+              entirely.
             </DialogDescription>
           </DialogHeader>
 
@@ -668,6 +733,11 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
                           muted={!live}
                           extraActions={
                             <div className="flex shrink-0 items-center gap-0.5">
+                              {goodDealButton(
+                                row.listing.id,
+                                row.listing.is_good_deal === true,
+                                !live,
+                              )}
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -768,6 +838,11 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
                         muted={!isLiveOnBoards(row)}
                         extraActions={
                           <div className="flex shrink-0 items-center gap-0.5">
+                            {goodDealButton(
+                              row.id,
+                              row.is_good_deal === true,
+                              !isLiveOnBoards(row),
+                            )}
                             {suppressButton(row.id, true)}
                             {siteHideButton(row.id, row.hidden_from_site === true)}
                           </div>
@@ -781,8 +856,8 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
               <TabsContent value="inventory" className="mt-0 space-y-3 outline-none">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                   <p className="text-xs text-muted-foreground">
-                    Active surfboards, newest first. Pin to the top of /boards, suppress to the
-                    bottom, or hide from the site.
+                    Active surfboards, newest first. Mark good deals, pin to the top of /boards,
+                    suppress to the bottom, or hide from the site.
                   </p>
                   {searchHits.length > 0 && inventoryTotal > searchHits.length ? (
                     <span className="text-xs text-muted-foreground">
@@ -855,6 +930,7 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
                           }
                           extraActions={
                             <div className="flex shrink-0 items-center gap-0.5">
+                              {goodDealButton(hit.id, hit.is_good_deal === true, inactive || hidden)}
                               {topPickButton(hit.id, isTopPick, inactive || hidden)}
                               {suppressButton(hit.id, isSuppressed, inactive || hidden)}
                               {siteHideButton(hit.id, hidden, inactive)}

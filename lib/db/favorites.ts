@@ -9,6 +9,7 @@ export type CartCarouselFavoriteListing = {
   title: string
   price: number
   compare_at_price?: number | null
+  is_good_deal?: boolean | null
   status: string
   section: string
   city: string | null
@@ -42,6 +43,7 @@ export async function getFavoriteListingsForCartCarousel(
         title,
         price,
         compare_at_price,
+        is_good_deal,
         status,
         section,
         user_id,
@@ -111,6 +113,7 @@ export async function getFavoriteListingsForCartCarousel(
           : typeof L.compare_at_price === "number"
             ? L.compare_at_price
             : Number(L.compare_at_price),
+      is_good_deal: L.is_good_deal,
       status: L.status,
       section: L.section,
       city: L.city,
@@ -138,6 +141,7 @@ export type SavedFavoriteListing = {
   title: string
   price: number
   compare_at_price?: number | string | null
+  is_good_deal?: boolean | null
   status: string
   section: string
   hidden_from_site?: boolean | null
@@ -181,6 +185,7 @@ export async function getSavedFavoritesForUser(
         title,
         price,
         compare_at_price,
+        is_good_deal,
         status,
         section,
         hidden_from_site,

@@ -76,6 +76,7 @@ export function CityTopSellerListingsRow({
               title: listing.title,
               price: listing.price,
               compare_at_price: listing.compare_at_price,
+              is_good_deal: listing.is_good_deal,
               status: listing.status ?? "active",
               section: listing.section,
               local_pickup: listing.local_pickup,

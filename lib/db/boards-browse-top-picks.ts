@@ -11,6 +11,7 @@ const CURATION_LISTING_SELECT = `
   board_type,
   status,
   hidden_from_site,
+  is_good_deal,
   listing_images (url, thumbnail_url, is_primary)
 `
 
@@ -22,6 +23,7 @@ type JoinedListing = {
   board_type: string | null
   status: string | null
   hidden_from_site: boolean | null
+  is_good_deal: boolean | null
   listing_images: ListingImageForCard[] | null
 }
 
@@ -44,6 +46,7 @@ export type BoardsBrowseTopPickCurationRow = {
     board_type: string | null
     status: string | null
     hidden_from_site: boolean | null
+    is_good_deal: boolean | null
     primary_image_url: string | null
   }
 }
@@ -64,6 +67,7 @@ function hydrateRow(row: RawCurationRow): BoardsBrowseTopPickCurationRow | null 
       board_type: listing.board_type ?? null,
       status: listing.status,
       hidden_from_site: listing.hidden_from_site,
+      is_good_deal: listing.is_good_deal,
       primary_image_url: listingHeroSlideSrc(listing.listing_images),
     },
   }
@@ -208,6 +212,7 @@ export type BoardsBrowseTopPickSearchHit = {
   primary_image_url: string | null
   status: string | null
   hidden_from_site: boolean | null
+  is_good_deal: boolean | null
   already_curated: boolean
 }
 
@@ -220,7 +225,7 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
   let builder = supabase
     .from("listings")
     .select(
-      `id, slug, title, price, board_type, status, hidden_from_site,
+      `id, slug, title, price, board_type, status, hidden_from_site, is_good_deal,
        listing_images (url, thumbnail_url, is_primary)`,
     )
     .eq("status", "active")
@@ -248,6 +253,7 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
     board_type: string | null
     status: string | null
     hidden_from_site: boolean | null
+    is_good_deal: boolean | null
     listing_images: ListingImageForCard[] | null
   }>
 
@@ -273,6 +279,7 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
     board_type: r.board_type ?? null,
     status: r.status,
     hidden_from_site: r.hidden_from_site,
+    is_good_deal: r.is_good_deal,
     primary_image_url: listingHeroSlideSrc(r.listing_images),
     already_curated: curatedIds.has(r.id),
   }))

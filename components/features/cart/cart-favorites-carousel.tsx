@@ -22,6 +22,7 @@ function toHomePeerListing(l: CartCarouselFavoriteListing): HomePeerScrollListin
     title: l.title,
     price: l.price,
     compare_at_price: l.compare_at_price,
+    is_good_deal: l.is_good_deal,
     status: l.status,
     section: l.section,
     local_pickup: l.local_pickup,

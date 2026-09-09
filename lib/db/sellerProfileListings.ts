@@ -15,6 +15,7 @@ const SELLER_PROFILE_LISTING_SELECT = `
   title,
   price,
   compare_at_price,
+  is_good_deal,
   status,
   section,
   local_pickup,
@@ -42,6 +43,7 @@ type SellerProfileListingRow = {
   title: string
   price: string | number
   compare_at_price?: number | string | null
+  is_good_deal?: boolean | null
   status: string | null
   section: string
   local_pickup?: boolean | null
@@ -85,6 +87,7 @@ function mapListing(row: SellerProfileListingRow): SellerProfileListing {
     title: row.title,
     price: row.price,
     compare_at_price: row.compare_at_price ?? null,
+    is_good_deal: row.is_good_deal,
     status: row.status ?? "active",
     section: row.section,
     local_pickup: row.local_pickup,
