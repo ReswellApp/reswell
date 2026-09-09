@@ -4,10 +4,12 @@ import type { Ref } from "react"
 import Link from "next/link"
 import { ExternalLink, Package, User } from "lucide-react"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
-import type { CaseInboxItem } from "@/lib/admin/case-inbox"
+import type { CaseInboxItem, CaseInboxPriority } from "@/lib/admin/case-inbox"
 import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
+import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { CaseInboxBriefing } from "@/components/features/admin/case-inbox-briefing"
+import { CaseInboxCommandBar } from "@/components/features/admin/case-inbox-command-bar"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
 import {
   CaseInboxComposer,
@@ -19,20 +21,25 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
-import { cn } from "@/lib/utils"
 
 interface CaseInboxConversationProps {
   item: CaseInboxItem
   messages: SupportCaseThreadMessage[]
   threadCaseId: string
   staffNames: Record<string, string>
+  currentStaffId: string | null
   composerRef: Ref<CaseInboxComposerHandle>
   mode: ComposerMode
   draft: string
   pending: boolean
+  savePending: boolean
   orderContext: AdminOrderDetail | null
   orderExtras: CaseOrderLabelContext | null
   onBack: () => void
+  onTake: () => void
+  onStatus: (status: SupportCaseStatus) => void
+  onPriority: (priority: CaseInboxPriority) => void
+  onResolve: () => void
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
   onInsertMacro: (text: string) => void
@@ -46,20 +53,22 @@ function kindBadge(item: CaseInboxItem): string {
   return item.channelLabel
 }
 
-function adminStatusLabel(item: CaseInboxItem): string {
-  return item.status === "waiting_on_you" ? "Waiting on customer" : item.statusLabel
-}
-
 export function CaseInboxConversation({
   item,
   messages,
   threadCaseId,
   staffNames,
+  currentStaffId,
   composerRef,
   mode,
   draft,
   pending,
+  savePending,
   onBack,
+  onTake,
+  onStatus,
+  onPriority,
+  onResolve,
   onModeChange,
   onDraftChange,
   onInsertMacro,
@@ -85,21 +94,13 @@ export function CaseInboxConversation({
           >
             ← Inbox
           </button>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="font-normal">
               {kindBadge(item)}
             </Badge>
-            <Badge
-              variant={item.isOpen ? "default" : "outline"}
-              className={cn("font-normal", !item.isOpen && "text-muted-foreground")}
-            >
-              {item.isOpen ? adminStatusLabel(item) : "Resolved"}
-            </Badge>
-            {item.priority === "high" || item.priority === "urgent" ? (
-              <Badge variant="outline" className="font-normal text-destructive">
-                {item.priority}
-              </Badge>
-            ) : null}
+            <span className="font-mono text-[11px] text-muted-foreground">
+              {formatSupportCaseReference(item.id)}
+            </span>
           </div>
           <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
             {item.subject}
@@ -108,36 +109,52 @@ export function CaseInboxConversation({
             {item.fromName}
             {item.fromEmail ? ` · ${item.fromEmail}` : null}
             {item.orderRef ? ` · #${item.orderRef}` : null}
-            {" · "}
-            {formatSupportCaseReference(item.id)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {item.userId ? (
-            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+            <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
               <Link href={`/admin/users/${item.userId}`} aria-label="Open customer profile">
                 <User className="h-4 w-4" />
+                <span className="ml-1.5 hidden xl:inline">Customer</span>
               </Link>
             </Button>
           ) : null}
           {item.orderId ? (
-            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+            <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
               <Link href={`/admin/orders/${item.orderId}`} aria-label="Open order">
                 <Package className="h-4 w-4" />
+                <span className="ml-1.5 hidden xl:inline">Order</span>
               </Link>
             </Button>
           ) : null}
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
             <Link
               href={supportCaseResponseHref(item.id)}
               target="_blank"
               aria-label="See the customer’s view of this case"
             >
               <ExternalLink className="h-4 w-4" />
+              <span className="ml-1.5 hidden xl:inline">Customer view</span>
             </Link>
           </Button>
         </div>
       </header>
+
+      <CaseInboxCommandBar
+        item={item}
+        currentStaffId={currentStaffId}
+        assigneeName={
+          item.assigneeAdminId
+            ? staffNames[item.assigneeAdminId] ?? null
+            : null
+        }
+        pending={savePending}
+        onTake={onTake}
+        onStatus={onStatus}
+        onPriority={onPriority}
+        onResolve={onResolve}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <CaseInboxBriefing

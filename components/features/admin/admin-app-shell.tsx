@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -41,9 +41,18 @@ export function AdminAppShell({
   children,
 }: AdminAppShellProps) {
   const pathname = usePathname() ?? ''
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const fullBleed = isFullBleedAdminPath(pathname)
   const workspace = isSupportInboxPath(pathname)
+
+  useEffect(() => {
+    if (workspace) return
+    const timer = window.setTimeout(() => {
+      router.prefetch('/admin/contact-messages')
+    }, 400)
+    return () => window.clearTimeout(timer)
+  }, [router, workspace])
 
   return (
     <div className={cn('admin-app flex flex-col', workspace ? 'h-dvh overflow-hidden' : 'min-h-dvh')}>

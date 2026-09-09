@@ -1,10 +1,5 @@
-import { Loader2 } from "lucide-react"
+import { CaseInboxWorkspaceSkeleton } from "@/components/features/admin/case-inbox-workspace-skeleton"
 
 export default function AdminContactMessagesLoading() {
-  return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground">
-      <Loader2 className="h-8 w-8 animate-spin" />
-      <p className="text-sm text-muted-foreground">Loading support inbox…</p>
-    </div>
-  )
+  return <CaseInboxWorkspaceSkeleton />
 }

@@ -1,15 +1,24 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
-import { Inbox, Loader2, Search, ShieldCheck, Sparkles } from "lucide-react"
+import { ArrowUpDown, Inbox, Search, ShieldCheck, Sparkles, UserRound } from "lucide-react"
 import {
   inboxInitials,
   inboxPreviewSnippet,
   type CaseInboxItem,
+  type CaseInboxSort,
   type CaseInboxTypeFilter,
   type CaseInboxView,
 } from "@/lib/admin/case-inbox"
 import { Input } from "@/components/ui/input"
+import { CaseInboxRowsSkeleton } from "@/components/features/admin/case-inbox-workspace-skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 const TYPE_OPTIONS: { id: CaseInboxTypeFilter; label: string }[] = [
@@ -33,28 +42,34 @@ function KindDot({ item }: { item: CaseInboxItem }) {
 
 interface CaseInboxListPaneProps {
   items: CaseInboxItem[]
+  staffNames: Record<string, string>
   view: CaseInboxView
   selectedKey: string | null
   search: string
+  sort: CaseInboxSort
   typeFilter: CaseInboxTypeFilter
   showTypeFilter: boolean
   loading: boolean
   emptyLabel: string
   onSearch: (value: string) => void
+  onSort: (value: CaseInboxSort) => void
   onTypeFilter: (value: CaseInboxTypeFilter) => void
   onSelect: (key: string) => void
 }
 
 export function CaseInboxListPane({
   items,
+  staffNames,
   view,
   selectedKey,
   search,
+  sort,
   typeFilter,
   showTypeFilter,
   loading,
   emptyLabel,
   onSearch,
+  onSort,
   onTypeFilter,
   onSelect,
 }: CaseInboxListPaneProps) {
@@ -80,15 +95,29 @@ export function CaseInboxListPane({
             </div>
           </div>
         ) : null}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search name, email, order…"
-            className="h-8 border-border/60 bg-muted/20 pl-8 text-sm"
-            aria-label="Search conversations"
-          />
+        <div className="flex gap-1.5">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+              disabled={loading}
+              placeholder="Search cases…"
+              className="h-8 border-border/60 bg-muted/20 pl-8 text-sm"
+              aria-label="Search conversations"
+            />
+          </div>
+          <Select value={sort} onValueChange={(value) => onSort(value as CaseInboxSort)} disabled={loading}>
+            <SelectTrigger className="h-8 w-[104px] shrink-0 bg-background text-xs" aria-label="Sort conversations">
+              <ArrowUpDown className="mr-1 h-3 w-3" aria-hidden />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="smart">Priority</SelectItem>
+              <SelectItem value="recent">Recent</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {showTypeFilter ? (
           <div className="flex flex-wrap gap-1">
@@ -96,6 +125,7 @@ export function CaseInboxListPane({
               <button
                 key={option.id}
                 type="button"
+                disabled={loading}
                 onClick={() => onTypeFilter(option.id)}
                 className={cn(
                   "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
@@ -109,14 +139,16 @@ export function CaseInboxListPane({
             ))}
           </div>
         ) : null}
+        <p className="text-[10px] tabular-nums text-muted-foreground">
+          {loading
+            ? "Loading conversations…"
+            : `${items.length} ${items.length === 1 ? "conversation" : "conversations"}`}
+        </p>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <p className="text-sm">Loading inbox…</p>
-          </div>
+          <CaseInboxRowsSkeleton />
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 px-6 py-20 text-center text-muted-foreground">
             <Inbox className="h-8 w-8 opacity-40" />
@@ -168,6 +200,12 @@ export function CaseInboxListPane({
                       <span className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px] text-muted-foreground">
                         <span>{item.kindLabel}</span>
                         {item.orderRef ? <span>#{item.orderRef}</span> : null}
+                        <span className={cn("inline-flex items-center gap-0.5", !item.assigneeAdminId && item.isOpen && "font-medium text-amber-700 dark:text-amber-300")}>
+                          <UserRound className="h-2.5 w-2.5" aria-hidden />
+                          {item.assigneeAdminId
+                            ? staffNames[item.assigneeAdminId] ?? "Staff"
+                            : "Unassigned"}
+                        </span>
                         {item.priority !== "normal" ? (
                           <span
                             className={cn(

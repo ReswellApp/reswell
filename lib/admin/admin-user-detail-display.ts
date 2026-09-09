@@ -34,10 +34,8 @@ export function adminListingStatusPill(status: string): { label: string; tone: S
 
 export function adminUserLocation(profile: {
   city: string | null
-  state: string | null
   location: string | null
 }): string | null {
-  const cityState = [profile.city, profile.state].filter(Boolean).join(', ')
-  if (cityState) return cityState
-  return profile.location
+  const location = [profile.city, profile.location].filter(Boolean).join(', ')
+  return location || null
 }

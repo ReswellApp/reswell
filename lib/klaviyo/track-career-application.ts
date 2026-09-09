@@ -6,7 +6,8 @@
  * Create a flow: Flows → Create flow → Metric → **Career Application Submitted**.
  * Filter `reswell_metric_seed` is not true if you use bootstrap events.
  *
- * Applicant confirmation template properties:
+ * Applicant confirmation HTML: `lib/klaviyo/career-application-submitted-email.html`
+ * Template properties:
  * - `{{ event.first_name }}`
  * - `{{ event.role_title }}`
  * - `{{ event.careers_url }}`

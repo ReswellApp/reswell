@@ -62,6 +62,7 @@ export async function insertSupportCase(
     requester_role?: "buyer" | "seller" | "member" | "guest"
     order_id?: string | null
     order_ref?: string | null
+    listing_id?: string | null
     conversation_id?: string | null
     contact_message_id?: string | null
     order_support_request_id?: string | null
@@ -89,6 +90,7 @@ export async function insertSupportCase(
       requester_role: row.requester_role ?? "member",
       order_id: row.order_id ?? null,
       order_ref: row.order_ref ?? null,
+      listing_id: row.listing_id ?? null,
       conversation_id: row.conversation_id ?? null,
       contact_message_id: row.contact_message_id ?? null,
       order_support_request_id: row.order_support_request_id ?? null,
@@ -291,6 +293,30 @@ export async function updateSupportCaseAdmin(
   return { error: null }
 }
 
+export async function linkSupportCaseToOrderAdmin(
+  supabase: SupabaseClient,
+  args: {
+    id: string
+    order_id: string
+    order_ref: string | null
+    listing_id: string | null
+    requester_user_id: string
+  },
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from("support_cases")
+    .update({
+      order_id: args.order_id,
+      order_ref: args.order_ref,
+      listing_id: args.listing_id,
+      requester_user_id: args.requester_user_id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", args.id)
+
+  return { error: error ? new Error(error.message) : null }
+}
+
 export async function insertSupportCaseEvent(
   supabase: SupabaseClient,
   row: {
@@ -356,6 +382,26 @@ export async function getSupportCaseByOrderSupportId(
     .select(CASE_SELECT)
     .eq("order_support_request_id", orderSupportRequestId)
     .maybeSingle()
+  if (error || !data) return null
+  return data as SupportCaseRow
+}
+
+export async function getOpenSellerSupportCaseForOrder(
+  supabase: SupabaseClient,
+  orderId: string,
+  sellerId: string,
+): Promise<SupportCaseRow | null> {
+  const { data, error } = await supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    .eq("order_id", orderId)
+    .eq("requester_user_id", sellerId)
+    .eq("requester_role", "seller")
+    .neq("status", "resolved")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
   if (error || !data) return null
   return data as SupportCaseRow
 }
