@@ -1,12 +1,13 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
-import { Inbox, Loader2, Search } from "lucide-react"
+import { Inbox, Loader2, Search, ShieldCheck, Sparkles } from "lucide-react"
 import {
   inboxInitials,
   inboxPreviewSnippet,
   type CaseInboxItem,
   type CaseInboxTypeFilter,
+  type CaseInboxView,
 } from "@/lib/admin/case-inbox"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -32,6 +33,7 @@ function KindDot({ item }: { item: CaseInboxItem }) {
 
 interface CaseInboxListPaneProps {
   items: CaseInboxItem[]
+  view: CaseInboxView
   selectedKey: string | null
   search: string
   typeFilter: CaseInboxTypeFilter
@@ -45,6 +47,7 @@ interface CaseInboxListPaneProps {
 
 export function CaseInboxListPane({
   items,
+  view,
   selectedKey,
   search,
   typeFilter,
@@ -58,6 +61,25 @@ export function CaseInboxListPane({
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <div className="shrink-0 space-y-2 border-b border-border/50 px-3 py-2.5">
+        {view === "new" || view === "claims" ? (
+          <div className="flex gap-2 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-2">
+            {view === "claims" ? (
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" aria-hidden />
+            ) : (
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" aria-hidden />
+            )}
+            <div>
+              <p className="text-xs font-semibold">
+                {view === "claims" ? "Claims command queue" : "New request triage"}
+              </p>
+              <p className="text-[11px] leading-4 text-muted-foreground">
+                {view === "claims"
+                  ? "Review evidence, carrier state, and financial resolution."
+                  : "Classify, prioritize, and assign every new conversation."}
+              </p>
+            </div>
+          </div>
+        ) : null}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -146,6 +168,25 @@ export function CaseInboxListPane({
                       <span className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px] text-muted-foreground">
                         <span>{item.kindLabel}</span>
                         {item.orderRef ? <span>#{item.orderRef}</span> : null}
+                        {item.priority !== "normal" ? (
+                          <span
+                            className={cn(
+                              "rounded px-1 py-0.5 font-semibold uppercase tracking-wide",
+                              item.priority === "urgent"
+                                ? "bg-destructive/10 text-destructive"
+                                : item.priority === "high"
+                                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                  : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {item.priority}
+                          </span>
+                        ) : null}
+                        {item.kind === "protection_claim" && item.order?.carrier_claim_status ? (
+                          <span className="rounded bg-rose-500/10 px-1 py-0.5 text-rose-700 dark:text-rose-300">
+                            Claim {item.order.carrier_claim_status.replaceAll("_", " ")}
+                          </span>
+                        ) : null}
                         {item.slaLabel ? (
                           <span
                             className={cn(

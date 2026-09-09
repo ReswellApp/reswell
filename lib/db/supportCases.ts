@@ -117,6 +117,15 @@ export type SupportCaseMessageRow = {
   created_at: string
 }
 
+export type SupportCaseEventRow = {
+  id: string
+  case_id: string
+  actor_admin_id: string | null
+  event_type: string
+  payload: Record<string, unknown>
+  created_at: string
+}
+
 export async function insertSupportCaseMessage(
   supabase: SupabaseClient,
   row: {
@@ -300,6 +309,25 @@ export async function insertSupportCaseEvent(
   if (error) {
     console.warn("[support_case_events] insert skipped:", error.message)
   }
+}
+
+export async function listSupportCaseEvents(
+  supabase: SupabaseClient,
+  caseId: string,
+  limit = 100,
+): Promise<SupportCaseEventRow[]> {
+  const { data, error } = await supabase
+    .from("support_case_events")
+    .select("id, case_id, actor_admin_id, event_type, payload, created_at")
+    .eq("case_id", caseId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.warn("[support_case_events] list skipped:", error.message)
+    return []
+  }
+  return (data ?? []) as SupportCaseEventRow[]
 }
 
 export async function listSupportCasesAdmin(

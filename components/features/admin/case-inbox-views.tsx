@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   CheckCircle2,
+  Clock3,
   Inbox,
   Shield,
   Sparkles,
@@ -17,6 +18,7 @@ export type InboxViewCounts = {
   mine: number
   unassigned: number
   neu: number
+  waiting: number
   claims: number
   overdue: number
   resolved: number
@@ -34,6 +36,7 @@ const VIEWS: {
   { id: "mine", label: "Mine", countKey: "mine", icon: UserRound },
   { id: "unassigned", label: "Unassigned", countKey: "unassigned", icon: UserMinus },
   { id: "new", label: "New", countKey: "neu", icon: Sparkles },
+  { id: "waiting", label: "Waiting", countKey: "waiting", icon: Clock3 },
   { id: "claims", label: "Claims", countKey: "claims", icon: Shield },
   { id: "overdue", label: "Overdue", countKey: "overdue", icon: AlertTriangle, danger: true },
   { id: "resolved", label: "Resolved", countKey: "resolved", icon: CheckCircle2 },

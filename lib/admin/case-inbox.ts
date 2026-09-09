@@ -11,16 +11,22 @@ import {
 } from "@/lib/utils/support-case-display"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import { supportTicketDisplaySubject } from "@/lib/utils/support-ticket-display"
-import { caseSlaState, formatSlaHoursLeft, type CaseSlaState } from "@/lib/help/support-sla"
+import {
+  caseSlaState,
+  formatSlaHoursLeft,
+  slaHoursForCaseKind,
+  type CaseSlaState,
+} from "@/lib/help/support-sla"
 
 export type CaseInboxTypeFilter = "all" | "general" | "order" | "claims"
-export type CaseInboxStatusFilter = "open" | "new" | "resolved" | "all"
+export type CaseInboxStatusFilter = "open" | "new" | "waiting" | "resolved" | "all"
 export type CaseInboxAssigneeFilter = "anyone" | "mine" | "unassigned"
 export type CaseInboxView =
   | "open"
   | "mine"
   | "unassigned"
   | "new"
+  | "waiting"
   | "claims"
   | "overdue"
   | "resolved"
@@ -48,6 +54,7 @@ export type CaseInboxItem = {
   isOpen: boolean
   isNew: boolean
   assigneeAdminId: string | null
+  slaDueAt: string | null
   slaState: CaseSlaState
   slaLabel: string
   priority: CaseInboxPriority
@@ -81,6 +88,8 @@ export function viewToFilters(view: CaseInboxView): {
       return { status: "open", type: "all", assignee: "unassigned", overdueOnly: false }
     case "new":
       return { status: "new", type: "all", assignee: "anyone", overdueOnly: false }
+    case "waiting":
+      return { status: "waiting", type: "all", assignee: "anyone", overdueOnly: false }
     case "claims":
       return { status: "open", type: "claims", assignee: "anyone", overdueOnly: false }
     case "overdue":
@@ -117,6 +126,7 @@ export function inboxViewFromSearchParams(params: {
     rawView === "mine" ||
     rawView === "unassigned" ||
     rawView === "new" ||
+    rawView === "waiting" ||
     rawView === "claims" ||
     rawView === "overdue" ||
     rawView === "resolved" ||
@@ -128,6 +138,7 @@ export function inboxViewFromSearchParams(params: {
   if (params.assignee === "mine") return { view: "mine", typeOverlay }
   if (params.assignee === "unassigned") return { view: "unassigned", typeOverlay }
   if (params.status === "new") return { view: "new", typeOverlay }
+  if (params.status === "waiting") return { view: "waiting", typeOverlay }
   if (params.status === "resolved") return { view: "resolved", typeOverlay }
   if (params.status === "all") return { view: "all", typeOverlay }
   if (typeOverlay === "claims") return { view: "claims", typeOverlay: "all" }
@@ -138,15 +149,26 @@ function slaFields(
   createdAt: string,
   kind: SupportCaseKind,
   isOpen: boolean,
-): Pick<CaseInboxItem, "slaState" | "slaLabel"> {
-  const sla = caseSlaState({ createdAtIso: createdAt, kind, isOpen })
-  if (sla.state === "resolved") {
-    return { slaState: sla.state, slaLabel: "" }
+  dueAtIso?: string | null,
+): Pick<CaseInboxItem, "slaDueAt" | "slaState" | "slaLabel"> {
+  const calculated = caseSlaState({ createdAtIso: createdAt, kind, isOpen })
+  const dueAt = dueAtIso ? new Date(dueAtIso) : calculated.dueAt
+  const hoursLeft = (dueAt.getTime() - Date.now()) / (60 * 60 * 1000)
+  const state: CaseSlaState = !isOpen
+    ? "resolved"
+    : hoursLeft <= 0
+      ? "overdue"
+      : hoursLeft <= slaHoursForCaseKind(kind) * 0.25
+        ? "due_soon"
+        : "on_track"
+  if (state === "resolved") {
+    return { slaDueAt: dueAt.toISOString(), slaState: state, slaLabel: "" }
   }
-  const unit = formatSlaHoursLeft(sla.hoursLeft)
+  const unit = formatSlaHoursLeft(hoursLeft)
   return {
-    slaState: sla.state,
-    slaLabel: sla.state === "overdue" ? `Overdue ${unit}` : `Due ${unit}`,
+    slaDueAt: dueAt.toISOString(),
+    slaState: state,
+    slaLabel: state === "overdue" ? `Overdue ${unit}` : `Due ${unit}`,
   }
 }
 
@@ -259,7 +281,7 @@ export function supportCaseToInboxItem(
     isOpen,
     isNew: row.status === "submitted",
     assigneeAdminId: row.assignee_admin_id,
-    ...slaFields(row.created_at, row.kind, isOpen),
+    ...slaFields(row.created_at, row.kind, isOpen, row.sla_due_at),
     priority: row.priority ?? "normal",
     contact: sidecar.contact,
     order: sidecar.order,
@@ -274,7 +296,7 @@ export function withInboxStatus(item: CaseInboxItem, status: SupportCaseStatus):
     statusLabel: SUPPORT_CASE_STATUS_LABEL[status],
     isOpen,
     isNew: status === "submitted",
-    ...slaFields(item.createdAt, item.kind, isOpen),
+    ...slaFields(item.createdAt, item.kind, isOpen, item.slaDueAt),
     contact: item.contact
       ? {
           ...item.contact,
@@ -321,6 +343,7 @@ export function filterInboxItems(
   return items.filter((item) => {
     if (args.status === "open" && !item.isOpen) return false
     if (args.status === "new" && !item.isNew) return false
+    if (args.status === "waiting" && item.status !== "waiting_on_you") return false
     if (args.status === "resolved" && item.isOpen) return false
     if (args.overdueOnly && item.slaState !== "overdue") return false
 

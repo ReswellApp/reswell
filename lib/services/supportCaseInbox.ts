@@ -80,6 +80,7 @@ export async function updateSupportCaseInboxService(
   const { error } = await updateSupportCaseAdmin(service, {
     id: row.id,
     status: nextStatus,
+    priority: parsed.data.priority,
     internal_notes: parsed.data.internal_notes,
     outcome: parsed.data.outcome,
   })
@@ -115,6 +116,24 @@ export async function updateSupportCaseInboxService(
         ? "Conversation marked resolved."
         : `Status updated to ${nextStatus.replaceAll("_", " ")}.`,
     )
+  }
+
+  if (parsed.data.priority && parsed.data.priority !== row.priority) {
+    await insertSupportCaseEvent(service, {
+      case_id: row.id,
+      actor_admin_id: user.id,
+      event_type: "priority_changed",
+      payload: { from: row.priority, to: parsed.data.priority },
+    })
+  }
+
+  if (parsed.data.outcome !== undefined && parsed.data.outcome !== row.outcome) {
+    await insertSupportCaseEvent(service, {
+      case_id: row.id,
+      actor_admin_id: user.id,
+      event_type: "outcome_changed",
+      payload: { from: row.outcome, to: parsed.data.outcome },
+    })
   }
 
   return { success: true, status: nextStatus ?? row.status }

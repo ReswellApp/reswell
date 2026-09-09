@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Inbox, PanelRight, RefreshCw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
+import type { SupportCaseEventRow } from "@/lib/db/supportCases"
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import { listAdminSupportInboxAction } from "@/lib/actions/adminSupportInbox"
 import { sendSupportCaseAdminReplyAction } from "@/lib/actions/supportCaseThread"
@@ -16,6 +17,7 @@ import {
   viewToFilters,
   withInboxStatus,
   type CaseInboxItem,
+  type CaseInboxPriority,
   type CaseInboxTypeFilter,
   type CaseInboxView,
 } from "@/lib/admin/case-inbox"
@@ -27,7 +29,11 @@ import { CaseInboxViews, type InboxViewCounts } from "@/components/features/admi
 import { CaseInboxListPane } from "@/components/features/admin/case-inbox-list-pane"
 import { CaseInboxConversation } from "@/components/features/admin/case-inbox-conversation"
 import { CaseInboxDetails } from "@/components/features/admin/case-inbox-details"
-import type { CaseInboxComposerHandle, ComposerMode } from "@/components/features/admin/case-inbox-composer"
+import type {
+  CaseInboxComposerHandle,
+  ComposerDisposition,
+  ComposerMode,
+} from "@/components/features/admin/case-inbox-composer"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -74,6 +80,7 @@ export function CaseInboxAdminClient() {
   const [orderExtras, setOrderExtras] = useState<CaseOrderLabelContext | null>(null)
   const [threadReloadToken, setThreadReloadToken] = useState(0)
   const [threadMessages, setThreadMessages] = useState<SupportCaseThreadMessage[]>([])
+  const [threadEvents, setThreadEvents] = useState<SupportCaseEventRow[]>([])
   const [threadCaseId, setThreadCaseId] = useState<string | null>(null)
   const [composerMode, setComposerMode] = useState<ComposerMode>("reply")
   const [draft, setDraft] = useState("")
@@ -198,12 +205,14 @@ export function CaseInboxAdminClient() {
   useEffect(() => {
     if (!selectedId) {
       setThreadMessages([])
+      setThreadEvents([])
       setThreadCaseId(null)
       loadedThreadIdRef.current = null
       return
     }
     if (loadedThreadIdRef.current !== selectedId) {
       setThreadMessages([])
+      setThreadEvents([])
       loadedThreadIdRef.current = selectedId
     }
     setThreadCaseId(selectedId)
@@ -216,6 +225,7 @@ export function CaseInboxAdminClient() {
       }
       setThreadCaseId(res.case.id)
       setThreadMessages(res.messages)
+      setThreadEvents(res.events)
     })
     return () => {
       cancelled = true
@@ -229,6 +239,7 @@ export function CaseInboxAdminClient() {
       mine: openItems.filter((item) => item.assigneeAdminId === currentStaffId).length,
       unassigned: openItems.filter((item) => !item.assigneeAdminId).length,
       neu: items.filter((item) => item.isNew).length,
+      waiting: openItems.filter((item) => item.status === "waiting_on_you").length,
       claims: openItems.filter((item) => item.kind === "protection_claim").length,
       overdue: openItems.filter((item) => item.slaState === "overdue").length,
       resolved: items.filter((item) => !item.isOpen).length,
@@ -273,6 +284,7 @@ export function CaseInboxAdminClient() {
 
   function persistInbox(patch: {
     status?: SupportCaseStatus
+    priority?: CaseInboxPriority
     notes?: string
     outcome?: string
     silent?: boolean
@@ -287,6 +299,7 @@ export function CaseInboxAdminClient() {
       const res = await updateSupportCaseInboxAction({
         case_id: selected.id,
         status: patch.status,
+        priority: patch.priority,
         internal_notes: patch.notes !== undefined ? patch.notes : undefined,
         outcome:
           patch.outcome !== undefined
@@ -303,6 +316,7 @@ export function CaseInboxAdminClient() {
       const next = patch.status ? withInboxStatus(selected, patch.status) : selected
       patchItem(selected.key, {
         ...next,
+        priority: patch.priority ?? next.priority,
         updatedAt: now,
         contact: next.contact
           ? { ...next.contact, internal_notes: nextNotes, updated_at: now }
@@ -320,11 +334,14 @@ export function CaseInboxAdminClient() {
           : null,
       })
       setSavedNote(nextNotes)
+      setThreadReloadToken((n) => n + 1)
       if (patch.silent) return
       if (patch.status === "in_progress" && !selected.isOpen) {
         toast.success("Reopened")
       } else if (patch.status) {
         toast.success("Status updated")
+      } else if (patch.priority) {
+        toast.success("Priority updated")
       }
     })
   }
@@ -347,13 +364,14 @@ export function CaseInboxAdminClient() {
         toast.error(res.error)
         return
       }
+      setThreadReloadToken((n) => n + 1)
       toast.success(
         advanceTo ? "Resolved — opened the next conversation" : "Resolved — inbox is clear",
       )
     })
   }
 
-  function sendComposer(closeAfter: boolean) {
+  function sendComposer(disposition: ComposerDisposition) {
     if (!selected) return
     const body = draft.trim()
     if (!body) {
@@ -390,8 +408,10 @@ export function CaseInboxAdminClient() {
         preview: sentMode === "note" ? `Note: ${body}` : body,
         updatedAt: new Date().toISOString(),
       })
-      if (closeAfter && composerMode === "reply") {
+      if (disposition === "resolve" && composerMode === "reply") {
         resolveSelected()
+      } else if (disposition === "waiting" && composerMode === "reply") {
+        persistInbox({ status: "waiting_on_you", silent: true })
       }
     })
   }
@@ -446,13 +466,36 @@ export function CaseInboxAdminClient() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
       <header className="flex shrink-0 items-center gap-3 border-b border-border/60 px-3 py-2">
-        <h1 className="text-sm font-semibold tracking-tight text-foreground">Inbox</h1>
-        <p className="hidden text-xs tabular-nums text-muted-foreground sm:block">
-          {counts.open} open
-          {counts.overdue > 0 ? (
-            <span className="text-destructive"> · {counts.overdue} overdue</span>
-          ) : null}
-        </p>
+        <div className="min-w-0">
+          <h1 className="text-sm font-semibold tracking-tight text-foreground">Support operations</h1>
+          <p className="hidden text-[11px] text-muted-foreground sm:block">
+            {counts.open} active conversations
+          </p>
+        </div>
+        <div className="hidden items-center gap-1.5 lg:flex">
+          {([
+            ["new", "New", counts.neu],
+            ["unassigned", "Unassigned", counts.unassigned],
+            ["waiting", "Waiting", counts.waiting],
+            ["claims", "Claims", counts.claims],
+            ["overdue", "Overdue", counts.overdue],
+          ] as const).map(([target, label, count]) => (
+            <button
+              key={target}
+              type="button"
+              onClick={() => setView(target)}
+              className={cn(
+                "rounded-md border px-2 py-1 text-[11px] font-medium tabular-nums transition-colors",
+                view === target
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
+                target === "overdue" && count > 0 && view !== target && "text-destructive",
+              )}
+            >
+              {label} {count}
+            </button>
+          ))}
+        </div>
         <div className="ml-auto flex items-center gap-1">
           {selected ? (
             <Button
@@ -496,6 +539,7 @@ export function CaseInboxAdminClient() {
           </div>
           <CaseInboxListPane
             items={filtered}
+            view={view}
             selectedKey={selectedKey}
             search={search}
             typeFilter={typeOverlay}
@@ -564,8 +608,14 @@ export function CaseInboxAdminClient() {
                   pinnedNote={pinnedNote}
                   savePending={savePending}
                   orderContext={orderContext}
-                  onAssigned={(id) => applyAssignee(selected.key, id)}
+                  events={threadEvents}
+                  staffNames={staffNames}
+                  onAssigned={(id) => {
+                    applyAssignee(selected.key, id)
+                    setThreadReloadToken((n) => n + 1)
+                  }}
                   onStatus={(status) => persistInbox({ status })}
+                  onPriority={(priority) => persistInbox({ priority })}
                   onResolve={() => persistInbox({ status: "resolved" })}
                   onReopen={() => persistInbox({ status: "in_progress" })}
                   onOrderOutcome={(outcome) => {
@@ -582,7 +632,10 @@ export function CaseInboxAdminClient() {
                     persistInbox({ notes: pinnedNote, silent: true })
                   }}
                   onOrderContextLoaded={onOrderContextLoaded}
-                  onRefundComplete={() => void load("refresh")}
+                  onRefundComplete={() => {
+                    void load("refresh")
+                    setThreadReloadToken((n) => n + 1)
+                  }}
                 />
               </div>
             </div>

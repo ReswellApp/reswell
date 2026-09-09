@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
 import {
   Select,
   SelectContent,
@@ -32,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 
 type DeskEvidence = {
   id: string
@@ -52,6 +54,14 @@ type DeskContext = {
   orderAmount: number | null
   orderStatus: string | null
 }
+
+const CLAIM_STAGES = [
+  { id: "intake", label: "Intake", statuses: ["not_started", "ready_to_file"] },
+  { id: "filed", label: "Filed", statuses: ["filed"] },
+  { id: "review", label: "Review", statuses: ["under_review"] },
+  { id: "decision", label: "Decision", statuses: ["approved", "denied", "withdrawn"] },
+  { id: "paid", label: "Paid", statuses: ["paid"] },
+] as const
 
 interface ProtectionClaimDeskProps {
   orderSupportRequestId: string
@@ -191,6 +201,13 @@ export function ProtectionClaimDesk({
         context.insuranceProvider !== "none" &&
         context.insuranceProvider.trim()),
   )
+  const stageIndex = Math.max(
+    0,
+    CLAIM_STAGES.findIndex((stage) =>
+      (stage.statuses as readonly string[]).includes(claimStatus),
+    ),
+  )
+  const stageProgress = (stageIndex / (CLAIM_STAGES.length - 1)) * 100
 
   return (
     <div className="space-y-4 rounded-xl border border-rose-500/25 bg-rose-500/[0.03] p-3">
@@ -199,6 +216,37 @@ export function ProtectionClaimDesk({
         <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">
           Protection claim desk
         </p>
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-background p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold">Claim progress</p>
+          <p className="text-[11px] capitalize text-muted-foreground">
+            {claimStatus.replaceAll("_", " ")}
+          </p>
+        </div>
+        <Progress value={stageProgress} className="h-1.5" aria-label="Claim workflow progress" />
+        <div className="mt-2 grid grid-cols-5 gap-1">
+          {CLAIM_STAGES.map((stage, index) => (
+            <div key={stage.id} className="min-w-0 text-center">
+              <span
+                className={cn(
+                  "mx-auto block h-2 w-2 rounded-full",
+                  index <= stageIndex ? "bg-foreground" : "bg-border",
+                )}
+                aria-hidden
+              />
+              <p
+                className={cn(
+                  "mt-1 truncate text-[9px]",
+                  index === stageIndex ? "font-semibold text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {stage.label}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {loading ? (
