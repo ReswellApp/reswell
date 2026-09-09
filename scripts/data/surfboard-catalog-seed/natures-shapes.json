@@ -1,0 +1,114 @@
+{
+  "generated_for": "Natures Shapes official named standup catalog",
+  "source": "https://naturesshapes.com/natures-shapes-board-models (official model pages \u2014 excludes SUPs, paddleboards, merch, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "natures-shapes",
+      "name": "Natures Shapes",
+      "website_url": "https://naturesshapes.com",
+      "location_label": "Sayville, Long Island, New York",
+      "founder_name": "Mike Becker",
+      "lead_shaper_name": "Mike Becker",
+      "short_description": "Long Island surfboards shaped and glassed by Mike Becker since 1993 \u2014 shortboards, fishes, mid-lengths, and logs built for East Coast beach breaks.",
+      "models": [
+        {
+          "name": "All Rounder",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591844763985-69QCRT4CCYDAS1RZF8QL/board_allrounder.png",
+          "description": "The All Rounder\u00a0was designed to be a basic all-around shortboard for medium to overhead surf. This board features a performance shortboard outline with a fuller, thicker rail and foil. This extra volume helps with float and wave-catching ability, while the deep single- to double-concaves keep this shape nimble and fast.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Snapper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591844854087-U9AC1UPY372U5VE60EB1/board_snapper.png",
+          "description": "The Snapper\u00a0is our newest fish added to the line up. Designed to be more of a rocket fish than a traditional fish, the Snapper has a slightly pulled in nose and tail. The change in outline, combined with subtle rocker and concave alterations makes for an extremely fast and responsive shape.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stub Diamond",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591844901645-POC60395UMUOFVZ96K6T/board_stubdiamond.png",
+          "description": "The Stub Diamond\u00a0is a blend of a round-nose fish nose and a modern diamond tail. The fuller nose allows for quicker wave entry and more speed though the flat sections. The diamond tail shortens the rail line of the board allowing it to pivot and turn like a shorter board. The bottom contours consist of a single to double barrel concave with 2 channels off the diamond tail. Although the concaves are standard, the channels are a newly added feature. Channels allow for more drive and less slide off the end of the tail. The Stub Diamond should be ridden 2\u20134 inches shorter and about 1\u20131.5 inches wider than your standard shortboard. Available in 3, 4, or 5-fin combos.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Go Kart",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591844928327-H8ECKQ6S28GY5M2AXOLJ/board_gokart.png",
+          "description": "The Go Kart\u00a0was designed to be an alternative small wave board. The front half of the outline is similar to a round nose fish while the tail pulls in to a bump squash. The thickness is under the chest and foiled out to a relatively thin tail. All these combinations work together to make a wave catching machine that turns on a dime like a go kart.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Disket",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845183217-8KEQ4BWQ92T90QAVMS3Z/board_discuit.png",
+          "description": "The Disket\u00a0is an excellent small to medium wave board. This model should be ridden 4 to 6 inches smaller than your standard shortboard. Round nose and full, thick boxy rails add a great amount of float and wave catching ability. The shorter and rounder outline makes this shape extremely pivotal and easy to turn in the weakest of conditions. Smooth rail-to-rail transitions in small and/or mushy surf.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Q82 Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845078642-PA0Z3L4TBUEYQ0J19L71/board_q82.png",
+          "description": "The Q82 Fish is one of our best selling models. This board combines a retro fish nose and mid section with the double bump tail shape of a modern rocket fish. A double concave between the quad fins runs into a slight v off of the tail corners. This overall shape gives the surfer the ability to surf in a variety of conditions. Unlike a twin keel fish, this board will allow for full roundhouse cutbacks and tighter turns in the pocket. From small weak surf to larger more powerful surf, the Q82 is extremely fast and versatile.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "K72 Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845106481-H144MPN4LDFI1D6A3L2G/board_k72.png",
+          "description": "The K72 Fish has a traditional fish outline\u2014a combination of early 70\u2019s fish templates. The retro shape with modern rails and a rolled v-bottom make for an extremely fast down-the-line board. The K72 works best in small to medium size surf. This model is available with a quad fin system using either Futures or LokBox fins. Glass or wood twin keel fins available upon request.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845049966-760SMUN54OEBR8SECWYC/board_hybrid.png",
+          "description": "The Hybrid was developed in 1998. Most of the intermediate surfers who ride larger shortboards can never find a board in the rack to fit them. It's either too narrow or too wide or it's just a simple funshape. The hybrid is designed to be the happy medium between a funshape and a shortboard. It has the volume and float of a funshape but the maneuverability of a shortboard. Mostly used as a larger surfers shortboard or a step down board from an egg or longboard shape. This model has a single to double barrel performance bottom contour along with either a round pin, squash or diamond tail shape. This is a very versatile shape that works well in small to large surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hipster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845224022-15HXLB089F549BN1AAKZ/board_hipster.png",
+          "description": "The Hipster\u00a0is a fat, wide, stubby shape. This model comes standard with a single- to double-concave bottom with vee out the tail. It\u2019s designed to be ridden at least 6 inches smaller than your standard shortboard. The Hipster is fast and responsive in small and weak surf, making it a great alternative to riding a longboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "C-Dog",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845248873-MWVXSIE998JZIIJQBZZD/board_c-dog.png",
+          "description": "The C-Dog is a 70\u2019s single-fin inspired shape.\u00a0For this board, we kept a classic outline with modern changes to rails, rocker, and bottom contours.\u00a0The C-Dog is a fun alternative that will glide in a wide variety of conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HP Mini",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845272957-UKLRCYIQJVIKS2UO1Y2U/board_hp-mini.png",
+          "description": "The HP Mini is a great all around egg shape for small to medium size surf. Taken from the HP1 template, it\u2019s basically a longboard that has been scaled down. The full outline makes it easy to catch waves, while the \u201chippy\u201d tail shape and double barrel concave bottom allow it to maneuver like a shorter board. This shape also makes a great single-fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HP1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845329014-34189ER2DW3GDWY8F0YV/board_hp1.png",
+          "description": "The HP1 is our claim to fame. Ridden by professional longboarder Toby Smith (2007 Unsound Pro longboard champion) and NS shaper Mike Becker, the HP1 is our best all around performance longboard. Most longboards are designed for either performance or nose riding\u2014the HP1 does both. In order to achieve this, we have been modifying the shape in increments of 1/8th of an inch since 1997. For the surfer that wants a longboard that maneuvers like a shortboard but still noserides, this is the shape for you. The double barrel performance bottom with a hippy outline and drawn in tail makes for an extremely pivotal shape while the nose concave creates lift for maximum tip time. \u00a0",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591876473070-UI1CZR7669WY4B2G3084/board_hp2.png",
+          "description": "The\u00a0HP2\u00a0was designed by our team riders to perfect the modern high performance longboard. The HP2 will ride the nose longer with more glide and inertia than the HP1. With added volume, this model is better in smaller surf, allowing more glide and float for the beginner surfer. \u00a0",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "NR1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591876594606-N3ZCER8L7RWEOWCOG7QP/board_nr1.png",
+          "description": "The\u00a0NR1\u00a0is a classic combination of Hanson 50/50 and Bing templates and has become our best performing nose rider. If you are looking for a classic all around longboard this is the model for you. The combination of a wider outline, 50/50 rails, concave nose, and rolled v-bottom allows the NR1 to trim and nose ride without a step out of place. \u00a0",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "NR2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591876782564-YZ7FKBXL04FFDTC34ESU/board_nr2.png",
+          "description": "The NR2\u00a0is wider, thicker, and heavier than our NR1. It has a deep nose concave flowing into a rolled v-bottom and boxy 50/50 rails. The NR2 is heavily glassed, including extra knee and fin patches for reinforcement. \u00a0",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ditch Digger",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591876841148-Z9O5Z9A58UAXPK5SL7MN/board_ditchdigger.png",
+          "description": "The Ditch Digger\u00a0is a super wide, thick, wave catching machine. This model is designed for the larger surfer or average longboarder that wants to keep up with the SUPers. Unlike the NR2, this is not a heavy log-style board. It\u2019s lightweight, featuring EPS construction with modern rocker and rails. These combinations along with a wide, hippy outline make the Ditch Digger an extremely maneuverable wave catching machine. \u00a0",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
