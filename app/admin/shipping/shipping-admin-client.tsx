@@ -20,6 +20,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   DollarSign,
   ExternalLink,
+  Landmark,
   Loader2,
   Package,
   RefreshCw,
@@ -36,6 +37,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { AdminShippingStats } from '@/lib/services/adminShippingStats'
 import { AdminAdjustedLabelsTab } from './admin-adjusted-labels-tab'
+import { AdminLabelSpendTab } from './admin-label-spend-tab'
 import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
 import { AdminFailedLabelsTab } from './admin-failed-labels-tab'
 import { AdminOrderLabelPurchase } from './admin-order-label-purchase'
@@ -179,7 +181,8 @@ export function AdminShippingClient() {
     tabFromUrl === 'rates' ||
     tabFromUrl === 'create' ||
     tabFromUrl === 'labels-created' ||
-    tabFromUrl === 'adjusted-labels'
+    tabFromUrl === 'adjusted-labels' ||
+    tabFromUrl === 'label-spend'
       ? tabFromUrl
       : 'overview'
 
@@ -402,7 +405,7 @@ export function AdminShippingClient() {
           accent="violet"
           label="Spend · 30d"
           value={stats ? usd(stats.totals.spendInWindowUsd) : '—'}
-          hint={stats ? `${stats.cost.labelsWithCost} with cost` : undefined}
+          hint={stats ? `${stats.cost.labelsWithCost} admin labels · see Label spend` : undefined}
         />
         <StatTile
           icon={TrendingUp}
@@ -452,6 +455,10 @@ export function AdminShippingClient() {
               <TrendingUp className="h-4 w-4" />
               Analytics
             </TabsTrigger>
+            <TabsTrigger value="label-spend" className={tabTriggerClass}>
+              <Landmark className="h-4 w-4" />
+              Label spend
+            </TabsTrigger>
             <TabsTrigger value="failed-labels" className={tabTriggerClass}>
               <TriangleAlert className="h-4 w-4" />
               Failed labels
@@ -491,6 +498,10 @@ export function AdminShippingClient() {
 
           <TabsContent value="analytics" className="page-enter mt-6">
             <ShippingAnalytics stats={stats} onRefresh={loadStats} />
+          </TabsContent>
+
+          <TabsContent value="label-spend" className="page-enter mt-6">
+            <AdminLabelSpendTab />
           </TabsContent>
 
           <TabsContent value="adjusted-labels" className="page-enter mt-6">

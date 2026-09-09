@@ -54,6 +54,8 @@ type PurchasedLabelPayload = {
   labelUrl: string | null
   trackingNumber: string
   trackingCarrier: string
+  costAmount?: number | null
+  costCurrency?: string | null
   paperlessQrUrl?: string | null
   paperlessInstructions?: string | null
   paperlessHandoffCode?: string | null
@@ -718,6 +720,8 @@ async function persistSellerPaidLabelAndTracking(params: {
         insurance_claim_url: params.purchased.insuranceClaimUrl ?? null,
         shipengine_label_id: params.purchased.shipengineLabelId ?? null,
         shipengine_shipment_id: params.purchased.shipengineShipmentId ?? null,
+        label_cost_usd: params.purchased.costAmount ?? null,
+        label_cost_currency: params.purchased.costCurrency ?? null,
       })
       .eq("id", params.claimId)
       .is("tracking_number", null)
@@ -754,6 +758,8 @@ async function persistSellerPaidLabelAndTracking(params: {
       insurance_claim_url: params.purchased.insuranceClaimUrl ?? null,
       shipengine_label_id: params.purchased.shipengineLabelId ?? null,
       shipengine_shipment_id: params.purchased.shipengineShipmentId ?? null,
+      label_cost_usd: params.purchased.costAmount ?? null,
+      label_cost_currency: params.purchased.costCurrency ?? null,
     })
 
     if (labelInsertErr) {

@@ -26,7 +26,7 @@ export const siteFooterNavLinks: {
     { name: "Help Center", href: "/help" },
     { name: "FAQs", href: "/faq" },
     { name: "Reswell Protection", href: "/protection-policy" },
-    { name: "Get help", href: "/dashboard/support/new" },
+    { name: "Get help", href: "/support" },
     { name: "Contact", href: "/contact" },
   ],
   careers: [

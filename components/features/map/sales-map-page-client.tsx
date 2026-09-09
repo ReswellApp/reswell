@@ -1,9 +1,11 @@
 "use client"
 
-import Link from "next/link"
 import { useMemo, useState, useSyncExternalStore } from "react"
 import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { ArrowRight, MapPin, Package, TrendingUp } from "lucide-react"
+import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
+import { SellerResourcesHero } from "@/components/features/seller-resources/seller-resources-hero"
+import { HOW_TO_SELL_HREF, HOW_TO_SHIP_HREF } from "@/lib/seller-resources"
 import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
 import { BRAND_CTA_BLUE, BRAND_DARK_BLUE, BRAND_DEEP_BLUE } from "@/lib/brand-colors"
 import { formatGmv } from "@/lib/format-gmv"
@@ -382,69 +384,59 @@ type SalesMapPageClientProps = {
 
 export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
   return (
-    <main className="flex-1">
-      <section className="container mx-auto px-4 py-4 sm:py-5 md:py-6">
-        <div className="mx-auto max-w-5xl">
-          <div className="max-w-2xl">
-            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:text-xs">
-              <Link href="/seller-resources" className="hover:text-foreground">
-                Seller Resources
-              </Link>
-              <span aria-hidden className="px-1.5 text-border">
-                /
-              </span>
-              Sales map
-            </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
-              Where Reswell orders flow
-            </h1>
-            <p className="mt-1 hidden text-sm leading-snug text-muted-foreground sm:block">
-              Confirmed sales mapped from seller state to buyer state.
-            </p>
-          </div>
+    <main className="flex-1 bg-white">
+      <SellerResourcesHero
+        compact
+        title="Where Reswell orders flow"
+        description="Confirmed sales mapped from seller state to buyer state."
+        primaryCta={{ href: HOW_TO_SELL_HREF, label: "How to Sell" }}
+        secondaryCta={{ href: HOW_TO_SHIP_HREF, label: "How to Ship" }}
+      />
 
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 lg:grid-cols-4 lg:gap-3">
-            <StatCard
-              icon={Package}
-              label="Mapped sales"
-              value={data.totals.mappableSales.toLocaleString()}
-              hint={`${data.totals.confirmedSales.toLocaleString()} confirmed`}
-            />
-            <StatCard
-              icon={MapPin}
-              label="States selling"
-              value={data.totals.statesSelling.toLocaleString()}
-              hint="Listing origins"
-            />
-            <StatCard
-              icon={TrendingUp}
-              label="Cross-state"
-              value={data.totals.crossStateSales.toLocaleString()}
-              hint={`${data.totals.statesBuying} buyer states`}
-            />
-            <StatCard
-              icon={ArrowRight}
-              label="Volume"
-              value={formatGmv(data.totals.volumeUsd)}
-              hint="Confirmed gross"
-            />
-          </div>
-
-          <UsaSalesFlowMap data={data} className="mt-3 sm:mt-4" />
-
-          {data.truncated ? (
-            <p className="mt-2 text-[10px] text-muted-foreground sm:text-xs">
-              Showing the most recent {data.totals.confirmedSales.toLocaleString()} confirmed sales.
-            </p>
-          ) : null}
-
-          <p className="mt-3 text-center text-[10px] text-muted-foreground sm:mt-4 sm:text-xs">
-            Updated{" "}
-            <RelativeTime iso={data.generatedAt} formatLabel={formatDistanceToNowLabel} /> · New
-            sales added after checkout
-          </p>
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard
+            icon={Package}
+            label="Mapped sales"
+            value={data.totals.mappableSales.toLocaleString()}
+            hint={`${data.totals.confirmedSales.toLocaleString()} confirmed`}
+          />
+          <StatCard
+            icon={MapPin}
+            label="States selling"
+            value={data.totals.statesSelling.toLocaleString()}
+            hint="Listing origins"
+          />
+          <StatCard
+            icon={TrendingUp}
+            label="Cross-state"
+            value={data.totals.crossStateSales.toLocaleString()}
+            hint={`${data.totals.statesBuying} buyer states`}
+          />
+          <StatCard
+            icon={ArrowRight}
+            label="Volume"
+            value={formatGmv(data.totals.volumeUsd)}
+            hint="Confirmed gross"
+          />
         </div>
+
+        <UsaSalesFlowMap data={data} className="mt-6" />
+
+        {data.truncated ? (
+          <p className="mt-3 text-center text-xs text-[#5c6b89]">
+            Showing the most recent {data.totals.confirmedSales.toLocaleString()} confirmed sales.
+          </p>
+        ) : null}
+
+        <p className="mt-4 text-center text-xs text-[#5c6b89]">
+          Updated{" "}
+          <RelativeTime iso={data.generatedAt} formatLabel={formatDistanceToNowLabel} /> · New
+          sales added after checkout
+        </p>
       </section>
+
+      <SellerResourcesCta />
     </main>
   )
 }
@@ -461,15 +453,15 @@ function StatCard({
   hint: string
 }) {
   return (
-    <div className="rounded-xl border border-border/80 bg-card px-2.5 py-2 shadow-sm sm:rounded-2xl sm:px-3 sm:py-2.5">
-      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
-        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+    <div className="rounded-[1.25rem] bg-[#F4F7FB] px-3 py-3 sm:px-4 sm:py-4">
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-[#5574AD] sm:text-xs">
+        <Icon className="h-3.5 w-3.5" />
         {label}
       </div>
-      <p className="mt-1 text-lg font-semibold tracking-tight text-foreground sm:mt-1.5 sm:text-xl">
+      <p className="mt-1.5 font-headline text-xl font-bold tracking-tight text-[#001A4A] sm:text-2xl">
         {value}
       </p>
-      <p className="mt-0.5 truncate text-[10px] text-muted-foreground sm:text-xs">{hint}</p>
+      <p className="mt-0.5 truncate text-xs text-[#5c6b89]">{hint}</p>
     </div>
   )
 }

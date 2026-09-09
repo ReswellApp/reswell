@@ -1,175 +1,128 @@
-"use client"
-
+import type { ReactNode } from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { formatDistanceToNowStrict } from "date-fns"
-import { LifeBuoy, Plus } from "lucide-react"
 import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
-import { isSupportCaseOpen } from "@/lib/utils/support-case-display"
-import { helpHubHref } from "@/lib/help/help-hub-intents"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-
-type SupportFilter = "all" | "open" | "resolved"
+import {
+  isSupportCaseOpen,
+  SUPPORT_CASE_STATUS_LABEL,
+} from "@/lib/utils/support-case-display"
+import { LocalDateOnly } from "@/components/ui/local-datetime"
+import { SupportCurrentRequest, SupportEmptyRequest } from "@/components/features/dashboard/support/support-current-request"
 
 interface SupportCasesListProps {
   cases: UserSupportCaseListItem[]
-  activeFilter: SupportFilter
-  openCount: number
+  historyOpen?: boolean
+  showCurrent?: boolean
 }
 
-function shortRelative(iso: string): string {
-  try {
-    return formatDistanceToNowStrict(new Date(iso), { addSuffix: false })
-      .replace(/ seconds?/, "s")
-      .replace(/ minutes?/, "m")
-      .replace(/ hours?/, "h")
-      .replace(/ days?/, "d")
-      .replace(/ months?/, "mo")
-      .replace(/ years?/, "y")
-  } catch {
-    return ""
+function partitionCases(cases: UserSupportCaseListItem[]) {
+  const open: UserSupportCaseListItem[] = []
+  const closed: UserSupportCaseListItem[] = []
+  for (const item of cases) {
+    if (isSupportCaseOpen(item.status)) open.push(item)
+    else closed.push(item)
   }
+  const waiting = open.find((item) => item.status === "waiting_on_you")
+  const current = waiting ?? open[0] ?? null
+  const otherOpen = current ? open.filter((item) => item.id !== current.id) : open
+  return { current, otherOpen, closed }
 }
 
-function SupportAvatar({ muted }: { muted?: boolean }) {
+function HistoryRow({
+  item,
+  showStatus = false,
+}: {
+  item: UserSupportCaseListItem
+  showStatus?: boolean
+}) {
   return (
-    <div
-      className={cn(
-        "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
-        muted ? "bg-muted text-muted-foreground" : "bg-foreground text-background",
-      )}
-      aria-hidden
-    >
-      <LifeBuoy className="h-5 w-5" strokeWidth={1.75} />
-    </div>
+    <li>
+      <Link
+        href={item.href}
+        className="flex items-baseline justify-between gap-3 rounded-xl py-3 transition-colors hover:bg-muted/40 sm:-mx-2 sm:px-2"
+      >
+        <div className="min-w-0">
+          <p className="truncate text-[14px] font-medium text-foreground">{item.subject}</p>
+          {showStatus ? (
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
+              {SUPPORT_CASE_STATUS_LABEL[item.status]}
+            </p>
+          ) : null}
+        </div>
+        <LocalDateOnly
+          iso={item.updatedAt}
+          dateStyle="medium"
+          className="shrink-0 text-[12px] text-muted-foreground"
+        />
+      </Link>
+    </li>
   )
 }
 
-export function SupportCasesList({ cases, activeFilter, openCount }: SupportCasesListProps) {
-  const pathname = usePathname() ?? "/dashboard/support"
-  const router = useRouter()
-  const searchParams = useSearchParams()
+function CaseDrawer({
+  title,
+  count,
+  defaultOpen,
+  children,
+}: {
+  title: string
+  count: number
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  return (
+    <details className="group" defaultOpen={defaultOpen}>
+      <summary className="cursor-pointer list-none rounded-lg py-1 marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center justify-between gap-3 text-[13px] text-muted-foreground transition-colors hover:text-foreground">
+          <span>{title}</span>
+          <span className="tabular-nums">
+            {count}
+            <span className="ml-2 group-open:hidden" aria-hidden>
+              +
+            </span>
+            <span className="ml-2 hidden group-open:inline" aria-hidden>
+              –
+            </span>
+          </span>
+        </span>
+      </summary>
+      <ul className="mt-1 divide-y divide-border/40">{children}</ul>
+    </details>
+  )
+}
 
-  function setFilter(next: SupportFilter) {
-    const q = new URLSearchParams(searchParams.toString())
-    if (next === "open") {
-      q.delete("status")
-    } else {
-      q.set("status", next)
-    }
-    const suffix = q.toString()
-    router.replace(suffix ? `${pathname}?${suffix}` : pathname)
-  }
-
-  if (cases.length === 0) {
-    return (
-      <div className="flex flex-col items-center px-2 py-20 text-center">
-        <SupportAvatar />
-        <p className="mt-5 text-[17px] font-medium text-foreground">
-          {activeFilter === "resolved" ? "No closed chats" : "No messages yet"}
-        </p>
-        <p className="mt-2 max-w-[16rem] text-[14px] leading-relaxed text-muted-foreground">
-          {activeFilter === "resolved"
-            ? "When a chat is closed, it will land here."
-            : "Ask us about orders, shipping, Purchase Protection, or your account."}
-        </p>
-        {activeFilter === "resolved" ? (
-          <button
-            type="button"
-            onClick={() => setFilter("open")}
-            className="mt-6 text-sm font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Back to open
-          </button>
-        ) : openCount === 0 ? (
-          <Button asChild className="mt-6 rounded-full px-5">
-            <Link href={helpHubHref()}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Message Support
-            </Link>
-          </Button>
-        ) : null}
-      </div>
-    )
-  }
+export function SupportCasesList({
+  cases,
+  historyOpen = false,
+  showCurrent = true,
+}: SupportCasesListProps) {
+  const { current, otherOpen, closed } = partitionCases(cases)
+  const showPastOpen = historyOpen || !current
 
   return (
-    <div>
-      <ul className="divide-y divide-border/40">
-        {cases.map((item) => {
-          const open = isSupportCaseOpen(item.status)
-          const waiting = item.status === "waiting_on_you"
-          const line =
-            item.preview ||
-            (item.orderRef ? `Order ${item.orderRef}` : "Tap to open conversation")
+    <div className="space-y-8">
+      {showCurrent ? (
+        current ? <SupportCurrentRequest item={current} /> : <SupportEmptyRequest />
+      ) : null}
 
-          return (
-            <li key={`${item.backend}-${item.id}`}>
-              <Link
-                href={item.href}
-                className="flex items-center gap-3 py-3.5 transition-colors hover:bg-muted/40 sm:-mx-2 sm:rounded-xl sm:px-2"
-              >
-                <SupportAvatar muted={!open} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p
-                      className={cn(
-                        "truncate text-[15px] text-foreground",
-                        waiting || open ? "font-semibold" : "font-medium",
-                      )}
-                    >
-                      {item.subject}
-                    </p>
-                    <time
-                      className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                      dateTime={item.updatedAt}
-                    >
-                      {shortRelative(item.updatedAt)}
-                    </time>
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <p
-                      className={cn(
-                        "min-w-0 flex-1 truncate text-[13px] text-muted-foreground",
-                        waiting && "font-medium text-foreground",
-                      )}
-                    >
-                      {waiting ? `Reply needed · ${line}` : line}
-                    </p>
-                    {waiting ? (
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full bg-foreground"
-                        aria-label="Needs reply"
-                      />
-                    ) : null}
-                  </div>
-                </div>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
+      {otherOpen.length > 0 || closed.length > 0 ? (
+        <div className="space-y-4 border-t border-border/50 pt-6">
+          {otherOpen.length > 0 ? (
+            <CaseDrawer title="Other open requests" count={otherOpen.length}>
+              {otherOpen.map((item) => (
+                <HistoryRow key={`${item.backend}-${item.id}`} item={item} showStatus />
+              ))}
+            </CaseDrawer>
+          ) : null}
 
-      <div className="mt-8 text-center text-[13px] text-muted-foreground">
-        {activeFilter === "resolved" ? (
-          <button
-            type="button"
-            onClick={() => setFilter("open")}
-            className="hover:text-foreground"
-          >
-            ← Open chats
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setFilter("resolved")}
-            className="hover:text-foreground"
-          >
-            View closed
-          </button>
-        )}
-      </div>
+          {closed.length > 0 ? (
+            <CaseDrawer title="Past conversations" count={closed.length} defaultOpen={showPastOpen}>
+              {closed.map((item) => (
+                <HistoryRow key={`${item.backend}-${item.id}`} item={item} />
+              ))}
+            </CaseDrawer>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }

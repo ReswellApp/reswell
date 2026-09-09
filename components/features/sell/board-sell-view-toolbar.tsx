@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils"
 type BoardSellViewToolbarProps = {
   viewMode: BoardSellViewMode
   onViewModeChange: (mode: BoardSellViewMode) => void
+  /** Hide Quick list when editing a live listing (pickup-only coerce would drop shipping). */
+  showQuickList?: boolean
   /** When set, shows “Search again” back to catalog search. */
   searchAgainHref?: string | null
   showBack: boolean
@@ -32,12 +34,13 @@ type BoardSellViewToolbarProps = {
 }
 
 /**
- * Sell form chrome at the bottom of the page: Guided / Advanced picker,
- * optional “Search again”, and Guided Next / Back.
+ * Sell form chrome at the bottom of the page: Guided / Advanced / Quick list
+ * picker, optional “Search again”, and Guided Next / Back.
  */
 export function BoardSellViewToolbar({
   viewMode,
   onViewModeChange,
+  showQuickList = true,
   searchAgainHref = null,
   showBack,
   showContinue,
@@ -74,8 +77,9 @@ export function BoardSellViewToolbar({
           <DropdownMenuRadioGroup
             value={viewMode}
             onValueChange={(value) => {
-              const next = value === "advanced" ? "advanced" : "guided"
-              onViewModeChange(next)
+              if (value === "advanced" || value === "guided" || value === "quick") {
+                onViewModeChange(value)
+              }
             }}
           >
             <DropdownMenuRadioItem value="guided" className="gap-2 pl-8">
@@ -94,6 +98,16 @@ export function BoardSellViewToolbar({
                 </span>
               </span>
             </DropdownMenuRadioItem>
+            {showQuickList ? (
+            <DropdownMenuRadioItem value="quick" className="gap-2 pl-8">
+              <span className="flex flex-col gap-0.5">
+                <span className="font-medium">Quick list</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Photo, price, publish
+                </span>
+              </span>
+            </DropdownMenuRadioItem>
+            ) : null}
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -153,7 +167,7 @@ export function BoardSellViewToolbar({
         ) : (
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
             <Check className="h-3.5 w-3.5 text-listingHeart" aria-hidden />
-            Full form
+            {viewMode === "quick" ? "Quick list" : "Full form"}
           </span>
         )}
       </div>

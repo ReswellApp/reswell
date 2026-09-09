@@ -1,29 +1,35 @@
 import Link from "next/link"
+import { BookOpen, Map, Package } from "lucide-react"
 import { helpArticlePath, helpTopicPath } from "@/lib/help-center/paths"
+import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
+import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
+import { SellerResourcesHero } from "@/components/features/seller-resources/seller-resources-hero"
 import {
   HOW_TO_SELL_HREF,
   HOW_TO_SHIP_HREF,
   SALES_MAP_HREF,
-  SELLER_RESOURCES_HUB_HREF,
   sellerResourcesComingSoon,
 } from "@/lib/seller-resources"
-import { SellerResourceCard, SellerResourcesShell } from "./seller-resources-shell"
+import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 
 const PRIMARY = [
   {
     title: "How to Sell",
     href: HOW_TO_SELL_HREF,
-    body: "The listing flow, photos, fees, and what happens after you publish.",
+    body: "Photo examples, the Sell walkthrough, box sizes, and how to build reviews.",
+    icon: BookOpen,
   },
   {
     title: "How to Ship",
     href: HOW_TO_SHIP_HREF,
     body: "Offer shipping, pack a board, print a label, or meet for pickup.",
+    icon: Package,
   },
   {
     title: "Sales Map",
     href: SALES_MAP_HREF,
     body: "See where confirmed Reswell orders travel from seller state to buyer state.",
+    icon: Map,
   },
 ] as const
 
@@ -38,54 +44,78 @@ const GUIDES = [
 
 export function MoreSellResourcesContent() {
   return (
-    <SellerResourcesShell
-      title="More Sell Resources"
-      description="Guides, tools, and the rest of the seller desk. Pricing Hub and the Sell-Out List will land here when we have the data."
-      currentHref={SELLER_RESOURCES_HUB_HREF}
-    >
-      <div className="grid gap-4 sm:grid-cols-3">
-        {PRIMARY.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="rounded-2xl border border-border bg-white p-5 shadow-sm transition-colors hover:border-listingHeart/30"
-          >
-            <p className="font-semibold text-[#001A4A]">{item.title}</p>
-            <p className="mt-2 text-sm leading-relaxed text-[#5c6b89]">{item.body}</p>
-          </Link>
-        ))}
-      </div>
+    <main className="flex-1 bg-white">
+      <SellerResourcesHero
+        title="Everything you need to sell"
+        description="Guides, tools, and the rest of the seller desk. Pricing Hub and the Sell-Out List will land here when we have the data."
+        primaryCta={{ href: SURFBOARD_SELL_BOARDS_CREATE_HREF, label: "Start a listing" }}
+        secondaryCta={{ href: HOW_TO_SELL_HREF, label: "How to Sell" }}
+      />
 
-      <SellerResourceCard title="Coming next">
-        <ul className="space-y-3">
+      <HowToSellSection
+        eyebrow="Guides"
+        title="Start with the basics"
+        lead="How to list, how to ship, and where boards are actually selling."
+      >
+        <ul className="grid gap-5 md:grid-cols-3">
+          {PRIMARY.map((item) => {
+            const Icon = item.icon
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="flex h-full flex-col rounded-[1.75rem] bg-[#F4F7FB] px-6 py-8 transition-colors hover:bg-[#eef2f8]"
+                >
+                  <Icon className="h-10 w-10 text-[#5574AD]" strokeWidth={1.75} aria-hidden />
+                  <p className="mt-5 text-xl font-bold tracking-tight text-[#001A4A]">{item.title}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-[#5c6b89]">{item.body}</p>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </HowToSellSection>
+
+      <HowToSellSection
+        wash
+        eyebrow="Coming next"
+        title="More seller tools on the way"
+      >
+        <ul className="grid gap-5 md:grid-cols-2">
           {sellerResourcesComingSoon.map((item) => (
-            <li key={item.label}>
-              <p className="font-semibold text-[#001A4A]">
-                {item.label}{" "}
-                <span className="ml-1 text-xs font-medium uppercase tracking-wide text-[#5574AD]">
+            <li key={item.label} className="rounded-[1.75rem] bg-white px-6 py-8 ring-1 ring-border">
+              <p className="flex flex-wrap items-center gap-2 text-xl font-bold text-[#001A4A]">
+                {item.label}
+                <span className="rounded-full bg-[#5574AD]/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#5574AD]">
                   Soon
                 </span>
               </p>
-              <p className="mt-0.5">{item.description}</p>
+              <p className="mt-2 text-sm leading-relaxed text-[#5c6b89]">{item.description}</p>
             </li>
           ))}
         </ul>
-      </SellerResourceCard>
+      </HowToSellSection>
 
-      <SellerResourceCard title="More guides and tools">
-        <ul className="grid gap-2 sm:grid-cols-2">
+      <HowToSellSection
+        eyebrow="More"
+        title="Guides and tools"
+        lead="Fees, payouts, protection, and the shipping estimator."
+      >
+        <ul className="grid gap-3 sm:grid-cols-2">
           {GUIDES.map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}
-                className="font-medium text-[#001A4A] underline underline-offset-2"
+                className="block rounded-[1.25rem] bg-[#F4F7FB] px-5 py-4 font-semibold text-[#001A4A] transition-colors hover:bg-[#eef2f8]"
               >
                 {item.title}
               </Link>
             </li>
           ))}
         </ul>
-      </SellerResourceCard>
-    </SellerResourcesShell>
+      </HowToSellSection>
+
+      <SellerResourcesCta />
+    </main>
   )
 }

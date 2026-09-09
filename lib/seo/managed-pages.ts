@@ -368,6 +368,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Search articles and guides for buying, selling, and managing your Reswell account.",
     path: "/help",
   }),
+  page("support", "content", "Customer support", {
+    title: "Customer Support — Reswell",
+    description:
+      "Get help with a purchase, sale, payment, or your account. Answer a few questions, then message the Reswell team.",
+    path: "/support",
+  }),
 
   // ---- Trust & legal ----
   page("protection-policy", "trust", "Purchase Protection", {
@@ -449,11 +455,16 @@ export const MANAGED_PAGES: ManagedPage[] = [
     keywords: ["sell surfboard", "seller resources", "how to sell on Reswell"],
   }),
   page("seller-resources-how-to-sell", "marketing", "How to Sell", {
-    title: "How to Sell on Reswell",
+    title: "How to Sell a Surfboard on Reswell",
     description:
-      "List a surfboard or gear on Reswell — photos, details, pickup or shipping, and pricing. Free to post.",
+      "List a surfboard on Reswell — photo examples, the Sell walkthrough, shipping and 76×22×5 box sizes, and how top shops build reviews. Free to post.",
     path: "/seller-resources/how-to-sell",
-    keywords: ["how to sell a surfboard", "list surfboard", "sell used surfboard"],
+    keywords: [
+      "how to sell a surfboard",
+      "list surfboard",
+      "sell used surfboard",
+      "surfboard shipping box size",
+    ],
   }),
   page("seller-resources-how-to-ship", "marketing", "How to Ship", {
     title: "How to Ship on Reswell",

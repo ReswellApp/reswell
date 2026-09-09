@@ -81,6 +81,13 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
       description: "Switch tabs to see sellers you follow and who follows your shop.",
     },
   },
+  {
+    prefix: "/dashboard/support",
+    meta: {
+      sectionName: "Support",
+      description: "Choose a topic, pick a purchase or sale, then message the Reswell team.",
+    },
+  },
 ]
 
 export function resolveDashboardSectionMeta(pathname: string): DashboardSectionMeta {

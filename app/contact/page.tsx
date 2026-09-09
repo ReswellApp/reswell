@@ -64,7 +64,7 @@ export default function ContactPage() {
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               Signed in? Use{" "}
-              <Link href="/dashboard/support/new" className="text-primary underline underline-offset-2">
+              <Link href="/support" className="text-primary underline underline-offset-2">
                 Get help
               </Link>{" "}
               for the fastest path — pick what you need and track your case. Or email us / send a

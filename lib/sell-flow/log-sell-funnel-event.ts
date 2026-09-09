@@ -44,6 +44,28 @@ export function logSellFunnelEvent(event: SellFunnelEventInput): void {
   })
 }
 
+export function logSellForkToFull(opts?: {
+  listingType?: PeerListingSection
+  message?: string
+}): void {
+  logSellFunnelEvent({
+    listingType: opts?.listingType ?? "surfboards",
+    event: "fork_to_full",
+    message: opts?.message ?? "quick_to_full",
+  })
+}
+
+export function logSellForkToQuick(opts?: {
+  listingType?: PeerListingSection
+  message?: string
+}): void {
+  logSellFunnelEvent({
+    listingType: opts?.listingType ?? "surfboards",
+    event: "fork_to_quick",
+    message: opts?.message ?? "full_to_quick",
+  })
+}
+
 const FIELD_INTERACTED_PREFIX = "reswell.sell.funnel.fieldInteracted."
 
 /** Once-per-session field focus/blur — feeds per-field drop-off in admin. */

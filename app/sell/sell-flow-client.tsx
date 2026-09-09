@@ -121,7 +121,11 @@ import {
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { applyBoardListingPublishedSideEffectsAction } from "@/lib/actions/boardListingPublishActions"
-import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import {
+  logSellForkToFull,
+  logSellForkToQuick,
+  logSellFunnelEvent,
+} from "@/lib/sell-flow/log-sell-funnel-event"
 import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
 import { cn } from "@/lib/utils"
 import {
@@ -157,12 +161,14 @@ import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   validateSellListingForm,
   buildResolvedListingTitle,
+  LISTING_MIN_PHOTOS,
   LISTING_TITLE_MAX_LENGTH,
   type BoardShippingCostMode,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import {
   LISTING_CONDITION_SELL_OPTIONS,
+  isListingSellableCondition,
   sellFormConditionValue,
 } from "@/lib/listing-labels"
 import {
@@ -228,6 +234,8 @@ import {
 } from "@/components/features/sell/sell-section-nav"
 import { SellSectionNavMobileProgress } from "@/components/features/sell/sell-section-nav-mobile-progress"
 import { BoardSellViewToolbar } from "@/components/features/sell/board-sell-view-toolbar"
+import { BoardSellQuickListForm } from "@/components/features/sell/board-sell-quick-list-form"
+import { QuickPhotoHero } from "@/components/features/sell/quick/quick-photo-hero"
 import {
   computeSellSectionCompletion,
   computeSellStepChecklist,
@@ -279,6 +287,11 @@ import {
   readStoredBoardSellViewMode,
   type BoardSellViewMode,
 } from "@/lib/sell-flow/board-sell-view-mode"
+import {
+  isGiveawayListingSession,
+  markGiveawayListingSession,
+} from "@/lib/sell-flow/giveaway-listing-session"
+import { resolveBoardSellCreateViewMode } from "@/lib/sell-flow/resolve-board-sell-create-view-mode"
 
 /** True once the seller has pinned the board (coordinates used for drafts + validation). */
 function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: number }): boolean {
@@ -693,6 +706,8 @@ function boardCatalogSnapshotFromSellForm(
 /** Set when a guest taps Publish — resume submit after sign-in (survives full-page login redirect). */
 const SELL_PENDING_PUBLISH_KEY = sellPendingPublishKey("board")
 
+const QUICK_LIST_DEFAULT_CATEGORY_ID = boardCategoryMap.other
+
 type SellPageContentProps = {
   editId: string | null
   startFresh: boolean
@@ -700,6 +715,9 @@ type SellPageContentProps = {
   onSoftOpenDraft?: (draftId: string) => void
   /** Server-resolved `profiles.is_admin` so privileged shipping cards paint immediately. */
   initialActorIsAdmin?: boolean
+  hasPublishedSurfboard?: boolean
+  fromGiveaway?: boolean
+  initialViewMode?: BoardSellViewMode
 }
 
 function SellPageContentInner({
@@ -707,6 +725,9 @@ function SellPageContentInner({
   startFresh,
   onSoftOpenDraft,
   initialActorIsAdmin,
+  hasPublishedSurfboard = false,
+  fromGiveaway = false,
+  initialViewMode = "guided",
 }: SellPageContentProps) {
   const listingPhotosInputId = useId()
   const listingVideoInputId = useId()
@@ -732,12 +753,19 @@ function SellPageContentInner({
     sellListingCameFromCatalogSearch(startFresh),
   )
 
+  useEffect(() => {
+    if (fromGiveaway) markGiveawayListingSession()
+  }, [fromGiveaway])
+
   /** Strip `?new=1` from the URL after blank-listing setup; stay on `/sell/boards`. */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
-      const fromCatalog =
-        new URLSearchParams(window.location.search).get("from") === "catalog"
+      const params = new URLSearchParams(window.location.search)
+      const fromCatalog = params.get("from") === "catalog"
+      if (params.get("from") === "giveaway" || fromGiveaway) {
+        markGiveawayListingSession()
+      }
       if (fromCatalog) {
         markSellCatalogSearchAgain()
         setCameFromCatalogSearch(true)
@@ -754,7 +782,7 @@ function SellPageContentInner({
       }
       router.replace("/sell/boards", { scroll: false })
     }
-  }, [startFresh, router])
+  }, [fromGiveaway, startFresh, router])
 
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
@@ -791,8 +819,18 @@ function SellPageContentInner({
     setFlowStep(step)
     persistBoardSellFlowStep(step)
   }, [])
-  const [viewMode, setViewModeState] = useState<BoardSellViewMode>("guided")
+  const [viewMode, setViewModeState] = useState<BoardSellViewMode>(initialViewMode)
+  const viewModeRef = useRef(viewMode)
+  viewModeRef.current = viewMode
   const setViewMode = useCallback((mode: BoardSellViewMode) => {
+    const current = viewModeRef.current
+    if (current !== mode) {
+      if (mode === "quick") {
+        logSellForkToQuick({ message: `mode_${current}` })
+      } else if (current === "quick") {
+        logSellForkToFull({ message: `mode_${mode}` })
+      }
+    }
     setViewModeState(mode)
     persistBoardSellViewMode(mode)
   }, [])
@@ -835,22 +873,35 @@ function SellPageContentInner({
     persistBoardSellFlowStep("product")
   }, [editId])
 
-  /** Restore guided/advanced + step from session after mount (must not run during SSR). */
+  /** Restore guided/advanced/quick + step from session after mount (must not run during SSR). */
   useEffect(() => {
     if (editId) return
-    // New listings and catalog handoffs always open Guided from the first step.
-    if (startFresh || peekSellCatalogHandoff("surfboards")) {
+    const catalogHandoff = Boolean(peekSellCatalogHandoff("surfboards"))
+    const giveawaySession = fromGiveaway || isGiveawayListingSession()
+    if (startFresh || catalogHandoff) {
       setFlowStep("product")
       persistBoardSellFlowStep("product")
-      setViewModeState("guided")
-      persistBoardSellViewMode("guided")
+      const mode = resolveBoardSellCreateViewMode({
+        fromGiveaway: giveawaySession,
+        hasPublishedSurfboard,
+        catalogHandoff,
+      })
+      setViewModeState(mode)
+      persistBoardSellViewMode(mode)
       return
     }
     const storedStep = readStoredBoardSellFlowStep()
     if (storedStep) setFlowStep(storedStep)
     const storedMode = readStoredBoardSellViewMode()
-    if (storedMode) setViewModeState(storedMode)
-  }, [editId, startFresh])
+    if (storedMode) {
+      setViewModeState(storedMode)
+      return
+    }
+    if (giveawaySession && !hasPublishedSurfboard) {
+      setViewModeState("quick")
+      persistBoardSellViewMode("quick")
+    }
+  }, [editId, fromGiveaway, hasPublishedSurfboard, startFresh])
 
   useEffect(() => {
     if (!loading) return
@@ -1130,8 +1181,12 @@ function SellPageContentInner({
       draftPhotosPendingRef.current = null
       setFormData(createInitialSellFormData())
       setBoardFlowStep("product")
-      setViewModeState("guided")
-      persistBoardSellViewMode("guided")
+      const nextMode = resolveBoardSellCreateViewMode({
+        fromGiveaway: fromGiveaway || isGiveawayListingSession(),
+        hasPublishedSurfboard,
+      })
+      setViewModeState(nextMode)
+      persistBoardSellViewMode(nextMode)
       clearPersistedBoardSellFlowStep()
       sellListingThumbLoadedSrcByClientId.clear()
       latestListingPhotoPrepareSeqRef.current.clear()
@@ -1154,7 +1209,7 @@ function SellPageContentInner({
     } finally {
       setStartNewListingBusy(false)
     }
-  }, [editId, router, setBoardFlowStep, supabase])
+  }, [editId, fromGiveaway, hasPublishedSurfboard, router, setBoardFlowStep, supabase])
 
   const buildBoardDraftPayload = useCallback(
     (listingId: string | null) => ({
@@ -1788,6 +1843,36 @@ function SellPageContentInner({
     [sellStepChecklistBySection],
   )
 
+  const quickListPriceValid = useMemo(() => {
+    const n = Number.parseFloat(formData.price.trim().replace(/,/g, ""))
+    return Number.isFinite(n) && n > 0
+  }, [formData.price])
+
+  const quickListLocationSet = Boolean(
+    formData.locationCity.trim() && formData.locationState.trim(),
+  )
+
+  const quickListMissing = useMemo(() => {
+    const items: string[] = []
+    if (images.length < LISTING_MIN_PHOTOS) items.push("a photo")
+    if (!formData.title.trim()) items.push("a title")
+    if (!formData.description.trim()) items.push("a description")
+    if (!quickListPriceValid) items.push("price")
+    if (!isListingSellableCondition(formData.condition)) items.push("condition")
+    if (!quickListLocationSet) items.push("location")
+    return items
+  }, [
+    formData.condition,
+    formData.description,
+    formData.title,
+    images.length,
+    quickListLocationSet,
+    quickListPriceValid,
+  ])
+
+  const quickListPhotosUploading =
+    images.some((im) => im.uploadPhase === "uploading") || videoUploading
+
   /**
    * Quick publish path: flip to pickup-only and clear the shipping config so
    * the seller isn't blocked on package size. Shipping can be added anytime by
@@ -1811,6 +1896,44 @@ function SellPageContentInner({
       reswellPackageWeightOz: "",
     }))
   }, [])
+
+  /** Quick list is pickup-only and does not ask for board shape. */
+  useEffect(() => {
+    if (viewMode !== "quick") return
+    if (skipPickupShippingStepperInteractionUx) return
+    setFormData((fd) => {
+      const needsFulfillment = fd.boardFulfillment !== "pickup_only"
+      const needsCategory = !fd.category.trim()
+      if (!needsFulfillment && !needsCategory) return fd
+      return {
+        ...fd,
+        ...(needsFulfillment
+          ? {
+              boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+              boardShippingCostMode: "reswell" as BoardShippingCostMode,
+              boardShippingPrice: "",
+              surfboardShippingTier: "" as SurfboardShippingTierId | "",
+              surfboardShippingTierCeilingConfirmed: false,
+              surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+              surfboardShippingPackBandCeilingConfirmed: false,
+              adminCustomShippingCarton: true,
+              reswellPackageLengthIn: "",
+              reswellPackageWidthIn: "",
+              reswellPackageHeightIn: "",
+              reswellPackageWeightLb: "",
+              reswellPackageWeightOz: "",
+            }
+          : {}),
+        ...(needsCategory
+          ? {
+              category: QUICK_LIST_DEFAULT_CATEGORY_ID,
+              boardType:
+                boardTypeFromCategoryId(QUICK_LIST_DEFAULT_CATEGORY_ID) || "other",
+            }
+          : {}),
+      }
+    })
+  }, [skipPickupShippingStepperInteractionUx, viewMode])
 
   const goToSellSection = useCallback(
     (sectionId: string) => {
@@ -1876,7 +1999,7 @@ function SellPageContentInner({
   })
 
   useEffect(() => {
-    if (viewMode === "advanced" || flowStep === "shipping") {
+    if (viewMode === "advanced" || viewMode === "quick" || flowStep === "shipping") {
       setPickupShippingSectionEnteredOnce(true)
     }
   }, [flowStep, viewMode])
@@ -2033,8 +2156,13 @@ function SellPageContentInner({
     draftPhotosPendingRef.current = null
     setFormData(createInitialSellFormData())
     setBoardFlowStep("product")
-    setViewModeState("guided")
-    persistBoardSellViewMode("guided")
+    const mode = resolveBoardSellCreateViewMode({
+      fromGiveaway: fromGiveaway || isGiveawayListingSession(),
+      hasPublishedSurfboard,
+      catalogHandoff: Boolean(peekSellCatalogHandoff("surfboards")),
+    })
+    setViewModeState(mode)
+    persistBoardSellViewMode(mode)
     clearPersistedBoardSellFlowStep()
     sellListingThumbLoadedSrcByClientId.clear()
     latestListingPhotoPrepareSeqRef.current.clear()
@@ -2055,7 +2183,7 @@ function SellPageContentInner({
         /* ignore */
       }
     })()
-  }, [setBoardFlowStep, startFresh, supabase])
+  }, [fromGiveaway, hasPublishedSurfboard, setBoardFlowStep, startFresh, supabase])
 
   useEffect(() => {
     if (!editId) {
@@ -2861,7 +2989,7 @@ function SellPageContentInner({
     logSellFunnelEvent({
       listingType: "surfboards",
       event: "publish_attempt",
-      message: editId ? "edit" : "create",
+      message: viewMode === "quick" ? "quick-list" : editId ? "edit" : "create",
     })
 
     const goSubmitStep = (n: number) => {
@@ -3840,14 +3968,23 @@ function SellPageContentInner({
             aria-hidden={fullscreenSellBlocking ? true : undefined}
           >
           <h1 className="sr-only">
-            {editId ? "Edit listing" : "Create a Listing"}
+            {editId
+              ? "Edit listing"
+              : viewMode === "quick"
+                ? "Quick list a board"
+                : "Create a Listing"}
           </h1>
           {showBoardModeHeader ? (
             <SellBoardModeHeader
               leading={
                 <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
-                  Create a listing
+                  {viewMode === "quick" ? "Quick list a board" : "Create a listing"}
                 </h1>
+              }
+              description={
+                viewMode === "quick"
+                  ? "Photo, title, price — publish in seconds. Switch to Guided or Advanced anytime for more detail."
+                  : undefined
               }
               actions={
                 showBoardDraftControls ||
@@ -3889,7 +4026,11 @@ function SellPageContentInner({
               <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
                 <div className="min-w-0 flex-1">
                   <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
-                    {editId ? "Edit listing" : "Create a listing"}
+                    {editId
+                      ? "Edit listing"
+                      : viewMode === "quick"
+                        ? "Quick list a board"
+                        : "Create a listing"}
                   </h1>
                 </div>
                 <div className="flex flex-col gap-1 shrink-0 sm:items-end">
@@ -4003,6 +4144,7 @@ function SellPageContentInner({
                 editLoading && "pointer-events-none opacity-60",
               )}
             >
+              {viewMode !== "quick" ? (
               <aside className="hidden shrink-0 lg:block lg:w-56 xl:w-64">
                 <div className="sticky top-24">
                   <SellSectionNav
@@ -4014,7 +4156,10 @@ function SellPageContentInner({
                   />
                 </div>
               </aside>
+              ) : null}
               <div className={cn("min-w-0", SELL_FORM_COLUMN_CLASS)}>
+                {viewMode !== "quick" ? (
+                <>
                 <SellSectionNavMobileProgress
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   activeSectionId={activeSellSectionId}
@@ -4030,6 +4175,8 @@ function SellPageContentInner({
                     viewMode === "advanced" && "sm:hidden",
                   )}
                 />
+                </>
+                ) : null}
                 <form
               ref={formRef}
               onSubmit={(e) => {
@@ -4040,10 +4187,129 @@ function SellPageContentInner({
                 }
                 void handleSubmit(e)
               }}
-              className="space-y-12 lg:space-y-14"
+              className={cn(
+                viewMode === "quick" ? "space-y-4 sm:space-y-5" : "space-y-12 lg:space-y-14",
+              )}
               aria-busy={loading}
             >
-                {viewMode === "advanced" || flowStep === "product" ? (
+                {viewMode === "quick" ? (
+                  <BoardSellQuickListForm
+                    photoHero={
+                      <QuickPhotoHero
+                        images={images}
+                        maxPhotos={12}
+                        fileInputId={listingPhotosInputId}
+                        photosFileDragActive={photosFileDragActive}
+                        onImageInputChange={handleImageChange}
+                        onDragEnter={handlePhotosFileDragEnter}
+                        onDragLeave={handlePhotosFileDragLeave}
+                        onDragOver={handlePhotosFileDragOver}
+                        onDrop={handlePhotosFileDrop}
+                        onDragEnd={handlePhotosDragEnd}
+                        onRemove={handlePhotoTileRemove}
+                        onRetry={handlePhotoTileRetry}
+                        onRotate180={handlePhotoTileRotate}
+                        photoDragSensors={photoDragSensors}
+                        minPhotos={LISTING_MIN_PHOTOS}
+                        video={video}
+                        videoFileInputId={listingVideoInputId}
+                        onVideoInputChange={handleVideoInputChange}
+                        onVideoRemove={handleVideoRemove}
+                        onVideoRetry={handleVideoRetry}
+                      />
+                    }
+                    title={formData.title}
+                    onTitleChange={(title) => setFormData((f) => ({ ...f, title }))}
+                    description={formData.description}
+                    onDescriptionChange={(description) =>
+                      setFormData((f) => ({ ...f, description }))
+                    }
+                    price={formData.price}
+                    onPriceChange={(price) => setFormData((f) => ({ ...f, price }))}
+                    priceValid={quickListPriceValid}
+                    condition={formData.condition}
+                    onConditionChange={(condition) =>
+                      setFormData((f) => ({ ...f, condition }))
+                    }
+                    conditionComplete={isListingSellableCondition(formData.condition)}
+                    locationPicker={
+                      <LocationPicker
+                        key={
+                          sellFormHasCommittedMapPins(formData)
+                            ? `quick-loc-${formData.locationLat.toFixed(5)}-${formData.locationLng.toFixed(5)}`
+                            : "quick-loc-empty"
+                        }
+                        onLocationSelect={(loc) => {
+                          setPickupShippingLocationUserCommits((c) => c + 1)
+                          setFormData((f) => ({
+                            ...f,
+                            locationLat: loc.lat,
+                            locationLng: loc.lng,
+                            locationCity: loc.city,
+                            locationState: loc.state,
+                            locationDisplay: loc.displayName,
+                          }))
+                          const saved = rememberSellSavedListingLocation({
+                            city: loc.city,
+                            state: loc.state,
+                            lat: loc.lat,
+                            lng: loc.lng,
+                            displayName: loc.displayName,
+                          })
+                          setSavedListingLocations(saved)
+                          if (!getImpersonation() && loc.city.trim()) {
+                            void saveDefaultListingLocationAction({
+                              city: loc.city.trim(),
+                              state: loc.state.trim() || undefined,
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              display: loc.displayName.trim() || undefined,
+                            })
+                          }
+                        }}
+                        onLocationClear={() => {
+                          setPickupShippingLocationUserCommits(0)
+                          setFormData((f) => ({
+                            ...f,
+                            locationLat: 0,
+                            locationLng: 0,
+                            locationCity: "",
+                            locationState: "",
+                            locationDisplay: "",
+                          }))
+                        }}
+                        prefillSuggested={locationPrefillSuggested}
+                        savedLocations={savedListingLocations}
+                        initialLat={formData.locationLat || undefined}
+                        initialLng={formData.locationLng || undefined}
+                        initialCity={formData.locationCity}
+                        initialState={formData.locationState}
+                        initialDisplay={formData.locationDisplay}
+                      />
+                    }
+                    locationSet={quickListLocationSet}
+                    missing={quickListMissing}
+                    uploadingPhotos={quickListPhotosUploading}
+                    publishing={loading}
+                    validationBanner={publishValidationBanner}
+                    toolbar={
+                      <BoardSellViewToolbar
+                        viewMode={viewMode}
+                        onViewModeChange={setViewMode}
+                        showQuickList={!editId || listingIsDraft}
+                        searchAgainHref={
+                          !editId && cameFromCatalogSearch ? "/sell" : null
+                        }
+                        showBack={false}
+                        showContinue={false}
+                        onBack={goToPrevSellStep}
+                        onContinue={goToNextSellStep}
+                        disabled={loading || editLoading}
+                      />
+                    }
+                  />
+                ) : null}
+                {viewMode !== "quick" && (viewMode === "advanced" || flowStep === "product") ? (
                 <SellFormSection
                   sectionId="sell-section-product"
                   title="Product Info"
@@ -4287,7 +4553,7 @@ function SellPageContentInner({
                 </SellFormSection>
                 ) : null}
 
-                {viewMode === "advanced" || flowStep === "photos" ? (
+                {viewMode !== "quick" && (viewMode === "advanced" || flowStep === "photos") ? (
                 <SellFormSection
                   sectionId="sell-section-photos"
                   title="Photos & Description"
@@ -4400,7 +4666,7 @@ function SellPageContentInner({
                 </SellFormSection>
                 ) : null}
 
-                {viewMode === "advanced" || flowStep === "pricing" ? (
+                {viewMode !== "quick" && (viewMode === "advanced" || flowStep === "pricing") ? (
                 <SellFormSection
                   sectionId="sell-section-pricing"
                   title="Pricing"
@@ -4538,7 +4804,7 @@ function SellPageContentInner({
                 </SellFormSection>
                 ) : null}
 
-                {viewMode === "advanced" || flowStep === "shipping" ? (
+                {viewMode !== "quick" && (viewMode === "advanced" || flowStep === "shipping") ? (
                 <SellFormSection
                   sectionId="sell-section-shipping"
                   title="Shipping"
@@ -4891,9 +5157,11 @@ function SellPageContentInner({
                 </SellFormSection>
                 ) : null}
 
+                {viewMode !== "quick" ? (
                 <BoardSellViewToolbar
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
+                  showQuickList={!editId || listingIsDraft}
                   searchAgainHref={
                     !editId && cameFromCatalogSearch ? "/sell" : null
                   }
@@ -4903,6 +5171,7 @@ function SellPageContentInner({
                   onContinue={goToNextSellStep}
                   disabled={loading || editLoading}
                 />
+                ) : null}
                 </form>
               </div>
             </div>
@@ -4919,6 +5188,9 @@ export default function SellFlowShell(props: {
   /** From the incoming request URL (RSC); merged with live `useSearchParams` client-side */
   urlEditListingId: string | null
   initialActorIsAdmin?: boolean
+  hasPublishedSurfboard?: boolean
+  fromGiveaway?: boolean
+  initialViewMode?: BoardSellViewMode
 }) {
   return <SellSearchParamsBridge {...props} />
 }
@@ -4931,6 +5203,9 @@ export default function SellFlowShell(props: {
 function SellSearchParamsBridge(props: {
   urlEditListingId: string | null
   initialActorIsAdmin?: boolean
+  hasPublishedSurfboard?: boolean
+  fromGiveaway?: boolean
+  initialViewMode?: BoardSellViewMode
 }) {
   const searchParams = useSearchParams()
   const qEditRaw = searchParams.get("edit")
@@ -4968,6 +5243,9 @@ function SellSearchParamsBridge(props: {
       startFresh={startFresh}
       onSoftOpenDraft={onSoftOpenDraft}
       initialActorIsAdmin={props.initialActorIsAdmin}
+      hasPublishedSurfboard={props.hasPublishedSurfboard}
+      fromGiveaway={props.fromGiveaway}
+      initialViewMode={props.initialViewMode}
     />
   )
 }

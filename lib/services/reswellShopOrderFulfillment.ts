@@ -239,6 +239,8 @@ export async function fulfillReswellShopOrder(
       insuranceClaimUrl: purchased.result.insuranceClaimUrl,
       shipengineLabelId: purchased.result.shipengineLabelId,
       shipengineShipmentId: purchased.result.shipengineShipmentId,
+      labelCostUsd: purchased.result.costAmount,
+      labelCostCurrency: purchased.result.costCurrency,
     })
     if (!attached.ok) {
       return { ok: false, error: attached.error, status: 500 }

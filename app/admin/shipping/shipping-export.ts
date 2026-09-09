@@ -122,3 +122,52 @@ export function buildFailuresCsv(rows: FailuresExportRow[]): string {
 export function downloadFailuresCsv(rows: FailuresExportRow[]): void {
   download(buildFailuresCsv(rows), `reswell-shipping-failures-${stamp()}.csv`)
 }
+
+export type LabelSpendExportRow = {
+  createdAt: string
+  kind: string
+  orderDisplayNum: string | null
+  orderId: string | null
+  trackingNumber: string | null
+  carrierCode: string | null
+  serviceCode: string | null
+  postageUsd: number
+  insuranceUsd: number
+  chargeUsd: number
+  labelId: string
+}
+
+const LABEL_SPEND_HEADERS = [
+  "Created",
+  "Kind",
+  "Order",
+  "Order ID",
+  "Tracking",
+  "Carrier",
+  "Service",
+  "Postage",
+  "Insurance",
+  "Charge",
+  "ShipEngine label",
+] as const
+
+export function buildLabelSpendCsv(rows: LabelSpendExportRow[]): string {
+  const out = rows.map((r) => [
+    r.createdAt,
+    r.kind,
+    r.orderDisplayNum ? `#${r.orderDisplayNum}` : "",
+    r.orderId ?? "",
+    r.trackingNumber ?? "",
+    r.carrierCode ?? "",
+    r.serviceCode ?? "",
+    r.postageUsd.toFixed(2),
+    r.insuranceUsd.toFixed(2),
+    r.chargeUsd.toFixed(2),
+    r.labelId,
+  ])
+  return [LABEL_SPEND_HEADERS, ...out].map((row) => row.map(csvCell).join(",")).join("\n")
+}
+
+export function downloadLabelSpendCsv(rows: LabelSpendExportRow[], dateFrom: string, dateTo: string): void {
+  download(buildLabelSpendCsv(rows), `reswell-shipengine-label-spend-${dateFrom}-${dateTo}.csv`)
+}
