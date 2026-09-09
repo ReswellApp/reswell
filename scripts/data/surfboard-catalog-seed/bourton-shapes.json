@@ -1,6 +1,6 @@
 {
   "generated_for": "Bourton Shapes official named standup catalog",
-  "source": "https://www.bourtonshapes.com (WordPress model pages — excludes Pipedream factory retro line, fins, merch, and one-off prototypes)",
+  "source": "https://www.bourtonshapes.com/boards-2/ (WordPress model pages \u2014 excludes Pipedream factory retro line, experiment blog posts, and merch)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -10,54 +10,210 @@
       "location_label": "Gold Coast, Queensland, Australia",
       "founder_name": "Murray Bourton",
       "lead_shaper_name": "Murray Bourton",
-      "short_description": "Gold Coast performance surfboards from Murray Bourton — high-performance thrusters, hybrids, and progressive designs shaped since the Pipedream era.",
+      "short_description": "Gold Coast performance surfboards from Murray Bourton \u2014 high-performance thrusters, hybrids, and progressive designs shaped since the Pipedream era.",
       "models": [
         {
+          "name": "EPS BOBBY DAZZLER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2015/02/SAM_1110.jpg",
+          "description": "Roughly 6 years ago I designed a Boot Model range which were a bunch of really small wide boards that could effectively fit in the boot of a car. The whole idea bombed and they just sat in the shop and festered. As they say- life is timing! Well 6 years on, the little Bobby Dazzler may have his timing right. When you look around the surfboard web sites these days the Dazzler has many close cousins, so I doubt this little number will be doing any festering. This design is the second one in a range purely dedicated for the new fused pellet EPS I have imported of late. The Bobby Dazzler is a break from my anal belief that all tails should be pulled in, in order to hold through bottom turns. The fact that this board is really aimed at the small wave category; this departure is really a no brainer. And to be candid it is still not as barge arsed as some of the Firewire models and well, it is ",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EPS Friekin Flyer",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2015/08/FRIKEN-FLYER.jpg",
+          "description": "The very first Frieken Flyer I made was for myself to surf with my grandkids in tiny surf .I went to the Stinger design and played with it a little by changing it to a round tail, adding an extra wing and digging out a little flute under the wing . The board is thicker with more roll on the deck and to facilitate my big weakness in ultra-small waves I pushed it out to 23\u201d wide- almost a knee board! It was a success in the small stuff but to my surprise due to using the bigger quads in the back and a mini keel I could control it in 6 ft. surf; and did it fly! I have been on a parallel type planshape binge of late, due to the success of my Stinger model. It seems that the positive feedback I have been getting from this direction has me inspired to fiddle a little more. The plan shape of the Frieken flyer is reasonably straight through the middle and is punctuated by 2 sets of wings that do",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EPS MACH 3 FIVE FINNER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2015/01/EPS-M-3-PROFILE.jpg",
+          "description": "The new EPS Mach 3 is designed off the Mach 3 PU, but wider and thicker, however still retains a lower rail to facilitate an EPS core. The Mach 2, then the Mach 3 and now the EPS Mach 3 demonstrates a gradual movement toward the need for smaller wave boards that paddle fast and run fast. The Mach series have been one of my most successful models so it was a no brainer for this design to be one of the first to be converted to EPS construction. If you need to learn more design detail about this model refer to the Mach 3 PU. GLASSING The Mach 3 has a 4oz double diagonal bottom and the same on the deck. Over this a 6oz carbon reinforced stomp pad running 2/3rds of the board. Besides strengthening the deck in the heavy traffic area it also stiffens up the board flex sort of like a stringer would. To keep the tail super strong there is an extra layer of carbon 6 oz, it is set horizontally so i",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HardNFast",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/03/Picture2.jpg",
+          "description": "If you are after a board that is hard \u201cn\u201d fast this is the craft for you. Muzza has been working on a new development with me as the test pilot. The idea to create something super high tech, high performance, very strong and still light. Using all the new materials available today. The HP \u2013 EPS (High Performance \u2013 Expanded Polystyrene) was created. The HP-EPS is stringerless, which on it\u2019s own would be too flexible and pretty weak. No back bone. The idea is to place varies carbon strips, in the right places, to give strength and the \u201cright\u201d amount of flex. The board is also from an Epoxy resin, which react in the same way they sound. Try and tap on a regular PU surfboard and then tap on an Epoxy surfboard. The Epoxy gives off a higher pitched, faster sound. When surfing an Epoxy you get a quicker spring and faster response. Great in clean conditions, great in steep hollow beach/reef brea",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Keel",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/01/Big-Wave-keel.jpg",
+          "description": "Since introducing the mini keels to my quad designs almost 4 years ago I have been developing new variations for different purposes. One thing that I did not expect however, was that many first time quad users have used the keel as a transition from thruster to quad to make the adjustment easier. I guess it is about that lost centre feeling. All these fins are solid glass but are still very light and fit into normal FCS plugs. Large wave keel \u2013 Base = 4 7/8\u201d Depth = 1 5/8\u201d This low profile keel is the first one I designed and is specifically for high speed traction without being too dominant. Understanding the pressures are more intense at high speed: deeper keels will over react. Medium wave keel \u2013 Base = 5 1/8\u201d Depth = 1 13/16\u201d This keel is a little deeper and longer than the large wave keel. For those who really like that centre feel in their quads and for smaller waves; this keel has",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "LITTLE ZAPPER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2013/11/SAM_0911.jpg",
+          "description": "The Little Zappa has been one of my star performing designs the last 6 years and I thought was worthy of being modified and kept alive in my range. What will really make a big, big difference however, is the introduction of the new Thruster Mimic quad fin positions now available in the new Little Zappa. Brooko tested this new quad trailor position and was sold on it. The new positions are a little north of a centre tail fin position but not up as far as normal quad trailors. The big change is that they are much closer to the stringer than the rail- 2\u201d to be precise out from the stringer. They also run parallel with the stringer just as a centre fin does. They should still be the same size as the standard trailor the result is they pivot more like a thruster, but grip better and go faster like a quad- best of both really. This fin choice is for the days where there is little wall on the w",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "THE PSEUDO FISH",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/PseduoFish-Back.jpg",
+          "description": "THE PSEUDO FISH 2012 I remember way back in 92 watching a vid shot by Martin Daley up in the bridge of Indies one while anchored in the Key hole at Lances. It was of Tom Curren riding a Tommy Peterson fireball fish in solid 10 waves at Bower off the Hinakos. Anyone else would have been going sideways but we are talking Curren here! He nursed the thing through some mind boggling barrels and I remember Daley saying, \u201c you watch, I bet once people see this footage, fish boards will become all the rage\u201d. I scoffed at the time but sure enough the fish became the alternative to the all too thin and narrow Slater inspired Merricks that were sinking to the bottom for most of the punters that blindly chose Kelly\u2019s path . Consequently I came out with my own fish not long after. At this point in time most surfers were one board punters as the notion of a quiver was not affordable and in most minds,",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "THE BAT TAILED QUAD TOW",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/01/tow1.jpg",
+          "description": "THE BAT TAILED QUAD TOW Originally I made this board for Ry Craike for up north WA four or 5 years back and we refined it together to where it is today. Although Ry has moved on the design is still blowing away all that strap themselves in. I have made a few for other notables like Joel Parkinson, Mick Fanning, Brooko, Ryan Hipwood, Jeff Rowley and Antman to name only those that I can remember. The feedback has all been positive with one complaint from Hippo saying that Shipsterns had its measure. Apparently when he got launched by that step he reckons landing a quad safely is a lot harder than a central finned thruster. Two fins on each rail means you have to land both wheels at a time which is not easy when staring down what evil is up ahead. On the other hand Yanabe Bombie in SA was he said, the perfect tow wave for the Bat tailed quad with its big long open faced walls he reckons he ",
+          "board_category_slug": "step-up-gun"
+        },
+        {
           "name": "THE BOTTOM FEEDER",
-          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/BottomFeeder-Back.jpg",
-          "description": "Murray Bourton thruster designed for scraps and everyday waves — one of Bourton Shapes' most successful boards, praised for paddle power, fin setup versatility, and all-around performance.",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/Feeder1.jpg",
+          "description": "THE BOTTOM FEEDER The goal with the Bottom feeder is to appeal to the surfer who has ignored the fish angle for small waves and offer him a very high performance small wave thruster along the lines of what the pros would pull out when it is tiny. Luke Munro gave me some great feedback on a groveller that I made him for Europe and Brazil the year he requalified, so I thought it prudent to start with his file as a base to design from. Luke has always liked his concaves deep and with this shortie we deepened it even more \u2013 6 mm in front of the fins with a slight double built in but not overpowering. The principal of having the deepest section of the concave between the front and back feet is obviously because this is where all the pressure is exerted and the kickback lift when rail to railing helps keep the board on the surface when there is little or no speed in the wave force itself. It i",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Can Opener",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/11/CanTop.jpg",
+          "description": "I do not know if you could open a can with this, perhaps it looks more like a bottle opener. Anyway the name is as impulsive as the design. My first quad was a flat decked stepped rail Bat Fish and was a great success. A few years later the 7S fish came out with a similar deck and rail shape. The Bat fish still has more than a few stalwarts that will ride nothing but, even though this design has been superseded long ago. I think it has a lot to do with the dead flat deck. After dealing with over sensitive rolled decks common to most high performance thrusters, it is a welcome relief when you jump to your feet on a flat deck as it is so forgiving particularly if you are not spot on to the stringer with your footing. \u00a0 The Can opener is basically a modern version of the old Bat Fish which I have always thought deserved some second wind. The dimensions of this can opener is 5.6 x 20 \u00bd x 2 1",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Creeping Jesus",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/11/CJsidev.jpg",
+          "description": "The name for this little afterthought came out of nowhere. After shaping the tail in and standing back and having a good look, I thought there was something rather biblical about the tail shape, so I called it the \u201cCreeping Jesus\u201d. Some might say it is an exaggerated Lost Rocket tail \u2013 which it probably is, but that is not where it came from. I like a tight corner and I also like the flow of a round tail and this is an attempt at putting the two opposites together and seeing what happens. For this design I went to my most popular fish which of late has been the Little Zappa, and worked off its successful DNA which was its rocker, lateral bottom shape and to a lesser degree its plan shape. I then set about changing its plan shape mainly in the back half so as to accommodate this weird tail. The nose area on the little Zappa was just right but the back half needed to be straightened out to",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Cutter",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/05/Cuttertwist1.jpg",
+          "description": "The Diamond Cutter has evolved from the success of the Bullet series and the need for some variation. I have always fancied the soft diamond tail as a tail with multi functions. Firstly it has a corner to lever off but if you round it a tad it sort of falls between a rounded pin and a rounded square tail with DNA from both. I think the success of the Bullet series was partly due to the easy pivot of the round tail so I did not want to divorce from that feel totally. Punctuating a tail with a corner reduces the curve in the back half of the plan shape which in turn helps face hug but can stiffen the board a tad. Being a quad this is not a biggy and if anything encourages this board into even bigger waves. The Diamond Cutter has the same dimensions as the Silver but is a little thicker on the stringer, but has the same rail thickness which has been achieved with a little more deck roll. Al",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Double Ender",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2014/10/SAM_0786.jpg",
+          "description": "OUT OF THE THE BOX \u2013 6.1 DOUBLE ENDER 6.1 x 21 x2 11/16 35.5 This board was a chop down of one of my Little Pirate models. It has a concave all the way through the guts and is punctuated by a short deepish vee out the tail. The rails have a little bulk in them as do the traditional double enders. The nose rocker is minimized but that is subsidised with more tail lift. With a little lean toward some of Neil Purchase Juniors designs I thought this board deserved a 2+1 option. The bigger alpha single fin can be moved up close to the front fins if warranted in order to get maximum pivot in the waves where there is not much wall going on. In quad mode this board will surf like the Pirate since it shares the DNA ,which will provide plenty of speed and manoeuvrability . This particular board would float a guy from 80 to 90 kilos. I have given the board a bit of a retro look with a loose type ra",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "THE EPS DIXI SPOON",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/05/IMG_0308.jpg",
+          "description": "Perhaps you could call this board a real hybrid in the true sense of the word. It certainly looks like one, but indeed does not surf like one. By all reports those that have surfed the Dixi Spoon say it surfs like a performance short board more than a hybrid fish. There are a few integral reasons for this not the least the use of EPS to keep it light and buoyant. I couldnt help making this simple looking little plank out of EPS since it is primarily a small wave runner and ripper. Not being so much on the wide side, I figured it needed all the float it could get coz most will want to ride this board short! Also the Dixi has a wider and flatter nose for the rest of its body which for one helps paddle and secondly creates the more parallel plan shape that is the main feature of this design inspired by the current paddle pop plan shapes we are seeing emerge of late. Perhaps the mechanism cr",
           "board_category_slug": "shortboard"
         },
         {
-          "name": "THE STUB FEEDER",
-          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2014/11/SAM_08891.jpg",
-          "description": "Stubbier evolution of the Bottom Feeder thruster line — tuned for responsive shortboard performance outside the scraps it was originally named for.",
+          "name": "THE FASHION VICTIM",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/05/SAM_06391.jpg",
+          "description": "Ever since Dane came out with the Diver Dumpster and Kelly his Wizard Sleeve; the concept of the normal thruster plan shape had, I think changed forever. The lust for shortness made wider noses more user friendly that could be controlled from the tail easier, as the board was now short enough to throw around even when front heavy. My quads had already moved in that direction as they had no problem with having wider noses because they were looser by nature (twin fin family) and because of the position of the rear fins (further up) that allow a surfer to turn from further forward. In addition the wider tails had more bight because they had 2 fins out to the rail that gripped the face more effectively than the thruster. This meant that a quad with a wider tail could be surfed in bigger waves than a thruster with a wide tail. Contrary to my beliefs \u2013 along comes a new generation, led particu",
           "board_category_slug": "shortboard"
         },
         {
-          "name": "THE THOROUGHLY MODERN BAT",
-          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2015/12/FIBat.jpg",
-          "description": "Updated Baby Bat hybrid drawing on late-forties Mini Simmons roots — a modern bat template that still feels lively and forgiving underfoot.",
+          "name": "THE FAT BULLET",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/01/fatbuldeck.jpg",
+          "description": "THE FAT BULLET The Fat Bullet is a hybrid in the true sense of the word; a mix of the old and new, which demonstrates that blends such as this, can be truly successful. To date the Fat Bullet has been my most successful model through 2010 and 2011 and probably needs minimal modification for 2012. For those wanting to go shorter and carrying a bit of weight the Fat Bullet is the ticket. This year\u2019s model has a rear centre fin mainly for the use of the new mini keel stabilizer Murray has introduced or also, if need be, the opportunity to ride it as a thruster. Perhaps the most noticeable feature of this model is the cathedral hull positioned under the nose which is designed to lift the front half of the board and makes it twice as forgiving with forward rail catching or pearling. In addition it increases the paddle power two fold with its hydrodynamic lifting action allowing the paddler to",
           "board_category_slug": "hybrid"
         },
         {
           "name": "The KNOB",
-          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/02/knob.jpg",
-          "description": "Experimental Bourton Shapes design from Murray Bourton's winter design sessions — a distinctive shortboard concept built when the factory slows down.",
-          "board_category_slug": "other"
-        },
-        {
-          "name": "HardNFast",
-          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/03/TBBanner2.jpg",
-          "description": "High-tech, high-performance shortboard developed with Murray Bourton and team riders — built for speed and strength using advanced construction and materials.",
-          "board_category_slug": "shortboard"
-        },
-        {
-          "name": "THE EPS DIXI SPOON",
-          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/05/IMG_0318.jpg",
-          "description": "EPS hybrid that rides like a performance shortboard despite its spoon-influenced outline — the Dixi Spoon blends hybrid looks with shortboard agility.",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/02/NOB-DECK.jpg",
+          "description": "Clearly I have had some time on my hands of late! Come late December all the factories empty out and all the sanders and glassers do a runner, so it is a good time to settle and do some thinking on the design side. I still have not gotten over the success of the more parallel plan shape theory and new designs like my Stinger model that is getting rave reviews. So I guess I am not entirely finished with the concept. Years back I designed a board with the flyer up front in order to get area forward, but not at the very tip. The thinking there was a paddle concept, since we all know the more area you have forward the better the board will paddle and the flyer was there to suddenly reduce the area at the end so it did not feel too front heavy. Likewise with the flyer at the rear doing the same thing \u2013 reducing the tail area as to take pressure off the fins. Wind the clock forward 8 years and",
           "board_category_slug": "hybrid"
+        },
+        {
+          "name": "THE LEDGE TAMER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/LedgeTamer-Back.jpg",
+          "description": "THE LEDGE TAMER Murray Bourton is no stranger to the power of reef breaks all around the world and is under no illusion what constitutes good design for such waves. Off the back of his recent success with the Reef Swallow, Muzz has come up with another idea that may interest some of those maniacs who relish the drop, in the gnarliest waves that can be found. In the last few years some reef breaks that were previously considered wilful suicide, have now been challenged, particularly by those who are not only very talented but also have as a commonality, a rather large scrotum and unusually small brain. Nevertheless I see them as a market, albeit a rather small one, and perhaps only a temporary one at that; due to the inevitable tally that these type of waves will take! To describe these waves that are much sort after by these maniacs- one word comes to mind ;\u201cledge\u201d. Basically short sharp",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Little Pinger",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/10/oob1.jpg",
+          "description": "I had some smaller diagonal stringered fused pellet EPS blanks left over that were seconds that had been lying around and getting in my way. So I decided to just make something out of them for myself. The longest I could get out of them was 5.9 and the widest 21 3/8 and the thickest 2 3/4. So be it, so proceeded to make a paddler primarily and secondly something I could zip around on when it was small. Perhaps people do not understand that you actually need a better paddler in smaller waves than you do in bigger more powerful waves particularly if you are not whippet fit. You are at the bottom of a wave expected to do something before you even know it in small stuff, so you gotta get to your feet real quick. First and foremost, knowing my canvas was limited, I made the nose lift very flat \u2013 3 3/8\u201d and blew the nose width out to 17 3/16\u201d. Again for paddle put a cathedral hull under the no",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "THE LITTLE PIRATE",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2013/02/SAM_0016.jpg",
+          "description": "Perhaps it is the environment that I have been designing for that has some influence on this design; and that is one where good waves are definitely a finite resource. I see so many guys scratching for waves on small performance thrusters amongst a pack of silver bearded 60 year old mal riders that have given up any hope of retaining the moves of their youth in order to keep up their stoke with a big wave count. I am sure that this is happening everywhere as the surf demo graph is aging but still turned on by the thrill of sliding along on one of nature\u2019s best gifts to mankind. The Little Pirate is an overture to those young thruster tragics- being a design that is not too bulbous and well within the range of being a board they can cut loose with and still retain a decent wave count. This model has the DNA of the Brooko MK2 which has all the high performance necessities but has been wide",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "THE MISSILE",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2013/08/themissile.jpg",
+          "description": "LONGBOARDERS . PASS THIS UP AT YOUR PERIL !!!! The 5 year success of the Bullet series has been a great ride and has had me design 3 different types to suit all comers. There had been many crew who were almost enticed to come down from the luxury of their Mals and try one of the bigger Fat Bullets but even they were not quite big enough for most of them. I think you become addicted to the ease of catching waves on those things and they are hard to come down from. Certainly they all would love a board that encourages them to turn and do some more exciting stuff off the top, and all with more free speed than their planks will ever deliver. ENTER THE MISSILE I thought this name was rather apt since the design is basically just a much bigger Bullet. I had drawn a line with the size of the fat bullet prior to the missile mainly because it was very difficult to source a blank this wide and thi",
+          "board_category_slug": "step-up-gun"
         },
         {
           "name": "The Modern Slick",
           "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/07/Slick.jpg",
-          "description": "Stalwart tri-fin thruster in Murray Bourton's range for over half a decade — updated with extra volume as competitors trend wider and more liter-forward.",
+          "description": "The slick has been a stalwart of my tri fin range for more than half a decade and has seen its competitors trending fatter and wider- so it is time now for the slick to indulge and put on a few litres as well. The rocker of the Slick has been my most curvy and lights up in hollow power and subsequently I have always maintained that if you have a good rocker- don\u2019t mess with it, unless you want to change the DNA of the particular design. The Slick\u2019s performance rocker is supported by a deepish single double concave that has worked well in unison. This I have not changed! What I have changed is the width and thickness and widened the nose a little more disproportionally. I have made the tail wider and a little more thumbish and caved into using future fins for that little more ping from minimal fin base roll during high pressure turns. In effect the new Slick will encourage those who want ",
           "board_category_slug": "shortboard"
         },
         {
+          "name": "The Fanger",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/05/fangpic11.jpg",
+          "description": "Perhaps the ugliest board I have designed thus far, but the way this thing goes you could liken it to one of those hell bodies that need a paper bag over its head. Sometimes there are ideas that you have where function overules aesthetics and with the Fanger this was certainly the case. I have been working on this left of centre design over the past 5 years and have made numerous versions. It was a struggle to design because of the slice variation at either end and I have had to go a little more subtle in order to smooth the bumps from the rail shoulder line I can say that after all the testing and tweeking it is now ready for offering as one of my models. The last prototype of the Fanger taken up by Ralf Faint of Lennox as part of my R&D Aliance Program helped with the final touches. The concept is to have a really thick tail that bights. The benefit of this is that you can keep running",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "THE PICK POCKET",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2012/08/PocketLogo.jpg",
+          "description": "First of all there is a story behind the name of this model which probably needs to be explained before I get into the technical. My label consists of about 20 different models which is probably nearly too many. These days however, there are so many different categories available since the market has diversified so much that you cannot possibly incorporate every type of design in your range. I had been asked by a loyal customer to design him a board similar to the Lost \u201cSub Scorcher\u201d. At the time I had not heard of the design (he was a good mate so I made the effort) so I went into my old shop at Cooly to check one out so I could get an idea what he was on about. Being a shaper I am always packing a tape measure so I ran a few measurements over the thing so I could get close enough to keep him happy. I know Matt Biolos personally, so I know he wouldn\u2019t give a shit just like I wouldn\u2019t, i",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Poppa Pinger",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2013/02/IMG_7104.jpg",
+          "description": "\u201c Father to the Little Pinger\u201d I made this board off the back of the success of the original 5.9 Pinger I made myself a few months back. I thought it would be a stretch me riding a 5.9 but besides the first session I got used to it pretty quick and found that it paddles as well as my 6.3 Zappa poly. The tail was very wide particularly for me (have skinny feet) and when I first surfed it with the normal quad set up \u2013 bigger fins up front and smaller in the rear, I could not get enough projection out of it \u2013 so I swapped the bigger fins into the back and smaller ones up front and it came alive. I then added a nubster low profile keel and it went even better. It was clear to me to ride wide tails any good you have to be a gorilla which helps you hold that tail down long enough to get a reaction. The fin swap just allowed me to go back and sit over those alpha rears and push off them and the",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "THE REEF SWALLOW",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/REEF-PROFILE.jpg",
+          "description": "THE REEF SWALLOW The swallow tail the last 15 years has been relegated in most minds as a tail for a wide short fish designs only. The Pro Tour\u2019s taste for rounded squares in small waves and rounded pintails in bigger waves has blindsided the public\u2019s perception of the great functions of the swallow tail, to the point where except in fish designs, they are almost extinct in mid range and semi guns entirely. Perhaps the reasons for the Tour to abandon the swallow early in the peace was that most contests back then were in shitty waves in which swallow tails feel too positive and stiff, whereas the rounded square was the perfect compromise for these waves and to this day the marketing power of the tail of choice of the Pros has ruled supreme. It is true that swallow tails work well in tiny waves if they are very wide hence the fish tail: and this is primarily because there are no alternati",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "THE SEXY FISH",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/SexyFish-Back.jpg",
+          "description": "THE SEXY FISH 2012 The Sexy Fish has been around for a couple of years and has been eclipsed by the Little Zappa and the Bullet series so much so I felt pity for the design and decided to sex it up a little more. The original design was aimed at those who were basically fish heads who wanted more out of their fish than just trimming at high speeds with an arched spine and hair streaming in the breeze. Most fishes were twin fins which lacked drive so to compensate their rockers were very straight which impeded their freedom in the hollower parts of a wave and also restricted vertical moves. The Sexy is basically a quad (although this year it is a 5 finner) which has automatic speed : like all quads have, so I have given this fish a little more tail flip to free it up the face and allow it to fit a little more comfortably in hollow sections. The sexy has a forward hull similar to the Bulle",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "THE SILVER BULLET",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/SAM_0626.jpg",
+          "description": "The Silver Bullet was created back in 2009 and has become my best seller. Due to its popularity I gave this little baby a face lift a while back. The Silver was born from the need for a thinner narrower Fat Bullet which was the first Bullet hatched whicht was aimed specifically at the heavier guy who wanted to go short with confidence. The Fat Bullet had a flat deck with a soft stepped down rail and the Silver was similar although slightly more rolled on the deck. \u00a0 \u00a0 \u00a0 \u00a0 \u00a0 \u00a0 I kept all the same dimensions but rolled the deck down even more to a more performance type rail to make it more appealing to those above average rippers who previously would have passed this design up as something too left field. The planshape has also received a makeover with a little more area forward and back to add a tad more balance. Have a listen here to \u201cThe Hogs\u201d breakdown of the board and see it in action",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "THE SKINNY BULLET",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2011/12/SkinnBullet-Back.jpg",
+          "description": "THE SKINNY BULLET The skinny bullet is basically the fat bullet on a diet. It is narrower and thinner. Again modelled off the success of the high performance Brooko roundtail quad the Skinny is designed for those who want a medium type of width and a flat deck as has the fat version but thinner on the stringer. As I have said in the past you can add width to quads without any negatives, so by some standards even the skinny bullet still may seem wide but I push for the punter to go shorter rather than narrower as the design is a great paddler anyway. The bottom shape is slightly different in the tail area but still retains the centre concave and nose hull. The Fat Bullet has a longer deeper vee in the tail that falls into a concave over 2 feet up from the tail. Being so wide and having a deep concave forward the Fat Bullet needs a longer vee to control the excess width. The Skinny Bullet ",
+          "board_category_slug": "step-up-gun"
+        },
+        {
           "name": "THE SNUB FEEDER",
-          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/09/Snub637x365.jpg",
-          "description": "Snub-nosed feeder design from Murray Bourton — a pivot in Bourton Shapes' small-wave hybrid thinking inspired by classic and modern performance references.",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2016/09/Snub3.jpg",
+          "description": "The world of surfboard design is from my point of view a very predicable beast punctuated at rare intervals by u turns in thought generated by something profound; be it Tom Curren riding a tiny fish in solid Indo or even Simon at Belles. One thing is sure; when it turns it goes extreme in a particular direction until over time the extremes fail and compromise wins over. The Snub feeder is a compromise. The stampede for short boards of late has seen all sorts of bloated stubby sleds appear on the market and indeed I have a few amongst my model range as well, but the thought with the Snub Feeder was simple! The Bottom Feeder model has been one of my most successful high performance thrusters and a lot of its success is due to its rocker and lateral bottom shape. I have another Feeder called the Stub Feeder- a five finner which is basically just a shorter wider version. The thinking with th",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "THE STEP UP",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2015/02/SAM_1191.jpg",
+          "description": "This Step Up model is a modern day replacement of my Indo Gun model which has been a perennial in my range for over 15 years. Although it has evolved over time and still to date; really is for those who like the contemporary semi guns that are concaved, rockered up and pulled in the tail. Having said that; it still needed to be living firmly in the year of 2015 -so more tweaks were necessary. Firstly I have lowered the nose entry a tad and added that back in tail lift. Also widened the nose somewhat as well as the tail with the thought of a quad option for real serious stuff. The bottom contour is a deepish single concave through the belly and the fins relieved by a sudden short little vee out the tail to help release all that water trapped in the concave out a pinch earlier. All in all- now a cutting edge semi gun ripe for that OS trip where you want the perfect board for that perfect b",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "THE STINGER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2014/06/bottom.jpg",
+          "description": "Of late there has been interest in a more parallel type of planshape. An extreme example of this can be seen with Daniel Thompsons square nose Firewire where the planshape is very straight and is punctuated at the nose end with a chiselled off nose. The chisel thing caught everyone\u2019s attention but was probably not necessary. I think they have since rounded it off, but it certainly got tongues wagging. Indeed the parallel thing is not new as the Malibu designs back yonder were very parallel and would just keep on trimming through white water because once on rail they had no plan shape friction. Perhaps their shear length added to this as well but nonetheless it is true that too much planshape curve through the middle has a board continually in turn mode, and it is difficult to set the rail into a meaningful trim. Additionally more parallel plans tend to hold to the face better and do not ",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "THE STUB FEEDER",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2014/11/SAM_08811.jpg",
+          "description": "The Bottom Feeder has been one of my most successful thrusters to date, only it has not been successful for the purpose it was actually designed for. The name insinuates the intention to have a board that worked well in the scraps, but while it was only moderately successful in this endeavour, it turned out to be red hot in the juice. It was too late to change the name so it just stuck, even though it did not bare relevance. In its defence however, not long after it was designed, surfboards in general moved out of the box and went radically short and wide making the Feeder look just like another high performance thruster which by this time; it basically was! The rocker, small box rail, deepish single double concave and planshape hip all worked so well it was imperative not to destroy this DNA when redesigning this board to finally live up to its name in smaller waves. Enter the \u201cStub Bot",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "THE THOROUGHLY MODERN BAT",
+          "image_url": "https://www.bourtonshapes.com/wp-content/uploads/2015/12/CLOSE-UP-OF-TAIL-FROM-THE-BOTTOM.jpg",
+          "description": "The Baby Bat to my way of seeing things was looking somewhat outdated- time to discard the nappies, and although its origins were from a hybrid Mini Simmons designed in the late forties, it still however, felt really good under foot for all that tried it . Regardless there were aspects that I thought it needed to unshackle. It is not uncommon for a surfboards model name to refer to its tail shape, particularly one as dynamically different as the Bat tail. There are in fact many unique aspects to this previous model beside its actual tail shape worthy of comment. Going forward the Modern Bat has taken on a more modern hybrid profile exiting the pronounced S deck and with some added tail lift and tail width in order to bring it up to date with what is currently on the market.In addition I designed in the obligatory concave through the belly where previously it was an old styled rolled vee ",
           "board_category_slug": "hybrid"
         }
       ]
