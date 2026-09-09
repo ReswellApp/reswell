@@ -1,0 +1,42 @@
+{
+  "generated_for": "Doug Schroedel / Schroedel Surfboards official named standup catalog",
+  "source": "http://www.schroedel.com/Surfboard%20Dynamics%20Swallow.htm and http://www.schroedel.com/Surfboard%20Dynamics%20Fish.htm (official Schroedel Surfboard Dynamics model lineup — excludes generic tail categories, custom guns, surfwear, and order forms)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "doug-schroedel",
+      "name": "Doug Schroedel",
+      "website_url": "http://www.schroedel.com/Schroedel%20Surfboards%20Home.htm",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Doug Schroedel",
+      "lead_shaper_name": "Doug Schroedel",
+      "short_description": "Schroedel Surfboards has shaped custom boards since 1973 in Santa Cruz, Hawaii, and Japan — from contemporary shortboards and fish to classics and big-wave guns.",
+      "models": [
+        {
+          "name": "S-Needle",
+          "image_url": "http://www.schroedel.com/images/62swsmalla.jpg",
+          "description": "Named swallow-tail fish design from Schroedel's Surfboard Dynamics lineup — built for smaller, tighter, flatter surf with a straighter rail line from the wide point to the wing for carve and release.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rythym",
+          "image_url": "http://www.schroedel.com/images/Bradfish20%25.jpg",
+          "description": "Schroedel fish model listed on the official Swallow Tail and Fish design pages — fast summer flymachine shapes tuned for smaller surf with swallow-tail control.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Baby Swallowtail",
+          "image_url": "http://www.schroedel.com/images/5%2011%20sw%20aqua%20yellow%2025%25.jpg",
+          "description": "Compact Baby Swallowtail fish from Doug Schroedel's Surfboard Dynamics catalog — a swallow-tail design for tight, flatter waves with the signature Schroedel fish feel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "L-Star",
+          "image_url": "http://www.schroedel.com/images/SCHRODEL%20LOOSTAR%20.jpg",
+          "description": "L-Star fish model from Schroedel Surfboards' official dynamics pages — a named swallow-tail design for fast, responsive riding in small to medium surf.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
