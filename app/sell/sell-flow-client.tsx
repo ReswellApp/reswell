@@ -14,7 +14,13 @@ import { createPortal } from "react-dom"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-import { purgeListingImageStorageAction } from "@/lib/actions/listingImageStoragePurge"
+import { saveDefaultListingLocationClient } from "@/lib/sell-flow/save-default-listing-location-client"
+import {
+  applyPublishedListingSideEffectsClient,
+  purgeListingImagesClient,
+  revalidateListingMutationClient,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import { peerListingEditHref } from "@/lib/peer-listing-sections"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -120,7 +126,6 @@ import {
 } from "@/lib/sell-flow/sell-submit-error"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
-import { applyBoardListingPublishedSideEffectsAction } from "@/lib/actions/boardListingPublishActions"
 import {
   logSellForkToFull,
   logSellForkToQuick,
@@ -146,9 +151,6 @@ import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
-import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
-import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
-import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import {
   readSellSavedListingLocations,
   rememberSellSavedListingLocation,
@@ -2876,16 +2878,9 @@ function SellPageContentInner({
     removedIds: string[],
   ): Promise<{ nextSlots: ListingPhotoSlot[]; didInsert: boolean }> {
     if (removedIds.length) {
-      const purge = await purgeListingImageStorageAction({
-        listingId,
-        imageRowIds: removedIds,
-      })
-      if ("error" in purge) {
-        throw new Error(
-          typeof purge.error === "string"
-            ? purge.error
-            : "Could not remove old photos from storage.",
-        )
+      const purge = await purgeListingImagesClient(listingId, removedIds)
+      if (!purge.ok) {
+        throw new Error(purge.error)
       }
       await supabase
         .from("listing_images")
@@ -3229,7 +3224,7 @@ function SellPageContentInner({
       function persistDefaultListingLocalityForProfile() {
         if (listingImpersonation) return
         if (!boardLocationCity) return
-        void saveDefaultListingLocationAction({
+        saveDefaultListingLocationClient({
           city: boardLocationCity,
           state: (boardLocationState ?? "").trim() || undefined,
           lat: boardLocationLat ?? undefined,
@@ -3284,7 +3279,7 @@ function SellPageContentInner({
 
       let listingId: string | null = effectiveEditId
       let listingSlug: string | null = null
-      let usedImpersonationListingApi = false
+      let listingPersistedViaApi = false
       let publishedDraftNeedsSideEffects = false
       const isLocalOnlyServerDraftSubmit = Boolean(localServerDraftId && !editId)
 
@@ -3350,87 +3345,60 @@ function SellPageContentInner({
         }
 
         if (ownerEditsOwnListing) {
-          let publishSlug: string | null = null
           const publishingFromDraftRow = listingIsDraft || isLocalOnlyServerDraftSubmit
-          if (publishingFromDraftRow) {
-            publishSlug = await generateUniqueListingSlug(supabase, resolvedListingTitle)
-          }
-          const updatePayload = {
-            ...editListingFields,
-            updated_at: new Date().toISOString(),
-            ...(publishingFromDraftRow
-              ? {
-                  status: "active" as const,
-                  hidden_from_site: false,
-                  site_visibility_reason: null,
-                  slug: publishSlug ?? undefined,
-                }
-              : {}),
-          }
-          const persistOwnerListingUpdate = async () => {
-            let { data: updated, error: updateError } = await supabase
-              .from("listings")
-              .update(updatePayload)
-              .eq("id", effectiveEditId)
-              .eq("user_id", user.id)
-              .select("slug")
-              .single()
-            if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
-              if (process.env.NODE_ENV === "development") {
-                console.warn(
-                  "[sell] DB rejected legacy listing dimension columns; saved without them. Ensure migrations are applied.",
-                )
-              }
-              const retry = await supabase
-                .from("listings")
-                .update({
-                  ...withoutListingDimensionDisplayDbFields(editListingFields as Record<string, unknown>),
-                  updated_at: new Date().toISOString(),
-                  ...(publishingFromDraftRow
-                    ? {
-                        status: "active" as const,
-                        hidden_from_site: false,
-                        site_visibility_reason: null,
-                        slug: publishSlug ?? undefined,
-                      }
-                    : {}),
-                })
-                .eq("id", effectiveEditId)
-                .eq("user_id", user.id)
-                .select("slug")
-                .single()
-              updated = retry.data
-              updateError = retry.error
+          const ownerImageOps: {
+            id?: string
+            url?: string
+            thumbnail_url?: string | null
+            is_primary: boolean
+            sort_order: number
+          }[] = []
+          for (let i = 0; i < images.length; i++) {
+            const img = images[i]
+            if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {
+              throw new Error(`Photo ${i + 1} is still uploading. Wait or retry before saving.`)
             }
-            if (updateError) {
-              // Keep the raw abort so retryOnceOnSellSubmitAbort can catch it.
-              if (isSellSubmitAbortError(updateError)) throw updateError
-              throw new Error(sellSubmitErrorMessage(updateError, "Failed to update listing"))
-            }
-            return updated
+            ownerImageOps.push({
+              id: img.id,
+              url: img.url,
+              thumbnail_url: img.thumbnailUrl,
+              is_primary: i === 0,
+              sort_order: i,
+            })
           }
-          const updated = await retryOnceOnSellSubmitAbort(persistOwnerListingUpdate, {
-            delayMs: 400,
-            onRetry: async () => {
-              await resolveClientSessionForMutation(supabase)
-            },
+          listingPersistedViaApi = true
+          goSubmitStep(1)
+          const updated = await updateOwnedListingViaApi({
+            listingId: effectiveEditId,
+            listing: editListingFields,
+            removedImageIds,
+            images: ownerImageOps,
+            removedVideoIds,
+            videos: readyVideo ? [readyVideo] : [],
+            catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
+            publishFromDraft: publishingFromDraftRow,
           })
-          listingSlug = updated?.slug ?? null
+          if (!updated.ok) {
+            throw new Error(sellActionErrorMessage(updated.error || "Failed to update listing"))
+          }
+          listingSlug = updated.slug
           listingId = effectiveEditId
-          persistBoardCatalogSnapshot(effectiveEditId, user.id)
+          if (updated.published === true) {
+            setEditListingStatus("active")
+          }
           if (publishingFromDraftRow) {
             requestKlaviyoListingCreated(effectiveEditId)
-            // Search-index / merchant sync runs after images are synced below.
             publishedDraftNeedsSideEffects = true
           }
           clearSellServerDraftListingId("surfboards")
+          goSubmitStep(2)
         } else if (adminEditsOtherListing) {
           if (!editId || !editListingOwnerId) {
             throw new Error("Listing is still loading. Try again in a moment.")
           }
           await ensureImpersonationForListingOwner(editListingOwnerId)
           setImpersonation(getActiveImpersonationClient())
-          usedImpersonationListingApi = true
+          listingPersistedViaApi = true
           goSubmitStep(0)
           const imageOps: {
             id?: string
@@ -3531,7 +3499,7 @@ function SellPageContentInner({
         }
 
         if (listingImpersonation) {
-          usedImpersonationListingApi = true
+          listingPersistedViaApi = true
           goSubmitStep(0)
           const imagePayload = listingImagesPayloadForApi()
           if (imagePayload.length !== images.length) {
@@ -3656,11 +3624,7 @@ function SellPageContentInner({
             }
           }
           requestKlaviyoListingCreated(String(listing.id))
-          await applyBoardListingPublishedSideEffectsAction(String(listing.id)).catch((err) => {
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[sell] publish side effects:", err)
-            }
-          })
+          applyPublishedListingSideEffectsClient(String(listing.id))
           goSubmitStep(2)
         }
       }
@@ -3677,30 +3641,16 @@ function SellPageContentInner({
       if (listingId) {
         if (!editId && !listingImpersonation) {
           if (publishedDraftNeedsSideEffects) {
-            await applyBoardListingPublishedSideEffectsAction(listingId).catch((err) => {
-              if (process.env.NODE_ENV === "development") {
-                console.warn("[sell] publish side effects:", err)
-              }
-            })
+            applyPublishedListingSideEffectsClient(listingId)
           }
           void clearSellListingDraft(user.id)
           persistDefaultListingLocalityForProfile()
           dismissUploadProgressToast()
-          void revalidateListingDetailAfterListingMutation({
+          revalidateListingMutationClient({
             listingId,
             slug: listingSlug,
-          }).catch((err) => {
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[sell] listing-detail cache revalidation:", err)
-            }
+            navSearch: revalidateNavSearchOnSuccess,
           })
-          if (revalidateNavSearchOnSuccess) {
-            void revalidateNavSearchSuggestAfterListingPublished().catch((err) => {
-              if (process.env.NODE_ENV === "development") {
-                console.warn("[sell] nav search suggest cache revalidation:", err)
-              }
-            })
-          }
 
           logSellFunnelEvent({
             listingType: "surfboards",
@@ -3729,7 +3679,7 @@ function SellPageContentInner({
           setLoading(false)
           return
         }
-        if (editId && !usedImpersonationListingApi) {
+        if (editId && !listingPersistedViaApi) {
           const willSyncNewPhotos = images.some((im) => !im.id && im.url)
           if (willSyncNewPhotos) goSubmitStep(1)
           await retryOnceOnSellSubmitAbort(
@@ -3754,11 +3704,7 @@ function SellPageContentInner({
           goSubmitStep(2)
         }
         if (publishedDraftNeedsSideEffects) {
-          await applyBoardListingPublishedSideEffectsAction(listingId).catch((err) => {
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[sell] publish side effects:", err)
-            }
-          })
+          applyPublishedListingSideEffectsClient(listingId)
         }
       }
 
@@ -3767,21 +3713,11 @@ function SellPageContentInner({
       persistDefaultListingLocalityForProfile()
       dismissUploadProgressToast()
       if (listingId) {
-        void revalidateListingDetailAfterListingMutation({
+        revalidateListingMutationClient({
           listingId,
           slug: listingSlug,
-        }).catch((err) => {
-          if (process.env.NODE_ENV === "development") {
-            console.warn("[sell] listing-detail cache revalidation:", err)
-          }
+          navSearch: revalidateNavSearchOnSuccess,
         })
-        if (revalidateNavSearchOnSuccess) {
-          void revalidateNavSearchSuggestAfterListingPublished().catch((err) => {
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[sell] nav search suggest cache revalidation:", err)
-            }
-          })
-        }
       }
       logSellFunnelEvent({
         listingType: "surfboards",
@@ -4258,7 +4194,7 @@ function SellPageContentInner({
                           })
                           setSavedListingLocations(saved)
                           if (!getImpersonation() && loc.city.trim()) {
-                            void saveDefaultListingLocationAction({
+                            saveDefaultListingLocationClient({
                               city: loc.city.trim(),
                               state: loc.state.trim() || undefined,
                               lat: loc.lat,
@@ -4838,7 +4774,7 @@ function SellPageContentInner({
                           })
                           setSavedListingLocations(saved)
                           if (!getImpersonation() && loc.city.trim()) {
-                            void saveDefaultListingLocationAction({
+                            saveDefaultListingLocationClient({
                               city: loc.city.trim(),
                               state: loc.state.trim() || undefined,
                               lat: loc.lat,

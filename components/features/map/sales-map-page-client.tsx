@@ -1,10 +1,12 @@
 "use client"
 
 import { useMemo, useState, useSyncExternalStore } from "react"
+import Link from "next/link"
 import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { ArrowRight, MapPin, Package, TrendingUp } from "lucide-react"
+import { SalesMapTopSellers } from "@/components/features/map/sales-map-top-sellers"
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
-import { SellerResourcesHero } from "@/components/features/seller-resources/seller-resources-hero"
+import { Button } from "@/components/ui/button"
 import { HOW_TO_SELL_HREF, HOW_TO_SHIP_HREF } from "@/lib/seller-resources"
 import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
 import { BRAND_CTA_BLUE, BRAND_DARK_BLUE, BRAND_DEEP_BLUE } from "@/lib/brand-colors"
@@ -152,7 +154,7 @@ export function UsaSalesFlowMap({
             "relative w-full",
             isCompact
               ? "h-[96px] sm:h-[108px] md:h-[120px]"
-              : "h-[480px] sm:h-[520px] md:h-[560px] lg:h-[600px]",
+              : "aspect-[960/600] min-h-[280px]",
           )}
         >
           <svg
@@ -385,55 +387,77 @@ type SalesMapPageClientProps = {
 export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
   return (
     <main className="flex-1 bg-white">
-      <SellerResourcesHero
-        compact
-        title="Where Reswell orders flow"
-        description="Confirmed sales mapped from seller state to buyer state."
-        primaryCta={{ href: HOW_TO_SELL_HREF, label: "How to Sell" }}
-        secondaryCta={{ href: HOW_TO_SHIP_HREF, label: "How to Ship" }}
-      />
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] xl:grid-cols-[minmax(0,1fr)_22.5rem] xl:gap-10">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5574AD]">
+              Seller Resources
+            </p>
+            <h1 className="mt-3 font-headline text-3xl font-bold tracking-tight text-[#001A4A] sm:text-4xl sm:leading-[1.05] lg:text-[2.75rem]">
+              Where Reswell orders flow
+            </h1>
+            <p className="mt-3 max-w-xl text-base leading-relaxed text-[#5c6b89] sm:text-lg">
+              Confirmed sales mapped from seller state to buyer state.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button
+                asChild
+                className="rounded-full bg-[#001A4A] px-6 font-semibold text-white hover:bg-[#001A4A]/90"
+              >
+                <Link href={HOW_TO_SELL_HREF}>How to Sell</Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-full px-6 font-semibold">
+                <Link href={HOW_TO_SHIP_HREF}>How to Ship</Link>
+              </Button>
+            </div>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard
-            icon={Package}
-            label="Mapped sales"
-            value={data.totals.mappableSales.toLocaleString()}
-            hint={`${data.totals.confirmedSales.toLocaleString()} confirmed`}
-          />
-          <StatCard
-            icon={MapPin}
-            label="States selling"
-            value={data.totals.statesSelling.toLocaleString()}
-            hint="Listing origins"
-          />
-          <StatCard
-            icon={TrendingUp}
-            label="Cross-state"
-            value={data.totals.crossStateSales.toLocaleString()}
-            hint={`${data.totals.statesBuying} buyer states`}
-          />
-          <StatCard
-            icon={ArrowRight}
-            label="Volume"
-            value={formatGmv(data.totals.volumeUsd)}
-            hint="Confirmed gross"
-          />
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              <StatCard
+                icon={Package}
+                label="Mapped sales"
+                value={data.totals.mappableSales.toLocaleString()}
+                hint={`${data.totals.confirmedSales.toLocaleString()} confirmed`}
+              />
+              <StatCard
+                icon={MapPin}
+                label="States selling"
+                value={data.totals.statesSelling.toLocaleString()}
+                hint="Listing origins"
+              />
+              <StatCard
+                icon={TrendingUp}
+                label="Cross-state"
+                value={data.totals.crossStateSales.toLocaleString()}
+                hint={`${data.totals.statesBuying} buyer states`}
+              />
+              <StatCard
+                icon={ArrowRight}
+                label="Volume"
+                value={formatGmv(data.totals.volumeUsd)}
+                hint="Confirmed gross"
+              />
+            </div>
+
+            <UsaSalesFlowMap data={data} className="mt-5" />
+
+            {data.truncated ? (
+              <p className="mt-3 text-center text-xs text-[#5c6b89]">
+                Showing the most recent {data.totals.confirmedSales.toLocaleString()} confirmed
+                sales.
+              </p>
+            ) : null}
+
+            <p className="mt-3 text-center text-xs text-[#5c6b89]">
+              Updated{" "}
+              <RelativeTime iso={data.generatedAt} formatLabel={formatDistanceToNowLabel} /> · New
+              sales added after checkout
+            </p>
+          </div>
+
+          <div className="lg:sticky lg:top-24">
+            <SalesMapTopSellers sellers={data.topSellers} />
+          </div>
         </div>
-
-        <UsaSalesFlowMap data={data} className="mt-6" />
-
-        {data.truncated ? (
-          <p className="mt-3 text-center text-xs text-[#5c6b89]">
-            Showing the most recent {data.totals.confirmedSales.toLocaleString()} confirmed sales.
-          </p>
-        ) : null}
-
-        <p className="mt-4 text-center text-xs text-[#5c6b89]">
-          Updated{" "}
-          <RelativeTime iso={data.generatedAt} formatLabel={formatDistanceToNowLabel} /> · New
-          sales added after checkout
-        </p>
       </section>
 
       <SellerResourcesCta />

@@ -59,10 +59,11 @@ import {
   WETSUIT_LISTING_TITLE_MAX_LENGTH,
   type CreateWetsuitListingInput,
 } from "@/lib/validations/wetsuit-listing"
+import { createWetsuitListingAction } from "@/lib/actions/wetsuitListingActions"
 import {
-  createWetsuitListingAction,
-  updateWetsuitListingAction,
-} from "@/lib/actions/wetsuitListingActions"
+  peerImagesToOwnedUpdateOps,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import { buildWetsuitListingPersistFields } from "@/lib/wetsuit-listing-persist-fields"
 import { computeWetsuitSellSectionCompletion } from "@/lib/wetsuit-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
@@ -751,14 +752,16 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           return
         }
 
-        const result = await updateWetsuitListingAction({
-          ...payload,
+        const updated = await updateOwnedListingViaApi({
           listingId: editId,
+          listing: buildWetsuitListingPersistFields(payload),
           removedImageIds,
+          images: peerImagesToOwnedUpdateOps(payload.images),
           removedVideoIds,
+          videos: payload.videos,
         })
-        if ("error" in result) {
-          const message = sellActionErrorMessage(result.error)
+        if (!updated.ok) {
+          const message = sellActionErrorMessage(updated.error)
           logSellFunnelEvent({
             listingType: "wetsuits",
             event: "publish_failed",
@@ -779,7 +782,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         navigateAfterListingSave(
           listingDetailHref({
             id: editId,
-            slug: result.slug,
+            slug: updated.slug,
           }),
         )
         return

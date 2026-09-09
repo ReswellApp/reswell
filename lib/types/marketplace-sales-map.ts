@@ -40,10 +40,21 @@ export type MarketplaceSalesMapTotals = {
   volumeUsd: number
 }
 
+/** Public seller row for the `/map` leaderboard — no PII beyond the shop profile. */
+export type MarketplaceSalesMapTopSeller = {
+  id: string
+  href: string
+  name: string
+  imageSrc: string
+  salesCount: number
+  shopVerified: boolean
+}
+
 export type MarketplaceSalesMapPayload = {
   flows: MarketplaceSalesMapFlow[]
   stateStats: MarketplaceSalesMapStateStat[]
   recentSales: MarketplaceSalesMapSale[]
+  topSellers: MarketplaceSalesMapTopSeller[]
   totals: MarketplaceSalesMapTotals
   /** Signed-up profiles with a resolvable home state, keyed by two-letter code. */
   userCountsByState: Record<string, number>

@@ -1,5 +1,5 @@
 import { toast } from "sonner"
-import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
+import { revalidateListingMutationClient } from "@/lib/sell-flow/update-owned-listing-client"
 import type { ImpersonationData } from "@/lib/impersonation"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
@@ -31,11 +31,7 @@ async function navigateToPublishedListing(
   listingId: string,
   slug: string,
 ): Promise<void> {
-  void revalidateListingDetailAfterListingMutation({ listingId, slug }).catch((err) => {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("[sell] listing-detail cache revalidation:", err)
-    }
-  })
+  revalidateListingMutationClient({ listingId, slug })
   navigateAfterListingSave(peerListingDetailPath(listingId, slug))
 }
 

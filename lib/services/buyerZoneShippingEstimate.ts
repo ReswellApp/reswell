@@ -1,6 +1,5 @@
-import { lookupUsZipViaNominatim } from "@/lib/geocode/us-zip-lookup"
-import { getGoogleGeocodingApiKey, googleGeocodeUsZip } from "@/lib/maps/google-geocoding-server"
 import { getBuyerZoneEstimateDestination } from "@/lib/shipping/buyer-zone-estimate-destinations"
+import { resolveUsZipShipFrom } from "@/lib/shipping/resolve-us-zip-ship-from"
 import {
   getTopSurfboardShippingRates,
   selectCheapestShippingRate,
@@ -16,7 +15,6 @@ import {
   surfboardShippingPackBandFixedParcel,
   type SurfboardShippingPackBandId,
 } from "@/lib/surfboard-shipping-pack-bands"
-import type { AddressFields } from "@/app/admin/shipping/address-fields"
 
 export type BuyerZoneShippingEstimateResult =
   | {
@@ -31,47 +29,6 @@ export type BuyerZoneShippingEstimateResult =
       zone: ReswellBuyerEstimateZone
     }
   | { ok: false; error: string }
-
-async function resolveOriginFromZip(zip: string): Promise<AddressFields | null> {
-  const five = zip.replace(/\D/g, "").slice(0, 5)
-  if (five.length !== 5) return null
-
-  const nominatim = await lookupUsZipViaNominatim(five)
-  if (nominatim?.city_locality && nominatim.state_province && nominatim.postal_code) {
-    return {
-      name: "Seller",
-      phone: "",
-      company_name: "",
-      address_line1: nominatim.address_line1 ?? "100 Main St",
-      address_line2: "",
-      city_locality: nominatim.city_locality,
-      state_province: nominatim.state_province,
-      postal_code: nominatim.postal_code,
-      country_code: "US",
-      residential: "no",
-    }
-  }
-
-  if (getGoogleGeocodingApiKey()) {
-    const g = await googleGeocodeUsZip(five)
-    if (g) {
-      return {
-        name: "Seller",
-        phone: "",
-        company_name: "",
-        address_line1: g.address_line1 ?? "100 Main St",
-        address_line2: "",
-        city_locality: g.city_locality,
-        state_province: g.state_province,
-        postal_code: g.postal_code,
-        country_code: "US",
-        residential: "no",
-      }
-    }
-  }
-
-  return null
-}
 
 /**
  * Live ShipEngine sample quote for a tier/band carton on a representative zone lane.
@@ -88,7 +45,7 @@ export async function getBuyerZoneShippingEstimate(input: {
     return { ok: false, error: "Pick a shipping size first." }
   }
 
-  const shipFrom = await resolveOriginFromZip(input.originZip)
+  const shipFrom = await resolveUsZipShipFrom(input.originZip)
   if (!shipFrom) {
     return { ok: false, error: "Could not look up that ship-from ZIP." }
   }

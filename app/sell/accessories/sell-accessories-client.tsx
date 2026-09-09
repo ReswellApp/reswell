@@ -64,10 +64,11 @@ import {
   ACCESSORY_LISTING_TITLE_MAX_LENGTH,
   type CreateAccessoryListingInput,
 } from "@/lib/validations/accessory-listing"
+import { createAccessoryListingAction } from "@/lib/actions/accessoryListingActions"
 import {
-  createAccessoryListingAction,
-  updateAccessoryListingAction,
-} from "@/lib/actions/accessoryListingActions"
+  peerImagesToOwnedUpdateOps,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import { buildAccessoryListingPersistFields } from "@/lib/accessory-listing-persist-fields"
 import { computeAccessorySellSectionCompletion } from "@/lib/accessory-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
@@ -856,14 +857,16 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
           return
         }
 
-        const result = await updateAccessoryListingAction({
-          ...payload,
+        const updated = await updateOwnedListingViaApi({
           listingId: editId,
+          listing: buildAccessoryListingPersistFields(payload),
           removedImageIds,
+          images: peerImagesToOwnedUpdateOps(payload.images),
           removedVideoIds,
+          videos: payload.videos,
         })
-        if ("error" in result) {
-          const message = sellActionErrorMessage(result.error)
+        if (!updated.ok) {
+          const message = sellActionErrorMessage(updated.error)
           logSellFunnelEvent({
             listingType: "accessories",
             event: "publish_failed",
@@ -881,7 +884,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        navigateAfterListingSave(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${updated.slug}`)
         return
       }
 

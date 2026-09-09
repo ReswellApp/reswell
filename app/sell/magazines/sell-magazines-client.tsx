@@ -50,13 +50,16 @@ import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-err
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { createClient } from "@/lib/supabase/client"
 import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
+import { createMagazineListingAction } from "@/lib/actions/magazineListingActions"
+import { buildMagazineListingPersistFields } from "@/lib/magazine-listing-persist-fields"
 import {
-  createMagazineListingAction,
-  updateMagazineListingAction,
-} from "@/lib/actions/magazineListingActions"
+  peerImagesToOwnedUpdateOps,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import {
   MAGAZINE_LISTING_MAX_PHOTOS,
   MAGAZINE_LISTING_TITLE_MAX_LENGTH,
+  updateMagazineListingSchema,
 } from "@/lib/validations/magazine-listing"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -450,14 +453,34 @@ export default function SellMagazinesFlow({
       const payload = buildPayload()
 
       if (editId) {
-        const result = await updateMagazineListingAction({
+        const parsedUpdate = updateMagazineListingSchema.safeParse({
           ...payload,
           listingId: editId,
           removedImageIds,
           removedVideoIds,
         })
-        if ("error" in result) {
-          const message = sellActionErrorMessage(result.error)
+        if (!parsedUpdate.success) {
+          const message =
+            parsedUpdate.error.issues[0]?.message ?? "Please check the form and try again."
+          logSellFunnelEvent({
+            listingType: "magazines",
+            event: "publish_failed",
+            message,
+            durationMs: Date.now() - publishStartedAt,
+          })
+          toast.error(message)
+          return
+        }
+        const updated = await updateOwnedListingViaApi({
+          listingId: editId,
+          listing: buildMagazineListingPersistFields(parsedUpdate.data),
+          removedImageIds,
+          images: peerImagesToOwnedUpdateOps(parsedUpdate.data.images),
+          removedVideoIds,
+          videos: parsedUpdate.data.videos,
+        })
+        if (!updated.ok) {
+          const message = sellActionErrorMessage(updated.error)
           logSellFunnelEvent({
             listingType: "magazines",
             event: "publish_failed",
@@ -474,7 +497,7 @@ export default function SellMagazinesFlow({
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Magazine listing updated.")
-        navigateAfterListingSave(listingDetailHref({ id: editId, slug: result.slug }))
+        navigateAfterListingSave(listingDetailHref({ id: editId, slug: updated.slug }))
         return
       }
 

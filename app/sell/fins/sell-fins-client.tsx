@@ -53,10 +53,11 @@ import {
   FIN_LISTING_MAX_PHOTOS,
   FIN_LISTING_TITLE_MAX_LENGTH,
 } from "@/lib/validations/fin-listing"
+import { createFinListingAction } from "@/lib/actions/finListingActions"
 import {
-  createFinListingAction,
-  updateFinListingAction,
-} from "@/lib/actions/finListingActions"
+  peerImagesToOwnedUpdateOps,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
 import { computeFinSellSectionCompletion } from "@/lib/fin-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
@@ -1011,14 +1012,17 @@ export default function SellFinsFlow({
           return
         }
 
-        const result = await updateFinListingAction({
-          ...payload,
+        const updated = await updateOwnedListingViaApi({
           listingId: effectiveEditId,
+          listing: buildFinListingPersistFields(payload),
           removedImageIds,
+          images: peerImagesToOwnedUpdateOps(payload.images),
           removedVideoIds,
+          videos: payload.videos,
+          publishFromDraft: listingIsDraft || isLocalOnlyServerDraftSubmit,
         })
-        if ("error" in result) {
-          const message = sellActionErrorMessage(result.error)
+        if (!updated.ok) {
+          const message = sellActionErrorMessage(updated.error)
           logSellFunnelEvent({
             listingType: "fins",
             event: "publish_failed",
@@ -1042,7 +1046,7 @@ export default function SellFinsFlow({
         toast.success(
           listingIsDraft || isLocalOnlyServerDraftSubmit ? "Your fin is live!" : "Listing updated",
         )
-        navigateAfterListingSave(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${updated.slug}`)
         return
       }
 

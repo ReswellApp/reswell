@@ -1,6 +1,5 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { updateProfileDefaultListingLocality } from "@/lib/db/profileDefaultListingLocality"
@@ -46,7 +45,7 @@ export async function saveDefaultListingLocationAction(raw: unknown) {
     return { error: error as string }
   }
 
-  revalidatePath("/sell")
-  revalidatePath("/sell/boards")
+  // Do not revalidate /sell — that refreshes the page the seller is editing
+  // and aborts the in-flight listing save.
   return { success: true as const }
 }

@@ -64,10 +64,11 @@ import {
   BOARDBAG_LISTING_TITLE_MAX_LENGTH,
   type CreateBoardbagListingInput,
 } from "@/lib/validations/boardbag-listing"
+import { createBoardbagListingAction } from "@/lib/actions/boardbagListingActions"
 import {
-  createBoardbagListingAction,
-  updateBoardbagListingAction,
-} from "@/lib/actions/boardbagListingActions"
+  peerImagesToOwnedUpdateOps,
+  updateOwnedListingViaApi,
+} from "@/lib/sell-flow/update-owned-listing-client"
 import { buildBoardbagListingPersistFields } from "@/lib/boardbag-listing-persist-fields"
 import { computeBoardbagSellSectionCompletion } from "@/lib/boardbag-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
@@ -856,14 +857,16 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
           return
         }
 
-        const result = await updateBoardbagListingAction({
-          ...payload,
+        const updated = await updateOwnedListingViaApi({
           listingId: editId,
+          listing: buildBoardbagListingPersistFields(payload),
           removedImageIds,
+          images: peerImagesToOwnedUpdateOps(payload.images),
           removedVideoIds,
+          videos: payload.videos,
         })
-        if ("error" in result) {
-          const message = sellActionErrorMessage(result.error)
+        if (!updated.ok) {
+          const message = sellActionErrorMessage(updated.error)
           logSellFunnelEvent({
             listingType: "boardbags",
             event: "publish_failed",
@@ -881,7 +884,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        navigateAfterListingSave(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${updated.slug}`)
         return
       }
 
