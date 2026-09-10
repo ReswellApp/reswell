@@ -1,0 +1,126 @@
+{
+  "generated_for": "Byrne Surfboards official named standup catalog",
+  "source": "https://byrnesurf.com/collections (Shopify Byrne Surf vendor surfboards only — excludes fins, apparel, and dimension stock SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "byrne-surfboards",
+      "name": "Byrne Surfboards",
+      "website_url": "https://byrnesurf.com",
+      "location_label": "Wollongong, New South Wales, Australia",
+      "founder_name": "Greg Byrne",
+      "lead_shaper_name": "Jed Ashton",
+      "short_description": "Family-run Wollongong performance boards — everyday shortboards through heavy water.",
+      "models": [
+        {
+          "name": "Prodigy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/Prodigy-Logo-Placement.webp?v=1725175332",
+          "description": "The Prodigy is part of the continuous evolution of the performance surfboard, worked on closely between our team and head designer / shaper (Parrish Byrne). Designed through critical feedback, constant refinement and rigorous testing from our team to perform at the highest of levels, the Prodigy was born. The best part of this board is that the evolution also benefits the everyday surfer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MM2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/MM2PHOTO2.png?v=1750649667",
+          "description": "The MM2 is the next evolution of our best all-round performance shortboard, built off the trusted DNA of the original MM but refined for added responsiveness and control. Lowered rail for increased sensitivity and control, medium entry rocker, flat through the mid section, tail flip off the front fins to the tail, single to double concave between fins, slight V off the tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spartan",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/spartan.jpg?v=1705271419",
+          "description": "The Spartan Model is the ultimate performance board, meticulously designed with added volume. During the research and development phase, we collaborated closely with team riders who faced challenges such as recovering from injuries, lower fitness levels, and the demands of everyday life.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Funk Punk",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/products/Funk-Punk-Product-Image.png?v=1706672428",
+          "description": "A new addition to our high-performance category. Evolved from one of our most popular performance models The Prodigy. The Funk Punk introduces a flattened profile with a wide point positioned further forward, optimizing speed, power, and flow.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MM Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/mm-stepup.jpg?v=1705271175",
+          "description": "The MM step up is the perfect board for when the waves turn on and have that little bit more size or power. The main difference in the MM step up is the narrower nose and tail and a little more nose and tail rocker to help the board fit in the curvature of a hollow wave.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/Gun_Photo_futures.png?v=1708049961",
+          "description": "Byrne Heavy Water step-up surfboard crafted for big waves and powerful surf conditions — designed to help you perform at your best when the surf turns on.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "DreamLiner",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/1_3cad878e-11ea-458b-8686-b7f3fbdb5d1f.png?v=1764028103",
+          "description": "The DreamLiner is Byrne's answer to the modern mid-length — a board built on generations of shaping knowledge and fine-tuned for the perfect blend of glide, flow, and performance. Drawing inspiration from the timeless boards that graced the iconic Australian points of the '70s and '80s.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Day Dreamer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/Day-Dreamer-Website-Photo.png?v=1763695154",
+          "description": "The Day Dreamer is the newest evolution in Byrne's Dream Series — a compact mid-length inspired by the glide of the DreamLiner but refined for surfers chasing sharper response, tighter lines, and modern performance.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stoke",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/StokeImage.png?v=1706411950",
+          "description": "The Stoke is a high-performance step-down surfboard engineered to excel in wave conditions ranging from 0 to 4 feet. Crafted with a fuller nose and flatter rocker, it effortlessly gains speed on slower waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Sugar & Spice 2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/Sugar_Spice2Image.png?v=1706412427",
+          "description": "The evolution of the ultimate performance fun board has continued and evolved into the Sugar & Spice 2, now enhanced for even greater performance and versatility. Designed to be surfed as a 2+1, twin fin, quad, or thruster.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bean.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/bean-1.jpg?v=1705273094",
+          "description": "The Perfect Board for Beginners and Fun in Average Conditions. With its distinctive round nose design, the Bean may initially resemble a mini-malibu, but don't be fooled. This board is not only ideal for beginners, but also guarantees an exciting and enjoyable ride in average wave conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Modern Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/1_e5171172-481d-432f-a27c-0f1552220357.png?v=1764115312",
+          "description": "The Modern Twin is the culmination of blending classic twin shapes with cutting-edge surfboard design principles. This fusion has resulted in an exceptionally high-performing board that thrives in smaller, less powerful surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hyper Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/HyperTwinPhoto2_ac4cef68-5b3f-42b1-a3fa-ef23160abaa5.png?v=1706413390",
+          "description": "The Hyper Twin is your ultimate performance 2+1. What separates this board from your average 2+1 is the ability to generate power through your turns while still keeping the board loose and lively.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Clinker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/clinker.jpg?v=1747874681",
+          "description": "The clinker twin evolved from the Australian Byrne surfboard factory in 1979 and was inspired by a then factory worker Brian Coombs who tried some channel bottom single fins boards in New Zealand. This was pretty much at the height of the twin fin era.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "80s Replica",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/tc-1.jpg?v=1705273600",
+          "description": "Byrne alternate retro surfboard model from the Australian Byrne surfboard factory lineage.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "MM MINI",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/mm-mini_17dad08a-d208-4679-a2c9-d61ea39cb505.jpg?v=1736478421",
+          "description": "The MM Mini is a phenomenal performance board crafted specifically to excel in average wave conditions. We have meticulously fine-tuned its design, incorporating several key features that optimize its performance and deliver an exceptional surfing experience.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "MM GROM",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/MMGromLogoPlacement.jpg?v=1707871967",
+          "description": "The MM Grom is a high-performance board designed specifically for experienced and skilled surfers. Featuring a flat rocker and increased thickness, the MM Grom offers impressive speed and acceleration.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grom Stomp",
+          "image_url": "https://cdn.shopify.com/s/files/1/0673/1733/4243/files/GromStomp24design_1.png?v=1713749530",
+          "description": "The Grom Stomp is the perfect board for young surfers transitioning from foamies to green waves. Designed with user-friendly features, this board offers an exceptional surfing experience with a flat rocker and increased thickness.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
