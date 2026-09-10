@@ -16,7 +16,7 @@ export function revalidateHomeStableCatalog(): void {
   revalidatePath("/", "page")
 }
 
-/** Bust the homepage /sell “Trending brands” strip after curation or featured-brand logo edits. */
+/** Bust the homepage “Trending brands” strip after curation or featured-brand logo edits. */
 export function revalidateHomeTrendingBrandsCatalog(): void {
   revalidateTag(HOME_TRENDING_BRANDS_CACHE_TAG, "max")
   revalidatePath("/", "page")

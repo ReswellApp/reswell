@@ -84,6 +84,7 @@ import { isPeerListingSection } from '@/lib/peer-listing-sections'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
+import { offerMessageAnchorId } from '@/lib/utils/offer-messages-href'
 import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
 import { PromiseDeadlineError, raceWithDeadline } from '@/lib/utils/race-with-deadline'
 import { isAbortError } from '@/lib/utils/is-abort-error'
@@ -305,7 +306,16 @@ export function ConversationThreadClient({
     el.scrollTo({ top: el.scrollHeight, behavior })
   }, [])
 
+  const [offerHashId, setOfferHashId] = useState<string | null>(null)
+
   useLayoutEffect(() => {
+    const hash = window.location.hash
+    const hashId = hash.startsWith('#offer-') ? hash.slice(1) : null
+    setOfferHashId(hashId)
+    if (hashId) {
+      stickToBottomRef.current = false
+      return
+    }
     scrollThreadToBottom('auto')
   }, [id, scrollThreadToBottom])
 
@@ -326,6 +336,10 @@ export function ConversationThreadClient({
   }, [conversation])
 
   useEffect(() => {
+    if (offerHashId) {
+      stickToBottomRef.current = false
+      return
+    }
     if (!stickToBottomRef.current) return
     const idFrame = requestAnimationFrame(() => {
       // Snap to bottom instantly on first paint; glide for live updates.
@@ -335,7 +349,15 @@ export function ConversationThreadClient({
     return () => {
       cancelAnimationFrame(idFrame)
     }
-  }, [orderedMessages, scrollThreadToBottom])
+  }, [offerHashId, orderedMessages, scrollThreadToBottom])
+
+  useEffect(() => {
+    if (!offerHashId) return
+    const el = document.getElementById(offerHashId)
+    if (!el) return
+    stickToBottomRef.current = false
+    el.scrollIntoView({ block: 'center', behavior: 'auto' })
+  }, [offerHashId, orderedMessages, offersById])
 
   useEffect(() => {
     if (!displayListing) return
@@ -930,7 +952,10 @@ export function ConversationThreadClient({
 
                     if (offer && message.offer_id) {
                       return (
-                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                        <div
+                          id={offerMessageAnchorId(message.offer_id)}
+                          className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}
+                        >
                           <OfferMessageCard
                             messageContent={message.content}
                             offer={offer}

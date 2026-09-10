@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import {
   MakeOfferDialog,
   MakeOfferTriggerButton,
+  ViewOfferTriggerButton,
 } from "@/components/features/listings/make-offer-dialog"
 import type { OfferShippingCostMode } from "@/lib/offer-listing-shipping"
 import type { ListingExclusivePurchaseAccess } from "@/lib/services/listingBuyerExclusiveWindow"
@@ -46,9 +47,11 @@ export type ListingDetailPeerPurchaseActionsProps = {
   makeOffer?: ListingMakeOfferConfig
   /** When the buyer has an ACCEPTED offer, checkout uses this item price (listing stays at list price in the gallery). */
   agreedCheckoutItemUsd?: number | null
-  /** Renders beside “Make an offer” (e.g. share roundel). */
+  /** Renders beside “Make an offer” / “View offer” (e.g. share roundel). */
   offerRowTrailingSlot?: React.ReactNode
   exclusivePurchaseAccess?: ListingExclusivePurchaseAccess
+  /** Viewer already has a PENDING or COUNTERED offer — link to that thread. */
+  openOfferHref?: string | null
 }
 
 export function ListingDetailPeerPurchaseActions({
@@ -60,6 +63,7 @@ export function ListingDetailPeerPurchaseActions({
   agreedCheckoutItemUsd,
   offerRowTrailingSlot,
   exclusivePurchaseAccess = { kind: "open" },
+  openOfferHref = null,
 }: ListingDetailPeerPurchaseActionsProps) {
   const [loading, setLoading] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
@@ -220,7 +224,14 @@ export function ListingDetailPeerPurchaseActions({
       </div>
       ) : null}
 
-      {!purchaseBlocked && makeOffer ? (
+      {openOfferHref ? (
+        <div className="flex gap-2">
+          <div className="min-w-0 flex-1">
+            <ViewOfferTriggerButton href={openOfferHref} />
+          </div>
+          {offerRowTrailingSlot ? <div className="shrink-0">{offerRowTrailingSlot}</div> : null}
+        </div>
+      ) : !purchaseBlocked && makeOffer ? (
         <>
           <div className="flex gap-2">
             <div className="min-w-0 flex-1">

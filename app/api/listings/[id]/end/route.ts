@@ -41,7 +41,6 @@ export async function POST(
     const result = await endSellerListing(supabase, {
       listingId,
       sellerUserId: user.id,
-      mode: parsed.data.mode,
     })
 
     if (!result.ok) {
@@ -53,9 +52,6 @@ export async function POST(
         data: {
           ok: true,
           mode: result.mode,
-          ...(result.mode === "archive" && result.message
-            ? { message: result.message }
-            : {}),
         },
       },
       { status: 200 },

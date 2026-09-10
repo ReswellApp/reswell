@@ -4,7 +4,11 @@ import type { Ref } from "react"
 import Link from "next/link"
 import { ExternalLink, Package, User } from "lucide-react"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
-import type { CaseInboxItem, CaseInboxPriority } from "@/lib/admin/case-inbox"
+import {
+  firstNonEmptyText,
+  type CaseInboxItem,
+  type CaseInboxPriority,
+} from "@/lib/admin/case-inbox"
 import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
@@ -173,7 +177,7 @@ export function CaseInboxConversation({
             closed={!item.isOpen}
             staffNames={staffNames}
             originalRequest={{
-              body: item.order?.body ?? item.contact?.message ?? item.preview,
+              body: firstNonEmptyText(item.order?.body, item.contact?.message, item.preview),
               createdAt: item.createdAt,
               name: item.fromName,
             }}

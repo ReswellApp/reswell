@@ -140,7 +140,7 @@ export function SupportCaseThread({
         ref={listRef}
         className={cn(
           "min-h-0 flex-1 overflow-y-auto",
-          role === "staff" ? "space-y-4 px-2 py-4" : "space-y-3 px-1 py-3",
+          role === "staff" ? "min-h-[12rem] space-y-4 px-2 py-4" : "space-y-3 px-1 py-3",
         )}
       >
         {displayMessages.length === 0 ? (

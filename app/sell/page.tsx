@@ -1,8 +1,6 @@
 import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { SellStart } from "@/components/features/sell/sell-start"
-import type { SellTrendingBrand } from "@/components/features/sell/sell-trending-brands"
-import { getCachedHomeTrendingBrandsCatalog } from "@/lib/cache/home-public-catalog"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { createClient } from "@/lib/supabase/server"
@@ -68,25 +66,12 @@ export default async function SellPage({
     )
   }
 
-  const [isAdmin, trendingBrandsCatalog] = await Promise.all([
-    isAdminPromise,
-    getCachedHomeTrendingBrandsCatalog(),
-  ])
-
-  const trendingBrands: SellTrendingBrand[] = trendingBrandsCatalog.homeTrendingBrandRows.map(
-    (row) => ({
-      id: row.brand.id,
-      slug: row.brand.slug,
-      name: row.brand.name,
-      logoUrl: row.brand.logo_url,
-    }),
-  )
+  const isAdmin = await isAdminPromise
 
   // `/sell` and `/sell?new=1` land on catalog search (+ compact type links).
   return (
     <SellStart
       isAdmin={isAdmin}
-      trendingBrands={trendingBrands}
       surfboardSellHref={SURFBOARD_SELL_BOARDS_CREATE_HREF}
     />
   )

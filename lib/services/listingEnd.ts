@@ -1,8 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import {
-  deleteListingDocument,
-  syncListingToIndex,
-} from "@/lib/elasticsearch/listings-index"
+import { deleteListingDocument } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
@@ -11,21 +8,16 @@ import {
   fetchListingImageUrlsForListingIds,
   removeListingImageFilesFromStorage,
 } from "@/lib/services/listingStorageCleanup"
-import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
 import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
-import { createServiceRoleClient } from "@/lib/supabase/server"
-import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 
 type ListingEndRow = {
   id: string
   user_id: string
   status: string
-  archived_at: string | null
   slug: string | null
 }
 
 export type EndSellerListingResult =
-  | { ok: true; mode: "archive"; message?: string }
   | { ok: true; mode: "delete" }
   | { ok: false; status: number; error: string }
 
@@ -33,61 +25,8 @@ export type DeleteSellerDraftListingResult =
   | { ok: true }
   | { ok: false; status: number; error: string }
 
-const ORDER_HISTORY_DELETE_FALLBACK_MESSAGE =
-  "Because this listing is linked to an order or payment, it could not be permanently deleted. We removed it from the public site and moved it to your archived listings."
-
-async function applySellerArchive(
-  supabase: SupabaseClient,
-  row: ListingEndRow,
-  listingId: string,
-  sellerUserId: string,
-): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
-  if (row.archived_at) {
-    return { ok: false, status: 400, error: "Listing is already archived" }
-  }
-  if (row.status === "draft") {
-    return {
-      ok: false,
-      status: 400,
-      error: "Discard drafts from the dashboard instead.",
-    }
-  }
-
-  const nextStatus = row.status === "sold" ? "sold" : "removed"
-
-  const { error } = await supabase
-    .from("listings")
-    .update({
-      status: nextStatus,
-      archived_at: new Date().toISOString(),
-      hidden_from_site: true,
-      site_visibility_reason: "seller_archive",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", listingId)
-    .eq("user_id", sellerUserId)
-    .is("archived_at", null)
-
-  if (error) {
-    return { ok: false, status: 500, error: "Failed to archive listing" }
-  }
-
-  try {
-    const service = createServiceRoleClient()
-    await recordListingVisibilityEvent(service, {
-      listingId,
-      hiddenFromSite: true,
-      source: "seller_archive",
-      actorUserId: sellerUserId,
-      metadata: { status: nextStatus },
-    })
-    await deleteAllCartRowsForListing(service, listingId)
-  } catch {
-    // best-effort — listing is already archived
-  }
-
-  return { ok: true }
-}
+const ORDER_HISTORY_DELETE_BLOCKED_MESSAGE =
+  "This listing is tied to an order or payment, so it cannot be permanently deleted."
 
 async function loadListingForEnd(
   supabase: SupabaseClient,
@@ -95,7 +34,7 @@ async function loadListingForEnd(
 ): Promise<ListingEndRow | null> {
   const { data, error } = await supabase
     .from("listings")
-    .select("id, user_id, status, archived_at, slug")
+    .select("id, user_id, status, slug")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -157,40 +96,14 @@ export async function deleteSellerDraftListing(
   return { ok: true }
 }
 
-async function archiveInsteadOfDelete(
-  supabase: SupabaseClient,
-  row: ListingEndRow,
-  listingId: string,
-  sellerUserId: string,
-): Promise<EndSellerListingResult> {
-  const applied = await applySellerArchive(supabase, row, listingId, sellerUserId)
-  if (!applied.ok) {
-    return applied
-  }
-  try {
-    await syncListingToIndex(supabase, listingId)
-  } catch {
-    // ES optional
-  }
-  await removeListingFromGoogleMerchantFeed(listingId)
-  revalidateListingDetailPage(listingId, row.slug)
-  revalidateBoardsBrowseCatalog()
-  await revalidateSellersAfterListingChange(supabase, sellerUserId)
-  return {
-    ok: true,
-    mode: "archive",
-    message: ORDER_HISTORY_DELETE_FALLBACK_MESSAGE,
-  }
-}
-
 /**
- * Seller ends a listing: archive (30-day retention) or permanent delete.
+ * Seller permanently deletes a listing. Listings tied to an order or payment cannot be deleted.
  */
 export async function endSellerListing(
   supabase: SupabaseClient,
-  params: { listingId: string; sellerUserId: string; mode: "archive" | "delete" },
+  params: { listingId: string; sellerUserId: string },
 ): Promise<EndSellerListingResult> {
-  const { listingId, sellerUserId, mode } = params
+  const { listingId, sellerUserId } = params
 
   const row = await loadListingForEnd(supabase, listingId)
   if (!row) {
@@ -200,30 +113,9 @@ export async function endSellerListing(
     return { ok: false, status: 403, error: "Forbidden" }
   }
 
-  if (mode === "archive") {
-    const applied = await applySellerArchive(supabase, row, listingId, sellerUserId)
-    if (!applied.ok) {
-      return applied
-    }
-
-    try {
-      await syncListingToIndex(supabase, listingId)
-    } catch {
-      // ES optional
-    }
-
-    await removeListingFromGoogleMerchantFeed(listingId)
-
-    revalidateListingDetailPage(listingId, row.slug)
-    revalidateBoardsBrowseCatalog()
-    await revalidateSellersAfterListingChange(supabase, sellerUserId)
-
-    return { ok: true, mode: "archive" }
-  }
-
   const canDelete = await listingCanBePermanentlyDeleted(supabase, listingId)
   if (!canDelete) {
-    return archiveInsteadOfDelete(supabase, row, listingId, sellerUserId)
+    return { ok: false, status: 409, error: ORDER_HISTORY_DELETE_BLOCKED_MESSAGE }
   }
 
   const imageUrls = await fetchListingImageUrlsForListingIds(supabase, [listingId])
@@ -236,7 +128,7 @@ export async function endSellerListing(
 
   if (error) {
     if (error.code === "23503") {
-      return archiveInsteadOfDelete(supabase, row, listingId, sellerUserId)
+      return { ok: false, status: 409, error: ORDER_HISTORY_DELETE_BLOCKED_MESSAGE }
     }
     return { ok: false, status: 500, error: "Failed to delete listing" }
   }

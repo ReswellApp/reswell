@@ -2,6 +2,10 @@ import Link from "next/link"
 import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EndListingButton } from "@/components/end-listing-button"
+import {
+  ListingVacationModeButton,
+  canUseListingVacationMode,
+} from "@/components/features/sell/listing-vacation-mode-button"
 import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
@@ -72,7 +76,7 @@ export async function ListingOwnerManageActions({
           </p>
         ) : hiddenFromSite ? (
           <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-            On vacation — hidden from browse and search. Use End listing to go live again.
+            On vacation — temporarily hidden from browse and search.
           </p>
         ) : null}
         <div className="flex min-w-0 flex-wrap gap-2">
@@ -96,6 +100,13 @@ export async function ListingOwnerManageActions({
               cartHolderCount={cartHolderCount}
               listPrice={currentPriceUsd}
               triggerClassName="border-border/60 shadow-none"
+            />
+          ) : null}
+          {canUseListingVacationMode(listingStatus) ? (
+            <ListingVacationModeButton
+              listingId={listingId}
+              vacationMode={hiddenFromSite}
+              className="rounded-full border-border/60 shadow-none"
             />
           ) : null}
           {!isDraft ? (

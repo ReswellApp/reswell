@@ -73,26 +73,38 @@ export function ListingVacationModeButton({
       disabled={disabled || busy}
       onClick={() => void handleClick()}
       className={cn(
-        "min-w-[5.5rem] rounded-full shadow-none",
+        "h-auto min-h-9 min-w-[5.5rem] flex-col gap-0 rounded-full py-1.5 shadow-none",
         vacationMode
           ? "bg-amber-600 text-white hover:bg-amber-600/90 dark:bg-amber-600 dark:hover:bg-amber-600/90"
           : "border-amber-500/40 text-amber-800 hover:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/15",
         className,
       )}
       aria-pressed={vacationMode}
+      aria-label={
+        vacationMode ? "Go live" : "Vacation mode (temporarily hide)"
+      }
     >
       {busy ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : vacationMode ? (
-        <>
-          <Sun className="h-3.5 w-3.5" />
-          Go live
-        </>
       ) : (
-        <>
-          <Palmtree className="h-3.5 w-3.5" />
-          Vacation
-        </>
+        <span className="inline-flex items-center gap-1">
+          {vacationMode ? (
+            <Sun className="h-3.5 w-3.5" />
+          ) : (
+            <Palmtree className="h-3.5 w-3.5" />
+          )}
+          {vacationMode ? "Go live" : "Vacation"}
+        </span>
+      )}
+      {busy ? null : (
+        <span
+          className={cn(
+            "text-[10px] font-normal leading-tight",
+            vacationMode ? "text-white/80" : "text-amber-800/80 dark:text-amber-300/80",
+          )}
+        >
+          {vacationMode ? "show listing" : "(temporarily hide)"}
+        </span>
       )}
     </Button>
   )

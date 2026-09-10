@@ -193,7 +193,7 @@ export const sellingHelpArticles: HelpArticle[] = [
     title: "How do I edit or remove a listing?",
     description:
       "Update a live listing, mark an item as sold, or end a listing from My Listings on Reswell.",
-    keywords: ["edit", "delete", "archive"],
+    keywords: ["edit", "delete", "vacation"],
     relatedSlugs: ["how-to-list-a-board", "i-sold-an-item-whats-next"],
     sections: [
       {
@@ -229,15 +229,11 @@ export const sellingHelpArticles: HelpArticle[] = [
             </p>
             <BulletList
               items={[
-                <><strong>Vacation mode</strong> to hide a live listing until you go live again.</>,
-                <><strong>Archive listing</strong> to take it off the public site. Archived listings stay in your account for 30 days.</>,
-                <><strong>Delete listing</strong> to remove it immediately, only when the listing is not tied to an order or payment. Listings with sale history show Archive instead.</>,
+                <><strong>Vacation mode</strong> (temporarily hide) to take a live listing off browse and search until you go live again.</>,
+                <><strong>Mark as sold</strong> if you closed the sale elsewhere. We will ask for an optional tip and rating.</>,
+                <><strong>Delete listing</strong> to remove it immediately, only when the listing is not tied to an order or payment. We will ask for the same optional tip and rating as mark as sold.</>,
               ]}
             />
-            <p>
-              Find archived listings under {helpLink("/dashboard/listings/archived", "Archived")} in
-              My Listings.
-            </p>
           </>
         ),
       },

@@ -18,13 +18,6 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     },
   },
   {
-    prefix: "/dashboard/listings/archived",
-    meta: {
-      sectionName: "Archived Listings",
-      description: "Ended listings are kept for 30 days, then permanently deleted.",
-    },
-  },
-  {
     prefix: "/dashboard/listings",
     meta: {
       sectionName: "My Listings",
