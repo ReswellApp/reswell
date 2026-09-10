@@ -589,7 +589,8 @@ export function AdminUserLabelPurchase() {
                     </Table>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Showing the 4 lowest USPS, UPS, and FedEx Ground or Priority rates.
+                    Showing the 4 lowest standard USPS, UPS, and FedEx rates, plus available same-day
+                    and next-day services.
                   </p>
 
                   <Button
