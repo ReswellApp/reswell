@@ -1,6 +1,6 @@
 {
   "generated_for": "Mesa Surfboards official named standup catalog",
-  "source": "https://mesasurfboards.com/boards/ (official model lineup — excludes in-stock dimension SKUs, merch, and custom order deposits)",
+  "source": "https://mesasurfboards.com/boards/ and official model pages (Motorhead, Baron) — excludes in-stock dimension SKUs, merch, and custom order deposits",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -47,6 +47,18 @@
           "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/WHIP-MAIN-edited.jpg",
           "description": "The whip is my standard all around thruster for everyday conditions. It has a sneaky amount of foam throughout the board, med/full rails, single to double concave and mid range rocker that works well in a variety of conditions.",
           "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Motorhead",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/motorhead3-480x640-1.jpg",
+          "description": "The Motorhead is simple, fast and full of style. Best in shoulder to overhead surf with some juice and face to work with. The first thing you'll notice is how smooth the board feels. The relaxed entry rocker and blend of slight concave/double to channel V keeps the board fast and responsive with plenty of hold through big turns. Typically comes with a flat deck and stepped rails, giving you extra paddle power and flow but the sensitivity of your usual high performance shortboard rails. Ride same/slightly longer than your typical shortboard or 1-2″ longer than your height.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Baron",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/baron3-480x640-1.jpg",
+          "description": "The Baron is a hybrid winged twin, between a fish and a shortboard. The lower overall rocker and blend of concaves make this board fast and loose. This board really shines in punchy waist to slightly overhead surf. Skatier then your shortboard, snappier then your fish. It's just fun.",
+          "board_category_slug": "hybrid"
         },
         {
           "name": "Mini Gun",
