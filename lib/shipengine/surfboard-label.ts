@@ -116,6 +116,8 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   adminCustomCarton?: boolean
   /** Listing section — Media Mail is only offered for magazines. */
   listingSection?: string | null
+  /** Admin-only picker option for urgent member shipments. */
+  includeSameAndNextDayRates?: boolean
   /** Declared value for ParcelGuard / carrier insurance when enabled. */
   insuredValueUsd?: number | null
 }): Promise<
@@ -206,6 +208,7 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   const rates = curateLabelPurchaseRates(
     normalizeShipEngineRatesForUi(rawRates),
     params.listingSection,
+    { includeSameAndNextDay: params.includeSameAndNextDayRates === true },
   )
   if (!rates.length) {
     return {

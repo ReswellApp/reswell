@@ -188,6 +188,7 @@ export async function quoteAdminUserShippingLabelRates(params: {
       heightIn: params.parcel.height_in,
       weightLb: params.parcel.weight_lb,
     },
+    includeSameAndNextDayRates: true,
   })
   if (!quoted.ok) {
     return quoted
