@@ -1,0 +1,132 @@
+{
+  "generated_for": "Ricky Carroll Surfboards official named standup catalog",
+  "source": "https://rickycarrollsurf.com/collections (Shopify Ricky Carroll Surfboards vendor \u2014 excludes merch, hats, apparel, and other-brand placeholders)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ricky-carroll-surfboards",
+      "name": "Ricky Carroll Surfboards",
+      "website_url": "https://rickycarrollsurf.com/",
+      "location_label": "Rockledge, Florida",
+      "founder_name": "Ricky Carroll",
+      "lead_shaper_name": "Ricky Carroll",
+      "short_description": "Handcrafted surfboards from Ricky Carroll in Rockledge, Florida since 1980 \u2014 retro longboards, midlengths, fish, and the Ricky Wahine series.",
+      "models": [
+        {
+          "name": "Classic",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/92Classic9215101.jpg?v=1739810282",
+          "description": "The Classic is one of the first retro style longboards that Ricky developed into a model with collaboration from shaper Tommy Maus. The Classic is a timeless traditional design. This is a great retro style board that nose rides well, but it\u2019s still easy to turn.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "JB",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/9JB9015832.jpg?v=1786990843",
+          "description": "The JB model was a collaboration between Ricky and team rider Jesse Briel. The board has a traditional outline paired with a more modern rocker, which makes this board great for nose rise, while still turning well. This board is a hybrid of a retro style longboard and a performance longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Me",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/74Mini7415896.jpg?v=1788268716",
+          "description": "The mini me is a scale down version of the performance longboard a.k.a. PLB it has the same three stage rocker chine rail and double concave as the PLB the performance aspects of this board is unmatched to any other mid range or fun shape board that I have shaped the paddling and maneuverability of this board makes it such a versatile board to ride in a lot of different surf conditions can be set up as a tri fin ,quad ,or 4+1 fin configuration",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "PLB",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/9PLB9015857_ed4d0e79-4c4c-487b-86bb-697a8dc59ad2.jpg?v=1788877538",
+          "description": "The performance longboard, a.k.a. PLB, this board performs well in a wide variety of surf. It has a unique three stage rocker, which makes the board turn well, but still keeps its speed. The PLB features a double concave barrel and a chimed rail, which frees the board up and makes it more forgiving. Epoxy",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "PLB Diamond Series",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/96PLBDiamond9615921.jpg?v=1788808112",
+          "description": "Ricky Carroll PLB Diamond Series \u2014 handcrafted in Rockledge, Florida since 1980.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "PNR",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/94PNR9415072.jpg?v=1747250533",
+          "description": "PNR: The Performance Nose Rider or PNR is based off the PLB with an adjusted rocker and widened nose to make it a performance longboard that nose rides well. Standard features do not include the chine rain like the PLB, but can be an option if desired.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/58RetroFish5815767.jpg?v=1785856009",
+          "description": "Ricky Carroll Retro Fish \u2014 handcrafted in Rockledge, Florida since 1980.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Lady 1.5",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/92RetroLady9215881w-43.jpg?v=1786038131",
+          "description": "Ricky Wahine - Retro Lady 1.5",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Retro Pig",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/96RetroPig9614095.jpg?v=1744212141",
+          "description": "Retro Pig Ricky retro, pig is my version of the classic pig. Shape with the wide point pulled back which adds more hip to the tail area which changes the pivot point of the board great nose riding board, but turns well. Color: Orange",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ricky Retro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/9Retro9015888.jpg?v=1786634369",
+          "description": "The Ricky Retro was originally designed by Ricky Carroll and Justin Quintal to be a traditional style nose rider. It started out as the Justin Quintal model and was renamed the Ricky Retro with the introduction of the Black Rose surfboard line. The board has thinner rails to make it more responsive, but wider outline makes it a great nose rider. In the Black Rose line, this board is known as the Dark Horse with a few tweaks from the original model.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ricky Retro 2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/8Retro28015860.jpg?v=1788877682",
+          "description": "The Ricky Retro 2 is a modified version of the Ricky Retro. This board is \u00bc of an inch narrower in the nose and in the middle. The tail is an inch narrower with a little more tail flip added; making the board turn easier. The Retro 2 is still a good nose riding board and better turning for a lighter rider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ricky Retro 3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/9Retro9015893.jpg?v=1786039330",
+          "description": "The Ricky Retro 3 is the same board as the Ricky Retro 2 except the tail has been changed to a round pin to allow the board turn even a little easier that the retro 2. The Retro 3 handles well in bigger steeper surf.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sea Blossom",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/9Seablossom9015924.jpg?v=1788986004",
+          "description": "Ricky Wahine - Sea Blossom",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Skippy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/11Skippy1115841.jpg?v=1785863950",
+          "description": "Glider",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Stalker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/61StalkerTwin6115611.jpg?v=1771254550",
+          "description": "Ricky Carroll Stalker \u2014 handcrafted in Rockledge, Florida since 1980.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TMM",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/68TMM6815919.jpg?v=1788985975",
+          "description": "TMM Tuned Mini Me + TMM XL The TMM is a modified version of the Mini Me, with a pulled in nose, enhancing the maneuverability and performance of the board Epoxy",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tribute",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/94Tribute9415887.jpg?v=1786990965",
+          "description": "Ricky Carroll Tribute \u2014 handcrafted in Rockledge, Florida since 1980.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wahine Hybrid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/7WahineHybrid7015377W020.jpg?v=1780942825",
+          "description": "Ricky Carroll Wahine Hybrid \u2014 handcrafted in Rockledge, Florida since 1980.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Guy Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0561/1261/1431/files/7BGF7015770.jpg?v=1787773180",
+          "description": "Ricky Carroll Big Guy Fish \u2014 handcrafted in Rockledge, Florida since 1980.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
