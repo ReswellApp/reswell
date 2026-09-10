@@ -148,6 +148,7 @@ interface ReindexSummary {
   sellersIndexed?: number
   sellersRemoved?: number
   sellerErrors?: number
+  listingsRemoved?: number
 }
 
 function userInitials(name: string | null, email: string | null): string {

@@ -21,6 +21,8 @@ import {
 } from "@/lib/elasticsearch/sell-catalog-index"
 import {
   bulkIndexListingDocuments,
+  deleteListingDocument,
+  deleteListingDocumentsNotIn,
   ensureListingsIndex,
   listingRowToSearchDocFromRow,
   LISTING_SEARCH_DOC_SELECT,
@@ -41,7 +43,12 @@ import {
 } from "@/lib/elasticsearch/forum-threads-index"
 import { getElasticsearchClient } from "@/lib/elasticsearch/client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
-import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
+import {
+  ELASTICSEARCH_INDEXED_LISTING_SECTIONS,
+  isElasticsearchIndexedListingSection,
+} from "@/lib/elasticsearch/listing-sections"
+import { pruneSearchAnalyticsDocuments } from "@/lib/elasticsearch/search-analytics-index"
+import { pruneSearchSuggestAnalyticsDocuments } from "@/lib/elasticsearch/search-suggest-analytics-index"
 import { isListingExternallyIndexable } from "@/lib/listing-public-visibility"
 
 export type ElasticsearchReindexSummary = {
@@ -61,6 +68,9 @@ export type ElasticsearchReindexSummary = {
   sellerErrors: number
   forumThreadsIndexed: number
   forumThreadErrors: number
+  listingsRemoved: number
+  analyticsPruned: number
+  suggestAnalyticsPruned: number
 }
 
 export type ElasticsearchReindexResult =
@@ -75,6 +85,53 @@ const PAGE_SIZE = 200
  * the same docs ~26× (Elastic Serverless ingest VCUs).
  */
 export const ELASTICSEARCH_CATCH_UP_LOOKBACK_MS = 14 * 60 * 60 * 1000
+
+async function listIndexableListingIds(supabase: SupabaseClient): Promise<Set<string>> {
+  const ids = new Set<string>()
+  let from = 0
+  for (;;) {
+    const { data: rows, error } = await supabase
+      .from("listings")
+      .select("id, status, title, hidden_from_site, archived_at, section")
+      .eq("status", "active")
+      .eq("hidden_from_site", false)
+      .is("archived_at", null)
+      .in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+
+    if (error) {
+      console.error("[elasticsearchReindex] listIndexableListingIds failed:", error.message)
+      return new Set()
+    }
+    if (!rows?.length) break
+
+    for (const row of rows as Array<{
+      id: string
+      status?: string | null
+      title?: string | null
+      hidden_from_site?: boolean | null
+      archived_at?: string | null
+      section?: string | null
+    }>) {
+      if (
+        isListingExternallyIndexable({
+          status: String(row.status ?? ""),
+          title: row.title,
+          hidden_from_site: row.hidden_from_site,
+          archived_at: row.archived_at,
+        }) &&
+        isElasticsearchIndexedListingSection(String(row.section ?? ""))
+      ) {
+        ids.add(row.id)
+      }
+    }
+
+    if (rows.length < PAGE_SIZE) break
+    from += PAGE_SIZE
+  }
+  return ids
+}
 
 export type ElasticsearchReindexOptions = {
   /**
@@ -174,6 +231,56 @@ export async function reindexElasticsearchFromSupabase(
 
     if (rows.length < PAGE_SIZE) break
     from += PAGE_SIZE
+  }
+
+  let listingsRemoved = 0
+  if (catchUpIso) {
+    let staleFrom = 0
+    for (;;) {
+      const { data: staleRows, error: staleError } = await supabase
+        .from("listings")
+        .select("id, status, title, hidden_from_site, archived_at, section")
+        .gte("updated_at", catchUpIso)
+        .order("updated_at", { ascending: false })
+        .range(staleFrom, staleFrom + PAGE_SIZE - 1)
+
+      if (staleError) {
+        return { ok: false, status: 500, error: staleError.message }
+      }
+      if (!staleRows?.length) break
+
+      for (const row of staleRows as Array<{
+        id: string
+        status?: string | null
+        title?: string | null
+        hidden_from_site?: boolean | null
+        archived_at?: string | null
+        section?: string | null
+      }>) {
+        const stillIndexable =
+          isListingExternallyIndexable({
+            status: String(row.status ?? ""),
+            title: row.title,
+            hidden_from_site: row.hidden_from_site,
+            archived_at: row.archived_at,
+          }) && isElasticsearchIndexedListingSection(String(row.section ?? ""))
+        if (stillIndexable) continue
+        try {
+          await deleteListingDocument(row.id)
+          listingsRemoved++
+        } catch {
+          errors++
+        }
+      }
+
+      if (staleRows.length < PAGE_SIZE) break
+      staleFrom += PAGE_SIZE
+    }
+  }
+
+  {
+    const keepIds = await listIndexableListingIds(supabase)
+    listingsRemoved += await deleteListingDocumentsNotIn(keepIds)
   }
 
   let brandsIndexed = 0
@@ -384,6 +491,15 @@ export async function reindexElasticsearchFromSupabase(
     forumThreadFrom += PAGE_SIZE
   }
 
+  let analyticsPruned = 0
+  let suggestAnalyticsPruned = 0
+  try {
+    analyticsPruned = await pruneSearchAnalyticsDocuments()
+    suggestAnalyticsPruned = await pruneSearchSuggestAnalyticsDocuments()
+  } catch (err) {
+    console.error("[elasticsearchReindex] analytics prune failed:", err)
+  }
+
   return {
     ok: true,
     summary: {
@@ -403,6 +519,9 @@ export async function reindexElasticsearchFromSupabase(
       sellerErrors,
       forumThreadsIndexed,
       forumThreadErrors,
+      listingsRemoved,
+      analyticsPruned,
+      suggestAnalyticsPruned,
     },
   }
 }

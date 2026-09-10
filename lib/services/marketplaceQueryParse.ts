@@ -20,6 +20,7 @@ import type { ElasticsearchIndexedListingSection } from "@/lib/elasticsearch/lis
 import {
   extractMarketplaceSectionIntent,
   isBrandOnlyMarketplaceSuggestQuery,
+  marketplaceSectionIntentIsBrandNameToken,
   isMarketplaceSearchNoiseToken,
   isMarketplaceSectionOnlyQuery,
   residualMarketplaceQueryAfterBrand,
@@ -430,7 +431,7 @@ export async function parseMarketplaceQuery(
   const expansions =
     options?.expansions ?? (raw.length >= 2 ? await expansionsForMarketplaceQuery(raw) : [])
 
-  const sectionIntent = extractMarketplaceSectionIntent(raw)
+  let sectionIntent = extractMarketplaceSectionIntent(raw)
 
   if (!raw) {
     return {
@@ -582,6 +583,11 @@ export async function parseMarketplaceQuery(
   residual = stripMarketplaceSearchNoiseWords(residual)
   if (styleIntent.length > 0) {
     residual = stripBoardStylePhrasesFromKeyword(residual)
+  }
+
+  // "Captain Fin" / "Lost Surfboards" contain section tokens; do not hard-scope those brand lookups.
+  if (marketplaceSectionIntentIsBrandNameToken(sectionIntent, resolvedBrand?.name)) {
+    sectionIntent = null
   }
 
   // After brand/model/length/noise strip (incl. section words like "fins"), nothing left ⇒ brand-only.

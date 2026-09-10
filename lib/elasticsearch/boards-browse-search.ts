@@ -541,8 +541,8 @@ export async function searchBoardsBrowse(
   const exclude = params.excludeIds?.filter(Boolean) ?? []
   if (exclude.length > 0) mustNot.push({ ids: { values: exclude } })
 
-  const from = Math.max(0, params.from)
-  const size = Math.max(0, params.size)
+  const from = Number.isFinite(params.from) ? Math.max(0, Math.floor(params.from)) : 0
+  const size = Number.isFinite(params.size) ? Math.max(0, Math.floor(params.size)) : 0
   // ES rejects from + size > 10000 by default; clamp deep pagination.
   if (from + size > 10_000) return { ids: [], total: 0 }
 
