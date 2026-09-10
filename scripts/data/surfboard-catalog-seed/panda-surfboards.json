@@ -1,0 +1,120 @@
+{
+  "generated_for": "Panda Surfboards official named standup catalog",
+  "source": "https://www.pandasurfboards.com/ (official model detail pages — excludes apparel, accessories, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "panda-surfboards",
+      "name": "Panda Surfboards",
+      "website_url": "https://www.pandasurfboards.com",
+      "location_label": "Costa Mesa, California",
+      "founder_name": "Black Peters",
+      "lead_shaper_name": "Blake",
+      "short_description": "Costa Mesa surfboards by Blake — alternate-performance shortboards, mid-lengths, fishes, and twinzers from the official Panda lineup.",
+      "models": [
+        {
+          "name": "Astro Zombie",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/64363790462e2d.webp",
+          "description": "Our twin keel fish has been tweaked and refined taking this guy to a whole other level. We have given this guy a new outline making it sleeker, refined the rails for control and changed the bottom. The bottom now consists of a vee entry to double concave between the feet. The main new feature is the channels running outside the fins using the twinzer concept to break the water before it hits the fins which has given this board a whole new gear. It's fast! This feature works great with glass on twins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dolly Dagger",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/30074434062d8d.webp",
+          "description": "One of our favourites. This is our high performance twin fin and contains a good amount of volume so it surfs well in smaller waves but will handle well in over head surf. The bottom consists of a single concave running under the front for blending into a deep double bonzer style concave to vee out the back. It's super fast and depending on your fin setup (loose as a twin, drivey as a twin with trailer) surfs very solid on rail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Middle Age Rage",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/8321080196622f.webp",
+          "description": "Originally designed for customers that have been enjoying the midlengths but that want something that bridges the gap between a midlength and a shortboard. Recommended to be ridden around 1\" longer than you are tall. This 5 fin setup is smooth, also works great as a step up or for below average surfers working their way down to a performance shortboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "NOZ V1",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/1578755969067a.webp",
+          "description": "An 80's outline shortboard with twinzer fin setup, designed in collaboration with team rider Noah Collins.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pandamonium",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/cms/17377160396490.jpg",
+          "description": "Panda Surfboards performance shortboard from the official Panda lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rocket Fish",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/78922399363e80.webp",
+          "description": "The Rocket Fish is a performance take on a traditional twin fin fish. A lot more versatile, it will handle more unpredictable beach break conditions and bigger waves compared to a traditional fish while still easily tearing up small waves. Narrower outline, slightly more rocker, and a single concave to moderate vee out the tail. Now available in a quad setup for a more modern feel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Shiitake",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/225322521630fe.webp",
+          "description": "A longer fish shape designed to be ridden from 6'0–7'0. Flat enough in the front for glide while paddling, combined with a healthy amount of concaved vee running out the tail. Excels best in waves from shoulder high plus. Designed to work mainly as a twinzer but also great as a twin or quad for bigger waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Shiitake HP",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/29958611762de1.webp",
+          "description": "The shortboard replacement — a slimmed down high performance version of the Shiitake for those who want more of an everyday board without a midlength while still maintaining speed and flow. Single concave in the entry for lift and quicker get-up-and-go on the takeoff. Designed to be surfed as a twinzer; sweet spot is shoulder high to double overhead.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Straight Twin",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/cms/17377160396490.jpg",
+          "description": "A performance twin fin design, unlike a lot of boards in this category it has been designed to be surfed specifically as a twin fin without a trailer fin. Similar in looks to the Dolly Dagger except minus the center fin box, with a lower tail rocker for more hold and drive combined with added thickness through the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Synthetic Sally 2.0",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/10049389876354.webp",
+          "description": "Ford Archbold's signature model — short, fat, and a little different. Features a flat deck with a low beveled rail and beak nose, keeping it stable and buoyant yet allowing you to still bury the rails. Deep single concave for speed and drive and a flyer behind the side fins for release and pivot. Ride 3 inches shorter, 5/8 wider and same thickness as your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Funnel Cake",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/1920887235666b.webp",
+          "description": "Designed for surfing barrels specifically. Narrow in the outline, thicker in the center with volume pushed forward under the chest. Stretched out entry rocker for paddle power to get in early and under the lip. Works great for steep takeoffs and slabby waves. Can be ridden as a thruster or a quad.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Norts",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/12326783006331.webp",
+          "description": "Premium high performance shortboard designed to be smooth and neutral. Works well for powerful surfers and handles anything from Lower Trestles to Indo. Smooth outline and medium rocker combined with soft medium rails and a single concave. Surfs anything from 2–6 ft.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Shrizz",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/212522136962e2.webp",
+          "description": "A trippy round nose hybrid — a real mix of shapes with the glide, flow and speed of a twin fin fish mixed with the ability to surf top to bottom with the aggression of a shortboard. The shortboarder's fish; recommended as a quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Spring Fling",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/114889441632f8.webp",
+          "description": "A small wave grovel board that is totally rippable and not fishy. More refined outline and rails than the Friendly Salmon while keeping foam hidden inside. Single, double to subtle concave vee out the tail — fast off the mark, glides over fat sections yet performs when a section presents itself.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Utility",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/cms/17377160396490.jpg",
+          "description": "A high performance shortboard with a fuller nose and more foam packed into the deck. Surfs like a full performance shortboard but for everyday California waves. Single to double concave for quick rail to rail transition. Comes standard as a thruster with either a round tail or rounded square tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twinzer Egg",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/surfboards/9895480365a736.webp",
+          "description": "Twinzer classic egg — twin fin, vee bottom fish surfboard from the Panda lineup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinzer Fish",
+          "image_url": "https://d3iswawdztsslu.cloudfront.net/145/cms/17377160396490.jpg",
+          "description": "Panda Surfboards twinzer fish fun shape from the official Panda lineup.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
