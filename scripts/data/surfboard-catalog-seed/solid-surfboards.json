@@ -1,0 +1,172 @@
+{
+  "generated_for": "Solid Surfboards official named standup catalog",
+  "source": "https://solidsurf.co/product-category/surfboard-models/ (WooCommerce surfboard-models category — excludes gift cards and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "solid-surfboards",
+      "name": "Solid Surfboards",
+      "website_url": "https://solidsurf.co/",
+      "location_label": "San Diego, California",
+      "short_description": "San Diego custom surfboards — performance shortboards, grovelers, midlengths, and longboards built to order.",
+      "models": [
+        {
+          "name": "Bachelor",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9743.png",
+          "description": "Retro Single Fin",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bean",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_0439.png",
+          "description": "Swiss Army Knife",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Bento Box",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9070.png",
+          "description": "Performance Mini Simmons",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Butter Biscuit",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/ButterBiscuitTOP.png",
+          "description": "All Round Compact Fun",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cafe Racer",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9231.png",
+          "description": "Performance Squash with Hip",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cinnabun",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/CinnabunTOP.png",
+          "description": "Floaty Fast Fun",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Diamond Jig",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_0424.png",
+          "description": "Versatile Trimming Single Fin",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Duck Sauce",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9181.png",
+          "description": "Gradual Rocker Performance",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EZ Street",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9789.png",
+          "description": "Tear Drop Blunt Nose",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Frisbee",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9934.png",
+          "description": "Easy Going Egg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Go2",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9219-1.png",
+          "description": "Reliable Performance Shortboard",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jet-I",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9170-3.png",
+          "description": "High Performance Swallow Tail",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "LHP",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/LHP2TOP.png",
+          "description": "High Performance Longboard",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "LOG",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9979.png",
+          "description": "Classic California Noserider",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lunch Break",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/LunchBreakTOP.png",
+          "description": "Beach Ball Performance Squash",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Meatfish",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_4609-copy.png",
+          "description": "Grippy Stub Groveler",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pescador",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9817.png",
+          "description": "Long Fish",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pinner",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9963.png",
+          "description": "Streamlined Retro Longboard",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rising Sun",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_5271-copy.png",
+          "description": "Retro Stinger Single Fin",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sasquash",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9176-copy.png",
+          "description": "Wide Squash Performance",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Shuttle",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2024/05/510SOLIDShuttle14370Tr.png",
+          "description": "Small Wave Performance Groveler",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Stealth Fish",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2022/05/SOLIDStealthFishAquaTop.png",
+          "description": "Retro Twin Fin Fish",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stub Squash",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_5212.png",
+          "description": "Concave Deck High Volume Squash",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Throwback",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_0387.png",
+          "description": "Retro Twin Fin Fish",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Vinny",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_0359-1.png",
+          "description": "Tube Shooter",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "WTF",
+          "image_url": "https://solidsurf.co/wp-content/uploads/2019/11/IMG_9155.1.png",
+          "description": "Winged Performance Fish",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
