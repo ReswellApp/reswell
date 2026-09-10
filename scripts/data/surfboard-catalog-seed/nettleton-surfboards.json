@@ -1,0 +1,156 @@
+{
+  "generated_for": "Nettleton Surfboards official named standup catalog",
+  "source": "https://www.nettletonsurfboards.com.au/collections/models and /collections/neat-models (Shopify Surfboard Model and Neat Surfboards product types only — excludes stock dimension SKUs, apparel, fins, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "nettleton-surfboards",
+      "name": "Nettleton Surfboards",
+      "website_url": "https://www.nettletonsurfboards.com.au",
+      "location_label": "Northern Rivers, New South Wales, Australia",
+      "founder_name": "Sean Nettleton",
+      "lead_shaper_name": "Sean Nettleton",
+      "short_description": "Low-volume, traditionally built longboards, midlengths, and alternative shortboards by Sean Nettleton on Yaegl Country in the Northern Rivers of New South Wales.",
+      "models": [
+        {
+          "name": "Multiply",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_c3ec9e76-91b6-4e4e-bb3e-4e2013ec17f3.jpg?v=1674636445",
+          "description": "Inspired by the late 60's involvement era outline, the Multiply is the most versatile board in the Nettleton range.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bower",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8060.jpg?v=1735715347",
+          "description": "Derived from the Multiply with WSL team rider Tully White's personal enhancements — added rocker, increased concave leading to rolled vee.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Nosetalgia",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_91d6667b-4911-45b1-ac66-d8f82ae03090.jpg?v=1674636770",
+          "description": "Quintessential Californian style longboard with wide nose, fuller rails and wide chopped squaretail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Longarch",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_50b40d8f-9cd5-493e-9e55-53b0010b83f8.jpg?v=1674635835",
+          "description": "Longboard that trims, nose rides and turns with ease — bladed out arc tail for going fast down the line.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pinch",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_a2244c24-b757-4079-9787-e6844bd0d818.jpg?v=1674638406",
+          "description": "Timeless outline influenced by Lance Carson's approach to longboarding — responsive and lively whilst maintaining trim.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Authentic",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8245.jpg?v=1716199358",
+          "description": "Steeped in tradition with wide point pulled back and classic longboard lines developed with team rider Jaya Guy.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Dime",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/image_b411ff0f-b860-43cc-b800-272d577cf296.jpg?v=1688030481",
+          "description": "Designed for critical surfing — combines responsiveness and stability in a performance shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Liberty",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8247.jpg?v=1716199624",
+          "description": "Built for the feeling of inertia and trim — a glide-focused design for clean, flowing lines.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mirror",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/773A62EA-C24F-47FD-A396-91171FF6F5C1.jpg?v=1740124042",
+          "description": "True double ender with continuous curve planshape and evenly distributed volume for easy paddling.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Elliptic",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_d7c551bc-f90a-4a3f-b4c2-347e4862a8ae.jpg?v=1677393503",
+          "description": "Derived from the Evolution era — unique outline produces speed whilst remaining stable through critical sections.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Oracle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/image_37b08509-2017-4c1d-bf1e-c543ba6d6619.jpg?v=1689588411",
+          "description": "Versatile alternative midlength combining a long fish and a mini glider with beaked, down-railed nose.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pyramid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8240.jpg?v=1716199075",
+          "description": "Drawing inspiration from boards ridden in the very late 60's — past appreciation with modern versatility.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Euphoric",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/image_262f0ad5-c52f-4e5e-a6a2-f0e4da9bf55b.jpg?v=1689589365",
+          "description": "Truly rippable single fin with plenty of volume to paddle, position, and cruise down the line with ease.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Monarch",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/image_da515c4f-bc18-48fc-87a7-89c03ff52028.jpg?v=1689636218",
+          "description": "Midlength with plenty of foam, flat rocker and subtle vee — a great paddler with flowing performance.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Duet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8252.jpg?v=1716199909",
+          "description": "One board quiver with flat rocker, modern rails, tucked edge in the tail, and slight vee under the nose.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Clover",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8256.jpg?v=1716200195",
+          "description": "Classic outline with modern enhancements — twin fin with freedom to do whatever you want on a wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Simmons",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/surfboard-model-simmons-1.jpg?v=1633415559",
+          "description": "Modern take on a mid-century Bob Simmons design — fast, loose, drivey, and paddles with ease.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Harp",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/D03C310C-8411-45B8-8439-82509BB8EB9F.jpg?v=1769850412",
+          "description": "Asym mid length from the Neat range — smoothest introduction to asymmetry, tested from slow points to punchy beachies.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Lunar",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/33DE8D6F-297A-41D2-BF14-297A1E37BEF3.jpg?v=1746344136",
+          "description": "Perfect balance between tradition and performance — one of the most versatile short boards in the Neat range.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wasp",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/97E65395-775E-4E49-B0A8-65F48CCC40F8.jpg?v=1758194617",
+          "description": "Blending classic curves with modern performance for fast, flowing surfing with control and manoeuvrability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Box",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/BBA0E3CB-7BD4-443D-BE9B-BD432D62BD13.jpg?v=1749469636",
+          "description": "Drawing inspiration from Bob Simmons — modern performance, speed, glide, and playful manoeuvrability in a compact twin-fin shape.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Compass",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/865EC7FF-FCE6-4841-94F7-FE7000CB7594.jpg?v=1747035241",
+          "description": "Mini glider designed for subtlety, trim, and clean lines — fusing full-length glider glide with a shorter, more responsive frame.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Medusa",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/F55E57FE-9C6E-424E-A97D-324B5A1C2C5F.jpg?v=1747035241",
+          "description": "Blending classic flow with modern drive — drawn-out outline and pintail with twin setup for speed and smooth transitions.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
