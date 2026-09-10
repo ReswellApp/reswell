@@ -55,14 +55,15 @@ export function SupportCaseThread({
   originalRequest = null,
   staffNames,
 }: SupportCaseThreadProps) {
-  const [messages, setMessages] = useState(initial)
+  const [localMessages, setLocalMessages] = useState(initial)
   const [draft, setDraft] = useState("")
   const [pending, startTransition] = useTransition()
   const listRef = useRef<HTMLDivElement>(null)
+  const messages = canReply ? localMessages : initial
 
   useEffect(() => {
-    setMessages(initial)
-  }, [initial])
+    if (canReply) setLocalMessages(initial)
+  }, [canReply, initial])
 
   useEffect(() => {
     if (seedText) setDraft(seedText)
@@ -117,7 +118,7 @@ export function SupportCaseThread({
         toast.error(res.error)
         return
       }
-      setMessages((prev) => [
+      setLocalMessages((prev) => [
         ...prev,
         {
           id: `local-${Date.now()}`,
