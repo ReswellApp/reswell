@@ -1,0 +1,168 @@
+{
+  "generated_for": "JC Hawaii official named standup catalog",
+  "source": "http://www.jchawaii.com/surfboards.php (official model lineup and viewer previews — excludes custom order forms and gallery one-offs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jc-hawaii",
+      "name": "JC Hawaii",
+      "website_url": "http://www.jchawaii.com/",
+      "location_label": "North Shore, Oahu, Hawaii",
+      "founder_name": "John \"JC\" Carper",
+      "lead_shaper_name": "John \"JC\" Carper",
+      "short_description": "Custom surfboards by John \"JC\" Carper on Oahu's North Shore — cutting-edge performance shapes for ASP pros, tow-in guns, and everyday surfers since the 1970s.",
+      "models": [
+        {
+          "name": "T-RD",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_trd.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "White Fang",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_whitefang.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Enabler",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_enabler.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SD-3",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_sd3.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PMM",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_pmm.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SM",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_sm.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MP-B",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_mpb.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "T-RX",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_trx.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flying Pig",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_flyingpig.png",
+          "description": "Named production groveler model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Sting Ray",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_stingray.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Retro Rocket",
+          "image_url": "http://www.jchawaii.com/img/boards/retro_rocket_jchawaii.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Equalizer",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_equalizer.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flying Fish",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_flyingfish.png",
+          "description": "Named production fish model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Semi-Gun",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_semigun.png",
+          "description": "Named production step-up gun model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "NX-1",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_nx1.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sling Shot",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_slingshot.png",
+          "description": "JC Hawaii tow-in gun model designed for heavy North Shore surf.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Shadow",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_shadow.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flo-Master",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_flomaster.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PBU",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_pbu.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup (Pray Before Use).",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hoyer",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_hoyer.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Brett Barley",
+          "image_url": "http://www.jchawaii.com/img/boards/brett_barley_jchawaii.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SDX",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_3dx.png",
+          "description": "Named production shortboard model (3D-X) from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Torpedo",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_torpedo.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rocket Fish",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_rocketfish.png",
+          "description": "Named production fish model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "RG4",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_rg4.png",
+          "description": "Named production shortboard model from John \"JC\" Carper's official JC Hawaii lineup.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
