@@ -471,7 +471,6 @@ export function CaseInboxAdminClient() {
           created_at: new Date().toISOString(),
         },
       ])
-      setThreadReloadToken((n) => n + 1)
       patchItem(selected.key, {
         preview: sentMode === "note" ? `Note: ${body}` : body,
         updatedAt: new Date().toISOString(),
@@ -582,9 +581,12 @@ export function CaseInboxAdminClient() {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => void load("refresh")}
+            onClick={() => {
+              setThreadReloadToken((n) => n + 1)
+              void load("refresh")
+            }}
             disabled={refreshing}
-            aria-label="Refresh inbox"
+            aria-label="Refresh inbox and conversation"
           >
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
           </Button>
