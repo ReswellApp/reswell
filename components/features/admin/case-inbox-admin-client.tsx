@@ -17,6 +17,8 @@ import { updateSupportCaseInboxAction } from "@/lib/actions/supportCaseInbox"
 import {
   filterInboxItems,
   inboxViewFromSearchParams,
+  nextInboxSelectedKey,
+  pinSelectedInboxItem,
   sortInboxItems,
   viewToFilters,
   withInboxStatus,
@@ -189,23 +191,24 @@ export function CaseInboxAdminClient() {
   )
 
   const selected = useMemo(
-    () => filtered.find((item) => item.key === selectedKey) ?? null,
-    [filtered, selectedKey],
+    () => items.find((item) => item.key === selectedKey) ?? null,
+    [items, selectedKey],
+  )
+
+  const listItems = useMemo(
+    () => pinSelectedInboxItem(filtered, selected),
+    [filtered, selected],
   )
 
   useEffect(() => {
-    if (loading) return
-    if (!selectedKey && filtered.length > 0) {
-      setSelectedKey(filtered[0]!.key)
-      return
-    }
-    if (selectedKey && !filtered.some((item) => item.key === selectedKey) && filtered.length > 0) {
-      setSelectedKey(filtered[0]!.key)
-    }
-    if (selectedKey && filtered.length === 0) {
-      setSelectedKey(null)
-    }
-  }, [filtered, selectedKey, loading])
+    const nextKey = nextInboxSelectedKey({
+      items,
+      filtered,
+      selectedKey,
+      loading,
+    })
+    if (nextKey !== undefined) setSelectedKey(nextKey)
+  }, [filtered, items, selectedKey, loading])
 
   useEffect(() => {
     syncUrl(view, typeOverlay, selectedKey)
@@ -272,7 +275,10 @@ export function CaseInboxAdminClient() {
         return
       }
       setThreadCaseId(res.case.id)
-      setThreadMessages(res.messages)
+      setThreadMessages((prev) => {
+        if (res.messages.length === 0 && prev.length > 0) return prev
+        return res.messages
+      })
       setThreadEvents(res.events)
     })
     return () => {
@@ -441,6 +447,7 @@ export function CaseInboxAdminClient() {
 
   function sendComposer(disposition: ComposerDisposition) {
     if (!selected) return
+    const current = selected
     const body = draft.trim()
     if (!body) {
       toast.error("Write a message first.")
@@ -448,7 +455,7 @@ export function CaseInboxAdminClient() {
     }
     startReply(async () => {
       const res = await sendSupportCaseAdminReplyAction({
-        case_id: selected.id,
+        case_id: current.id,
         content: body,
         is_internal: composerMode === "note",
       })
@@ -459,35 +466,52 @@ export function CaseInboxAdminClient() {
       toast.success(composerMode === "note" ? "Note added" : "Sent to customer")
       setDraft("")
       const sentMode = composerMode
+      const now = new Date().toISOString()
       setThreadMessages((prev) => [
         ...prev,
         {
           id: `local-${Date.now()}`,
-          case_id: selected.id,
+          case_id: current.id,
           author_user_id: currentStaffId,
           author_role: "agent",
           body,
           is_internal: sentMode === "note",
-          created_at: new Date().toISOString(),
+          created_at: now,
         },
       ])
-      patchItem(selected.key, {
+      const nextStatus =
+        sentMode === "note"
+          ? current.status
+          : disposition === "resolve"
+            ? "resolved"
+            : disposition === "waiting"
+              ? "waiting_on_you"
+              : current.status === "submitted" ||
+                  current.status === "in_review" ||
+                  current.status === "waiting_on_you"
+                ? "in_progress"
+                : current.status
+      const next = nextStatus !== current.status ? withInboxStatus(current, nextStatus) : current
+      patchItem(current.key, {
+        ...next,
         preview: sentMode === "note" ? `Note: ${body}` : body,
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
       })
-      if (disposition === "resolve" && composerMode === "reply") {
+      if (disposition === "resolve" && sentMode === "reply") {
         resolveSelected()
-      } else if (disposition === "waiting" && composerMode === "reply") {
+      } else if (disposition === "waiting" && sentMode === "reply") {
         persistInbox({ status: "waiting_on_you", silent: true })
+      } else {
+        setThreadReloadToken((n) => n + 1)
       }
     })
   }
 
   function selectRelative(delta: number) {
-    if (filtered.length === 0) return
-    const index = filtered.findIndex((item) => item.key === selectedKey)
-    const next = index < 0 ? 0 : Math.min(filtered.length - 1, Math.max(0, index + delta))
-    setSelectedKey(filtered[next]!.key)
+    if (listItems.length === 0) return
+    const index = listItems.findIndex((item) => item.key === selectedKey)
+    const next = index < 0 ? 0 : Math.min(listItems.length - 1, Math.max(0, index + delta))
+    setSelectedKey(listItems[next]!.key)
   }
 
   useEffect(() => {
@@ -608,7 +632,7 @@ export function CaseInboxAdminClient() {
             <CaseInboxViews compact active={view} counts={counts} onChange={setView} />
           </div>
           <CaseInboxListPane
-            items={filtered}
+            items={listItems}
             staffNames={staffNames}
             view={view}
             selectedKey={selectedKey}

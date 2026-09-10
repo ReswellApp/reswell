@@ -224,6 +224,7 @@ export function SellerOfferToCartHolders({
                               <Link
                                 href={offerMessagesHref(
                                   {
+                                    id: holder.openOfferId ?? undefined,
                                     listing_id: listingId,
                                     buyer_id: holder.buyerUserId,
                                     seller_id: sellerUserId,

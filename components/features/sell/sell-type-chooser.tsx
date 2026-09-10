@@ -52,8 +52,7 @@ function sellTypeOptions(
 }
 
 /**
- * Compact type links between catalog search and trending brands
- * (and in empty-result panels).
+ * Compact type links under catalog search (and in empty-result panels).
  */
 export function SellListByTypeLinks({
   isAdmin = false,

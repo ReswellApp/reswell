@@ -41,6 +41,7 @@ export function MarkSoldTipCheckoutPlaceholder() {
 }
 
 export function MarkSoldSurveyForm({
+  variant = "mark_sold",
   soldChannel,
   elsewhereDetail,
   elsewhereDetailValid,
@@ -61,6 +62,7 @@ export function MarkSoldSurveyForm({
   onRatingChange,
   onSubmit,
 }: {
+  variant?: "mark_sold" | "delete"
   soldChannel: SoldOffPlatformChannel | null
   elsewhereDetail: string
   elsewhereDetailValid: boolean
@@ -86,8 +88,9 @@ export function MarkSoldSurveyForm({
   const canSubmit =
     !loading &&
     !customTipInvalid &&
-    (hasValidTip || (Boolean(soldChannel) && elsewhereDetailValid))
+    (variant === "delete" || hasValidTip || (Boolean(soldChannel) && elsewhereDetailValid))
   const noTipSelected = selectedTipCents === null && !customTip.trim()
+  const showChannel = variant === "mark_sold"
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
@@ -97,6 +100,7 @@ export function MarkSoldSurveyForm({
           hasValidTip ? "max-h-[min(16rem,34dvh)] shrink-0" : "flex-1",
         )}
       >
+        {showChannel ? (
         <section className="space-y-1.5">
           <h3 className="text-sm font-medium">Where did you sell it?</h3>
           <div className="grid grid-cols-2 gap-1.5">
@@ -143,6 +147,7 @@ export function MarkSoldSurveyForm({
             </div>
           ) : null}
         </section>
+        ) : null}
 
       <section className="space-y-1.5">
         <div className="flex items-baseline justify-between gap-2">
@@ -238,7 +243,7 @@ export function MarkSoldSurveyForm({
           <div className="flex h-full min-h-0 flex-col">{tipCheckout}</div>
         ) : (
           <Button type="button" className="w-full" disabled={!canSubmit} onClick={onSubmit}>
-            {loading ? "Saving…" : "Done"}
+            {loading ? "Saving…" : variant === "delete" ? "Delete listing" : "Done"}
           </Button>
         )}
       </section>

@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { AlertCircle, ImageOff, Loader2 } from "lucide-react"
@@ -209,6 +210,7 @@ export function MakeOfferDialog({
         return
       }
       onOpenChange(false)
+      router.refresh()
     } finally {
       setSubmitting(false)
     }
@@ -489,6 +491,9 @@ export function MakeOfferDialog({
   )
 }
 
+const offerTriggerButtonClassName =
+  "min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#f2f3f5] text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80 sm:h-auto"
+
 export function MakeOfferTriggerButton({
   className,
   disabled,
@@ -503,14 +508,33 @@ export function MakeOfferTriggerButton({
       type="button"
       variant="secondary"
       size="lg"
-      className={cn(
-        "min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#f2f3f5] text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80 sm:h-auto",
-        className,
-      )}
+      className={cn(offerTriggerButtonClassName, className)}
       disabled={disabled}
       onClick={onClick}
     >
       Make an offer
+    </Button>
+  )
+}
+
+export function ViewOfferTriggerButton({
+  href,
+  className,
+}: {
+  href: string
+  className?: string
+}) {
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      size="lg"
+      className={cn(offerTriggerButtonClassName, className)}
+      asChild
+    >
+      <Link href={href} prefetch>
+        View offer
+      </Link>
     </Button>
   )
 }

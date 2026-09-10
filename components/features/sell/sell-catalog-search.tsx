@@ -36,10 +36,6 @@ import {
   writeSellCatalogHandoff,
 } from "@/lib/sell-flow/catalog-handoff"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
-import {
-  SellTrendingBrandsSlider,
-  type SellTrendingBrand,
-} from "@/components/features/sell/sell-trending-brands"
 import { SellListByTypeLinks } from "@/components/features/sell/sell-type-chooser"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
@@ -114,8 +110,6 @@ function filterResultForQuery(
 export type SellCatalogSearchProps = {
   /** Show admin-only sell types (e.g. apparel) in the “list by type” row. */
   isAdmin?: boolean
-  /** Homepage trending brands — tapping one drills into that brand's models. */
-  trendingBrands?: SellTrendingBrand[]
   /** Experience-based surfboard create URL (Quick vs Guided). */
   surfboardSellHref: string
   /** Optional resume-draft prompt above the search hero. */
@@ -465,123 +459,6 @@ function SellCatalogSearchPanel({
   return null
 }
 
-async function fetchSellBrandCatalogModels(
-  brandId: string,
-): Promise<SellCatalogSearchResultRow[]> {
-  const res = await fetch(
-    `/api/sell/catalog-search/brand-models?${new URLSearchParams({ brand_id: brandId })}`,
-    { method: "GET", headers: { Accept: "application/json" } },
-  )
-  const body = (await res.json()) as {
-    data?: { rows: SellCatalogSearchResultRow[] }
-    error?: string
-  }
-  if (!res.ok || !body.data) {
-    throw new Error(body.error ?? "Could not load this brand's models.")
-  }
-  return body.data.rows
-}
-
-/**
- * Trending-brand drill-in: "Which {brand} model is it?" — every catalog model
- * for the tapped brand as clickable blocks. Picking one runs the same handoff
- * as a search result, so it lands in the right sell flow prefilled.
- */
-function SellBrandModelsPanel({
-  brand,
-  rows,
-  loading,
-  error,
-  onSelect,
-  onBack,
-  isAdmin = false,
-  surfboardSellHref,
-}: {
-  brand: SellTrendingBrand
-  rows: SellCatalogSearchResultRow[] | null
-  loading: boolean
-  error: string | null
-  onSelect: (row: SellCatalogSearchResultRow) => void
-  onBack: () => void
-  isAdmin?: boolean
-  surfboardSellHref: string
-}) {
-  const [filter, setFilter] = React.useState("")
-  const filterKey = compactSearchKey(filter)
-  const visibleRows = React.useMemo(() => {
-    if (!rows) return []
-    if (!filterKey) return rows
-    return rows.filter((row) =>
-      compactSearchKey(productTitleLine(row)).includes(filterKey),
-    )
-  }, [rows, filterKey])
-
-  return (
-    <section
-      className="overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-sm animate-in fade-in duration-150 ease-out motion-reduce:animate-none"
-      aria-label={`${brand.name} catalog models`}
-    >
-      <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 sm:px-4">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 shrink-0 px-2 text-xs text-muted-foreground"
-          onClick={onBack}
-        >
-          ← All brands
-        </Button>
-        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
-          Which {brand.name} model is it?
-        </p>
-      </div>
-
-      {rows && rows.length > 8 ? (
-        <div className="px-3 pt-3 sm:px-4">
-          <input
-            type="text"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder={`Filter ${brand.name} models`}
-            className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground/70 focus:border-cerulean/40 focus:ring-2 focus:ring-cerulean/15"
-            aria-label={`Filter ${brand.name} models`}
-          />
-        </div>
-      ) : null}
-
-      {loading || (!error && rows === null) ? (
-        <NavSuggestPanelSkeleton />
-      ) : error ? (
-        <div className="px-4 py-4 text-sm text-destructive">{error}</div>
-      ) : visibleRows.length > 0 ? (
-        <ul
-          role="listbox"
-          aria-label={`${brand.name} models`}
-          className="max-h-[min(56dvh,480px)] overflow-y-auto overscroll-contain py-1"
-        >
-          {visibleRows.map((row) => (
-            <ProductRow key={rowKey(row)} row={row} query={filter} onSelect={onSelect} />
-          ))}
-        </ul>
-      ) : (
-        <p className="px-4 py-5 text-sm text-muted-foreground">
-          {filterKey
-            ? `No ${brand.name} models match that filter.`
-            : `We don't have ${brand.name} models in the catalog yet.`}
-        </p>
-      )}
-
-      <div className="border-t border-border/60 px-3 py-2.5 sm:px-4">
-        <SellListByTypeLinks
-          isAdmin={isAdmin}
-          surfboardHref={surfboardSellHref}
-          variant="panel"
-        />
-      </div>
-    </section>
-  )
-}
-
 async function fetchSellCatalogSearch(query: string): Promise<SellCatalogSearchResult> {
   const cached = getCachedSellCatalogSearch(query)
   if (cached) return cached
@@ -599,7 +476,6 @@ async function fetchSellCatalogSearch(query: string): Promise<SellCatalogSearchR
 
 export function SellCatalogSearch({
   isAdmin = false,
-  trendingBrands = [],
   surfboardSellHref,
   resumeBanner,
   className,
@@ -626,45 +502,6 @@ export function SellCatalogSearch({
   const focusStageRef = React.useRef<HTMLDivElement>(null)
   const searchEpochRef = React.useRef(0)
   const [searchFocused, setSearchFocused] = React.useState(false)
-
-  // Trending-brand drill-in: tapping a brand swaps the slider for that brand's
-  // model blocks (loaded once per brand; picking one reuses handleSelect).
-  const [focusBrand, setFocusBrand] = React.useState<SellTrendingBrand | null>(null)
-  const [brandModels, setBrandModels] = React.useState<SellCatalogSearchResultRow[] | null>(null)
-  const [brandModelsLoading, setBrandModelsLoading] = React.useState(false)
-  const [brandModelsError, setBrandModelsError] = React.useState<string | null>(null)
-  const brandFetchEpochRef = React.useRef(0)
-
-  React.useEffect(() => {
-    if (!focusBrand) {
-      setBrandModels(null)
-      setBrandModelsError(null)
-      setBrandModelsLoading(false)
-      return
-    }
-    // The main search unmounts while a brand is focused — clear its overlay
-    // state so the scrim doesn't linger when the search returns.
-    setSuggestOpen(false)
-    setSearchFocused(false)
-    brandFetchEpochRef.current += 1
-    const epoch = brandFetchEpochRef.current
-    setBrandModels(null)
-    setBrandModelsError(null)
-    setBrandModelsLoading(true)
-    fetchSellBrandCatalogModels(focusBrand.id)
-      .then((rows) => {
-        if (epoch !== brandFetchEpochRef.current) return
-        setBrandModels(rows)
-        setBrandModelsLoading(false)
-      })
-      .catch((err: unknown) => {
-        if (epoch !== brandFetchEpochRef.current) return
-        setBrandModelsError(
-          err instanceof Error ? err.message : "Could not load this brand's models.",
-        )
-        setBrandModelsLoading(false)
-      })
-  }, [focusBrand])
 
   // Parallel AI helper: fires after the primary search settles without exact
   // matches; suggestions render below the standard results, never blocking them.
@@ -781,9 +618,6 @@ export function SellCatalogSearch({
             </h2>
           </header>
 
-          {/* Brand drill-in replaces the main search — the panel has its own
-              filter, so two search inputs at once would compete. */}
-          {focusBrand ? null : (
           <div
             ref={focusStageRef}
             className={cn(
@@ -886,46 +720,19 @@ export function SellCatalogSearch({
               ) : null}
             </div>
           </div>
-          )}
 
-          {focusBrand ? null : (
-            <div
-              className={cn(
-                "transition-opacity duration-300 ease-out motion-reduce:transition-none",
-                focusMode && "opacity-35",
-              )}
-            >
-              <SellListByTypeLinks
-                isAdmin={isAdmin}
-                surfboardHref={surfboardSellHref}
-                variant="page"
-              />
-            </div>
-          )}
-
-          {focusBrand ? (
-            <SellBrandModelsPanel
-              key={focusBrand.id}
-              brand={focusBrand}
-              rows={brandModels}
-              loading={brandModelsLoading}
-              error={brandModelsError}
-              onSelect={handleSelect}
-              onBack={() => setFocusBrand(null)}
+          <div
+            className={cn(
+              "transition-opacity duration-300 ease-out motion-reduce:transition-none",
+              focusMode && "opacity-35",
+            )}
+          >
+            <SellListByTypeLinks
               isAdmin={isAdmin}
-              surfboardSellHref={surfboardSellHref}
+              surfboardHref={surfboardSellHref}
+              variant="page"
             />
-          ) : trendingBrands.length > 0 ? (
-            <div
-              className={cn(
-                "transition-opacity duration-300 ease-out motion-reduce:transition-none",
-                focusMode && "pointer-events-none opacity-35",
-              )}
-              aria-hidden={focusMode || undefined}
-            >
-              <SellTrendingBrandsSlider brands={trendingBrands} onSelect={setFocusBrand} />
-            </div>
-          ) : null}
+          </div>
         </div>
       </div>
     </main>

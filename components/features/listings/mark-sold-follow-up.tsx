@@ -10,6 +10,7 @@ import {
 } from "@/components/features/listings/mark-sold-survey-steps"
 import { submitSoldFlowReswellReviewAction } from "@/lib/actions/reswellPlatformReview"
 import { postListingSaleFeedback, postListingSaleTip } from "@/lib/listing-sale-feedback-request"
+import { postEndListing } from "@/lib/listing-end-request"
 import { postMarkListingSold } from "@/lib/listing-mark-sold-request"
 import { prefetchSaleTipCheckout } from "@/lib/stripe/prefetch-sale-tip-checkout"
 import {
@@ -46,17 +47,21 @@ function parseCustomTipCents(raw: string): number | null {
 export function MarkSoldFollowUp({
   listingId,
   listingPriceUsd,
+  intent = "mark_sold",
   onClose,
   onFinished,
   onCheckoutActiveChange,
   onMarkedSold,
+  onDeleted,
 }: {
   listingId: string
   listingPriceUsd: number | null
+  intent?: "mark_sold" | "delete"
   onClose: () => void
   onFinished?: () => void
   onCheckoutActiveChange?: (active: boolean) => void
   onMarkedSold?: () => void
+  onDeleted?: () => void
 }) {
   const [step, setStep] = useState<FollowUpStep>("form")
   const [soldChannel, setSoldChannel] = useState<SoldOffPlatformChannel | null>(null)
@@ -100,6 +105,16 @@ export function MarkSoldFollowUp({
     setStep("thanks")
   }
 
+  async function confirmListingDeleted(): Promise<boolean> {
+    const result = await postEndListing(listingId, "delete")
+    if (!result.ok) {
+      toast.error(result.error)
+      return false
+    }
+    onDeleted?.()
+    return true
+  }
+
   async function confirmListingSold(): Promise<boolean> {
     const channel = soldChannel
     const result = await postMarkListingSold(
@@ -123,7 +138,8 @@ export function MarkSoldFollowUp({
   async function saveFeedbackAndReview(): Promise<boolean> {
     const channel = soldChannel
     const rating = reviewRating
-    const shouldSaveFeedback = Boolean(channel && elsewhereDetailValid)
+    const shouldSaveFeedback =
+      intent === "mark_sold" && Boolean(channel && elsewhereDetailValid)
     if (!shouldSaveFeedback && rating == null) return true
 
     try {
@@ -252,6 +268,14 @@ export function MarkSoldFollowUp({
         if (!started) return
         return
       }
+      if (intent === "delete") {
+        const saved = await saveFeedbackAndReview()
+        if (!saved) return
+        const deleted = await confirmListingDeleted()
+        if (!deleted) return
+        finish()
+        return
+      }
       if (!soldChannel || !elsewhereDetailValid) {
         toast.error("Tell us where you sold it, or add a tip.")
         return
@@ -276,6 +300,7 @@ export function MarkSoldFollowUp({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
       <MarkSoldSurveyForm
+        variant={intent}
         soldChannel={soldChannel}
         elsewhereDetail={elsewhereDetail}
         elsewhereDetailValid={elsewhereDetailValid}
@@ -295,14 +320,21 @@ export function MarkSoldFollowUp({
                 amountCents={activeTipCents}
                 onSuccess={() => {
                   void (async () => {
-                    const marked = await confirmListingSold()
-                    if (!marked) return
+                    if (intent === "delete") {
+                      const saved = await saveFeedbackAndReview()
+                      if (!saved) return
+                      const deleted = await confirmListingDeleted()
+                      if (!deleted) return
+                    } else {
+                      const marked = await confirmListingSold()
+                      if (!marked) return
+                      void saveFeedbackAndReview()
+                    }
                     setTipped(true)
                     clientSecretRef.current = null
                     startedForRef.current = null
                     onCheckoutActiveChangeRef.current?.(false)
                     finish()
-                    void saveFeedbackAndReview()
                   })()
                 }}
               />

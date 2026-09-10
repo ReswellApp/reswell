@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { LISTING_BUYER_OPEN_OFFER_STATUSES } from "@/lib/utils/offer-messages-href"
 
 const SELLER_OFFER_LISTING_SELECT =
   "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)"
@@ -144,6 +145,14 @@ export async function fetchSellerListingsForOffer(
   return [...byId.values()]
 }
 
+export type OpenBuyerOfferOnListing = {
+  id: string
+  listing_id: string
+  buyer_id: string
+  seller_id: string
+  status: (typeof LISTING_BUYER_OPEN_OFFER_STATUSES)[number]
+}
+
 export async function findPendingOfferForBuyer(
   supabase: SupabaseClient,
   listingId: string,
@@ -159,6 +168,25 @@ export async function findPendingOfferForBuyer(
 
   if (error || !data) return null
   return { id: data.id }
+}
+
+export async function findOpenBuyerOfferOnListing(
+  supabase: SupabaseClient,
+  listingId: string,
+  buyerId: string,
+): Promise<OpenBuyerOfferOnListing | null> {
+  const { data, error } = await supabase
+    .from("offers")
+    .select("id, listing_id, buyer_id, seller_id, status")
+    .eq("listing_id", listingId)
+    .eq("buyer_id", buyerId)
+    .in("status", [...LISTING_BUYER_OPEN_OFFER_STATUSES])
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return data as OpenBuyerOfferOnListing
 }
 
 /** Buyer–seller offer row where the buyer may check out at `current_amount` (listing stays `active`). */

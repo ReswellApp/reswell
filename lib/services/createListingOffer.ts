@@ -3,8 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   fetchListingForOffer,
-  findPendingOfferForBuyer,
+  findOpenBuyerOfferOnListing,
 } from "@/lib/db/offers"
+import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { offerShippingAmountFromListing } from "@/lib/offer-listing-shipping"
 import type { CreateListingOfferBody } from "@/lib/validations/create-listing-offer"
 import { trackKlaviyoOfferMade } from "@/lib/klaviyo/track-offer-made"
@@ -113,19 +114,29 @@ export async function createListingOffer(
     return { ok: false, status: 400, error: `Your offer can’t exceed the list price ($${listPrice.toFixed(2)}).` }
   }
 
-  const pending = await findPendingOfferForBuyer(supabase, listingId, buyerId)
-  if (pending) {
-    const repaired = await syncOfferThreadIfMissing(pending.id)
+  const openOffer = await findOpenBuyerOfferOnListing(supabase, listingId, buyerId)
+  if (openOffer) {
+    const repaired = await syncOfferThreadIfMissing(openOffer.id)
     if (!repaired.ok) {
       console.error("[createListingOffer] sync existing pending offer thread:", repaired.reason)
+    }
+    let conversationId = repaired.ok ? repaired.conversationId : null
+    if (!conversationId) {
+      const existing = await getConversationForBuyerSellerListing(
+        supabase,
+        openOffer.buyer_id,
+        openOffer.seller_id,
+        openOffer.listing_id,
+      )
+      conversationId = existing?.id ?? null
     }
     return {
       ok: false,
       status: 409,
       code: "offer_already_open",
       error: "Offer already pending on this listing.",
-      offerId: pending.id,
-      conversationId: repaired.ok ? repaired.conversationId : null,
+      offerId: openOffer.id,
+      conversationId,
     }
   }
 

@@ -233,7 +233,7 @@ export function PrivacyPolicyContent({ compact = false }: { compact?: boolean })
             </Link>
             .
           </li>
-          <li>Edit or archive your listings at any time.</li>
+          <li>Edit, hide, or delete your listings at any time.</li>
           <li>Control which emails you receive from your notification preferences.</li>
           <li>
             Manage cookies through your browser. See our{" "}

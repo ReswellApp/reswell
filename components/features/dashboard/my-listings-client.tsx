@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Archive,
   ArrowLeft,
   ArrowRight,
   Package,
@@ -37,6 +36,10 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
+import {
+  ListingVacationModeButton,
+  canUseListingVacationMode,
+} from "@/components/features/sell/listing-vacation-mode-button"
 import { RelistListingButton } from "@/components/features/listings/relist-listing-button"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
@@ -297,6 +300,7 @@ export function MyListingsClient({
   const [sectionFilter, setSectionFilter] = useState("all")
   const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>("all")
   const [endListingId, setEndListingId] = useState<string | null>(null)
+  const [vacationById, setVacationById] = useState<Record<string, boolean>>({})
 
   const listingTypeOptions = useMemo(() => {
     const unique = new Set(
@@ -373,6 +377,14 @@ export function MyListingsClient({
   const endListing = endListingId
     ? listings.find((listing) => listing.id === endListingId)
     : undefined
+  const endListingVacation =
+    endListing != null
+      ? (vacationById[endListing.id] ?? endListing.hidden_from_site === true)
+      : false
+
+  function setListingVacation(listingId: string, enabled: boolean) {
+    setVacationById((current) => ({ ...current, [listingId]: enabled }))
+  }
 
   return (
     <div className="space-y-6">
@@ -381,17 +393,6 @@ export function MyListingsClient({
         description="Summary of your listing inventory and performance."
         actions={
           <>
-            <Button
-              asChild
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-            >
-              <Link href="/dashboard/listings/archived" title="Archived listings">
-                <Archive className="h-4 w-4" aria-hidden />
-                <span className="sr-only">Archived listings</span>
-              </Link>
-            </Button>
             {!sellerBanned ? (
               <Button asChild size="sm" className="rounded-full">
                 <Link href="/sell?new=1">
@@ -539,6 +540,8 @@ export function MyListingsClient({
                 getListingHref={getListingHref}
                 onDiscardDraft={handleDiscardDraft}
                 onEndListing={setEndListingId}
+                vacationMode={vacationById[pinnedDraft.id] ?? pinnedDraft.hidden_from_site === true}
+                onVacationModeChange={setListingVacation}
               />
               {hiddenDraftCount > 0 ? (
                 <div className="flex justify-end py-2">
@@ -570,6 +573,8 @@ export function MyListingsClient({
                     getListingHref={getListingHref}
                     onDiscardDraft={handleDiscardDraft}
                     onEndListing={setEndListingId}
+                    vacationMode={vacationById[listing.id] ?? listing.hidden_from_site === true}
+                    onVacationModeChange={setListingVacation}
                   />
                 ))}
               </div>
@@ -586,11 +591,16 @@ export function MyListingsClient({
         listingId={endListingId}
         listingPriceUsd={endListing?.price}
         listingStatus={endListing?.status}
-        vacationMode={endListing?.hidden_from_site === true}
+        vacationMode={endListingVacation}
         canDelete={endListing?.canDelete === true}
         open={!!endListingId}
         onOpenChange={(open) => {
           if (!open) setEndListingId(null)
+        }}
+        onComplete={(result) => {
+          if (result.mode === "vacation" && endListingId) {
+            setListingVacation(endListingId, result.vacationMode)
+          }
         }}
       />
     </div>
@@ -604,6 +614,8 @@ function ListingRow({
   getListingHref,
   onDiscardDraft,
   onEndListing,
+  vacationMode,
+  onVacationModeChange,
 }: {
   listing: MyListingRow
   sellerUserId: string
@@ -611,6 +623,8 @@ function ListingRow({
   getListingHref: (section: string, id: string, slug?: string | null) => string
   onDiscardDraft: (id: string) => void
   onEndListing: (id: string) => void
+  vacationMode: boolean
+  onVacationModeChange: (listingId: string, enabled: boolean) => void
 }) {
   const imageSrc = listingRowImageSrc(listing)
   const isDraft = listing.status === "draft"
@@ -629,7 +643,7 @@ function ListingRow({
     !isDraft &&
     !isSold &&
     !isDelinquent &&
-    listing.hidden_from_site !== true &&
+    !vacationMode &&
     isPeerListingSection(listing.section) &&
     listing.cartCount > 0
 
@@ -690,9 +704,9 @@ function ListingRow({
           <p className="mt-0.5 text-[11px] font-medium text-orange-700 dark:text-orange-400">
             Delinquent — hidden from site
           </p>
-        ) : listing.hidden_from_site && !isDraft && !isSold ? (
+        ) : vacationMode && !isDraft && !isSold ? (
           <p className="mt-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-            On vacation — hidden from site. Use End to go live.
+            On vacation — temporarily hidden from site
           </p>
         ) : null}
         {!isDraft && !isDelinquent && listing.status !== "active" && !isSold ? (
@@ -754,6 +768,13 @@ function ListingRow({
             triggerSize="sm"
             triggerLabel="Offer"
             triggerClassName="min-w-[5.5rem] border-border/60 bg-muted text-primary shadow-none hover:bg-muted/80"
+          />
+        ) : null}
+        {canUseListingVacationMode(listing.status) ? (
+          <ListingVacationModeButton
+            listingId={listing.id}
+            vacationMode={vacationMode}
+            onVacationModeChange={(enabled) => onVacationModeChange(listing.id, enabled)}
           />
         ) : null}
         {isDraft ? (

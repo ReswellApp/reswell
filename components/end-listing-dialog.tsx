@@ -16,16 +16,14 @@ import { MarkSoldFollowUp } from "@/components/features/listings/mark-sold-follo
 import { canUseListingVacationMode } from "@/components/features/sell/listing-vacation-mode-button"
 import { toast } from "sonner"
 import { setListingVacationModeAction } from "@/lib/actions/listingVacationMode"
-import { postEndListing } from "@/lib/listing-end-request"
 import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
 import { prefetchSaleTipCheckout } from "@/lib/stripe/prefetch-sale-tip-checkout"
 import { cn } from "@/lib/utils"
 
-type EndChoice = "delete" | "archive" | "mark_sold" | "vacation" | null
-type DialogStep = "main" | "sold_survey"
+type EndChoice = "delete" | "mark_sold" | "vacation" | null
+type DialogStep = "main" | "sold_survey" | "delete_survey"
 
 export type EndListingDialogResult =
-  | { mode: "archive"; message?: string }
   | { mode: "delete" }
   | { mode: "mark_sold" }
   | { mode: "vacation"; vacationMode: boolean }
@@ -58,6 +56,7 @@ export function EndListingDialog({
   const [tipCheckoutActive, setTipCheckoutActive] = useState(false)
   const [soldThanks, setSoldThanks] = useState(false)
   const markedSoldRef = useRef(false)
+  const deletedRef = useRef(false)
   const tipCheckoutActiveRef = useRef(false)
   const router = useRouter()
 
@@ -76,11 +75,20 @@ export function EndListingDialog({
     tipCheckoutActiveRef.current = false
   }
 
-  function closeAndRefreshIfSold() {
+  function closeAndRefreshIfEnded() {
     const sold = markedSoldRef.current
+    const deleted = deletedRef.current
     resetState()
     markedSoldRef.current = false
+    deletedRef.current = false
     onOpenChange(false)
+    if (deleted) {
+      toast.success("Listing deleted")
+      onComplete?.({ mode: "delete" })
+      router.push("/dashboard/listings")
+      router.refresh()
+      return
+    }
     if (sold) {
       toast.success("Listing marked as sold")
       onComplete?.({ mode: "mark_sold" })
@@ -91,9 +99,9 @@ export function EndListingDialog({
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
       // Stripe's iframe teardown looks like an outside dismiss. Keep the
-      // sold follow-up (including "Tip sent") open until the user hits close.
-      if (step === "sold_survey") return
-      closeAndRefreshIfSold()
+      // follow-up (including "Tip sent") open until the user hits close.
+      if (step === "sold_survey" || step === "delete_survey") return
+      closeAndRefreshIfEnded()
       return
     }
     onOpenChange(true)
@@ -142,35 +150,20 @@ export function EndListingDialog({
       return
     }
 
-    if (choice === "delete" && !canDelete) return
-
-    setLoading(true)
-    try {
-      const result = await postEndListing(listingId, choice)
-      if (!result.ok) {
-        toast.error(result.error)
-        return
-      }
-
-      if (result.mode === "delete") {
-        onComplete?.({ mode: "delete" })
-        closeAndRefreshIfSold()
-        router.push("/dashboard/listings")
-        return
-      }
-
-      onComplete?.({ mode: "archive", message: result.message })
-      closeAndRefreshIfSold()
-      router.push("/dashboard/listings/archived")
-    } finally {
-      setLoading(false)
+    if (choice === "delete") {
+      if (!canDelete) return
+      setSoldPriceUsd(
+        typeof listingPriceUsd === "number" && listingPriceUsd > 0 ? listingPriceUsd : null,
+      )
+      setStep("delete_survey")
     }
   }
 
   const followUpPriceUsd =
     soldPriceUsd ??
     (typeof listingPriceUsd === "number" && listingPriceUsd > 0 ? listingPriceUsd : null)
-  const followUpOpen = step === "sold_survey"
+  const followUpOpen = step === "sold_survey" || step === "delete_survey"
+  const followUpIntent = step === "delete_survey" ? "delete" : "mark_sold"
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -214,16 +207,20 @@ export function EndListingDialog({
             <button
               type="button"
               className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              onClick={closeAndRefreshIfSold}
+              onClick={closeAndRefreshIfEnded}
               aria-label="Close"
             >
               <X className="h-4 w-4" />
             </button>
             {soldThanks ? null : (
               <DialogHeader className="shrink-0 space-y-1 pr-8 text-left">
-                <DialogTitle className="text-base">Congrats on the sale</DialogTitle>
+                <DialogTitle className="text-base">
+                  {followUpIntent === "delete" ? "Before you delete" : "Congrats on the sale"}
+                </DialogTitle>
                 <DialogDescription className="text-xs">
-                  Where it sold, optional tip, and a rating.
+                  {followUpIntent === "delete"
+                    ? "Optional tip and a rating — same as marking a listing sold."
+                    : "Where it sold, optional tip, and a rating."}
                 </DialogDescription>
               </DialogHeader>
             )}
@@ -231,11 +228,15 @@ export function EndListingDialog({
               <MarkSoldFollowUp
                 listingId={listingId}
                 listingPriceUsd={followUpPriceUsd}
+                intent={followUpIntent}
                 onCheckoutActiveChange={handleCheckoutActiveChange}
-                onClose={closeAndRefreshIfSold}
+                onClose={closeAndRefreshIfEnded}
                 onFinished={() => setSoldThanks(true)}
                 onMarkedSold={() => {
                   markedSoldRef.current = true
+                }}
+                onDeleted={() => {
+                  deletedRef.current = true
                 }}
               />
             ) : null}
@@ -246,13 +247,11 @@ export function EndListingDialog({
               <DialogTitle>End listing</DialogTitle>
               <DialogDescription>
                 {canUseListingVacationMode(listingStatus)
-                  ? "Vacation hides a live listing until you go live again. "
+                  ? "Vacation mode temporarily hides a live listing until you go live again. "
                   : null}
-                Archive removes it from the public site and keeps it under Archived listings for 30
-                days.
                 {canDelete
-                  ? " Delete removes the listing immediately."
-                  : " This listing is tied to an order or payment, so it can be archived instead of deleted."}{" "}
+                  ? "Delete removes the listing immediately."
+                  : "This listing is tied to an order or payment, so it cannot be permanently deleted."}{" "}
                 Mark as sold keeps it on file when you closed the sale elsewhere.
               </DialogDescription>
             </DialogHeader>
@@ -260,21 +259,23 @@ export function EndListingDialog({
               {canUseListingVacationMode(listingStatus) ? (
                 <Button
                   variant={choice === "vacation" ? "default" : "outline"}
-                  className="justify-start"
+                  className="h-auto justify-start py-2"
                   type="button"
                   onClick={() => setChoice("vacation")}
                 >
-                  {vacationMode ? "Go live" : "Vacation mode"}
+                  <span className="flex flex-col items-start text-left">
+                    <span>{vacationMode ? "Go live" : "Vacation mode"}</span>
+                    <span
+                      className={cn(
+                        "text-xs font-normal",
+                        choice === "vacation" ? "text-primary-foreground/80" : "text-muted-foreground",
+                      )}
+                    >
+                      {vacationMode ? "Show on the site again" : "(temporarily hide)"}
+                    </span>
+                  </span>
                 </Button>
               ) : null}
-              <Button
-                variant={choice === "archive" ? "default" : "outline"}
-                className="justify-start"
-                type="button"
-                onClick={() => setChoice("archive")}
-              >
-                Archive listing
-              </Button>
               <Button
                 variant={choice === "mark_sold" ? "default" : "outline"}
                 className="justify-start"
@@ -299,7 +300,7 @@ export function EndListingDialog({
                 type="button"
                 variant="outline"
                 disabled={loading}
-                onClick={closeAndRefreshIfSold}
+                onClick={closeAndRefreshIfEnded}
               >
                 Cancel
               </Button>
@@ -310,26 +311,20 @@ export function EndListingDialog({
                 onClick={() => void handleConfirm()}
               >
                 {loading
-                  ? choice === "delete"
-                    ? "Deleting…"
+                  ? choice === "vacation"
+                    ? vacationMode
+                      ? "Going live…"
+                      : "Updating…"
+                    : "Continue"
+                  : choice === "delete"
+                    ? "Continue"
                     : choice === "mark_sold"
                       ? "Continue"
                       : choice === "vacation"
                         ? vacationMode
-                          ? "Going live…"
-                          : "Updating…"
-                        : "Archiving…"
-                  : choice === "delete"
-                    ? "Delete listing"
-                    : choice === "archive"
-                      ? "Archive listing"
-                      : choice === "mark_sold"
-                        ? "Continue"
-                        : choice === "vacation"
-                          ? vacationMode
-                            ? "Go live"
-                            : "Turn on vacation"
-                          : "Continue"}
+                          ? "Go live"
+                          : "Turn on vacation"
+                        : "Continue"}
               </Button>
             </DialogFooter>
           </>
