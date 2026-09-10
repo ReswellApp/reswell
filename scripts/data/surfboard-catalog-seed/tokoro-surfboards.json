@@ -1,0 +1,126 @@
+{
+  "generated_for": "Tokoro Surfboards official named standup catalog",
+  "source": "https://tokorosurfboards.com/products.json (Shopify Surfboard product type only — excludes merch and construction-option SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "tokoro-surfboards",
+      "name": "Tokoro Surfboards",
+      "website_url": "https://tokorosurfboards.com",
+      "location_label": "Hawaii",
+      "founder_name": "Eric Tokoro",
+      "lead_shaper_name": "Eric Tokoro",
+      "short_description": "Hawaiian performance shortboards shaped by Eric Tokoro — North Shore-tested designs from the 4VC and 5+ to fish and longboard models.",
+      "models": [
+        {
+          "name": "4VC",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/4VC_TOP_ADDED_BLK_LINE.png?v=1734224456",
+          "description": "Loves Steep Drops And Powerful Waves Gets On Waves Quickly Easy Paddling Extraordinary Control In And Out of Heavy Surf Crafted with the finest materials the 4VC Model is a high-performance board. This surfboard is the result of years of research and development on the notorious north shore of Hawaii. Built for steep and powerful waves, the 4VC is the go-to board for many professional surfers who demand the best performance from their equipment. The 4VC model features smooth and gradual curves i",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "5+",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/5_TOP.png?v=1728007992",
+          "description": "Astounding Acceleration Lower Nose Increases Paddling Speed Control During Carves and Snaps Streamlined Design Increases Control In The Air Crafted from the finest materials the Model 5+ has been a go to for decades. This board boasts a unique rocker profile with a lower nose, but plenty of curve throughout the board, making it perfect for surfers who love to ride in the pocket of the wave and demand control at the most critical parts of a wave. The bottom of the board features a mild single con",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "5Z",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/5zTOP.png?v=1728011643",
+          "description": "The 5Z is our latest high-performance shortboard, developed in collaboration with team rider Zeke Lau. Built off the foundation of the 5+, we refined the design. While maintaining a similar rocker, we removed some of the double concave to enhance drive and hold, giving the board more control without sacrificing speed. Zeke fell in love with this board really quick, making it his go-to for a variety of conditions. You can ride this board from 1 foot to 6 to 8 feet Hawaiian! The 5Z excels in tight",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "A1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/tokoroA1top.jpg?v=1768599873",
+          "description": "The A1 is our newest model in our line up. It has a little bit more rocker in the nose and it's a little flatter in the tail. The concave is very subtle so when you do a turn, it allows you to throw a lot of spray! It has a slight single concave to a super slight double concave by the fins. You can ride this board from 1 foot to 6 foot Hawaiian depending on the size of your board. This is an all around shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fiber",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/ScreenShot2025-06-16at6.41.50PM.png?v=1750135322",
+          "description": "This has been a new and proven technology in our line up. Although this is a full carbon of our 5+ model. We can make a full carbon board in any of our models. We made this one specially for our rider, Zeke. It was a duplicate of his board where he won at the U.S Open in 2022! We use a 1.5 lb EPS Blank with a thin 2 ply stringer to keep our rocker true as possible. This is a full Carbon board to keep the lightness and strength to the board. Although this board has a 2 ply stringer, the carbon ke",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HP Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/IMG_3584.png?v=1734995541",
+          "description": "The HP Twin is our refined take on the classic twin fin, designed for high-performance surfing. Evolved from our retro twin fin, this model features increased nose and tail rocker, allowing it to perform effortlessly in the pocket. We've also pulled in the nose and tail outline for added sensitivity and control. Versatile in design, the HP Twin can be ridden with or without a wing and thrives in a variety of conditions, from mushy surf to quality waves. We love riding it in 1-3 foot Hawaiian con",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Jamie O'Brien 4VC",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/JamieTOPNew.png?v=1728008118",
+          "description": "Loves Steep Drops And Powerful Waves Gets On Waves Quickly Easy Paddling Extraordinary Control In And Out of Heavy Surf Get a custom surfboard just like JOB, airbrush included. Crafted with the finest materials the 4VC Model is a high-performance board. This surfboard is the result of years of research and development on the notorious north shore of Hawaii. Built for steep and powerful waves, the 4VC is the go-to board for many professional surfers who demand the best performance from their equi",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "K3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/Copy-of-IMG_3386.png?v=1734995637",
+          "description": "The K3 is an exceptional shortboard, designed to deliver everything a surfer desires—speed, control, and seamless flow. Featuring slightly more rocker than our other models, this board excels when ridden in the pocket. Its deep single concave throughout enhances drive, making it ideal for powerful, gouging rail turns. A favorite among both traveling and local pros, the K3 stands out for its impressive speed and precise handling.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lemonade aka LA",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/IMG_3561.png?v=1734996713",
+          "description": "The lemonade is a great board for beginners and is user friendly. \"The back story of how the lemonade came to be. We made a board for a good friend and it was a new design to suit him and his surfing. He wanted a board that was easy to paddle and ride but still able to manoeuvre. He got the board, rode it and said it was a lemon! \"Really bad\". I told him to let me use the board and when I did, it paddled well, was super fast, easy to turn and was the best board I'd had in years!!! The lemonade i",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Lemonade+ aka LA+",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/IMG_3540.png?v=1734996790",
+          "description": "A High-Performance Upgrade. We had a lot of people asking for a more performance LA, so of course we created one!! The LA+ has more rocker than the LA. The rocker allows the board to maneuver easier and fit more in the pocket. We also pulled in the outline as well to add more sensitivity. The LA+ still contains a slight single to deep double concave with a Vee at the very end. You can also add a wing to pull the tail in a little bit . The ideal conditions are 1-3 foot , mushy to clean conditions",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "NR1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/tokoropinkside_b28f3df7-34f0-485d-a161-1cf62287a285.jpg?v=1768599542",
+          "description": "We get this question a lot! \"Does Tokoro surfboards make longboards?\" We sure do!! We just don't advertise it as much as our other boards but we still love making them! In fact many of our local customers order longboards from us. The NR1 is our performance longboard. This longboard has a slight single concave to a deep double into a Vee in the tail. It has a medium amount of nose rocker and a little bit more curve in the tail to help the board turn easier and have the ability to nose ride as we",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Project",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/ProjectTOP.png?v=1728011800",
+          "description": "The project was designed to be a versatile user friendly board that is a shorter wider board with high performance characteristics. This design has a fuller outline and the recommended tail design is a round pin but other tail designs works as well. The overall low rocker with a flip in the tail allows the project to paddle well and is very maneuverable. The deep concaves allows for speed and lift over the flats of waves. The Project is the favorite when the waves are knee to overhead.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/IMG_3522.png?v=1734996833",
+          "description": "This is for the cruisers! If you want to get into the waves easier and trim down the line this is for you! It has an overall flatter rocker throughout the whole board. The subtle single-to-deep double concave keeps it fast and responsive, while the deep swallow tail enhances that classic twin-fin feel. The wide point on the outline is moved forward a bit. Ridden exclusively as a twin, the Retro Fish delivers a loose, skatey ride if you want to carve and rip. You can ride the board in any conditi",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SF1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/SF1TOP.png?v=1734222883",
+          "description": "The SF1 is the first super fish in the Tokoro series and has had great reviews. The outline on the board has a full round nose and the wide point of the outline is up from center. The tail flows into a swallow which allows the board to flow through its turns. The lower rocker in the overall board gives this model tremendous glide and speed. The SF1 is the favorite when the waves are knee to head high.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SF3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/IMG_3566.png?v=1734996892",
+          "description": "This model has a fuller outline with the wide point pushed up a little from center. With an even amount of nose and tail rocker the board has great maneuverability. This design also has a deep single concave for added lift and speed. With easy paddling and quick turning, the SF3 is an awesome shortboard machine.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SFS",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/IMG_3533.png?v=1734996981",
+          "description": "The SFS is one of our most versatile models in the Tokoro performance line up. This model has a bit more area in the nose outline and it has a normal tail width. The wider nose outline assists with paddling, stability and projection. An overall lower rocker gives this board a lot of speed, glide and drive through turns. There is a mild full concave that runs through the entire board with a slightly double in the tail area. The SFS is great in beach and reef breaks from knee high to overhead surf",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SM1+",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/SM1_TOP.png?v=1734822152",
+          "description": "SM1+ is one of our high performance shortboards. This model boasts the deepest concave in our lineup, featuring a pronounced single-to-double concave that generates exceptional drive. With a medium nose and tail rocker, plus a deep concave around the fin area, this board delivers incredible responsiveness. The added tail curve enhances release in critical sections, making it a go-to board for progressive surfing in 2-4 foot Hawaiian conditions. Available in squash, round, or swallow tail options",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SM3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0713/6945/7910/files/SM3TOP.png?v=1734822066",
+          "description": "Crafted from the finest materials the SM3, is a true high-performance shortboard for surfers. For those that crave steep take offs, precision during carves, and overall control. This is the board designed for those who demand nothing but the best, whether you're a seasoned pro or a starting enthusiast. The SM3's balanced outline is engineered to deliver exceptional speed and lift, while the extreme nose rocker and moderate tail kick help with steep takeoffs and complete control over your movemen",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
