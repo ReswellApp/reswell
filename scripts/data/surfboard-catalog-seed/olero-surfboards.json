@@ -1,0 +1,138 @@
+{
+  "generated_for": "Olero Surfboards official named standup catalog",
+  "source": "https://olerosurfboards.com/collections/all (Shopify Surfboard product type only — excludes fins, deposits, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "olero-surfboards",
+      "name": "Olero Surfboards",
+      "website_url": "https://olerosurfboards.com",
+      "location_label": "Australia",
+      "founder_name": null,
+      "lead_shaper_name": null,
+      "short_description": "Experimental Australian shapes including finless hybrids.",
+      "models": [
+        {
+          "name": "BR Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF5322Edited.jpg",
+          "description": "Based on the tradtional fish design with a wide swallow tail, straighter plan shape and keel fins, this is a recipe for speed from the get go. With performance in mind, modern concaves have been added with a slight roll from the nose, blended into a single concave then slight double set inside of that, flowing out the tail with a bit of vee flaring off the swallow allowing for easier rail to rail turns and giving just the right amount of tail rocker to guide you round effortlessly. Overall rocke",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BR Sidecut fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/MG_2132Edited.jpg",
+          "description": "The sidecut version of the BR adds this slight in cut to the outline, narrowing the surface area around the back foot and accentuating the hips at the same time. The main advantage to this is that rail to rail transitions become easier having been loosened up from it's wide tail. Hips now really liven the board up, giving a pivot point which makes a huge difference when surfing your backhand. Extremely playful as usual but with a little extra energy and freeness, allowing tighter turning arcs an",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BR Sidecut fish (Edge bottom)",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF2516Edited.jpg",
+          "description": "Elevated feelings brought forward from the BR sidecut fish featuring the edge design of George Greenough, giving an enhanced flavour of what already was… improved manoeuvrability, speed of which feels unrestricted, added lift also provides a more positive feeling through turns, that flow easier than ever. All in all surprisingly more user friendly and one I’m excited for more and more. Fit as standard with Futures fin boxes, twin fin setup, no channels Boards featured are handshaped from Polyola",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Brahman",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF7210Edited.jpg",
+          "description": "Something a little different from your traditional log with the Brahman here. Taking nose riding design theories and putting them together in an alternative way to give a nicely balance blend of tip time and turn ability. A thinner nose than a lot of nose riders, which rely on the volume and surface area up front. The Brahman loses a bit of that swing weight and adds the width in the tail instead with it's old skool 80's skateboard inspired tail shape and flip. This gives the counterlever effect",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Dagger Moon",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF1445Edited.jpg",
+          "description": "Four channels and 2 fins, made to be surfed hard with plenty of speed and hold making the Dagger Moon a great choice for more critical waves and bigger faces. Feel extra confidence under foot with the addition of hard edged channels to your twin fins, with no second guesses of sliding out. The slightly rounded pin tail gives another boost of confidence in handling high speeds and keeping things feeling well in control. If seeking more release with a snappier feel, then opting for a diamond tail ",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Feral Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF5645Edited.jpg",
+          "description": "At first glance the Feral has MR inspiration all over it, with the stepped wings and swallow tail but look closer and there are some important features that make this board quite special. I've utilised the e-wing design for the Feral, which in effect is like the reverse of the usual fluted wings you would find on these types of boards. The main effect these e-wings have are when cranked on rail, they give a little more bite and mainly adjust the rocker curve in which you are then turning on, thu",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Feral Mid Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/B6325F1C-D06D-452A-B4C7-D3E651D0A5C9Edited.jpg",
+          "description": "This is the 'midlength' version of the Feral fish. I sized this board up in exploration of wanting a larger board that would have that paddle and glide you expect from boards of this length but with much more manoeuvrability and freedom to explore the wave than conventionally expected. It still has all the same attributes from it's shorter version but in a bigger stretched out package. I have converted and dialled all the appropriate alterations to keep this the fluid and dynamic board it is. On",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hog",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/HogpanelsfrontEdited.jpg",
+          "description": "The Hog is a classic longboard designed to be your daily driver, one that can do it all and in a variety of conditions. Full in the nose and holding its width through most of the board provides the perfect platform for those cross steps and hang tens. Find yourself generating insane amounts of speed even when perched on the nose and flying round sections. The nose has a tear shaped concave for added lift when nose riding which is blended smoothly out flat for the mid section and into a rolled be",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mid Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF8774Edited.jpg",
+          "description": "If you enjoy riding fishes but would like a little more glide and ease of wave entry when the waves creep up then the Mid Fish is a super fun option. Kind of that in between sizing from short to mid this offers those wanting to jump up in size without too much of a step or sacrifice in performance or for those sizing down, it's a great fit. Surprisingly spicy feeling for a longer fish, you can still expect to throwing these around at your will. No need to over complicate the bottom shape on thes",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mid Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF6902EditedEdited.jpg",
+          "description": "The Mid Pin to me is what I see as a proper mid length, in the mid 7ft range, single fin, high volume, made to catch everything, cruise, glide and shimmy stylistic moves as you feel. Cheater fives or carve out some smooth lines top to bottom, this board always delivers the fun and will have you moving up and down the board maximising its capabilities on the wave through different sections. From knee slappers to head high and more, depending what you are comfortable in. The pin tail combined with",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Oracle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF5198Edited.jpg",
+          "description": "A hybrid combination, being fish upfront with its wider nose and foam distributed forward of centre, yet hips transition the tail into a more shortboard oriented type ride. Take advantage of getting in easy and often, without the sacrifice of agility and responsiveness. Hips add a nice pivot point to get you carving around with ease, especially helping to loosen things up on your backhand. Single to double through the bottom concaves and opening up some spiral vee after those hips. Also a good o",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pinball",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/8F3C7D6A-4977-4F84-B5BC-040BB46CB843Edited.jpg",
+          "description": "Nice and discy in it's plan shape, the Pinball having very similar nose and tail measurements make it a well balanced board with continuous flowing curves. A fun all rounder for the shortboarders in you. Featuring a double barrel concaved channel through the fins adds lift and drive, as well as giving a ball bearing type action for smooth rail transitions. This board will have you pinballing around all over the wave, hence the name. Good volume under chest with some extra width at the wide point",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rambler",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/RamblerfrontEdited.jpg",
+          "description": "If you were only to have one board that you could travel round the world with, this would probably be it! The Rambler is basically a mid length egg that will accommodate for all levels and wave types. It surprisingly feels closer to a shortboard once on a wave with a little more guts, giving great hold and quick top to bottom responsiveness. You will have an instant sense with this board the second your feet hit the deck that you can put all your confidents into and knowing it will do what you w",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Rascal Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/MG_4766Edited.jpg",
+          "description": "The Rascal fish sits somewhere in the middle between your traditional wide swallow tail 'retro' fish and a performance style fish. Taking aspects of both and blending them into a well balance plan shape that offers good wave catching and paddle, holding width and volume up near the chest and a shaka's tail width which seems to offer the best of both worlds in terms of speed and agility. A special single concave blend that channels out the fin area, set with some vee off the tail really has the R",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "RF Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF3229Edited_3deda204-7aed-4a8a-aa69-491dd383443b.jpg",
+          "description": "The RF fish has derived from a merge of the Rascal fish and the Feral fish. Taking design concepts from each but relaying them in an alternative way to spawn a new board somewhere between the two, offering the best of both. The e-wings from the Feral have been converted into the channels, rail side of the fins, in some ways giving the effect of a twinzer canard, cleaning the water flow around the fin whilst also adding vee and rocker lift. This really livens the board up with ample drive, releas",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SD Special",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/MG_0465Edited.jpg",
+          "description": "A classic style mid lengthed diamond tail single fin, designed with a decent foam distribution and rounded down rails for high wave count, maximum cruisability and all round good time. This board brings inspiration and feelings of the early 70's but with some modernised tweeks. Draw some classic lines, taking it as the wave comes, feel the flow and trim to your hearts desire. Fit as standard with 10.5\" single box Recommended dimensions: 6'6 x 20 7/8 x 2 3/4 6'8 x 20 7/8 x 2 3/4 6'10 x 21 x 2 13/",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shaman",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/MG_1037Edited.jpg",
+          "description": "A smooth riding log that is going to get you into those tighter pockets where a more cumbersome board is just too much. Pulled the nose in on this one and the wide point set back from centre, taking heavy inspiration from the Aussies. A little more refined all round, having a nice foil to both ends, pinched 60/40 rails and turning up toward nose and tail for a combination of hold and forgiveness. An elongated concave travels from the nose through to almost midway, helping to lock you into the wa",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Smokin Moon",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF4543Edited_9a9ae11e-5f00-4bf9-817e-af51452f1199.jpg",
+          "description": "A slightly slimmed down alternative to your fish. Nose and tail having lost some width helping the Smokin Moon to fit into tighter pockets and be surfed on rail. It's moon tail having a good balance of surface area and foil to allow for a well connected feeling that will handle high speeds and hard turns. Subtle fluted wings add pivot and release, holding a straighter rail line to the fins, then tightening to get it banking on rail. Bundles of natural speed have you charging straight out the gat",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Space Bucket",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF4053Edited.jpg",
+          "description": "Back by popular demand, the Space Bucket is your small wave pocket rocket for a guaranteed good time. The template taken from my Brahman longboard model, shrunk down into this little package, offering bundles of speed from it's mini Simmons inspired design. Somewhat narrower than the Simmons mind and not as chunky, it's more refined shape utilises surface area and well distributed volume to keep it a fun groveller type board with a very playful attitude. A big bulging spiral vee is woven into th",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Fin-ess",
+          "image_url": "https://cdn.shopify.com/s/files/1/0980/4745/9677/files/DSCF7751Edited.jpg?v=1760522673",
+          "description": "The Fin-ess is the result of a quest ventured upon with team rider Matt Snelling in search of new feelings in the realm of free friction (finless). Matt having already taken a deep dive into this world, solely surfing without fins for several years already had ideas to explore. We soon discovered what was working and what was not, leading us onto this concept we have now. Ironically I came to realise we had to think more along the lines of fins and what was already familiar ground, rather than g",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
