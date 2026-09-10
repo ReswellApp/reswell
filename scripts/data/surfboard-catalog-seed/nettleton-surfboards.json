@@ -1,0 +1,121 @@
+{
+  "generated_for": "Nettleton Surfboards official named standup catalog",
+  "source": "https://www.nettletonsurfboards.com.au/pages/surfboard-models and Shopify products.json product_type=Surfboard Model — excludes stock size SKUs, Neat Surfboards collab line, wetsuits, fins, apparel, gift cards, and accessories",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "nettleton-surfboards",
+      "name": "Nettleton Surfboards",
+      "website_url": "https://www.nettletonsurfboards.com.au",
+      "location_label": "Northern Rivers, New South Wales, Australia",
+      "founder_name": "Sean Nettleton",
+      "lead_shaper_name": "Sean Nettleton",
+      "short_description": "Low-volume, traditionally built longboards, midlengths, and alternative shortboards by Sean Nettleton on Yaegl Country in the Northern Rivers of New South Wales.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/nettleton-surfboards.png",
+      "models": [
+        {
+          "name": "Authentic",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8245.jpg",
+          "description": "Steeped in tradition, hence the name, the Authentic is what team rider Jaya Guy and Sean unearthed to compliment Jaya’s silky smooth style. With its wide point pulled right back, fuller more forgiving rails, pulled in nose and bit of tail flip, this outline loves to sitting tight into the pocket.     9’0 – 10’4 satin finish lamination or gloss 8 x 6 oz deck 6 oz bottom with 6 oz tail patch",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bower",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8060.jpg",
+          "description": "The Bower has been derived from the Multiply with WSL team rider Tully White’s personal enhancements. Added rocker, increased concave leading to rolled vee making it more reactive underfoot through the middle. A clean involvement style board that flows in a range of conditions that the current WSL tour stops consists of.     The name “The Bower” coming from the first place the board was tested and Tullys favourite wave on the Northern Beaches. So we thought best to add some extra spice to our current range by including her personal rider as a new model.    9’0 – 10’4  Satin finish lamination 8oz x 6oz deck 6oz bottom with 6oz tail patch",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Clover",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8256.jpg",
+          "description": "Classic outline with modern enhancements, the Clover twin fin gives you so much freedom to do whatever you want on a wave. With its flat rocker, thickness under your chest, and wide tail, explore the speed that this wave catching machine can provide. Its parallel outline enables power through rail to rail turns with the added bonus of stability in the tube.  4’10 – 6’6 6 x 4 oz deck 6 oz bottom",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dime",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/image_b411ff0f-b860-43cc-b800-272d577cf296.jpg",
+          "description": "The Dime is a new model I’ve been working on for the past few months. With the idea of critical surfing in mind, the Dime combines both responsiveness and stability. Added hip, tad more nose rocker, slight concave will help the rider stay tight in the pocket for longer, right where you’re meant to be.  The diamond tail increasing the ease of turning as well as aesthetically pleasing to look at.  9'0 - 10'4   Satin finish Lamination   8oz x 6oz Deck   6oz Bottom with 6oz fin patch",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Duet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8252.jpg",
+          "description": "The Duet is a one board quiver. Flat rocker with a little nose flip, modern rails with tucked edge in the tail. It has slight vee under the nose easing to a little more through the fins this allows for easy rail to rail transition which along with its outline allow for this board to draw beautiful lines. Never lacking speed you can choose to cruise or carve it up.   6’0 – 8’0 6 x 4 oz deck 6 oz bottom",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Elliptic",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_d7c551bc-f90a-4a3f-b4c2-347e4862a8ae.jpg",
+          "description": "Derived from the Evolution era, the Elliptic’s unique outline produces speed whilst remaining stable through critical sections. Slight vee through the middle increasing through the tail, wide point set right back allows controlled back foot turns tight in the pocket. Super fun to ride, the Elliptic will leave you grinning ear to ear and wanting more.   7’0 - 8’8 Satin finish Lamination 6 x 4 0z deck 6 oz bottom",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Euphoric",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/image_262f0ad5-c52f-4e5e-a6a2-f0e4da9bf55b.jpg",
+          "description": "The Euphoric is a truly rippable single fin with plenty of volume to help you paddle, position, and cruise down the line with ease. Subtle Vee throughout, with the tail is pulled in as a round pin allows the board to surf well in steeper parts of the wave. Perfect all around board to take out when the waves turn on, or for a hip high grovel session.  5’10 - 7’0 Satin finish Lamination 6 x 4 0z deck 6 oz bottom",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Liberty",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8247.jpg",
+          "description": "The feeling of inertia and trim is something that can’t be explained, it needs to be experienced. Introducing the Liberty. This goliath of a board, can be easily tamed by engaging the energy of the wave. The enhanced rocker allows for powerful responsive turns, providing ease for later take offs. Although not initially designed for noseriding, if the opportunity to get up the front arises it won’t disappoint.   8'10 – 12’0  satin finish lamination 8 x 6 oz deck 6 oz bottom with 6 oz tail patch",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Longarch",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_50b40d8f-9cd5-493e-9e55-53b0010b83f8.jpg",
+          "description": "If going fast is your thing, this board will definitely please. Although obscure to the eye, this longboard trims, nose rides and turns with ease. The bladed out arched tail design creates a wider planning area to help generate speed, whilst holding under the lip for long controlled nose rides. Get your back foot over the fin and feel it slice through the face for a long arched powerful turn.   9’0 – 10'2 Satin finish lamination 8 x 6 oz deck 6oz bottom with 6 oz tail patch",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mirror",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/773A62EA-C24F-47FD-A396-91171FF6F5C1.jpg",
+          "description": "The Mirror is a true \"double ender\". The planshape consists of continuous curve, no straights. Evenly distributed volume to help you paddle without feeling corky. Starting with a decent amount of vee flowing to double concave vee back to vee off the tail. The tail pulled in as a round pin allows the board to surf well in steeper parts of the wave. Perfect all around board to take out when the waves turn on, or for a hip high grovel session. Available in a variety of fin configurations 2+1, twin, quad, twinzer, the limits are endless.  6'1 - 8'10 Satin finish Lamination 6 x 4 0z deck 6 oz bottom",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Monarch",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/image_da515c4f-bc18-48fc-87a7-89c03ff52028.jpg",
+          "description": "Plenty of foam, a flat rocker with subtle vee running the length of the board, this midlength will provide.A great paddler with foam distribution being greatest under your chest, it’s design aspects make for a fast arching board that lends itself to a beautiful style of surfing. Having the wide point ¾ of the way up the board, scoop in early, take the high line and stretch five your life away.    7’0 – 8’6 satin finish lamination 6 x 6 oz deck 6 oz bottom",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Multiply",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_c3ec9e76-91b6-4e4e-bb3e-4e2013ec17f3.jpg",
+          "description": "Inspired by the late 60’s involvement era outline, the Multiply is the most versatile longboard in the Nettleton range. Whether it’s fast peeling point breaks or punchy rolling beach breaks, this board will adapt to the situation, giving the rider full confidence in their equipment.   A true hot dogger shape, this board was created a few years back with Belinda Baggs. She wanted a longboard that she could travel with and be confident it would work in all conditions, noseride, turn and trim with speed. After a few boards and some tweaking here and there, the Multiply was born.   9’0 – 10’4  Satin finish lamination 8oz x 6oz deck 6oz bottom with 6oz tail patch",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Nosetalgia",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_91d6667b-4911-45b1-ac66-d8f82ae03090.jpg",
+          "description": "This board is your quintessential Californian style longboard. wide nose, fuller rails and wide chopped squaretail. All of those design aspects make for one super user friendly and forgiving board. The wide nose allows you to get up the front on flat waves and the parallel outlines through the tail lengthens the sweet spot for turning. This is a timeless design for one reason….. it works.   9’0 – 10’6 Satin finish lamination 8 x 6 oz deck 6 0z bottom with 6 oz tail patch",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Oracle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/image_37b08509-2017-4c1d-bf1e-c543ba6d6619.jpg",
+          "description": "The Oracle is a versitile alternative midlength which is a combination of a long fish and a mini glider. Beaked, down railed nose, flat entry rocker, long parallel rails thinning out to a deep swallow tail. This board paddles like a longboard, locks in full trim at high speed and reacts off the tail with unbeliveable control. For those days you want to go fast and carve out some beautiful drawn out lines. Whether it's knee high or well over head, the Oracle will provide you with all the answers.   7'6 – 9'0  6 x 4 oz deck   6 oz bottom   Single or Twin option",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pinch",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/image_a2244c24-b757-4079-9787-e6844bd0d818.jpg",
+          "description": "Timeless outline influenced by Lance Carson’s approach to longboarding. Responsive and lively whilst maintaining excellent stability in the curl. You’ll be so relaxed on the nose, you get the feeling you could have a ham sandwich while your waiting around.   Reasonable amount of blended concave in the nose, leading to slight roll continuing through the back end, 50/50 rails, pinching towards the area pintail.   9'0 - 10'4   Satin finish Lamination   8oz x 6oz Deck   6oz Bottom with 6oz fin patch",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pyramid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/files/IMG-8240.jpg",
+          "description": "Drawing inspiration from boards being ridden in the very late 60’s the Pyramid is for surfers that have an appreciation for the past but want a little more versatility then the boards derived from that era. Its pretty flat with a super subtle rolled bottom helping you get into the wave earlier. Ridden as a single fin, the flowing outline paired with 60/40 rails and some tucked edge in the back benefits the rider by creating a massive sweet spot for turning  7’0 – 9'0 satin finish lamination 6 x 6 oz deck 6 oz bottom",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Simmons",
+          "image_url": "https://cdn.shopify.com/s/files/1/0589/8918/3162/products/surfboard-model-simmons-1.jpg",
+          "description": "A modern take on a mid-century design by Bob Simmons, this ultra-fun design has all the ingredients you want in a board, it's fast, loose, drivey, paddles with ease. Its flat rocker and wide tail area help catch just about anything you want to throw it into. Typically ridden as a twin keel and 5-8 inches smaller than your shortboard.   4'11 – 6'0 Satin finish Lamination 6 x 4 0z deck 6 oz bottom",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
