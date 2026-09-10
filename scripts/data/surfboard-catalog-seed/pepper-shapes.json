@@ -1,6 +1,6 @@
 {
   "generated_for": "Pepper Shapes official named standup catalog",
-  "source": "https://peppershapes.com.au/portfolio/",
+  "source": "https://peppershapes.com.au/ (WordPress homepage model lineup — 12 named production models; excludes fins and merch)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -77,6 +77,12 @@
           "image_url": "https://i0.wp.com/peppershapes.com.au/wp-content/uploads/2021/03/pep-wilder-twin-1.jpg",
           "description": "The Wilder Twin is the ultimate all round surf craft, it performs in any conditions from 1 ft to well overhead. The deep double concave through to the large swallow tail gives you the hold you need to push as hard as you can on those big turns and the low level rocker combined with the twin fin helps maintain speed in smaller conditions, it has lots of volume up front around the chest area for easy paddling to keep your wave count up, if you're after a board to suit all kinds of conditions this is the board for you. Available from 6'6 to 7'6.",
           "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Heaps Fun",
+          "image_url": "https://i0.wp.com/peppershapes.com.au/wp-content/uploads/2023/11/pep-hf4.jpg",
+          "description": "Named 'Heaps Fun' for good reason, this semi-high performance thruster is designed to navigate you into tight pockets with precision while the added width ensures a smooth flow through turns on smaller, fuller waves. This versatile board becomes your ultimate weapon of choice, showcasing its ability across a spectrum of conditions. Whether you're charging an 8ft face or aiming to unleash your fins on a 3-4ft beach break, the Heaps Fun board is your go-to for a punchy and enjoyable ride.",
+          "board_category_slug": "shortboard"
         }
       ]
     }
