@@ -13,7 +13,7 @@ export const maxDuration = 300
  * changed in the last 14 hours. Full catalog rebuilds stay on admin `/api/search/reindex`.
  *
  * GET /api/cron/elasticsearch-reindex
- * Protected with CRON_SECRET when set. Scheduled in vercel.json (`15 * * * *`).
+ * Protected with CRON_SECRET when set. Scheduled in vercel.json (`20 4,16 * * *`).
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")

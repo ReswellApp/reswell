@@ -81,6 +81,35 @@ export async function ensureSearchSuggestAnalyticsIndex(): Promise<boolean> {
   }
 }
 
+/** Keep typeahead pick events in step with marketplace search analytics. */
+export const SEARCH_SUGGEST_ANALYTICS_RETENTION_DAYS = Math.max(
+  30,
+  Number.parseInt(process.env.SEARCH_ANALYTICS_RETENTION_DAYS ?? "365", 10) || 365,
+)
+
+export async function pruneSearchSuggestAnalyticsDocuments(
+  olderThanDays = SEARCH_SUGGEST_ANALYTICS_RETENTION_DAYS,
+): Promise<number> {
+  const es = getElasticsearchClient()
+  if (!es || olderThanDays < 1) return 0
+
+  const ready = await ensureSearchSuggestAnalyticsIndex()
+  if (!ready) return 0
+
+  try {
+    const result = await es.deleteByQuery({
+      index: ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX,
+      refresh: false,
+      query: { range: { occurred_at: { lt: `now-${olderThanDays}d` } } },
+    })
+    return typeof result.deleted === "number" ? result.deleted : 0
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] pruneSearchSuggestAnalyticsDocuments failed:", msg)
+    return 0
+  }
+}
+
 export async function indexSearchSuggestPickDocument(doc: SearchSuggestPickDoc): Promise<void> {
   const es = getElasticsearchClient()
   if (!es) return

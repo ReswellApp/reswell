@@ -236,6 +236,34 @@ export async function bulkIndexListingDocuments(
   return { indexed, errors }
 }
 
+/**
+ * Remove listing docs that are no longer in the indexable Supabase set.
+ * Guards against an empty keep-set so a failed ID load cannot wipe the index.
+ */
+export async function deleteListingDocumentsNotIn(
+  keepIds: ReadonlySet<string>,
+): Promise<number> {
+  const es = getElasticsearchClient()
+  if (!es || keepIds.size === 0) return 0
+
+  try {
+    const result = await es.deleteByQuery({
+      index: ELASTICSEARCH_LISTINGS_INDEX,
+      refresh: false,
+      query: {
+        bool: {
+          must_not: [{ ids: { values: [...keepIds] } }],
+        },
+      },
+    })
+    return typeof result.deleted === "number" ? result.deleted : 0
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] deleteListingDocumentsNotIn failed:", msg)
+    return 0
+  }
+}
+
 export async function deleteListingDocument(listingId: string): Promise<void> {
   const es = getElasticsearchClient()
   if (!es) return

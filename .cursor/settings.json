@@ -1,1 +1,7 @@
-{}
+{
+  "plugins": {
+    "elastic": {
+      "enabled": true
+    }
+  }
+}

@@ -72,4 +72,4 @@ docker run -d --name es -p 9200:9200 \
   docker.elastic.co/elasticsearch/elasticsearch:8.11.0
 ```
 
-Set `ELASTICSEARCH_URL=http://localhost:9200` (no API key).
+Set `ELASTICSEARCH_URL=http://localhost:9200` and `ELASTICSEARCH_ALLOW_ANONYMOUS=true` (no API key).

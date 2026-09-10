@@ -83,7 +83,8 @@ export async function getBoardsBrowseListingsPageViaEs(
   input: BoardsBrowseEsPageInput,
 ): Promise<BoardsBrowseCategoryTypePage | null> {
   const limit = BOARDS_BROWSE_PAGE_SIZE
-  const offset = (input.page - 1) * limit
+  const page = Number.isFinite(input.page) && input.page >= 1 ? Math.floor(input.page) : 1
+  const offset = (page - 1) * limit
   const ids = await standardPageIds(input, offset, limit)
 
   if (ids === null) return null

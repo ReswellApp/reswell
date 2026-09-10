@@ -3,8 +3,8 @@
  * Strips generic listing words so "andreini surfboards" resolves to brand "Andreini".
  */
 
-import type { ElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
-import { marketplaceBrandSynonymCandidates } from "@/lib/utils/marketplace-brand-synonyms"
+import type { ElasticsearchIndexedListingSection } from "../elasticsearch/listing-sections.ts"
+import { marketplaceBrandSynonymCandidates } from "./marketplace-brand-synonyms.ts"
 
 const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "surfboard",
@@ -108,6 +108,19 @@ export function extractMarketplaceSectionIntent(
     if (found.has(section)) return section
   }
   return null
+}
+
+/**
+ * True when the section token is part of the resolved brand name
+ * ("Captain Fin" → fins, "Lost Surfboards" → surfboards). Those queries are
+ * brand lookups, not a request to scope marketplace section.
+ */
+export function marketplaceSectionIntentIsBrandNameToken(
+  section: ElasticsearchIndexedListingSection | null,
+  brandName: string | null | undefined,
+): boolean {
+  if (!section || !brandName?.trim()) return false
+  return tokenizeQuery(brandName).some((token) => SECTION_INTENT_BY_TOKEN[token] === section)
 }
 
 /**

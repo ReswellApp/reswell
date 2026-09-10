@@ -466,11 +466,12 @@ async function resolveSearchListings(
         lengthInches?: number | null
         boardTypes?: string[] | null
         typoFallback?: boolean
+        sections?: string[]
       }) =>
         searchListingIdsFromElasticsearch(opts.q, LIMIT, {
           categoryName: category?.name ?? null,
           expansions,
-          sections,
+          sections: opts.sections ?? sections,
           brandId: opts.brandId,
           brandModelIds: opts.brandModelIds,
           lengthInches: opts.lengthInches,
@@ -521,6 +522,18 @@ async function resolveSearchListings(
           lengthInches: null,
           boardTypes,
           typoFallback: true,
+        })
+      }
+      // Last recall pass: drop inferred section / style filters (e.g. "captain fin"
+      // must not stay locked to `fins` when the boards live in another section).
+      if (ids.length === 0 && (parsed?.sectionIntent || (boardTypes?.length ?? 0) > 0)) {
+        ids = await runEs({
+          q: rawQuery.trim(),
+          brandModelIds: null,
+          brandId: null,
+          lengthInches: null,
+          boardTypes: null,
+          sections: [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS],
         })
       }
       listings = await hydrateListingsByIds(supabase, ids)

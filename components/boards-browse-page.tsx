@@ -126,7 +126,8 @@ async function BoardListings({
 }) {
   const searchParams = await searchParamsPromise
   const supabase = createAnonSupabaseClient()
-  const page = parseInt(searchParams.page || "1", 10)
+  const parsedPage = parseInt(searchParams.page || "1", 10)
+  const page = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : 1
   const limit = BOARDS_BROWSE_PAGE_SIZE
   const offset = (page - 1) * limit
 
