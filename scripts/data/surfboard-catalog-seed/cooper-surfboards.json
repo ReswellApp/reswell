@@ -101,6 +101,12 @@
           "image_url": "https://coopersurfboards.com/wp-content/uploads/Cali_Square_Tail_Single_Fin_Longboard_Cooper_Surfboards_uk.jpg",
           "description": "Characterised by its wide round nose and hipped tail, the Cali Square Tail follows an infamous outline well-known for its hang time and easy riding.",
           "board_category_slug": "longboard"
+        },
+        {
+          "name": "Quickstep",
+          "image_url": "https://coopersurfboards.com/wp-content/uploads/IMG_20180522_145313-scaled.jpg",
+          "description": "A versatile longboard specially made for smaller and lighter surfers. The Quickstep will noseride and trim with the best — perfect for groms, girls, and lighter riders. Cooper's do-everything longboard shape with a round concaved nose, single channel through the middle, and a rolled pulled-in tail section. Slightly narrower with a touch more blended rocker than other Cooper longboard models, but still a stable and stylish cruiser.",
+          "board_category_slug": "longboard"
         }
       ]
     }
