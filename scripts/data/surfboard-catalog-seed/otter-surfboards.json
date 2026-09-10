@@ -1,0 +1,132 @@
+{
+  "generated_for": "Otter Surfboards official named standup catalog",
+  "source": "https://ottersurfboards.co.uk/ (official homepage model lineup \u2014 excludes workshops, paddleboards, bellyboards, handplanes, fins, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "otter-surfboards",
+      "name": "Otter Surfboards",
+      "website_url": "https://ottersurfboards.co.uk/",
+      "location_label": "Porthtowan, Cornwall",
+      "founder_name": "James Otter",
+      "lead_shaper_name": "James Otter",
+      "short_description": "Hollow wooden surfboards handcrafted in Porthtowan, Cornwall since 2010 from locally grown timber.",
+      "models": [
+        {
+          "name": "ADPT",
+          "description": "A high performance twin fin, best in waves from 2-8 feet. 5\u20196\u201d x 19\u00bd\u201d x 2 \u215c\u201d - 27 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2021/04/Otter-Surfboards-ADPT-profile-shape-composite.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Seadar",
+          "description": "A Bob Simmons inspired planing hull design, best in waves from 1-6 feet. 5'6\" x 22\" x 2 5/8\" - 32.4 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2025/02/Otter-Wooden-Surfboard-Seadar-Mini-Simmons-Blue-Door-Deck-Product.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fetch",
+          "description": "A performance fish best in waves from 2-6 feet. 5\u201910\u201d x 20\u00be\u201d x 2\u00be\u201d - 32.6 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2025/02/Otter-Wooden-Surfboard-Fish-Fetch-Blue-Door-Deck-Product.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Swift",
+          "description": "A hybrid twin fin or thruster, best in waves from 2-8 feet. 6'2 x 211/2\u201d x 27/8\u201d - 41.3 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter-Wooden-Surfboard-Swift-Blue-Door-Top-Product-1.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cutter",
+          "description": "A fast, sleek single fin model, best in waves from 2-6 feet. 6'4\" x 20 3/4\" x 2 1/2\" - 34.5 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2025/04/Tom-Elkins-Cutter-Single-Dark-Deck-1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Woodburner",
+          "description": "A higher volume fish, best in waves from 2-6 feet. 6'4\" x 22 1/4\" x 2 3/4\" - 36 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Chris-Woodburner-Deck.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Riser",
+          "description": "A semi-gun or step-up shortboard, best ridden in waves from 3-10 feet. 6\u20198\u201d x 20 1/4\u201d x 2 1/2\u201d 38.5 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter_Surfboards_6_8_Riser_wall-centered.jpg",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Jetty",
+          "description": "A full template, egg style shape that is best in waves from 1-6 feet. 6\u201910\u201d x 21\u00bd\u201d x 2\u215d\u201d - 43.8 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/05-Jetty-fb.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Barque",
+          "description": "A mid-length egg for waves from 1-6 feet. 7\u20192\u201d x 21\u00be\u201d x 2\u00be\u201d - 48l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2021/04/Otter_Surfboards_7_2_Barque_composite_logo_crop.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Coaster",
+          "description": "A midlength tracker with a refined, pulled in, template and a rounded pintail. Best in waves from 2-10 feet. 7\u20192\u201d x 21\u00bd\u201d x 2\u00be\u201d - 46.4 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter_Surfboards_Coaster_Centered-Composite-copy.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Roller Coaster",
+          "description": "Our popular Coaster model with an extra 5 litres of volume. Best in waves from 2-10 feet. 7'2\" x 22\" x 3\" - 52.3l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Roller-Coaster-Marlow-Warrington-Mattei-Deck.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Island Hopper",
+          "description": "A high-volume, egg shaped mid length, best in waves from 1-6 feet. 7\u20194\u201d x 23\u201d x 3\u201d - 59.2 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2021/04/Wim-Island-Hopper-product.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Clipper",
+          "description": "A classic 70's-style single fin pintail, best in waves over 4 feet. 7'10\" x 21 5/8\" x 3 1/4\" - 60.4l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Clipper-Triple-Pale-Bottom.jpg",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Pieces of Eight",
+          "description": "A smaller longboard-style board, best surfed in waves from 1-6 feet. 8\u20193\u201d x 21\u00bd \u201d x 2\u215e\u201d - 55.1 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/CenteredOtter_Surfboards_8022_Pieces_of_Eight_logo.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wicket",
+          "description": "Our performance mal, best in waves from 2-8 feet. 9'1\" x 14 7/8\" x 22 1/2\" x 18 1/8 x 3\" - 72.2 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2021/04/Otter_Surfboards_Wicket-centered.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Seasaw",
+          "description": "Our all-rounder mal, best in waves from 1-6 feet. 9'4\" x 16\" x 22 7/8\" x 18 1/2\" x 3\" - 72.6 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/SeaSaw-product-shot-big-centered.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tea Tree",
+          "description": "Past meets present in this refined shape, best in waves from 1-5 feet 9\u20196\u201d x 16 5/16\u201d x 23\u201d x 17 3/4\u201d x 3\u201d - 75.1 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2022/09/Mat-Deck.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pier",
+          "description": "Our traditional, square-tailed mal, best in waves from 1-4 feet 9'6\" x 16\" x 22 7/8\" x 18 1/2\" x 3 1/4\" - 78.2 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/centered-A1-Otter-x-Riz-paddling-peelers-rgb.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cali Log",
+          "description": "Our take on the classic 60's Californian longboard. Best in waves from 1-4 feet. 9'8'' x 16 3/4\" x 23 1/8'' x 17 7/8\" x 3 1/4'' - 85.2 l",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2024/04/Cali-Log-98-Bottom.jpg",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
