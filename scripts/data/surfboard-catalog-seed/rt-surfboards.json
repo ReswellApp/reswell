@@ -1,0 +1,160 @@
+{
+  "generated_for": "RT Surfboards official named standup catalog",
+  "source": "https://rtsurfboards.com/en/surfboards/collection/ (official WordPress collection — excludes custom orders, apparel, and test-center rentals)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "rt-surfboards",
+      "name": "RT Surfboards",
+      "website_url": "https://rtsurfboards.com/en/surfboards/collection/",
+      "location_label": "Anglet, France",
+      "short_description": "Independent custom surfboard maker in Anglet, France, founded in 2001. In-house CAD, shaping, and glassing with a named standup collection of performance shortboards, twins, hybrids, and big-wave models.",
+      "models": [
+        {
+          "name": "180BPM",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboards-big-wave-model-1080bpm-3.jpg",
+          "description": "Assisted-take-off shape for extreme conditions: tow-in, tow-at, and step-off. Optimized for high-speed stability, hold in hollow sections, and sincere rail reactions rather than paddle power.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Dopamine",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-dopamine-shape-1.jpg",
+          "description": "Modern big-wave gun with the wide point further back and a narrow aerodynamic nose. Extra tail area and thickness for wave entry, hold on steep sections, and enough maneuverability for open faces.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Edge",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/edgertsurfboards-shape1.png",
+          "description": "High-performance, versatile easy performer for heavier or powerful surfers. Slight rocker, generous volume, full-length single concave, and full rounded rails; sporty and tolerant as a small-wave or everyday shortboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Edge2",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2025/04/Edge2-model-E.png",
+          "description": "Officially presented as the new EDGE deux / Edge2: an all-round easy performer balancing performance, versatility, and accessibility. Moderate rocker, simple concave, spread volume, and a wide center with a relatively narrow nose and tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HotBox",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2025/07/HotBox1.jpg",
+          "description": "High-performance twin-fin that is not retro. Carves sharp, precise lines with twin-fin speed and flow; effective in small, soft waves and still at ease in more solid, hollow conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Icon",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-slider-icon-1.png",
+          "description": "Fast, sincere, accurate, and versatile performance shortboard. Balanced outline, rocker, foil, and rails for beach-breaks and point-breaks; standard squash tail, also offered in round or swallow.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Icon Step-Up",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-icon-stepup-rocker.png",
+          "description": "The Icon optimized for solid conditions: easier take-off, sincerity, and precision at high speed. Extra thickness and a pulled-in rounded tail for hollow, tubular waves while staying sporty.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Kingpin",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-slider-kingpin-1.png",
+          "description": "High-performance shortboard for a powerful style. Accentuated rocker, deep single concave, and centered volume with thin, sharp ends for drive, precision, and hollow beach-breaks.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Kingpin Step-up",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-kingpin-stepup-rocker.png",
+          "description": "Kingpin qualities tuned for solid waves, typically overhead to double-overhead. More length and thickness, a slightly straighter rocker, less-deep concave, and a pulled-in round tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mastermind",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-mastermind-1.png",
+          "description": "Comfortable, forgiving hybrid with generous volume and a center of gravity further back than standard. Fast enough to carve precise rail lines; a cruiser in small waves and a carver when given more speed.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid-L",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-shape-mid-l.jpg",
+          "description": "Sleek and versatile mid-length hybrid: very accessible and tolerant, but able to draw beautiful lines. Optimized to facilitate progression and pleasure with fluid balanced lines, advanced wide point, and rounded rails for sincerity and confidence.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Matchbox",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-matchbox-rocker-1.png",
+          "description": "A keel-fish twin reinterpreted with a sporty RT character. Wide planing area and rounded front rails for small and medium waves, with an aggressive rocker and full-length single concave for drive.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Player",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/player-rt-surfboards.jpg",
+          "description": "A next-generation high-performance shortboard designed for consistent waves with mass and power. Generous volume under the front foot for stability in heavy conditions, with a thin, sharp rear for precision and a moderate rocker with full-length single concave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PsykoCandy",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-psykocandy-rocker.png",
+          "description": "A sporty yet tolerant shortboard for small and mushy conditions. Fairly straight rocker and generous lines for speed, with a pronounced V and a later-generation tighter tail and nose for more versatility.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Roundbox",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-roundbox-rocker.png",
+          "description": "An ultra-versatile twin-fin for different styles and all wave types. Generous width for speed in soft waves, a relatively narrow round tail for control, and a single-concave bottom.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rover",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-rover-1.png",
+          "description": "The Rover iteration 25 hybrid: a fairly wide, flat funboard nose paired with a high-performance shortboard tail. Punchier than earlier versions while remaining one of the most versatile models in the range.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spark",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-spark-rocker.png",
+          "description": "Unconventional sled that keeps the Vault tail for speed and grafts a more conventional nose for a wider size range. Fast, maneuverable, and precise in small waves or more solid conditions depending on size.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Speed Queen",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/10/SpeedQueenShape.jpg",
+          "description": "Hybrid performer blending performance and tolerance: strong paddle and take-off, naturally fast, easy to handle, and precise. Relatively straight rear rocker, more curve up front, and thinner-than-usual rails.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spicebox",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-spicebox-rocker.png",
+          "description": "True high-performance twin fin designed for maximum efficiency with two fins. Draws aggressive bold lines with twin-fin speed and flow; versatile, ultra-responsive, and precise for demanding surfers while making performance surfing more accessible.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "V-Max",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-v-max-shape-1.jpg",
+          "description": "Big-wave tube-rider for fast, hollow conditions. Sincere, efficient paddle power and control, with thickness in the center, pulled-in thin sharp rear, and a smooth rocker with a simple V bottom.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Vault",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-vault-rocker.png",
+          "description": "Unconventional high-performance shortboard developed with CFD. Shortened nose and tail behind the back foot for extreme efficiency; short/wide versions for small waves, longer/narrow versions for hollow, fast waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vector",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/rt-surfboard-the-vector-rocker.png",
+          "description": "High-performance shortboard for small and medium waves and a powerful, committed style. Straighter rocker, more planing area, and a pronounced outline bump about 12 inches from the tail for quick reactions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wand",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/tech-board-wander.jpg",
+          "description": "A sporty, intuitive performance shortboard for small and medium waves. Volume is thinner under the front foot and thicker under the back foot so the surfer sits naturally rearward for aggressive, tight lines.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Witch",
+          "image_url": "https://rtsurfboards.com/wp-content/uploads/2024/01/WITCH-model-1.png",
+          "description": "Fast, responsive, and versatile high-performance shortboard for small to medium or weaker waves. Based on the Icon with a straighter center rocker, more pronounced V off the tail, and a mild outline bump over the side fins.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
