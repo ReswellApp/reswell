@@ -1,0 +1,156 @@
+{
+  "generated_for": "Escape Surfboards official named standup catalog",
+  "source": "https://www.escapesurfboards.com/products (official Big Cartel model pages \u2014 excludes Maluku line, fins, merch, and one-off stock SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "escape-surfboards",
+      "name": "Escape Surfboards",
+      "website_url": "https://www.escapesurfboards.com/",
+      "location_label": "St Minver, Cornwall, United Kingdom",
+      "founder_name": "Bill Attlee",
+      "lead_shaper_name": "Bill Attlee",
+      "short_description": "Cornwall surfboards hand-shaped by Bill Attlee since 1997 \u2014 from progressive Malibus and mid-lengths to fishes, step-ups, and nose riders built in Rock near Polzeath.",
+      "models": [
+        {
+          "name": "Allegro",
+          "image_url": "https://assets.bigcartel.com/product_images/406333533/9-6+Harrys+Allegro.jpg",
+          "description": "Allegro high-performance longboard, malibu style surfboard. This example 9\u20196\u201d x 23 \u00be\u201d x 3 1/8\u201d x 15 \u00be\u201d tail x 19 3/8\u201d nose x 85 litres volume Construction: Surfblanks Polyurethane Foam blank Polyester resin multi tint bottom laminate 6oz with 6oz tail patch Deck: I x 4 oz Grey tint inlay with 6oz full laminate over...",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Barnstormer",
+          "image_url": "https://assets.bigcartel.com/product_images/379759335/9-2+Barnstormer+PolyT_B+.jpg",
+          "description": "Barnstormer 9\u20192 x 22 5/8\u201d x 2 7/8\u201d x 68 Litres Arctic Polyurethane foam core, Polyester Resin Laminate. FCS 10\u201d Centre box, FCS11 side boxes, The outline design features a nose width of 14 \u00bd\u201d and tail width of 14 3/8\u201d with the wide point at 56\u201d from the tail. The rocker has 3 \u00bd\u201d of tail lift and 5 \u00bd\u201d of nose rocker....",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Big Fish",
+          "image_url": "https://assets.bigcartel.com/product_images/9097f838-8eff-43c4-8320-88354be95a92/7-1-big-fish-rainbow.jpg",
+          "description": "The Big Fish \u2022 Fun board-inspired nose shape for a playful and responsive ride \u2022 Volume focused beneath the chest to enhance paddle power and stability \u2022 Flatter deck for improved stability and increased volume \u2022 Rails step down and taper from the midpoint back for superior response and control \u2022 Bottom contour: \u2018V\u2019...",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big Twin",
+          "image_url": "https://assets.bigcartel.com/product_images/379766244/7-2+Big+Twin+T_B.jpg",
+          "description": "BigTwin 7'2 x 21 1/4\" x 2 13/16\" 53 litres Construction, Arctic PU foam with Polyester laminate. Future twin fin boxes. At Escape we don\u2019t believe that mid length boards should be either big short boards or short longboards but should be designs in their own right. Our local surf break (Polzeath) tends...",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Bobby",
+          "image_url": "https://assets.bigcartel.com/product_images/f0cc4549-9d71-4a6b-8a00-080c520d8d5b/7-3-escape-bobby-midlength-surfboard-epoxy-eps-concave-deck.jpg",
+          "description": "7\u20194 x 23\u201d x 2 \u00be\u201d x Tail 16 1/4\u201d x Nose 18 \u00be\u201d This is a used product. This Bobby is one I shaped by hand from a Marko EPS foam blank. This classic mid-length surfboard is meticulously designed to offer surfers of all levels an exceptional riding experience. In search of a midlength that is going to compete with soft...",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Geezer",
+          "image_url": "https://assets.bigcartel.com/product_images/370691830/8-2+Diamond+Geazer+T_B.jpg",
+          "description": "The Diamond Geezer This one 8\u20192 x 23 \u00bc\u201d x 3 1/16\u201d x 68.5 litres Polyurethane Blank, Polyester Resin Laminate. Double Concave with slight from nose to tail. Progressive nose and tail rocker. Fuller rails at mid-point to thinner and boxy in the tail. Centre fin box with quad fin plug alternatives. The Diamond Geezer...",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Eclipse",
+          "image_url": "https://assets.bigcartel.com/product_images/404433309/7-8+Eclipse+Egg.jpg",
+          "description": "The Modern Mid-Length Egg Surfboard is the ultimate all-rounder \u2014 sleek, stylish, and designed to perform in almost any wave. With its egg outline, balanced rocker, and versatile fin setup, this board blends speed, stability, and smooth turning into one stunning package. Whether you\u2019re cruising mellow point breaks,...",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flying Carpet",
+          "image_url": "https://assets.bigcartel.com/product_images/f79a44e6-d05b-4ea0-9ab8-703f56d20629/7-3-flying-carpet-polyola-foam-epoxy-biosap-laminate.jpg",
+          "description": "7'3 Flying Carpet, the best board for learner progressor surfers or super fun small wave plank for experts. Polyola recyclable blank Bio Sap Epoxy Laminate 1 x 6 oz Bottom 6 + 4 oz Deck FCS 10\" Centre Box FCS11 Side Bites FCS Leash Plug Round tail: A super versatile tail that's perfect for long, drawn...",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Funk",
+          "image_url": "https://assets.bigcartel.com/product_images/1868a9f2-9f58-471a-942e-5446c2e35dc3/6-0-funk-surfboard.jpg",
+          "description": "6'0 Funk 6\u20190 x 20 \u00bc\u201d x 2 \u00bd\u201d x 33.8 Litres Homeblown PU Blank, Polyester Laminate Slightly Fuller Outline Medium Nose and Tail Rocker Curve. Medium Thin Reactive Rails Single to Double Concave Bottom Shape Genuine FCS11 Fin Boxes Our most popular small wave performance surfboard. The Funk model will surf small...",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://assets.bigcartel.com/product_images/379758825/5-9+Keel+FishYellow+Green.jpg",
+          "description": "The Keel Fish is a timeless design that has been greatly updated and redesigned since its inception in the 1970\u2019s. The modern Keel Fish bares only a resemblance to its forbearers. The Keel Fish we make feature a modern bottom shape incorporating a single concave nose and mid section to double concave \u2018V\u2019 in the...",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Legend",
+          "image_url": "https://assets.bigcartel.com/product_images/375201952/7-6+Bill+Legend.jpg",
+          "description": "Legend This one 7\u20196 x 21 1/22 x 2 13/16\u201d 54 litres Polyurethane Blank, Polyester Resin Laminate. Rolled \u2018V\u2019 nose to mid-point, double concave through the tail. Fat deck with rails tapered down to medium full, fine thin rails in the tail behind the wing. Swallow tail for better hold and drive through the turns. Okay...",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Peanut",
+          "image_url": "https://assets.bigcartel.com/product_images/398053635/6-6+Peanut+Green+Tint+Bottom.jpg",
+          "description": "The Peanut epitomises the Escape Surfboards design philosophy of getting the best performance out of the most compact design possible. These fun little boards give the maximum \u2018chuckable\u2019 volume in the length, but still keeping the rails, noses and tail\u2019s relatively thin for control. So whether you are an...",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Stepper",
+          "image_url": "https://assets.bigcartel.com/product_images/2f698ea4-ed73-407f-a8b2-4f9f82b1e665/9-8-stepper-nose-rider-longboard-surfboard.jpg",
+          "description": "The Stepper Longboard This example 9\u20198 x 23 3/4\" x 3 1/4\" x 90 litrs *Construction: Polyurethane Foam blank, Polyester Resin Laminate *Designed and refined on the beaches point breaks and reefs or North Cornwall. *Contemporary parallel outline shape with wide square tail for maximum surface area, rail...",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Stickato",
+          "image_url": "https://assets.bigcartel.com/product_images/379759083/9-0+Stickato+Top+and+Bottom+.jpg",
+          "description": "Stickato 9\u20190 x 22 \u00bd\u201d x 2 \u00be\u201d x 67 litres Sizes from 8\u20192 \u2013 9\u20198 Construction Arctic foam core, Polyester Resin laminate. FCS 102 centre box with FCS11 side boxes. The Stickato represents a significant evolution in the realm of progressive Malibu surfboards, distinguished by its refined features tailored for optimal...",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SuperFrog",
+          "image_url": "https://assets.bigcartel.com/product_images/8f36bd31-bb44-42d1-9164-b921e5028cec/7-3-superfrog-mid-length-surfboard-epoxy-laminate-fcs11-fins.jpg",
+          "description": "The Super Frog \u2022 Fun board-inspired nose shape for a playful and responsive ride \u2022 Volume focused beneath the chest to enhance paddle power and stability \u2022 Flatter deck for improved stability and increased volume \u2022 Low mid thickness rails at the centre of the board tapering at the nose and tail. The tucked bottom...",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Brother",
+          "image_url": "https://assets.bigcartel.com/product_images/89e3ff86-fead-44d5-b3c6-62930accef36/the-brother-versatile-midlength-surfboard-by-bill-attlee.jpg",
+          "description": "Versatile midlength surfboard by Bill Attlee. Fast paddling, smooth rail-to-rail flow, and reliable performance in all wave conditions. Demo available.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Dew Drop",
+          "image_url": "https://assets.bigcartel.com/product_images/379759542/9-6+DewDrop.jpg",
+          "description": "9\u20196 x 24 \u00bc\u201d x 3 7/16\u201d x 95.5 Litres Sizes from 8\u20190\" \u2013 10\u20190\" The DewDrop is designed specifically to get the maximum volume possible from the shortest lengths, while still retaining good surfing characteristics. If you are looking for a longboard that is going to give you stabiliy and maximum wave catching...",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Flight",
+          "image_url": "https://assets.bigcartel.com/product_images/379763958/6-8+Flight+Black+Rails+T_B.jpg",
+          "description": "Totally modern single fin surfboard with high performance credentials The Flight has a sleek outline and rocker that ouse speed and control. A board that is going to love surfing in both heavier waves or for a lighter surfer, happy to scratch a waist high pocket. The bottom shape features single to double concave...",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Spark",
+          "image_url": "https://assets.bigcartel.com/product_images/265e95d1-7270-404e-8845-4fda0e511321/the-spark-classic-fun-longboard-surfboard.jpg",
+          "description": "Classic fun longboard surfboard designed for easy paddling, high wave count, and effortless glide. Hand-shaped in Cornwall. Test surf available.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Wasp",
+          "image_url": "https://assets.bigcartel.com/product_images/379763364/9-2+Wasp+Black+DB_R.jpg",
+          "description": "The Wasp is a design inspired by West Coast USA surfboard designs . With it's full Cali attributes it is a surfboard that can cope with radical beach breaks or long rolling point waves. The shape of the Wasp tells the story, with it's low rockered medium full nose with deep single concave through to rolled...",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Twin Brother",
+          "image_url": "https://assets.bigcartel.com/product_images/399055020/6-8+Twin+Brother.jpg",
+          "description": "Dynamic Twin Fin Mid-Length surfboard for progressive surfing in slack or heavy wave situations. Hey surfers!! We want to introduce you to a new design for this year. The 6'8 x 22\" x 3\u201d x 49 litre version of the the Twin Big Brother surfboard. I've been enjoying surfing these Brother boards over the...",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Stick",
+          "image_url": "https://assets.bigcartel.com/product_images/379763865/5-10+Twin+Stick.jpg",
+          "description": "Standard sizes from 5\u20196 to 6\u20196\u201d. This now used sample 5\u201910 x 20 \u00bc\u201d x 2 5/16\u201d x 31.5 Litres With a 14\u201d nose width at 1 \u2018 off the nose and 15 \u00bd\u201d tail width at 1\u2019 off the tail, the twin stick is a full outlined board giving the best opportunity to catch and rip the smallest and mushiest waves. The bottom rocker curve...",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Waltz",
+          "image_url": "https://assets.bigcartel.com/product_images/421600371/9-6+Waltz+Green+Tint.jpg",
+          "description": "Handcrafted 9'6\" Waltz longboard ideal for nose-riding, smooth glide and stability. Come to our showroom or ask about delivery options to the UK Mainland.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
