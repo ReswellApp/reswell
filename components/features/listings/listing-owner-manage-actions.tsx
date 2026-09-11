@@ -2,10 +2,8 @@ import Link from "next/link"
 import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EndListingButton } from "@/components/end-listing-button"
-import {
-  ListingVacationModeButton,
-  canUseListingVacationMode,
-} from "@/components/features/sell/listing-vacation-mode-button"
+import { ListingVacationModeButton } from "@/components/features/sell/listing-vacation-mode-button"
+import { canUseListingVacationMode } from "@/lib/listing-vacation-mode"
 import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
@@ -51,12 +49,21 @@ export async function ListingOwnerManageActions(props: ListingOwnerManageActions
     return (
       <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
         <p className="text-[14px] text-muted-foreground">Your listing</p>
-        <div className="mt-2">
+        <div className="mt-2 flex min-w-0 flex-wrap gap-2">
           <Button asChild className="rounded-full">
             <Link prefetch={false} href={editHref}>
               Edit listing
             </Link>
           </Button>
+          {props.listingStatus !== "draft" ? (
+            <EndListingButton
+              listingId={props.listingId}
+              listingPriceUsd={props.currentPriceUsd}
+              listingStatus={props.listingStatus}
+              vacationMode={props.hiddenFromSite === true}
+              triggerClassName="rounded-full border-border/60 shadow-none"
+            />
+          ) : null}
         </div>
       </div>
     )
