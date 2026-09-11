@@ -109,8 +109,3 @@ export function ListingVacationModeButton({
     </Button>
   )
 }
-
-export function canUseListingVacationMode(status: string | null | undefined): boolean {
-  const normalized = status?.trim() ?? ""
-  return normalized === "active" || normalized === "pending_sale"
-}

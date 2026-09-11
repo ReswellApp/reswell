@@ -19,9 +19,11 @@ import { giveawaySellHref } from "@/lib/giveaways/paths"
 import {
   dismissGiveawaySignupPopup,
   hasDismissedGiveawaySignupPopup,
+  shouldSkipGiveawaySignupPopupAfterPublish,
 } from "@/lib/giveaways/signup-popup-storage"
 import { submitGiveawayEntry } from "@/lib/giveaways/submit-entry"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
+import { peekJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
 const RECENT_SIGNUP_MS = 24 * 60 * 60 * 1000
@@ -32,10 +34,24 @@ function isRecentSignup(user: User | null | undefined): boolean {
   return Number.isFinite(createdMs) && Date.now() - createdMs < RECENT_SIGNUP_MS
 }
 
+function listingParamFromPathname(pathname: string | null): string | null {
+  if (!pathname?.startsWith("/l/")) return null
+  const param = pathname.slice(3).split("/")[0]
+  if (!param) return null
+  try {
+    return decodeURIComponent(param)
+  } catch {
+    return param
+  }
+}
+
 function shouldSkipPath(pathname: string | null): boolean {
   if (!pathname) return true
   if (pathname.startsWith("/auth")) return true
   if (pathname === "/sell" || pathname.startsWith("/sell/")) return true
+  const listingParam = listingParamFromPathname(pathname)
+  if (listingParam && shouldSkipGiveawaySignupPopupAfterPublish()) return true
+  if (listingParam && peekJustPublishedListingMarker(listingParam)) return true
   return false
 }
 
@@ -61,7 +77,10 @@ export function GiveawaySignupPopup({
     }
     if (!giveaway || !isGiveawayOpen(giveaway)) return
     if (!isRecentSignup(serverUser)) return
-    if (shouldSkipPath(pathname)) return
+    if (shouldSkipPath(pathname)) {
+      setOpen(false)
+      return
+    }
     if (hasDismissedGiveawaySignupPopup()) return
     setOpen(true)
   }, [forceOpen, pathname, serverUser, giveaway])

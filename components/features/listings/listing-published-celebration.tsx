@@ -9,8 +9,13 @@ import { GiveawayBrandPicker } from "@/components/features/giveaways/giveaway-br
 import { Button } from "@/components/ui/button"
 import {
   consumeJustPublishedListingMarker,
+  peekJustPublishedListingMarker,
   type JustPublishedListingMarker,
 } from "@/lib/sell-flow/just-published"
+import {
+  dismissGiveawaySignupPopup,
+  skipGiveawaySignupPopupAfterPublish,
+} from "@/lib/giveaways/signup-popup-storage"
 import {
   computeListingEnrichmentGaps,
   type ListingEnrichmentGap,
@@ -103,6 +108,15 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
     if (consumedRef.current) return
     consumedRef.current = true
 
+    // Dismiss the sitewide "list a board" dialog before consuming the marker so
+    // it cannot open in the gap after sessionStorage is cleared.
+    const pending = peekJustPublishedListingMarker(listingParam)
+    if (pending) {
+      skipGiveawaySignupPopupAfterPublish()
+      if (pending.section === "surfboards") {
+        dismissGiveawaySignupPopup()
+      }
+    }
     const found = consumeJustPublishedListingMarker(listingParam)
     if (!found) return
     setMarker(found)

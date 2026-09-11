@@ -36,10 +36,8 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
-import {
-  ListingVacationModeButton,
-  canUseListingVacationMode,
-} from "@/components/features/sell/listing-vacation-mode-button"
+import { ListingVacationModeButton } from "@/components/features/sell/listing-vacation-mode-button"
+import { canUseListingVacationMode } from "@/lib/listing-vacation-mode"
 import { RelistListingButton } from "@/components/features/listings/relist-listing-button"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"

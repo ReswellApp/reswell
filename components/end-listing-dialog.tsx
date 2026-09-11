@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { MarkSoldFollowUp } from "@/components/features/listings/mark-sold-follow-up"
-import { canUseListingVacationMode } from "@/components/features/sell/listing-vacation-mode-button"
+import { canUseListingVacationMode } from "@/lib/listing-vacation-mode"
 import { toast } from "sonner"
 import { setListingVacationModeAction } from "@/lib/actions/listingVacationMode"
 import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
