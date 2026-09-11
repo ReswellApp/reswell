@@ -349,7 +349,9 @@ export function ListingAboutSellerSection({
                           {rv.comment.trim()}
                         </p>
                       ) : (
-                        <p className="mt-1 text-[14px] text-muted-foreground">Rated {rv.rating.toFixed(0)}★</p>
+                        <p className="mt-1 text-[14px] text-muted-foreground">
+                          Rated {Number.isFinite(Number(rv.rating)) ? Number(rv.rating).toFixed(0) : "—"}★
+                        </p>
                       )}
                       <MarketplaceReviewPhotos
                         reviewId={rv.id}

@@ -9,6 +9,7 @@ import {
 import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { captureException } from "@/lib/services/opsIngest"
 import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { isPeerListingSection, peerListingEditHref } from "@/lib/peer-listing-sections"
@@ -28,7 +29,41 @@ interface ListingOwnerManageActionsProps {
 }
 
 /** Seller controls on the listing detail page — edit, quick price, end. */
-export async function ListingOwnerManageActions({
+export async function ListingOwnerManageActions(props: ListingOwnerManageActionsProps) {
+  try {
+    return await renderListingOwnerManageActions(props)
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      typeof (error as { digest?: unknown }).digest === "string" &&
+      String((error as { digest: string }).digest).startsWith("NEXT_")
+    ) {
+      throw error
+    }
+    console.error("[ListingOwnerManageActions] failed", error)
+    await captureException(error, {
+      boundary: "ListingOwnerManageActions",
+      listingId: props.listingId,
+    })
+    const editHref = peerListingEditHref(props.section, props.listingId)
+    return (
+      <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
+        <p className="text-[14px] text-muted-foreground">Your listing</p>
+        <div className="mt-2">
+          <Button asChild className="rounded-full">
+            <Link prefetch={false} href={editHref}>
+              Edit listing
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+}
+
+async function renderListingOwnerManageActions({
   listingId,
   section,
   currentPriceUsd,

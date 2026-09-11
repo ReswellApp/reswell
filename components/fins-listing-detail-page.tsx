@@ -22,6 +22,7 @@ import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
 } from "@/lib/listing-detail-page-load"
+import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
@@ -103,7 +104,11 @@ function finSetupDisplay(raw: string | null | undefined): string | null {
   return slugs.map((s) => FIN_SETUP_LABELS[s]).join(", ")
 }
 
-export async function FinsListingDetailPage({
+export async function FinsListingDetailPage(props: ListingDetailPageSharedProps) {
+  return renderListingDetailWithGuestFallback(props, renderFinsListingDetailPage)
+}
+
+async function renderFinsListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,

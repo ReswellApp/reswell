@@ -22,6 +22,7 @@ import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
 } from "@/lib/listing-detail-page-load"
+import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
@@ -98,7 +99,11 @@ type GalleryImage = {
 
 const SELLER_WETSUITS_PDP_LIMIT = 12
 
-export async function WetsuitsListingDetailPage({
+export async function WetsuitsListingDetailPage(props: ListingDetailPageSharedProps) {
+  return renderListingDetailWithGuestFallback(props, renderWetsuitsListingDetailPage)
+}
+
+async function renderWetsuitsListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,

@@ -10,6 +10,7 @@ import {
   isGoogleMerchantEligibleListing,
   type GoogleMerchantListingRow,
 } from "@/lib/google-merchant/map-listing-to-product-input"
+import { captureException } from "@/lib/services/opsIngest"
 import { UnavailableListingLandingPage } from "@/components/features/listings/unavailable-listing-landing-page"
 import { buildUnavailableListingLanding } from "@/lib/services/unavailableListingLanding"
 import {
@@ -48,7 +49,51 @@ async function loadUnavailableListingContext(
  * Live lookup + auth gates for signed-in viewers, plus sold, hidden, or cache-miss PDPs.
  * Kept out of the hourly ISR shell so anonymous catalog crawlers stay on the edge cache.
  */
-export async function ListingDetailDynamicGate({
+export async function ListingDetailDynamicGate(props: {
+  listingParam: string
+  prefetchedListing: Record<string, unknown> | null
+  prefetchedRedirectSlug: string | null
+}) {
+  try {
+    return await renderListingDetailDynamicGate(props)
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      typeof (error as { digest?: unknown }).digest === "string" &&
+      String((error as { digest: string }).digest).startsWith("NEXT_")
+    ) {
+      throw error
+    }
+    console.error("[ListingDetailDynamicGate] signed-in gate failed", {
+      listingParam: props.listingParam,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    await captureException(error, {
+      boundary: "ListingDetailDynamicGate",
+      path: `/l/${props.listingParam}`,
+      listingParam: props.listingParam,
+    })
+    const cached = props.prefetchedListing
+    if (cached && cached.hidden_from_site !== true && typeof cached.section === "string") {
+      return (
+        <ListingDetailPublicBody
+          listing={cached as PublicListingRow}
+          listingParam={props.listingParam}
+          sectionProps={{
+            listingParam: props.listingParam,
+            prefetchedListing: cached.section === "new" ? undefined : cached,
+            anonymousPublicView: true,
+          }}
+        />
+      )
+    }
+    throw error
+  }
+}
+
+async function renderListingDetailDynamicGate({
   listingParam,
   prefetchedListing,
   prefetchedRedirectSlug,
@@ -110,7 +155,6 @@ export async function ListingDetailDynamicGate({
   const sectionProps: ListingDetailPageSharedProps = {
     listingParam,
     prefetchedListing: listing.section === "new" ? undefined : listing,
-    viewerUser: user,
   }
 
   return (

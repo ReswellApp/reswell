@@ -21,6 +21,8 @@ import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
 } from "@/lib/listing-detail-page-load"
+import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
+import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { computeListingEnrichmentGaps } from "@/lib/sell-flow/listing-enrichment"
@@ -98,7 +100,11 @@ type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>[
 
 const SELLER_BOARDS_PDP_LIMIT = 12
 
-export async function SurfboardListingDetailPage({
+export async function SurfboardListingDetailPage(props: ListingDetailPageSharedProps) {
+  return renderListingDetailWithGuestFallback(props, renderSurfboardListingDetailPage)
+}
+
+async function renderSurfboardListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
@@ -120,7 +126,8 @@ export async function SurfboardListingDetailPage({
   delete board.seller_purchase_price_usd
 
   // Ensure seller profile never contains private data (email, etc.) before sending to client
-  const p = board.profiles as Record<string, unknown> | null
+  const profilesRaw = board.profiles as Record<string, unknown> | Record<string, unknown>[] | null
+  const p = Array.isArray(profilesRaw) ? profilesRaw[0] : profilesRaw
   if (p && typeof p === "object") {
     board.profiles = {
       id: p.id,
@@ -144,43 +151,59 @@ export async function SurfboardListingDetailPage({
     typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
 
   // Wave 1: everything that depends only on the listing row runs in parallel.
-  const [
-    sellerReviewSummaryRes,
-    sellerReviewPreviewRes,
-    reswellPlatformReviewSummaryRes,
-    sellerBoardsRes,
-    soldUsedShipping,
-    indexBrand,
-    similarBoardsRaw,
-    [cartHolderCount, listingWatchersCount],
-  ] = await Promise.all([
-    getCachedSellerReviewSummary(sellerId),
-    listSellerReviewPreviews(supabase, sellerId),
-    getCachedReswellPlatformReviewSummary(),
-    supabase
-      .from("listings")
-      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-      .eq("user_id", sellerId)
-      .eq("status", "active")
-      .eq("section", "surfboards")
-      .eq("hidden_from_site", false)
-      .neq("id", board.id)
-      .order("created_at", { ascending: false })
-      .limit(SELLER_BOARDS_PDP_LIMIT),
-    isSold
-      ? getCachedSoldSurfboardUsedShippingFulfillment(board.id)
-      : Promise.resolve(false as const),
-    brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
-    fetchSimilarSurfboardsForListingPdp(supabase, {
-      excludeListingId: board.id,
-      boardType: rawBoardType,
-      priceUsd: listPriceNum,
-    }),
-    Promise.all([
-      !isSold ? getListingCartHolderCount(supabase, board.id) : Promise.resolve(0),
-      !isSold ? getListingFavoriteCount(supabase, board.id) : Promise.resolve(0),
-    ]),
-  ])
+  let sellerReviewSummaryRes = { avgRating: 0, reviewCount: 0 }
+  let sellerReviewPreviewRes: Awaited<ReturnType<typeof listSellerReviewPreviews>> = {
+    data: [],
+    error: null,
+  }
+  let reswellPlatformReviewSummaryRes = { avgRating: 0, reviewCount: 0 }
+  let sellerBoardsRes: { data: Record<string, unknown>[] | null } = { data: [] }
+  let soldUsedShipping: boolean = false
+  let indexBrand: Awaited<ReturnType<typeof getBrandById>> = null
+  let similarBoardsRaw: Awaited<ReturnType<typeof fetchSimilarSurfboardsForListingPdp>> = []
+  let cartHolderCount = 0
+  let listingWatchersCount = 0
+  try {
+    ;[
+      sellerReviewSummaryRes,
+      sellerReviewPreviewRes,
+      reswellPlatformReviewSummaryRes,
+      sellerBoardsRes,
+      soldUsedShipping,
+      indexBrand,
+      similarBoardsRaw,
+      [cartHolderCount, listingWatchersCount],
+    ] = await Promise.all([
+      getCachedSellerReviewSummary(sellerId),
+      listSellerReviewPreviews(createAnonSupabaseClient(), sellerId),
+      getCachedReswellPlatformReviewSummary(),
+      supabase
+        .from("listings")
+        .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
+        .eq("user_id", sellerId)
+        .eq("status", "active")
+        .eq("section", "surfboards")
+        .eq("hidden_from_site", false)
+        .neq("id", board.id)
+        .order("created_at", { ascending: false })
+        .limit(SELLER_BOARDS_PDP_LIMIT),
+      isSold
+        ? getCachedSoldSurfboardUsedShippingFulfillment(board.id)
+        : Promise.resolve(false as const),
+      brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
+      fetchSimilarSurfboardsForListingPdp(supabase, {
+        excludeListingId: board.id,
+        boardType: rawBoardType,
+        priceUsd: listPriceNum,
+      }),
+      Promise.all([
+        !isSold ? getListingCartHolderCount(supabase, board.id) : Promise.resolve(0),
+        !isSold ? getListingFavoriteCount(supabase, board.id) : Promise.resolve(0),
+      ]),
+    ])
+  } catch (error) {
+    console.error("[surfboard-pdp] catalog extras failed", error)
+  }
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
     sellerReviewSummaryRes
@@ -195,21 +218,30 @@ export async function SurfboardListingDetailPage({
 
   // Wave 2: everything that depends on the viewer runs in parallel,
   // with all favorite lookups coalesced into a single query.
-  const [favoriteRowsRes, acceptedOffer, dbRecentListings] = await Promise.all([
-    user
-      ? supabase
-          .from("favorites")
-          .select("listing_id")
-          .eq("user_id", user.id)
-          .in("listing_id", [board.id, ...sellerBoardIds, ...similarBoardIds])
-      : Promise.resolve({ data: null }),
-    user && !isOwnListing && board.status === "active"
-      ? fetchAcceptedOfferForBuyerListing(supabase, user.id, board.id)
-      : Promise.resolve(null),
-    user
-      ? fetchSignedInPdpRecentlyViewedSurfboards(supabase, user.id, board.id)
-      : Promise.resolve(undefined),
-  ])
+  let favoriteRowsRes: { data: { listing_id: string }[] | null } = { data: null }
+  let acceptedOffer: Awaited<ReturnType<typeof fetchAcceptedOfferForBuyerListing>> = null
+  let dbRecentListings: Awaited<
+    ReturnType<typeof fetchSignedInPdpRecentlyViewedSurfboards>
+  > | undefined
+  try {
+    ;[favoriteRowsRes, acceptedOffer, dbRecentListings] = await Promise.all([
+      user
+        ? supabase
+            .from("favorites")
+            .select("listing_id")
+            .eq("user_id", user.id)
+            .in("listing_id", [board.id, ...sellerBoardIds, ...similarBoardIds])
+        : Promise.resolve({ data: null }),
+      user && !isOwnListing && board.status === "active"
+        ? fetchAcceptedOfferForBuyerListing(supabase, user.id, board.id)
+        : Promise.resolve(null),
+      user
+        ? fetchSignedInPdpRecentlyViewedSurfboards(supabase, user.id, board.id)
+        : Promise.resolve(undefined),
+    ])
+  } catch (error) {
+    console.error("[surfboard-pdp] viewer personalization failed", error)
+  }
 
   const favoritedIds = new Set(
     (favoriteRowsRes.data ?? []).map((f: { listing_id: string }) => f.listing_id),
