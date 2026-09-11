@@ -29,6 +29,7 @@ import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-
 import { ImageGallery } from "@/components/image-gallery"
 import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { orderedListingGalleryImages } from "@/lib/listing-image-display"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
@@ -186,9 +187,10 @@ export async function SurfboardListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
   const sellerBoards = hydrateHomePeerListingRows((sellerBoardsRes.data ?? []) as Record<string, unknown>[])
+  const similarBoards = hydrateHomePeerListingRows(similarBoardsRaw)
 
   const sellerBoardIds = (sellerBoards ?? []).map((b) => b.id)
-  const similarBoardIds = similarBoardsRaw.map((r) => String(r.id))
+  const similarBoardIds = similarBoards.map((r) => String(r.id))
   const isOwnListing = user?.id === board.user_id
 
   // Wave 2: everything that depends on the viewer runs in parallel,
@@ -216,9 +218,7 @@ export async function SurfboardListingDetailPage({
   const sellerBoardFavoritedIds = sellerBoardIds.filter((id) => favoritedIds.has(id))
   const similarBoardFavoritedIds = similarBoardIds.filter((id) => favoritedIds.has(id))
 
-  const images = board.listing_images?.sort((a: { is_primary: boolean; sort_order?: number }, b: { is_primary: boolean; sort_order?: number }) => 
-    (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  ) || []
+  const images = orderedListingGalleryImages(board.listing_images)
 
   const video = primaryListingVideo(
     (
@@ -803,12 +803,12 @@ export async function SurfboardListingDetailPage({
               ) : null}
             </div>
 
-            {similarBoardsRaw.length > 0 ? (
+            {similarBoards.length > 0 ? (
               <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
                   <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
                   <HomeListingScrollRow uniformCardHeights>
-                    {similarBoardsRaw.map((row) => (
+                    {similarBoards.map((row) => (
                       <HomePeerListingScrollTile
                         key={String(row.id)}
                         listing={row as unknown as HomePeerScrollListing}

@@ -70,7 +70,14 @@ export async function ListingDetailDynamicGate({
       section: undefined,
       includeHiddenListings: true,
     })
-    if (user || live.listing || !listing) {
+    if (live.listing) {
+      listing = live.listing as Record<string, unknown>
+      redirectSlug = live.redirectSlug
+    } else if (live.queryFailed && listing) {
+      console.error("[ListingDetailDynamicGate] live lookup failed; keeping cached listing", {
+        listingParam,
+      })
+    } else if (user || !listing) {
       listing = live.listing as Record<string, unknown> | null
       redirectSlug = live.redirectSlug
     }
