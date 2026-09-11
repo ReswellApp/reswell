@@ -38,6 +38,12 @@
           "board_category_slug": "longboard"
         },
         {
+          "name": "HP Mini Mal",
+          "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_3153.jpg?v=1788921153",
+          "description": "Based off an old 7'2\" Bear mini mal that Hutcho had shaped for Evan growing up, this board is an exact handshaped replica of those boards. Paul still had the full nose to tail template sitting in his archives, and Burford still makes their iconic 7'4\" L mini mal blank — both were used and this board surfs as good as the originals, possibly better with Krypt Powerdrives for even more speed and control. A perfect travel board or one-board quiver that will surf literally anything you paddle out in.",
+          "board_category_slug": "hybrid"
+        },
+        {
           "name": "Mid VISH",
           "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_3132.jpg?v=1784779999",
           "description": "You’ve been riding mid lengths for years now. You know how they turn, you know what waves they like being ridden in and you pretty much know everything there is to know about a 7 to 8 foot single fin rolled bottom, foiled rail mid length… What am I going to do with my (surfing) life now?! Well here it is. Mid. Length. Vish. Not your run-of-the-mill mid length board, these things can handle some serious juice, while still being amazing in the knee to chest high range that so many people love riding mid length style boards in. Tubing point and you don’t want to deal with the hassle and nightmare paddle of riding a sub 5’6″ fish? Here’s your answer. Paddle in early and still be able to rip the absolute shit out of the wave with speed, power and flow…",
@@ -66,6 +72,12 @@
           "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_2911.jpg?v=1757936036",
           "description": "Loosely based off a high performance MR twin, this thing has been re-worked to be a workhorse. Plenty of rail line rocker to counter the copious amounts of single concave running the whole way through the board. The flatter rocker following the stringer up and down the board will have you catching anything you paddle for and trimming with plenty of speed, then when on rail you will utilise the extra rail line rocker to suddenly feel the board come alive under your feet and fit into tighter spots on the wave than other flatter twinny’s you may have ridden. If you want something that will allow you to get off your fish and surf a little more “performancey”, then this is what you’re looking for. Also a great travel board to compliment a fish, for when the swell comes up and you need something that can handle the extra juice and curve in the wave face.",
           "board_category_slug": "fish"
+        },
+        {
+          "name": "Rolled Vee 1",
+          "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_3159.jpg?v=1788920742",
+          "description": "Originally made to ride as an alternative to clunky 9 footers, the Rolled Vee 1 was based around McTavish's boards in Hot Generation. Paul replaced flat panel vee with a rolled vee that continues all the way through the board, helping it get on rail where it loves to be surfed from rather than pivoted from the tail. Rails start quite up in the nose, run through 50/50, and flow into a 60/40 down rail in the tail — perfect for surfers who want trim speed without riding a full longboard but still want a board that can be surfed properly on rail.",
+          "board_category_slug": "hybrid"
         },
         {
           "name": "Rolled Vee 2",
