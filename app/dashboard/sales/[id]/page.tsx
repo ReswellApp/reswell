@@ -64,7 +64,10 @@ import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/util
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
-import { sellerReviewRequestAlreadySentForOrder } from "@/lib/services/sellerReviewRequest"
+import {
+  autoSendSellerReviewRequestForOrder,
+  sellerReviewRequestAlreadySentForOrder,
+} from "@/lib/services/sellerReviewRequest"
 import { AskBuyerReviewButton } from "@/components/features/sales/ask-buyer-review-button"
 import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
 import { OrderReturnsSection } from "@/components/features/orders/order-returns-section"
@@ -375,6 +378,47 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     hasShippingAddress: !!addrBlock,
   })
 
+  const orderNumber = formatOrderNumForCustomer(sale.order_num, sale.id)
+
+  const { data: buyerReviewForOrder } = sale.buyer_id
+    ? await getMarketplaceReviewByOrderAndReviewer(supabase, id, sale.buyer_id)
+    : { data: null }
+  const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
+  const buyerReviewGate = validateSellerReviewForOrder(
+    {
+      status: sale.status,
+      delivery_status: sale.delivery_status,
+    },
+    carrierTracking,
+  )
+  const canAskBuyerForReview =
+    buyerReviewGate.ok && !buyerReviewForOrder && Boolean(sale.buyer_id)
+
+  const existingSellerReviewOfBuyer = sellerReviewOfBuyer
+    ? existingMarketplaceReviewFromRow(sellerReviewOfBuyer)
+    : null
+  const canSubmitBuyerReview =
+    buyerReviewGate.ok && !existingSellerReviewOfBuyer && Boolean(sale.buyer_id)
+  const showSellerOwnBuyerReviewUi = !!(existingSellerReviewOfBuyer || canSubmitBuyerReview)
+
+  let reviewRequestAlreadySent =
+    canAskBuyerForReview && sale.buyer_id
+      ? await sellerReviewRequestAlreadySentForOrder(
+          supabase,
+          sale.buyer_id,
+          user.id,
+          id,
+          sale.listing_id,
+        )
+      : false
+
+  if (canAskBuyerForReview && !reviewRequestAlreadySent) {
+    const autoSent = await autoSendSellerReviewRequestForOrder(id)
+    if (autoSent.ok && (autoSent.alreadySent || autoSent.conversationId)) {
+      reviewRequestAlreadySent = true
+    }
+  }
+
   const convRow = sale.buyer_id
     ? await getConversationForBuyerSellerListing(
         supabase,
@@ -402,40 +446,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       .eq("conversation_id", conversationId)
       .neq("sender_id", user.id)
   }
-
-  const orderNumber = formatOrderNumForCustomer(sale.order_num, sale.id)
-
-  const { data: buyerReviewForOrder } = sale.buyer_id
-    ? await getMarketplaceReviewByOrderAndReviewer(supabase, id, sale.buyer_id)
-    : { data: null }
-  const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
-  const buyerReviewGate = validateSellerReviewForOrder(
-    {
-      status: sale.status,
-      delivery_status: sale.delivery_status,
-    },
-    carrierTracking,
-  )
-  const canAskBuyerForReview =
-    buyerReviewGate.ok && !buyerReviewForOrder && Boolean(sale.buyer_id)
-
-  const existingSellerReviewOfBuyer = sellerReviewOfBuyer
-    ? existingMarketplaceReviewFromRow(sellerReviewOfBuyer)
-    : null
-  const canSubmitBuyerReview =
-    buyerReviewGate.ok && !existingSellerReviewOfBuyer && Boolean(sale.buyer_id)
-  const showSellerOwnBuyerReviewUi = !!(existingSellerReviewOfBuyer || canSubmitBuyerReview)
-
-  const reviewRequestAlreadySent =
-    canAskBuyerForReview && sale.buyer_id
-      ? await sellerReviewRequestAlreadySentForOrder(
-          supabase,
-          sale.buyer_id,
-          user.id,
-          id,
-          sale.listing_id,
-        )
-      : false
 
   return (
     <div className="space-y-6 pb-12">
@@ -851,8 +861,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 <div className="space-y-2 border-t border-border/60 pt-3">
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     {reviewRequestAlreadySent
-                      ? "Your review request is in Messages with this buyer. They can tap it anytime to leave stars."
-                      : "The buyer can leave a public review now that delivery is complete. We’ll place a friendly card in your message thread with them."}
+                      ? "We sent a review request in Messages and emailed the buyer. They can tap it anytime to leave stars."
+                      : "Delivery is complete. If the automatic request did not send, you can send it here."}
                   </p>
                   <AskBuyerReviewButton
                     orderId={sale.id}

@@ -1,5 +1,6 @@
 /**
- * Server-only: Klaviyo Events API — fires when a seller asks a buyer to leave a review for an order.
+ * Server-only: Klaviyo Events API — fires when a buyer is asked to leave a review for an order
+ * (automatically on delivery/pickup, or as a rare manual retry from the sale page).
  *
  * **Metric name in Klaviyo:** `Review Requested` — profile is the **buyer** so metric-triggered
  * flows email them. Seller display context lives under `request_from` (nested), not top-level scalars.

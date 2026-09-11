@@ -19,6 +19,8 @@ function item(overrides: Partial<CaseInboxItem> = {}): CaseInboxItem {
     fromName: "Seller",
     fromEmail: "seller@example.com",
     userId: "user-1",
+    requesterRole: "seller",
+    openedBy: "requester",
     kind: "order_question",
     kindLabel: "Order question",
     status: "submitted",
@@ -201,5 +203,31 @@ describe("case briefing", () => {
 
     assert.ok(briefing.hints.some((hint) => hint.includes("Issue refund — item amount")))
     assert.ok(briefing.hints.some((hint) => hint.includes("Item returns")))
+  })
+
+  it("does not say the seller opened a staff outreach thread", () => {
+    const briefing = buildCaseBriefing({
+      item: item({
+        openedBy: "staff",
+        status: "waiting_on_you",
+        subject: "Reswell needs information about order QT39VA",
+        preview: "Reswell Support here. We’re helping with order QT39VA.",
+        order: null,
+        orderRef: "QT39VA",
+      }),
+      messages: [
+        {
+          author_role: "agent",
+          is_internal: false,
+          body: "Reswell Support here. We’re helping with order QT39VA.",
+        },
+      ],
+      order: null,
+      extras: null,
+    })
+
+    assert.match(briefing.summary, /Reswell Support reached out to the seller/)
+    assert.match(briefing.summary, /No reply yet/)
+    assert.equal(briefing.ask, null)
   })
 })

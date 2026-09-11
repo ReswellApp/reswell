@@ -17,6 +17,7 @@ import {
   dashboardSidebarNavIconClass,
   dashboardSidebarNavItemClass,
 } from "@/lib/utils/dashboard-display-styles"
+import { SupportUnreadTicker } from "@/components/features/support/support-unread-ticker"
 import { cn } from "@/lib/utils"
 
 function isLinkActive(pathname: string, href: string): boolean {
@@ -64,7 +65,10 @@ function DashboardNavItem({
         )}
       >
         <Icon className={iconClass} />
-        {link.name}
+        <span className="min-w-0 flex-1 truncate">{link.name}</span>
+        {link.href === "/dashboard/support" ? (
+          <SupportUnreadTicker className="h-4 min-w-4 text-[10px]" />
+        ) : null}
       </Link>
     )
   }

@@ -21,6 +21,7 @@ import { supportCaseReplySchema } from "@/lib/validations/supportCaseThread"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
+import { markSupportCaseReadForMember } from "@/lib/services/supportUnread"
 
 export type SupportCaseThreadMessage = SupportCaseMessageRow
 
@@ -89,6 +90,7 @@ export async function getSupportCaseThreadForMember(
     return { error: "Case not found." }
   }
   const messages = await listSupportCaseMessages(supabase, row.id)
+  await markSupportCaseReadForMember(supabase, userId, row.id)
   return { case: row, messages }
 }
 

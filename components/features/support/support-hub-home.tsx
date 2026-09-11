@@ -36,7 +36,10 @@ export function SupportHubHome({
 }: SupportHubHomeProps) {
   const openCases = cases.filter((item) => isSupportCaseOpen(item.status))
   const current =
-    openCases.find((item) => item.status === "waiting_on_you") ?? openCases[0] ?? null
+    openCases.find((item) => item.unreadCount > 0) ??
+    openCases.find((item) => item.status === "waiting_on_you") ??
+    openCases[0] ??
+    null
   const hasHistory = cases.some((item) => item.id !== current?.id)
 
   return (

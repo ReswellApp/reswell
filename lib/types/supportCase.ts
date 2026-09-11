@@ -42,6 +42,7 @@ export interface UserSupportCaseListItem {
   updatedAt: string
   hasThread: boolean
   href: string
+  unreadCount: number
 }
 
 export type HelpHubIntentId =

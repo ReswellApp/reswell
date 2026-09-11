@@ -856,9 +856,9 @@ export const sellingHelpArticles: HelpArticle[] = [
         heading: "Asking the buyer for a review",
         body: (
           <p>
-            Once delivery or pickup is complete, you can tap <strong>Ask buyer for review</strong> on
-            the sale page. That sends a prompt in your Messages thread so the buyer can review you
-            too.
+            Once delivery or pickup is complete, Reswell automatically sends a review request in
+            your Messages thread and emails the buyer so they can review you. You do not need to tap
+            anything.
           </p>
         ),
       },

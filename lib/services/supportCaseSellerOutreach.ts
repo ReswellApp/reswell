@@ -68,6 +68,7 @@ export async function openSellerSupportOutreachService(
       order_ref: order.order_num,
       listing_id: order.listing_id,
       source_channel: "order_seller",
+      opened_by: "staff",
       priority: sourceCase.priority === "urgent" ? "high" : sourceCase.priority,
     })
     sellerCase = inserted.data

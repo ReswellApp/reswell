@@ -8,6 +8,7 @@ import { trackKlaviyoReviewRequested } from "@/lib/klaviyo/track-review-requeste
 import { getOrCreateReviewInviteTokenForOrder } from "@/lib/services/orderReviewInvite"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { ReviewRequestMessagePayload } from "@/lib/validations/review-request-message-metadata"
 import { parseReviewRequestMessageMetadata } from "@/lib/validations/review-request-message-metadata"
 
@@ -237,4 +238,63 @@ export async function sendSellerReviewRequestForOrder(
   })
 
   return { ok: true, conversationId: conversation.id }
+}
+
+export type AutoSendSellerReviewRequestResult =
+  | { ok: true; conversationId: string | null; alreadySent: boolean }
+  | { ok: false; error: string }
+
+/**
+ * System send after delivery/pickup — same in-thread card + Klaviyo `Review Requested`
+ * as the former manual Ask for a review button. Idempotent.
+ */
+export async function autoSendSellerReviewRequestForOrder(
+  orderId: string,
+): Promise<AutoSendSellerReviewRequestResult> {
+  let supabase: SupabaseClient
+  try {
+    supabase = createServiceRoleClient()
+  } catch (e) {
+    console.error("[seller review request] auto-send service role:", e)
+    return { ok: false, error: "Could not send the review request." }
+  }
+
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .select("id, buyer_id, seller_id, listing_id, is_admin_test")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  if (orderErr || !order) {
+    return { ok: false, error: "Order not found." }
+  }
+
+  if (order.is_admin_test === true) {
+    return { ok: true, conversationId: null, alreadySent: false }
+  }
+
+  if (!order.buyer_id || !order.seller_id) {
+    return { ok: false, error: "Order is missing a buyer or seller." }
+  }
+
+  const alreadySent = await sellerReviewRequestAlreadySentForOrder(
+    supabase,
+    order.buyer_id,
+    order.seller_id,
+    order.id,
+    order.listing_id,
+  )
+  if (alreadySent) {
+    return { ok: true, conversationId: null, alreadySent: true }
+  }
+
+  const result = await sendSellerReviewRequestForOrder(supabase, order.seller_id, order.id)
+  if (!result.ok) {
+    if (result.error.includes("already sent")) {
+      return { ok: true, conversationId: null, alreadySent: true }
+    }
+    return result
+  }
+
+  return { ok: true, conversationId: result.conversationId, alreadySent: false }
 }

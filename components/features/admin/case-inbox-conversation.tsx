@@ -25,6 +25,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
+import {
+  inboxCounterpartLabel,
+  staffReplyPlaceholder,
+} from "@/lib/admin/case-inbox-counterpart"
 
 interface CaseInboxConversationProps {
   item: CaseInboxItem
@@ -118,9 +122,9 @@ export function CaseInboxConversation({
         <div className="flex shrink-0 items-center gap-1">
           {item.userId ? (
             <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
-              <Link href={`/admin/users/${item.userId}`} aria-label="Open customer profile">
+              <Link href={`/admin/users/${item.userId}`} aria-label={`Open ${inboxCounterpartLabel(item.requesterRole).toLowerCase()} profile`}>
                 <User className="h-4 w-4" />
-                <span className="ml-1.5 hidden xl:inline">Customer</span>
+                <span className="ml-1.5 hidden xl:inline">{inboxCounterpartLabel(item.requesterRole)}</span>
               </Link>
             </Button>
           ) : null}
@@ -136,10 +140,10 @@ export function CaseInboxConversation({
             <Link
               href={supportCaseResponseHref(item.id)}
               target="_blank"
-              aria-label="See the customer’s view of this case"
+              aria-label={`See the ${inboxCounterpartLabel(item.requesterRole).toLowerCase()}’s view of this case`}
             >
               <ExternalLink className="h-4 w-4" />
-              <span className="ml-1.5 hidden xl:inline">Customer view</span>
+              <span className="ml-1.5 hidden xl:inline">Their view</span>
             </Link>
           </Button>
         </div>
@@ -176,11 +180,16 @@ export function CaseInboxConversation({
             role="staff"
             closed={!item.isOpen}
             staffNames={staffNames}
-            originalRequest={{
-              body: firstNonEmptyText(item.order?.body, item.contact?.message, item.preview),
-              createdAt: item.createdAt,
-              name: item.fromName,
-            }}
+            counterpartLabel={inboxCounterpartLabel(item.requesterRole)}
+            originalRequest={
+              item.openedBy === "staff"
+                ? null
+                : {
+                    body: firstNonEmptyText(item.order?.body, item.contact?.message, item.preview),
+                    createdAt: item.createdAt,
+                    name: item.fromName,
+                  }
+            }
           />
         </div>
         <div className="shrink-0 border-t border-border/50 bg-background/95 px-3 py-3 backdrop-blur-sm">
@@ -192,6 +201,7 @@ export function CaseInboxConversation({
             closed={!item.isOpen}
             kindFilter={kindFilter}
             vars={{ order_ref: item.orderRef ?? undefined, name: item.fromName }}
+            replyPlaceholder={staffReplyPlaceholder(item.requesterRole)}
             onModeChange={onModeChange}
             onDraftChange={onDraftChange}
             onInsertMacro={onInsertMacro}

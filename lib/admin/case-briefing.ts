@@ -31,13 +31,15 @@ function uniqueTexts(values: string[]): string[] {
 }
 
 export function collectCustomerCaseTexts(
-  item: Pick<CaseInboxItem, "preview" | "contact" | "order">,
+  item: Pick<CaseInboxItem, "preview" | "contact" | "order" | "openedBy">,
   messages: CustomerMessage[],
 ): string[] {
   const originals: string[] = []
-  if (item.order?.body?.trim()) originals.push(item.order.body)
-  else if (item.contact?.message?.trim()) originals.push(item.contact.message)
-  else if (item.preview.trim()) originals.push(item.preview)
+  if (item.openedBy !== "staff") {
+    if (item.order?.body?.trim()) originals.push(item.order.body)
+    else if (item.contact?.message?.trim()) originals.push(item.contact.message)
+    else if (item.preview.trim()) originals.push(item.preview)
+  }
 
   const live = messages
     .filter((message) => message.author_role === "customer" && !message.is_internal)
@@ -95,10 +97,10 @@ function orderRefLabel(item: Pick<CaseInboxItem, "orderRef">, order: AdminOrderD
   return ref ? `order ${ref}` : "this order"
 }
 
-function whoOpened(item: Pick<CaseInboxItem, "order" | "fromName">): string {
-  if (item.order?.requester_role === "seller") return "The seller"
-  if (item.order?.requester_role === "buyer") return "The buyer"
-  return item.fromName.trim() || "The customer"
+function whoOpened(item: Pick<CaseInboxItem, "order" | "fromName" | "requesterRole">): string {
+  if (item.requesterRole === "seller" || item.order?.requester_role === "seller") return "The seller"
+  if (item.requesterRole === "buyer" || item.order?.requester_role === "buyer") return "The buyer"
+  return item.fromName.trim() || "The member"
 }
 
 function aboutLine(item: Pick<CaseInboxItem, "kind" | "kindLabel">): string {
@@ -121,10 +123,22 @@ export function buildCaseBriefing(input: {
   const who = whoOpened(input.item)
   const about = aboutLine(input.item)
   const ref = orderRefLabel(input.item, input.order)
+  const memberReplied = input.messages.some(
+    (message) => message.author_role === "customer" && !message.is_internal,
+  )
 
-  const summary = input.item.orderId
-    ? `${who} opened ${about} on ${ref}.`
-    : `${who} opened a ${about} case.`
+  const summary =
+    input.item.openedBy === "staff"
+      ? input.item.orderId
+        ? memberReplied
+          ? `Reswell Support reached out to ${who.toLowerCase()} about ${ref}. They replied.`
+          : `Reswell Support reached out to ${who.toLowerCase()} about ${ref}. No reply yet.`
+        : memberReplied
+          ? `Reswell Support reached out to ${who.toLowerCase()}. They replied.`
+          : `Reswell Support reached out to ${who.toLowerCase()}. No reply yet.`
+      : input.item.orderId
+        ? `${who} opened ${about} on ${ref}.`
+        : `${who} opened a ${about} case.`
 
   const facts: string[] = []
   const order = input.order

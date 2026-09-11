@@ -7,6 +7,7 @@ import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
 import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
+import { countUnreadSupportMessages } from "@/lib/utils/unread-support-count-events"
 
 export async function listUserSupportCasesService(
   userId: string,
@@ -19,7 +20,35 @@ export async function listUserSupportCasesService(
   await backfillUserLegacyCases(supabase, userId, user?.email ?? null)
 
   const rows = await listSupportCasesForRequester(supabase, userId, filter)
-  return rows.filter((row) => !isUnpublishedLiveChatTicket(row)).map((row) => ({
+  const visible = rows.filter((row) => !isUnpublishedLiveChatTicket(row))
+  const unreadByCase = new Map<string, number>()
+
+  if (visible.length > 0) {
+    const { data: agentMessages } = await supabase
+      .from("support_case_messages")
+      .select("case_id, created_at, author_role, is_internal")
+      .in("case_id", visible.map((row) => row.id))
+      .eq("author_role", "agent")
+      .eq("is_internal", false)
+      .limit(2000)
+
+    for (const row of visible) {
+      const messages = (agentMessages ?? []).filter(
+        (message) => String((message as { case_id: string }).case_id) === row.id,
+      )
+      unreadByCase.set(
+        row.id,
+        row.status === "resolved"
+          ? 0
+          : countUnreadSupportMessages(
+              messages as Array<{ author_role: string; is_internal?: boolean; created_at: string }>,
+              row.requester_last_read_at,
+            ),
+      )
+    }
+  }
+
+  return visible.map((row) => ({
     id: row.id,
     backend: row.order_support_request_id ? "order_support" : "contact_message",
     kind: row.kind,
@@ -32,6 +61,7 @@ export async function listUserSupportCasesService(
     updatedAt: row.updated_at,
     hasThread: true,
     href: supportCaseResponseHref(row.id),
+    unreadCount: unreadByCase.get(row.id) ?? 0,
   }))
 }
 

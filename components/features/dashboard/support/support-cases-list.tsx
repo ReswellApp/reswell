@@ -21,8 +21,9 @@ function partitionCases(cases: UserSupportCaseListItem[]) {
     if (isSupportCaseOpen(item.status)) open.push(item)
     else closed.push(item)
   }
+  const unread = open.find((item) => item.unreadCount > 0)
   const waiting = open.find((item) => item.status === "waiting_on_you")
-  const current = waiting ?? open[0] ?? null
+  const current = unread ?? waiting ?? open[0] ?? null
   const otherOpen = current ? open.filter((item) => item.id !== current.id) : open
   return { current, otherOpen, closed }
 }
@@ -41,7 +42,14 @@ function HistoryRow({
         className="flex items-baseline justify-between gap-3 rounded-xl py-3 transition-colors hover:bg-muted/40 sm:-mx-2 sm:px-2"
       >
         <div className="min-w-0">
-          <p className="truncate text-[14px] font-medium text-foreground">{item.subject}</p>
+          <p className="flex items-center gap-2 truncate text-[14px] font-medium text-foreground">
+            <span className="truncate">{item.subject}</span>
+            {item.unreadCount > 0 ? (
+              <span className="shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+                {item.unreadCount > 99 ? "99+" : item.unreadCount}
+              </span>
+            ) : null}
+          </p>
           {showStatus ? (
             <p className="mt-0.5 text-[12px] text-muted-foreground">
               {SUPPORT_CASE_STATUS_LABEL[item.status]}

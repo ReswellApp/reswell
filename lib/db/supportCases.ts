@@ -24,6 +24,8 @@ export type SupportCaseRow = {
   outcome: string | null
   internal_notes: string | null
   source_channel: string
+  opened_by: "requester" | "staff"
+  requester_last_read_at: string | null
   created_at: string
   updated_at: string
   resolved_at: string | null
@@ -39,7 +41,7 @@ export type SupportMacroRow = {
 }
 
 const CASE_SELECT =
-  "id, case_number, kind, status, priority, subject, preview, requester_user_id, requester_email, requester_role, order_id, order_ref, listing_id, conversation_id, contact_message_id, order_support_request_id, assignee_admin_id, sla_due_at, outcome, internal_notes, source_channel, created_at, updated_at, resolved_at"
+  "id, case_number, kind, status, priority, subject, preview, requester_user_id, requester_email, requester_role, order_id, order_ref, listing_id, conversation_id, contact_message_id, order_support_request_id, assignee_admin_id, sla_due_at, outcome, internal_notes, source_channel, opened_by, requester_last_read_at, created_at, updated_at, resolved_at"
 
 function caseNumberFromId(id: string): string {
   return formatSupportCaseReference(id).replace("RS-", "RS-")
@@ -67,6 +69,7 @@ export async function insertSupportCase(
     contact_message_id?: string | null
     order_support_request_id?: string | null
     source_channel: string
+    opened_by?: "requester" | "staff"
     priority?: "low" | "normal" | "high" | "urgent"
   },
 ): Promise<{ data: SupportCaseRow | null; error: Error | null }> {
@@ -95,6 +98,7 @@ export async function insertSupportCase(
       contact_message_id: row.contact_message_id ?? null,
       order_support_request_id: row.order_support_request_id ?? null,
       source_channel: row.source_channel,
+      opened_by: row.opened_by ?? "requester",
       sla_due_at: slaDue,
     })
     .select(CASE_SELECT)
