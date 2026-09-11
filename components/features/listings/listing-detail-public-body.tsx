@@ -12,6 +12,7 @@ import { ListingViewTracker } from "@/components/features/listings/listing-view-
 import { ListingPdpProductJsonLd } from "@/components/features/listings/listing-pdp-product-json-ld"
 import { isGoogleMerchantPeerSection } from "@/lib/google-merchant/config"
 import type { GoogleMerchantListingRow } from "@/lib/google-merchant/map-listing-to-product-input"
+import { asListingImageArray } from "@/lib/listing-image-display"
 import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-load"
 
 type PublicListingRow = Record<string, unknown> & {
@@ -21,8 +22,16 @@ type PublicListingRow = Record<string, unknown> & {
 
 export type { PublicListingRow }
 
+function normalizePublicListingRow(listing: PublicListingRow): PublicListingRow {
+  return {
+    ...listing,
+    listing_images: asListingImageArray(listing.listing_images),
+    listing_videos: Array.isArray(listing.listing_videos) ? listing.listing_videos : [],
+  }
+}
+
 export function ListingDetailPublicBody({
-  listing,
+  listing: listingRaw,
   listingParam,
   sectionProps,
 }: {
@@ -30,6 +39,7 @@ export function ListingDetailPublicBody({
   listingParam: string
   sectionProps: ListingDetailPageSharedProps
 }) {
+  const listing = normalizePublicListingRow(listingRaw)
   const cachedPublicProps: ListingDetailPageSharedProps = {
     ...sectionProps,
     prefetchedListing: listing.section === "new" ? undefined : listing,

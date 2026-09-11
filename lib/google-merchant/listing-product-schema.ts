@@ -7,6 +7,7 @@ import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
 import { buildGoogleMerchantProductDescription } from "@/lib/google-merchant/product-description"
 import { mapListingConditionToSchemaOrg } from "@/lib/google-merchant/condition"
 import { productSchema } from "@/lib/seo/structured-data"
+import { asListingImageArray } from "@/lib/listing-image-display"
 import type { GoogleMerchantListingRow } from "@/lib/google-merchant/map-listing-to-product-input"
 
 type ListingProductSchemaInput = Pick<
@@ -55,7 +56,7 @@ export function googleMerchantListingProductSchema(listing: ListingProductSchema
   const price = Number(listing.price)
   if (!Number.isFinite(price) || price <= 0) return null
 
-  const images = listing.listing_images ?? []
+  const images = asListingImageArray(listing.listing_images)
   const primary = images.find((i) => i.is_primary) || images[0]
   const imageRaw = primary ? googleMerchantListingImageSourceUrl(primary) : null
   const image = imageRaw ? googleMerchantListingImageUrl(imageRaw) : undefined

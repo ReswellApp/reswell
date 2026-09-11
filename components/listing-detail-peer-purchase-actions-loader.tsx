@@ -1,5 +1,5 @@
 import { cache } from "react"
-import { createClient } from "@/lib/supabase/server"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import {
   fetchListingExclusiveBuyerFields,
   resolveListingExclusivePurchaseAccess,
@@ -11,10 +11,7 @@ import {
 } from "@/components/listing-detail-peer-purchase-actions"
 
 const loadPeerPurchaseViewerState = cache(async (listingId: string) => {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { supabase, user } = await getCachedRequestSession()
 
   const [fields, openOfferHref] = await Promise.all([
     fetchListingExclusiveBuyerFields(supabase, listingId),

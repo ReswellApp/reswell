@@ -62,10 +62,38 @@ export function listingTileImageSrcFromRow(img: ListingImageForCard): string {
   return listingTileImageSrcCandidatesFromRow(img)[0] ?? ""
 }
 
+/**
+ * PostgREST embeds are arrays on success. A failed embed can arrive as an error
+ * object (`{ message, code }`) — never call `.find` / `.sort` on that value.
+ */
+export function asListingImageArray(
+  images: ListingImageForCard[] | ListingImageForCard | null | undefined | unknown,
+): ListingImageForCard[] {
+  if (Array.isArray(images)) {
+    return images.filter((img): img is ListingImageForCard => !!img && typeof img === "object")
+  }
+  if (images && typeof images === "object" && "url" in images) {
+    return [images as ListingImageForCard]
+  }
+  return []
+}
+
+/** Gallery order: primary first, then `sort_order`. Does not mutate the source. */
+export function orderedListingGalleryImages<T extends ListingImageForCard>(
+  images: T[] | null | undefined | unknown,
+): T[] {
+  const list = asListingImageArray(images) as T[]
+  return [...list].sort((a, b) => {
+    const aOrder = (a as ListingImageForCard & { sort_order?: number | null }).sort_order
+    const bOrder = (b as ListingImageForCard & { sort_order?: number | null }).sort_order
+    return (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (aOrder ?? 0) - (bOrder ?? 0)
+  })
+}
+
 export function listingCardImageSrc(
-  images: ListingImageForCard[] | null | undefined,
+  images: ListingImageForCard[] | ListingImageForCard | null | undefined | unknown,
 ): string {
-  const list = images ?? []
+  const list = asListingImageArray(images)
   const primary = list.find((i) => i.is_primary) || list[0]
   if (!primary) return ""
   return listingTileImageSrcFromRow(primary)
@@ -123,9 +151,9 @@ export function listingTileCarouselImageUrls(
 
 /** Per-slide URL fallbacks for carousel tiles (primary photo first). */
 export function listingTileCarouselImageCandidateLists(
-  images: ListingImageForCard[] | null | undefined,
+  images: ListingImageForCard[] | null | undefined | unknown,
 ): string[][] {
-  const list = images ?? []
+  const list = asListingImageArray(images)
   if (list.length === 0) return []
 
   const primaryIdx = list.findIndex((i) => i.is_primary)

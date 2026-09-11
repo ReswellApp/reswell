@@ -4,7 +4,7 @@ import {
   googleMerchantListingImageSourceUrl,
   googleMerchantListingImageUrl,
 } from "@/lib/google-merchant/product-image-link"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import { asListingImageArray, type ListingImageForCard } from "@/lib/listing-image-display"
 import { listingDirectPublicImageUrl } from "@/lib/listing-media-proxy-url"
 import { LISTING_VIDEO_MIN_DURATION_SECONDS } from "@/lib/listing-video-constants"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
@@ -139,7 +139,7 @@ function absoluteImageUrl(raw: string | null | undefined): string | null {
 }
 
 function orderedListingImageRaws(listing: GoogleMerchantListingRow): string[] {
-  const images = listing.listing_images ?? []
+  const images = asListingImageArray(listing.listing_images)
   if (images.length === 0) return []
 
   const sorted = images.slice().sort(
@@ -157,7 +157,7 @@ function orderedListingImageRaws(listing: GoogleMerchantListingRow): string[] {
 }
 
 function absoluteImageLink(listing: GoogleMerchantListingRow): string | null {
-  const list = listing.listing_images ?? []
+  const list = asListingImageArray(listing.listing_images)
   const primary = list.find((i) => i.is_primary) || list[0]
   if (!primary) return null
 

@@ -6,7 +6,7 @@ import { BrandMarketplaceListingsPreview } from "@/components/brands/brand-marke
 import { RecentFeedClient } from "@/components/recent-feed-client"
 import type { UnavailableListingLandingModel } from "@/lib/services/unavailableListingLanding"
 import type { BoardBrowseListingRow } from "@/lib/db/boards-browse-listings"
-import { createClient } from "@/lib/supabase/server"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import {
@@ -37,10 +37,7 @@ export async function UnavailableListingLandingPage({
 }: {
   landing: UnavailableListingLandingModel
 }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { supabase, user } = await getCachedRequestSession()
 
   const previewIds = [
     ...landing.brandLiveListings.map((l) => l.id),

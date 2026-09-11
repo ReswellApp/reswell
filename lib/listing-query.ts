@@ -40,60 +40,84 @@ export async function findListingByParam(
   listing: any | null
   redirectSlug: string | null
   canonicalPath: string | null
+  /** True when PostgREST rejected the select (not a genuine missing row). */
+  queryFailed: boolean
 }> {
   const applySiteVisibility = <T extends { eq: (c: string, v: boolean) => T }>(q: T) =>
     includeHiddenListings ? q : q.eq("hidden_from_site", false)
 
-  const byId = async (withSection: boolean) => {
-    let q = applySiteVisibility(supabase.from("listings").select(select).eq("id", param))
+  const lookup = async (
+    column: "id" | "slug",
+    withSection: boolean,
+  ): Promise<{ row: { section: string; id: string; slug?: string | null } | null; failed: boolean }> => {
+    let q = applySiteVisibility(supabase.from("listings").select(select).eq(column, param))
     if (withSection && expectedSection) q = q.eq("section", expectedSection)
-    const { data } = await q.maybeSingle()
-    return isListingRow(data) ? data : null
+    const { data, error } = await q.maybeSingle()
+    if (error) {
+      console.error("[findListingByParam]", {
+        param,
+        column,
+        expectedSection: expectedSection ?? null,
+        code: error.code,
+        message: error.message,
+      })
+      return { row: null, failed: true }
+    }
+    return { row: isListingRow(data) ? data : null, failed: false }
   }
 
-  const bySlug = async (withSection: boolean) => {
-    let q = applySiteVisibility(supabase.from("listings").select(select).eq("slug", param))
-    if (withSection && expectedSection) q = q.eq("section", expectedSection)
-    const { data } = await q.maybeSingle()
-    return isListingRow(data) ? data : null
-  }
+  const byId = async (withSection: boolean) => lookup("id", withSection)
+  const bySlug = async (withSection: boolean) => lookup("slug", withSection)
 
   if (isUUID(param)) {
-    let data = expectedSection ? await byId(true) : await byId(false)
-    if (!data && expectedSection) {
-      data = await byId(false)
+    let found = expectedSection ? await byId(true) : await byId(false)
+    if (!found.row && expectedSection) {
+      found = await byId(false)
     }
-    if (!data) {
-      return { listing: null, redirectSlug: null, canonicalPath: null }
-    }
-    if (expectedSection && data.section !== expectedSection) {
+    if (!found.row) {
       return {
-        listing: data,
+        listing: null,
         redirectSlug: null,
-        canonicalPath: listingDetailPath(data),
+        canonicalPath: null,
+        queryFailed: found.failed,
       }
     }
-    const slug = (data as { slug?: string | null }).slug
+    if (expectedSection && found.row.section !== expectedSection) {
+      return {
+        listing: found.row,
+        redirectSlug: null,
+        canonicalPath: listingDetailPath(found.row),
+        queryFailed: false,
+      }
+    }
+    const slug = found.row.slug
     return {
-      listing: data,
+      listing: found.row,
       redirectSlug: slug?.trim() ? slug : null,
       canonicalPath: null,
+      queryFailed: false,
     }
   }
 
-  let data = expectedSection ? await bySlug(true) : await bySlug(false)
-  if (!data && expectedSection) {
-    data = await bySlug(false)
+  let found = expectedSection ? await bySlug(true) : await bySlug(false)
+  if (!found.row && expectedSection) {
+    found = await bySlug(false)
   }
-  if (!data) {
-    return { listing: null, redirectSlug: null, canonicalPath: null }
-  }
-  if (expectedSection && data.section !== expectedSection) {
+  if (!found.row) {
     return {
-      listing: data,
+      listing: null,
       redirectSlug: null,
-      canonicalPath: listingDetailPath(data),
+      canonicalPath: null,
+      queryFailed: found.failed,
     }
   }
-  return { listing: data, redirectSlug: null, canonicalPath: null }
+  if (expectedSection && found.row.section !== expectedSection) {
+    return {
+      listing: found.row,
+      redirectSlug: null,
+      canonicalPath: listingDetailPath(found.row),
+      queryFailed: false,
+    }
+  }
+  return { listing: found.row, redirectSlug: null, canonicalPath: null, queryFailed: false }
 }

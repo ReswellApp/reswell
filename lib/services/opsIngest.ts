@@ -208,6 +208,7 @@ export async function reportClientOpsError(
       react ? "react" : "client",
       name,
       message.slice(0, 160),
+      raw.digest ?? "",
       normalizeStackSample(raw.stack),
     ],
     signal: {
