@@ -210,34 +210,150 @@ export async function sendSellerReviewRequestForOrder(
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
 
-  revalidateMessagesInboxForParticipants(row.buyer_id, row.seller_id)
+  try {
+    revalidateMessagesInboxForParticipants(row.buyer_id, row.seller_id)
+  } catch {
+    // No-op outside Next.js request context (e.g. backfill scripts).
+  }
 
-  const { data: senderProfile } = await supabase
-    .from("profiles")
-    .select("display_name, shop_name, is_shop")
-    .eq("id", sellerUserId)
-    .maybeSingle()
-
-  const reviewToken = await getOrCreateReviewInviteTokenForOrder(supabase, row.id)
-
-  void trackKlaviyoReviewRequested({
+  await emitKlaviyoReviewRequested({
+    supabase,
     orderId: row.id,
     orderNum,
     listingId: row.listing_id,
     listingTitle,
     buyerUserId: row.buyer_id,
-    sellerUserId: sellerUserId,
+    sellerUserId,
     conversationId: conversation.id,
     messageId: inserted.id,
     sentAt: inserted.created_at,
-    reviewToken,
-    sessionSeller: {
-      email: session?.email ?? null,
-      profile: senderProfile,
-    },
+    sessionEmail: session?.email ?? null,
   })
 
   return { ok: true, conversationId: conversation.id }
+}
+
+async function findReviewRequestMessageInThread(
+  supabase: SupabaseClient,
+  conversationId: string,
+  orderId: string,
+): Promise<{ id: string; created_at: string } | null> {
+  const { data: rows } = await supabase
+    .from("messages")
+    .select("id, created_at, metadata")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(40)
+
+  for (const row of rows ?? []) {
+    const p = parseReviewRequestMessageMetadata(row.metadata)
+    if (p?.orderId === orderId && typeof row.id === "string" && typeof row.created_at === "string") {
+      return { id: row.id, created_at: row.created_at }
+    }
+  }
+  return null
+}
+
+async function emitKlaviyoReviewRequested(input: {
+  supabase: SupabaseClient
+  orderId: string
+  orderNum: string
+  listingId: string | null
+  listingTitle: string
+  buyerUserId: string
+  sellerUserId: string
+  conversationId: string
+  messageId: string
+  sentAt: string
+  sessionEmail?: string | null
+}): Promise<void> {
+  const { data: senderProfile } = await input.supabase
+    .from("profiles")
+    .select("display_name, shop_name, is_shop")
+    .eq("id", input.sellerUserId)
+    .maybeSingle()
+
+  const reviewToken = await getOrCreateReviewInviteTokenForOrder(input.supabase, input.orderId)
+
+  try {
+    await trackKlaviyoReviewRequested({
+      orderId: input.orderId,
+      orderNum: input.orderNum,
+      listingId: input.listingId,
+      listingTitle: input.listingTitle,
+      buyerUserId: input.buyerUserId,
+      sellerUserId: input.sellerUserId,
+      conversationId: input.conversationId,
+      messageId: input.messageId,
+      sentAt: input.sentAt,
+      reviewToken,
+      sessionSeller: {
+        email: input.sessionEmail ?? null,
+        profile: senderProfile,
+      },
+    })
+  } catch (e) {
+    console.error("[seller review request] klaviyo Review Requested:", e)
+  }
+}
+
+async function emitKlaviyoReviewRequestedForExistingOrder(
+  supabase: SupabaseClient,
+  order: {
+    id: string
+    buyer_id: string
+    seller_id: string
+    listing_id: string | null
+  },
+): Promise<void> {
+  const conversation = await getConversationForBuyerSellerListing(
+    supabase,
+    order.buyer_id,
+    order.seller_id,
+    order.listing_id,
+  )
+  if (!conversation) return
+
+  const message = await findReviewRequestMessageInThread(supabase, conversation.id, order.id)
+  if (!message) return
+
+  const { data: orderRow } = await supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      order_num,
+      listing_id,
+      listings ( id, title ),
+      order_items (
+        sort_order,
+        listings ( id, title )
+      )
+    `,
+    )
+    .eq("id", order.id)
+    .maybeSingle()
+
+  const listingTitle = orderRow
+    ? displayListingTitleSummary(orderRow as unknown as OrderRowForReviewRequest)
+    : "Your purchase"
+  const orderNum = formatOrderNumForCustomer(
+    typeof orderRow?.order_num === "string" ? orderRow.order_num : null,
+    order.id,
+  )
+
+  await emitKlaviyoReviewRequested({
+    supabase,
+    orderId: order.id,
+    orderNum,
+    listingId: order.listing_id,
+    listingTitle,
+    buyerUserId: order.buyer_id,
+    sellerUserId: order.seller_id,
+    conversationId: conversation.id,
+    messageId: message.id,
+    sentAt: message.created_at,
+  })
 }
 
 export type AutoSendSellerReviewRequestResult =
@@ -285,12 +401,14 @@ export async function autoSendSellerReviewRequestForOrder(
     order.listing_id,
   )
   if (alreadySent) {
+    await emitKlaviyoReviewRequestedForExistingOrder(supabase, order)
     return { ok: true, conversationId: null, alreadySent: true }
   }
 
   const result = await sendSellerReviewRequestForOrder(supabase, order.seller_id, order.id)
   if (!result.ok) {
     if (result.error.includes("already sent")) {
+      await emitKlaviyoReviewRequestedForExistingOrder(supabase, order)
       return { ok: true, conversationId: null, alreadySent: true }
     }
     return result

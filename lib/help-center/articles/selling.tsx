@@ -842,8 +842,9 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              After a sale completes, open the order in {helpLink("/dashboard/sales", "Sales")}. On
-              the buyer card, tap <strong>Review buyer</strong> to leave a star rating and comment.
+              After a sale completes, Reswell emails you asking to review the buyer. Open the order
+              in {helpLink("/dashboard/sales", "Sales")} and tap <strong>Review buyer</strong> on the
+              buyer card to leave a star rating and comment.
             </p>
             <p>
               Honest feedback helps other sellers know what to expect. Keep it factual and
