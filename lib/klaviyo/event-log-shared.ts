@@ -25,6 +25,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "New Account Created": "lifecycle",
   "User Inactive 30 Days": "lifecycle",
   "Review Requested": "lifecycle",
+  "Review Buyer Requested": "lifecycle",
   "Checkout Started": "lifecycle",
   "Added to Cart": "lifecycle",
   "Offer Made": "engagement",
