@@ -1,5 +1,6 @@
 import { cache } from "react"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { captureException } from "@/lib/services/opsIngest"
 import {
   fetchListingExclusiveBuyerFields,
   resolveListingExclusivePurchaseAccess,
@@ -28,15 +29,30 @@ const loadPeerPurchaseViewerState = cache(async (listingId: string) => {
 export async function ListingDetailPeerPurchaseActionsLoader(
   props: ListingDetailPeerPurchaseActionsProps,
 ) {
-  const { exclusivePurchaseAccess, openOfferHref } = await loadPeerPurchaseViewerState(
-    props.listingId,
-  )
+  try {
+    const { exclusivePurchaseAccess, openOfferHref } = await loadPeerPurchaseViewerState(
+      props.listingId,
+    )
 
-  return (
-    <ListingDetailPeerPurchaseActions
-      {...props}
-      exclusivePurchaseAccess={exclusivePurchaseAccess}
-      openOfferHref={openOfferHref}
-    />
-  )
+    return (
+      <ListingDetailPeerPurchaseActions
+        {...props}
+        exclusivePurchaseAccess={exclusivePurchaseAccess}
+        openOfferHref={openOfferHref}
+      />
+    )
+  } catch (error) {
+    console.error("[ListingDetailPeerPurchaseActionsLoader] failed", error)
+    await captureException(error, {
+      boundary: "ListingDetailPeerPurchaseActionsLoader",
+      listingId: props.listingId,
+    })
+    return (
+      <ListingDetailPeerPurchaseActions
+        {...props}
+        exclusivePurchaseAccess={{ kind: "open" }}
+        openOfferHref={null}
+      />
+    )
+  }
 }

@@ -16,5 +16,5 @@ export const HOME_PEER_LISTING_WITH_PROFILE_SELECT = `
 export function hydrateHomePeerListingRows<T extends Record<string, unknown>>(
   rows: T[] | null | undefined,
 ) {
-  return hydrateCardListingImages(rows ?? [])
+  return hydrateCardListingImages(Array.isArray(rows) ? rows : [])
 }

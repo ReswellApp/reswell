@@ -169,9 +169,9 @@ export function listingTileCarouselImageCandidateLists(
 
 /** Ordered fallbacks for compact listing rows (nav search, cart, checkout). */
 export function listingTitleThumbnailCandidates(
-  images: ListingImageForCard[] | null | undefined,
+  images: ListingImageForCard[] | null | undefined | unknown,
 ): string[] {
-  const list = images ?? []
+  const list = asListingImageArray(images)
   const primary = list.find((i) => i.is_primary) || list[0]
   if (!primary) return []
   return listingTileImageSrcCandidatesFromRow(primary)
@@ -189,9 +189,9 @@ export function listingTitleThumbnailSrc(
 
 /** Full-size primary image for large backdrops (e.g. homepage hero); skips thumbnails. */
 export function listingHeroSlideSrc(
-  images: ListingImageForCard[] | null | undefined,
+  images: ListingImageForCard[] | null | undefined | unknown,
 ): string | null {
-  const list = images ?? []
+  const list = asListingImageArray(images)
   const primary = list.find((i) => i.is_primary) || list[0]
   const raw = primary?.url?.trim()
   if (!raw) return null

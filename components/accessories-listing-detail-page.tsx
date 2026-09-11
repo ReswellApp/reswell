@@ -22,6 +22,7 @@ import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
 } from "@/lib/listing-detail-page-load"
+import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
@@ -93,7 +94,11 @@ type GalleryImage = {
 
 const SELLER_ACCESSORIES_PDP_LIMIT = 12
 
-export async function AccessoriesListingDetailPage({
+export async function AccessoriesListingDetailPage(props: ListingDetailPageSharedProps) {
+  return renderListingDetailWithGuestFallback(props, renderAccessoriesListingDetailPage)
+}
+
+async function renderAccessoriesListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
