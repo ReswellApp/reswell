@@ -1,0 +1,154 @@
+{
+  "generated_for": "Furrow Surf Craft official named standup catalog",
+  "source": "https://www.furrowsurfcraft.com/pages/boards (Shopify board portfolio — excludes apparel, wetsuit collabs, and art prints)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "furrow-surf-craft",
+      "name": "Furrow Surf Craft",
+      "website_url": "https://www.furrowsurfcraft.com/",
+      "location_label": "Encinitas, California",
+      "short_description": "Encinitas custom surfboards and design. Official site copy says boards are shaped using US Blanks and glassed at Moonlight Glassing.",
+      "models": [
+        {
+          "name": "Arctail Quad",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-7889a266a5227ed7e5d1.jpg",
+          "description": null,
+          "board_category_slug": "other"
+        },
+        {
+          "name": "California Fish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-559b6f26aa3f49efe910.png",
+          "description": "Furrow’s tribute to the California-born classic fish, with a wider fish nose, mellow rocker, and single-to-spiral-vee concave. Official stock dims 5'4\"–6'4\". Twin or quad. A longer California Long Fish is listed from 6'5\" up as a custom size of this model, not a separate catalog page.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Coastal Cruiser",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-91da5d76339d7dc1d30d.png",
+          "description": "A higher-volume board combining a round stubbie nose and full wide squash tail, designed as a travel-friendly “big” board that can still be surfed hard. Stock dims 6'0\"–7'11\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cosmic Bandito TPH",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-7ea9f595ef756eada93a.png",
+          "description": "A tri-plane hull glider. Official copy cites influence from Marc Andreini gliders and Manny Caro’s Hunter Seeker, and describes a paper-airplane planning sensation. Stock dims 9'1\"–11'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Edge Board",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-c8a57344b0c257c43acf.jpg",
+          "description": "Named Furrow model based on George Greenough Edge Board templates shared through Marc Andreini. Official copy says the added Edge bottom cuts through chop, with a sensation like a tri-plane hull in sub-par conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Floyd Pepper",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-8ee88e0070334b3a12dd.png",
+          "description": "A winged round-tail twin fin, a nod to late-70s and early-80s winged twins. Official copy places it between loose and control, with slight hull entry blending into spiral vee, hidden chest volume, and a single wing. Official dims 5'4\"–6'4\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Floyd Pepper 2.0",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-694df66758bdc9c85918.jpg",
+          "description": "A sleeker, higher-performance iteration of the Floyd Pepper with the same single-to-spiral-vee concave, added nose and tail rocker, and a thinner, narrower outline for hollower waves. Stock dims 5'4\"–6'10\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "FP Longo",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-9912e4ae8f5df745535a.jpg",
+          "description": "A fuller-nose, flatter-rocker midlength expansion of the Floyd Pepper, designed for crowded Encinitas reef and beach breaks. Official copy says it trims and turns from the center and still makes slingshot cutbacks off the tail. Also called Floyd Pepper Longo on the original Floyd Pepper page.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Labyrinth",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-b91b7cbbf37520cda79c.jpg",
+          "description": "A wide-point-back double-ender single fin inspired by Wayne Lynch’s boards in the 1969 film Evolution. Official copy describes fast trim, easy cutbacks from the middle of the board, and a narrower nose that lightens swing weight. Size range 6'6\"–8'8\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Labyrinth Twin",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-a299c681507ae0149756.jpg",
+          "description": "The newest iteration of the Labyrinth. Official copy combines a tri-plane hull with single-to-spiral-vee bottom contour and the familiar Labyrinth rocker and outline. Stock dims 6'6\"–8'8\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moontail Quad",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-1673173e7257572c308e.jpg",
+          "description": "A mini board with a full outline, hull entry, single-to-spiral-vee concave, and a half-moon tail cutout. Official copy recommends it for waves chest-high and under. Stock dims 4'11\"–5'11\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Olivella",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-e761123a8ce812f065f0.png",
+          "description": "Named after Olivella shells on the local coastline. Official copy calls it a fast pocket board for mushy chop through lined-up waves, with hull nose entry, single-to-spiral-vee concaves, a full round nose, and a round pin tail. Stock dims 5'4\"–6'4\". 2+1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Paipos",
+          "image_url": "https://www.furrowsurfcraft.com/wp-content/uploads/2020/05/a83daaf16398806a-IMG_1200.jpeg",
+          "description": "Tail Options: Moontail or Chevrontail. Available for custom order (ask if stock is available) Paulownia wood paipos 48\" and under. Include a hand painted circle carving on the deck and sealed with varnish. Single concave for lift and outline enacts as a fin that breaks free through cutbacks. These boards fly and go so fast that turns are an important (and fun!) way to stay in the pocket. Note: Customs can be made longer than 48\" if needed.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Radii",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-5b3eb14d8b7dfc84c6b3.jpg",
+          "description": "Combines the California fish nose with a wider pin tail. Official pronunciation is rey-dee-ahy. Recommended as a 2+1 and also available as single, quad, or 5-box. Stock dims 5'4\"–7'0\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Round Nose Fish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-9a621f2a4d79860233bf.jpg",
+          "description": "Combines a traditional California fish tail with a stubbie nose, hull entry, and single-to-spiral-vee concave. Official copy calls it a skateboard-like everyday Southern California board, also available as a quad. Stock dims 4'11\"–6'6\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Samsāra",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-1d4806e9303b69aba112.jpg",
+          "description": "A wing pintail with single-to-spiral-vee concave and a sleek outline for hollow waves or tucking into new lines in average surf. Official copy notes hidden foam under the chest, a balance of hold and loose control, and availability as a twin or single fin. Stock dims 6'0\"–7'6\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Skylark",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-d45c7fd258d18842248c.jpg",
+          "description": "A wing twin fish and the newest model in the Furrow lineup. Official copy calls it a cousin to the Samsāra and Floyd Pepper 2.0, with single-to-spiral-vee bottom concave and a pulled-in outline for tighter turns. Stock dims 5'8\"–6'10\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stubbie Scout",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-fae49f155c704272f681.jpg",
+          "description": "A round-nose / round-pintail stubbie. Official copy says the Scout is about high lines, down-the-line speed, and figure-eight cutbacks. Official dims 5'8\"–6'8\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stubbie Squash",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-16b8cdad65abeaf7b2ca.jpg",
+          "description": "A stubbie with hull entry blending into spiral vee, stubbie nose, and round squash tail. Official dims 5'8\"–7'6\". Available as single, 2+1, or quad.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Traditional Stubbie",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-ce3474062d7a2ff73c9c.jpg",
+          "description": "A stubbie with hull entry blending into spiral vee, stubbie nose, and round tail. Official dims 5'6\"–7'6\". Available as single, 2+1, or quad.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twinzer Fish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-564d9ca5447257d1781e.jpg",
+          "description": "Official copy says this complements the Long Fish Twin with a sleek outline and pulled-in nose and tail. Bottom contours blend single to spiral vee, with extra lift in the tail for drive. Recommended for all sizes of surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinzer FP2.0",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-640bae421cd0c98fe3a7.jpg",
+          "description": "A single-wing round-tail Twinzer. Official copy says the wings are for punch and locked-in lines, with a narrow round tail for tight turns and single-to-spiral-vee bottom contours through the fins.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wilderness Explorer",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-32e59c552474ed601198.jpg",
+          "description": "Official copy calls this the Cosmic Bandito’s compact sibling, with effortless paddle, down-the-line speed, and a user-friendly tri-plane hull for glide and lift. Stock dims 7'0\"–8'8\".",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
