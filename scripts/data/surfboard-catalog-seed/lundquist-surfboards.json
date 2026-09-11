@@ -1,0 +1,258 @@
+{
+  "generated_for": "Lundquist Surfboards official named standup catalog",
+  "source": "https://lundquistsurfboards.com/models (official model pages — excludes wake surf Rage and Wake Surf 2)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "lundquist-surfboards",
+      "name": "Lundquist Surfboards",
+      "website_url": "https://lundquistsurfboards.com",
+      "location_label": "San Clemente, California",
+      "founder_name": "Lundquist Family",
+      "lead_shaper_name": "Lundquist Family",
+      "short_description": "Four generations of custom surfboards shaped in San Clemente, California — shortboards, twin fins, mid-lengths, longboards, and gliders.",
+      "models": [
+        {
+          "name": "2nd to None",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/2nd-to-none/1222204AT-1.jpg?width=1280",
+          "description": "Custom modern Swiss-Army shortboard with quad-default direction. Built for fattier-faced surf where speed maintenance matters more than pop pivot. Shaped in San Clemente.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Aardvark",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/aardvark/3872325MH-1.jpg?width=1280",
+          "description": "Custom twinzer surfboard built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Acid-Drop",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/acid-drop/3452323JNY-1.jpg?width=1280",
+          "description": "Custom glass-on mini-simmons built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Apparition",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/apparition/1202204AT-1.jpg?width=1280",
+          "description": "Custom everyday shortboard tuned for the SoCal waist-to-overhead window. Wider-forward outline, deep single-to-double concave, round tail. Thruster stock, quad option. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Bang!",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/bang/1272204AT-1.jpg?width=1280",
+          "description": "Custom grovel-friendly shortboard — paddles into mush, projects through clean fun surf. Quad stock with thruster option. Wide planing outline, squash tail. Shaped in San Clemente.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Big Buoy",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/innuendo/3512313FY-1.jpg?width=1280&quality=80",
+          "description": "Custom floaty daily-driver shortboard built for waist-to-overhead beach break, point, or reef with shape and push. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Big Joe",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/big-joe/1022204AT-1.jpg?width=1280",
+          "description": "Custom classic longboard built for knee-to-shoulder-high glide — soft point breaks, summer beach break, lazy reef. Shaped in San Clemente.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Black Pearl",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/black-pearl/1512215AT-1.jpg?width=1280",
+          "description": "Custom classic longboard built for knee-to-shoulder-high glide — soft point breaks, summer beach break, lazy reef. Shaped in San Clemente.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Boomerang",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/boomerang/3952328AL-1.jpg?width=1280",
+          "description": "Custom twin + trailer surfboard built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Duppy",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/duppy/1122204AT-1.jpg?width=1280",
+          "description": "Custom modern twin-fin surfboard built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dutchman",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/dutchman/27662128DR-1.jpg?width=1280",
+          "description": "Custom glider built for knee-to-chest-high glide — the smallest, weakest waves in the lineup. Shaped in San Clemente.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Esplanade",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/esplanade/3862323MH-1.jpg?width=1280",
+          "description": "Custom single-fin mid-length built for knee-to-head-high points, soft beach break, and gliding reef. Shaped in San Clemente.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Fantasma",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/fantasma/1002204AT-1.jpg?width=1280",
+          "description": "Custom traditional longboard built for glide, paddle, and drawn-out turns. Shaped in San Clemente. Single 10.5\" Stavron long box only, 8'6\"–11'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Five Horizons",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/five-horizons/1242204AT-1.jpg?width=1280",
+          "description": "Custom power-surf daily driver built for shoulder-to-overhead+ surf. Single concave + vee-blended double bottom for held-rail drive through power sections. Thruster only. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Gold",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/gold/1852201SR-1.jpg?width=1280",
+          "description": "Custom modern twin-fin surfboard built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gumball",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/gumball/2412201SR-1.jpg?width=1280",
+          "description": "Custom asymmetric shortboard built for waist-to-overhead beach break, point, or reef with shape and push. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Half-Moon",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/half-moon/3332205DR-1.jpg?width=1280",
+          "description": "Custom twinzer surfboard built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hiatus",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/hiatus/4182319JLY-1.jpg?width=1280",
+          "description": "Custom mid-length built for the shortboarder taking an honest break — easier paddle, more glide, more wave count, without giving up real turns. 2+1 stock, round-pin tail, San Clemente.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Innuendo",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/innuendo/3652327FY-1.jpg?width=1280",
+          "description": "Custom high-performance shortboard built for chest-to-overhead surf. Shaped in San Clemente. Thruster stock; quad and five-fin options.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Lasso",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/lasso/1212204AT-1.jpg?width=1280",
+          "description": "Custom versatile shortboard built for waist-to-overhead beach break, point, or reef with shape and push. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Legacy",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/legacy/2252201SR-1.jpg?width=1280",
+          "description": "Custom heritage longboard built for knee-to-shoulder-high glide — soft point breaks, summer beach break, lazy reef. Shaped in San Clemente.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lucid",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/suds/1162204AT-1.jpg?width=1280&quality=80",
+          "description": "Custom modern twin-fin surfboard built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Lunada",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/lunada/3152224NR-1.jpg?width=1280",
+          "description": "Custom performance longboard built for knee-to-shoulder-high glide — soft point breaks, summer beach break, lazy reef. Shaped in San Clemente.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Magic Carpet",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/magic-carpet/1732219AT-1.jpg?width=1280",
+          "description": "Custom 2+1 longboard built for knee-to-shoulder-high glide — soft point breaks, summer beach break, lazy reef. Shaped in San Clemente.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Moon Shine",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/moon-shine/1342204AT-1.jpg?width=1280",
+          "description": "Custom everyday shortboard built for SoCal waist-to-overhead. Single concave + flat-blend + soft double. Round-tail stock; thruster only. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Pegasus",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/fantasma/1002204AT-1.jpg?width=1280&quality=80",
+          "description": "Lundquist's dedicated traditional noserider: a wider nose, a single concave right under the nose, and a fuller hip for hanging five and ten. Shaped in San Clemente.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pin Twin",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/pin-twin/1132204AT-1.jpg?width=1280",
+          "description": "Custom pin-tail twin-fin surfboard built for clean waist-to-head surf with shape. Shaped in San Clemente. Twin setup stock, Futures boxes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Popsicle Stick",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/popsicle-stick/3432323JNY-1.jpg?width=1280",
+          "description": "Custom retro performance shortboard built for waist-to-overhead beach break, point, or reef with shape and push. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Revenant",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/revenant/1112204AT-1.jpg?width=1280",
+          "description": "Custom modern twin-fin surfboard built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Salt Burn",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/suds/1162204AT-1.jpg?width=1280&quality=80",
+          "description": "Custom high-performance fish built for clean waist-to-head surf with drive. Swallow-tail twin fin shaped in San Clemente. Twin setup stock, Futures boxes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Scorpio",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/scorpio/3442323JNY-1.jpg?width=1280",
+          "description": "Custom performance shortboard with step-up DNA — clean chest-to-overhead surf with push. Shaped in San Clemente. Quad stock; 5-fin option adds thrusters on the same board.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Sea Bottom",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/sea-bottom/2562201SR-1.jpg?width=1280",
+          "description": "Custom performance mid-length built for knee-to-head-high points, soft beach break, and gliding reef. Shaped in San Clemente.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Serenata",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/serenata/4082304MY-1.jpg?width=1280",
+          "description": "Custom 2+1 mid-length built for knee-to-head-high points, soft beach break, and gliding reef. Shaped in San Clemente.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Spectre",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/spectre/1082204AT-1.jpg?width=1280",
+          "description": "Custom performance mid-length surfboard built for clean waist-to-head surf. Shaped in San Clemente. Twin or single fin (3 boxes total — never all three at once). Reference: Ryan Lovelace mid-lengths.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Suds",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/suds/1162204AT-1.jpg?width=1280",
+          "description": "Custom modern twin-fin surfboard built for clean waist-to-head surf with shape — beach break, point, or reef with some push. Shaped in San Clemente.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Talisman (Gun)",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/talisman-gun/4322310OR-1.jpg?width=1280",
+          "description": "Custom big-wave gun built for overhead-to-double-overhead-plus reef and point. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Talisman (Mini Gun)",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/talisman-gun/4322310OR-1.jpg?width=1280&quality=80",
+          "description": "Custom mini gun built for overhead-to-double-overhead reef and point. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Talisman (Step Up)",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/innuendo/3512313FY-1.jpg?width=1280&quality=80",
+          "description": "Custom step-up shortboard built for head-high to double-overhead-plus reef and point break. Shaped in San Clemente.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Wanted",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/wanted/1662219AT-1.jpg?width=1280",
+          "description": "Custom forgiving HPSB built around continuous-double drive. Capped at 6'4\" — meant to ride 2–6\" shorter. Shaped in San Clemente.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Whip-Stitch",
+          "image_url": "https://ctqcredceyifxiartnuy.supabase.co/storage/v1/render/image/public/model-photos/whip-stitch/2262201SR-1.jpg?width=1280",
+          "description": "Custom performance mid-length surfboard — paddle of a longer board, snap of a shortboard. Thruster stock, quad option (5-box layout). Round tail. Shaped in San Clemente.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
