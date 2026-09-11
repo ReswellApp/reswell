@@ -21,6 +21,7 @@ import {
   List,
   Plus,
   TrendingUp,
+  LifeBuoy,
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
@@ -33,6 +34,7 @@ import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { ORDER_STATUS_LIST } from "@/lib/order-status"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboard/dashboard-overview-realtime-refresh"
+import { LiveSupportUnreadValue } from "@/components/features/dashboard/live-support-unread-value"
 import { dashboardPageSubtitleClass, dashboardPageTitleClass } from "@/lib/utils/dashboard-display-styles"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
@@ -107,7 +109,7 @@ export default async function DashboardPage() {
     supabase
       .from("profiles")
       .select(
-        "is_shop, shop_name, display_name, city, location, seller_slug, avatar_url, shop_logo_url, follower_count, unread_message_count",
+        "is_shop, shop_name, display_name, city, location, seller_slug, avatar_url, shop_logo_url, follower_count, unread_message_count, unread_support_count",
       )
       .eq("id", user.id)
       .single(),
@@ -145,6 +147,7 @@ export default async function DashboardPage() {
   const walletRow = walletRes.data
   const profile = profileRes.data
   const unreadMsgCount = profile?.unread_message_count ?? 0
+  const unreadSupportCount = Number(profile?.unread_support_count ?? 0)
   const unreadCount = Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0)
   const followerCount = profile?.follower_count ?? 0
   const newFollowersThisMonth = newFollowersRes.count ?? 0
@@ -255,6 +258,12 @@ export default async function DashboardPage() {
       value: unreadCount || 0,
       icon: MessageSquare,
       href: "/messages",
+    },
+    {
+      name: "Support",
+      value: unreadSupportCount || 0,
+      icon: LifeBuoy,
+      href: "/dashboard/support",
     },
   ]
 
@@ -381,10 +390,16 @@ export default async function DashboardPage() {
 
       <div>
         <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
           {activityStats.map((stat) => (
             <Link key={stat.name} href={stat.href} className="min-w-0">
-              <Card className="h-full overflow-hidden hover:shadow-md transition-shadow">
+              <Card
+                className={`h-full overflow-hidden hover:shadow-md transition-shadow${
+                  stat.name === "Support" && unreadSupportCount > 0
+                    ? " border-listingHeart/35"
+                    : ""
+                }`}
+              >
                 <CardContent className="p-5 sm:p-6">
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">{stat.name}</p>
@@ -393,7 +408,11 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                   <p className="mt-3 text-2xl font-bold tabular-nums tracking-tight sm:text-3xl">
-                    {stat.value.toLocaleString()}
+                    {stat.name === "Support" ? (
+                      <LiveSupportUnreadValue initialCount={Number(stat.value)} />
+                    ) : (
+                      stat.value.toLocaleString()
+                    )}
                   </p>
                 </CardContent>
               </Card>

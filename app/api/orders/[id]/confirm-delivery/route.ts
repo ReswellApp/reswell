@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { sendFulfillmentReviewReminder } from "@/lib/services/orderReviewInvite"
+import { sendFulfillmentReviewPrompts } from "@/lib/services/fulfillmentReviewPrompts"
 import { NextRequest, NextResponse } from "next/server"
 
 /**
@@ -100,7 +100,7 @@ export async function POST(
       .eq("id", conv.id)
   }
 
-  void sendFulfillmentReviewReminder(orderId)
+  void sendFulfillmentReviewPrompts(orderId)
 
   return NextResponse.json({ success: true })
 }

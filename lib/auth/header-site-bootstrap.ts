@@ -12,11 +12,13 @@ export type HeaderProfileBootstrap = {
   shop_logo_url: string | null
   is_shop: boolean | null
   unread_message_count: number | null
+  unread_support_count: number | null
 }
 
 export type HeaderSiteBootstrap = {
   profile: HeaderProfileBootstrap | null
   unreadMessages: number
+  unreadSupport: number
   walletBalance: number | null
 }
 
@@ -32,7 +34,7 @@ export async function fetchHeaderSiteBootstrap(
     supabase
       .from("profiles")
       .select(
-        "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count",
+        "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
       )
       .eq("id", user.id)
       .single(),
@@ -61,6 +63,7 @@ export async function fetchHeaderSiteBootstrap(
   return {
     profile,
     unreadMessages: Number(profile?.unread_message_count ?? 0),
+    unreadSupport: Number(profile?.unread_support_count ?? 0),
     walletBalance: wallet ? reconcileWalletAggregates(wallet).totalBalance : 0,
   }
 }

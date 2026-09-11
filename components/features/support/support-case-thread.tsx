@@ -23,6 +23,7 @@ type SupportCaseThreadProps = {
   seedText?: string
   originalRequest?: { body: string; createdAt: string; name: string } | null
   staffNames?: Record<string, string>
+  counterpartLabel?: string
 }
 
 function bubbleAlign(authorRole: SupportCaseThreadMessage["author_role"], viewer: "member" | "staff") {
@@ -35,10 +36,11 @@ function authorLabel(
   message: SupportCaseThreadMessage,
   viewer: "member" | "staff",
   staffNames?: Record<string, string>,
+  counterpartLabel = "Member",
 ): string {
   if (message.is_internal) return "Internal note"
   if (message.author_role === "system") return "System"
-  if (message.author_role === "customer") return viewer === "member" ? "You" : "Customer"
+  if (message.author_role === "customer") return viewer === "member" ? "You" : counterpartLabel
   if (message.author_user_id && staffNames?.[message.author_user_id]) {
     return staffNames[message.author_user_id] ?? "Support"
   }
@@ -54,6 +56,7 @@ export function SupportCaseThread({
   seedText,
   originalRequest = null,
   staffNames,
+  counterpartLabel = "Member",
 }: SupportCaseThreadProps) {
   const [localMessages, setLocalMessages] = useState(initial)
   const [draft, setDraft] = useState("")
@@ -181,7 +184,7 @@ export function SupportCaseThread({
                       mine && !note && "text-right",
                     )}
                   >
-                    {authorLabel(message, role, staffNames)}
+                    {authorLabel(message, role, staffNames, counterpartLabel)}
                     {" · "}
                     {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                   </p>
@@ -212,7 +215,9 @@ export function SupportCaseThread({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={3}
-            placeholder={role === "staff" ? "Reply to the customer…" : "Reply to Support…"}
+            placeholder={
+              role === "staff" ? `Reply to the ${counterpartLabel.toLowerCase()}…` : "Reply to Support…"
+            }
             className="resize-y text-sm"
             maxLength={12000}
           />

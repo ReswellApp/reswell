@@ -178,6 +178,7 @@ type HeaderDerivedNavState = {
   profileDisplayName: string | null
   isAdmin: boolean
   unreadMessages: number
+  unreadSupport: number
   walletBalance: number | null
   authLoaded: boolean
 }
@@ -190,6 +191,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileDisplayName: null,
       isAdmin: false,
       unreadMessages: 0,
+      unreadSupport: 0,
       walletBalance: null,
       authLoaded: true,
     }
@@ -202,6 +204,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileDisplayName: null,
       isAdmin: false,
       unreadMessages: 0,
+      unreadSupport: 0,
       walletBalance: null,
       authLoaded: false,
     }
@@ -213,6 +216,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
     profileDisplayName: prof.display_name,
     isAdmin: prof.is_admin === true,
     unreadMessages: b.unreadMessages,
+    unreadSupport: Number(b.unreadSupport ?? 0) || 0,
     walletBalance: b.walletBalance,
     authLoaded: true,
   }
@@ -477,6 +481,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(initNav.profileDisplayName)
   const [isAdmin, setIsAdmin] = useState(initNav.isAdmin)
   const [unreadMessages, setUnreadMessages] = useState(initNav.unreadMessages)
+  const [unreadSupport, setUnreadSupport] = useState(initNav.unreadSupport)
   const [walletBalance, setWalletBalance] = useState<number | null>(initNav.walletBalance)
   /** Client-synced total from earnings (or other wallet UI); wins over stale server bootstrap. */
   const clientWalletTotalRef = useRef<number | null>(null)
@@ -557,6 +562,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         : "",
       b?.walletBalance ?? "",
       b?.unreadMessages ?? "",
+      b?.unreadSupport ?? "",
       b?.profile?.display_name ?? "",
       b?.profile?.avatar_url ?? "",
       b?.profile?.shop_logo_url ?? "",
@@ -567,6 +573,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     (serverHeaderAuth.user as { updated_at?: string } | null | undefined)?.updated_at,
     serverHeaderAuth.bootstrap?.walletBalance,
     serverHeaderAuth.bootstrap?.unreadMessages,
+    serverHeaderAuth.bootstrap?.unreadSupport,
     serverHeaderAuth.bootstrap?.profile?.display_name,
     serverHeaderAuth.bootstrap?.profile?.avatar_url,
     serverHeaderAuth.bootstrap?.profile?.shop_logo_url,
@@ -595,6 +602,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         return serverUnread
       })
     }
+    const applyServerUnreadSupport = (serverUnread: number, mode: "partial" | "full") => {
+      setUnreadSupport((prev) => {
+        if (mode === "partial" && serverUnread <= 0) return prev
+        return Math.max(0, serverUnread)
+      })
+    }
 
     if (isPartialBootstrap) {
       // Incomplete server bootstrap (profile/wallet missing) — keep last-known UI until
@@ -603,6 +616,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileDisplayName((prev) => prev ?? d.profileDisplayName)
       setIsAdmin((prev) => (d.isAdmin ? d.isAdmin : prev))
       applyServerUnread(d.unreadMessages, "partial")
+      applyServerUnreadSupport(d.unreadSupport, "partial")
       setWalletBalance((prev) => {
         if (prev !== null) return prev
         const clientTotal = clientWalletTotalRef.current
@@ -614,6 +628,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileDisplayName(d.profileDisplayName)
       setIsAdmin(d.isAdmin)
       applyServerUnread(d.unreadMessages, "full")
+      applyServerUnreadSupport(d.unreadSupport, "full")
       if (d.walletBalance !== null) {
         setWalletBalance((prev) => {
           const clientTotal = clientWalletTotalRef.current
@@ -665,6 +680,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileDisplayName(guest.profileDisplayName)
         setIsAdmin(guest.isAdmin)
         setUnreadMessages(guest.unreadMessages)
+        setUnreadSupport(guest.unreadSupport)
         clientWalletTotalRef.current = null
         setWalletBalance(guest.walletBalance)
         return
@@ -673,7 +689,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       const { data: profile } = await supabase
         .from("profiles")
         .select(
-          "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count",
+          "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
         )
         .eq("id", resolvedUser.id)
         .single()
@@ -687,6 +703,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           preferClientUnreadRef.current = false
           return Math.max(0, nextUnread)
         })
+        const nextSupport = Number(profile?.unread_support_count ?? 0)
+        if (Number.isFinite(nextSupport)) setUnreadSupport(Math.max(0, nextSupport))
       }
 
       const { data: wallet } = await supabase
@@ -763,7 +781,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       if (!u) return
       const { data: profile } = await supabase
         .from("profiles")
-        .select("unread_message_count")
+        .select("unread_message_count, unread_support_count")
         .eq("id", u.id)
         .single()
       const next = Number(profile?.unread_message_count ?? 0)
@@ -772,6 +790,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         preferClientUnreadRef.current = false
         return Math.max(0, next)
       })
+      const nextSupport = Number(profile?.unread_support_count ?? 0)
+      if (Number.isFinite(nextSupport)) setUnreadSupport(Math.max(0, nextSupport))
     }
 
     function onUnreadCountAdjust(event: Event) {
@@ -808,6 +828,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileDisplayName(guest.profileDisplayName)
         setIsAdmin(guest.isAdmin)
         setUnreadMessages(guest.unreadMessages)
+        setUnreadSupport(guest.unreadSupport)
         clientWalletTotalRef.current = null
         setWalletBalance(guest.walletBalance)
         setAuthLoaded(true)
@@ -845,9 +866,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     const applyUnreadFromProfileRow = (row: unknown) => {
       if (!row || typeof row !== "object") return false
       const raw = (row as { unread_message_count?: unknown }).unread_message_count
-      if (raw == null) return false
+      const supportRaw = (row as { unread_support_count?: unknown }).unread_support_count
+      const nextSupport = Number(supportRaw)
+      if (Number.isFinite(nextSupport) && supportRaw != null) {
+        setUnreadSupport(Math.max(0, nextSupport))
+      }
+      if (raw == null) return supportRaw != null
       const next = Number(raw)
-      if (!Number.isFinite(next)) return false
+      if (!Number.isFinite(next)) return supportRaw != null
       setUnreadMessages((prev) => {
         // Keep optimistic decreases (thread open / viewing) over a briefly higher
         // denormalized count from an INSERT that is about to be marked read.
@@ -955,18 +981,21 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       })
     supabase
       .from("profiles")
-      .select("unread_message_count")
+      .select("unread_message_count, unread_support_count")
       .eq("id", user.id)
       .single()
       .then(({ data: profile }) => {
         if (cancelled || !profile) return
         const next = Number(profile.unread_message_count ?? 0)
-        if (!Number.isFinite(next)) return
-        setUnreadMessages((prev) => {
-          if (preferClientUnreadRef.current && next > prev) return prev
-          preferClientUnreadRef.current = false
-          return Math.max(0, next)
-        })
+        if (Number.isFinite(next)) {
+          setUnreadMessages((prev) => {
+            if (preferClientUnreadRef.current && next > prev) return prev
+            preferClientUnreadRef.current = false
+            return Math.max(0, next)
+          })
+        }
+        const nextSupport = Number(profile.unread_support_count ?? 0)
+        if (Number.isFinite(nextSupport)) setUnreadSupport(Math.max(0, nextSupport))
       })
     return () => { cancelled = true }
   }, [supabase, user?.id, pathname])
@@ -1031,6 +1060,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         resolvedInitial={resolvedInitial}
         resolvedDisplayName={resolvedDisplayName}
         walletBalance={walletBalance}
+        unreadSupport={unreadSupport}
         isAdmin={isAdmin}
         onSignOut={handleSignOut}
       />

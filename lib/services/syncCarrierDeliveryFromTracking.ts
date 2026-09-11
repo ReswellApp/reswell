@@ -5,7 +5,7 @@ import {
   trackingDetailReportsDelivered,
 } from "@/lib/shipping/carrier-delivery-payout-hold"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
-import { sendFulfillmentReviewReminder } from "@/lib/services/orderReviewInvite"
+import { sendFulfillmentReviewPrompts } from "@/lib/services/fulfillmentReviewPrompts"
 import {
   getOrderShipmentById,
   updateOrderShipmentCarrierFields,
@@ -109,7 +109,7 @@ export async function syncShipmentCarrierDeliveryFromTracking(
     (!!rollup.carrierDeliveredAt && !beforeRollup.carrierDeliveredAt)
 
   if (rollup.deliveryStatus === "delivered" && orderDeliveryUpdated) {
-    void sendFulfillmentReviewReminder(orderId)
+    void sendFulfillmentReviewPrompts(orderId)
   }
 
   // Payout hold: only when the whole order is carrier-delivered (all packages).
@@ -241,7 +241,7 @@ async function syncLegacyOrderCarrierDelivery(
     }
 
     if (deliveryStatusUpdated) {
-      void sendFulfillmentReviewReminder(orderId)
+      void sendFulfillmentReviewPrompts(orderId)
     }
 
     await supabase

@@ -3,6 +3,7 @@
 import { CheckCircle2, Clock3, UserCheck, UserRound } from "lucide-react"
 import type { CaseInboxItem, CaseInboxPriority } from "@/lib/admin/case-inbox"
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
+import { staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -24,12 +25,12 @@ interface CaseInboxCommandBarProps {
   onResolve: () => void
 }
 
-const STATUSES: { value: SupportCaseStatus; label: string }[] = [
-  { value: "submitted", label: "New" },
-  { value: "in_review", label: "In review" },
-  { value: "in_progress", label: "Open" },
-  { value: "waiting_on_you", label: "Waiting on customer" },
-  { value: "resolved", label: "Resolved" },
+const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
+  "submitted",
+  "in_review",
+  "in_progress",
+  "waiting_on_you",
+  "resolved",
 ]
 
 export function CaseInboxCommandBar({
@@ -56,12 +57,14 @@ export function CaseInboxCommandBar({
 
       <span className="hidden text-[11px] text-muted-foreground sm:inline">Status</span>
       <Select value={item.status} onValueChange={(value) => onStatus(value as SupportCaseStatus)} disabled={pending}>
-        <SelectTrigger className="h-8 w-[138px] bg-background text-xs" aria-label="Case status">
+        <SelectTrigger className="h-8 w-[168px] bg-background text-xs" aria-label="Case status">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {STATUSES.map((status) => (
-            <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
+          {WORKFLOW_STATUS_VALUES.map((status) => (
+            <SelectItem key={status} value={status}>
+              {staffWorkflowStatusLabel(status, item)}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>

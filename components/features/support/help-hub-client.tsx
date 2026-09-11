@@ -35,6 +35,8 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { ClaimEvidenceUploader } from "@/components/features/support/claim-evidence-uploader"
+import { SupportUnreadCountLabel } from "@/components/features/support/support-unread-ticker"
+import { SupportHubLiveRefresh } from "@/components/features/support/support-hub-live-refresh"
 import { SupportHubChoiceCards } from "@/components/features/support/support-hub-choice-cards"
 import { SupportHubHome } from "@/components/features/support/support-hub-home"
 import { SupportHubOrderPicker } from "@/components/features/support/support-hub-order-picker"
@@ -457,8 +459,11 @@ export function HelpHubClient({
                   ? "Orders and sales are on your account. Sign in to choose one."
                   : "Pick the closest match, or ask our team below."
 
+  const unreadSupportTotal = cases.reduce((sum, item) => sum + item.unreadCount, 0)
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 xl:max-w-4xl">
+      {signedIn ? <SupportHubLiveRefresh initialCount={unreadSupportTotal} /> : null}
       {phase !== "intents" ? (
         <Button
           type="button"
@@ -473,8 +478,14 @@ export function HelpHubClient({
       ) : null}
 
       <div className="space-y-1">
-        <h1 className="text-[22px] font-semibold tracking-tight text-foreground sm:text-2xl">
-          {heading}
+        <h1 className="flex flex-wrap items-center gap-2 text-[22px] font-semibold tracking-tight text-foreground sm:text-2xl">
+          <span>{heading}</span>
+          {signedIn && phase === "intents" ? (
+            <SupportUnreadCountLabel
+              initialCount={unreadSupportTotal}
+              className="text-[16px] font-semibold text-muted-foreground sm:text-[18px]"
+            />
+          ) : null}
         </h1>
         <p className="text-[13px] text-muted-foreground sm:text-sm">{subtitle}</p>
       </div>

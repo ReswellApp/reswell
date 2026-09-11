@@ -47,12 +47,18 @@ export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem 
           <span
             className={cn(
               "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
-              waiting
+              item.unreadCount > 0 || waiting
                 ? "bg-listingHeart text-white"
                 : "bg-listingHeart/10 text-listingHeart",
             )}
           >
-            {waiting ? "Reply needed" : SUPPORT_CASE_STATUS_LABEL[item.status]}
+            {item.unreadCount > 0
+              ? item.unreadCount === 1
+                ? "New message"
+                : `${item.unreadCount} new`
+              : waiting
+                ? "Reply needed"
+                : SUPPORT_CASE_STATUS_LABEL[item.status]}
           </span>
         </div>
         {meta.length > 0 ? (

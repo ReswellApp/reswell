@@ -99,9 +99,9 @@ export function AskBuyerReviewButton({
             </div>
             <div className="min-w-0 flex-1 space-y-2">
               <div>
-                <p className="text-sm font-semibold text-foreground">Message sent to buyer</p>
+                <p className="text-sm font-semibold text-foreground">Review request sent</p>
                 <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                  They’ll get your review request in this sale’s message thread. It is the same as any other chat from you.
+                  The buyer has a review card in this sale’s message thread and an email asking them to leave stars.
                 </p>
               </div>
               <AmberStarsRow showPop />
@@ -136,10 +136,10 @@ export function AskBuyerReviewButton({
             aria-hidden
           />
         )}
-        Ask for a review
+        Send review request
       </Button>
       <p className="text-[11px] text-center text-muted-foreground">
-        Sends a friendly message they can tap to leave stars.
+        Retry the automatic message and email if they did not go out.
       </p>
     </div>
   )

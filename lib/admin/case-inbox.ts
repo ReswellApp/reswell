@@ -33,6 +33,8 @@ export type CaseInboxView =
   | "all"
 export type CaseInboxPriority = "low" | "normal" | "high" | "urgent"
 export type CaseInboxSort = "smart" | "recent" | "oldest"
+export type CaseInboxOpenedBy = "requester" | "staff"
+export type CaseInboxRequesterRole = "buyer" | "seller" | "member" | "guest"
 
 export type CaseInboxItem = {
   key: string
@@ -43,6 +45,8 @@ export type CaseInboxItem = {
   fromName: string
   fromEmail: string | null
   userId: string | null
+  requesterRole: CaseInboxRequesterRole
+  openedBy: CaseInboxOpenedBy
   kind: SupportCaseKind
   kindLabel: string
   status: SupportCaseStatus
@@ -232,6 +236,8 @@ export function contactToInboxItem(row: ContactMessageRow): CaseInboxItem {
     fromName: row.name,
     fromEmail: row.email,
     userId: row.user_id,
+    requesterRole: row.user_id ? "member" : "guest",
+    openedBy: "requester",
     kind,
     kindLabel: SUPPORT_CASE_KIND_LABEL[kind],
     status,
@@ -267,6 +273,8 @@ export function orderToInboxItem(row: OrderSupportRequestRow): CaseInboxItem {
     fromName: row.requester_role === "seller" ? "Seller" : "Buyer",
     fromEmail: null,
     userId: row.buyer_id,
+    requesterRole: row.requester_role === "seller" ? "seller" : "buyer",
+    openedBy: "requester",
     kind,
     kindLabel: SUPPORT_CASE_KIND_LABEL[kind],
     status,
@@ -308,6 +316,8 @@ export function supportCaseToInboxItem(
     fromName: sidecar.contact?.name || (row.requester_role === "seller" ? "Seller" : row.requester_role === "buyer" ? "Buyer" : "Member"),
     fromEmail: sidecar.contact?.email ?? row.requester_email,
     userId: row.requester_user_id,
+    requesterRole: row.requester_role,
+    openedBy: row.opened_by === "staff" ? "staff" : "requester",
     kind: row.kind,
     kindLabel: SUPPORT_CASE_KIND_LABEL[row.kind],
     status: row.status,

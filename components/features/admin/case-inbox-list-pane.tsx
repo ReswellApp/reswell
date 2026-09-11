@@ -220,6 +220,11 @@ export function CaseInboxListPane({
                             {item.priority}
                           </span>
                         ) : null}
+                        {item.openedBy === "staff" && item.status === "waiting_on_you" ? (
+                          <span className="rounded bg-amber-500/10 px-1 py-0.5 font-medium text-amber-800 dark:text-amber-200">
+                            No reply
+                          </span>
+                        ) : null}
                         {item.kind === "protection_claim" && item.order?.carrier_claim_status ? (
                           <span className="rounded bg-rose-500/10 px-1 py-0.5 text-rose-700 dark:text-rose-300">
                             Claim {item.order.carrier_claim_status.replaceAll("_", " ")}

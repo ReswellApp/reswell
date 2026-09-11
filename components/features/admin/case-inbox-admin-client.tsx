@@ -28,6 +28,7 @@ import {
   type CaseInboxTypeFilter,
   type CaseInboxView,
 } from "@/lib/admin/case-inbox"
+import { staffSentToast } from "@/lib/admin/case-inbox-counterpart"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
@@ -463,7 +464,9 @@ export function CaseInboxAdminClient() {
         toast.error(res.error)
         return
       }
-      toast.success(composerMode === "note" ? "Note added" : "Sent to customer")
+      toast.success(
+        composerMode === "note" ? "Note added" : staffSentToast(current.requesterRole),
+      )
       setDraft("")
       const sentMode = composerMode
       const now = new Date().toISOString()

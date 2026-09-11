@@ -22,6 +22,7 @@ interface CaseInboxComposerProps {
   closed: boolean
   kindFilter: string | null
   vars: { name?: string; order_ref?: string }
+  replyPlaceholder?: string
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
   onInsertMacro: (text: string) => void
@@ -37,6 +38,7 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
       closed,
       kindFilter,
       vars,
+      replyPlaceholder = "Write a reply they will see…",
       onModeChange,
       onDraftChange,
       onInsertMacro,
@@ -107,7 +109,7 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
             placeholder={
               mode === "note"
                 ? "Add a private note for the team…"
-                : "Write a reply the customer will see…"
+                : replyPlaceholder
             }
             className="resize-none bg-background text-sm"
           />

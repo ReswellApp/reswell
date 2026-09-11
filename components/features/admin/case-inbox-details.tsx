@@ -32,14 +32,15 @@ import {
 } from "@/components/ui/select"
 import { inboxInitials } from "@/lib/admin/case-inbox"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+import { inboxCounterpartLabel, staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
 import { cn } from "@/lib/utils"
 
-const WORKFLOW_STATUSES: { value: SupportCaseStatus; label: string }[] = [
-  { value: "submitted", label: "New" },
-  { value: "in_review", label: "In review" },
-  { value: "in_progress", label: "Open" },
-  { value: "waiting_on_you", label: "Waiting on customer" },
-  { value: "resolved", label: "Resolved" },
+const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
+  "submitted",
+  "in_review",
+  "in_progress",
+  "waiting_on_you",
+  "resolved",
 ]
 
 const OUTCOME_OPTIONS: { value: OrderSupportOutcome; label: string }[] = [
@@ -137,7 +138,9 @@ export function CaseInboxDetails({
 
         <TabsContent value="overview" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-5 pt-3">
           <section className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Customer</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {inboxCounterpartLabel(item.requesterRole)}
+            </p>
             <div className="flex items-start gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
                 {inboxInitials(item.fromName)}
@@ -156,7 +159,7 @@ export function CaseInboxDetails({
 
           <section className="space-y-2 border-t border-border/50 pt-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Customer activity
+              {inboxCounterpartLabel(item.requesterRole)} activity
             </p>
             <CaseCustomerContext
               caseId={item.id}
@@ -173,7 +176,11 @@ export function CaseInboxDetails({
                 <Select value={item.status} onValueChange={(value) => onStatus(value as SupportCaseStatus)} disabled={savePending}>
                   <SelectTrigger className="h-9 bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {WORKFLOW_STATUSES.map((status) => <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>)}
+                    {WORKFLOW_STATUS_VALUES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {staffWorkflowStatusLabel(status, item)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

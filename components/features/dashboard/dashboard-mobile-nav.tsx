@@ -13,6 +13,7 @@ import {
   DASHBOARD_NAV_LINKS,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
+import { SupportUnreadTicker } from "@/components/features/support/support-unread-ticker"
 import { cn } from "@/lib/utils"
 
 function isLinkActive(pathname: string, href: string): boolean {
@@ -110,11 +111,14 @@ export function DashboardMobileNav({
             >
               <span
                 className={cn(
-                  "truncate text-[15px] text-foreground",
+                  "flex min-w-0 items-center gap-2 truncate text-[15px] text-foreground",
                   isAccountVariant ? "font-semibold" : "font-medium text-foreground/90",
                 )}
               >
-                {activeLink.name}
+                <span className="truncate">{activeLink.name}</span>
+                {activeLink.href === "/dashboard/support" ? (
+                  <SupportUnreadTicker className="h-4 min-w-4 text-[10px]" />
+                ) : null}
               </span>
               <ChevronDown
                 className={cn(
@@ -137,14 +141,17 @@ export function DashboardMobileNav({
                       href={link.href}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        "block px-4 py-3 text-[15px] leading-snug transition-colors",
+                        "flex items-center justify-between gap-3 px-4 py-3 text-[15px] leading-snug transition-colors",
                         active
                           ? "bg-primary/10 font-semibold text-primary"
                           : "font-medium text-muted-foreground hover:bg-muted/30 hover:text-foreground",
                       )}
                       aria-current={active ? "page" : undefined}
                     >
-                      {link.name}
+                      <span>{link.name}</span>
+                      {link.href === "/dashboard/support" ? (
+                        <SupportUnreadTicker className="h-4 min-w-4 text-[10px]" />
+                      ) : null}
                     </Link>
                   </li>
                 )
