@@ -1,0 +1,138 @@
+{
+  "generated_for": "Wayne Rich Surfboards official named standup catalog",
+  "source": "https://www.waynerich.com/ (official homepage model gallery — Logs, Modern Longboards, Mid Lengths, Shortboards, and Surftech sections)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "wayne-rich-surfboards",
+      "name": "Wayne Rich",
+      "website_url": "https://www.waynerich.com/",
+      "location_label": "Santa Barbara, California",
+      "founder_name": "Wayne Rich",
+      "lead_shaper_name": "Wayne Rich",
+      "short_description": "Wayne Rich is a Santa Barbara-based surfboard shaper with over 40 years of experience, known for blending old-school craftsmanship with innovative design.",
+      "models": [
+        {
+          "name": "Harmonic 67",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1589473389169-PR4XUUTDUI04AENVKLAZ/H67_Deck_600x800.png",
+          "description": "Named log from Wayne Rich's Logs lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Flow Harmonic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1598327114978-9F1JROTOUFKZ6DQZR4T7/Checkmate_Deck_600x800.png",
+          "description": "Named log from Wayne Rich's Logs lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wildcard 1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1589473987816-NBQINCVK4D3XQSCLC8K9/WC_Deck_600x800.png",
+          "description": "Named log from Wayne Rich's Logs lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wildcard 3",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1589487748664-3WBCZPBKFO8S626QY0S7/WC3_Deck_600x800.png",
+          "description": "Named log from Wayne Rich's Logs lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mothership",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1589038514888-74AIKQ11ZOAQQW9QZSUC/Full_Deck_600x800.png",
+          "description": "Named log from Wayne Rich's Logs lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Diamond Tip",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616261458639-6DC765JEME4PCV2VU18L/DTDH_Deck_600x800.png",
+          "description": "Named log from Wayne Rich's Logs lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sceptre",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1598327971070-BHUT6NWLJ9T858V3DTCZ/Scepter_Deck_600x800.png",
+          "description": "Named log from Wayne Rich's Logs lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Linch Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616262866849-JZHQV80XYIBC8J5C3WNH/LinchPin_Deck_600x800.png",
+          "description": "Named log from Wayne Rich's Logs lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Modern Classic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616262036387-4HLIG894FTM1WPLFCDMJ/Checkmate_Deck_600x800.png",
+          "description": "Named modern longboard from Wayne Rich's Modern Longboards lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Modern Classic 2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616262452991-Y5097R2HFOVF9MBXMQBQ/MC2_Deck_600x800.png",
+          "description": "Named modern longboard from Wayne Rich's Modern Longboards lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pro Mod II",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616262194645-RMVYEYW08GF3VR0RJAQM/Checkmate_Deck_600x800.png",
+          "description": "Named modern longboard from Wayne Rich's Modern Longboards lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Checmate",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616261819802-EE1I9QHX1WOI4HJSTPF0/Checkmate_Deck_600x800.png",
+          "description": "Named modern longboard from Wayne Rich's Modern Longboards lineup (listed as Checmate on the official site).",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Speed Foil",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616263445211-69SRYGV0TKAJ9MHGB6V0/SpeedFoil_Deck_600x800.png",
+          "description": "Named mid-length from Wayne Rich's Mid Lengths lineup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nightmare",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616263624734-L0UYUQVHS22VB85GREGG/Nightmare_Deck_600x800.png",
+          "description": "Named shortboard from Wayne Rich's Shortboards lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Singularity 77",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616264353088-C6Q0ACF9OYT3ETCBAGSS/Singularity77_Pink__Deck_600x800.png",
+          "description": "Named shortboard from Wayne Rich's Shortboards lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sniper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/1616264001483-WNI7XJ8NWIOT6HJ9FDKU/Sniper_Deck_600x800.png",
+          "description": "Named shortboard from Wayne Rich's Shortboards lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wild Card 3 - NFT",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/0654dd97-bcad-4da0-b611-54a680b41c0a/wildcard_WayneRich.png",
+          "description": "Wayne Rich Surftech production model listed on the official site.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Checkmate",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/c48194b1-8392-43bf-9720-2f84743c6e0f/CHECKMATE.png",
+          "description": "Wayne Rich Surftech production model listed on the official site.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Singularity Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/0cfaa50f-465e-4a7a-8d4c-e526ee67be92/SINGULARITYPIN.jpg",
+          "description": "Wayne Rich Surftech production model listed on the official site.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Singularity Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5ead983949f5a47cb0ea4314/b0ef0411-5354-4a5a-a269-36e57efbda3a/SINGULARITYSWALLOW.jpg",
+          "description": "Wayne Rich Surftech production model listed on the official site.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
