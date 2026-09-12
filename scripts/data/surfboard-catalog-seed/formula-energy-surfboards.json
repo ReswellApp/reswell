@@ -1,0 +1,168 @@
+{
+  "generated_for": "Formula Energy official named surfboard catalog",
+  "source": "https://formulaenergy.com.au/collections/surfboards (Shopify products.json — excludes stock dimension SKUs, fins, apparel, board art)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "formula-energy-surfboards",
+      "name": "Formula Energy",
+      "website_url": "https://formulaenergy.com.au/",
+      "location_label": "Tweed Heads South, New South Wales, Australia",
+      "founder_name": "Eden Scallan",
+      "lead_shaper_name": "Eden Scallan",
+      "short_description": "Gold Coast / Tweed Heads custom surfboards founded in 2008 by shaper Eden Scallan — high-performance fishes, twins, and step-ups from the USC and Premium ranges.",
+      "models": [
+        {
+          "name": "Adapt",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/Adapt-Premium.png?v=1637899972",
+          "description": "Small wave speed machine with fish like qualities with width and foam up front and plenty of area in the tail pod, but performs like a modern short-board, quick release with plenty of speed and flow. Leading into a forgiving squash tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Alien",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/AlienUSC.png?v=1633495425",
+          "description": "The most popular board we have created so far. A must add to your quiver. If you only could travel with ONE board around the world, this would be the it ! High performance fish , with wide point forward , for easy paddling , but with a tight performance based tail-pod for performance based surfing in the pocket .",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Alien Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/AlienStep-UpUSC.png?v=1632602109",
+          "description": "Lots of guys of late have been expressing the conundrum of enjoying riding there ALIEN so much in all kinds of surf that when they return to a longer board when the waves get solid… The enjoyment factor is not there and they struggle with the traditional plan-shapes. We imported the ALIEN high performance fish feeling into a step up board for the more solid days — for longer winter swells or Indo sojourns.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Best One Yet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/files/usc-best-one-yet.png?v=1720592103",
+          "description": "Performance twin fin made for good waves. Incredibly user friendly shape, slight extra width up front, allows you to ghost into serious waves with ease. A versatile model that fits right next to a mid length in the quiver and really lights up when waves start pumping.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blend",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/BlendUSC.png?v=1632537601",
+          "description": "As the name suggests a nice mix of performance all rounder with a little twist. Modern performance outline with a pronounced hip in the tail allowing for quick release through turns with amazing pop out of your turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Convert",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/ConvertUSC.png?v=1632536589",
+          "description": "Small wave speed machine with fish like qualities but performs like a modern short-board with double flyers reducing tail area and acting as a break point for jamming tighter arcs. Leading into a forgiving squash tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Demon",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/Demon-DCD_55272648-cfba-4cba-a571-a06c1a3d42fe.png?v=1637900683",
+          "description": "The DEMON is a fun style of board with a performance based edge. The fuller nose plan-shape hides a deceptively easy board to throw around and jam hard in the pocket but still with plenty of foam up front to glide over dead sections with ease.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fresh Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/fresh-fish-premium.png?v=1637899815",
+          "description": "Based on the old school fish design, flatter deck line, plenty of width and foam. 12 inch tail pod with 6 inch deep swallow tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Have",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/Have-USC.png?v=1632523691",
+          "description": "Inspired by the single fin era. Designed with wide point up front for plenty of paddle power and incredible versatility in many types of waves. Essentially made for bigger surf, longer paddles and people who enjoy heavy water.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Hi-Performance",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/hi-performanceUSC.png?v=1632538769",
+          "description": "For good to excellent wave conditions. Will go in marginal to ok conditions but designed to come alive and push your surfing when in good waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lil Beak",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/files/Lil_Beak_USC.png?v=1719464926",
+          "description": "Genuine performance twin fin made for good waves, speed generation and turning tight in the pocket. With a beak nose for a little extra foam up front and pronounced hip into a small swallow tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Little Thing",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/LittleThingUSC.png?v=1632642759",
+          "description": "Based on the fish style model nose up front but with a conventional squash tail for small wave groveling.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "MLT Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/MLTPremium.png?v=1637899886",
+          "description": "Mid length twin fin designed as an alternate option for a vast variety of waves. Get into waves fast and early and bring back a bit of old school steeze into your surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid Length Beak",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/premium-mid-length-beak_composite_portraitcopy.png?v=1651817796",
+          "description": "User friendly performance mid length. Old school beak nose with plenty of foam under chest for easy paddling and versatile wave range.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid Strength",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/MidStrengthUSC.png?v=1632705827",
+          "description": "Beak in the nose with plenty of foam under chest for a user friendly mid length that bridges small wave fun and performance surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Must",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/Must-Premium.png?v=1637900075",
+          "description": "Sits just under your hi performance board. A modern performance outline hides flatter entry rocker for speed in average to good waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mutant",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/MutantUSC.png?v=1634180078",
+          "description": "Small wave fun machine for marginal wave quality. High performance fish outline with fuller nose, wider point forward for paddle power and single flyers into a swallow tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Nemo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/NemoUSC.png?v=1634088871",
+          "description": "Super popular fun board with a performance edge. Glides over fat sections with ease and generates unbelievable speed. Fuller nose plan shape with a tight tail pod that removes unwanted drift.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Nice Mid-Up Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/files/1544-mid-twin-portrait.png?v=1770351270",
+          "description": "Performance mid length. The most refined performance step up inspired mid length to date — surf in the pocket and rip it up on this performance mid length twin fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Option",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/OptionUSC.png?v=1632645321",
+          "description": "Small wave micro mal for small, average waves that lack power. Super fun and user friendly as twin fin or single fin — a compact alternative when you need longboard glide but want to fit in the pocket.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Performance Plus",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/performance-plus-usc_composite_portraitcopy.png?v=1632891079",
+          "description": "Traditional performance plan-shape step-up semi-gun model. Custom built for good quality waves — Indonesia bound or pumping days back home.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "RP Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/rp-twinfinusc.png?v=1642388679",
+          "description": "Performance twin designed to be ridden slightly shorter than your normal modern shortboard. Designed to be surfed rail to rail with plenty of speed and flow, used with upright style twins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Savage",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/SavageUSC.png?v=1632535202",
+          "description": "Pro surfer Brent Savage signature all round performance modern shortboard. Designed to work on and above the lip with constant speed, flow and tail release in the USC range.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sin Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/Sin-Twin-USC.png?v=1632469067",
+          "description": "Classic twin outline with single flyers, diamond tail shape and the added benefit of rear stabiliser or two plus one set up.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spiral",
+          "image_url": "https://cdn.shopify.com/s/files/1/0545/2385/products/spiral-usc_composite_portrait.png?v=1637886083",
+          "description": "Small wave hybrid with unique single flyers diamond tail shape. Flat deck line with plenty of foam for marginal surf days.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
