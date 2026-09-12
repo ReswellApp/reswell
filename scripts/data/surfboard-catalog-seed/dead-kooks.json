@@ -1,0 +1,162 @@
+{
+  "generated_for": "Dead Kooks official named surfboard catalog",
+  "source": "https://deadkooks.com/collections (Shopify — excludes fins, apparel, gift cards, and stock dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dead-kooks",
+      "name": "Dead Kooks",
+      "website_url": "https://deadkooks.com/",
+      "location_label": "Byron Bay, New South Wales, Australia",
+      "founder_name": "Eden Saul",
+      "lead_shaper_name": "Eden Saul",
+      "short_description": "Byron Bay surfboards shaped by Eden Saul. Dead Kooks boards are built with a keen eye for functional design and stimulating aesthetic details.",
+      "models": [
+        {
+          "name": "11'11",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6948.jpg?v=1780376798",
+          "description": "These big blades are one of my favourites in the range.  Ideal at 11’11 yet can happily scale them down, they are a far cry from some big boaty plug.  A very refined foil tip to tip, rolled nose entry that continues down the length of the board to a deeper panel Vee in the tail.  The bottom roll combined with the consi",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "All Time",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_6279.jpg?v=1655433053",
+          "description": "A new direction. Taking cues from some late 60's Australian rockers, a few things we learnt from the Guerrero and some feelings we were chasing, the All Time is where we ended up.  It's noticeably a wider outline, plenty of curve all round.  The rocker is the rear is pretty straight but continuous with a flip in the fr",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Aphex",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_2835.jpg?v=1606968619",
+          "description": "The Aphex Twin was a new model for 2020, although it was brewing for many years before that, a real all-rounder for those who enjoy some longer rail.  Using a tried and tested rocker with a forgiving mid boxy rail that gets very bitey in the rear third for sensitivity and hold with a nice tucked edge.  A soft single co",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Casbah",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_0600_4f87ceeb-afc3-43e0-9b1a-59970a85f920.jpg?v=1642116767",
+          "description": "The more sleek and thinned out longboard in the lineup. A narrow outline, running them nice and refined (team dims are generally 9’5 x 22 9/16 x 2 5/8). A flattened rocker with a little tail kick, a subtle concave running through the front end to a very mellow rolled bottom with a rail band that comes way up, almost me",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ege Bamyasi",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_08352.jpg?v=1637644035",
+          "description": "The Ege Bamyasi is a continuation on from the Salty. Generally ridden a bit shorter than the Salty, with a 2+1 fin setup for a really buttery feel under the back foot and some extra hold in more hollow surf. We've kept that tucked edge and added a bit more spice through the back to keep things nice and tight and dynamic. Something that'll get you smiling in onshore slop to overhead perfection.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flatdeck Thruster",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_3175.jpg?v=1610944441",
+          "description": "Taking an old 80's outline and making a few tweaks, adding some modern bottom contours, flat deck with drop bevel rail, the Flatdeck Thruster come together.  Wanting a shortboard for more critical and tight radius surfing that had the flow, initial speed and carry through the flats that i got from my Riches.  Plenty of",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Guerrero",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6971.jpg?v=1780380344",
+          "description": "In designing and shaping this board i wanted to bring a totally fresh approach to what CJ has been riding.  After making a few Nausea model's in various sizes and with a few tweaks I had a solid idea what i wanted to do with this board.  The Guerrero model is something fresh and exciting.  Starting with the rocker used",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hellcat",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6434-Photoroom.jpg?v=1779245797",
+          "description": "Looking for new feelings from a twin the Hellcat was born.  A scaled down Hellhound outline with similar foil but thats about where it stops.  Some detailed bottom contours, tucked under edge and low rail, fins pushed up with the wider pintail providing hold and amble release when needed.  The tighter tail keeps it nic",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hellhound",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6445-Photoroom.jpg?v=1779227634",
+          "description": "The real go-to in the collection.  The Hellhound is one of my first templates and still a favourite.  Happy in such a wide array of conditions and if i could just take one board on a trip this might be it.  Foam pushed forward, neutral rails, double concave under the back foot and a nice edge to provide positive feel a",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Marquee",
+          "image_url": "https://deadkooks.com/cdn/shop/collections/Dead-Kooks-Surfboards_Marquee_01_WEB.jpg?v=1510192448",
+          "description": "One of the new models born from a few Summer’s back.  I was doing a round the world trip shaping and surfing in a bunch of different spots and conditions and this is what i was travelling with.  The Marquee was comfortable in punchy beach breaks, junky mush and pushing points.  More rocker than the rest of the range an",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Nausea",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6959.jpg?v=1780377601",
+          "description": "All-round winner.  This is our tried and tested favourite in the range.  Heavy late 60’s Australian influence, tucked in nose, hips just behind center, even/consistent rocker tip to tip and pinched out foiled rail.  Narrow concave running through the front third, the Nausea has been my go to for a long time. Refined an",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "New Rave",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6975.jpg?v=1780376385",
+          "description": "Our take on a classic Noserider. A very easy and forgiving ride. Molasses is the term that comes to mind.. Smooth and easy as she goes is what this is all about. A soft and wide blended concave in the front 1/3, soft roll through the middle for speed and ease of trim. A mid 60/40 Rail that provides hold and sensitivity but won't get to sticky. Plenty of guts in this board with ample foil where needed to keep things sensitive and responsive. There's a bit going on but everything's pretty subtle and well tempered. If you have liked the Nausea and want something fresh it's a great update for a new feel. If you're after something for softer waves but more lively than your traditional nose rider, you'll be stoked on these.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pretty (Hate) Machine",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6968.jpg?v=1780376918",
+          "description": "The Pretty (Hate) Machine has come about through the desire to have something that gives the drive of a glider from the tail but with nose rider characteristics in the front third. Something that'll trim all day and that you can push as hard as you'll ever want to from the tail, but still hold tight on the nose in the",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rattlesnake",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_9811.jpg?v=1580833010",
+          "description": "Sleek and refined, the Rattlesnake is built for clean tight lines and crisp surfing.  The stretched fish outline with the pulled in tail block, sharp rails and dynamic bottom contours make this haul ass.  There’s such a good feel from pushing these boards hard, the drive and control from a board this size is a whole lo",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Riches RF",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6411-Photoroom2.jpg?v=1779245533",
+          "description": "Highly functional, tried tested and well refined.  The Riches RF is my go-to for most days.  From Californian summer slop to well overhead East Coast points, these are built to be surfed hard and really come to life in good waves.  Low rails and low rocker, a clean foil tip to tip and some complex bottom contours, ther",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Salty",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_4139.jpg?v=1623990382",
+          "description": "The most easy riding MidLength in our  lineup.  Consistent rocker, fuller outline and tighter backend. A scooped out nose to reduce swing weight combine with a rolled entry, flat to panel Vee bottom.  A forgiving rail with a more mid boxy feel and tucked edge.  Smooth surfing, drawn out clean lines and tight pocket hoo",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shorty",
+          "image_url": "https://deadkooks.com/cdn/shop/collections/Dead-Kooks-Surfboards_Shorty_01_WEB.jpg?v=1510113916",
+          "description": "I cut my teeth shaping shortboards and still get a good kick out of it.  Building refined Shorty’s and StepUps for friends to some of the tour guys with a rounded approach to speed, agility and performance.  We have a few dialled in shapes we usually run but happy to tweak to your needs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SPEED",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_9263-Photoroom-Photoroom.jpg?v=1787543884",
+          "description": "A new model I've been really enjoying, a bit of a strange alchemy of thoughts and feelings.  Starting with some Jacobs models that got a little rebirth in the early 2000's, a nod to late 60's speed shapes but with some of the fun of the often dissed late 1990's / early 2000's longboards. A generous amount of rocker, so",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Stubby",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_0595.jpg?v=1582154433",
+          "description": "Great easy to ride option for a range of conditions.  The Stubby has a foiled hull entry, neutral rails to soft tucked down rail in the tail. A soft double under the backfoot into Vee provides able drive and a familiar reliability to push hard through turns. A flat rocker with wide point and volume pushed forward under",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Thang",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_9256-Photoroom-Photoroom.jpg?v=1787546919",
+          "description": "Essentially, the design for this has pulled strong inspiration from the Yin Yang, incorporating some modifications such as shortening the front section by 4 inches and refining its structure and pulling everything in a bit. Following countless sessions and conversations with Dave, and several trips to Fiji and the St",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Toro",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6901.jpg?v=1780380003",
+          "description": "What started as a fun little KneeBoard experiment has quickly become a favourite for those small days or just maximising fun.  Taking cues from old \"Sky\" Kneeboard and the MR bumblebee, the toro has a stubby little plan shape.  Not overly wide but with the full nose and straighter exit in the tail, it keeps some nice c",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vivi",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_6933.jpg?v=1780376856",
+          "description": "A new model for 2025 built in collaboration with Victoria Vegara.  This model is the culmination of working together for over 10 years on refining what works best for Vic.  A highly versatile shape.  Tucked nose and more neutral outline to a tighter tail and diamond tail block.  A soft teardrop concave under the nose t",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wildflower",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_0330.jpg?v=1726031231",
+          "description": "The Wildflower is the result of a recent film project that required a range of boards to fit the setting of the early 70's. Outlines and design cues were taken from that era and modernised slightly to create something incredibly reliable and ripable in a broad range of conditions. Foam carried right across the deck, fl",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Yin Yang",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/files/IMG_9633-Photoroom.jpg?v=1788139577",
+          "description": "This is our bread and butter. My favourite board in the range and our best seller. The Yin Yang has come about through countless hours and many iterations over the past few years. Wanting to keep a generous amount of foam for paddle-power, speed and flow, but come up with something that would be comfortable being put w",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
