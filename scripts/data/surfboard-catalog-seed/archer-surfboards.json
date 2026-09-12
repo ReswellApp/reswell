@@ -1,0 +1,157 @@
+{
+  "generated_for": "Archer Surfboards official named standup catalog",
+  "source": "https://archersurfboards.com/ collections shortboards, midlength-surfboards, longboards, and big-wave-surfboards (Shopify products.json — excludes In The Rack sized one-offs, apparel, fins, and gift vouchers)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "archer-surfboards",
+      "name": "Archer Surfboards",
+      "website_url": "https://archersurfboards.com/",
+      "location_label": "Brookvale, New South Wales, Australia",
+      "founder_name": "Archer Drinan",
+      "lead_shaper_name": "Archer Drinan",
+      "short_description": "Custom surfboards hand-shaped by Archer Drinan at Rhino Laminating in Brookvale on Sydney's Northern Beaches — shortboards, fishes, mid-lengths, longboards, and guns.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/archer-surfboards.png",
+      "models": [
+        {
+          "name": "T-Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-510-tfish-gloss-and-polish-emerald-timber-keels.jpg?v=1756095630&format=jpg",
+          "description": "The T-Fish is a blend of tradition and performance. Super fast down the line and equally manoeuvrable in the pocket. It suits a range of different styles and approaches, with a slightly beaked nose, twin-fin drive, and single concave between the fins for lift and speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mini Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/Mini_fish_54.jpg?v=1770868507&format=jpg",
+          "description": "The Mini Fish is Archer's more performance-style twin fin with a trailer. Based on the T-Fish, the tail is pulled in with added vee behind the trailer for a more natural rail transition. Fast, with drive and hold through turns — the perfect board for small to medium waves, and one you'll want when it's pumping too.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "GQ",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/GQ_flames.jpg?v=1770871545&format=jpg",
+          "description": "The GQ or GUAC Quad is an alternative high-performance board and team rider Manny's go-to in almost any condition. Perfect for average beach break, reef, or local slab. Refined rails hide plenty of foam, matched with a balanced modern rocker and a rolled reverse bottom contour with pronounced double concave through the fin cluster.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hunter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-6-hunter.jpg?v=1753524116&format=jpg",
+          "description": "The Hunter is a step-up designed for 4ft+ waves of consequence and likes to be pushed hard. A great board for bigger beach breaks and reef breaks. Designed to be ridden as a quad with a thruster option, rounded pin, lower entry rocker for faster paddling, and an exaggerated curve out the tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Apollo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-6-apollo-purple.jpg?v=1770601546&format=jpg",
+          "description": "The Apollo is a hybrid shortboard for good surf in the 2ft+ range. Designed for hollow, powerful waves, slabs, and reefs, it features a flat rocker with modern rail curves, wide point forward of centre, and a pulled-in swallow tail for faster paddling and down-the-line speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Performance Shorty 1 (PS1)",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-57-PS1.jpg?v=1753521760&format=jpg",
+          "description": "The PS1 is the first board in the Performance Shortboard series — a reliable, versatile high-performance shortboard. Perfect from average waist-high conditions to overhead pumping surf. Moderate entry and exit rocker, hard edge from two inches in front of the front fins, medium/low rails, and single concave throughout for speed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Performance Shorty 2 (PS2)",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/PS2_Benny.jpg?v=1777193271&format=jpg",
+          "description": "The PS2 is the second board in the Performance Shortboard series and more high performance than the PS1. Designed for head-high to double-overhead pumping surf and ridden at your height. Highest entry and exit rocker of the PS series, hard edge through the tail, single to double concave, and a flat behind the rear fin for snappier top turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Performance Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-55-performance-fish.jpg?v=1753524186&format=jpg",
+          "description": "The Performance Twin is a high-performance twin fin — fast and responsive with unique drive and hold through turns. The perfect board from small waves to double-overhead conditions, with single under the chest to double through the fins to panel vee out the tail, low tail rocker, and a small subtle beak.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Asym",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-6260-asym-natural-footer.jpg?v=1756095591&format=jpg",
+          "description": "An asymmetrical surfboard with a distinctive outline, rocker, and rail profile built for a natural or goofy footer. The shorter rail tightens the turning arc; the longer rail adds drive and projection down the line. Built to maximize control and responsiveness with smoother rail-to-rail transitions.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Stubby",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer_surfboards_66Stubby.jpg?v=1756170079&format=jpg",
+          "description": "The Stubby is a versatile single fin with a low continuous rocker. A flat deck with plenty of foam meets Stüssy's 80s meaty down rails for more responsive manoeuvres. A slight vee bottom throughout smooths rail-to-rail transitions, keeps you stable while trimming, and frees up the tail through turns.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Jib",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/E929E8A8-A248-4519-A708-79BC9E977D15.jpg?v=1785912951&format=jpg",
+          "description": "The Jib is Archer's performance-driven twinzer, blending high-performance shortboards and twin fins. Narrower plan shape, more entry rocker, and a subtle spiral vee out the tail compared to the Mini Fish. The Twinzer setup is known for more speed, more hold, smoother transitions, and quicker turning — the speed of a twin that pivots on rail like a thruster.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sailfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/IMG-4184.jpg?v=1788474449&format=jpg",
+          "description": "The Sailfish is a sportier profile of the T-Fish with sleeker lines. It is the fastest fish in the Archer range. Ideal for surfers who like to go fast and feel the flow, with bottom contours that stay stable and consistent from small mushy waves to overhead offshore surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Love",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-72-love-rhino.jpg?v=1753524096&format=jpg",
+          "description": "The Love is a beautiful single, inspired by planing hulls, and highly versatile in small to overhead waves. Pinched 60/40 rails, a slightly rolled bottom blended into a subtle spiral vee out the tail, and flatter rocker make it a super easy paddler that loves to trim at high speeds.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/performance-mid-twoshot.jpg?v=1788739876&format=jpg",
+          "description": "The Performance Mid is a reliable allrounder — fast, smooth, and responsive. A board for trimming down the line or surfing off the tail and jamming turns in the pocket, with a rounded pin, spiral vee, moderate rocker, and forgiving 60/40 rails.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-610-twinpin.jpg?v=1767740244&format=jpg",
+          "description": "The Twin Pin is a versatile all-round board with classic twin-fin feel and extra hold through the round pin tail for surf 2ft+. Ideal for fast, flowing surfing that still bites into the face. Stable and connected through turns from small mushy waves to overhead pumping surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Prologue",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/Prologue_tully_teal_tint.jpg?v=1785140000&format=jpg",
+          "description": "The Prologue is a modern performance single-fin longboard. Its plan shape draws inspiration from the ’60s pig, with the wide point set back. A subtle roll bottom enhances rail-to-rail transitions, and a unique stepped-down rail line in the tail creates downforce for elevated nose rides and more intuitive turning.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Yardstick",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-yardstick-96-splitview.jpg?v=1756095442&format=jpg",
+          "description": "The Yardstick is a traditional longboard with heavy inspiration from Old Mals. Refined 50/50 soft rails turned up in the nose and tail with a roll bottom throughout. Built for critical surfing in the pocket, radical drop-knee turns, and smooth rail surfing as a traditional single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fusion",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-94-fusion-splitview.jpg?v=1756095491&format=jpg",
+          "description": "The Fusion is Archer's take on modern, higher-performance longboards, designed to be surfed off the rail in 1ft+ surf. For surfers looking to surf off the tail with faster rail-to-rail turns, hit the lip, do a cutback, or lock in for nose rides in critical sections.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Modern Log",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-96-modlog-splitview.jpg?v=1756095506&format=jpg",
+          "description": "The Modern Log is a refined version of old roll-bottom logs for trimming in small waves at high speeds. Soft 50/50 rails turned up in the nose and tail with a subtle vee bottom throughout. Concave in the nose makes turns more dynamic and increases lift to elevate nose riding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Longbow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/easteregg102.jpg?v=1782184512&format=jpg",
+          "description": "The Longbow is a glider by name and by size for surfers who want to simplify their surfing and trim and glide even when the waves get big. It floats like a small yacht, with plenty of hold and speed in any conditions, designed to be ridden as a traditional single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Jaguar",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/IMG-3304.jpg?v=1785746128&format=jpg",
+          "description": "The Jaguar is a sleek, agile glider built to glide in knee-high waves and lock in when the swell kicks up. The younger brother of the Longbow, with a more pulled-in tail, slightly beaked nose, and pinched 50/50 rails. Archer rides it at 9ft as a daily driver — an easy rider from beginners to advanced surfers.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Legacy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-78-legacy-splitview.jpg?v=1753523613&format=jpg",
+          "description": "The Legacy is a gun for waves of consequence. Built to handle the power and speed of big surf with the stability, paddle power, and control needed for critical drops. Panel vee up front holds your line; a double concave through the tail allows smoother rail-to-rail transitions and extra lift on rail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Rhino Chaser",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/10_rhinochaser_red_yellow_polish.jpg?v=1775707408&format=jpg",
+          "description": "The Rhino Chaser is a gun for bomboras. Lots of foam for paddle power and a narrower outline than the Legacy for greater control in bigger surf. Perfect for getting in early on big waves, with a high entry rocker, chimed 70/30 rails, and panel vee through the whole board.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
