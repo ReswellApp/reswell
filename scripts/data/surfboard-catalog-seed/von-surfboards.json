@@ -1,0 +1,130 @@
+{
+  "generated_for": "Von Surfboards official named standup catalog",
+  "source": "https://vonboards.com/boards/ (official Breakdance model catalog — excludes apparel, add-ons, custom deposits, and dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "von-surfboards",
+      "name": "Von Surfboards",
+      "website_url": "https://vonboards.com",
+      "location_label": "Dunsborough, Western Australia",
+      "lead_shaper_name": "Ryan",
+      "short_description": "Western Australian surfboard shaper building performance shortboards, twins, and alternate craft from Dunsborough.",
+      "models": [
+        {
+          "name": "Nucleus",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fun-Nucleus.png",
+          "board_category_slug": "groveler",
+          "description": "Exciting, unparalleled groveller, developed to offer zestful surfing in small-sized conditions."
+        },
+        {
+          "name": "RAD(Fun).og",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fun-Radog.png",
+          "board_category_slug": "groveler",
+          "description": "Fun, compact board primed to get you fired up about surfing on the days that are less-than-epic. Effortless to ride, excelling in weaker sections and has a lively performance-orientated feel off the tail."
+        },
+        {
+          "name": "Rehab",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fun-Rehab.png",
+          "board_category_slug": "fish",
+          "description": "Fast, free, and fun. A channel-bottom twin that blends classic curves with modern performance. Built for speed, flow, and effortless surfing in small to mid waves. The REHAB is a limited edition collaboration with Luke Sranaha."
+        },
+        {
+          "name": "Lamb",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Performance-Lamb.png",
+          "board_category_slug": "shortboard",
+          "description": "The must-have, tuned-up, everyday forgiving shortboard for small to medium-sized conditions that allows the average surfer to perform at their highest level. It loves to be put on the rail, and pushed above the lip, favoured by our team and everyday surfers alike."
+        },
+        {
+          "name": "Marcela",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Performance-Marcela.png",
+          "board_category_slug": "shortboard",
+          "description": "Born free and built to fly. The MARCELA is our flattest high-performance shortboard to date—tuned for speed, lift, and release in weaker waves, while still holding its own when the surf turns on."
+        },
+        {
+          "name": "2020",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Performance-2020.png",
+          "board_category_slug": "shortboard",
+          "description": "Elite choice for those who ride high-performance shortboards, often in sub-par conditions seeking a fast and free feeling under foot, to suit explosive and progressive surfing."
+        },
+        {
+          "name": "Porto",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Performance-Porto.png",
+          "board_category_slug": "shortboard",
+          "description": "Perfect board to transition to when the waves get solid. Connected full rocker and aggressive bottom contours to hold you in tight, yet designed with enough foam and built in speed to be a viable tool in any adept surfers quiver."
+        },
+        {
+          "name": "RadStep",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-Radstep.png",
+          "board_category_slug": "step-up-gun",
+          "description": "High-volume, reliable step-up. Foam forward for paddle, speed that carries, and rails that hold when pushed. Approachable and versatile, built to make strong surfing easier in proper waves at home or away."
+        },
+        {
+          "name": "Anchovy",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-Anchovy.png",
+          "board_category_slug": "shortboard",
+          "description": "Reliable board in hollower, more powerful types of waves that works great for a wide range of surfers and could be considered a one-board quiver for any surf trip with decent to good waves."
+        },
+        {
+          "name": "JMO2",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-JMO2.png",
+          "board_category_slug": "step-up-gun",
+          "description": "When the waves are pumping and heavy, maximise your paddling power and ability to catch waves with extra volume under your chest to get you over the ledge."
+        },
+        {
+          "name": "HOOF",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Consequence-Hoof.png",
+          "board_category_slug": "step-up-gun",
+          "description": "For those waves you don’t paddle into. Whether you’re tripling your wave count on an empty day or stepping off the ski into serious water, this is the board we’ve refined for that purpose. After two years of constant feedback and fine-tuning with riders, it’s now available for custom order."
+        },
+        {
+          "name": "LIVE",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-WLTWN-GLD-scaled.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wlt Twn",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-WLTWN-GLD-scaled.png",
+          "board_category_slug": "hybrid",
+          "description": "Perfect for the enlightened shortboarder or alternate craft aficionado for Beautiful, uninterrupted surfing with user friendly turn and paddle ease without sacrificing performance."
+        },
+        {
+          "name": "Mnspn",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fun-MNSPN.png",
+          "board_category_slug": "groveler",
+          "description": "Maximising fun in tiny surf. Flowing effortlessly over the flats, carrying speed to fit into tight carves—or just letting you cruise."
+        },
+        {
+          "name": "JSYM",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-JSYM.png",
+          "board_category_slug": "asym",
+          "description": "A fully symmetrical spin on one of our most talked-about designs. Compact, fast, and highly responsive, the JSYM delivers all the performance of its asym predecessor—now in a package for traditionalists."
+        },
+        {
+          "name": "VSLC",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-VSLC.png",
+          "board_category_slug": "hybrid",
+          "description": "Fast, skatey, and responsive. The VSLICE is a swallow-tailed hybrid built to inspire pure stoke—easy speed in average surf, precise control when the waves turn on."
+        },
+        {
+          "name": "PNSPN",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-PNSPN.png",
+          "board_category_slug": "hybrid",
+          "description": "An instant classic. Inspired by the mid-lengths that came before, refined with modern contours and pulled into a clean round tail for hold. The PNSPN is about burning speed and burying rail, with the flow to match."
+        },
+        {
+          "name": "LNGSPN",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-LNGSPN.png",
+          "board_category_slug": "hybrid",
+          "description": "High-performance and hyper-fun, the LNGSPN is based on the PNSPN’s rocker and outline—stretched out for more paddle power, easier entry, and added versatility. It’s a wave-catching, easy-riding machine that doesn’t skimp on performance."
+        },
+        {
+          "name": "Farrely",
+          "image_url": "https://vonboards.com/wp-content/uploads/2024/03/Fringe-Farrely.png",
+          "board_category_slug": "fish",
+          "description": "Our modern take on the classic winged swallow by Midget Farrelly. Built for down-the-line speed, lightning-fast turns, easy paddling, and maximum fun. A design pulled from the #labyrinth file, now brought back to life with fresh strength and relevance."
+        }
+      ]
+    }
+  ]
+}
