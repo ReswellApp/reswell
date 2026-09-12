@@ -1,0 +1,144 @@
+{
+  "generated_for": "Russell Surfboards official named standup catalog",
+  "source": "https://www.surfboardsbyrussell.com/shop?format=json (Squarespace board models shop — excludes apparel and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "russell-surfboards",
+      "name": "Russell Surfboards",
+      "website_url": "https://www.surfboardsbyrussell.com/",
+      "location_label": "Newport Beach, California",
+      "founder_name": "Robert Russell Brown",
+      "lead_shaper_name": "Robert Russell Brown",
+      "short_description": "Hand-built classic and modern surfboards since 1967, made start to finish in Russell's own glass shop in Costa Mesa, with a retail shop on the Balboa Peninsula in Newport Beach.",
+      "models": [
+        {
+          "name": "Inglewood",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5397816ce4b03ea7cc913085/1402639666817-ESG4CCEQUOZUTJ503QV0/image-asset.png",
+          "description": "The Inglewood is quickly becoming our most popular board. The Inglewood is a true displacement hull. A tapering 1” cedar stringer vanishes before the tail, creating a flex tail. The flex tail combined with a big flex fin will load up on your bottom turn and release propelling you into a high line on the wave. A bottom turn like you’ve never felt before. Usually ridden further up on the board, The Inglewood is ideal for point breaks or down the line reef breaks. This board is all about style and trim. Nothing quite compares to the feeling you can achieve on these types of boards.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Espresso",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/5398dd0be4b05a78781d4602/1633647184360/",
+          "description": "The Espresso is a new take on a classic shape. The Espresso was inspired by a shape that Shawn Stussy created for Russell in the 70’s. The board features a modern bottom contour with a moderate single concave tapering into a spiral vee through the tail. The modern rails with a hard edge back by the fin gives The Espresso the ability to be surfed more off the tail than other single fins while keeping the same style and fluidity. Perfect for small peaky days at your local beach, The Espresso also has the ability to handle a serious set if it rolls through.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Slim Jim",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/5398da7ee4b0ed48f512d9d8/1633647202685/",
+          "description": "Our favorite mid length model, the Slim Jim bridges the gap between your longboard and shortboard. Rolled bottom and 50/50 rails give the Slim Jim a classic feel in a small package. Fits well in the pocket, perfect for getting head dips and trimming in the pocket at your favorite beach break. Usually ridden from 7'0 to 8'0",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moonshiner",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5397816ce4b03ea7cc913085/1402615879176-HIAH213JYUSD9M6UTJDT/image-asset.png",
+          "description": "The Moonshiner is another variation of a displacement hull we make. After having a number of customers request a shorter option of a hull we designed the Moonshiner. While most hulls are ridden in the 6'8 to 7'2 range the Moonshiner is designed to be ridden in the 6'0 to 6'6 range, extra volume and width is added throughout to still give the board its trim and planing ability you hull riders are addicted to.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Megaphan",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/539a3883e4b02b6731e5a16a/1662750559612/",
+          "description": "This board was inspired by some vee bottom boards done by Russell during the late 60’s. Transitional shapes usually ridden with long raked out flex fins they are all about trim and rail to rail movement. Proven to be most popular by our friends who love riding displament hulls yet get frustrated when the waves arnt quite right for their favorite hull. We have found these offer a similar feeling and experience yet plane through flat sections easier and tend to not bog out. The megaphan can also handle some steeper beach break peaks and even some little barrels if you’re game.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Buck Knife",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/552074f3e4b098a11a846b4e/1633647122847/",
+          "description": "The buck knife is one of our more popular mid-lengths. It bridges the gap between your log and shortboard or fish. Usually ridden in the 7’2 to 7’6 range, the buck knife paddles well and trims out in small waves yet can still handle a serious section if you can. Low rocker and a complex bottom contour gives the BK its magical feeling , its able to be surfed off the tail and tends to be more user friendly than a displacement hull. Good entry mid-length.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "snub nose",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5397816ce4b03ea7cc913085/1402616089312-736VL7Z7IZ1J6I1UKSAQ/image-asset.png",
+          "description": "This is a new nose rider model for us, squash nose and squash tail give it a fresh look and feel. Still has a rolled bottom and classic 50-50 rails you’re used to but has an inviting block up front to hang those toes off of. Recommended to be ridden with our flex nose stringer.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The 51/50",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/552075fde4b0566549cd973b/1662750540720/",
+          "description": "The 51-50 is another traditional nose rider we make. Designed for slower softer waves like San Onofre, the 51/50 has the widest nose out of any of our logs. Really stable and a wave catching machine. Rolled bottom and pinched rails give it that classic feel you're used to, and lots of real estate up front to set up shop on the nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tranquilizer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5397816ce4b03ea7cc913085/1402526885126-E38L467X9J4WYBWR7HJ2/image-asset.png",
+          "description": "The Tranquilizer is our pig style nose rider. A good log option for a beach break, the wide point is pulled back giving it some hips. The flip of rocker out of the tail gives The Tranquilizer its easy pivot off the take off to set up for a long ride on the nose. The board has a rolled bottom and 50/50 rails. The Tranquilizer features our flex nose stringer, a 1” cedar stringer in the tail that tapers and stops about 24 inches before the nose. The unique stringer does a few things, it allows the board to have a bit more natural rocker while surfing it off the tail and when you run up and park on the nose, the board flattens out and trims. The stringer also lets the board twist while you are on the nose, keeping the rail engaged and in the pocket while the fin stays planted. Get up on the nose and set up camp!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Balboa",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/539a3ab1e4b0a7d9fcae84c5/1662750552811/",
+          "description": "This is our big tanker. Its like walking on a sidewalk. Knee paddle with ease and catch anything that moves. Park up on the nose and have lunch. A great San Onofre board and any soft, cruisy wave.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Tranq",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/539a3b4ae4b013d4209e43d4/1404964964911/",
+          "description": "Popular with the groms and girls this is a shrunken down version of our popular tranquilizer model. Still has the wide point pulled back and a small spoon nose. Perfect for peaky beach breaks like blackies.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Jetty Fish",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/539a409de4b0aae135046dc6/1633647146806/",
+          "description": "A take on the classic twin fin, perfected by an old shaper of Russells named Al Dove, is now carried on by our new guys in the same fashion. Fast down the line and extremely loose these boards really perform well in clean small surf where you can link manuervers together with un matched speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Kimchi",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5397816ce4b03ea7cc913085/1428191730855-GBJWXN8TZBW7WV9J9IWF/image-asset.png",
+          "description": "The Kimchi is a simmons inspired performance board. Ridden narrower, thinner and longer than a traditional mini simmons, the kimchi provides a more high performance ride when other style boards can leave much to be desired. The bottom contour is rolled entry to single concave to spiral vee out the the tail. The straight outline gives you all the speed you could want and then some. Great small wave machine.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "RBZ",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5397816ce4b03ea7cc913085/1428192351463-7TJWOWKL8832SRKUSTBB/image-asset.png",
+          "description": "After having so much success and good feed back from our Rocket fish the RBZ was born. A few modifications were made, wider nose and narrower tail give it more of tear drop effect as well as a more radical bottom contour. We’ve had great feedback as a quad or as a tri fin bonzer.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Switchblade",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/539a3cc6e4b04e08562a1b9d/1633647227640/",
+          "description": "The ultra-high performance fish! Designed and perfected at Lower Trestles the switchblade can do it all, airs, turns, and barrels. If you’re only going to have one board in southern California this is the one. Single to double concave design helps the switchblade go rail to rail easily and have a ton of release. Low rocker and wider nose gives it speed down the line, as well as a ton of paddle power.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rocket Fish",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/53be22b9e4b0a154e3742fe5/1627327567821/",
+          "description": "The rocket fish is a new modern fish we’ve been working on and we are pretty happy with the results. Low entry rocker and volume carried forward makes this board ultra fast down the line even when the waves arnt quite doing their thing. Slight vee entry and double concave through the fins makes it very fast and loose which is why so many people fall in love with fishes in the first place.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BFD",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/539a3d26e4b00393aeefccd8/1662750573571/",
+          "description": "The BFD is the go to board when your local spot is doing it. Still ridden an inch or two shorter than your \"normal\" shortboard it is ridden linger than a magic marker. More rocker and rail line combined with a more pulled in tail give it the control you need when jamming down the line or through the tube. Can be put hard on rail with confidence, something that can lack in step down boards.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Magic Marker",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/539a3f70e4b0f872cec0d376/1627327583075/",
+          "description": "this is it, the magic marker is that go to high performance board to jump on even when the waves aren’t the best. Lower entry rocker and a forward wide point gives this board the speed to boost on those rampy sections and the wider tail gives it that skatey feel every surfer looks for on the “average” days. Our most popular model and all the boys are riding one this summer. Suggested to be ridden 3-5 inches shorter that your normal short board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stilletto",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/539a4028e4b04d13b7ae18ad/1662750579915/",
+          "description": "The cousin of the magic marker, is a great small wave machine in its own right. We tuned in the outline some and put a wing swallow on it, the wing will give the rail line a breaking point for some release.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jekyll",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/54b32b90e4b0c6ceb95e11f9/1633647060297/",
+          "description": "Another version of our popular step down model the Hyde, the Jekyll has a more radical and complex bottom contour and tail design. Lots of drive, the Jeklyll stays fun even the waves arnt.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Acro Pro",
+          "image_url": "https://static1.squarespace.com/static/5397816ce4b03ea7cc913085/5397a0bae4b0f4c00946432f/55207cece4b0bf6923147bf8/1633647046245/",
+          "description": "The Acro is a another high performance board we make, meant to be ridden about the same height as the surfer. What makes the Acro special is the very deep single concave through the tail which is combined with an over exaggerated flip in the tail rocker. This gives the board drive off your front foot and speed when you need it, but give the board an amazingly tight turning radius. Meant to be ridden in shoulder to overhead waves, tight in the pocket.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
