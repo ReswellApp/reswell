@@ -1,0 +1,156 @@
+{
+  "generated_for": "Archer Surfboards official named surfboard catalog",
+  "source": "https://archersurfboards.com/products.json (Shopify — excludes fins, apparel, gift vouchers, and stock dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "archer-surfboards",
+      "name": "Archer Surfboards",
+      "website_url": "https://archersurfboards.com/",
+      "location_label": "Brookvale, New South Wales, Australia",
+      "founder_name": "Archer Drinan",
+      "lead_shaper_name": "Archer Drinan",
+      "short_description": "Custom surfboards hand-shaped by Archer Drinan at Rhino Laminating in Brookvale on Sydney's Northern Beaches — shortboards, fishes, mid-lengths, longboards, and guns.",
+      "models": [
+        {
+          "name": "Apollo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-6-apollo-purple.jpg?v=1770601546",
+          "description": "The Apollo is a hybrid shortboard for good surf in the 2ft+ range. The Apollo is designed for hollow, powerful waves, slabs, and reefs. Featuring a flat rocker with some modern rail curves to enhance its performance. The go-to for team rider Sam at his local beach break and reefs. Features: Wide point forward of centre Pulled-in swallow tail Flatter entry rocker for faster paddling and down the line speed Tail shapes: Shallow swallow, squash or round. Recommended size: 1\" - 2\" shorter than your current shortboard",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Asym",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-6260-asym-natural-footer.jpg?v=1756095591",
+          "description": "An asymmetrical surfboard features a distinctive design where the outline, rocker, and rail profiles of the board are not symmetrical. This deliberate asymmetry serves a specific purpose in enhancing a surfer's performance. The asymmetrical design aims to cater to a surfer's stance and the unique challenges posed by various wave conditions. The boards are specifically designed for either a natural footer or a goofy footer. By accommodating a surfer's natural foot positioning, the board maximizes control and responsiveness, allowing for smoother transitions rail to rail. This design encourages surfers to surf more dynamically from one rail to another; the shorter rail for tighter turns, the longer rail provides length to drive and project down the line. Asymmetrical surfboards are often seen as unusual and scare off most surfers. However, they are truly the next logical step in improving your skills and enjoyment in the water, unlocking new levels of creativity and precision while surfing. An asymmetrical surfboard features a distinctive design where the outline, rocker, and rail profiles of the board are not symmetrical.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Fusion",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-94-fusion-splitview.jpg?v=1756095491",
+          "description": "The Fusion is our take on modern, higher-performance longboards, designed to be surfed off the rail, excelling in surf 1ft+. For surfers looking to surf off the tail with faster rail-to-rail turns, hit the lip, do a cutback, or lock in for nose rides in critical sections. Features: Thickness through the centre foiled to low 60/40 rails running from mid board through to the tail Hard resin edge in the tail for release through turns Turned up rails in the nose for improved noseriding Concave to add stability on the nose Tail shapes: Chop, diamond, squash or rounded pin. Fin configuration: 1 +2, quad or single. Recommended sizing: 9'0 x 22 1/2 x 2 3/4 9'2 x 22 5/8 x 2 13/16 9'4 x 22 3/4 x 2 7/8 9'6 x 22 7/8 x 2 15/16",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "GQ",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/GQ_flames.jpg?v=1770871545",
+          "description": "The GQ or 'GUAC Quad' is an alternative high-performance board. It is our team rider Manny's go-to board in almost any condition. Perfect for your average beach break, reef, or local slab. Refined rails hiding plenty of foam, matched with a balanced modern rocker to deliver a board that will rise to any occasion. Features: A unique rolled reverse bottom contour with a pronounced double concave running through the fin cluster, which delivers high speeds with precise control through the back foot Low tail rocker to increase drive Snub nose increases surface area for late drops and creates a larger planing area, allowing the board to be surfed shorter Glides under any conditions, guac. Tail shapes: Swallow, arc or chop. Recommended sizes: 5'0 - 6'0 or 2-4\" shorter than your daily shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hunter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-6-hunter.jpg?v=1753524116",
+          "description": "The Hunter is a step up designed for surf 4ft+ waves of consequence and likes to be pushed hard, it's a hunter. A great board for bigger beach breaks and reef breaks. The Hunter is designed to be ridden as a quad but comes with the option of a thruster. Features: 5 Fin standard FCS/Futures set up for any surf Rounded pin for increased manoeuvrability on steeper faces Lower entry rocker for faster paddling and an exaggerated curve out the tail to liven up the board Recommended size: 6'0 - 7'2 Stock dimensions: 6'0 x 18 1/4 x 2 3/8 6'2 x 18 1/2 x 2 7/16 6'4 x 18 3/4 x 2 1/2 6'6 x 19 x 2 9/16 6'8 x 19 1/4 x 2 5/8 6'10 x 19 1/2 x 2 11/16 7'0 x 19 3/4 x 2 3/4 7'2 x 20 x 2 13/16",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jaguar",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/IMG-3304.jpg?v=1785746128",
+          "description": "The Jaguar is a sleek, agile, streamlined design built to glide effortlessly in knee-high waves. When the swell kicks up, it can handle larger waves thanks to its refined rails and triplane contours; it will lock in on those steeper faces. I like to surf it at the 9ft length as a daily driver. Its widest point is just forward of centre, making it an easier paddler, with a flatter rocker; it's highly versatile in most conditions I find myself in when I pull up to the beach for a morning surf. The Jaguar is the younger brother of the Long Bow; the tail is more pulled in, the nose is slightly beaked, and the rails are pinched 50/50 all this to dial it in as an easy rider for anyone to surf, from beginners to advanced surfers. Recommended sizing: 8'0 to 9'6 Tail shape: Round pin, round, baby swallow. Fin set up: SIngle, single + stabilisers, twin.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Jib",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/E929E8A8-A248-4519-A708-79BC9E977D15.jpg?v=1785912951",
+          "description": "The Jib is our performance driven twinzer. It blends the lines between high performance shortboards and twin fins. The Jib has a narrower plan shape, more entry rocker and a subtle spiral vee out the tail compared to the Mini Fish. The Twinzer set up is known for more speed, more hold, smoother transitions and quicker turning. I’ve always described it as a board with the speed of a twin fin that pivots on rail like a thruster. It comes standard as a 4 fin set up as a twin or twinzer - on request we can add a trailer fin too for a more versatile board. It's fast, with drive and plenty of hold through turns. The perfect board for small to medium waves, and you'll want to surf it when it's pumping too! Recommended fins are the Futures T2 Twinzer set Notable features: Single to double to spiral vee out the tail Multiple fin configurations Medium-low rails for a feeling consistent through most performance shortboards Tail shape: Swallow, diamond or rounded pin Fin set up: Twinzer, Twinzer + trailer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Legacy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-78-legacy-splitview.jpg?v=1753523613",
+          "description": "The Legacy is a gun surfboard for waves of consequence. Designed for surfers who push the boundaries of their limits, the Legacy is built to handle the power and speed of big surf, offering the stability, paddle power and control needed to make critical drops and navigate larger wave faces. Crafted with only the best quality materials to create a shape that is super durable and performs even in the most challenging waves. Panel vee up front to helps to set and hold your line when paddling and surfing, the vet double concave through the tail allows for smoother rail to rail transitions while still getting extra lift on rail for faster turns to get you out of sticky situations. Features: 60/40 chimed rails Flat deck holds more foam for better paddling Spiral vee bottom contours Sleek foil Tail shapes: Round, Swallow or Pin. Fin configuration: 2 + 1 , quad, 5 fin. Recommended sizing: 7'6 - 8'6",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Longbow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/easteregg102.jpg?v=1782184512",
+          "description": "The Longbow is a glider by name and by size that's increasing in popularity with surfers who want to simplify their surfing and trim & glide even when the waves get big. It floats like a small yacht, with plenty of hold and speed in any conditions. The Long Bow requires minimal effort to achieve maximum glide, designed to be ridden as a traditional single fin . Recommended sizing: 9'6 to 10'4 Tail shape: Round pin. Fin setup: Single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Love",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-72-love-rhino.jpg?v=1753524096",
+          "description": "The Love is a beautiful single, inspired by planing hulls; it’s highly versatile in small to overhead waves. The rails are pinched 60/40 throughout the centre of the board, turned up in the nose and turned down in the tail to a hard resin edge behind the fins. The bottom contours are a slightly rolled bottom blended into a subtle spiral vee out the tail. Its flatter rocker makes the Love a super easy paddler and loves to trim at high speeds. The Love can do it all as a mid, jamming turns or some cheeky steps to the tip, in the right conditions. Features: 50/50 Pinched rails Flat and fast rocker Spiral vee bottom contours Sleek foil Tail shapes: Diamond, Round, Squash or Pin. Fin configuration: Single fin Recommended size: 7'0 - 8'6",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/Mini_fish_54.jpg?v=1770868507",
+          "description": "The Mini Fish is our more performance-style twin fin with a trailer. Based on the T-Fish, I've pulled in the tail and added some vee to the rail line behind the trailer for a more natural rail transition sensation. It's fast, with drive and plenty of hold through turns. The perfect board for small to medium waves, and you'll want to surf it when it's pumping too! Notable features: Single to double to vee out the tail Low rocker - a paddle machine Ridden 3-4\" smaller than your shortboard or 2-4\" shorter than your height Tail shape: Swallow or diamond Fin set up: Twin + trailer Stock sizes: 5'4 x 19 1/4 x 2 1/4 5'5 x 20 1/4 x 2 2 3/8 5'6 x 20 11/16 x 2 3/8 29.5L 5'7 x 20 3/4 x 2 7/16 31.3L 5'8 x 20 13/16 x 2 1/2 32.5L 5'9 x 20 7/8 x 2 9/16 34L 5'10 x 20 15/16 x 2 5/8 35.5L 5'11 x 21 x 2 11/16 37L 6'0 x 21 1/16 x 2 3/4 38.5L",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Modern Log",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-96-modlog-splitview.jpg?v=1756095506",
+          "description": "The Modern Log is a newer refined version of old roll bottom 'logs' for trimming in small waves at high speeds. Soft 50/50 rails turned up in the nose and tail with a subtle vee bottom throughout the entire board. Concave in the nose makes turns more dynamic and increases lift to elevate your nose riding. The Modern Log will paddle you into any wave with minimal effort and maximum glide. Designed to be ridden as a traditional single fin in smaller surf. Board pictured is 9'6\" x 23\" x 3\" Tail shapes: Chop, squash or pin. Recommended sizing: 9'0 to 9'6",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Performance Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/performance-mid-twoshot.jpg?v=1788739876",
+          "description": "The Performance Mid is a reliable allrounder for anyone; fast, smooth and responsive. A board for trimming down the line or surfing off the tail and jamming turns in the pocket. Features: Rounded pin for extra hold and smooth surfing Spiral vee for ease of transitions rail to rail Moderate rocker paired with forgiving 60/40 rails for smooth transitional manoeuvres Tail shapes: Round, round pin or swallow tail. Fin configuration: Single + stabilisers, thruster or 5 fin Recommended sizes: 6'8 x 20 3/4 x 2 5/8 7'0 x 21 x 2 3/4 7'2 x 21 1/4 x 2 7/8 7'6 x 21 1/2 x 3",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Shorty 1 (PS1)",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-57-PS1.jpg?v=1753521760",
+          "description": "The PS1 is the first board in the Performance Shortboard series, it is a reliable/versatile high performance shortboard. Perfect for average waist high conditions to overhead pumping surf. A favourite among team riders. Notable Features: Moderate entry and exit rocker Hard edge from 2\" infront of front fins in the tail increasing release through turns Medium/low rails give it balance between performance and stability Single concave throughout for speed Stock dimensions: 5'6 x 17 3/4 x 2 3/16 (22L) 5'7 x 17 7/8 x 2 3/16 (22.5L) 5'8 x 18 x 2 1/4 (23.5L) 5'9 x 18 1/4 x 2 5/16 (25.3L) 5'10 x 18 1/2 x 2 3/8 (26.5L) 5'11 x 18 3/4 x 2 7/16 (28.2L) 6'0 x 19 x 2 1/2 (29.75L) 6'1 x 19 1/4 x 2 9/16 (31.5L) 6'2 x 19 1/2 x 2 5/8 (33L) 6'3 x 19 3/4 x 2 11/16 (34.5L) 6'4 x 20 x 2 3/4 (36.5L) Tail shapes: Rounded square or round.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Performance Shorty 2 (PS2)",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/PS2_Benny.jpg?v=1777193271",
+          "description": "The PS2 is the second board in the Performance Shortboard series, it is more high performance than the PS1. Designed for surf head high to double overhead pumping surf. A favourite to be ridden the same height as you are tall. Notable Features: Highest entry and exit rocker of the PS series Hard edge from 2\" infront of front fins through to the tail increasing release through turns Medium/low rails give it balance between performance and stability Single to double concave throughout for speed and control at high speeds Flat behind the rear fin for more release and snappier top turns Stock dimensions: 5'6 x 17 3/4 x 2 3/16 (22L) 5'7 x 18 x 2 3/16 (23L) 5'8 x 18 1/4 x 2 1/4 (24L) 5'9 x 18 3/8 x 2 5/16 (25.5L) 5'10 x 18 1/2 x 2 3/8 (26.5L) 5'11 x 18 3/4 x 2 7/16 (28.2L) 6'0 x 19 x 2 1/2 (29.75L) 6'1 x 19 1/4 x 2 9/16 (31.5L) 6'2 x 19 1/2 x 2 5/8 (33L Tail shapes: Squash, round, or round pin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Performance Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-55-performance-fish.jpg?v=1753524186",
+          "description": "The Performance Twin, as the name suggests, is a high performance twin fin. Fast and responsive with unique drive and hold through turns. The perfect board for small waves to double over head perfect conditions. Features: Single under the chest to double through the fins to panel vee out the tail Low tail rocker Small subtle beak Twin or Twinzer fin set up Tail shapes: Swallow, squash or round. Recommended size: 5'6 - 6'4",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Prologue",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/Prologue_tully_teal_tint.jpg?v=1785140000",
+          "description": "The Prologue is a modern performance single-fin longboard. Its plan shape draws inspiration from the ’60s pig, with the wide point set back, allowing the Prologue to excel across a variety of waves. A subtle roll bottom throughout enhances effortless rail-to-rail transitions and encourages higher-performance manoeuvres with style, flow, and grace. A unique stepped-down rail line in the tail creates increased downforce, enabling you to hold an elevated nose ride through sections. It also heightens sensitivity between the surfer’s back foot and the water, reducing the physical effort required to manoeuvre the board and making turning more responsive and intuitive. Features: Pinched broomstick 60/40 down rails Hard resin edge in the tail for release through turns A blended subtle nose concave with an extra flick of entry curve More rocker than other models - this is a longboard for progressive surfing! Tail shapes: Square, diamond, or bell pin. Fin configuration: Single fin or single with stabilisers. Recommended fin: 10\" Dolphin Recommended sizing: 9'0 x 22 1/4 x 2 3/4 9'2 x 22 1/2 x 2 7/8 9'4 x 22 3/4 x 3 9'6 x 23 x 3 1/8",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rhino Chaser",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/10_rhinochaser_red_yellow_polish.jpg?v=1775707408",
+          "description": "The Rhino chaser is a gun surfboard for Bombora's. Lots of foam for paddle power, narrower outline than the Legacy for greater control in bigger surf. Perfect for getting in early on big waves. A highly customisable design that can be tailored to a particular break and surfer. Features: Flat deck maximising foam and float for create paddle power 70/30 chimed down rails for grip and hold perfect for big waves High entry rocker, flatter through the belly and accentuated tail rocker out the tail to liven the board up on the face Panel vee through the whole board, slightest double concave fades through the centre of the board and dissipates before the fins. Glassed super strong double 6oz deck and double 6 oz bottom with a fin patch with a minimum 10.5mm ply laminate stringer - recommended to order as a triple stringer! Tail shapes: Rounded pin or baby swallow. Fin configuration: 5 fin boxes futures. Recommended sizing: Lengths ranging 9'0 - 10'2, w idths ranging from 19 1/2 to 22 1/2 and t hicknesses ranging from 2 7/8 to 4 in the centre",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Sailfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/IMG-4184.jpg?v=1788474449",
+          "description": "The Sailfish is a sportier profile of the T-Fish with sleeker lines. It is the fastest fish in our range. Ideal for surfers who like to go fast and feel the flow. Its bottom contours keep it stable and consistent, making it great in a variety of conditions, from small mushy waves to overhead offshore surf. Features: Wide point placed forward of centre Single to double concave for versatility with a slight vee out the tail to make rail-to-rail transitions fast and calculated Fin set up tailored for down the line projection and hold through turns Tail shapes: Swallow, flyer swallow. Fin configuration: Twin keel or split keel (cluster quad). Recommended sizes: 6'4 - 7'6. Pictured size 6'8 x 20 7/8 x 2 11/16",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stubby",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer_surfboards_66Stubby.jpg?v=1756170079",
+          "description": "The Stubby is a versatile single fin with a low continuous rocker. A flat deck with plenty of foam meets Stüssy's 80's meaty down rails for more responsive manoeuvres. A slight vee bottom throughout the entire board smooths rail-to-rail transitions, keeps you stable while trimming, and frees up the tail through turns. A fun alternative board to add to any quiver. Features: Flat deck with down rails for hold and drive Slight vee bottom for responsive surfing Cedar stringer and glassed with a layer of 6oz on the bottom and 6oz + 4oz deck for durability Fin configuration: Single fin box or glass on. Recommended size: 6'2 - 7'0",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "T-FISH",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-510-tfish-gloss-and-polish-emerald-timber-keels.jpg?v=1756095630",
+          "description": "The T-Fish is a blend of tradition and performance. Super fast down the line and equally manoeuvrable in the pocket. It suits a range of different styles and approaches. Features: Twin fin set up for drive and hold Slightly beaked nose that evens volume distribution Single concave between the fins for lift and speed Option of glass-in or fin boxes Tail shapes: Swallow, flyer swallow Fin configuration: Fin boxes or glass ons Recommended sizes: 5'2 - 6'0",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-610-twinpin.jpg?v=1767740244",
+          "description": "The Twin Pin is a versatile all-round board with the classic twin fin feel and extra hold through the round pin tail for surf 2ft+. Ideal for surfers who like fast, flowing surfing but still bite into the wave face. The TP is stable and connected to the waves through turns, which is why it is great in a variety of conditions from small mushy waves to overhead and pumping surf. Features: Spiral vee out the tail for easy rail-to-rail transitions Single to double concave for versatility Beaked nose holding more foam forward Tail shapes: Round, pin or baby swallow. Fin configuration: Twin, twin + stabiliser. Recommended sizes: 5'8 - 7'6",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Yardstick",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/3047/9794/files/archer-surfboards-yardstick-96-splitview.jpg?v=1756095442",
+          "description": "The Yardstick is a traditional longboard with heavy inspiration from Old Mals. Refined 50/50 soft rails turned up in the nose and tail with a roll bottom throughout the entire board. For critical surfing in the pocket, radical drop knee turns and smooth rail surfing. Designed to be ridden as a traditional single fin in any surf. Tail shapes: Chop, squash, round or pin. Recommended sizing: 9'4 x 22 3/4 x 3 9'6 x 22 7/8 x 3 1/8 9'8 x 23 x 3 1/4",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
