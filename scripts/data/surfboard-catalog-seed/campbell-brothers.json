@@ -1,0 +1,120 @@
+{
+  "generated_for": "Campbell Brothers official named standup catalog",
+  "source": "https://www.bonzer5.com/allboard (official Campbell Bros. model pages \u2014 excludes custom orders, stock boards, apparel, and Missing Links experimental builds)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "campbell-brothers",
+      "name": "Campbell Brothers",
+      "website_url": "https://www.bonzer5.com",
+      "location_label": "Oxnard, California",
+      "founder_name": "Malcolm Campbell",
+      "lead_shaper_name": "Malcolm Campbell",
+      "short_description": "Inventors of the Bonzer \u2014 Malcolm and Duncan Campbell have refined three-, five-, and twin-fin Bonzer designs for over 50 years from Oxnard, California.",
+      "models": [
+        {
+          "name": "Alpha Omega",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/3054b4dd-7e38-4602-a45a-c768b1e1988b/photo-22.jpg",
+          "description": "The Alpha Omega is a Bonzer Twin Fin. We built our first one during the Fall-Winter season of 1977-78. It was made for Duncan, and he put it through it\u2019s paces in everything from knock around surf, to way overhead top to bottom tubes at Silverstrand Beach. That board was our offering to the emerging Twin Fin craze inspired by the incredible surfing of Mark Richards.  The template was based on what MR was doing, and we combined it with our Bonzer Light Vehicle bottom design. With a combination of jest and bravado, we named it the Alpha Omega.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bumblebee",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/9580dafb-7099-41ac-ade0-6dca64ae90d6/2FrameGrab_75.jpg",
+          "description": "The Bumblebee is a replica of one of the shapes that Duncan and I rode between 1973 and 1978. It is designed to be ridden shorter than the average board. It has a wide arc tail, about 9 1/4\u2033 to 10 1/4\u2033 from corner to corner. Most people ride them the same size you would ride a \u201cfish\u201d. The Bumblebee rides equally well frontside and backside. It is very fast and works in a wide variety of waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/b5bd6f95-225f-4ee7-887a-600a9b95ac9d/egg-image-e1554746394315.jpeg",
+          "description": "The Bonzer egg has evolved from the eggs of the early 70\u2019s. They combine the best attributes of past, present and future. We make a wide range of them using mostly the 5 fin set up. They will work in many types of waves. Bonzer eggs utilize round, diamond and squash tails.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Egg Light",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/f543d1fb-38be-4098-a38f-d29caf3660ac/PXL_20220814_040449285.jpg",
+          "description": "The Egg Light is a hybrid type shape that synthesizes elements of the Russ Short and Speed Egg, as well as incorporating the Bonzer Light Vehicle bottom contour. Developed by Jacob while on Oahu, this shape is its own unique ride with a deceptively broad performance range. The beaked and rounder nose provide excellent paddle and easy planing, while the wide point forward draws the tail into a tighter swallow which fits well in the pocket, with great bite off the bottom and in the hook. The elusive one bonzer quiver could be here. Primarily the Egg Light uses the 3 fin setup, but 5 fins can work as well (though without the LV bottom).",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Guns",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/292c3df1-91ca-4f42-a02b-c51598e66ffb/guns_Splash.jpg",
+          "description": "Campbell Brothers Bonzer guns and step-ups for bigger surf.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/33abffdd-136e-4f96-b2c7-89dd0f6b89d8/DSC_0227.jpg",
+          "description": "Our Longboards are generally a bit more of a high performance type longboard. The basic template is a slight variation on one we stole from Billy Hamilton many moons ago. For the record, we confessed, and he asked us to make him a 7\u201910\u201d Semi Gun. He has been making some Bonzers ever since.  It has been the coolest of exchanges.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "MBLV",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/95c86eaa-de00-43aa-84ca-f63b06f82de2/IMG_20200516_153929775.jpg",
+          "description": "The Mini Bonzer Light Vehicle (MBLV) is designed to be mainly a sub six-foot board, although we do make them up to 6\u20194\u201d or so for some bigger guys. The name comes from the fact that it utilizes the Bonzer Light Vehicle bottom which we first designed in 1977, and yes it is mini. The MBLV is a Bonzer 3, as that is what the original Bonzer Light Vehicle was. This board has great speed, maneuverability, and control. The tail isn\u2019t super wide, which gives the MBLV good versatility. It Surfs frontside and backside equally well and will handle some pretty solid waves for its size. It\u2019s a great little wave catcher as well.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Bonzer 5",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/ee46deed-77b8-4265-ad02-50669c0aa229/Mini1a.jpg",
+          "description": "The Mini Bonzer 5 is designed to be mainly a sub six foot board, although we do make them up to 6\u20194\u201d or so for some bigger guys. The name comes from the fact that it utilizes the Bonzer Light Vehicle bottom which we first designed in 1977; and yes it is mini. The MBLV is a Bonzer 3, as that is what the original Bonzer Light Vehicle was. This board has great speed, maneuverability, and control. The tail isn\u2019t super wide, which gives the MBLV good versatility. It surfs frontside and backside equally well, and will handle some pretty solid waves for it\u2019s size. It\u2019s a great little wave catcher as well.The Mini B5 has the same template and rocker as the MBLV, but uses the B5 fin setup and the standard Bonzer 5 bottom design. The differences between the Mini B5 and the MBLV are small. The MBLV is a little more smooth and drivey, and the Mini B5 a tad quicker off the top, with a bit more pivot. Both boards are equally fast.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Merk",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/2c1e3b30-5284-4235-81f0-8052656479b2/tk4.jpeg",
+          "description": "The Mini Merk is a performance shortboard with dimensions more akin to the mid 80\u2019s to early 90\u2019s. If you are looking for shortboard performance, but would like more foam, this might be what the doctor ordered. The Mini Merk has mild nose rocker and a trim beaked nose. This makes for a great paddling, speedy short board. It is primarily a thumb tail, but can be ordered with squash, round and swallow tails. The Mini Merk utilizes the Bonzer 5 fin system. The board Rob Machado is riding in the Chile film clip is a Mini Merk.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mod Bees",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/067a4fb4-621c-46ba-a909-6c9259f7ca5d/PXL_20221222_182120896.jpg",
+          "description": "Modified Bumblebees include the Racy Bee (akin to our Bonzer 3D CI/Dane collab), E-winged Bumblebees, as well as non-beak nosed Bees. In each iteration, the traditional model's tail width has be brought in for tighter control in the pocket and a quicker turning radius. The Mod Bees can be viewed as a in-between shape approaching a more contemporary style of board and surfing, while still maintaining easy entry and paddle into waves. The Bonzer 3 or 5 setups work equally well. Thruster, twin, or even twinzer setup are a possibility too.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Octafish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/f4c31190-ce81-49fe-a6f3-98885a1c8b8d/IMG_20200516_160547280-scaled.jpg",
+          "description": "The Octafish is \u201cNot a Fish\u201d. It looks a bit like a Fish, but has a wider range of performance. The Octafish features the Elevated Wing. The E-Wing is a design innovation created by Max McDonald. We have incorporated it in many of our shapes since 1988.The E-Wing enables the Octafish to get up and down the wave face more vertically and quickly than a traditional Fish. Powered by the Bonzer 5 fin system, this board surfs equally well frontside and backside. The Octafish bridges the gap between a fish and a contemporary shortboard, and has great all-around small to medium wave performance.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pod",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/cf8a5bd2-766c-4db9-9f53-9c6a80845f9e/333.jpg",
+          "description": "This board looks like a seed pod. It has a flat rocker and a wide nose and tail. It differs from the eggs in that the tail is wider than the nose. The Pod uses the 5 fin system which makes it a unique combination of Bonzer past and present. The flat rocker of the Pod makes it get up and go in small weak waves. It also works well in point type surf, but the flatter rocker can reduce its ability to change directions quickly in hollow waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Russ Short",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/c4e2f326-10f5-4124-a230-92b9ec18b531/russ.jpg",
+          "description": "This was our most popular Bonzer shape during the mid to late 70\u2019s. Russ Short, Duncan, Cliff Collinge and I all rode slight variations of this template during the time. This model was pushed to the limit in all types of waves and proved to be a very versatile high performance surfboard. The Russ Short model is used mostly with the 3 fin set up, but can incorporate the 5 fin system as well. The Russ Short model works well as a diamond, round or swallow tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Russ Shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/a475f0ef-ea28-4744-9ccc-c64ebbd2e564/PXL_20221222_183747622.jpg",
+          "description": "As the name implies, this is a modified version of the Russ Short. Developed by Jacob while living on Oahu, the Russ Shortboard bridges the gap to a more contemporary shape and style of surfing while still maintaining the classic feel of the original Russ Short. With a non-beaked nose, wide point pushed farther back towards center, and exiting into a swallow to 5 fin combo, this model is a versatile shortboard that will have a high top-end of the waves it can handle. Available also as a 3 fin, round pin, thumb or squash tail, this board can stretch out into an excellent step up board as well.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Shelter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/48e2fb04-886f-4e7e-99a0-4ecd22ce4ee9/TK_shelter-splash.jpg",
+          "description": "This is our contemporary high performance Bonzer 5 fin. The name comes from the Malloy Brother\u2019s film \u201cShelter\u201d. We made some green boards that were ridden by Taylor Knox and Donovan Frankenreiter in the film. The Shelter board works well with swallow, squash or round tails. When getting your first Shelter board, or any contemporary Bonzer, it is best to order your favorite dimensions. This will allow you to more easily understand and feel what the Bonzer fins and bottom designs are doing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Speed Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/58d4cbe1-54cf-4aa3-ad45-e674c4f1b6e2/Spegg-header-scaled.jpg",
+          "description": "The Speed Egg is our traditional Bonzer Egg with the nose pulled in. Paddling and glide are virtually the same as the Egg. The narrower nose gives it a more versatility in steeper and hollower waves. This board can be a bridge between a Contemporary Short board and a full Egg.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wi-5",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/0fd703b0-a637-41c9-b1d9-27fcde1b877a/tk1.jpg",
+          "description": "The Wi-5 has evolved out of 20 years of collaboration with Taylor Knox. The name of this model derives from the film Taylor made; Wi-5 A BONZER EXPERIENCE.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
