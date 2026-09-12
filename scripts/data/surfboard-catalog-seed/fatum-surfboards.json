@@ -1,0 +1,174 @@
+{
+  "generated_for": "Fatum Surfboards official named standup catalog",
+  "source": "https://fatumsurfboards.com/product-category/boards/ (official board model pages \u2014 excludes factory stock SKUs, apparel, fins, and accessories)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "fatum-surfboards",
+      "name": "Fatum Surfboards",
+      "website_url": "https://fatumsurfboards.com/",
+      "location_label": "Peniche, Portugal",
+      "founder_name": "Gero Tragatschnig",
+      "lead_shaper_name": "Gero Tragatschnig",
+      "short_description": "Custom surfboards designed and finished by Gero Tragatschnig in Peniche, Portugal.",
+      "models": [
+        {
+          "name": "Bond",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_bond_602_topview_catlist.jpg",
+          "description": "Step up Surfboards are made to give you more hold and drive in bigger waves. The Bond has that hold but the concave bottom makes it behave like a Shortboard.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Fusion",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_fusion_600_topview_catlist.jpg",
+          "description": "The essential high performance all-round shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Skippa",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_skippa_601_topview_catlist.jpg",
+          "description": "A quick and agil all-round performance Shortboard. Lightens up in beach breaks, flys to flat sections, turns very fast and let's you adjust your speed to the wave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Super Seven",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_super_seven_506_topview_catlist.jpg",
+          "description": "This is what we call a funboard. Pure joy for everybody.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super Six",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_super_six_600_topview_catlist.jpg",
+          "description": "The Super Six is the ideal first shortboard but we also like to call it a \u2018smart\u2019 shortboard. The volume helps not only while paddling it also makes the transitions on the wave much easier.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wire",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_wire_503_topview_catlist.jpg",
+          "description": "Fatum aim to make the best board for every surfer. The Fatum Wire is the perfect showcase of this idea. Give a Grom this Surfboard and he will smile",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Majestic",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_majestic_900_topview_catlist.jpg",
+          "description": "Modern performance nose rider",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Firm",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_firm_900_topview_catlist.jpg",
+          "description": "Our longboard design for all-round performance.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Therapy",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_therapy_909_topview_catlist.jpg",
+          "description": "Extremely laid back, no stress classic style longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Sniper",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_sniper_900_topview_catlist.jpg",
+          "description": "Modern high performance longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ze Don",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_don_902_topview_catlist.jpg",
+          "description": "You want to walk on your board like it\u2019s part of the sidewalk in front of your house?",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Buffer",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_buffer_800_topview_catlist.jpg",
+          "description": "Easy cruiser for more soulful surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Master",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_dolphin_702_topview_catlist.jpg",
+          "description": "Malibu for easy wave catching and gliding. The perfect first surfboard!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Duke",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2015/12/fatum_duke_604_topview_catlist.jpg",
+          "description": "The wonder board for everybody who likes to have fun.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Axiom",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_axiom_601_topview_catlist.jpg",
+          "description": "The original, famous since 1989 and still evolving today.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Bulldog",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_bulldog_509_topview_catlist.jpg",
+          "description": "The ultimate board for small but punchy waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Chill Pill",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_chill_pill_509_topview_catlist.jpg",
+          "description": "The remedy to cure your small wave sickness.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Disco",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_disco_509_topview_catlist.jpg",
+          "description": "Your weapon for the Atlantic summer.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flying Fish",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_flying_fish_600_topview_catlist.jpg",
+          "description": "All the advantages of a shortboard but still a fish with all the volume and the loose skatey feel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Giant",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_giant_511_topview_catlist.jpg",
+          "description": "If you are looking for the best of new and old school combined then here you go. This old school fish provides",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Habano",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2015/12/fatum_habano_507_topview_catlist.jpg",
+          "description": "The Habano has the typical Hybrid elements\u00a0like low rocker, wider outline with the wide point pushed forward, more thickness throughout, especially under the chest, modern style rails, functional bottom contours",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moby",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_moby_610_topview_catlist.jpg",
+          "description": "The ideal all-round board and ultimate wave catching machine for intermediates.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Thrill Pill",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_thrill_pill_600_topview_catlist.jpg",
+          "description": "Alternative for small summer waves, even wider outline and tail allows to go extra short",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Eisbach",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_eisbach_504_topview_catlist.jpg",
+          "description": "The original Munich Eisbach shredder.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Floyd",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_floyd_603_topview_catlist.jpg",
+          "description": "Old school is back in town.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Rush",
+          "image_url": "https://fatumsurfboards.com/wp-content/uploads/2013/03/fatum_rush_503_topview_catlist.jpg",
+          "description": "Riverboard tuned for the Bispingen flowrider.",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
