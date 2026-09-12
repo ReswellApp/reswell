@@ -1,0 +1,186 @@
+{
+  "generated_for": "ND Surfboards official named standup catalog",
+  "source": "https://www.ndsurfboards.co.uk/ (WordPress model pages via REST API \u2014 excludes ding repair, custom ordering info, kids learner category pages, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "nd-surfboards",
+      "name": "ND Surfboards",
+      "website_url": "https://www.ndsurfboards.co.uk/",
+      "location_label": "Chester-le-Street, County Durham, United Kingdom",
+      "founder_name": "Steve Parks",
+      "lead_shaper_name": "Steve Parks",
+      "short_description": "Independent UK surfboards shaped by Steve Parks in Chester-le-Street, County Durham, built for North East and British waves.",
+      "models": [
+        {
+          "name": "11th Hour",
+          "description": "The 11th Hour Mid Length Twin Fin Surfboard. I might have been a little late to the Twin Pin party, and that\u2019s exactly why I named this board the 11th Hour.This Mid Length board is great for our UK Surf.It pulls together two of my favorite things,the Mid Length and the Twin Fin setup. 11th [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/11/Mid-Length-Twin-Fin-Surfboard.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Atom",
+          "description": "Small to medium Wave\u2019s Groveler. The Atom Are you after a Board that rides well in either Wave Pool waves and also when the surf is smaller. Then the Atom Groveler Shortboard ticks all the boxes. It\u2019s design gives you a high wave count while maintaining the shortboard performance needed for advanced surfing. The Atom [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2024/10/Atom-decal.jpg",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Bandit",
+          "description": "The Bandit Performance Shortboard One of my favorite shortboard shapes, the Bandit has been a permanent fixture in my quiver for years, it\u2019s a very fast stable board that performs well in any condition you would ride a shortboard in.The Bandit never fails to meet our customers expectations,it\u2019s one of them reliable surfboards that never [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2019/04/BanditFix.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bigus Fishus",
+          "description": "The Big Long Fish = More Waves, More Glide A Long Fish like the Bigus Fishus means a massive wave count and endless fun. It\u2019s Growing popular in the UK as it gives you an alternative to the Longboard for the average more mellow waves. Gliding down the line with effortless speed, this big fish [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2019/12/BIGUS-FISHUS-FISH-SURFBOARD.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Classic Noserider",
+          "description": "Introducing our Classic Noserider Longboard This Classic Log is the ultimate noserider longboard, crafted for surfers who love the timeless style and smooth glide of traditional logging. With a wide nose, nose concave, and stable outline, it maximizes tip time for effortless noserides on peeling waves. Perfect for mellow summer swells or clean beach days, [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2021/08/being-blue-surf-1-of-1.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cooly Weirdy",
+          "description": "Cooly Weirdy \u2013 A Performance Fish Surfboard The Cooly Weirdy Performance Fish was born to handle the challenging reefs and Beach Breaks of the UK. Putting a modern twist on the classic fish shape, it\u2019s aggressive template delivers superior hold on hollow waves. This gives you the confidence to charge hard in powerful surf. [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2022/08/Cooly-Weirdy-Fish-Surfboard.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Drifter",
+          "description": "The Drifter, a performance longboard surfboard The Drifter Performance Longboard strikes the perfect balance of ease and stability, delivering a smooth, enjoyable ride every time. Its classic pintail shape, single concave nose, and hulled V-bottom make rail-to-rail surfing effortless. Whether you\u2019re cruising on the nose or carving through waves with confidence, the Drifter performs beautifully. [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/11/Custom-Longboards-UK.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "description": "Introducing our Glider Longboard The Glider Longboard delivers a smooth, effortless ride that captures the feeling of surfing at its best. It catches waves with ease, turns beautifully, and trims like a dream. Designed to perform in everything from small summer peelers to solid winter sets, this board offers incredible versatility. While not a dedicated [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2021/09/Glider-Longboard-Model.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hound Dog",
+          "description": "The Perfect All Round Longboard Surfboard The Hound Dog Longboard surfboard is a versatile all-round model designed for surfers who want to enjoy the classic feel of riding a log without needing extensive experience. Perfect for beginners and intermediate riders alike, this board offers excellent stability and user-friendly handling. It noserides beautifully, allowing smooth tip [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2023/10/Hound-Dog-Longboard.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Long Simmons",
+          "description": "Long Simmons Surfboard \u2013 Sea Monster The Sea Monster is a Hand Crafted Long Simmons, Twin Fin surfboard design. It is available to order as a Custom Board from 7ft6\u2033-9ft. This design is an inspired shape taken from Bob Simmons 50s Twin Fin boards. However i have put my own spin on it to suit [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2023/03/Riding-a-Long-Simmons-Surfboard.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Simmons",
+          "description": "Classic Simmons Style Twin with Modern Features The Mini Simmons Surfboard is an iconic shape from the past that is still very relevant today. While the Classic shape hasn\u2019t changed much over time our Mini Simmons has a more modern feel to the ride. Benefiting from years of experimentation we have eventually come up with [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2026/03/Classic-Mini-Simmons.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Missing Link",
+          "description": "Set between Mid Length and Funboard \u2013 The Missing Link With a split between a retro Mid length and a more modern Funboard design. The Missing Link fills a gulf for surfers at a certain skill level needing a board the right size for them to progress. Fusing the retro Mid Length nose with a [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2026/03/Missing-Link-Surfboard.png",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "ND Mid",
+          "description": "Introducing the ND Mid Length Surfboard The ND MID is our go-to mid-length surfboard. A classic shape that has proven itself over the years. With a modern, versatile design, it blends vintage style with contemporary performance, offering a smooth, responsive ride. If we were to compare it, it\u2019s quite similar to a CI Mid, delivering that [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/11/ND-Mid-Length-Surfboard.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Ocillator",
+          "description": "The Ocillator Mid Length Surfboard The Ocillator Mid Length has an elliptical shape that caries the mid point to the rear of center. This allows a fast and loose feel when riding. However this a very different feel to normal Mid Length, as you ride more with your back foot. Allowing you to maximize the [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/11/Ocillator-Mid-length-Surfboard.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pod",
+          "description": "The Pod, Your ideal first Shortboard Surfboard The Pod is a slightly Larger shortboard that has all the performance features of an advanced board, just in a more friendly way. This makes it a great step down towards a higher level of surfing. and the best option for your first Shortboard. Furthermore it would also [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/11/My-First-shortboard.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Predator",
+          "description": "The Predator \u2013 Versatile Performance Shortboard Reliable performance when you need it from a shortboard with a pedigree.in competitive surfing.The Predator has been a part of our Surfboard range for over a decade.Designed to make the best of the UK surf conditions. Predator story Originally design for competition surfing especially on waves that are not [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2024/10/Predator-decal.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Super Kook",
+          "description": "Advance your Surfing Skills with the Super Kook Meet the Super Kook \u2014 the perfect intermediate surfboard to fine-tune your surfing without sacrificing wave count. Designed for progression, it helps bridge the gap between beginner and more advanced boards with ease. Once you\u2019ve mastered the basics\u2014popping up and riding down the line\u2014you\u2019re ready to step [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2026/04/Learner-Shortboard-Surfboard.png",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Tail Gunner",
+          "description": "Mid Twin, Thruster or Quad fin Mid length The Tail Gunner Mid Length was named due to the fully loaded tail full of fin setup options. You can ride this board as a Mid Twin Pin, a Quad fin or a Thruster fin, or you can order with only the fin setup you require. Whichever [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2024/09/Tail-Gunner-decal.jpg",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Tail Gunner Short",
+          "description": "Tail Gunner Shortboard \u2013 Performance Hybrid This new short Hybrid board shape has taken about two years of R&D to develop the hull design, We\u2019ve been fine tuning it to deliver the right amount of lift and drive to give you maximum speed and maneuverability. Just like it\u2019s big brother Tail Gunner Mid everything about [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/11/Hybrid-Shortboard.png",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Outlaw",
+          "description": "Fun Packed Hybrid Surfboard for smaller swells The Outlaw is the ultimate groveler Hybrid Shortboard. A hybrid that fuses fish DNA with shortboard performance, it combines the rocker and outline of a fish with the rails, tail, and fin setup of a shortboard. This little gem catches waves you\u2019d normally skip, giving you more fun options [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2024/10/Outlaw-decal-2.jpg",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Sea Bean",
+          "description": "The Sea Bean Hybrid surfboard Introducing the Sea Bean \u2013 the perfect all round hybrid surfboard designed to take your surfing to the next level. Whether you\u2019re an intermediate rider looking to refine your style or a surfer aiming to push your skills further. The Sea Bean offers the versatility, stability, and responsiveness you need [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2026/02/Hybrid-Surfboard-2.png",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "The Smish",
+          "description": "The Smish Hybrid Fish \u2013 a fun Twin Fin The Smish is a crazy little Hybrid Fish surfboard design that offers a fun ride to small waves, it\u2019s twitchy, skatey and slides off the tail, It\u2019s perfect for the summer swells. With Fish rocker and a Mini Simmons like template it skatey and fun to [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2022/08/Smish-decal.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Squad",
+          "description": "The ultimate hybrid surfboard \u2013 The Squad Meet the undisputed Hybrid Surfboard Heavyweight champ: The Squad. Designed for surfers who want power, speed, and effortless style, it stands tall as one of the finest hybrid boards available in the UK. Now available in two distinct styles \u2014 the original Simmons Hybrid and the all-new Planning [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/12/1000040565.jpg",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "The Thing",
+          "description": "A Hybrid Simmons Twin Fin that will blow your mind Ride the ultimate Twin Fin Surfboard this summer. The Thing is a board that is designed to deliver performance surfing in average conditions. This surfboard has everything you need to handle summer slop or even challenging hollow waves, due to it\u2019s unusual design features. The [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/05/Thing-Decal.jpg",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "The U.S.O.",
+          "description": "An Unidentified Surfing Object has landed in the UK Warning- the information you are about to receive is classified. All around the UK surfers are seeing a strange new object in the Lineup. Some mistake it for a Mini Simmons other think it\u2019s an Alaia. Government sauces have analyzed the evidence and come to the [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2025/11/Mini-Simmons-Hybrid.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tracker",
+          "description": "Retro Inspired Tracker \u2013 Shredding Since 1968 The Tracker mid length surfboard is one of the most iconic designs to emerge from the Australian surfing revolution of the late 1960s. Developed by pioneering shaper Bob McTavish during a period when surfboard design was rapidly evolving. The Tracker helped transition surfing away from heavy longboards toward [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2026/03/Tracker-Mid-Length-Surfboard.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wasp",
+          "description": "Our most popular mid length surfboard for decades Never be out-gunned on your travels.The Wasp Mid Length is built to handle serious waves while still keeping the fun factor high. A true all-rounder, this board earns its spot in any quiver thanks to its versatility across a wide range of conditions.First Designed and built in [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2026/01/Custom-Wasp-Mid-length.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Weemal",
+          "description": "Progressive, Fun and Great to Learn on! The Weemal Learner Surfboard is an advanced evolution of the classic minimaL It\u2019s designed to take your surfing to the next level. The Weemal offers improved maneuverability, responsiveness, and performance compared to other minimal boards. Featuring a refined rocker profile, narrower nose, and a more dynamic tail. It [\u2026]",
+          "image_url": "https://www.ndsurfboards.co.uk/wp-content/uploads/2026/04/Weemal-Learner-Surfboard.png",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
