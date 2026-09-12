@@ -1,0 +1,66 @@
+{
+  "generated_for": "Kai Sallas official named standup catalog",
+  "source": "https://www.kaisallaslongboardco.com/ (official model pages — excludes apparel, fins, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "kai-sallas-surfboards",
+      "name": "Kai Sallas",
+      "website_url": "https://www.kaisallaslongboardco.com/",
+      "location_label": "Honolulu, Hawaii",
+      "founder_name": "Kai Sallas",
+      "lead_shaper_name": "Kai Sallas",
+      "short_description": "World-champion longboards and mid-lengths shaped by Kai Sallas in Honolulu — from classic noseriders and logs to performance twins and grovelers.",
+      "models": [
+        {
+          "name": "Guava Jam",
+          "image_url": "https://www.kaisallaslongboardco.com/uploads/b/e70fd3ead1b5f707414080b136a9961724904de0fc3da268cd0b8056045c514e/guava_jam_deck_1623788182.png",
+          "description": "This user friendly, modern log has a medium rocker, V bottom and no nose concave for continuous speed while trimming and nose riding, soft rails with slight tucked edge for smooth fast turns. This board does it all and works in conditions from 1-2 feet to 2 feet over head.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "O.G.",
+          "image_url": "https://www.kaisallaslongboardco.com/uploads/b/e70fd3ead1b5f707414080b136a9961724904de0fc3da268cd0b8056045c514e/og_deck_1623788219.png",
+          "description": "The ultimate traditional style noserider. Its wide tail and wide nose make this thing an absolute sidewalk. This thing is so stable and allows you to noseride with ease deep in the pocket, in the white water or out on the shoulder. 50/50 rails, roll bottom, deep tear drop nose concave. Ideal for shoulder high and under waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mango Jam",
+          "image_url": "https://www.kaisallaslongboardco.com/uploads/b/e70fd3ead1b5f707414080b136a9961724904de0fc3da268cd0b8056045c514e/mango_jam_deck_1623788195.png",
+          "description": "A sporty, modern log, built for speed. This is our most versatile board. From 1-2 foot to double over head, or beach breaks or point breaks this board does it all. It has a medium rocker, slight V bottom, hard rails, and a slight tucked edge in the tail. It also has its wide point just behind center to give the outline a little more curve for turning.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Waikiki",
+          "image_url": "https://www.kaisallaslongboardco.com/uploads/b/e70fd3ead1b5f707414080b136a9961724904de0fc3da268cd0b8056045c514e/waikiki_deck_1623788231.png",
+          "description": "The Waikiki model lives up to its name, designed to surf with style and grace in all Waikiki style waves. Its roll bottom, 50/50 rails and pulled in tail gives you smooth, controlled rail to rail turns and its nice wide round nose with a long drawn out nose concave for extended nose rides deep in the pocket as well as out on the shoulder.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tsunami",
+          "image_url": "https://www.kaisallaslongboardco.com/uploads/b/e70fd3ead1b5f707414080b136a9961724904de0fc3da268cd0b8056045c514e/tsunami_deck_1623788227.png",
+          "description": "A board designed for Kani \"Tsunami\" Stewart, that he placed 2nd in the world on. Its subtle flip in the tail and wide tail block is designed for doing long, levitating noserides in the pocket. No nose concave needed. The curves in the tail allow this board to turn amazingly well even with such a wide tail. This is one of our newest and most popular models. Designed for waves in the 1-2 foot to 2 foot over head range.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lava Flow",
+          "image_url": "https://www.kaisallaslongboardco.com/uploads/b/e70fd3ead1b5f707414080b136a9961724904de0fc3da268cd0b8056045c514e/lava_flow_deck_1623788191.png",
+          "description": "Built for speed. Pulled in nose, pin tail, hard V-bottom, edge in the tail, generous amount of continuous rocker without being too much. Make this board ideal for beach breaks, hollow waves or anything with a little juice. This board is designed to go fast and carve. Round house cutbacks, floaters, getting barreled, or if you want something to ride in small surf that will catch waves like a longboard but turn like a short board. Ideal for head high to double over head surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spicy Ahi",
+          "image_url": "https://www.kaisallaslongboardco.com/uploads/b/e70fd3ead1b5f707414080b136a9961724904de0fc3da268cd0b8056045c514e/spicy_ahi_front_1690877353.png",
+          "description": "A fast loose retro style twin fin. Its flat rocker and wide outline make this board super fun when the waves are a bit soft but you still wanna rip.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pineapple Express",
+          "image_url": "https://www.kaisallaslongboardco.com/uploads/b/e70fd3ead1b5f707414080b136a9961724904de0fc3da268cd0b8056045c514e/pineapple_express_front_1689824780.png",
+          "description": "The ultimate groveler, this board is perfect for someone looking for paddle power and maneuverability. This board is pure fun. Ideal for waist high to a 2 foot over head waves.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
