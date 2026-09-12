@@ -1,0 +1,138 @@
+{
+  "generated_for": "Anderson Surfboards official named standup catalog",
+  "source": "https://andersonsurfboards.com/wp-sitemap-posts-surfboard-1.xml (official surfboard model pages at /surfboard/{slug}/ \u2014 excludes duplicate legacy URLs physh-quad-2 and sbt-2, apparel, and services)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "anderson-surfboards",
+      "name": "Anderson Surfboards",
+      "website_url": "https://andersonsurfboards.com",
+      "location_label": "Malibu, California",
+      "founder_name": "Scott Anderson",
+      "lead_shaper_name": "Scott Anderson",
+      "short_description": "Malibu shaper Scott Anderson has built more than 20,000 performance shortboards, fish, and longboards since 1988 \u2014 a staple on the Surfrider Beach wall.",
+      "models": [
+        {
+          "name": "HIGH PERFORMANCE FISH",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/02/hp-fishP.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "FADER",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/FADER1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "METH MODEL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/meth1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BIG GUY TRI",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/bigguytri.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SNUB",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2011/08/bgt-surfboard1.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "FLOWMASTER",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2011/07/diamont-tail.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Poacher Quad",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2011/08/poacher2.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PHYSH QUAD",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-7.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PHYSH",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-81.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SLIDE GLIDE",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-13.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SO GNAR",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-14.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BIG FISH",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-173.jpeg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "FIRST POINT MODEL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2013/01/first-point.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SWARTZ MODEL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/11/swartz-model.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SBT",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/boad-111.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MASSIE THRUSTER FISH",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/boad-9.jpeg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "POACHER",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/boad-5.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "ROD LAGUNA",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/funshape1.jpeg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "BOJORQUEZ",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/BOJORQUEZ1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BLACK BIRD",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/BlackBird1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SLINGSHOT",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/shortBoard1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EVOLVER",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/evlover1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BROTHERS MARSHALL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/BM1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "FARBEROW 2 MODEL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/Farberow1.jpg",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
