@@ -1,0 +1,174 @@
+{
+  "generated_for": "Carabine Surfboards official named standup catalog",
+  "source": "https://carabine.surf/shop/ (official WooCommerce product catalog — excludes apparel, fins, wetsuits, wax, gift certificates, and one-off stock dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "carabine-surfboards",
+      "name": "Carabine Surfboards",
+      "website_url": "https://carabine.surf",
+      "location_label": "Bellambi, New South Wales, Australia",
+      "founder_name": "Mick Carabine",
+      "lead_shaper_name": "Shane Hornby",
+      "short_description": "Wollongong-area custom surfboards from Carabine — shortboards, fishes, mid-lengths, and longboards shaped and glassed on site since 1969.",
+      "models": [
+        {
+          "name": "BIG O",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/big-o.png",
+          "description": "High performance surfboard. The Big O has a deep single concave, great speed and agility. It has high rockers in both nose and tail, allowing the board to perform big manoeuvres in critical sections. The biggest difference between this and the rest of our boards is minimisation of foam in front of your front foot. This allows the board to turn with ease. This craft is designed for the advanced surfer. Makes an excellent step up board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BOMB",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/Bomb-2-scaled.jpg",
+          "description": "It's called the bomb for a reason. It's the perfect performance surfboard. Slightly modified single to double concave with generous rocker, full rails and a relatively flat deck roll. We have created an excellent combination for performance surfing. This board allows you to push through turns and release all that power out the tail, maintaining with smooth rail to rail transitions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EVIL MONKEY",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/evil-monkey.png",
+          "description": "This is the perfect board for young surfers who want to make the jump from a larger learn to surf board to a smaller, more responsive fiberglass board. It has been designed with a flatter short board rocker, single concave, and a medium friendly rail that enables young surfers to progress and adapt quickly to the sensitivity of a regular short board. The outline through the nose has been widened for ease of paddling and the tail narrowed to increase manoeuvrability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HORNET",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/hornet.png",
+          "description": "Hornet is the all-rounder in the midrange boards, the forgiving rail shape and rounded square tail greatly increase manoeuvrability regardless of the surfers skill level. Normally a conventional thruster setup this board is extremely versatile in a variety of wave conditions. Great beginners board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "IFISH",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/i-fish.png",
+          "description": "The iFish is designed for those who like a wider nose but not too wide. It still has great catching wave ability but a little less foam so you can still throw it around. It has a pulled in fish tail to increase agility — this board is lively and maintains a high level of performance. Single to double concave for speed and with straighter outline the iFish is friendly to all levels of surfer, great for the smaller fatter days. This board can be ridden 4–6 inches shorter than your normal board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "KONG",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/kong-1.png",
+          "description": "The Kong model is a high-volume not-so-short board for big blokes. Normally at 7'6, it has a full nose, a pined tail for easy rail to rail transition and generous concaves for speed. The wide point is at the halfway point and extra volume under your chest making the board easy to paddle. Once you are up and riding that narrow tail really comes into play. The board comes with either a thruster or a 2+1 fin set-up, but can also be ridden as a single fin if preferred.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MINI FROTHER",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/mini-frother.png",
+          "description": "This board is the transition board for young surfers who want to make the jump from foam board to a fiberglass board. It has been designed with a very flat rocker, single double concave, and a full friendly rail that enables young surfers to progress and adapt quickly to the sensitivity of a fiberglass board. The outline through the nose has been widened for ease of paddling and the tail is also very broad to increase stability and help little grommies adapt.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MLOW",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/m-low.png",
+          "description": "The MLow is the board that will take you into bigger surf in comfort. This board has plenty of rocker with a pulled in nose with forward volume and a tight tail making you feel more connected to the wave. Hollow, bigger waves — excellent when it gets over 6 foot.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "MODEL T",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/Model-T-2-scaled.jpg",
+          "description": "Model T is our best all-rounder. It has a bottom curve designed for speed and a special fin set up to loosen it up. This is a high performance board that is very forgiving. Single to double concave with generous tail rocker. The nose is a little flatter than our other performance boards. The MODEL T is designed to surf free and easy.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MODFISH",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/Mod-fish-set.jpg",
+          "description": "Modfish is the ultimate small wave high-performance board. It makes small surf extremely fun. It's fast, loose and really easy to turn. It has a wider outline with more nose area for floatation and paddling power and a winged swallow tail for bite and grunt. Best ridden as a twin fin with a small rear stabilizer. Awesome fun in small surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mr. ED",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/mr-ed.png",
+          "description": "Low, relaxed rocker makes this board paddle onto waves really well, accelerate from the take off with minimal effort. The narrowness of the tail and generous tail rocker allow for free flowing turns on the face of the wave. There's plenty of volume in the nose and tail, and out towards the rails — this provides added stability and makes this board simple and easy to ride.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MUDRAT",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/Mud-Rat-set.jpg",
+          "description": "The Mud Rat is the modern fish. It has a high amount of volume under the chest, which enables it to paddle like a dream. The outline resembles an old single fin with its wide point forward of centre, then reduces back to tight rounded pintail. The rocker is flat throughout, with a very slight nose kick. This helps when taking off late or in steeper sections of the wave. This board is built for speed, enabling you to make sections you don't normally make.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "NICK OFF",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/nick-off.png",
+          "description": "The Nick Off is the performance longboard of the Carabine collection. This board is light and fast. Can have a combination of fin configurations — thruster, quad or 2+1 fin set up. The quad set up loosens things up and takes speed to the next level. This board is superfast, and turns on a dime. The nose still allows you to take a trip to the front for a quick nose ride, should you feel the urge. This is one for the advanced surfer looking for performance and speed.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "NO 12",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/No-12-2-scaled.jpg",
+          "description": "No 12 is perfect for slower weaker waves. It has a medium rocker throughout with some extra paddling power due to increased volume in the front and bottom of the board. A slightly narrower outline in the tail allows for increased control and release while still giving you plenty of speed. This combined with a deep single concave gives you plenty of lift and natural speed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PIN HEAD",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/pin-head.png",
+          "description": "Pin Head has some of the smoothest riding characteristics of any board you'll ever ride. The pinched hulled nose allows effortless paddling. 50/50 rail and a gentle bottom curve from nose to tail makes for smooth free rail to rail transitions, and critically does not drive you unintentionally ahead of the wave's curl. Pin Head is designed to stay in sync with the wave's natural speed. A brilliant nose rider with smooth and effortless transitions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "QUADZILLA",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/Quadzilla.jpg",
+          "description": "A great small wave board with unique design aspects that separate it from other small wave performance fish designs. A low entry and exit rocker makes it a fast board for riding clean smaller waves. It has a low bevelled rail so it feels very lively through turns, scooped in the nose and tail to hug your foot during manoeuvres. Great for the small summer days.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SHAKEY",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/shakey.png",
+          "description": "The modern log, a well-balanced board in every sense. Wide point in the middle, long straight rail lines and 50/50 rail. Subtle concave in the nose, gentle soft roll in the middle to a rolled Vee out the tail. The rocker is quite flat in the nose and generous kick in the tail. This rocker gives plenty of control on the nose ride and easy to turn when you need it. Shakey encourages you to surf the entire board — classic lines, hard arcs and long nose-rides.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SPACE PIG",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/Space-Pig-THUMB.jpg",
+          "description": "Space Pig is for trimmers and nose riders, found to be nimbler off the tail and fast in trim. Flattened nose rocker, moderate kick in the tail, rolled under the nose and in the belly with more of a vee out the tail. Easy entry, a snappy bottom turn, fast nimble walking. Great for pivot trim noseride approach for smaller waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "T2",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/T2-3-1-scaled.jpg",
+          "description": "This is the Model T with a few high performance upgrades. We have increased nose rocker and narrowed it down. This gives a more agile front half of the board, allowing it to fly through lip turns. Deep single concave and slightly wider round tail to increase drive. T2 is designed to surf tight in the pocket, fly through and drive out of turns. Best in performance waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TAKA",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/taka.png",
+          "description": "An excellent summer fun board. Surf the board from the nose or from the tail. This board will absolutely fly when ridden on the nose. With a true pin tail and a 2+1 fin setup, this board will perform the tightest of turns when pushed to its limits. Probably one of the funnest small boards out there — 60/40 rail for controlled manoeuvrability. Full round nose allows easy wave catching and the pin tail gives you increased turning ability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TFL",
+          "image_url": "https://carabine.surf/wp-content/uploads/2022/03/TFL-2-scaled.jpg",
+          "description": "High performance modern short board with a lot of rocker. It has a shorter rail line that still maintains drive. The bottom has a deep single concave and an aggressive flip in the tail. The full outline provides enough volume to ride the TFL about the same length as your height. This short board turns very quick and performs best in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Bull",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/kps.png",
+          "description": "The Bull is a short board for big guys. A little wider through its rail line gives more float and paddle. Deep single to double concave gives great speed and agility and generous nose rocker allows this board to perform on the open face. The extra width gives extra momentum through the fat sections. This board works best on its rail. This craft is designed for the competent surfer. Excellent power surfing board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "THE SUB",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/the-sub.png",
+          "description": "This design is the most well-rounded and versatile of the Carabine longboards. Broad in the nose so it's super easy to nose ride — this width continues through the centre, and with the narrowing pin tail, it's extremely manoeuvrable. The Sub has 60/40 rails, concave in the nose, an almost flat centre, with a slight vee out the tail. Mostly ridden as a single fin, this board is perfect if you only want to own one board. Performance nose rider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "V3",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/V3-2-scaled.jpg",
+          "description": "The V3 is a blend of two of our most popular performance boards. This has created a perfect combination of speed, power and flow. Lowering the entry and exit rockers, giving it a single to double while widening the nose outline has created an extremely fast dynamic surfboard. Everyone that tried our prototype ordered one. Performance Plus.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "WHIPPA",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/Whippa-set-copy.jpg",
+          "description": "If you love rounded pins then you will love the Whippa. This is one of our shorter and wider models. It has lower entry rocker, wider outline and full round tail. The flat single concave on entry and under your chest offers lift and speed through to a double concave between the fins for drive and off the top release. This board is outstanding from 1–3 foot. Ride this board 3–4 inches shorter than your normal short board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "XLR8",
+          "image_url": "https://carabine.surf/wp-content/uploads/2019/09/xlr8.png",
+          "description": "The XLR8 is a board for over 6 foot plus. Particularly good in the Indo reef breaks. Best ridden at 3–6 inches longer than your short board, it should be about the same width with added thickness, making it easier to paddle into larger waves. This board has a single concave through to the tail, and some extra nose rocker making it perfect for the steep drop. Best in bigger waves.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
