@@ -1,0 +1,149 @@
+{
+  "generated_for": "Ryan Sakal Surfboards official named standup catalog",
+  "source": "https://www.ryansakalsurfboards.com/ (official Squarespace model pages \u2014 excludes custom deposits, stock dimension SKUs, used boards, sale listings, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ryan-sakal-surfboards",
+      "name": "Ryan Sakal Surfboards",
+      "website_url": "https://www.ryansakalsurfboards.com",
+      "location_label": "Costa Mesa / Oceanside, California",
+      "founder_name": "Ryan Sakal",
+      "lead_shaper_name": "Ryan Sakal",
+      "short_description": "Hand-shaped surfboards by Ryan Sakal in Southern California \u2014 high-performance shortboards, twin fins, fishes, and traditional longboards.",
+      "models": [
+        {
+          "name": "Howler Twinzer",
+          "board_category_slug": "hybrid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/9cd09d71-9454-4404-ba60-8f18b7d3fb27/Screen+Shot+2025-09-02+at+12.08.59+PM.png",
+          "description": "The Howler Twinzer A great everyday board. Works great in good point breaks, good beach breaks and will shine on average days at your local spot. The main focus is the fin setup, the Twinzer. The configuration is an upright twin with a smaller Canard fin placed in front. Not a quad! The small Canard directs water flow onto the upright twin making the water flow efficient. The feeling is added drive and ease of transition to a twin fin setup if youve yet to try one. The rocker is unique as it is not quite a standard short board rocker and not quite a fish rocker. Low entry in the nose with efficient flip and low exit rocker out of the tail and a significant tail flip for pop off of the tail. The outline was influenced by the later versions of the San Diego Fish\u2019s made by Steve Lis infused with a blend of my templates from the 90\u2019s to now. The rails are a modern high performance rail and feels slightly thinner than it is. The bottom contour is a modern performace bottom. Starting from the nose its flat into single concave which increases towards the tail and is deepest in front of the fins and fades to less out of the tail. The foil in the tail is key to this board and works with the Twinzer setup keeing the rail and fins connected to the wave. The foil is very balanced and adds to the ease of of paddle and speed as soon as you are on your feet on the wave. Speed, drive, ease of paddle, and a new unique feel are the main features of how this board surfs. Give one a try!"
+        },
+        {
+          "name": "Sabre",
+          "board_category_slug": "hybrid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/6d4046ac-1a56-4314-af75-1828b5ff3ce6/IMG_8621.jpg",
+          "description": "Not your average egg. Built to perform as well as glide and flow. The outline with lots of curve and a wing pin tail pulling in the last third of the board for hold and flow through turns. Another board that uses Ryan\u2019s VCV bottom, slight vee in the nose, single concave under the front foot mid section, into vee out the tail. The Sabre also has 4 deep channels for speed and drive off of your back foot, think of them as a gas pedal on a surfboard. All of this flows through large twin keel fins and a thinner foiled tail."
+        },
+        {
+          "name": "Soapbox Derby",
+          "board_category_slug": "shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/9f24e7e0-ab0e-4a7e-bc0d-52591f52acdf/IMG_8624.jpg",
+          "description": "No need to drive around looking for the best sloppy wave the Soap Box Derby does all the driving. This model is designed from a mix of modern designs and old school theories. Old school flow and modern aggression makes surfing the Soap Box Derby a fun and unique experience. This design lets you put the pedal to the metal and stay controlled due to its bottom contour and tapered rails. Foiled tail helps it turn through maneuvers. Available with several tail options to customize for your surfing and wave conditions."
+        },
+        {
+          "name": "Ranger",
+          "board_category_slug": "fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/e78141bc-6d9e-40bd-8290-834360d4cb42/IMG_8625.jpg",
+          "description": "A fish with lots of modern elements. Made for performance surfing in mind yet staying a bit fishy. The Ranger has a full traditional fish nose outline mixed with a double wing to pull in the tail outline helping the board hold in at higher speed and thrust. The bottom contours on the Ranger has a deep single concave focused under the front foot flowing out of the tail into a vee with double concave inside. Recommended fin set up 5 fin to allow 3 or 4 fin.Does not come stock with double stringer as shown but is optional."
+        },
+        {
+          "name": "Rambler",
+          "board_category_slug": "fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1583984221492-BL6VMS9XN8LHQJPU5537/rambler.png",
+          "description": "A modern take on the vintage Rocket Fish design. Built for speed and drive this board is a go-to in smaller softer waves yet still handles up to over head high waves. Features include low entry rocker with plenty of kick in the nose.The bottom has a deep single concave under the front foot blending into slight vee out of the tail. The tail has 2 channels which add drive. Think of them as a gas pedal on a surfboard, instant speed. Multiple fin set up\u2019s available. Twin fin, Tri fin, Quad fin, or 5 fin for Tri/Quad option."
+        },
+        {
+          "name": "Lasso",
+          "board_category_slug": "hybrid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585002406673-MHEN0NVL238HQLDPRTIU/lasso.png"
+        },
+        {
+          "name": "HB Fish",
+          "board_category_slug": "fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586890134590-2KD5XY3EFOY07HE1J72A/hb-fish%402x.png",
+          "description": "The HB (Huntington Beach) Fish. Like with the SD Fish Ryan wanted to pay respect to the original shapers ,designers and surfers who first imagined, tested, and proved the original\u00a0Fish design by staying true to as many of the features that make that board a proven classic yet adjust its for performance for multiple conditions. The H.B. Fish keeps all of the original elements such as the classic fish outline, low foiled rails, and keel twin fin but the bottom is changed. Ryan took out the extreme deep single concave going out the tail and replaced it with spiral vee. Which is a slight vee with double concave running through the vee on each side of the stringer. Where the original SD Fish shines in fast down the line point break waves holding its line and only wanting to go faster the HB Fish was modified to be able to work well in waves where carving back into the source of the waves energy is necessary. With the spiral vee now under the wide tail it allows the board to be leaned over quicker giving the board a more responsive feel and allowing the board to make a tighter arc. This board still has the same fish feel os the original but is better suited for beach breaks or softer point breaks."
+        },
+        {
+          "name": "SD Fish",
+          "board_category_slug": "fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585184563633-9G468OEALD7FFAVFAWOA/sd-fish.png",
+          "description": "The SD (San Diego) Fish. With the evolution of this design and the many variations and attempts to modernize it over the years since its inception Ryan wanted to pay respect to the original shapers ,designers and surfers who first imagined it. Guys like Steve Lis and Skip Frye who proved the original design on a small stretch of the San Diego coastline. By making his version as close to the original his goal is to spread the original message of the design as best as he can. The SD Fish is a proven design in so many conditions. Thought of as a small wave board by so many but under the feet of a highly skilled surfer this board and its design has shined in some of the best waves in the world. . Its design features are very distinct. A wide more round nose with a straight and wide tail. The deep swallow tail is hard to miss and the wood keel fins are as beautiful as they are functional. The bottom is as distinct as every other part of the design as well. With a slight vee in the nose quickly transitioning to a deep single concave exiting through the fins. This design has been around for years and only keeps proving itself to be ahead of its time."
+        },
+        {
+          "name": "Bandit",
+          "board_category_slug": "hybrid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585002222179-YGOXZALCG69VQEHNURUK/bandit.png",
+          "description": "A fun alternative to a standard shortboard. With its lower entry rocker, fuller outline mixed with a performance shortboard rail the Bandit is a smooth and flowing easy to ride and easy to catch plenty of waves. This board has Ryan Sakal\u2019s VCV bottom, slight vee in the nose , single concave under the front foot, vee with double concave out the tail. Ridden 2\u201d-6\u201d shorter than a standard shortboard."
+        },
+        {
+          "name": "Scout",
+          "board_category_slug": "hybrid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586818700410-JFCFKKESQPBZPZDKN1UF/soapbox-derby%402x.png",
+          "description": "The Scout is an adventurous blend of yesterday\u2019s outline with today\u2019s performance. Made to be a fun board in waist high to overhead waves that has an alternative feel with the luxuries of performance from modern bottom contours and rocker. Low entry rocker with some hidden volume from the sleek beak nose helps this board ease into waves. The bottom contour makes this model maneuverable in the pocket and helps transition from rail to rail and skip over flat sections with ease. With 4 deep channels exiting the tail you\u2019ve got instant speed and hold off your back foot when you need it. Multiple fin options available Twin, Tri, Quad, and five fin option for Tri/Quad option. Order this model 3 to 5 inches shorter than your standard short board."
+        },
+        {
+          "name": "Haulin Oats",
+          "board_category_slug": "groveler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889476298-MMD4BIIBD0HD7OISTEY0/haulin-oats.png",
+          "description": "This board was conceived during a long flat spell after weeks of cruising on a long board and everything else in-between I had the thought to make a board that could be surfed in small waves the way you\u2019d surf a head high wave. The key was finding a way to harness speed and build a board that fits the curve of small waves. Thinking outside the box on rocker, outline, and especially the bottom contours everything was designed to harness speed and allow you to use it as efficiently as possible. The bottom on the Haulin Oats is very unique and something I have never seen from any other shaper. Something I\u2019m calling Flat Panel Concave. FPC concave is flat across on each side of the stringer. Basically an inverse version of a flat panel vee. What this does is create less friction than a standard convex concave increasing speed and giving the feeling of glide as well as the hold of a regular concave. The FPC concave is deepest just above the back foot area and transitions into a slight vee just under the back fin with double concave inside the vee as it exits. This creates a Venturi effect as water flows into the large area of the concave and passes through the fins and out the vee/double concave exiting the tail creating thrust. Volume is hidden well in a small package which gets you into waves easy and generates speed instantly. We are self-proclaiming this board as our fastest model. The Haulin Oats hauls!"
+        },
+        {
+          "name": "Weapon of Choice",
+          "board_category_slug": "shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889592382-00Q91D70QECHY0W07H2Z/weapon-of-choice%402x.png",
+          "description": "The Weapon of Choice is a new high performance short board design made to perform at it\u2019s best on the days your local spot is really doing its thing or for that surf trip you have planned to that perfect point or reef break. This board holds it\u2019s speed and carves like a weapon and also has plenty of pop when sections call for it to go to the air or release the fins. The rocker is a smooth medium entry rocker with plenty of flip in the last few inches of the nose to keep you out of trouble on late drops and recovering from critical maneuvers. The tail rocker has smooth continuous curve with a medium release out of the tail.\u00a0The bottom contour has a single concave running from the nose all the way out the tail and is deepest just in front of the fins for drive and lift. The rails are refined and foiled for hold yet are plenty forgiving in critical situations. The thickness is balanced and allows for great paddling and ease of catching waves while allowing the rail to engage and hold in turns. Available in multiple tail configurations depending on your destination or personal preference. Base price $800.00"
+        },
+        {
+          "name": "Five O'Clock Shadow",
+          "board_category_slug": "shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586819272316-NNBM81J3HDJ1TLUU5XZ0/soapbox-derby%402x.png",
+          "description": "The Five O\u2019clock Shadow is a high performance shortboard that shines in waist high sloppy beach break to clean head high point or reef breaks.\u00a0With it\u2019s low entry and exit rocker this board has a lot of drive creating speed in softer waves for high performance maneuvers and skating over flat sections with ease. It utilizes a smooth continuous outline and refined and foiled rails keeping it responsive. Being one of the most versatile board in our line up the\u00a0Five O\u2019clock\u00a0Shadow makes the board bag on any trip or rides in your car daily. Order this board your height or 1 to 2 inches shorter than your standard shortboard."
+        },
+        {
+          "name": "Chief",
+          "board_category_slug": "step-up-gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889689733-MNKCLXZGWBFRKRUNHGCY/chief%402x.png",
+          "description": "The Chief stands proud as our step up model. Made for bigger waves at home or for that surf trip somewhere to waves of consequence the Chief will get you in the right spot early and with confidence."
+        },
+        {
+          "name": "Broseph",
+          "board_category_slug": "shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586818966369-SMIVZQ80XBI0DNG07UMA/soapbox-derby%402x.png",
+          "description": "The Broseph is another dependable board in the lineup that goes great on an average day at your local beach or point break and is ready to go on the days with more hollow conditions and you need a board that fits well in the pocket. With this board you can just grab and go but you know if its barreling you\u2019re still good to go. It\u2019s loose and snappy yet has plenty of drive. A fuller forward outline for stability and added forward volume for paddling yet its nimble and goes right where you want it to go. Foiled and refined rails for hold and still has plenty of volume for great paddling and wave catching."
+        },
+        {
+          "name": "Sting",
+          "board_category_slug": "other",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585001938946-3BVPQ6NEZSNI34PD6PFO/sting.png",
+          "description": "This board came about as a collaboration with Ryan Sakal and Chris Christenson. As an entry into the Vissla Cosmic Creek Surf Contest where Chris selected Ryan to be his surfer for the event both Chris and Ryan combined ideas to shape then both ride this board in the event. The board is a modern take on the Ben Aipa Sting with a few extras. Medium/low entry rocker flows into a slight vee with double concave exiting out the tail. The wing has a slight flute for added bite and hold. This board is a fun and surprisingly loose traditional single fin. Fun in any conditions but shines in head high open face waves."
+        },
+        {
+          "name": "Convoy",
+          "board_category_slug": "other",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585002323190-O9SVTBM953OOTXP5U9HR/convoy.png",
+          "description": "The Convoy is a very versatile design. The original Convoy comes as a traditional single fin with low entry rocker, the wide point slightly pulled forward, a tri plane vee bottom , down rail\u2019s and beaked nose. This board is a fun trip back to the style of the 60\u2019s and 70\u2019s and if a fun board in almost any condition. The original Convoy works as a perfect platform for most fin configuration so it can be ordered as a thruster, quad, or Bonzer as well as it\u2019s original single fin . Pictured here is with the Campbell Brothers Alpha Omega bottom and fin configuration. Pin tails and rounded diamond tails are available upon request as well."
+        },
+        {
+          "name": "Wounded Gull",
+          "board_category_slug": "fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889778079-PQHWYLTVAJL396CXICW1/wounded-gull%402x.png",
+          "description": "The Wounded Gull is a modern take on the twin fin\u2019s of the 70\u2019s and a bit of a tribute to Mr Wounded Gull himself Mark Richards. Our main focus was to make a board that had the smooth glide and flow of a traditional keel fin fish and the more high performance abilities of the MR style twin. The result is a fun board to ride in waves from knee high to overhead that has lots of speed and drive while is still easy to put on a rail and carves like a knife. The bottom contour and rails on this board are quite unique using a version of the tri plane hull bottom which gives it a smooth and forgiving feel. The rails are slight down rails and are foiled thin through the tail to help the rails and tail hold during powerful carves. With a low yet modern rocker, a smooth and full outline, and slight beaked nose to help distribute more foam forward and under your chest there is plenty of volume making this board able to catch waves with ease and have fun in most conditions."
+        },
+        {
+          "name": "Sith",
+          "board_category_slug": "shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585002574761-S8JJYJP9X1K3ONI06OWC/sith%402x.png",
+          "description": "The most progressive design in our\u00a0high performance line up. There is a lot more going on than it appears with this board.\u00a0The bottom contours are something I haven\u2019t seen from any other shaper. Something I\u2019m calling Flat Panel Concave. The concave is flat across each side of the stringer instead of slightly convex. Imagine a flat panel vee bottom but inverted to create concave. What this does is allow water to flow across the bottom of the board with less friction than a standard convex concave giving the feeling of glide while still holding. The FPC concave is deepest just above the back foot area and transitions into a slight vee just under the back fin with double concave inside the vee as it exits. This combination creates a Venturi effect as water flows from the large area of the deep single FPC concave and passes onto and through the fins then out the vee/double concave of the tail creating thrust. The Sith outline keeps the tail a noticeably wider which makes the overall rail line straighter keeping more of the rail engaged allowing you to ride this board a bit shorter than your standard shortboard. The slight bump in the tail pulls in the last few inches of the tail keeping the wider tail feeling loose and fast yet adding control of the speed and giving the tail a pivot point in turns. The rocker is also key to the feel of this board with a low entry at a consistent angle for smooth flow through the water. The tail rocker does the same on its exit allowing for less friction on its way out of the tail. If you are looking for a high performance board that has a truly unique and functional look and feel you\u2019d be stoked to give this board a try."
+        },
+        {
+          "name": "Little Wing",
+          "board_category_slug": "other",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889897026-OQO4YRY6OUDW03R6C1IA/little-wing%402x.png",
+          "description": "The Little Wing is a single fin all about styling out and flowing turns. Catching waves is easy on this model and the board turns on a dime. Not shy of a good time The Little Wing makes surfing fun and effortless with style."
+        },
+        {
+          "name": "Golden Bear",
+          "board_category_slug": "longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586890024345-X7GI32QF6UUWBEUOW3AN/golden-bear%402x.png",
+          "description": "The Golden Bear is our traditional longboard model. Cruise with your toes on the nose and enjoy the ride. This board catches waves really easy and it can be made for the experienced nose rider as well as a first timer."
+        },
+        {
+          "name": "Cavalry",
+          "board_category_slug": "longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585002685311-OHE56OBC6RMBS9K16F5D/cavalry%402x.png",
+          "description": "The Cavalry is a traditional longboard with the balance of performance surfing and nose riding in mind. With plenty of flip in the tail rocker to allow for quick response when turning off the tail while still providing plenty of drive. Low nose rocker keeps this board planing well as you transition from turns and walking to the tip for some time on the nose. A deep nose concave helps to feel stabilized once you\u2019re up on the nose and the slightly rolled forgiving bottom helps lean you over for turns. This is a great all around longboard for beginner to pro level surfers."
+        }
+      ]
+    }
+  ]
+}
