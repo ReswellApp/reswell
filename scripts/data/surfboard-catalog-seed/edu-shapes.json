@@ -1,0 +1,180 @@
+{
+  "generated_for": "Edu Shapes official named standup catalog",
+  "source": "https://edushapes.com/boards/ (official model pages by category — excludes apparel and custom-only deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "edu-shapes",
+      "name": "Edu Shapes",
+      "website_url": "https://edushapes.com/",
+      "location_label": "Praia das Maças, Colares, Portugal",
+      "founder_name": "Eduardo Garcia",
+      "lead_shaper_name": "Eduardo Garcia",
+      "short_description": "Custom surfboards hand made in Portugal by Eduardo Garcia, tested from summer beach breaks to Nazare.",
+      "models": [
+        {
+          "name": "E1",
+          "image_url": "https://edushapes.com/_astro/old_E1.DJI4DuRL_Z2wkb1i.jpg",
+          "description": "The summer wave specialist. The E1 is a custom performance surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "E2",
+          "image_url": "https://edushapes.com/_astro/old_E2.Dsy8Bchb_25n6so.jpg",
+          "description": "The everyday powerhouse. The E2 is a custom performance surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "E3",
+          "image_url": "https://edushapes.com/_astro/Edu_E3_Deck.JSp5n9OR_ZamayF.jpg",
+          "description": "The step up. The E3 is a custom performance surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "GT's",
+          "image_url": "https://edushapes.com/_astro/old_GTs.BNzuuFU1_14vmjH.jpg",
+          "description": "The grom board. The GT's is a custom performance surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "iC Signature",
+          "image_url": "https://edushapes.com/_astro/old_iC.TJq8grmx_jiDsh.jpg",
+          "description": "The all rounder for good surfers. The iC Signature is a custom performance surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MBF",
+          "image_url": "https://edushapes.com/_astro/old_MBF.BeCOCxUn_Z2jWm6H.jpg",
+          "description": "Luis Eyre signature model. The MBF is a custom performance surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Padre",
+          "image_url": "https://edushapes.com/_astro/old_Padre.Cah39Hew_ZGqcAW.jpg",
+          "description": "The California model. The Padre is a custom performance surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Padre Pro",
+          "image_url": "https://edushapes.com/_astro/old_Padre_Pro.CK97JvYR_viAuW.jpg",
+          "description": "The refined evolution. The Padre Pro is a custom performance surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cherry",
+          "image_url": "https://edushapes.com/_astro/Edu_Cherry_Deck.Dy9nDvjc_Z1RP346.jpg",
+          "description": "The cherry on top. The Cherry is a custom performance hybrid surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "E0",
+          "image_url": "https://edushapes.com/_astro/Edu_E0_Deck.Uuzyi-us_2kqrYJ.jpg",
+          "description": "The small wave killer. The E0 is a custom performance hybrid surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nova",
+          "image_url": "https://edushapes.com/og-default.jpg",
+          "description": "Do not change your surfing. Change the board. The Nova is a custom performance hybrid surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki",
+          "image_url": "https://edushapes.com/_astro/Edu_Tiki_1_Deck.GpkfXBWP_Z1SMbKU.jpg",
+          "description": "The original midlength. The Tiki is a custom midlength surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki 2",
+          "image_url": "https://edushapes.com/_astro/Edu_Tiki_2_Deck.Cot4E4-j_2eHkIr.jpg",
+          "description": "Where the pure meets performance. The Tiki 2 is a custom midlength surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki 3",
+          "image_url": "https://edushapes.com/_astro/Edu_Tiki_3_Deck.DDYlKo3N_Z1tF5hs.jpg",
+          "description": "The fun of a Tiki. The feeling of a shortboard. The Tiki 3 is a custom midlength surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Perrot Fish",
+          "image_url": "https://edushapes.com/_astro/Edu_Parrot_Fish_Deck.NPrcxFBq_aqxDl.jpg",
+          "description": "Small waves do not need to be boring. The Perrot Fish is a custom twin surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tiki Double Pin",
+          "image_url": "https://edushapes.com/_astro/old_Tiki_Double_Pin.BbIikWTh_1ap81a.jpg",
+          "description": "The flat deck performer. The Tiki Double Pin is a custom twin surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tiki Pin",
+          "image_url": "https://edushapes.com/_astro/old_Tiki_Pin.D4xDKMZw_Z1iDSMm.jpg",
+          "description": "Twin fin, round pin. The Tiki Pin is a custom twin surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://edushapes.com/_astro/old_Fish.CpVy4lwJ_ZzoBiX.jpg",
+          "description": "Not your conventional fish. The Fish is a custom fun surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "MM",
+          "image_url": "https://edushapes.com/_astro/old_MM.CReepYF8_Z1xn6KV.jpg",
+          "description": "The MiniMal. The MM is a custom fun surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "NGFish",
+          "image_url": "https://edushapes.com/_astro/old_NGFish.DRc5w0Bs_ZNlHq8.jpg",
+          "description": "The new generation fish. The NGFish is a custom fun surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tiki Mini",
+          "image_url": "https://edushapes.com/_astro/old_Tiki_Mini.UWsTfhHe_ZIVykc.jpg",
+          "description": "The Tiki, shrunk. The Tiki Mini is a custom fun surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Classic Man",
+          "image_url": "https://edushapes.com/_astro/old_Classic_Man.CuWgXWad_ZEpQJx.jpg",
+          "description": "A tribute to timeless design. The Classic Man is a custom longboard surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Primitive Man",
+          "image_url": "https://edushapes.com/_astro/old_Primitive_Man.Bl5lufuA_KiJRk.jpg",
+          "description": "Pure glide. The Primitive Man is a custom longboard surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://edushapes.com/_astro/Edu_Gun_Deck.B-sZ8xPo_Z26tGr4.jpg",
+          "description": "The big wave paddle board. The Gun is a custom big wave surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Gun Flat Deck",
+          "image_url": "https://edushapes.com/_astro/Edu_Gun_FD_Deck.CS6OijxP_2ekVoC.jpg",
+          "description": "The evolution of the traditional Gun. The Gun Flat Deck is a custom big wave surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "NZxII Tow",
+          "image_url": "https://edushapes.com/_astro/Edu_NZxII_Tow_Deck.Bmx0xOtF_ZbPfDh.jpg",
+          "description": "Designed for the biggest days. The NZxII Tow is a custom big wave surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Tow",
+          "image_url": "https://edushapes.com/_astro/Edu_Tow_Deck.UD-taadR_Z2r1VgQ.jpg",
+          "description": "For the days you cannot paddle. The Tow is a custom big wave surfboard hand shaped in Colares, Portugal.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
