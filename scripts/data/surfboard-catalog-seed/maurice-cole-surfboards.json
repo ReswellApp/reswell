@@ -1,0 +1,126 @@
+{
+  "generated_for": "Maurice Cole Surfboards official named standup catalog",
+  "source": "https://www.mauricecole.com/Board-Models and individual model pages at mauricecole.com (official Squarespace catalog — excludes fins, apparel, stock dimension SKUs, and legacy models without current official pages)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "maurice-cole-surfboards",
+      "name": "Maurice Cole Surfboards",
+      "website_url": "https://www.mauricecole.com/",
+      "location_label": "Torquay, Victoria, Australia",
+      "founder_name": "Maurice Cole",
+      "lead_shaper_name": "Maurice Cole",
+      "short_description": "Maurice Cole — pioneering Australian performance design.",
+      "models": [
+        {
+          "name": "Asymmetric",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1495532383267-6RADZR3NB2C7IP1FZL2I/MC_Indo_1.jpg",
+          "description": "A new frontier. Designed for waves 1-8ft. For surfers that have used the MC Protow or other boards with a single, deep concave. The rail is more drawn out, giving you the feeling of a step-up shortboard without the unwanted foam.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "ATM",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493865281025-6BGWCU6W4R5WM4NCQ1IK/Taj.jpg",
+          "description": "The Magic Board. Designed for waves 2-12ft. The closest Maurice makes to a conventional board. It has a deeper concave than most designs with a lot of tail kick, which means a bit faster and carvier than your current ride.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dirty Dingo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493865281025-6BGWCU6W4R5WM4NCQ1IK/Taj.jpg",
+          "description": "The ultimate groveller. Designed for waves 1-5ft. A small wave hybrid that comes as a 5 fin and has the MC DNA of a single concave with hard edges nose to tail and low rocker.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Guns",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1781162782272-0DOU1D754T3W9GUUXYK0/image-asset.jpeg",
+          "description": "Designed for waves 6-30ft. Developed with Noah Johnson: a gun that paddles in with ease but can be turned 3/4 of the way down the face and into the barrel, avoiding the drawn-out bottom turn.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mermaid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493948232548-3KSX0EGBKUD0PNRCUIJ9/image-asset.jpeg",
+          "description": "The all-rounder. Designed for waves 1-4ft. Maurice's mainstay performance design for small waves — a board designed to replace anything fishy.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Metro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1494377655287-SERF56MTN0SO9RFEDTSK/MC_Indo_2.jpg",
+          "description": "The Modern Retro. Designed for waves 1-5ft. Combines width and thickness from the old retro fish, but introduces a tow inspired bottom rocker and a very deep concave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Metro iD",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1495754197547-LDMSV69A7U3720Q9VIIU/image-asset.jpeg",
+          "description": "The Modern Retro — updated. Designed for waves 1-5ft. The Metro combines width and thickness from the old retro fish, but introduces a tow inspired bottom rocker and a very deep concave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Protow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1494379984155-JT2FPFHKDMPWLQXU7LEJ/MC_Indo_7.jpg",
+          "description": "The most advanced surfboard on the market. Designed for waves 2-8ft. The step up board from the Metro-TT, based on the tow series evolution.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "RCJ Tow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493952704846-KYIACSMLTOF91AIGNXEF/RCJ_Tow2.jpg",
+          "description": "Ross Clarke-Jones tow board. Designed for waves 6-30ft. Developed with Ross Clarke-Jones as test pilot on boards generally 5'11\" x 16 1/4\" x 1 3/4, attaining speeds anywhere up to 120km/h.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Red Dingo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1494377829811-S43K3TQV8IMJGCU2BN0Q/MC_Indo_1.jpg",
+          "description": "The crowd crusher. Designed for waves 1-5ft. Maurice's answer to the Mini Longboard/Mal — a very high performance board from 6'8\"-9'6\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Reverse V",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1781162782272-0DOU1D754T3W9GUUXYK0/image-asset.jpeg",
+          "description": "The board that changed everything. Designed for waves 2ft plus. In 1990 Tom Curren and Maurice Cole began a surfing/shaping relationship that resulted in Tom winning the World Title from trials to World Champion.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Reverse Vee Shorty",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1667865611607-8B4V5354SZZH0BD9ANDM/yellow_7%272%27.jpg",
+          "description": "Revisiting a classic bottom curve, for an all around shortboard. Designed for waves 0-6ft. Vee in the nose for easy paddling, easy take-offs and is great in chop.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Reverse Vee Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1722216788170-VQF6NG8WV2Y6R1G9UV3H/Kayu_TwinPin.jpg",
+          "description": "A modern take on a magic board. Designed for waves 1-10ft. The new modern day MC twin fin, designed with the history of Maurice riding a board in the 80s given to him by Dane Kealoha.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Shiva",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1495512728798-HKMZO0O7AVS1UHKNOMX2/Roark_5.jpg",
+          "description": "A board for every day. Designed for waves 1-8ft. Born from a desire to create a design that would work as a single, a quad, and a thruster so Roark could travel with a one-board quiver.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493952760995-2MYSNFNNA5N9E36ZGRWI/image-asset.jpeg",
+          "description": "Designed for waves 6-30ft. Maurice Cole's tow-in design: a substantial 3/4\" concave running the length of the board for less wetted surface, a very straight/fast centre bottom line, and curve for turning on the rail line.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Twuster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493865281025-6BGWCU6W4R5WM4NCQ1IK/Taj.jpg",
+          "description": "The Modern Twin. Designed for waves 1-6ft. Redesigned so it can be ridden in small surf as a twin, but also as a thruster when the waves are bigger and you need more grip and drive.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Vee Con III",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1703048647705-YLID5OOKXDZ6XQR6RWHC/8%27VeeCon.jpg",
+          "description": "The best board you'll ever ride. Designed for waves 0-10ft. An all around high performance board (short or long) that can be made in sizes from 5'8\" to 9'6\" and comes in a thruster configuration.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vee Con IV",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1722216680380-Z1OTB4128SVOYKJJZ070/JARED_VC3_5.jpg",
+          "description": "The best board you'll ever ride. The VeeCon IV is an all around high performance board (short or long). It can be made in sizes from 5'8\" to 9'6\" and comes in a thruster configuration.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
