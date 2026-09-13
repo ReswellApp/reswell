@@ -1,6 +1,6 @@
 {
   "generated_for": "Vouch Surfboards official named standup catalog",
-  "source": "https://northcoastsurfboards.com.au/collections/vouch (North Coast Surfboards factory, Byron Bay NSW)",
+  "source": "https://northcoastsurfboards.com.au/collections/vouch (official Vouch model products — excludes fins, apparel, and dimension stock SKUs)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -38,6 +38,12 @@
           "board_category_slug": "longboard"
         },
         {
+          "name": "HP Mini Mal",
+          "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_3153.jpg?v=1788921153",
+          "description": "High-performance mini mal from the Vouch lineup at North Coast Surfboards.",
+          "board_category_slug": "hybrid"
+        },
+        {
           "name": "Mid VISH",
           "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_3132.jpg?v=1784779999",
           "description": "You’ve been riding mid lengths for years now. You know how they turn, you know what waves they like being ridden in and you pretty much know everything there is to know about a 7 to 8 foot single fin rolled bottom, foiled rail mid length… What am I going to do with my (surfing) life now?! Well here it is. Mid. Length. Vish. Not your run-of-the-mill mid length board, these things can handle some serious juice, while still being amazing in the knee to chest high range that so many people love riding mid length style boards in. Tubing point and you don’t want to deal with the hassle and nightmare paddle of riding a sub 5’6″ fish? Here’s your answer. Paddle in early and still be able to rip the absolute shit out of the wave with speed, power and flow…",
@@ -68,10 +74,22 @@
           "board_category_slug": "fish"
         },
         {
+          "name": "Rolled Vee 1",
+          "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_3159.jpg?v=1788920742",
+          "description": "Originally made to ride as an alternative to clunky 9 footers, we based this around McTavish's boards in Hot Generation. Paul always hated flat panel Vee's as they were too tracky. So we took the flat panel away and replaced it will a rolled Vee. This roll continues all the way through the board and helps with getting the board on rail where it loves to be surfed from, rather than pivoted from the tail. The rails start quite 'up' in the nose running through to 50/50 and then flowing into a 60/40 'down' rail in the tail, all soft and flowing. Perfect for guys not wanting to ride longer boards but still wanting that classic rolled-vee feel.",
+          "board_category_slug": "hybrid"
+        },
+        {
           "name": "Rolled Vee 2",
           "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_2803.jpg?v=1738106952",
           "description": "Made after riding the 1st Gen for around 12 months. Wanting to shrink down what we already had, so it could be surfed in bigger waves and also surfed a lot harder from the tail. The roll is a lot more intense the whole way through the bottom especially in the nose, which will help with locking the board into the face on bigger, more sucky waves. The nose has been pulled in slightly also to help with this. Tail width is brought in slightly also so it can be surfed a lot harder from the tail. Rails are quite similar to the 1st Gen, however slightly more knifey through the middle of the board.",
           "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1786/4965/files/IMG_2200.jpg?v=1690799396",
+          "description": "Vouch single-fin model from North Coast Surfboards.",
+          "board_category_slug": "other"
         },
         {
           "name": "VISH",
