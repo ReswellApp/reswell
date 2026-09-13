@@ -1,0 +1,166 @@
+{
+  "generated_for": "Wave Riding Vehicles official named standup catalog",
+  "source": "https://www.waveridingvehicles.com/pages/ (official model pages) plus named model product pages for Mary Jane Twin, Speed Pin, Mod 67, Wahoo, and Kee \u2014 excludes apparel, materials, custom-order forms, and dimension stock SKUs",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "wrv-surfboards",
+      "name": "Wave Riding Vehicles",
+      "website_url": "https://www.waveridingvehicles.com",
+      "location_label": "Virginia Beach, Virginia",
+      "short_description": "East Coast surfboards from Virginia Beach \u2014 WRV in-house shortboards, fishes, mid-lengths, and logs shaped for Atlantic beach-break and point surf.",
+      "models": [
+        {
+          "name": "Almond",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/ALT_SHORTS_2048x2048_3671a2f4-ba3e-4c69-99dc-56f5def9ed1f.png?v=1580486724",
+          "description": "The Almond features all of the positives...Speed, looseness and maneuverability. Designed for small, gutless surf, this board will turn windblown chop into memorable sessions",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bizarro",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/MID_RANGE_2048x2048_abfd5e63-40d0-40bf-866b-71d2eb57a003.png?v=1580485172",
+          "description": "When the surfing world was exploring shorter boards and getting lost in the mix, Marty and Les blazed a path with the \u201cBizarro\u201d!! Nimble, sleek and sexy, the Bizarro is the board you never knew you needed",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Classic Long",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/LONGS_2048x2048_967585f0-1af3-47d2-993d-2b0eb48f999a.png?v=1580486397",
+          "description": "These hand-shaped beauties are built for your cruising pleasure. The Classic Long is available in multiple finishes, stringers, nose and tail blocks, Volan glass and resin tints. For pricing or to place an order for a custom WRV Surfboard",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/PERFORMANCE_2048x2048_b0fe890c-3b5b-4a5b-9f44-639520289cba.png?v=1580487054",
+          "description": "An endurance style step-up. This board will help you get out to the line up faster and into waves of substantial reward sooner",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "El Jefe",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/PERFORMANCE_2048x2048_b0fe890c-3b5b-4a5b-9f44-639520289cba.png?v=1580487054",
+          "description": "It\u2019s pronounced \u201cEl Hefe\u201d and it\u2019s Spanish for The Boss. When less than average conditions still command optimal performance, the WRV El Jefe is large and in charge. The advantage of added volume accommodates for challenging conditions while its single to double concave with slight-vee turns on a dime. Run the line-up with the new chief of high-performance. The WRV EL JEFE model was nominated for the 2017 SIMA Performance Shortboard of the Year",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/ALT_SHORTS_2048x2048_3671a2f4-ba3e-4c69-99dc-56f5def9ed1f.png?v=1580486724",
+          "description": "\"The nucleus of all boards\"... \"universal tool to wave sliding\"... \"the staple\". Having a board quiver without a proper fish is like golfing without a putter. The \u201cFish\" has passed through space and time since its origin in the late 60's by creator Steve Lis. Since then it's been evolving, adapting, experimented with and re-evolved. Through many shapers, surfers, and backyard builders, the fish has seen countless unique shapes and sizes. Jordan's fish story led him on a journey that took most of his shaping career to find a design that would be versatile, user friendly, aesthetically pleasing, and most of all... FUN! SIZING FROM 4'10-6'10",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish Taco",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/ALT_SHORTS_2048x2048_3671a2f4-ba3e-4c69-99dc-56f5def9ed1f.png?v=1580486724",
+          "description": "A tasty new favorite in our quiver. We modified the Vapor outline, kept the single wing swallow tail, added channels, increased the volume and lowered the rocker to add more speed. Special sauce not included!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Groveler",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/ALT_SHORTS_2048x2048_3671a2f4-ba3e-4c69-99dc-56f5def9ed1f.png?v=1580486724",
+          "description": "The Groveler can be ridden really short due to it's volume and design. It has a wider outline, higher volume and a wide squash tail. This board is perfect for those smaller days. It is a great addition to your quiver, with a single to double concave bottom",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Hyperformance Fun",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/MID_RANGE_HEADER.png?v=1580414758",
+          "description": "The Hyperformance Fun is for the surfers who want to catch a lot of waves with the feel and glide of a longboard or mid range, but have the maneuverability of a shorter style shape. Perfect for entry level surfers and bigger guys, it comes with a \"vee\" bottom with a double concave",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hyperformance Long",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/LONGS_2048x2048_967585f0-1af3-47d2-993d-2b0eb48f999a.png?v=1580486397",
+          "description": "This board is for the more aggressive, performance minded riders. This model can nose ride but is designed narrower and with thinner rails along with a narrower tail area. This board was designed for turning and burning. It has a slight concave nose with a \"vee\" center to double concave bottom. For pricing or to place an order for a custom WRV Surfboard",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hyperformance Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/ALT_SHORTS_2048x2048_3671a2f4-ba3e-4c69-99dc-56f5def9ed1f.png?v=1580486724",
+          "description": "A modern version of an 80's twin fin. Short and wide with a flat rocker for speed. This board is fast and responsive especially in mall to medium conditions. This board has a \"vee\" bottom that makes it go rail to rail with ease",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Kee",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/9_6-kee-both_c11040f9-c157-440c-aeb1-9385f29d0a92.png?v=1739826132",
+          "description": "The Kee shaped by Marty Keesecker \u2022 Length - 9'6 \u2022 Width - 23\" \u2022 Thickness - 2.625\" Board Description: \u2022 Formerly known as the Classic Tri or Classic Long, the Kee is a hand-shaped beauty made for your cruising pleasure. The Kee is available in multiple finishes, multiple stringers, nose and tail blocks, Volan glass and resin tints. The possibilities are endless",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mary Jane Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/MJ3Both.png?v=1781899024",
+          "description": "Mary Jane shaped by Josh Peterson \u2022 Length - 6'0\" \u2022 Width - 20\" \u2022 Thickness - 2.45\" Board Description: \u2022 The Mary Jane is a nice in between from a midlength or an alternative step up. The parallel outline adds extra drive for speed but a break in the outline at the tail combined with the vee between the channels really makes this board exciting to ride. The foam under nose and chest makes it a great paddler while the thinner foiling at the tail keeps it spicy and alive",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mini Long",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/MID_RANGE_2048x2048_abfd5e63-40d0-40bf-866b-71d2eb57a003.png?v=1580485172",
+          "description": "It\u2019s literally a miniature longboard. The Mini-Long advantage is the reduced bulk and lighter weight that yields better response and maximizes the action. Great for all experience levels. A 2+1 fin configuration allows you to ride either a long trailer fin for nose rides or a short cutaway for enhanced maneuverability. With sizes ranging from 7\u2019 to the mid 8\u2019 range you can\u2019t go wrong with the Mini-Long. Call for quote",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mod 67",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/2613429_2MOD67Both.png?v=1788893901",
+          "description": "Mod 67 shaped by Leo Ravina \u2022 Length - 9'3 \u2022 Width - 22.75 \u2022 Thickness - 2.875 Board Description: \u2022 By late 1967, longboard design had reached its peak for the era. From that point on, boards began to get smaller with a bigger focus on radical maneuvering. The Mod 67 displays characteristics of that late 60's era. A wider shoveled tail, 60/40 rails, a rolled concave in the nose with more rocker. A combination of design elements that represent the best of an era",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/LONGS_2048x2048_967585f0-1af3-47d2-993d-2b0eb48f999a.png?v=1580486397",
+          "description": "Our highest volume longboard with the most dramatic vee-bottom available keeps this heavy hitter light on its feet. The ultra high volume provides the paddle power for the little guys and the extra float for the big boys!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Nugget",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/ALT_SHORTS_2048x2048_3671a2f4-ba3e-4c69-99dc-56f5def9ed1f.png?v=1580486724",
+          "description": "This past decade has seen a growing demand for more volume in boards and our Nugget is the answer. It\u2019s groundbreaking design continues to redefine how to make small wave riding fun. It\u2019s a relatively full board in both volume and overall surface area with a wider nose and forgiving rails, yet it\u2019s agility, once on a plane, will fool you. Catch more waves, have more fun, simple. The 5\u20190 range works for many surfers with lengths continuing into the 6\u20190 range and the design has even been creeping into the 7\u20190 lengths. The Nugget will hold its place in any lineup, it\u2019s irresistible",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Nugget Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/PERFORMANCE_2048x2048_b0fe890c-3b5b-4a5b-9f44-639520289cba.png?v=1580487054",
+          "description": "A new twist on an old favorite! The WRV NUGGET PRO is the answer for riders looking for the right ratio of volume and performance. A narrower nose and a touch more rocker while maintaining similar volume and overall surface area compared to the original. The NUGGET PRO will guarantee more flexibility for turns and overall maneuverability. Call for quotes or custom orders \u2022 WRV Factory: (252)491-8535, wrvfactory@gmail.com",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Party Barge",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/MID_RANGE_2048x2048_abfd5e63-40d0-40bf-866b-71d2eb57a003.png?v=1580485172",
+          "description": "A master of the good times, Doyle has developed a board that keeps the good times rolling, no matter what the conditions. Using every cubic liter of the blank, this floaty vessel will transform a mediocre session into an all day bash",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Red Ripper",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/PERFORMANCE_2048x2048_b0fe890c-3b5b-4a5b-9f44-639520289cba.png?v=1580487054",
+          "description": "Built for barrels, this board is essentially a fine tuned cousin of the \"Chronic\". With a highly responsive tail, the Red Ripper is your ideal, all-around performance shape. Designed for Team Rider Blayr Barton",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Speed Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/JP1Both.png?v=1781900077",
+          "description": "Speed Pin shaped by Josh Peterson \u2022 Length - 5'8\" \u2022 Width - 19.5\" \u2022 Thickness - 2.38\" \u2022 Volume - 29.4L Board Description: \u2022 Not quite a mid length and not quite a short board. Maybe you would call it an alternative step up? Maybe its a fast twin you want to pull into a honking tube with? It can be a lot of things but we know its becoming a favorite for the friends of the porpoise. It Paddles extremely well, gliding into waves with plenty of speed and maneuverability to keep things interesting",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/PERFORMANCE_2048x2048_b0fe890c-3b5b-4a5b-9f44-639520289cba.png?v=1580487054",
+          "description": "A must have for any experienced rider looking for a little more length in beefy, hollow surf. From overhead Hatteras beach breaks, to maxed out reefs in Puerto Rico, the WRV Step-Up will keep you stoked no matter how hectic the conditions. Sizes range from 6'0 to 6'6\"",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Trident",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/MID_RANGE_2048x2048_abfd5e63-40d0-40bf-866b-71d2eb57a003.png?v=1580485172",
+          "description": "This model is a hybrid that bridges the gap between a fun board and a mid-range longboard. It has a full, round nose, a narrow width with thinner rails for a very loose and responsive feeling. This board comes up to 8'0\" but also comes in sizes under 7'0\" with a \"Vee\" in center to a double concave bottom",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vapor",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/ALT_SHORTS_2048x2048_3671a2f4-ba3e-4c69-99dc-56f5def9ed1f.png?v=1580486724",
+          "description": "The WRV Vapor pairs a retro outline with a high performance bottom. Take it to the beach and surf all day. Whether it's 2 feet or the waves are firing, you won't be let down by the Vapor. Its volume lies mainly in it's width, flatter deck and fuller rails. The pulled in winged swallow tail, deep single to double concave and unique rocker give this board its responsiveness and maneuverability. Call for quote",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wahoo",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/2607135_10WahooBoth.png?v=1789048913",
+          "description": "Wahoo shaped by Leo Ravina \u2022 Length - 5'10\" \u2022 Width - 20. 6875 \" \u2022 Thickness - 2.50\" Board Description: \u2022 The Wahoo mixes a traditional fish outline with characteristics more commonly found in a modern high-performance shape. The deck at nose fades from a beveled rail down to a more modern rail at the mid-section down to the tail. Single to double concave to light v ee on the bottom, and fairly full volume throughout sets the tone for smooth, fluid surfing",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
