@@ -1,6 +1,6 @@
 {
   "generated_for": "Toy Boat Surfboards official named standup catalog",
-  "source": "https://www.toyboatsurfboards.com/models (Squarespace surfboard model pages only — excludes custom orders, goods, and apparel; Quail Egg model page at /models/baked-bean)",
+  "source": "https://www.toyboatsurfboards.com/products.json (Shopify surfboard products only — excludes apparel and custom deposits; legacy DB row Baked Bean has no current official product page)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -14,43 +14,44 @@
       "models": [
         {
           "name": "Flathead",
-          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/a21b0fc9-a389-4b3f-97d5-40d585f02b50/Gemini_Generated_Image_iislb5iislb5iisl.png",
-          "description": "The Flathead Fish is a purpose-designed board meant to be ridden 3 to 4 inches shorter than your traditional keel fish. It's designed for maximum sensitivity, lift, and drive—pared down into a small, efficient package. The concept behind the polarizing nose design is that you get the rail line of a longer board for hold and drive while reducing the overall length of the board and its swing weight. Combined with the heavy single concave throughout the bottom and the pinched rails, you get tons of lift and a board that can bite the wave. If you've spent time on a mini Simmons or similar, this hybrid brings a super fun blend to the arena.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/flathead_hero.jpg?v=1789056515",
+          "description": "The Flathead Fish is a purpose-designed board meant to be ridden 3 to 4 inches shorter than your traditional keel fish. It's designed for maximum sensitivity, lift, and drive—pared down into a small, efficient package. The concept behind the polarizing nose design is that you get the rail line of a longer board for hold and drive while reducing the overall length of the board and its swing weight. Combined with the heavy single concave throughout the bottom and pinched rails, you get tons of lift and a board that can bite the wave. If you've spent time on a mini Simmons or similar, this hybrid brings a super fun blend to the arena.",
           "board_category_slug": "fish"
         },
         {
           "name": "VMG",
-          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/cf02705a-2cad-4cdc-8cb2-f8442abe325b/Surf05.JPG",
-          "description": "The VMG is a traditional San Diego-style fish with some adjustments for a thinner overall foil, mellower rounded rails, and a little more curve through the back half. This board works great in the barrel and can be done as a twin or a split keel type of quad. The bottom shape is a single to triplane forward. This board stretched up to 7' to 10' is the Lordship model.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/vmg_hero.jpg?v=1789185830",
+          "description": "The VMG is Trevor Gordon's take on a traditional San Diego-style fish with some adjustments for his taste — thinner overall, with a foiled-out nose and tail, and mellower, thin-yet-rounded rails. There is a little more curve in the outline throughout the back half when compared to a standard traditional fish. This board works great in the barrel and can be built as a twin or a split-keel-type quad. The bottom shape features a single to tri-plane forward. The VMG stretched up to 7' to 10' is the Lordship model.",
           "board_category_slug": "fish"
         },
         {
           "name": "Pluero",
-          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/603b3093-3477-4410-8114-e4950c4bd01d/IMG_0150.JPG",
-          "description": "Short for Plueronectiform — like a halibut or any asymmetrical fish. A high-performance shortboard whose template and design changes to the person and the purpose. More often than not the toe side is straighter and the heel side is curvier, with thinner toe-side rails and fuller heel-side rails. Two, three, or four fins; sizing ranges from two inches below your height to a step-up mini gun.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/pluero_hero.jpg?v=1789185143",
+          "description": "Short for Pleuronectiform — like a halibut or any asymmetrical fish. A high-performance shortboard whose template and design change depending on the person and the purpose. More often than not the toe side is straighter and the heel side is curvier, with thinner toe-side rails and fuller heel-side rails. Ride it with two, three, or four fins; sizing ranges from two inches below your height to a step-up mini gun.",
           "board_category_slug": "asym"
         },
         {
           "name": "Quail Egg",
-          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/eb3decc5-9293-4bf6-9b42-88d379185637/IMG_9308.JPG",
-          "description": "An all-rounder high-performance, fuller templated board that can be ridden in a ton of different sizes and all types of different waves and conditions. Similar to the VMG, it has a tri-plane style hull that allows for easy transitions and a go anywhere on the wave approach. Wide point centered and normally paired with a quad setup.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/lmnop_hero.jpg?v=1789184251",
+          "description": "The LMNOP is an all-rounder high-performance, fuller-templated board that can be ridden in a wide range of sizes across all types of waves and conditions. Similar to the VMG, it features a tri-plane-style hull that allows for easy transitions and a go-anywhere wave approach. The wide point is centered and normally paired with a quad setup.",
           "board_category_slug": "hybrid"
         },
         {
           "name": "Willard",
-          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/33af25e8-220c-4faa-8929-aacb5f61ad78/IMG_5151.JPG",
-          "description": "The Willard is the gap between a mid length and a glider style board. Designed for high speed trimming in the pocket while being quickly able to switch gears, turn and re-direct down the line. It has a rolly controlled feeling and a ton of speed while riding far up on the board. Ideal lengths between 7'6\" and 8'4\" and ridden as a single fin.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/willard_hero.jpg?v=1789183617",
+          "description": "The Willard bridges the gap between a midlength and a glider-style board. It is designed for high-speed trimming in the pocket while allowing you to quickly switch gears, turn, and redirect down the line. It delivers a rolly, controlled feel and tons of speed while you ride far up on the board. Ideal lengths range between 7'6\" and 8'4\", and it's best ridden as a single fin.",
           "board_category_slug": "longboard"
         },
         {
           "name": "Lordship",
-          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/d2424ab7-102a-49aa-98bb-178b7c9fa363/IMG_0315+2.JPG",
-          "description": "The VMG stretched up to 7' to 10' — a longer fish template built for glide, trim, and speed in a wide range of conditions.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/Lordship_hero.jpg?v=1789182892",
+          "description": "The Lordship is the VMG stretched up to 7'6\" to 10' — a longer fish template built for glide, trim, and speed in a wide range of conditions.",
           "board_category_slug": "hybrid"
         },
         {
           "name": "Blood Sausage",
-          "image_url": "https://images.squarespace-cdn.com/content/v1/64530cca5da11163c1c222be/d2424ab7-102a-49aa-98bb-178b7c9fa363/IMG_0315+2.JPG",
+          "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/bloodsaus_hero.jpg?v=1789182038",
+          "description": "Toy Boat's glider model — a long, trim-focused shape for flowing lines and speed.",
           "board_category_slug": "other"
         }
       ]
