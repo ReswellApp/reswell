@@ -1,6 +1,6 @@
 {
   "generated_for": "Toy Boat Surfboards official named standup catalog",
-  "source": "https://www.toyboatsurfboards.com/products.json (Shopify surfboard products only — excludes apparel and custom deposits; legacy DB row Baked Bean has no current official product page)",
+  "source": "https://www.toyboatsurfboards.com/products.json (Shopify surfboard products only — excludes apparel and custom deposits; legacy DB rows Baked Bean, Flathead, VMG, and Quail Egg have no current official product pages)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -13,27 +13,27 @@
       "short_description": "Toy Boat Surfboards is the personal shaping label of Santa Barbara surfer, sailor, and creative Trevor Gordon — fast, loose boards known for flowing rail-to-rail performance.",
       "models": [
         {
-          "name": "Flathead",
+          "name": "Flathead Fish",
           "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/flathead_hero.jpg?v=1789056515",
-          "description": "The Flathead Fish is a purpose-designed board meant to be ridden 3 to 4 inches shorter than your traditional keel fish. It's designed for maximum sensitivity, lift, and drive—pared down into a small, efficient package. The concept behind the polarizing nose design is that you get the rail line of a longer board for hold and drive while reducing the overall length of the board and its swing weight. Combined with the heavy single concave throughout the bottom and pinched rails, you get tons of lift and a board that can bite the wave. If you've spent time on a mini Simmons or similar, this hybrid brings a super fun blend to the arena.",
+          "description": "The Flathead Fish is a purpose-designed board meant to be ridden 3 to 4 inches shorter than your traditional keel fish. It's designed for maximum sensitivity, lift, and drive—pared down into a small, efficient package. This isn't your everyday, every-condition fish. The concept behind the polarizing nose design is that you get the rail line of a longer board for hold and drive while reducing the overall length of the board and its swing weight. That design, combined with the heavy single concave throughout the bottom and pinched rails, gives you tons of lift and a board that can bite the wave. It's a board that surprises me over and over in all the best ways. If you've spent time on a mini Simmons or similar, this hybrid brings a super fun blend to the arena.",
           "board_category_slug": "fish"
         },
         {
-          "name": "VMG",
+          "name": "VMG Fish",
           "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/vmg_hero.jpg?v=1789185830",
-          "description": "The VMG is Trevor Gordon's take on a traditional San Diego-style fish with some adjustments for his taste — thinner overall, with a foiled-out nose and tail, and mellower, thin-yet-rounded rails. There is a little more curve in the outline throughout the back half when compared to a standard traditional fish. This board works great in the barrel and can be built as a twin or a split-keel-type quad. The bottom shape features a single to tri-plane forward. The VMG stretched up to 7' to 10' is the Lordship model.",
+          "description": "The VMG is my take on a traditional San Diego-style fish with some adjustments for my taste. This is the board I ride most often because it is just so versatile. This isn't a chunky, bulky, high-volume fish. It's thinner overall, with a foiled-out nose and tail, and mellower, thin-yet-rounded rails that allow it to hold tight to the wave when turning while still maintaining plenty of float and easy rail-to-rail transitions. There is a little more curve in the outline throughout the back half when compared to a standard traditional fish. This board also works great in the barrel and can be built as a twin or a split-keel-type quad. The bottom shape features a single to tri-plane forward. The VMG stretched up to 7' to 10' is the Lordship model.",
           "board_category_slug": "fish"
         },
         {
           "name": "Pluero",
           "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/pluero_hero.jpg?v=1789185143",
-          "description": "Short for Pleuronectiform — like a halibut or any asymmetrical fish. A high-performance shortboard whose template and design change depending on the person and the purpose. More often than not the toe side is straighter and the heel side is curvier, with thinner toe-side rails and fuller heel-side rails. Ride it with two, three, or four fins; sizing ranges from two inches below your height to a step-up mini gun.",
+          "description": "Short for Pleuronectiform. Like a halibut or any asymmetrical fish. This is my high-performance shortboard. Like its name, its template and design change depending on the person and the purpose. More often than not, the toe side is straighter and the heel side is curvier. The toe side has more concave, while the heel side is more subtle. The toe side rail is thinner, and the heel side is fuller. Ride it with two, three, or four fins; sizing ranges from two inches below your height to a step-up mini gun.",
           "board_category_slug": "asym"
         },
         {
-          "name": "Quail Egg",
+          "name": "LMNOP",
           "image_url": "https://cdn.shopify.com/s/files/1/0680/1244/1662/files/lmnop_hero.jpg?v=1789184251",
-          "description": "The LMNOP is an all-rounder high-performance, fuller-templated board that can be ridden in a wide range of sizes across all types of waves and conditions. Similar to the VMG, it features a tri-plane-style hull that allows for easy transitions and a go-anywhere wave approach. The wide point is centered and normally paired with a quad setup.",
+          "description": "The LMNOP is an all-rounder, high-performance, fuller-templated board that can be ridden in a wide range of sizes across all types of waves and conditions. Similar to the VMG, it features a tri-plane-style hull that allows for easy transitions and a go-anywhere wave approach. The wide point is centered and normally paired with a quad setup.",
           "board_category_slug": "hybrid"
         },
         {
