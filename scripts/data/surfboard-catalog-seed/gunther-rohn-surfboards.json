@@ -1,0 +1,198 @@
+{
+  "generated_for": "Gunther Rohn Surfboards official named standup catalog",
+  "source": "https://grsurfboards.com/products.json (official Shopify surfboard products — excludes fins, apparel, accessories, and EPS construction options)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "gunther-rohn-surfboards",
+      "name": "Gunther Rohn Surfboards",
+      "website_url": "https://grsurfboards.com",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Gunther Rohn",
+      "lead_shaper_name": "Gunther Rohn",
+      "short_description": "Gold Coast performance boards from veteran shaper Gunther Rohn, including Italo Ferreira models and decades of WCT-proven designs.",
+      "models": [
+        {
+          "name": "4 Deep Channels",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/4chTBR.jpg?v=1564358269",
+          "description": "4 DEEP CHANNELS GR 4 Channel surfboard. 4 is designed to encourage you to lay it over on the rail, enhance performance. What's unique about the design is the precise placement of FCSII and Future plugs right where I had always envisioned channels and fin placement in my designs – nestled inside the deeper channel along the rail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "V6 Channel",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/6channelTBR.jpg?v=1564305697",
+          "description": "V6 Channel surfboard – your key to unlocking a world of carving speed, and power. This innovative design features six deep channels that redefine your surfing experience.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "ALL IN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/ScreenShot2026-05-27at3.11.33pm.png?v=1779858788",
+          "description": "The Italo Ferreira – ALL IN is the latest innovation born from a powerhouse collaboration between legendary shaper Timmy Patterson, Brazilian shaping icons Sylvio \"Tico\" and Adriano \"Teco\" from Silver Surf Surfboards, and World and Olympic Champion Italo Ferreira.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Alley Rat",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/alleyrat.jpg?v=1715684868",
+          "description": "The Alley Rat model, meticulously crafted to propel one's surfing prowess to new heights. Designed with a traditional performance outline, this shortboard boasts a sleek pulled-in nose and a tail optimised for the perfect harmony of speed and control.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cool Tool Mid Length",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/cooltool-copy.jpg?v=1646958252",
+          "description": "Mid Length Cool Tool — Gunther Rohn neo classic design. A surfboard that seamlessly blends retro inspiration with modern minimalism, thoughtfully designed for a unique mid-length surfing experience.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Delinquent",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/axels-bds_61ac21a0-bd7f-4017-a83d-2061dcad0f44.jpg?v=1505946887",
+          "description": "GR Youth Delinquent Full Performance board — designed to take your surfing to the next level with boosted bottom turns and maximum speed and power.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dip Stick",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/dippy-copy.jpg?v=1603772662",
+          "description": "DIP STICK surfboard designed for short beach breaks. Single concave running into a V in the tail with double wings creating two pivot areas for short arcs and quick directional changes in the pocket.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "G2 Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/g2pro1.jpg?v=1541307278",
+          "description": "The G2 Pro, a high-performance surfboard meticulously crafted for tight pocket surfing. This board is all about speed, responsiveness, and a loose, agile feel in the water.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "G4 Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/G4_pro.png?v=1764132301",
+          "description": "The G4 is a continuation of the Kompressor 501 and refined for precision and speed — the next evolution in high-performance shortboards and Koda Killorn's go-to choice.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gas Pedal",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/gaspedal.jpg?v=1715687570",
+          "description": "GAS PEDAL — if you're seeking a board that effortlessly glides through slow and weak sections, this board delivers a high-performance feel without compromising on speed.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "IF15",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/Screen_Shot_2025-01-23_at_12.17.50_pm.png?v=1737595105",
+          "description": "The IF15 Italo Ferreira model — a high-performance surfboard designed specifically for WCT surfer Italo Ferreira, striking the perfect balance between stability and maneuverability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Icycool",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/icycool-copy.jpg?v=1541293630",
+          "description": "Surfboard Model Icycool – a harmonious blend of balance and versatility designed to enhance your surfing experience.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jetpack",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/jetpac.jpg?v=1541232441",
+          "description": "JETPACK — fuller outline and slightly flatter nose rocker, straightening into a most notable winged Bat tail. Small wave jet of a board for surfers looking for something a bit different.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Kompressor-501",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/komp.jpg?v=1541300874",
+          "description": "The Kompressor 501 is the ultimate performance surfboard, a testament to the genius of its designer, Gunther Rohn — the key to unlocking your full surfing potential.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "LAZY WILFRED",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/lazywilly.jpg?v=1564309658",
+          "description": "Full outline, bull nose, flat deck, high rails, hip behind the fins, concave bottom — a relaxed mid-length for lounge lizards who still want to get off the couch.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/maltint_blue.jpg?v=1507069779",
+          "description": "GR longboard with traditional spiral vee bottom, 2+1 fin setup, and rounded square, round, or rounded pin tail options.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lunatic",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/gr-surfboard-lunatic.jpg?v=1606019216",
+          "description": "The Lunatic is designed for short punchy beach break waves with emphasis on total manoeuvrability. Wings provide a pivot point along with a narrower round tail for tight controlled arcs.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Neo Retro Classic 80's surfboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/neo_retro.jpg?v=1508879140",
+          "description": "Neo Retro 83 — a classic 80's vintage performance surfboard tailored for smaller waves, paying homage to the iconic early thruster designs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Popsicool",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/popsicool-copy_751486c7-c37e-4be1-9494-7e811a8d4337.jpg?v=1697257146",
+          "description": "Get ready for a whole new level of fun in small waves with the Popsicool surfboard — a full, curvy outline with an oversized round tail for improved turning arc.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Retro Fish Twin Keel",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/neo1.jpg?v=1556793044",
+          "description": "The Retro Fish Twin Keel — the perfect board for flat beach breaks and slow points with ample face, purpose-built to savour slow, fuller waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Twin Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/Twin_Fin.png?v=1697267285",
+          "description": "RETRO TWIN FIN — Twin Fin 82, a surfboard that takes inspiration from the late 70s to mid-80s vintage style twin fins with modern improvements for enhanced performance.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Single fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/singlefinLM-1copy.jpg?v=1505947019",
+          "description": "Gunther Rohn retro single fin — classic 70s outline, full rails, flat deck, vee bottom. Rides along traditional single fin lines.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Step Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/stepupG4.jpg?v=1508884401",
+          "description": "THE GR GUN — step up boards for stepping out in serious surf 10 foot and beyond, shaped with Gunther's Hawaii gun experience.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Stoke-Ed",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/stoke-ed.jpg?v=1715734126",
+          "description": "Italo Ferreira's STOKE-ED model — hand crafted to be one of the most forgiving high performance models on the market.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Synthetic 84",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/synthetic84.jpg?v=1715689452",
+          "description": "Synthetic 84 — a tribute to Timmy Patterson's first surfboard label Synthetic surfboards and work with legendary Damian Brawner in the 1980s.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Triple Crown",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/tripplecrown-copy-3.jpg?v=1589268572",
+          "description": "Triple Crown performance surfboard shaped and designed by Gunther Rohn — derivative of the Jetpack with a crisp outline and plenty of pivot for surfing in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Turbo Turtle",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/turbo_turtle.jpg?v=1508881261",
+          "description": "The Turbo Turtle — a balanced and responsive design with a fuller nose area for stability, tailored for seasoned wave riders.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "V2 Rocket Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/v2rocket.jpg?v=1508879608",
+          "description": "V2 Rocket Fish — voted best all round design by board factory poll. The perfect board in a wide range of conditions from small to medium size waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Walshy G4",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/G4W.jpg?v=1508883248",
+          "description": "Walsh G4 — designed for surfers ranging from average to advanced, particularly those who crave the thrill of serious drops.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Winged Gull Vintage Surfboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/products/singlefinwingLM-copy2.jpg?v=1505949132",
+          "description": "Vintage retro shape — Gunther Rohn retro classic 70s outline with unique wings and flutes about 10 1/2 inches up from the tail, fuller rails, flat deck, vee bottom.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
