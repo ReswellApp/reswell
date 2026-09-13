@@ -1,6 +1,6 @@
 {
   "generated_for": "Locus Surfboards official named standup catalog",
-  "source": "https://www.locussurfboards.com/surfboards (Squarespace model pages — excludes merch and custom-only orders)",
+  "source": "https://www.locussurfboards.com/surfboards and https://www.locussurfboards.com/sucker-punch (Squarespace model pages — excludes lorem-ipsum placeholder pages, merch, and custom-only orders)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -44,6 +44,12 @@
           "name": "The Shakedown",
           "image_url": "https://images.squarespace-cdn.com/content/v1/593eba0286e6c0d633f4a3e3/1537672673766-URDQPADIUNFIRJ5S862V/Dano2-1.jpg",
           "description": "The Shakedown is a high performance-planning hull. Designed to be a great fit as a daily driver. With a straight, parallel outline and the overall width pulled in much closer to a more contemporary shortboard design. This model produces a ton of projection and drive. As a result the Shakedown must be ridden 6-12 inches shorter than your standard shortboard. Allowing the rider to easily overpower this down the line drive. The bottom has mid entry rocker and low, drag reducing tail rocker coupled with single to double concave through the tail. Designed to be ridden as a quad the Shakedown also performs well as a twin with wide based keels. The Shakedown paddles great and requires little energy to pop up on a plane. It produces speed effortlessly allowing the rider to focus on what to do with all that speed rather than generating it. This model excels in surf in the 2ft-6ft range. Hands down the most versatile model in our line up.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sucker Punch",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/593eba0286e6c0d633f4a3e3/1537673809056-L32LW6MOL9RP0E6W2SQ5/Tfox-1-6.jpg",
+          "description": "Welcome to the Sucker Punch. This model was designed with ease of use in barrels and steep fast breaking waves. The outline, being very parallel makes for easy paddling and quick planing, making it ideal for hollow surf. The shovel nose helps to keep the front half of the outline straight while increasing the planing area under your front foot. This feature allows this model to be ridden 4-6 inches shorter than your standard shortboard. It also helps stabilize the front on re-entry, floaters and airs. The rounded pin tail provides exceptional hold while reducing the surface area enough for tight arching turns under the lip.",
           "board_category_slug": "shortboard"
         }
       ]
