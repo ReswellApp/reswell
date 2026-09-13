@@ -1,0 +1,162 @@
+{
+  "generated_for": "Riley Balsa Wood Surfboards official named standup catalog",
+  "source": "https://balsawoodsurfboardsriley.com/collections/balsawood-surfboards (official Shopify products.json and model sections on board product pages — excludes balsa wood, fins, blanks, apparel, DVDs, and ding repair)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "riley-balsa-surfboards",
+      "name": "Riley Balsa Wood Surfboards",
+      "website_url": "https://balsawoodsurfboardsriley.com",
+      "location_label": "Miranda, New South Wales, Australia",
+      "founder_name": "Mark Riley",
+      "lead_shaper_name": "Mark Riley",
+      "short_description": "Hand-shaped Australian balsa and EPS-core boards built in Miranda, NSW since 1996.",
+      "models": [
+        {
+          "name": "Beginners Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/learn2surfcover.jpg",
+          "description": "Riley beginners longboard template featured in the Learn to Surf instructional series — stable, wide-nose shape for first-time surfers learning to paddle and stand up.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Malibu",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/Mark_black_and_white.jpg",
+          "description": "After World War 2 the first balsawood surfboards emerged and changed surfing dramatically. These lighter and more manoeuvrable boards meant a more radical surfing style which soon became known as hot-dogging. From their origin in Malibu, California, balsa surfboards soon made their way to Australia were keen surfers such as Scott Dillon began riding and making them. The Riley Classic is a solid Malibu inspired by these boards of the 50’s and 60’s which the Australians, Americans and Hawaiians rode at the small point breaks of Noosa, Malibu and Waikiki. This is a great board for hot-dogging and",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Mini Malibu",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/prod_surf_allrmain_7b0b91ef-8ee4-41bb-ad6a-b318a991e587.jpg",
+          "description": "Solid balsa Classic Mini Malibu funboard — a smaller Malibu-inspired shape for hot-dogging and trimming in small to medium surf, hand shaped in Miranda, NSW.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Python",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/20190506_142601.jpg",
+          "description": "The Diamond Python is the funboard in the Diamond Range. This series of boards feature the diamond shaped tail with a balsa/cedar tail block to give it strength and weight for hard back foot driving. The use of Paulownia in the tail block gives it a harder and heavier feel because paulownia is twice the weight of balsa.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Range",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/20190506_142601.jpg",
+          "description": "This series of boards feature the diamond shaped tail with a balsa/cedar tail block to give it strength and weight for hard back foot driving. The fun board series are called the Diamond Python and the short performance boards are the Diamond ring. The use of Paulownia in the tail block gives it a harder and heavier feel because paulownia is twice the weight of balsa.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Ring",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/20190506_142601.jpg",
+          "description": "The Diamond Ring is the short performance board in the Diamond Range. This series of boards feature the diamond shaped tail with a balsa/cedar tail block to give it strength and weight for hard back foot driving. The use of Paulownia in the tail block gives it a harder and heavier feel because paulownia is twice the weight of balsa.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Foam Core Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/files/20251028_144518_002.png",
+          "description": "Riley foam-core balsa-skinned fish lineup — the official fish collection page covering High Tail Fish, Flying Fish, Marlin, and Mackerel templates.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hawaiian Gun (Balsa/Vector)",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/20230124_153156_resized.jpg",
+          "description": "Balsa guns are slick Features: • 12 month warranty - you snap it - we replace it • The Balsa/Vector Construction weighs around 6 kg–light to surf • The lightest durable gun available • triple cedar stringer if required • proven shape • Hand shaped and glassed in Australia - quality guaranteed • Great resale value Comes with a single stringer and a glassed on single fin. Extra stringers are $100 ADDITIONAL INFORMATION Weight 8.0000 Type of construction Balsa/Vector Construction Bottom Shape vee Rail shape 20/80 Type of stringer triple cedar stringer Type of waves suited for 10-30 feet Type of s",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Hawaiian Gun (Solid Balsa)",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/20230124_153156_resized_4d8ee873-80ba-49e3-a72f-660a3743aaa7.jpg",
+          "description": "Balsa guns are slick Features: • 12 month warranty - you snap it - we replace it • The Solid gun weighs around 12 kg– like the boards back then • The strongest and most durable gun available • triple cedar stringer • proven shape • Hand shaped and glassed in Australia - quality guaranteed • Great resale value Comes with a single stringer and a glassed on single fin. Extra stringers are $100 ADDITIONAL INFORMATION Weight 10.0000 Type of construction solid Bottom Shape vee Rail shape 20/80 Type of stringer triple cedar stringer Type of waves suited for 10-30 feet Type of surfer suited for mature",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "High Tail Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/files/20251028_144518_002.png",
+          "description": "The high cut tail on this fish gives it more water release and tighter turns. Ridden by Mark on those slow mushy days that you need some paddle power and ripping turns for some dribble surf. This also handles the 5ft days with some chop that cuts through.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hybrid Secret Weapon",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/files/rileyb19_1_of_1.jpg",
+          "description": "This hybrid is the best of both, not ALL worlds! Suitable for all ages, sizes, and conditions. This is between a fish and a short board. It has volume, but not too much. It's built to ride waves from 2 ft to 6ft. It's a great paddler for catching the dribblers. It can be ridden as a thruster with the FCS1 fin system equivalent. Diamond tail and thruster fin set up in FCS1 boxes. Customise to your preference by contacting mark@riley.com.au Sizing can start from 6ft up to 7ft. Polished finish - no fins included. Matt finish - fins included. Jason from Newy Surf building a hybrid - Click here Bla",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid Length",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/files/20260628_12240522.jpg",
+          "description": "This mid-length is the best of both worlds - big and small waves! Suitable for all ages, sizes, and conditions. With plenty of volume, you will catch all of the small summer waves and the large winter swells also. It paddles really well and feels like a short board on every wave. The rocker profile is super unique with a bit more flip in the tail to give it the loose feel like a short board. The bottom of the board has a very complex bottom, which changes every 1 1/2ft from flat to concave to double concave to Vee. You have to see it to believe it and ride it to believe it. This is between a f",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The 2 Kilo Killa",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/cropped_2.jpg",
+          "description": "The ultimate high performance short board. The 2 Kilo Killa is a thruster setup for the wiry person that can break some moves. Even though this is super light it is super strong, with a one year snap guarantee. With plenty of nose rocker and tail, this thing can really turn on a 20c piece — with the flex to take some hollow late drops. The Killa is a balsa skinned EPS foam core shortboard. The recycled EPS foam and the absence of a stringer create a significant reduction in weight bringing this to merely 2kg (excluding fins).",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Allrounder",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/bottom_vert_plain.jpg",
+          "description": "The Allrounder is an EPS foam-core performance MiniMal. It is the only board that features newly designed 1/8’’ cedar rail stringers for added stiffness on smaller waves. This type of board is suited to most riders — perfect for small to medium sized conditions and great for all ages.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Flying Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/botton_vert.jpg",
+          "description": "This is the new fish model, tried, tested and perfected by Tom down the South Coast of NSW. The FF is a EPS foam core performance fish which features stringerless flex and memory return. This can turn on a dime and drive when its required; this board is more for the average to advanced. The 2 ½’’ thickness of the board under the chest area makes this board a great wave catcher.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Limb",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/cropped_2.jpg",
+          "description": "The Limb is a balsa skinned EPS foam core shortboard. The recycled EPS foam and the absence of a stringer create a significant reduction in weight bringing the Limb to around 3kg with great memory and flex. The end result is a high performance balsawood surfboard with far greater strength and durability than your regular polyurethane board. This is a great board for beach breaks from 2 to 8 foot waves. The Riley Limb has a set thruster fins — boxes are optional at no extra cost — and this thruster has great drive and speed down the line.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Little Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/bottom_vert_plain.jpg",
+          "description": "When building a balsawood board like this, a bit more volume is added to compensate for lower paddle power. A little more width and thickness always comes in handy when paddling for waves. This little longboard is perfect for a beginner or the advanced because it’s not too long to handle but it has the width and thickness to give it some stability for paddling, catching and riding small and medium waves. Easily bottom turns and cuts back with great response.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Mackerel",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/files/20251028_144518_002.png",
+          "description": "This is the modern version of the retro fish. It has a little less volume with a rolled deck giving it better and tighter turns. This has a quad fin box set up that can be used as a twin also. The cedar stringers separate the stained balsa strips to represent the Striped Mackerel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Marlin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/prod_surf_marlinmain.jpg",
+          "description": "The Marlin is a EPS foam core performance fish which features our unparallel stringers. During turns, these drive the energy to the tail of the board for clean, crisp, powerful carves. The 2 ½’’ thickness of the board under the chest area makes this board a great wave catcher.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Native",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/cropped_2.jpg",
+          "description": "For summer and its small waves, the Native is a thruster thrasher for the larger or old generation — who don’t want to go to a longboard or a fish — this is in between these. The Native is a balsa skinned EPS foam core shortboard. The recycled EPS foam and the absence of a stringer create a significant reduction in weight bringing the Native to merely 3kg (excluding fins). The end result is a high performance balsawood surfboard with far greater strength and durability than your regular polyurethane board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Performer",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/performer-deck_and_profile.jpg",
+          "description": "The Performer combines the best of both worlds — a recycled EPS foam core and 2-3mm balsawood skin. With a weight of only 7-8 kg and an emphasis on maneuverability and maximum speed, the Performer is designed and shaped for today's high-performance longboarding. The Performer comes with a single fin box (no fin included).",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Sapling",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/bottom.jpg",
+          "description": "The Sapling combines the best of both worlds for the more stable board or beginner — a recycled EPS foam core and 2-3mm balsawood skin (light and strong). With a weight of only 8 kg and an emphasis on stability and control, this longboard is designed and shaped for beginners through to intermediate surfers. The Sapling comes with a single box (no fin included).",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Stick",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/products/cropped_2.jpg",
+          "description": "The Stick is a balsa skinned EPS foam core shortboard. The recycled EPS foam and the absence of a stringer create a significant reduction in weight bringing the Stick to around 3kg. The end result is a high performance balsawood surfboard with far greater strength and durability than your regular polyurethane board. For summer and its small waves, the Riley Stick is also available as a quad. This quad is way faster than your standard thruster or even twin fin and much more responsive.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The UltiMATE",
+          "image_url": "https://cdn.shopify.com/s/files/1/1107/3616/files/20201105_155409.jpg",
+          "description": "The UltiMATE is your best mate for a performance longboard — it has plenty of nose rocker for the steep drops and take-offs, not to mention the tight turns in the pocket. It is only 7kgs for a 9-footer but has the great flotation properties of wood.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
