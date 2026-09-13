@@ -1,0 +1,174 @@
+{
+  "generated_for": "MATTA Surfboards official named standup catalog",
+  "source": "https://www.matta.surf/surfboards-compare/ (official model compare pages) plus /girls-powered-by-matta-hubby/, /girls-powered-by-matta-triskle/, and /mtm-pool/ — excludes apparel, gift cards, fins, leashes, wax, custom deposits, and dimension stock SKUs",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "matta-surfboards",
+      "name": "MATTA Surfboards",
+      "website_url": "https://www.matta.surf/",
+      "location_label": "Costa da Caparica, Portugal",
+      "founder_name": "Nuno Matta",
+      "lead_shaper_name": "Nuno Matta",
+      "short_description": "Independent Costa da Caparica surfboards founded in 1996 by Nuno Matta, with named performance shorts, hybrids, and twins from the official factory and showroom at Rua Jaime Cortesão, Quinta da Vitória de Fora.",
+      "models": [
+        {
+          "name": "2825",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_2825_2018.jpg",
+          "description": "The endless summer is here. This design was created to generate nothing but speed in really small waves. It makes you find the joy of surfing in really small conditions, floating you over bumps and flat sections with that vibrant, fast and gentle energy of summer. Destroy all weapons of mass destruction, this board will create peace, harmony and joy in small waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "2825 MT",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_2825MT_2018.jpg",
+          "description": "It’s 2017 and it’s good to mix things up. Combine the right ingredients and you get a winner of a surfboard. We slow juiced the 2825 outline and added the rocker of the MTM. So we have the 2825 – maintaining that smooth, wide outline and now also featuring a high performance rocker to comply with more serious waves and turns on a dime in steep pockets.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "BFF",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_BFF_2018.jpg",
+          "description": "We all need a BFF. That someone you can simply rely on and share every single moment. The good, the bad, the ugly.. and the beautiful. The wider nose helps you to catch every wave you paddle for, the round pin tail makes it easy to turn and surf on the rail. It’s a dream of a surfboard and will prove to be your ultimate travel companion. Never letting you down, but always providing you with a high. We all know that high road is hard to find, so to have a board like this in your quiver.. or to have a 1 board quiver, this is a no brainer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gravy",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_GRAVY_2018.jpg",
+          "description": "Designed for barrels. The wide point of this board is more up front, which will get you into that gnarly beast in time. It paddles like a dream and still gives that complete control in hollow conditions. Its perfect for power waves, that one model you need in your board bag whenever its truly pumping. If you are looking for a step up, this is it! Step up or step aside!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gravy X",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_GRAVYX_2018.jpg",
+          "description": "Designed for turns and barrels. Its perfect for power waves, that one model you need in your board bag whenever its truly pumping. If you are looking for a step up, this is it! Step up or step aside!",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Hubby",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2024/04/2024_HUBBY_deck.jpg",
+          "description": "We all need a HUBBY. That someone you can simply rely on and share every single moment. The good, the bad, the ugly.. and the beautiful. The wider nose helps you to catch every wave you paddle for, the round pin tail makes it easy to turn and surf on the rail. It’s a dream of a surfboard and will prove to be your ultimate travel companion. Never letting you down, but always providing you with a high. We all know that high road is hard to find, so to have a board like this in your quiver.. or to have a 1 board quiver, this is a no brainer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "J5",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_J5_STRIPED_2018.jpg",
+          "description": "The number 5. It was the number on the jersey of Jadson while he was throwing the most technical, lofty airs on the World Championship Tour / World Surf League.\nThis model is a collaboration between Nuno Matta and Ricardo Martins. Having worked together for many years, this model will be both in the Ricardo Martins line up as well as in MATTA Surfboards.\nIt’s a full on high performance shape that performs as your stand out high performance shortboard – yet it can also be ordered just that little bit shorter and wider. It’s got a very versatile rocker that fits in any pocket and gives you the ability to not think about your next move, but just perform it. It’s built around spontaneous surfing like Jadson André.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lekker",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_LEKKER_2018.jpg",
+          "description": "Lekker means ‘’good’’ in Dutch. It’s such a nice, sexy word to say and it’s very versatile… and that’s why we named this board the Lekker. It was inspired by flying Dutchman Yannick de Jager, bringing high performance surfing to the waves of the North Sea. We came up with a new design that suits those small, unpredictable waves best. The template of this board will fit in tiny pockets and lets you hit sections with everything you got. Although wider, shorter and very different looking, this board will allow you to surf like your normal short board in good waves. A new dimension in small wave surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Lekker Channel",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_LEKKER_CHANNEL_2018.jpg",
+          "description": "This is the LEKKER model with added channels. It’s the same board with more horse power. It will still work in the waves like the mushy North Sea, but it will also fly and accelerate a step more, especially on those long, clean lines. Do you know those point breaks with those long walls that seem perfect, but lack a bit of push? This version of the LEKKER will generate that. In steep point break waves you will benefit from the extra speed and hold.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Lekker Round",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_LEKKER_CHANNEL_striped_2018.jpg",
+          "description": "Lekker means ‘’good’’ in Dutch. It’s such a nice, sexy word to say and it’s very versatile… and that’s why we named this board the Lekker. It was inspired by flying Dutchman Yannick de Jager, bringing high performance surfing to the waves of the North Sea. We came up with a new design that suits those small, unpredictable waves best. The template of this board will fit in tiny pockets and lets you hit sections with everything you got. Although wider, shorter and very different looking, this board will allow you to surf like your normal short board in good waves. A new dimension in small wave surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MTM 2",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_MTM_2018.jpg",
+          "description": "This board has been designed for everyday use. Wake up, have breakfast, go for a surf. The outline provides a forgiving platform for big turns and makes it easy and forgiving to ride.On waves you need speed… and that’s exactly what this board will bring you. Fast, swift and gentle on those Monday morning legs. Once you get going it will give you all the response that you are looking for, it holds whatever line you want to take on a wave. It´s the ideal choice for surfers trying to get the most use out of one performance board in their quiver. For humans that shred waves on a surfboard. On Monday… or every other day of the week.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MTM Channel",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_MTM_CHANNEL_striped_2018.jpg",
+          "description": "This is the MTM model with added channels. It’s the same board with more horse power. It will step up a notch or two and go into the next gear when taken into the water of that perfect point break. Generating extra acceleration on open walls or full on speed and extra hold on those steeper sections. All the while it is still that same epic surfboard you can surf from Monday.. till Monday!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MTM Pool",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2025/05/2025_MTMpool_deck.jpg",
+          "description": "Meet the Pool Board — your go-to for small wave sessions and artificial perfection. Born from the DNA of the MTM and created as a celebration of Sam Pitiers entry for the 2025 Stab High competition, this modern shape is fine-tuned for today’s conditions: whether you’re threading the perfect section in your local wavepool or making the most of knee-high runners at home.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Petit Diable",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_PETIT_STRIPED_2019.jpg",
+          "description": "This is the SMP 1 model. This board was designed for kids that want to make the next steps in their surfing. It’s a powerful platform under their feet to grow their surfing ability to new heights.\nWith the help of one of the best coaches in the world, Didier Piter, we were able to build a board that will guide grommets to the right place on the wave and provide complete freedom of movements.With a small and thinner tail, it’s easy and quick to turn, but still allows free flowing rails through carves. Created for variable conditions.\nFrom father to son, Sam Piter has been able to climb the steps of the surfing world with this refined design – it’s now updated and ready for a new generation of kids to start their pro career\nand keep the fun in their surfing at all times!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pink Panther",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2024/01/menu_PINKpanther_2024.jpg",
+          "description": "This model was created while really listening to Adri her needs and visualising Adriana Hidalgo her surfing. It’s got a regular shortboard outline, with a high performance rocker and a single to double concave; to really let the board generate the speed she needs, no matter the conditions. This board will help her archive all her goals and have the most fun in the water &#8211; no doubt!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pottz Tri Fin",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_POTTZ_TRI_2018.jpg",
+          "description": "This modern shortboard was created to celebrate Mr Pottz and continue his legacy. It’s based on the MTM – our team’s proven favourite. We then poured over a secret sauce in collaboration with Martin to create a feel like it’s 1989 again. This board is guaranteed to make you feel inspired about your surfing again – but make no mistake – this is a high performance, modern, state of the art shortboard. Another bonus: you are allowed to do cheeky 360’s and comment on other people’s surfing.. but only if you have this pocket rocket in your quiver.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pottz Twin Fin",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_POTTZ_TWIN_2018.jpg",
+          "description": "The twin fin is a unique design of a board that started it all for Pottz. We used the outline that gave birth to his style of radical surfing back in the day, but we mixed it up with a high performance rocker of our own to create a twin fin design that does it all: it draws that perfect line that only twin fins find, but it also lets you go all out on whatever canvas the waves throws at you. Steep or soft sections, this board just cuts through it, like a knife through butter.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SMP2",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_SMP2_2019.jpg",
+          "description": "Sam Piter is growing and growing.. so we wanted to update the successful design of the SMP to accommodate the physical changes that such a young, talented surfer goes through. We updated the board with minor tweaks to its design, to give it even more performance, especially when young men like Sam grow and gain power.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SSB",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_SSB_2018.jpg",
+          "description": "The smooth operator. It’s different, it’s fast, it has a free flow on a wave that is hard to let go once you experienced it. With a wide nose, wide tail and low rocker it floats over weak sections without losing a drop of speed. Get out there, don’t worry about a thing and let this board do all the work for you. Enjoy!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SSB Round",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_SSB_ROUND_1_2018.jpg",
+          "description": "The smooth operator. It’s different, it’s fast, it has a free flow on a wave that is hard to let go once you experienced it. With a wide nose, wide tail and low rocker it floats over weak sections without losing a drop of speed. Get out there, don’t worry about a thing and let this board do all the work for you. Enjoy!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "T20",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_T20_2018.jpg",
+          "description": "The T20 is a special edition surfboard and it offers a whole lot more than you expect from your typical ”Retro Twin”. It has the natural flow of a twin fin, but with a massive boost in speed, drive and maneuverability.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Driver",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_DRIVER_2018.jpg",
+          "description": "You like to be in the drivers seat? Get this board. Hit the gas, it will hit you back! This model generates speed like no other, while still maintaining control, flow and breaks out when needed in the pocket. For humans who like to fly high above the lip and put passionate pressure on their rails. There is no overpowering this board. This sled is able to project all that energy in your surfing and never be let down by that workhorse under your feet.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Driver XL",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_DRIVERXL_2018.jpg",
+          "description": "Big guys shred too. This is the driver geared up for heavy machinery, heavy muscles and heavy humans. It’s got all the volume that they need to put the pedal to the metal and get have all the energy fire right back at them. There is no overpowering this big, beautiful, board. It’s The Driver XL.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "TLX",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_TLX_2018.jpg",
+          "description": "You could say this could be your standard high performance shortboard, but there is nothing standard about it. This board allows for that extra bit of connection to the wave that surprises you.. that solid, satisfying feeling through carves and long, drawn out bottom turns. This board will maintain control in high speed turns and powerful waves while lifting you to the next level in your surfing ability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Triskle",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2024/04/2024_TRISKLE_deck.jpg",
+          "description": "The Girls just want to have fun !  A twin fin build from 27 years of shaping experience ! It has all the flow and pure stoke, the same essence that was so apparent in the 80’s/90’s era of surfing,  the perfect combination of old school stoke and modern day magic !",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "TTT",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/menu_TTT_2018.jpg",
+          "description": "It´s a new curve, it´s a new board that all our team riders are extremely excited about.\nFlat rocker on the front foot for when the wave has no power, or when you have to fly over those flat sections.. and then when the wave start shaping up or you fall in a proper section the board will seamlessly transition into the back curve which will accelerate and give the freedom to put the board anywhere you want it to go. A solid kick tail gives all the freedom you need.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
