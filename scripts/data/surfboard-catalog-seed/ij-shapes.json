@@ -1,0 +1,66 @@
+{
+  "generated_for": "IJ Shapes official named standup catalog",
+  "source": "https://www.ijshapes.com.au/shapes (official Squarespace model pages \u2014 excludes custom orders and ding repair)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ij-shapes",
+      "name": "IJ Shapes",
+      "website_url": "https://www.ijshapes.com.au/",
+      "location_label": "Newcastle, New South Wales, Australia",
+      "founder_name": "Isaak Jagoe",
+      "lead_shaper_name": "Isaak Jagoe",
+      "short_description": "Handshaped custom surfboards by Isaak Jagoe in Newcastle, Australia \u2014 shortboards, twins, mids and step-ups for east coast conditions.",
+      "models": [
+        {
+          "name": "Good Wave Shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6857ca1573c5ba2dd4921b7e/32cb51e6-2990-49d5-a079-49e606ffa158/IMG_0548.jpg",
+          "description": "My shortboards are what I\u2019ve shaped most over my time shaping, and what I\u2019ve spent most time and effort refining over the past 5. They features a continuous rocker, which is moderately flipped in nose and a bit more exaggerated out the tail. Flat entry to deep single concave, slight double through the fins and flat again out the tail. These board excel when the waves have push, perfect for anything above 3ft. I generally keep a medium soft rail on these to keep them forgiving when on rail, allowing all skill levels of surfer to be able to enjoy these in good surf. They come standard with a pulled in squash tail, but work well as a round tail or swallow. Lengths: up to 6\u20195\u201d Widths: 18\u201d - 19 3/4\u2019",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Small Wave Shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6857ca1573c5ba2dd4921b7e/8dea2f15-f9fc-4aea-82fb-aaf9736e4f7f/IMG_0159.jpeg",
+          "description": "A mellowed out version of my shortboard design, with added foam in the outline and over the stringerline and the rail for paddle power and forgiveness when the waves have less push. The bottom contours are the same which in conjunction with the flatter rocker allows this board to generate speed easily even when the waves lack push. They come standard with a swallow tail, but can be adapted to a wide squash or hip squash. Perfect for waves in the 1-4ft range, excelling in EPS construction. Lengths: up to 6\u20192\u201d Widths: 18 1/2\u201d- 20\u201d",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Step Up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6857ca1573c5ba2dd4921b7e/f843f1ce-a936-4430-9cc2-d61cfadccf39/IMG_0263.jpg",
+          "description": "Growing up in southwest Victoria, step ups were a large majority of what I have shaped in my time. The outlines are long and slender, generally never pushing 19\u201d in width, I adapt the rocker based on the clients needs, whether it be for down the line tubes or open face turns, which dictates changes in the exit curve especially, aiming help the rider to feel comfortable when the waves have size. Rails are generally low, and the bottoms aren\u2019t over concaved, allowing the rider to harness the power of the wave with control. Round, pin, or tight swallow tails can all be adapted. Lengths: up to 6\u20199\u201d Widths: up to 19 1/4\u201d",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mid Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6857ca1573c5ba2dd4921b7e/81eeebde-b161-48f6-b5c2-80cd492060ab/IMG_5637+2.jpg",
+          "description": "One of the more versatile boards in the lineup. They feature a low entry rocker, with a bit more flip out the tail, a light single concave running into spiral vee out the tail. Tidy foam distribution throughout and a low-moderate rail. These boards are super versatile, with the length and low entry rocker allowing them to glide into waves with ease, but the vee and tail rocker make then surf shorter than what they are. Perfect for beach, reefs and points, but really excelling with any clean face, working best from 6\u20195\u201d and above, perfect for anyone wanting to step up from a shortboard to just have more fun, or step down from a bigger board but keep the glide and paddle power. Lengths: up to 7\u20190 Widths 20\u201d-21\u201d",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mids",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6857ca1573c5ba2dd4921b7e/d0780e41-07ab-44af-96f3-18f8b89a7d58/IMG_0186.jpg",
+          "description": "Over the years I\u2019ve been working on two main midlength designs. The first being a Wayne Lynch inspired, wide point setback, hull bottom, With pinched rails, low entry curve, moderate tail curve that kicks as the outline pulls in, allowing the rider to ride in trim, but turn the board with ease from the back foot. Great for anything from knee high to well overhead, perfect for any clean face. The second being a performance 2+1, moderate rocker, vee, light single concave, to double back to vee out the tail, the rails and foam distribution in tailored to the rider and can be adapted to be on the forgiving side for a lesser surfer, or dialed in to be surfed on rail at a high performance level for someone wanting more foam than their shortboard. Lengths: up to 8\u20190\u201d",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twins",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6857ca1573c5ba2dd4921b7e/5b2a84fc-9ed8-40e4-bc51-79c225f2cd95/IMG_0102.jpg",
+          "description": "A slight modernisation to the standard twin fin. Generous foam throughout, they come standard with a flat deck and chined rails in the nose, fading out down the board. Single to double concave with a generous amount of vee out the tail, low continuous rocker throughout and a medium boxy rail. Tried and tested, easy, fun, perfect for small days or anyone chasing a skatey feeling in a bit of push. Lengths: up to 6\u20192\u201d Widths: 19 3/4\u201d- 21 1/2\u201d",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin + Trailer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6857ca1573c5ba2dd4921b7e/5b103e26-fc35-43c1-80fb-510d902e229f/IMG_0554.jpg",
+          "description": "I find the twin + trailer setup to be very versatile when used properly, twin fin speed but with the hold of a thruster, A twin + tailer tailored to performance surfing. I\u2019ve received very little negative feedback from these boards. They feature a low-medium rocker throughout, with a single concave running into a hard edged channel out the tail. The main outline I use on these is quite parallel, the snub nose widens the outline early aiding in early planing which gives great paddleability and speed off the takeoff. The straighter outline in between the stance gives these great drive and allows them to be pushed hard without sliding out. The curve behind the flyer breaks the line and tightens the arc off the back foot. My idea behind these was to create a board that can be pushed as hard as a thruster but with the effortless speed and flow of a twin fin. Perfect for waves up to 3ft, and excelling in EPS construction. Lengths: up to 6\u20192\u201d Widths; 18 3/4\u201d - 21\u201d",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Snub Quad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6857ca1573c5ba2dd4921b7e/b3b510a9-9f16-4d75-ae0f-97a4bf929615/IMG_1184+2.jpg",
+          "description": "The fastest board in the lineup. The snub nose creates a more parallel outline, giving these boards great projection and drive through turns. These are low rockered, and I generally run a subtle single to double to light vee as the bottom contours, with a medium rail. This all equals a super fast board that effortlessly transitions from rail to rail, the perfect board for gutless waves and above. Quads are generally fast, and like to be surfed on rail, they transition heel to toe side effortlessly due to the lack of centre fin. I recommend sizing these a couple inches shorter than your favourite shortboard. Customisable with most tail shapes Lengths: up to 6\u20192\u201d Widths; 18 3/4\u201d - 21\u201d",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
