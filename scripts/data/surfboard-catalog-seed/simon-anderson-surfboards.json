@@ -1,6 +1,6 @@
 {
   "generated_for": "Simon Anderson Surfboards official named standup catalog",
-  "source": "https://simonandersonsurfboards.com/surfboards/ (WordPress model pages — excludes custom-only boards)",
+  "source": "https://simonandersonsurfboards.com/surfboards/ plus https://simonandersonsurfboards.com/early-bird/ and https://simonandersonsurfboards.com/1981-thruster/ (WordPress model pages — excludes custom-only boards and merch)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -58,6 +58,18 @@
           "name": "Varmit",
           "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/06/Varmit.png",
           "description": "A fuller volume performance board with extra width through the nose and overall plan shape, combined with a rounded square tail, single to double concave and smooth modern rocker. Normal length but wider nose on a wider board with a normal width rounded square.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Early Bird",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/Early-Bird-deck-2.jpg",
+          "description": "Small-wave all-rounder with added area through the nose and rounded square tail, combined with a streamlined outline. Features stronger rocker for its size, deep single to double concave, and slight vee through the tail. Designed for waves 1 to 4 feet — draw out turns when needed or snap tight in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "1981 Thruster",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/SINGLE-2.jpg-2.webp",
+          "description": "A recreation of the 6'1\" double flyer rounded square thruster that Simon rode to victory at the 1981 Bells Beach Classic. Part of the New Originals heritage range — shaped to reflect the original board's look, feel, and performance with slight improvements in rocker, plan shape, and rail. Available in multiple sizes with full gloss and polish finish and fixed SOAR S81 thruster fins.",
           "board_category_slug": "shortboard"
         }
       ]
