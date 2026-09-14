@@ -37,6 +37,8 @@ export type MetaListingProductSource = {
   condition?: string | null
   status?: string | null
   hidden_from_site?: boolean | null
+  city?: string | null
+  state?: string | null
   listing_images?: MetaListingImage[] | null
   listing_videos?: MetaListingVideo[] | null
 }
@@ -57,15 +59,19 @@ export type MetaCatalogFeedItem = {
   identifier_exists: "no"
   /** Product-set filter for Meta Ads — e.g. HaydenGarfield / OutSurfing / Brownstone shop only. */
   custom_label_0?: string
+  /** City product-set filter — e.g. SantaBarbara / Ventura on the city catalog feed. */
+  custom_label_1?: string
   /** Direct downloadable video file URL (Meta Advantage+ catalog ads). */
   "video[0].url"?: string
 }
 
-/** Optional feed-build context (seller → custom_label_0). */
+/** Optional feed-build context (seller → custom_label_0, city → custom_label_1). */
 export type MetaCatalogFeedContext = {
   haydenShopUserId: string | null
   outSurfingShopUserId: string | null
   brownstoneShopUserId: string | null
+  /** Set when building a city catalog page so Meta can filter SantaBarbara | Ventura. */
+  cityCustomLabel?: string
 }
 
 const MAX_DESCRIPTION_LENGTH = 5000
@@ -203,6 +209,17 @@ export function getMetaCatalogCustomLabel0ForListing(
   if (brownstoneId && ownerId === brownstoneId) return getMetaCatalogBrownstoneShopCustomLabel()
 
   return undefined
+}
+
+/**
+ * `custom_label_1` for a city catalog row — set from feed context when the listing
+ * was fetched for a known city landing (Santa Barbara / Ventura).
+ */
+export function getMetaCatalogCustomLabel1ForListing(
+  context: MetaCatalogFeedContext | undefined,
+): string | undefined {
+  const label = context?.cityCustomLabel?.trim()
+  return label || undefined
 }
 
 export function parseMetaListingPrice(
@@ -352,6 +369,7 @@ export function listingToMetaCatalogFeedItem(
 
   const brand = typeof listing.brand === "string" ? listing.brand.trim() : ""
   const customLabel0 = getMetaCatalogCustomLabel0ForListing(listing, context)
+  const customLabel1 = getMetaCatalogCustomLabel1ForListing(context)
   const videoLink = primaryVideoLink(listing)
 
   return {
@@ -370,6 +388,7 @@ export function listingToMetaCatalogFeedItem(
     additional_image_link: additionalImageLinks(listing, imageLink),
     identifier_exists: "no",
     ...(customLabel0 ? { custom_label_0: customLabel0 } : {}),
+    ...(customLabel1 ? { custom_label_1: customLabel1 } : {}),
     ...(videoLink ? { "video[0].url": videoLink } : {}),
   }
 }

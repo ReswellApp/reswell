@@ -33,6 +33,10 @@ import {
   netUsdAfterInstantBankFee,
   roundMoney,
 } from "@/lib/utils/stripe-connect-cashout"
+import {
+  addressRowLooksLikeUsPoBox,
+  isStripePrefillAddressRejection,
+} from "@/lib/utils/stripe-connect-prefill-address"
 
 /**
  * Wallet debits must bypass RLS: seller session clients often cannot UPDATE `wallets` / INSERT
@@ -313,6 +317,9 @@ function buildIndividualAddressFromRow(
   addr: StripePrefillAddressRow | null,
 ): Stripe.AddressParam | undefined {
   if (!addr) return undefined
+  if (addressRowLooksLikeUsPoBox(addr)) {
+    return undefined
+  }
   const line1 = addr.line1?.trim()
   const city = addr.city?.trim()
   const postal = addr.postal_code?.trim()
@@ -398,6 +405,27 @@ function stripIdentityFields(
   return { business_profile: prefill.business_profile }
 }
 
+function prefillWithoutIndividualAddress(
+  prefill: StripeConnectAccountPrefillFields,
+): StripeConnectAccountPrefillFields {
+  if (!prefill.individual?.address) return prefill
+  const { address: _dropped, ...individualRest } = prefill.individual
+  return {
+    ...prefill,
+    individual: Object.keys(individualRest).length > 0 ? individualRest : undefined,
+  }
+}
+
+function userFacingMessageForConnectAccountCreateError(e: unknown): string {
+  if (e instanceof Stripe.errors.StripeError && isStripePrefillAddressRejection(e)) {
+    return (
+      "Stripe needs a physical street address to verify payouts — a PO Box can’t be used. " +
+      "Update the address on your Reswell account, then try Connect bank account again."
+    )
+  }
+  return "Stripe could not create a payout profile. Try again shortly."
+}
+
 /**
  * Syncs Reswell profile + default address into the connected account so Stripe onboarding asks for less
  * (business URL, description, name, phone, mailing address when we have them).
@@ -455,11 +483,11 @@ export async function ensureExpressConnectedAccount(
   const stripe = getStripe()
   const prefill = await loadStripeConnectAccountPrefillParams(supabase, userId, email)
 
-  try {
-    const account = await stripe.accounts.create({
+  const createExpressAccount = (fields: StripeConnectAccountPrefillFields) =>
+    stripe.accounts.create({
       type: "express",
       country: "US",
-      ...prefill,
+      ...fields,
       capabilities: {
         transfers: { requested: true },
       },
@@ -467,6 +495,26 @@ export async function ensureExpressConnectedAccount(
         reswell_user_id: userId,
       },
     })
+
+  try {
+    let account: Stripe.Account
+    try {
+      account = await createExpressAccount(prefill)
+    } catch (first) {
+      if (
+        first instanceof Stripe.errors.StripeError &&
+        isStripePrefillAddressRejection(first) &&
+        prefill.individual?.address
+      ) {
+        console.warn(
+          "[stripe connect] dropping rejected prefill address and retrying account create",
+          first.message,
+        )
+        account = await createExpressAccount(prefillWithoutIndividualAddress(prefill))
+      } else {
+        throw first
+      }
+    }
 
     const inserted = await insertStripeConnectAccount(supabase, {
       user_id: userId,
@@ -486,7 +534,7 @@ export async function ensureExpressConnectedAccount(
     return { stripeAccountId: account.id }
   } catch (e) {
     console.error("[stripe connect] ensureExpressConnectedAccount", e)
-    return { error: "Stripe could not create a payout profile. Try again shortly." }
+    return { error: userFacingMessageForConnectAccountCreateError(e) }
   }
 }
 

@@ -166,7 +166,10 @@ export function StripeConnectSetupDialog({
           })
           const data = (await res.json()) as { clientSecret?: string; error?: string }
           if (!res.ok || !data.clientSecret) {
-            throw new Error(data.error ?? "Could not open the secure session.")
+            const message = data.error ?? "Could not open the secure session."
+            setInitError(message)
+            setStripeFormLoading(false)
+            throw new Error(message)
           }
           return data.clientSecret
         },

@@ -1,13 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
-import { fetchMetaCatalogFeedPage } from "@/lib/db/metaCatalogFeed"
+import {
+  fetchMetaCatalogFeedPage,
+  fetchMetaCatalogFeedPageForLocation,
+} from "@/lib/db/metaCatalogFeed"
+import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
 import {
   listingToMetaCatalogFeedItem,
   META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL,
   META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL,
   META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL,
+  type MetaCatalogFeedContext,
   type MetaCatalogFeedItem,
 } from "@/lib/meta/catalog-product"
+import {
+  META_CITY_CATALOG_MARKETS,
+  type MetaCityCatalogMarket,
+} from "@/lib/meta/city-catalog-feed"
 import { findUserIdByEmail } from "@/lib/services/resolveUserIdByEmail"
 
 const DEFAULT_MAX_ITEMS = 10_000
@@ -26,6 +35,24 @@ const META_CATALOG_CSV_HEADERS = [
   "additional_image_link",
   "identifier_exists",
   "custom_label_0",
+  "video[0].url",
+] as const
+
+const META_CITY_CATALOG_CSV_HEADERS = [
+  "id",
+  "title",
+  "description",
+  "availability",
+  "condition",
+  "price",
+  "link",
+  "image_link",
+  "brand",
+  "google_product_category",
+  "additional_image_link",
+  "identifier_exists",
+  "custom_label_0",
+  "custom_label_1",
   "video[0].url",
 ] as const
 
@@ -114,12 +141,7 @@ export async function buildMetaCatalogFeed(
   supabase: SupabaseClient,
 ): Promise<MetaCatalogFeedItem[]> {
   const maxItems = catalogFeedMaxItems()
-  const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId] = await Promise.all([
-    resolveMetaCatalogHaydenShopUserId(supabase),
-    resolveMetaCatalogOutSurfingShopUserId(supabase),
-    resolveMetaCatalogBrownstoneShopUserId(supabase),
-  ])
-  const feedContext = { haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId }
+  const feedContext = await resolveMetaCatalogShopContext(supabase)
   const items: MetaCatalogFeedItem[] = []
   let offset = 0
 
@@ -140,11 +162,80 @@ export async function buildMetaCatalogFeed(
   return items
 }
 
-export function metaCatalogFeedToCsv(items: MetaCatalogFeedItem[]): string {
-  const lines = [META_CATALOG_CSV_HEADERS.join(",")]
+async function resolveMetaCatalogShopContext(
+  supabase: SupabaseClient,
+): Promise<MetaCatalogFeedContext> {
+  const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId] = await Promise.all([
+    resolveMetaCatalogHaydenShopUserId(supabase),
+    resolveMetaCatalogOutSurfingShopUserId(supabase),
+    resolveMetaCatalogBrownstoneShopUserId(supabase),
+  ])
+  return { haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId }
+}
+
+/**
+ * Active surfboards listed in the given city landings (default: Santa Barbara + Ventura).
+ * `custom_label_1` is SantaBarbara | Ventura for Meta product-set ads.
+ */
+export async function buildMetaCityCatalogFeed(
+  supabase: SupabaseClient,
+  markets: readonly MetaCityCatalogMarket[] = META_CITY_CATALOG_MARKETS,
+): Promise<MetaCatalogFeedItem[]> {
+  const maxItems = catalogFeedMaxItems()
+  const shopContext = await resolveMetaCatalogShopContext(supabase)
+  const items: MetaCatalogFeedItem[] = []
+  const seenIds = new Set<string>()
+
+  for (const market of markets) {
+    if (items.length >= maxItems) break
+    let offset = 0
+
+    while (items.length < maxItems) {
+      const page = await fetchMetaCatalogFeedPageForLocation(
+        supabase,
+        market.locationLabel,
+        offset,
+      )
+      if (page.rows.length === 0) break
+
+      for (const row of page.rows) {
+        if (items.length >= maxItems) break
+        if (seenIds.has(row.id)) continue
+        if (
+          !isListingDiscoveryEligible({
+            status: row.status ?? "active",
+            title: row.title,
+            hidden_from_site: row.hidden_from_site,
+          })
+        ) {
+          continue
+        }
+
+        const item = listingToMetaCatalogFeedItem(row, {
+          ...shopContext,
+          cityCustomLabel: market.customLabel,
+        })
+        if (!item) continue
+        seenIds.add(row.id)
+        items.push(item)
+      }
+
+      if (page.nextOffset == null) break
+      offset = page.nextOffset
+    }
+  }
+
+  return items
+}
+
+function catalogItemsToCsv(
+  items: MetaCatalogFeedItem[],
+  headers: readonly (keyof MetaCatalogFeedItem)[],
+): string {
+  const lines = [headers.join(",")]
 
   for (const item of items) {
-    const row = META_CATALOG_CSV_HEADERS.map((header) => {
+    const row = headers.map((header) => {
       const value = item[header]
       return escapeCsvField(value == null ? "" : String(value))
     })
@@ -152,6 +243,14 @@ export function metaCatalogFeedToCsv(items: MetaCatalogFeedItem[]): string {
   }
 
   return `${lines.join("\n")}\n`
+}
+
+export function metaCatalogFeedToCsv(items: MetaCatalogFeedItem[]): string {
+  return catalogItemsToCsv(items, META_CATALOG_CSV_HEADERS)
+}
+
+export function metaCityCatalogFeedToCsv(items: MetaCatalogFeedItem[]): string {
+  return catalogItemsToCsv(items, META_CITY_CATALOG_CSV_HEADERS)
 }
 
 export function isMetaCatalogFeedAuthorized(request: Request): boolean {
