@@ -1,6 +1,6 @@
 {
   "generated_for": "AJ Surfboards official named shape catalog",
-  "source": "https://ajsurfboards.com/ (WordPress shape pages \u2014 performance-boards, goodtimes-boards, mid-boards)",
+  "source": "https://ajsurfboards.com/ (WordPress shape pages + homepage/performance-boards named models — excludes blog posts and custom-only placeholders)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -16,6 +16,12 @@
           "name": "Gripper",
           "image_url": "https://ajsurfboards.com/wp-content/uploads/2024/03/Gripper-1024x620.jpg",
           "description": "Performance shortboard for the next generation of groms stepping off an intermediate board with progressive to advanced surfing ability. This board will enable you to push your surfing to the next level.\n\nOutline\n\nGood blend of curve through out the board with extra curve through tail to promote turning capabilities.\n\nSlight single to double concaves.\n\nRails\n\nLow to medium rail profile for performance and speed.\n\nTail options\n\nRound square, Squash, Round tail\n\nWave sizes\n\nGood all rounder for beach and reef breaks 2 \u2013 6 ft for best performance\n\nRocker tail\n\nmedium\n\nRocker nose\n\nmedium\n\nGlassing options\n\nstandard to pro",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stir Fry",
+          "image_url": "https://ajsurfboards.com/wp-content/uploads/2023/09/stirfry.png",
+          "description": "Versatile performance shortboard named alongside the Gripper, Stompbox, and Jackal on AJ Surfboards' official Performance Boards page — an everyday travel-friendly shape for intermediate to advanced surfers across beach and reef breaks.",
           "board_category_slug": "shortboard"
         },
         {
@@ -53,6 +59,12 @@
           "image_url": "https://ajsurfboards.com/wp-content/uploads/2024/05/DJDtheCoasterAJ.png",
           "description": "A midlength Twin fin that glides across sections and catches waves easily. Great for those long point breaks or relaxed surf sessions. You can feel the speed and glide of the longer profile and still maneuver the board to perform turns or just set a line and trim. Perfect travel board as it can be surfed in various conditions.\n\nOutline\n\nWider outline foward into nice flowing round pin tail. The board surfs with speed and flow, the twin fin This enables you to turn off the back foot performing turns easily.\n\nSubtle vee in nose to deep double concaves with vee.\n\nConstruction\n\nPU\n\nRails\n\nSubtle flat deck with blended low soft rail.\n\nTail options\n\nRound pin\n\nWave sizes\n\nGreat for point breaks or everyday beach break conditions, surfs 1-5ft\n\nRocker tail\n\nhigh\n\nRocker nose\n\nmedium\n\nGlassing options\n\nOptional, looks great with resin tints and foam sprays.\n\nFins\n\nTwin plus single fin box.",
           "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Crankie Pumpkin",
+          "image_url": "https://ajsurfboards.com/wp-content/uploads/2023/09/AJcrankiePumpkin.jpg",
+          "description": "Named fish / alternate model featured in AJ Surfboards' official site gallery (Crankie Pumpkin product photo).",
+          "board_category_slug": "fish"
         }
       ]
     }
