@@ -8,6 +8,8 @@
  * - `{{ event.response }}` — staff reply body
  * - `{{ event.ticket_url }}` — Dashboard → Support deep link
  * - `{{ event.support_ticket_id }}`
+ * - `{{ event.case_ref }}` — RS-XXXXXXXX
+ * - `{{ event.reply_to }}` — set the flow Reply-To to this so Gmail replies land in the thread
  * - `{{ event.response_type }}` — admin_inbox_reply | support_dm_reply | status_update
  */
 
@@ -47,6 +49,12 @@ Reswell Support
 <tr>
 <td style="padding:0 0 24px 0;">
   <a href="{{ event|lookup:'ticket_url' }}" style="display:inline-block;padding:12px 20px;font-family:${fontSans};font-size:${KLAVIYO_EMAIL_BUTTON_FONT_SIZE};font-weight:600;color:${C.buttonText};text-decoration:none;background:${C.buttonBg};border-radius:${KLAVIYO_EMAIL_BUTTON_RADIUS};letter-spacing:-0.02em;">View support ticket</a>
+</td>
+</tr>
+
+<tr>
+<td style="padding:0 0 12px 0;font-family:${fontSans};font-size:14px;line-height:1.5;color:${C.muted};">
+Reply to this email to continue the conversation (case {{ event|lookup:'case_ref' }}), or open the ticket in Help.
 </td>
 </tr>
 

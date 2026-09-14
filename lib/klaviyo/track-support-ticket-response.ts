@@ -12,6 +12,9 @@
  * - `{{ event.response }}` — customer-visible reply body (admin inbox / support DM / status update)
  * - `{{ event.response_type }}` — `admin_inbox_reply` | `support_dm_reply` | `status_update`
  * - `{{ event.ticket_url }}` — Dashboard → Support deep link
+ * - `{{ event.case_ref }}` — short reference (RS-XXXXXXXX)
+ * - `{{ event.reply_to }}` — plus-addressed inbound mailbox when `SUPPORT_INBOUND_REPLY_TO` is set.
+ *   Set the Klaviyo flow Reply-To to this so Gmail replies hit `/api/webhooks/inbound-email`.
  *
  * Avoid top-level duplicate email fields — `profile.email` identifies the recipient; keep copy in `response`.
  *
@@ -20,6 +23,8 @@
 
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
+import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+import { formatSupportInboundReplyTo } from "@/lib/utils/support-inbound-email"
 import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 
 const RESPONSE_PROP_MAX = 4000
@@ -72,6 +77,8 @@ export async function trackKlaviyoSupportTicketResponse(
 
   const time = new Date().toISOString()
   const ext = payload.externalId?.trim() || null
+  const mailbox = process.env.SUPPORT_INBOUND_REPLY_TO?.trim() || ""
+  const replyTo = mailbox ? formatSupportInboundReplyTo(mailbox, supportTicketId) : null
 
   await sendKlaviyoServerEvent({
     metricName: "Support Tickets Response",
@@ -82,12 +89,14 @@ export async function trackKlaviyoSupportTicketResponse(
     properties: {
       time,
       support_ticket_id: supportTicketId,
+      case_ref: formatSupportCaseReference(supportTicketId),
       response,
       response_type: payload.responseType,
       support_status: payload.supportStatus?.trim() ?? "",
       ticket_url:
         payload.ticketUrl?.trim() ||
         supportCaseResponseAbsoluteUrl(publicSiteOriginForEmail(), supportTicketId),
+      reply_to: replyTo ?? "",
     },
     uniqueId: payload.uniqueId.trim() || `support-ticket-response-${supportTicketId}-${time}`,
   })
