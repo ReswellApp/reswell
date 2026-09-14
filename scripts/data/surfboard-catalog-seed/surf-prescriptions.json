@@ -1,6 +1,6 @@
 {
   "generated_for": "Surf Prescriptions official named standup catalog",
-  "source": "https://surfprescriptions.com/pages/surfboards (official model lineup — excludes apparel, fins, used boards, and dimension stock SKUs)",
+  "source": "https://surfprescriptions.com/pages/surfboards and https://surfprescriptions.com/products.json (official model lineup — excludes apparel, fins, used boards, and dimension stock SKUs)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -160,6 +160,12 @@
           "name": "Wonder Twin",
           "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/WonderTwin-twin-fin-front-surf-prescriptions.png?v=1777481695",
           "description": "The Wonder Twin is a round wing pin version of the Twin 82. A custom performance twin fin groveler designed for surfers who want to push hard through small waves without holding back. The shape features a flat deck, a beak nose, and a wide point set above center for paddle power and easy wave entry. The wing pin tail tightens up the back end of the board for control and bite, while the bottom contour runs a double barrel concave from tip to tail for speed and drive. What makes the Wonder Twin different is in the channels. Doc added a channel running inside each fin, about a quarter of the way up from the tail, plus a short slot channel running from behind the fins out through the tail. Designed to give you the hold of a stabilizer center fin without the drag of an actual third fin.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Wonder Twin Zer 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/wonder-twinzer-2-5-8-blue-front-doc-lausch-surf-prescriptions.png?v=1784176124",
+          "description": "The Wonder Twin Zer 2.0 is Doc's refined take on the popular Wonder Twin. The original had heaps of fans, but feedback kept pointing to the same limitations: flatter nose rocker, box rails, flat deck, and beak nose that kept the board from pushing into bigger surf. The 2.0 rebuilds those exact features. A more continuous nose rocker frees the rider to surf vertically and jam turns wherever and whenever they want. Refined rails and deck keep the board responsive when conditions step up. Doc left the tail alone — it wasn't broken, and it didn't need fixing. The result is a twinzer that still shines in small junky surf but now has the range to perform when waves are a grade overhead. The twinzer fin setup gives you the looseness of a true twin with extra hold for critical sections, making this a next-level small wave performance machine.",
           "board_category_slug": "groveler"
         },
         {
