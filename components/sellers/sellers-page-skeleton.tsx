@@ -10,27 +10,25 @@ const TITLE_WIDTHS = [
   "w-[80%]",
 ] as const
 
-/** Skeleton placeholder matching {@link SellerDirectoryCard} layout. */
+/** Skeleton placeholder matching {@link SellerDirectoryCard} storefront layout. */
 export function SellerDirectoryCardSkeleton({ index = 0 }: { index?: number }) {
   const titleWidth = TITLE_WIDTHS[index % TITLE_WIDTHS.length]
 
   return (
     <div
-      className="overflow-hidden rounded-[18px] border border-border/70 bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+      className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
       aria-hidden
     >
-      <ListingTileShimmer className="h-[152px] w-full rounded-none sm:h-[172px]" />
-      <div className="flex items-start gap-3 px-4 pb-3 pt-3.5">
-        <ListingTileShimmer className="h-10 w-10 shrink-0 rounded-full" />
-        <div className="min-w-0 flex-1 space-y-2 pt-0.5">
-          <ListingTileShimmer className={cn("h-4", titleWidth)} />
-          <ListingTileShimmer className="h-3 w-16" />
+      <div className="relative aspect-[4/5] w-full">
+        <ListingTileShimmer className="h-full w-full rounded-none" />
+        <div className="absolute inset-x-0 bottom-0 flex items-end gap-2 px-2.5 pb-2.5">
+          <ListingTileShimmer className="h-10 w-10 shrink-0 rounded-full" />
+          <ListingTileShimmer className={cn("mb-1 h-3.5", titleWidth)} />
         </div>
-        <ListingTileShimmer className="h-9 w-[4.75rem] shrink-0 rounded-full" />
       </div>
-      <div className="min-h-[4.75rem] space-y-2 px-4 pb-4 pt-0.5">
-        <ListingTileShimmer className="h-4 w-32" />
-        <ListingTileShimmer className="h-4 w-40" />
+      <div className="space-y-2 px-2.5 pb-2.5 pt-2">
+        <ListingTileShimmer className="h-3 w-28" />
+        <ListingTileShimmer className="h-3 w-20" />
       </div>
     </div>
   )
@@ -54,8 +52,8 @@ export function SellersPageSkeleton() {
         </div>
       </section>
       <section className="py-10 sm:py-14" aria-hidden>
-        <div className="container mx-auto max-w-6xl px-4 sm:px-6">
-          <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="container mx-auto px-4 sm:px-6">
+          <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {SKELETON_CARD_KEYS.map((key) => (
               <li key={key} className="min-h-0">
                 <SellerDirectoryCardSkeleton index={key} />

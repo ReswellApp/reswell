@@ -1,17 +1,17 @@
-import type { ReactNode } from "react"
-import Link from "next/link"
 import { Truck } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
-import { SellerDirectoryMosaicImage } from "@/components/sellers/seller-directory-mosaic-image"
+import { SellerDirectoryStorefrontWindow } from "@/components/sellers/seller-directory-storefront-window"
 import { SellerDirectoryTileFollow } from "@/components/sellers/seller-directory-tile-follow"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
 import {
   buildSellerDirectoryMosaicSlots,
-  sellerDirectoryMosaicHasRenderableImage,
   type SellerDirectoryMosaicSlot,
 } from "@/lib/sellers/directory-mosaic-images"
-import { homePeerListingGridCardClass, homePeerListingGridImageSizes } from "@/lib/home-listing-scroll-styles"
+import {
+  sellerDirectoryMonogram,
+  sellerDirectorySignature,
+} from "@/lib/sellers/directory-signature"
 import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { cn } from "@/lib/utils"
@@ -47,6 +47,7 @@ type SellerDirectoryCardProps = {
   tileMeta: SellerDirectoryTileMeta
   avgRating: number
   reviewCount: number
+  inventoryCount: number
   initialFollowing: boolean
   isLoggedIn: boolean
   isOwnProfile: boolean
@@ -62,48 +63,14 @@ function sellerLabel(shop: SellerDirectoryCardShop): string {
   return shop.shop_name?.trim() || shop.display_name?.trim() || "Seller"
 }
 
-function SellerDirectoryMosaic({
-  slots,
-  href,
-  imagePriority,
-}: {
-  slots: SellerDirectoryMosaicSlot[]
-  href: string
-  imagePriority?: boolean
-}) {
-  const hasImages = sellerDirectoryMosaicHasRenderableImage(slots)
-
-  if (!hasImages) {
-    return (
-      <Link
-        href={href}
-        className="block aspect-[3/4] w-full rounded-t-xl bg-muted outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="View seller profile"
-      />
-    )
+function inventoryLine(inventoryCount: number, salesCount: number | null): string | null {
+  if (inventoryCount > 0) {
+    return `${inventoryCount} for sale`
   }
-
-  return (
-    <Link
-      href={href}
-      className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <SellerDirectoryMosaicImage
-        slot={slots[0]!}
-        className="aspect-[3/4] w-full shrink-0 rounded-t-xl"
-        sizes={homePeerListingGridImageSizes}
-        priority={imagePriority}
-      />
-    </Link>
-  )
-}
-
-function PolicyIcon({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
-      {children}
-    </span>
-  )
+  if (salesCount && salesCount > 0) {
+    return `${salesCount} sale${salesCount === 1 ? "" : "s"}`
+  }
+  return null
 }
 
 export function SellerDirectoryCard({
@@ -112,6 +79,7 @@ export function SellerDirectoryCard({
   tileMeta,
   avgRating,
   reviewCount,
+  inventoryCount,
   initialFollowing,
   isLoggedIn,
   isOwnProfile,
@@ -124,87 +92,73 @@ export function SellerDirectoryCard({
   const avatarSrc = avatarSrcProp ?? resolveSellerProfileDisplayImageUrl(shop, thumbs)
   const href = sellerProfileHref(shop)
   const mosaicSlots = mosaicSlotsProp ?? buildSellerDirectoryMosaicSlots(thumbs, shop)
+  const stockLine = inventoryLine(inventoryCount, shop.sales_count)
+  const locationShort = tileMeta.locationShort ?? shop.city?.trim() ?? null
 
   return (
-    <article className={cn(homePeerListingGridCardClass, className)}>
-      <SellerDirectoryMosaic slots={mosaicSlots} href={href} imagePriority={imagePriority} />
-
-      <div className="px-2.5 pb-2 pt-2.5">
-        <div className="flex items-start gap-2">
-          <Link
-            href={href}
-            className="shrink-0 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={avatarSrc} alt="" />
-              <AvatarFallback className="bg-muted text-xs font-semibold text-foreground">
-                {label.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
-
-          <div className="min-w-0 flex-1 pt-0.5">
-            <div className="flex min-w-0 flex-col items-start gap-1.5">
-              <Link
-                href={href}
-                className="min-w-0 w-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <h2 className="break-words text-[15px] font-bold leading-snug text-foreground">
-                  {label}
-                </h2>
-              </Link>
-
-              <SellerDirectoryTileFollow
-                sellerId={shop.id}
-                sellerSlug={shop.seller_slug}
-                sellerName={label}
-                initialFollowing={initialFollowing}
-                isLoggedIn={isLoggedIn}
-                isOwnProfile={isOwnProfile}
-              />
-            </div>
-
-            {reviewCount > 0 ? (
-              <div
-                className="mt-1 flex min-w-0 items-center gap-1"
-                role="img"
-                aria-label={`${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
-              >
-                <SellerRatingStarRow value={avgRating} size="sm" className="shrink-0" />
-                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  ({reviewCount})
-                </span>
-              </div>
-            ) : null}
-          </div>
+    <article
+      className={cn(
+        listingProductCardSolidClassName,
+        "flex h-full min-w-0 flex-col [content-visibility:auto] [contain-intrinsic-size:auto_28rem]",
+        className,
+      )}
+    >
+      <div className="relative">
+        <SellerDirectoryStorefrontWindow
+          href={href}
+          slots={mosaicSlots}
+          label={label}
+          avatarSrc={avatarSrc}
+          isShop={shop.is_shop === true}
+          shopVerified={shop.shop_verified === true}
+          locationShort={locationShort}
+          monogram={sellerDirectoryMonogram(label)}
+          signature={sellerDirectorySignature(shop.id)}
+          imagePriority={imagePriority}
+        />
+        <div className="absolute right-2 top-2 z-10">
+          <SellerDirectoryTileFollow
+            sellerId={shop.id}
+            sellerSlug={shop.seller_slug}
+            sellerName={label}
+            initialFollowing={initialFollowing}
+            isLoggedIn={isLoggedIn}
+            isOwnProfile={isOwnProfile}
+          />
         </div>
       </div>
 
-      <div className="space-y-1 px-2.5 pb-2.5 pt-0">
-        {tileMeta.offersShipping ? (
-          <>
-            {tileMeta.shipFromState ? (
-              <p className="text-[11px] font-medium leading-snug text-muted-foreground">
-                Ships from {tileMeta.shipFromState}
+      {tileMeta.specialtyLine || stockLine || reviewCount > 0 || tileMeta.offersShipping ? (
+        <div className="flex flex-1 flex-col gap-1.5 px-2.5 pb-2.5 pt-2">
+          {tileMeta.specialtyLine || stockLine ? (
+            <p className="truncate text-[11px] font-medium leading-snug text-muted-foreground">
+              {[tileMeta.specialtyLine, stockLine].filter(Boolean).join(" · ")}
+            </p>
+          ) : null}
+
+          {reviewCount > 0 ? (
+            <div
+              className="flex min-w-0 items-center gap-1"
+              role="img"
+              aria-label={`${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
+            >
+              <SellerRatingStarRow value={avgRating} size="sm" className="shrink-0" />
+              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">({reviewCount})</span>
+            </div>
+          ) : null}
+
+          {tileMeta.offersShipping ? (
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
+                <Truck className="h-3 w-3" aria-hidden />
+              </span>
+              <p className="truncate text-[11px] font-medium leading-snug text-muted-foreground">
+                {tileMeta.shippingLine}
               </p>
-            ) : null}
-            {tileMeta.shippingLine ? (
-              <div className="flex items-center gap-1.5">
-                <PolicyIcon>
-                  <Truck className="h-3 w-3" aria-hidden />
-                </PolicyIcon>
-                <p className="text-[11px] font-medium leading-snug text-muted-foreground">
-                  {tileMeta.shippingLine}
-                </p>
-              </div>
-            ) : null}
-          </>
-        ) : tileMeta.locatedInLabel ? (
-          <p className="text-[11px] font-medium leading-snug text-muted-foreground">
-            {tileMeta.locatedInLabel}
-          </p>
-        ) : null}
-      </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   )
 }

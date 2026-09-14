@@ -1,9 +1,11 @@
+import { isPeerListingSection, type PeerListingSection } from "@/lib/peer-listing-sections"
 import { toUsStateCode } from "@/lib/utils/us-state-code"
 
 export type SellerListingForTileMeta = {
   city: string | null
   state: string | null
   shipping_available: boolean | null
+  section?: string | null
 }
 
 export type SellerDirectoryTileMeta = {
@@ -12,6 +14,22 @@ export type SellerDirectoryTileMeta = {
   shipFromState: string | null
   shippingLine: string | null
   locatedInLabel: string | null
+  /** City/state without a "Located in" / "Ships from" prefix. */
+  locationShort: string | null
+  /** Top inventory categories, e.g. "Surfboards · Fins". */
+  specialtyLine: string | null
+}
+
+const SPECIALTY_LABELS: Record<PeerListingSection, string> = {
+  surfboards: "Surfboards",
+  fins: "Fins",
+  wetsuits: "Wetsuits",
+  boardbags: "Boardbags",
+  surfpacks: "Surfpacks",
+  leashes: "Leashes",
+  apparel: "Apparel",
+  accessories: "Accessories",
+  magazines: "Magazines",
 }
 
 /**
@@ -96,19 +114,38 @@ function resolveLocatedInLabel(listings: SellerListingForTileMeta[]): string | n
   return formatLocatedIn(pair.city, pair.state)
 }
 
+function deriveSpecialtyLine(listings: SellerListingForTileMeta[]): string | null {
+  const counts = new Map<PeerListingSection, number>()
+  for (const listing of listings) {
+    if (!isPeerListingSection(listing.section)) continue
+    counts.set(listing.section, (counts.get(listing.section) ?? 0) + 1)
+  }
+
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1])
+  if (ranked.length === 0) return null
+
+  const [top, second] = ranked
+  const topLabel = SPECIALTY_LABELS[top[0]]
+  if (!second || top[1] >= second[1] * 3) return topLabel
+  return `${topLabel} · ${SPECIALTY_LABELS[second[0]]}`
+}
+
 /** Aggregate ship-from / located-in copy from listing rows (active and/or sold). */
 export function deriveSellerDirectoryTileMeta(
   listings: SellerListingForTileMeta[],
 ): SellerDirectoryTileMeta {
   const offersShipping = listings.some((l) => l.shipping_available === true)
+  const locationShort = resolvePrimaryListingState(listings)
+  const specialtyLine = deriveSpecialtyLine(listings)
 
   if (offersShipping) {
-    const shipFrom = resolvePrimaryListingState(listings)
     return {
       offersShipping: true,
-      shipFromState: shipFrom,
+      shipFromState: locationShort,
       shippingLine: "Seller offers shipping",
       locatedInLabel: null,
+      locationShort,
+      specialtyLine,
     }
   }
 
@@ -117,6 +154,8 @@ export function deriveSellerDirectoryTileMeta(
     shipFromState: null,
     shippingLine: null,
     locatedInLabel: resolveLocatedInLabel(listings),
+    locationShort,
+    specialtyLine,
   }
 }
 

@@ -52,6 +52,7 @@ export default async function SellersPage({
     tileMeta: item.tileMeta,
     avgRating: item.avgRating,
     reviewCount: item.reviewCount,
+    inventoryCount: item.inventoryCount,
     avatarSrc: item.avatarSrc,
     mosaicSlots: item.mosaicSlots,
     initialFollowing: followingSet.has(item.shop.id),

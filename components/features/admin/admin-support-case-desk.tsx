@@ -53,6 +53,8 @@ type AdminSupportCaseDeskProps = {
     amount: number
     shippingAmount: number
     paymentMethod: string
+    fulfillmentMethod?: string | null
+    deliveryStatus?: string | null
     repairCreditTotal: number
   } | null
 }
@@ -261,6 +263,8 @@ export function AdminSupportCaseDesk({
               amount={refund.amount}
               shippingAmount={refund.shippingAmount}
               paymentMethod={refund.paymentMethod}
+              fulfillmentMethod={refund.fulfillmentMethod}
+              deliveryStatus={refund.deliveryStatus}
               repairCreditTotal={refund.repairCreditTotal}
               canIssueRefund={isAdmin}
             />

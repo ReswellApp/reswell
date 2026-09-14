@@ -20,7 +20,7 @@ import { toast } from "sonner"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import {
   ADMIN_REFUND_DISPOSITION_OPTIONS,
-  DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
+  defaultMarketplaceOrderRefundDisposition,
   type MarketplaceOrderRefundDisposition,
 } from "@/lib/services/marketplaceOrderRefundDisposition"
 import { cn } from "@/lib/utils"
@@ -58,6 +58,8 @@ export function AdminIssueRefundButton({
   amount,
   shippingAmount = 0,
   paymentMethod,
+  fulfillmentMethod = null,
+  deliveryStatus = null,
   onComplete,
 }: {
   orderId: string
@@ -66,6 +68,8 @@ export function AdminIssueRefundButton({
   /** Buyer-paid shipping included in `amount` (for display). */
   shippingAmount?: number
   paymentMethod: string
+  fulfillmentMethod?: string | null
+  deliveryStatus?: string | null
   /** Called after a successful refund (client pages should refetch order data). */
   onComplete?: () => void
 }) {
@@ -73,8 +77,8 @@ export function AdminIssueRefundButton({
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [fullyRefundedUi, setFullyRefundedUi] = useState(false)
-  const [disposition, setDisposition] = useState<MarketplaceOrderRefundDisposition>(
-    DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
+  const [disposition, setDisposition] = useState<MarketplaceOrderRefundDisposition>(() =>
+    defaultMarketplaceOrderRefundDisposition({ fulfillmentMethod, deliveryStatus }),
   )
 
   if (orderStatus !== "confirmed" && orderStatus !== "refunding") return null

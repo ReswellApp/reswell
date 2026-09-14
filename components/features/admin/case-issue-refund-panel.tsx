@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { issueOrderSupportCaseRefundAction } from "@/lib/actions/orderSupportCaseRefund"
 import {
   ADMIN_REFUND_DISPOSITION_OPTIONS,
-  DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
+  defaultMarketplaceOrderRefundDisposition,
   type MarketplaceOrderRefundDisposition,
 } from "@/lib/services/marketplaceOrderRefundDisposition"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,8 @@ type CaseIssueRefundPanelProps = {
   amount: number
   shippingAmount?: number
   paymentMethod: string
+  fulfillmentMethod?: string | null
+  deliveryStatus?: string | null
   repairCreditTotal: number
   canIssueRefund: boolean
   onComplete?: () => void
@@ -45,6 +47,8 @@ export function CaseIssueRefundPanel({
   amount,
   shippingAmount = 0,
   paymentMethod,
+  fulfillmentMethod = null,
+  deliveryStatus = null,
   repairCreditTotal,
   canIssueRefund,
   onComplete,
@@ -52,8 +56,8 @@ export function CaseIssueRefundPanel({
   const [pending, startTransition] = useTransition()
   const [open, setOpen] = useState(false)
   const [allowAfterCredit, setAllowAfterCredit] = useState(false)
-  const [disposition, setDisposition] = useState<MarketplaceOrderRefundDisposition>(
-    DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
+  const [disposition, setDisposition] = useState<MarketplaceOrderRefundDisposition>(() =>
+    defaultMarketplaceOrderRefundDisposition({ fulfillmentMethod, deliveryStatus }),
   )
 
   if (orderStatus === "refunded") {

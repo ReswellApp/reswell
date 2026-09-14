@@ -25,7 +25,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 export const SELLERS_DIRECTORY_CACHE_TAG = "sellers-directory"
 export const SELLERS_DIRECTORY_REVALIDATE_SECONDS = 60 * 60 * 24 * 7
 
-const THUMB_PER_SELLER = 1
+const THUMB_PER_SELLER = 4
 const LISTINGS_FETCH_CAP = 4000
 
 const profilePublicFields =
@@ -138,6 +138,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
       city: row.city ?? null,
       state: row.state ?? null,
       shipping_available: row.shipping_available ?? null,
+      section: row.section ?? null,
     }
     const metaList = listingsForMetaBySeller.get(row.user_id) ?? []
     metaList.push(metaRow)
@@ -216,7 +217,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
 
 export const getCachedSellersDirectoryCatalog = unstable_cache(
   loadSellersDirectoryCatalogUncached,
-  ["sellers-directory-catalog-v2"],
+  ["sellers-directory-catalog-v3"],
   {
     revalidate: SELLERS_DIRECTORY_REVALIDATE_SECONDS,
     tags: [SELLERS_DIRECTORY_CACHE_TAG],

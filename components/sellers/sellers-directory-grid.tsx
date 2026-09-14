@@ -12,6 +12,7 @@ export type SellerDirectoryGridItem = {
   tileMeta: SellerDirectoryTileMeta
   avgRating: number
   reviewCount: number
+  inventoryCount: number
   avatarSrc?: string
   mosaicSlots?: SellerDirectoryMosaicSlot[]
   initialFollowing: boolean
@@ -25,7 +26,7 @@ type SellersDirectoryGridProps = {
 
 export function SellersDirectoryGrid({ items, isLoggedIn }: SellersDirectoryGridProps) {
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((item, index) => (
         <li key={item.shop.id} className="min-w-0 h-full">
           <SellerDirectoryCard
@@ -34,12 +35,13 @@ export function SellersDirectoryGrid({ items, isLoggedIn }: SellersDirectoryGrid
             tileMeta={item.tileMeta}
             avgRating={item.avgRating}
             reviewCount={item.reviewCount}
+            inventoryCount={item.inventoryCount}
             avatarSrc={item.avatarSrc}
             mosaicSlots={item.mosaicSlots}
             initialFollowing={item.initialFollowing}
             isLoggedIn={isLoggedIn}
             isOwnProfile={item.isOwnProfile}
-            imagePriority={index < 5}
+            imagePriority={index < 4}
           />
         </li>
       ))}
