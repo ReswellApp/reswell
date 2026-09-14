@@ -64,4 +64,17 @@ describe("support reply example search pattern", () => {
     assert.equal(supportReplyExampleSearchPattern("..."), "...")
     assert.equal(supportReplyExampleSearchPattern("   "), null)
   })
+
+  it("matches stored body for thanks. and Hi, Hayden", () => {
+    const staffReply = "Hi, Hayden — tracking is live. thanks."
+    const customerExcerpt = "Hi, Hayden, where is my board?"
+    const thanks = supportReplyExampleSearchPattern("thanks.")
+    const greeting = supportReplyExampleSearchPattern("Hi, Hayden")
+    assert.ok(thanks)
+    assert.ok(greeting)
+    assert.ok(staffReply.toLowerCase().includes(thanks.toLowerCase()))
+    assert.ok(staffReply.toLowerCase().includes(greeting.toLowerCase()))
+    assert.ok(customerExcerpt.toLowerCase().includes(greeting.toLowerCase()))
+    assert.ok(supportReplyExampleSearchOrClause("thanks.")?.includes("thanks."))
+  })
 })
