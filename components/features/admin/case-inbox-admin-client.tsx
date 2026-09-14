@@ -42,6 +42,7 @@ import type {
   ComposerDisposition,
   ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
+import { useSupportReplyDraft } from "@/components/features/admin/hooks/use-support-reply-draft"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -122,6 +123,8 @@ export function CaseInboxAdminClient() {
   const [replyPending, startReply] = useTransition()
   const composerRef = useRef<CaseInboxComposerHandle>(null)
   const skipNoteBlur = useRef(false)
+  const [aiAppliedBody, setAiAppliedBody] = useState<string | null>(null)
+  const consumedAiId = useRef<string | null>(null)
 
   const onOrderContextLoaded = useCallback(
     (detail: AdminOrderDetail, extras: CaseOrderLabelContext) => {
@@ -242,7 +245,34 @@ export function CaseInboxAdminClient() {
   }, [selected, draftCaseId])
 
   const selectedId = selected?.id ?? null
+  const {
+    draft: aiDraft,
+    loading: aiLoading,
+    error: aiError,
+    regenerate: regenerateAi,
+    rate: rateAi,
+  } = useSupportReplyDraft(selected?.isOpen ? selectedId : null)
   const loadedThreadIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    setAiAppliedBody(null)
+    consumedAiId.current = null
+  }, [selectedId])
+
+  useEffect(() => {
+    if (!selected?.isOpen || !aiDraft || composerMode !== "reply") return
+    if (consumedAiId.current === aiDraft.id) return
+    if (draftCaseId !== aiDraft.caseId) return
+    const current = draft.trim()
+    const canReplace = !current || current === (aiAppliedBody ?? "").trim()
+    if (!canReplace) return
+    if (current === aiDraft.body.trim()) {
+      if (aiAppliedBody !== aiDraft.body) setAiAppliedBody(aiDraft.body)
+      return
+    }
+    setDraft(aiDraft.body)
+    setAiAppliedBody(aiDraft.body)
+  }, [aiDraft, selected, composerMode, draftCaseId, draft, aiAppliedBody])
 
   useEffect(() => {
     if (!selectedId || draftCaseId !== selectedId) return
@@ -467,8 +497,10 @@ export function CaseInboxAdminClient() {
       toast.success(
         composerMode === "note" ? "Note added" : staffSentToast(current.requesterRole),
       )
-      setDraft("")
       const sentMode = composerMode
+      if (sentMode === "reply" && aiDraft) consumedAiId.current = aiDraft.id
+      setAiAppliedBody(null)
+      setDraft("")
       const now = new Date().toISOString()
       setThreadMessages((prev) => [
         ...prev,
@@ -697,6 +729,12 @@ export function CaseInboxAdminClient() {
                   onSend={sendComposer}
                   orderContext={orderContext}
                   orderExtras={orderExtras}
+                  aiLoading={aiLoading}
+                  aiActive={Boolean(aiDraft) && draft.trim() === (aiAppliedBody ?? "").trim()}
+                  aiError={aiError}
+                  aiHelp={aiDraft?.citedHelp}
+                  onRegenerateAi={regenerateAi}
+                  onRateAi={rateAi}
                 />
               </div>
               <div

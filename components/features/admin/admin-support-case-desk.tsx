@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, ExternalLink, Package, User } from "lucide-react"
+import { ArrowLeft, ExternalLink, Loader2, Package, RefreshCw, Sparkles, User } from "lucide-react"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { SupportMacrosPicker } from "@/components/features/admin/support-macros-picker"
+import { useSupportReplyDraft } from "@/components/features/admin/hooks/use-support-reply-draft"
 import { ProtectionClaimDesk } from "@/components/features/admin/protection-claim-desk"
 import { CaseAssigneeSelect } from "@/components/features/admin/case-assignee-select"
 import { CaseIssueRefundPanel } from "@/components/features/admin/case-issue-refund-panel"
@@ -77,6 +78,19 @@ export function AdminSupportCaseDesk({
   const [currentStaffId, setCurrentStaffId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [macroDraft, setMacroDraft] = useState("")
+  const [seedText, setSeedText] = useState("")
+  const { draft: aiDraft, loading: aiLoading, regenerate: regenerateAi } = useSupportReplyDraft(
+    closed ? null : caseId,
+  )
+
+  useEffect(() => {
+    if (macroDraft) setSeedText(macroDraft)
+  }, [macroDraft])
+
+  useEffect(() => {
+    if (macroDraft || aiLoading || !aiDraft?.body) return
+    setSeedText((current) => (current.trim() ? current : aiDraft.body))
+  }, [aiDraft, macroDraft, aiLoading])
 
   useEffect(() => {
     void listSupportStaffAction().then((res) => {
@@ -150,6 +164,36 @@ export function AdminSupportCaseDesk({
               <p className="sr-only">{macroDraft}</p>
             ) : null}
             <div className="shrink-0 border-b border-border/50 px-1 py-3">
+              {!closed ? (
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                  <span>
+                    {aiLoading
+                      ? "Writing a reply…"
+                      : aiDraft
+                        ? "Suggested reply is in the box — edit before you send"
+                        : "Reply drafts appear here when ready"}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2"
+                    disabled={aiLoading}
+                    onClick={() => {
+                      regenerateAi()
+                      setSeedText("")
+                    }}
+                  >
+                    {aiLoading ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-1 h-3 w-3" />
+                    )}
+                    Rewrite
+                  </Button>
+                </div>
+              ) : null}
               <SupportMacrosPicker
                 kindFilter={
                   kind === "protection_claim"
@@ -178,7 +222,7 @@ export function AdminSupportCaseDesk({
               canReply
               role="staff"
               closed={closed}
-              seedText={macroDraft || undefined}
+              seedText={seedText || undefined}
             />
           </div>
         </div>

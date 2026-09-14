@@ -22,6 +22,7 @@ import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-t
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 import { markSupportCaseReadForMember } from "@/lib/services/supportUnread"
+import { recordSentSupportReplyExample } from "@/lib/services/supportReplyDraft"
 
 export type SupportCaseThreadMessage = SupportCaseMessageRow
 
@@ -234,6 +235,12 @@ export async function sendSupportCaseAdminReplyService(
     id: row.id,
     preview: body,
     status: nextStatus,
+  })
+
+  void recordSentSupportReplyExample({
+    caseId: row.id,
+    sentBody: body,
+    staffUserId: staff.userId,
   })
 
   if (row.requester_email?.trim()) {
