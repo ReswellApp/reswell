@@ -12,6 +12,7 @@ export const SUPPORT_REPLY_EXAMPLE_KINDS = [
   "account",
 ] as const
 export const SUPPORT_REPLY_EXAMPLE_PAGE_SIZE = 25
+export const SUPPORT_REPLY_EXAMPLE_SEARCH_MAX = 200
 
 const emptyToUndefined = (value: unknown) => {
   if (value == null) return undefined
@@ -30,7 +31,31 @@ const citedHelpSlugsSchema = z
 
 const optionalKindSchema = z.preprocess(
   emptyToUndefined,
-  z.enum(SUPPORT_REPLY_EXAMPLE_KINDS).optional(),
+  z.enum(SUPPORT_REPLY_EXAMPLE_KINDS).optional().catch(undefined),
+)
+
+const optionalRatingSchema = z.preprocess(
+  emptyToUndefined,
+  z.enum(SUPPORT_REPLY_DRAFT_RATINGS).optional().catch(undefined),
+)
+
+const optionalQuerySchema = z
+  .preprocess(emptyToUndefined, z.string().optional().catch(undefined))
+  .transform((value) => {
+    if (typeof value !== "string") return undefined
+    const trimmed = value.trim()
+    if (!trimmed) return undefined
+    return trimmed.slice(0, SUPPORT_REPLY_EXAMPLE_SEARCH_MAX)
+  })
+
+const optionalPageSchema = z.preprocess(
+  emptyToUndefined,
+  z.coerce.number().int().min(1).optional().catch(undefined),
+)
+
+const optionalLimitSchema = z.preprocess(
+  emptyToUndefined,
+  z.coerce.number().int().min(1).max(100).optional().catch(undefined),
 )
 
 export const supportReplyDraftCaseIdSchema = z.object({
@@ -52,11 +77,11 @@ export const supportReplyDraftLlmSchema = z.object({
 })
 
 export const supportReplyExampleListSchema = z.object({
-  rating: z.preprocess(emptyToUndefined, z.enum(SUPPORT_REPLY_DRAFT_RATINGS).optional()),
+  rating: optionalRatingSchema,
   kind: optionalKindSchema,
-  q: z.preprocess(emptyToUndefined, z.string().trim().max(200).optional()),
-  page: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).optional()),
-  limit: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(100).optional()),
+  q: optionalQuerySchema,
+  page: optionalPageSchema,
+  limit: optionalLimitSchema,
 })
 
 export const supportReplyExampleUpdateSchema = z.object({
@@ -83,3 +108,8 @@ export type SupportReplyExampleKind = (typeof SUPPORT_REPLY_EXAMPLE_KINDS)[numbe
 export type SupportReplyExampleListInput = z.infer<typeof supportReplyExampleListSchema>
 export type SupportReplyExampleUpdateInput = z.infer<typeof supportReplyExampleUpdateSchema>
 export type SupportReplyExampleDeleteInput = z.infer<typeof supportReplyExampleDeleteSchema>
+
+export function parseSupportReplyExampleListParams(raw: unknown): SupportReplyExampleListInput {
+  const parsed = supportReplyExampleListSchema.safeParse(raw)
+  return parsed.success ? parsed.data : {}
+}

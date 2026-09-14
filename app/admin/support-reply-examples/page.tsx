@@ -8,7 +8,7 @@ import {
 } from "@/lib/utils/support-reply-examples"
 import {
   SUPPORT_REPLY_EXAMPLE_PAGE_SIZE,
-  supportReplyExampleListSchema,
+  parseSupportReplyExampleListParams,
 } from "@/lib/validations/supportReplyDraft"
 import type { SupportReplyExampleListResult } from "@/lib/types/supportReplyDraft"
 
@@ -41,8 +41,7 @@ export default async function AdminSupportReplyExamplesPage({
   searchParams,
 }: AdminSupportReplyExamplesPageProps) {
   const raw = await searchParams
-  const parsed = supportReplyExampleListSchema.safeParse(raw)
-  const filters = parsed.success ? parsed.data : {}
+  const filters = parseSupportReplyExampleListParams(raw)
   const loaded = await listAdminSupportReplyExamplesService(filters)
   if ("data" in loaded && loaded.data.page !== (filters.page ?? 1)) {
     redirect(

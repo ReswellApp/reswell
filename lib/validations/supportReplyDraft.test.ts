@@ -2,6 +2,8 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   SUPPORT_REPLY_EXAMPLE_PAGE_SIZE,
+  SUPPORT_REPLY_EXAMPLE_SEARCH_MAX,
+  parseSupportReplyExampleListParams,
   supportReplyExampleDeleteSchema,
   supportReplyExampleListSchema,
   supportReplyExampleUpdateSchema,
@@ -34,9 +36,30 @@ describe("support reply example review schemas", () => {
     assert.equal(parsed.data.page, 2)
   })
 
-  it("rejects an unknown kind filter", () => {
-    const parsed = supportReplyExampleListSchema.safeParse({ kind: "not-a-kind" })
-    assert.equal(parsed.success, false)
+  it("keeps valid filters when one query param is invalid", () => {
+    const parsed = parseSupportReplyExampleListParams({
+      rating: "accepted",
+      kind: "not-a-kind",
+      q: "tracking",
+      page: "nope",
+    })
+    assert.equal(parsed.rating, "accepted")
+    assert.equal(parsed.kind, undefined)
+    assert.equal(parsed.q, "tracking")
+    assert.equal(parsed.page, undefined)
+  })
+
+  it("caps a long search without dropping rating or kind", () => {
+    const q = `${"refund ".repeat(40)}end`
+    const parsed = parseSupportReplyExampleListParams({
+      rating: "edited",
+      kind: "order_question",
+      q,
+    })
+    assert.equal(parsed.rating, "edited")
+    assert.equal(parsed.kind, "order_question")
+    assert.equal(parsed.q?.length, SUPPORT_REPLY_EXAMPLE_SEARCH_MAX)
+    assert.ok(parsed.q?.startsWith("refund"))
   })
 
   it("updates an example and splits cited slugs", () => {

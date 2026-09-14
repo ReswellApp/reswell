@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight } from "lucide-react"
@@ -19,6 +19,7 @@ import {
 import {
   SUPPORT_REPLY_DRAFT_RATINGS,
   SUPPORT_REPLY_EXAMPLE_KINDS,
+  SUPPORT_REPLY_EXAMPLE_SEARCH_MAX,
   type SupportReplyDraftRating,
   type SupportReplyExampleKind,
 } from "@/lib/validations/supportReplyDraft"
@@ -48,6 +49,10 @@ export function SupportReplyExamplesAdminClient({
   const router = useRouter()
   const [query, setQuery] = useState(filters.q ?? "")
   const pageCount = Math.max(1, Math.ceil(result.total / result.limit))
+
+  useEffect(() => {
+    setQuery(filters.q ?? "")
+  }, [filters.q])
 
   function go(next: {
     rating?: SupportReplyDraftRating | null
@@ -107,7 +112,7 @@ export function SupportReplyExamplesAdminClient({
               key={chip.label}
               type="button"
               aria-pressed={selected}
-              onClick={() => go({ rating: chip.id ?? null, page: 1 })}
+              onClick={() => go({ rating: chip.id ?? null, q: query.trim() || null, page: 1 })}
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium",
                 selected ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80",
@@ -132,6 +137,7 @@ export function SupportReplyExamplesAdminClient({
           onChange={(event) =>
             go({
               kind: (event.target.value || null) as SupportReplyExampleKind | null,
+              q: query.trim() || null,
               page: 1,
             })
           }
@@ -145,6 +151,7 @@ export function SupportReplyExamplesAdminClient({
         </select>
         <Input
           value={query}
+          maxLength={SUPPORT_REPLY_EXAMPLE_SEARCH_MAX}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search customer or staff copy…"
           className="sm:max-w-sm"

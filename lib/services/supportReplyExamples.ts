@@ -18,8 +18,8 @@ import type {
 import {
   SUPPORT_REPLY_DRAFT_RATINGS,
   SUPPORT_REPLY_EXAMPLE_PAGE_SIZE,
+  parseSupportReplyExampleListParams,
   supportReplyExampleDeleteSchema,
-  supportReplyExampleListSchema,
   supportReplyExampleUpdateSchema,
 } from "@/lib/validations/supportReplyDraft"
 
@@ -105,15 +105,13 @@ export async function listAdminSupportReplyExamplesService(
   const staff = await requireStaff()
   if (!staff.ok) return { error: staff.error }
 
-  const parsed = supportReplyExampleListSchema.safeParse(raw)
-  if (!parsed.success) return { error: flattenZod(parsed.error) }
-
-  const page = parsed.data.page ?? 1
-  const limit = parsed.data.limit ?? SUPPORT_REPLY_EXAMPLE_PAGE_SIZE
+  const parsed = parseSupportReplyExampleListParams(raw)
+  const page = parsed.page ?? 1
+  const limit = parsed.limit ?? SUPPORT_REPLY_EXAMPLE_PAGE_SIZE
   const filters = {
-    rating: parsed.data.rating,
-    kind: parsed.data.kind,
-    q: parsed.data.q,
+    rating: parsed.rating,
+    kind: parsed.kind,
+    q: parsed.q,
   }
 
   const [listed, counts] = await Promise.all([
