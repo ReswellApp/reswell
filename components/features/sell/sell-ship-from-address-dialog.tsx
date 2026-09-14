@@ -46,6 +46,8 @@ export function SellShipFromAddressDialog({
   needsFullName,
   needsPhone,
   allowDismissToPickup,
+  title = "Where will this ship from?",
+  description = "One-time setup. We save this to your addresses and use it only to print a shipping label after a sale. Buyers see your city — never your street address.",
   onSaved,
   onDismissToPickup,
 }: {
@@ -53,6 +55,8 @@ export function SellShipFromAddressDialog({
   needsFullName: boolean
   needsPhone: boolean
   allowDismissToPickup: boolean
+  title?: string
+  description?: string
   onSaved: (locality: ListingLocalityFromAddress) => void
   onDismissToPickup?: () => void
 }) {
@@ -116,11 +120,8 @@ export function SellShipFromAddressDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>Where will this ship from?</DialogTitle>
-          <DialogDescription>
-            One-time setup. We save this to your addresses and use it only to print a shipping
-            label after a sale. Buyers see your city — never your street address.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 py-2 sm:grid-cols-2">

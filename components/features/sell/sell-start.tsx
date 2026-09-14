@@ -4,6 +4,7 @@ import * as React from "react"
 import { SellCatalogSearch } from "@/components/features/sell/sell-catalog-search"
 import { SellContinueDrafts } from "@/components/features/sell/sell-continue-drafts"
 import { SellFaqSection } from "@/components/features/sell/sell-faq-section"
+import { SellMissingShipFromPrompt } from "@/components/features/sell/sell-missing-ship-from-prompt"
 import { SellWhySellSection } from "@/components/features/sell/sell-why-sell-section"
 import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
@@ -14,9 +15,11 @@ import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 export function SellStart({
   isAdmin = false,
   surfboardSellHref,
+  shipFromPrompt = null,
 }: {
   isAdmin?: boolean
   surfboardSellHref: string
+  shipFromPrompt?: { needsFullName: boolean; needsPhone: boolean } | null
 }) {
   React.useEffect(() => {
     // Stamp session entry once so downstream flow_started rows join cleanly.
@@ -26,6 +29,12 @@ export function SellStart({
 
   return (
     <div className="flex-1 bg-background">
+      {shipFromPrompt ? (
+        <SellMissingShipFromPrompt
+          needsFullName={shipFromPrompt.needsFullName}
+          needsPhone={shipFromPrompt.needsPhone}
+        />
+      ) : null}
       <SellCatalogSearch
         isAdmin={isAdmin}
         surfboardSellHref={surfboardSellHref}
