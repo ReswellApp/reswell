@@ -18,6 +18,27 @@ const MAX_LENGTH = 50
 /** Basic email pattern: something@something */
 const EMAIL_LIKE = /@|\.(com|net|org|io|co|edu|gov)(\s|$)/i
 
+/**
+ * Patterns that could be confused with official Reswell staff/support.
+ * Only admin accounts can use these names (enforced at database level).
+ */
+const IMPERSONATION_PATTERNS = [
+  /reswell\s*support/i,
+  /support\s*reswell/i,
+  /reswell\s*admin/i,
+  /admin\s*reswell/i,
+  /reswell\s*team/i,
+  /team\s*reswell/i,
+  /reswell\s*staff/i,
+  /staff\s*reswell/i,
+  /reswell\s*official/i,
+  /official\s*reswell/i,
+  /reswell\s*help/i,
+  /help\s*reswell/i,
+  /^reswell$/i,
+  /^res\s*well$/i,
+]
+
 export type DisplayNameResult = { valid: true } | { valid: false; error: string }
 
 /**
@@ -47,6 +68,16 @@ export function validateDisplayName(
   if (userEmail && trimmed.toLowerCase() === userEmail.toLowerCase()) {
     return { valid: false, error: "Display name cannot be your email address." }
   }
+
+  // Check for official Reswell impersonation attempts
+  const hasImpersonation = IMPERSONATION_PATTERNS.some((pattern) => pattern.test(trimmed))
+  if (hasImpersonation) {
+    return { 
+      valid: false, 
+      error: "This display name is not allowed. Please choose a different name." 
+    }
+  }
+
   const lower = trimmed.toLowerCase()
   const hasBlocked = BLOCKLIST.some((word) => {
     const re = new RegExp("\\b" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i")
