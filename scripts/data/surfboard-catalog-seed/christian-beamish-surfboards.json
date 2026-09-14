@@ -1,6 +1,6 @@
 {
   "generated_for": "Christian Beamish official named standup catalog",
-  "source": "https://christianbeamish.com/surfboards-california-1",
+  "source": "https://christianbeamish.com/surfboards-california-1 and https://christianbeamish.com/rab80 (official Surfboards California model pages — excludes writing, apparel, and custom deposits)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -29,6 +29,12 @@
           "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1783537811244-BO1ZIYEBMLWER3KT037S/Malibu+Vector+2.jpg",
           "description": "With the projecting, \"directional\" turns of a fish and great paddling speed, the Malibu Vector turns mushy surf into a fun skatepark scenario. The Malibu Vector comes out of an 8'8\" I call \"Malibu Sam,\" which (in a very general sense) combines the nose and forward section of Joe Quigg's early 1950s \"Malibu Chip\" with a wide tail block and vee reminiscent of the McTavish/Nat Young \"Magic Sam\" circa '66 - '67. I thought of a 6'9\" version as if it was cut-out from the 8\"8\", and the board I shaped reminds me of Dave Parmenter's \"Stub Vector\" design—hence the name \"Malibu Vector.\" The fin array is tight cluster set forward, and the longer boards have slightly more pulled-in dimensions.",
           "board_category_slug": "fish"
+        },
+        {
+          "name": "RAB80",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1783538161752-UOS6AXH58621LPDA7SJU/RAB82.jpeg",
+          "description": "The RAB80 is a six-channel single fin version.",
+          "board_category_slug": "shortboard"
         },
         {
           "name": "RAB82",
