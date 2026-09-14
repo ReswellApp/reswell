@@ -1,6 +1,6 @@
 {
   "generated_for": "Christian Beamish official named standup catalog",
-  "source": "https://christianbeamish.com/surfboards-california-1 and https://christianbeamish.com/rab80 (official Surfboards California model pages — excludes writing, apparel, and custom deposits)",
+  "source": "https://christianbeamish.com/surfboards-california-1, https://christianbeamish.com/gun, and per-model pages (official Surfboards California lineup — excludes writing, apparel, and custom deposits)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -58,6 +58,18 @@
           "name": "Gliders & Guns",
           "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1625622681475-DGRYK51S5LBW5VHHJ1KN/Beamish_gun.jpg",
           "description": null,
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1625622874922-BHRNIGSDNHBSY2HRPFPD/088136010024.jpg",
+          "description": "Gliders, as the name suggests, are meant for easy-momentum paddling and distance rides in long, rolling surf. Variations on the concept go from designs that are geared to ocean paddling (with leash loops on the forward deck for tying-down a dry bag) to more spear-like outlines that encourage a critical line high in the hook of a fast-breaking wave. These big boards hearken back to surfing's roots, and tap into something essential in the energy of wave riding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/558457afe4b07760d64deeab/1625622866603-JZQH0EXOXPZKDQS4BNAU/Beamish_gun.jpg",
+          "description": "I shaped a 1957 Pat Curren gun-inspired 9'6\" keel fin to surf Mav's circa 2010-2012. The board has a \"Makaha-style\" nose, which is wider than the noses on contemporary big wave guns and provides excellent paddling advantage. Reverse vee (meaning a slightly \"rolled vee\" in the nose section) absorbs the impact on late drops, and increased tail rocker fits under the cornice of steep waves. The boards feel natural and solid under foot, equipped with twin keels. I also shape clean single fin and 2 + 1 guns in a classic \"Hawaiian outline\" (pintail, baby swallow, or soft-diamond tail).",
           "board_category_slug": "step-up-gun"
         }
       ]
