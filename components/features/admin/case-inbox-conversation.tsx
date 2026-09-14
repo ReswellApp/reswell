@@ -30,6 +30,7 @@ import {
   inboxCounterpartLabel,
   staffReplyPlaceholder,
 } from "@/lib/admin/case-inbox-counterpart"
+import { supportMacroVarsFromOrder } from "@/lib/utils/support-macro-order-vars"
 
 interface CaseInboxConversationProps {
   item: CaseInboxItem
@@ -103,6 +104,21 @@ export function CaseInboxConversation({
       : item.kind === "cancel_request"
         ? "cancel_request"
         : null
+  const linkedOrder = orderContext && item.orderId === orderContext.id ? orderContext : null
+  const macroVars = supportMacroVarsFromOrder({
+    name: item.fromName,
+    order_ref: item.orderRef,
+    tracking: linkedOrder?.tracking_number,
+    order: linkedOrder
+      ? {
+          status: linkedOrder.status,
+          fulfillment_method: linkedOrder.fulfillment_method,
+          delivery_status: linkedOrder.delivery_status,
+          tracking_carrier: linkedOrder.tracking_carrier,
+          carrier_delivered_at: linkedOrder.carrier_delivered_at,
+        }
+      : null,
+  })
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -213,18 +229,7 @@ export function CaseInboxConversation({
             pending={pending}
             closed={!item.isOpen}
             kindFilter={kindFilter}
-            vars={{
-              name: item.fromName,
-              order_ref: item.orderRef ?? undefined,
-              tracking:
-                orderContext && item.orderId === orderContext.id
-                  ? orderContext.tracking_number ?? undefined
-                  : undefined,
-              order_status:
-                orderContext && item.orderId === orderContext.id
-                  ? orderContext.status
-                  : undefined,
-            }}
+            vars={macroVars}
             replyPlaceholder={
               aiLoading ? "Writing a reply…" : staffReplyPlaceholder(item.requesterRole)
             }

@@ -20,6 +20,7 @@ import {
 } from "@/lib/utils/support-case-display"
 import type { SupportCaseKind } from "@/lib/types/supportCase"
 import { adminSupportCaseHref, supportCaseResponseHref } from "@/lib/utils/support-case-paths"
+import { supportMacroVarsFromOrder } from "@/lib/utils/support-macro-order-vars"
 import type { CarrierClaimStatus } from "@/lib/types/protectionClaimDesk"
 
 const CASES_INBOX_HREF = "/admin/contact-messages"
@@ -55,6 +56,7 @@ type AdminSupportCaseDeskProps = {
     paymentMethod: string
     fulfillmentMethod?: string | null
     deliveryStatus?: string | null
+    trackingNumber?: string | null
     repairCreditTotal: number
   } | null
 }
@@ -219,11 +221,18 @@ export function AdminSupportCaseDesk({
                       ? "cancel_request"
                       : null
                 }
-                vars={{
-                  order_ref: orderRef ?? undefined,
+                vars={supportMacroVarsFromOrder({
                   name: customerLabel,
-                  order_status: refund?.orderStatus,
-                }}
+                  order_ref: orderRef,
+                  tracking: refund?.trackingNumber,
+                  order: refund
+                    ? {
+                        status: refund.orderStatus,
+                        fulfillment_method: refund.fulfillmentMethod ?? null,
+                        delivery_status: refund.deliveryStatus ?? null,
+                      }
+                    : null,
+                })}
                 onInsert={(text) => setMacroDraft(text)}
               />
               {macroDraft ? (

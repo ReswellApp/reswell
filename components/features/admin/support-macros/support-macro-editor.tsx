@@ -7,6 +7,7 @@ import {
   applySupportMacroVars,
   SUPPORT_MACRO_VAR_HINTS,
 } from "@/lib/utils/apply-support-macro-vars"
+import { SUPPORT_MACRO_PREVIEW_VARS } from "@/lib/utils/support-macro-order-vars"
 import { SUPPORT_CASE_KIND_LABEL } from "@/lib/utils/support-case-display"
 import { SUPPORT_MACRO_KIND_FILTERS } from "@/lib/validations/supportMacros"
 import { Button } from "@/components/ui/button"
@@ -23,12 +24,6 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 
 const ALL_KINDS = "all"
-const PREVIEW_VARS = {
-  name: "Alex",
-  order_ref: "RS-1042",
-  tracking: "1Z999AA10123456784",
-  order_status: "shipped",
-}
 
 interface SupportMacroEditorProps {
   macro: SupportMacroRecord | null
@@ -167,7 +162,7 @@ export function SupportMacroEditor({
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground">Preview</p>
           <p className="whitespace-pre-wrap rounded-md bg-muted/50 px-3 py-2 text-sm">
-            {applySupportMacroVars(body, PREVIEW_VARS)}
+            {applySupportMacroVars(body, SUPPORT_MACRO_PREVIEW_VARS)}
           </p>
         </div>
       ) : null}

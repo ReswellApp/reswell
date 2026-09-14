@@ -17,10 +17,10 @@ describe("applySupportMacroVars", () => {
     assert.equal(
       applySupportMacroVars("{{order_ref}} is {{order_status}} ({{tracking}}).", {
         order_ref: "RS-1042",
-        order_status: "shipped",
+        order_status: "In transit",
         tracking: "1Z999",
       }),
-      "RS-1042 is shipped (1Z999).",
+      "RS-1042 is In transit (1Z999).",
     )
   })
 
@@ -38,3 +38,4 @@ describe("applySupportMacroVars", () => {
     )
   })
 })
+

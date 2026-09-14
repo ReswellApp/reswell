@@ -35,3 +35,4 @@ export function applySupportMacroVars(body: string, vars: SupportMacroVars = {})
     .replaceAll("{{tracking}}", vars.tracking?.trim() || SUPPORT_MACRO_VAR_FALLBACKS.tracking)
     .replaceAll("{{order_status}}", vars.order_status?.trim() || SUPPORT_MACRO_VAR_FALLBACKS.order_status)
 }
+
