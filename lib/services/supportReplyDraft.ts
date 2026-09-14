@@ -11,11 +11,13 @@ import {
 import {
   getSupportReplyDraftByCaseId,
   getSupportReplyOrderSnapshot,
+  getSupportReplyRequesterNames,
   insertSupportReplyExample,
   listOpenCaseIdsNeedingDraft,
   upsertSupportReplyDraft,
   type SupportReplyOrderSnapshot,
 } from "@/lib/db/supportReplyDrafts"
+import { supportReplyGreetingName } from "@/lib/utils/support-reply-greeting"
 import {
   APP_LLM_FEATURES,
   gatewayTagsForFeature,
@@ -211,6 +213,7 @@ async function generateDraftBody(args: {
   messages: SupportCaseMessageRow[]
   knowledge: SupportReplyKnowledge
   order: SupportReplyOrderSnapshot | null
+  greetingName: string
 }): Promise<{
   body: string
   origin: SupportReplyDraftOrigin
@@ -238,7 +241,7 @@ async function generateDraftBody(args: {
 
   if (!isSupportReplyDraftLlmEnabled()) {
     const fallback = fallbackDraft(args.knowledge, {
-      name: args.row.requester_email,
+      name: args.greetingName,
       orderRef: args.row.order_ref,
     })
     return { ...fallback, model: null, needsHumanReview: true }
@@ -259,13 +262,14 @@ Rules:
 - Safety / scam reports: take them seriously, ask for the listing or conversation link, and say staff will review.
 - Keep it under 180 words unless the thread needs a short numbered list.
 - Sign off simply as Reswell Support (no invented personal name).
+- Greet them as ${args.greetingName}. Never address them by email.
 - If the last staff message already answered them, write a short follow-up, not a repeat.`,
     prompt: `Draft the next customer-visible reply.
 
 Case: ${args.row.subject}
 Kind: ${args.row.kind}
 Status: ${args.row.status}
-Requester: ${args.row.requester_role}${args.row.requester_email ? ` · ${args.row.requester_email}` : ""}
+Requester: ${args.greetingName} (${args.row.requester_role})
 ${compactOrder(args.order)}
 
 Customer messages:
@@ -285,7 +289,7 @@ ${knowledgePrompt(args.knowledge)}`,
 
   if (!output?.reply.trim()) {
     const fallback = fallbackDraft(args.knowledge, {
-      name: args.row.requester_email,
+      name: args.greetingName,
       orderRef: args.row.order_ref,
     })
     return { ...fallback, model: supportReplyDraftModelId(), needsHumanReview: true }
@@ -354,22 +358,28 @@ export async function generateAndStoreDraft(
   }
 
   const query = [row.subject, row.kind, lastCustomer, row.preview].filter(Boolean).join(" ")
-  const [knowledge, order] = await Promise.all([
+  const [knowledge, order, names] = await Promise.all([
     gatherSupportReplyKnowledge(service, {
       query,
       kind: row.kind,
       excludeCaseId: row.id,
     }),
     row.order_id ? getSupportReplyOrderSnapshot(service, row.order_id) : Promise.resolve(null),
+    getSupportReplyRequesterNames(service, row),
   ])
+  const greetingName = supportReplyGreetingName({
+    contactName: names.contactName,
+    displayName: names.displayName,
+    role: row.requester_role,
+  })
 
   let generated
   try {
-    generated = await generateDraftBody({ row, messages, knowledge, order })
+    generated = await generateDraftBody({ row, messages, knowledge, order, greetingName })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)
     const fallback = fallbackDraft(knowledge, {
-      name: row.requester_email,
+      name: greetingName,
       orderRef: row.order_ref,
     })
     generated = { ...fallback, model: null, needsHumanReview: true }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, ExternalLink, Loader2, Package, RefreshCw, Sparkles, User } from "lucide-react"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
@@ -79,17 +79,28 @@ export function AdminSupportCaseDesk({
   const [isAdmin, setIsAdmin] = useState(false)
   const [macroDraft, setMacroDraft] = useState("")
   const [seedText, setSeedText] = useState("")
+  const [seedMode, setSeedMode] = useState<"fill-empty" | "replace">("fill-empty")
+  const replaceNextSeed = useRef(false)
   const { draft: aiDraft, loading: aiLoading, regenerate: regenerateAi } = useSupportReplyDraft(
     closed ? null : caseId,
   )
 
   useEffect(() => {
-    if (macroDraft) setSeedText(macroDraft)
+    if (!macroDraft) return
+    setSeedMode("replace")
+    setSeedText(macroDraft)
   }, [macroDraft])
 
   useEffect(() => {
     if (macroDraft || aiLoading || !aiDraft?.body) return
-    setSeedText((current) => (current.trim() ? current : aiDraft.body))
+    if (replaceNextSeed.current) {
+      replaceNextSeed.current = false
+      setSeedMode("replace")
+      setSeedText(aiDraft.body)
+      return
+    }
+    setSeedMode("fill-empty")
+    setSeedText(aiDraft.body)
   }, [aiDraft, macroDraft, aiLoading])
 
   useEffect(() => {
@@ -181,6 +192,7 @@ export function AdminSupportCaseDesk({
                     className="h-7 px-2"
                     disabled={aiLoading}
                     onClick={() => {
+                      replaceNextSeed.current = true
                       regenerateAi()
                       setSeedText("")
                     }}
@@ -223,6 +235,7 @@ export function AdminSupportCaseDesk({
               role="staff"
               closed={closed}
               seedText={seedText || undefined}
+              seedMode={seedMode}
             />
           </div>
         </div>

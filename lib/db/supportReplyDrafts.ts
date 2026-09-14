@@ -204,6 +204,38 @@ export async function listOpenCaseIdsNeedingDraft(
   return ids.filter((id) => !have.has(id)).slice(0, limit)
 }
 
+export async function getSupportReplyRequesterNames(
+  supabase: SupabaseClient,
+  row: { contact_message_id: string | null; requester_user_id: string | null },
+): Promise<{ contactName: string | null; displayName: string | null }> {
+  const [contact, profile] = await Promise.all([
+    row.contact_message_id
+      ? supabase
+          .from("contact_messages")
+          .select("name")
+          .eq("id", row.contact_message_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    row.requester_user_id
+      ? supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", row.requester_user_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
+
+  const contactName =
+    contact.data && typeof (contact.data as { name?: unknown }).name === "string"
+      ? (contact.data as { name: string }).name
+      : null
+  const displayName =
+    profile.data && typeof (profile.data as { display_name?: unknown }).display_name === "string"
+      ? (profile.data as { display_name: string }).display_name
+      : null
+  return { contactName, displayName }
+}
+
 export async function getSupportReplyOrderSnapshot(
   supabase: SupabaseClient,
   orderId: string,

@@ -43,6 +43,10 @@ import type {
   ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
 import { useSupportReplyDraft } from "@/components/features/admin/hooks/use-support-reply-draft"
+import {
+  parseStoredCaseComposerDraft,
+  serializeStoredCaseComposerDraft,
+} from "@/lib/admin/case-inbox-draft"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -58,25 +62,10 @@ export const ADMIN_SUPPORT_INBOX_ORDER_SUPPORT_HREF = "/admin/contact-messages?t
 
 const CASE_DRAFT_STORAGE_PREFIX = "reswell:support-draft:v1:"
 
-function readCaseDraft(caseId: string): { body: string; mode: ComposerMode } | null {
-  try {
-    const value: unknown = JSON.parse(
-      window.sessionStorage.getItem(`${CASE_DRAFT_STORAGE_PREFIX}${caseId}`) ?? "null",
-    )
-    if (
-      typeof value === "object" &&
-      value !== null &&
-      "body" in value &&
-      typeof value.body === "string" &&
-      "mode" in value &&
-      (value.mode === "reply" || value.mode === "note")
-    ) {
-      return { body: value.body, mode: value.mode }
-    }
-  } catch {
-    return null
-  }
-  return null
+function readCaseDraft(caseId: string) {
+  return parseStoredCaseComposerDraft(
+    window.sessionStorage.getItem(`${CASE_DRAFT_STORAGE_PREFIX}${caseId}`),
+  )
 }
 
 export function CaseInboxAdminClient() {
@@ -237,6 +226,7 @@ export function CaseInboxAdminClient() {
       setDraft(savedDraft?.body ?? "")
       setComposerMode(savedDraft?.mode ?? "reply")
       setDraftCaseId(selected.id)
+      setAiAppliedBody(savedDraft?.suggestionId ? savedDraft.body : null)
     }
     if (!selected.orderId) {
       setOrderContext(null)
@@ -255,7 +245,6 @@ export function CaseInboxAdminClient() {
   const loadedThreadIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    setAiAppliedBody(null)
     consumedAiId.current = null
   }, [selectedId])
 
@@ -281,8 +270,26 @@ export function CaseInboxAdminClient() {
       window.sessionStorage.removeItem(key)
       return
     }
-    window.sessionStorage.setItem(key, JSON.stringify({ body: draft, mode: composerMode }))
-  }, [selectedId, draftCaseId, draft, composerMode])
+    const matchesLiveSuggestion =
+      composerMode === "reply" &&
+      aiDraft?.caseId === selectedId &&
+      draft.trim() === aiDraft.body.trim()
+    const matchesAppliedSuggestion =
+      composerMode === "reply" && Boolean(aiAppliedBody) && draft.trim() === aiAppliedBody.trim()
+    const suggestionId = matchesLiveSuggestion
+      ? aiDraft.id
+      : matchesAppliedSuggestion
+        ? (readCaseDraft(selectedId)?.suggestionId ?? "applied")
+        : null
+    window.sessionStorage.setItem(
+      key,
+      serializeStoredCaseComposerDraft({
+        body: draft,
+        mode: composerMode,
+        suggestionId,
+      }),
+    )
+  }, [selectedId, draftCaseId, draft, composerMode, aiDraft, aiAppliedBody])
 
   useEffect(() => {
     if (!selectedId) {
