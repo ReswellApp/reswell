@@ -21,6 +21,7 @@ import {
   type ComposerDisposition,
   type ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
+import type { SupportReplyCitedHelp } from "@/lib/types/supportReplyDraft"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
@@ -52,6 +53,12 @@ interface CaseInboxConversationProps {
   onDraftChange: (value: string) => void
   onInsertMacro: (text: string) => void
   onSend: (disposition: ComposerDisposition) => void
+  aiLoading?: boolean
+  aiActive?: boolean
+  aiError?: string | null
+  aiHelp?: SupportReplyCitedHelp[]
+  onRegenerateAi?: () => void
+  onRateAi?: (rating: "accepted" | "rejected") => void
 }
 
 function kindBadge(item: CaseInboxItem): string {
@@ -83,6 +90,12 @@ export function CaseInboxConversation({
   onSend,
   orderContext,
   orderExtras,
+  aiLoading,
+  aiActive,
+  aiError,
+  aiHelp,
+  onRegenerateAi,
+  onRateAi,
 }: CaseInboxConversationProps) {
   const kindFilter =
     item.kind === "protection_claim"
@@ -201,11 +214,19 @@ export function CaseInboxConversation({
             closed={!item.isOpen}
             kindFilter={kindFilter}
             vars={{ order_ref: item.orderRef ?? undefined, name: item.fromName }}
-            replyPlaceholder={staffReplyPlaceholder(item.requesterRole)}
+            replyPlaceholder={
+              aiLoading ? "Writing a reply…" : staffReplyPlaceholder(item.requesterRole)
+            }
             onModeChange={onModeChange}
             onDraftChange={onDraftChange}
             onInsertMacro={onInsertMacro}
             onSend={onSend}
+            aiLoading={aiLoading}
+            aiActive={aiActive}
+            aiError={aiError}
+            aiHelp={aiHelp}
+            onRegenerateAi={onRegenerateAi}
+            onRateAi={onRateAi}
           />
         </div>
       </div>

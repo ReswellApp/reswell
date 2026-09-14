@@ -11,6 +11,7 @@ export type AppLlmFeatureId =
   | "listing_description"
   | "business_intelligence"
   | "search_daily_report"
+  | "support_reply_draft"
 
 export interface AppLlmFeatureDefinition {
   id: AppLlmFeatureId
@@ -120,6 +121,27 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/businessIntelligence.ts",
       "lib/services/businessIntelligenceLlm.ts",
       "lib/services/businessIntelligenceSnapshot.ts",
+    ],
+  },
+  {
+    id: "support_reply_draft",
+    name: "Support reply drafts",
+    purpose:
+      "Drafts a ready-to-send customer-service reply when Hayden opens a ticket. Retrieves /help-center articles, similar resolved tickets, and rated sent replies so the model improves as staff send and rate drafts.",
+    gatewayFeatureTag: "feature:support-reply-draft",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-flash",
+    modelEnvVar: "SUPPORT_REPLY_DRAFT_MODEL",
+    enabledEnvVar: "SUPPORT_REPLY_DRAFT_ENABLED",
+    surfaces: [
+      "/admin/contact-messages",
+      "/admin/support/[id]",
+      "GET /api/cron/support-reply-drafts",
+    ],
+    sourceFiles: [
+      "lib/services/supportReplyDraft.ts",
+      "lib/services/supportReplyKnowledge.ts",
+      "lib/db/supportReplyDrafts.ts",
     ],
   },
 ] as const

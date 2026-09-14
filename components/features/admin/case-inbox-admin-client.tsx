@@ -42,6 +42,12 @@ import type {
   ComposerDisposition,
   ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
+import { useSupportReplyDraft } from "@/components/features/admin/hooks/use-support-reply-draft"
+import {
+  inboxSuggestionBelongsToSelectedCase,
+  parseStoredCaseComposerDraft,
+  serializeStoredCaseComposerDraft,
+} from "@/lib/admin/case-inbox-draft"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -57,25 +63,10 @@ export const ADMIN_SUPPORT_INBOX_ORDER_SUPPORT_HREF = "/admin/contact-messages?t
 
 const CASE_DRAFT_STORAGE_PREFIX = "reswell:support-draft:v1:"
 
-function readCaseDraft(caseId: string): { body: string; mode: ComposerMode } | null {
-  try {
-    const value: unknown = JSON.parse(
-      window.sessionStorage.getItem(`${CASE_DRAFT_STORAGE_PREFIX}${caseId}`) ?? "null",
-    )
-    if (
-      typeof value === "object" &&
-      value !== null &&
-      "body" in value &&
-      typeof value.body === "string" &&
-      "mode" in value &&
-      (value.mode === "reply" || value.mode === "note")
-    ) {
-      return { body: value.body, mode: value.mode }
-    }
-  } catch {
-    return null
-  }
-  return null
+function readCaseDraft(caseId: string) {
+  return parseStoredCaseComposerDraft(
+    window.sessionStorage.getItem(`${CASE_DRAFT_STORAGE_PREFIX}${caseId}`),
+  )
 }
 
 export function CaseInboxAdminClient() {
@@ -122,6 +113,8 @@ export function CaseInboxAdminClient() {
   const [replyPending, startReply] = useTransition()
   const composerRef = useRef<CaseInboxComposerHandle>(null)
   const skipNoteBlur = useRef(false)
+  const [aiAppliedBody, setAiAppliedBody] = useState<string | null>(null)
+  const consumedAi = useRef<{ id: string; body: string } | null>(null)
 
   const onOrderContextLoaded = useCallback(
     (detail: AdminOrderDetail, extras: CaseOrderLabelContext) => {
@@ -234,6 +227,7 @@ export function CaseInboxAdminClient() {
       setDraft(savedDraft?.body ?? "")
       setComposerMode(savedDraft?.mode ?? "reply")
       setDraftCaseId(selected.id)
+      setAiAppliedBody(savedDraft?.suggestionId ? savedDraft.body : null)
     }
     if (!selected.orderId) {
       setOrderContext(null)
@@ -242,7 +236,41 @@ export function CaseInboxAdminClient() {
   }, [selected, draftCaseId])
 
   const selectedId = selected?.id ?? null
+  const {
+    draft: aiDraft,
+    loading: aiLoading,
+    error: aiError,
+    regenerate: regenerateAi,
+    rate: rateAi,
+  } = useSupportReplyDraft(selected?.isOpen ? selectedId : null)
   const loadedThreadIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    consumedAi.current = null
+  }, [selectedId])
+
+  useEffect(() => {
+    if (!selected?.isOpen || !aiDraft || composerMode !== "reply") return
+    if (
+      !inboxSuggestionBelongsToSelectedCase({
+        selectedCaseId: selected.id,
+        composerCaseId: draftCaseId,
+        suggestionCaseId: aiDraft.caseId,
+      })
+    ) {
+      return
+    }
+    if (consumedAi.current?.id === aiDraft.id && consumedAi.current.body === aiDraft.body) return
+    const current = draft.trim()
+    const canReplace = !current || current === (aiAppliedBody ?? "").trim()
+    if (!canReplace) return
+    if (current === aiDraft.body.trim()) {
+      if (aiAppliedBody !== aiDraft.body) setAiAppliedBody(aiDraft.body)
+      return
+    }
+    setDraft(aiDraft.body)
+    setAiAppliedBody(aiDraft.body)
+  }, [aiDraft, selected, composerMode, draftCaseId, draft, aiAppliedBody])
 
   useEffect(() => {
     if (!selectedId || draftCaseId !== selectedId) return
@@ -251,8 +279,26 @@ export function CaseInboxAdminClient() {
       window.sessionStorage.removeItem(key)
       return
     }
-    window.sessionStorage.setItem(key, JSON.stringify({ body: draft, mode: composerMode }))
-  }, [selectedId, draftCaseId, draft, composerMode])
+    const matchesLiveSuggestion =
+      composerMode === "reply" &&
+      aiDraft?.caseId === selectedId &&
+      draft.trim() === aiDraft.body.trim()
+    const matchesAppliedSuggestion =
+      composerMode === "reply" && Boolean(aiAppliedBody) && draft.trim() === aiAppliedBody.trim()
+    const suggestionId = matchesLiveSuggestion
+      ? aiDraft.id
+      : matchesAppliedSuggestion
+        ? (readCaseDraft(selectedId)?.suggestionId ?? "applied")
+        : null
+    window.sessionStorage.setItem(
+      key,
+      serializeStoredCaseComposerDraft({
+        body: draft,
+        mode: composerMode,
+        suggestionId,
+      }),
+    )
+  }, [selectedId, draftCaseId, draft, composerMode, aiDraft, aiAppliedBody])
 
   useEffect(() => {
     if (!selectedId) {
@@ -467,8 +513,12 @@ export function CaseInboxAdminClient() {
       toast.success(
         composerMode === "note" ? "Note added" : staffSentToast(current.requesterRole),
       )
-      setDraft("")
       const sentMode = composerMode
+      if (sentMode === "reply" && aiDraft) {
+        consumedAi.current = { id: aiDraft.id, body: aiDraft.body }
+      }
+      setAiAppliedBody(null)
+      setDraft("")
       const now = new Date().toISOString()
       setThreadMessages((prev) => [
         ...prev,
@@ -697,6 +747,17 @@ export function CaseInboxAdminClient() {
                   onSend={sendComposer}
                   orderContext={orderContext}
                   orderExtras={orderExtras}
+                  aiLoading={aiLoading}
+                  aiActive={Boolean(
+                    aiDraft && draft.trim() && draft.trim() === (aiAppliedBody ?? "").trim(),
+                  )}
+                  aiError={aiError}
+                  aiHelp={aiDraft?.citedHelp}
+                  onRegenerateAi={() => {
+                    consumedAi.current = null
+                    regenerateAi()
+                  }}
+                  onRateAi={rateAi}
                 />
               </div>
               <div
