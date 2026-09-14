@@ -19,9 +19,13 @@ import {
 import { updateSupportCaseInboxAction } from "@/lib/actions/supportCaseInbox"
 import {
   filterInboxItems,
+  findInboxItemBySelection,
+  inboxLoadQueryKey,
   inboxViewFromSearchParams,
+  mergeInboxPageItems,
   nextInboxSelectedKey,
   pinSelectedInboxItem,
+  shouldApplyInboxLoad,
   sortInboxItems,
   viewToFilters,
   withInboxStatus,
@@ -34,7 +38,6 @@ import {
   EMPTY_INBOX_VIEW_COUNTS,
 } from "@/lib/admin/case-inbox"
 import { staffSentToast } from "@/lib/admin/case-inbox-counterpart"
-import { parseInboxCaseParam } from "@/lib/utils/support-case-paths"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
@@ -134,6 +137,15 @@ export function CaseInboxAdminClient({
   const selectedKeyRef = useRef<string | null>(selectedKey)
   selectedKeyRef.current = selectedKey
   const skipNoteBlur = useRef(false)
+  const loadGenerationRef = useRef(0)
+  const loadQueryRef = useRef(
+    inboxLoadQueryKey({
+      view: parsed.view,
+      type: parsed.typeOverlay,
+      sort: "smart",
+      search: "",
+    }),
+  )
   const [aiAppliedBody, setAiAppliedBody] = useState<string | null>(null)
   const consumedAi = useRef<{ id: string; body: string } | null>(null)
 
@@ -169,39 +181,62 @@ export function CaseInboxAdminClient({
     }) => {
       const mode = args.mode ?? "initial"
       const offset = args.offset ?? 0
+      const queryKey = inboxLoadQueryKey({
+        view: args.view,
+        type: args.type,
+        sort: args.sort,
+        search: args.search ?? "",
+      })
+      if (mode !== "page") {
+        loadGenerationRef.current += 1
+        loadQueryRef.current = queryKey
+      }
+      const requestGeneration = loadGenerationRef.current
       if (mode === "refresh") setRefreshing(true)
       else if (mode === "page") setLoadingMore(true)
       else setLoading(true)
 
-      const res = await listAdminSupportInboxAction({
-        view: args.view,
-        type: args.view === "claims" ? "all" : args.type,
-        search: args.search ?? "",
-        sort: args.sort,
-        offset,
-        selected_key: args.selectedKey,
-      })
-      if ("error" in res) {
-        toast.error(res.error)
-        if (mode !== "page") {
-          setItems([])
-          setHasMore(false)
-        }
-      } else {
-        setItems((prev) => {
-          if (mode === "page") {
-            const seen = new Set(prev.map((item) => item.key))
-            return [...prev, ...res.items.filter((item) => !seen.has(item.key))]
-          }
-          return res.items
+      try {
+        const res = await listAdminSupportInboxAction({
+          view: args.view,
+          type: args.view === "claims" ? "all" : args.type,
+          search: args.search ?? "",
+          sort: args.sort,
+          offset,
+          selected_key: args.selectedKey,
         })
-        setCounts(res.counts)
-        setHasMore(res.hasMore)
-        setNextOffset(res.nextOffset)
+        if (
+          !shouldApplyInboxLoad({
+            mode,
+            requestGeneration,
+            currentGeneration: loadGenerationRef.current,
+            requestQueryKey: queryKey,
+            currentQueryKey: loadQueryRef.current,
+          })
+        ) {
+          return
+        }
+        if ("error" in res) {
+          toast.error(res.error)
+          if (mode !== "page") {
+            setItems([])
+            setHasMore(false)
+          }
+        } else {
+          setItems((prev) =>
+            mode === "page" ? mergeInboxPageItems(prev, res.items) : res.items,
+          )
+          setCounts(res.counts)
+          setHasMore(res.hasMore)
+          setNextOffset(res.nextOffset)
+        }
+      } finally {
+        if (requestGeneration === loadGenerationRef.current) {
+          setLoading(false)
+          setRefreshing(false)
+          setLoadingMore(false)
+        }
       }
-      setLoading(false)
-      setRefreshing(false)
-      setLoadingMore(false)
     },
     [],
   )
@@ -262,17 +297,10 @@ export function CaseInboxAdminClient({
     )
   }, [items, viewFilters, effectiveType, currentStaffId, debouncedSearch, sort])
 
-  const selected = useMemo(() => {
-    if (!selectedKey) return null
-    const byKey = items.find((item) => item.key === selectedKey)
-    if (byKey) return byKey
-    const raw = parseInboxCaseParam(selectedKey)
-    return (
-      items.find(
-        (item) => item.id === raw || item.contact?.id === raw || item.order?.id === raw,
-      ) ?? null
-    )
-  }, [items, selectedKey])
+  const selected = useMemo(
+    () => findInboxItemBySelection(items, selectedKey),
+    [items, selectedKey],
+  )
 
   const listItems = useMemo(
     () => pinSelectedInboxItem(filtered, selected),

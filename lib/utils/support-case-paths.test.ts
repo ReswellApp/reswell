@@ -4,6 +4,8 @@ import { describe, it } from "node:test"
 import {
   adminSupportCaseHref,
   inboxCaseKey,
+  inboxContactKey,
+  inboxSelectionKey,
   parseInboxCaseParam,
   supportCaseResponseHref,
 } from "./support-case-paths.ts"
@@ -13,6 +15,21 @@ describe("adminSupportCaseHref", () => {
     const id = "11111111-1111-4111-8111-111111111111"
     assert.equal(adminSupportCaseHref(id), `/admin/contact-messages?case=sc%3A${id}`)
     assert.equal(inboxCaseKey(id), `sc:${id}`)
+  })
+
+  it("keeps contact and order prefixes so deep links stay resolvable", () => {
+    const contactId = "22222222-2222-4222-8222-222222222222"
+    const orderSupportId = "33333333-3333-4333-8333-333333333333"
+    assert.equal(inboxContactKey(contactId), `cm:${contactId}`)
+    assert.equal(inboxSelectionKey(`cm:${contactId}`), `cm:${contactId}`)
+    assert.equal(
+      adminSupportCaseHref(`cm:${contactId}`),
+      `/admin/contact-messages?case=cm%3A${contactId}`,
+    )
+    assert.equal(
+      adminSupportCaseHref(`os:${orderSupportId}`),
+      `/admin/contact-messages?case=os%3A${orderSupportId}`,
+    )
   })
 })
 
