@@ -19,14 +19,18 @@ import {
 } from '@/lib/utils/reswellTicketCursorPrompt'
 import { isReswellTicketCursorBusy } from '@/lib/utils/reswellTicketCursorState'
 
-function cursorPatch(snapshot: CursorAgentSnapshot): UpdateReswellTicketRowInput {
+function cursorPatch(
+  snapshot: CursorAgentSnapshot,
+  previous: { agentId: string | null; prUrl: string | null },
+): UpdateReswellTicketRowInput {
+  const sameAgent = Boolean(previous.agentId && previous.agentId === snapshot.agentId)
   return {
     cursor_agent_id: snapshot.agentId,
     cursor_agent_url: snapshot.agentUrl,
     cursor_agent_status: snapshot.agentStatus,
     cursor_run_id: snapshot.runId,
     cursor_run_status: snapshot.runStatus,
-    cursor_pr_url: snapshot.prUrl,
+    cursor_pr_url: snapshot.prUrl ?? (sameAgent ? previous.prUrl : null),
     cursor_last_synced_at: new Date().toISOString(),
   }
 }
@@ -42,7 +46,10 @@ async function persistSnapshot(
   const previousPr = ticket.cursorAgent?.prUrl ?? null
   const previousRun = ticket.cursorAgent?.runStatus ?? null
   const patch: UpdateReswellTicketRowInput = {
-    ...cursorPatch(snapshot),
+    ...cursorPatch(snapshot, {
+      agentId: ticket.cursorAgent?.agentId ?? null,
+      prUrl: previousPr,
+    }),
     ...extra,
   }
 
