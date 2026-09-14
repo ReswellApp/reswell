@@ -3,10 +3,13 @@
  * (automatically on delivery/pickup, or as a rare manual retry from the sale page).
  *
  * **Metric name in Klaviyo:** `Review Requested` — profile is the **buyer** so metric-triggered
- * flows email them. Seller display context lives under `request_from` (nested), not top-level scalars.
+ * flows email them. Seller email stays under `request_from` (nested). Display name is also on
+ * top-level `seller_display_name` for the review-the-seller template.
  *
- * **Building the flow:** Flows → Metric → **Review Requested** → email; use e.g.
- * `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.messages_url }}`, `{{ event.purchase_url }}`,
+ * **Building the flow:** Flows → Metric → **Review Requested** → email.
+ * Template: `lib/klaviyo/review-seller-requested-email.html`.
+ * Variables: `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.review_url }}`,
+ * `{{ event.purchase_url }}`, `{{ event.seller_display_name }}`,
  * `{{ event.request_from.display_name }}`.
  *
  * When a review invite token exists, `review_url` points to `/review/[token]` (direct review page).
@@ -157,6 +160,7 @@ export async function trackKlaviyoReviewRequested(
       messages_url: messagesUrl,
       conversation_id: payload.conversationId,
       message_id: payload.messageId,
+      seller_display_name: requestFrom.display_name,
       request_from: {
         user_id: payload.sellerUserId,
         email: requestFrom.email ?? "",

@@ -7,8 +7,10 @@
  * - `post_purchase` — fired once after checkout completes
  * - `fulfillment` — fired once after pickup code verified or shipping delivered (skipped if buyer already reviewed)
  *
+ * **Template:** `lib/klaviyo/review-seller-requested-email.html` (use `phase` = fulfillment).
  * **Template variables:** `{{ event.review_url }}`, `{{ event.order_num }}`, `{{ event.Title }}`,
- * `{{ event.purchase_url }}`, `{{ event.request_from.display_name }}`, `{{ event.phase }}`.
+ * `{{ event.purchase_url }}`, `{{ event.seller_display_name }}`,
+ * `{{ event.request_from.display_name }}`, `{{ event.phase }}`.
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -124,6 +126,7 @@ export async function trackKlaviyoReviewInvite(payload: KlaviyoReviewInvitePaylo
       listing_url: listingUrl,
       purchase_url: purchaseUrl,
       review_url: reviewUrl,
+      seller_display_name: requestFrom.display_name,
       request_from: {
         user_id: payload.sellerUserId,
         email: requestFrom.email ?? "",
