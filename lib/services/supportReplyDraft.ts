@@ -17,6 +17,7 @@ import {
   upsertSupportReplyDraft,
   type SupportReplyOrderSnapshot,
 } from "@/lib/db/supportReplyDrafts"
+import { applySupportMacroVars } from "@/lib/utils/apply-support-macro-vars"
 import { supportReplyGreetingName } from "@/lib/utils/support-reply-greeting"
 import {
   APP_LLM_FEATURES,
@@ -96,11 +97,37 @@ function lastMessageAt(messages: SupportCaseMessageRow[]): string | null {
 
 function applyMacroVars(
   body: string,
-  vars: { name?: string | null; orderRef?: string | null },
+  vars: {
+    name?: string | null
+    orderRef?: string | null
+    tracking?: string | null
+    orderStatus?: string | null
+  },
 ): string {
-  return body
-    .replaceAll("{{name}}", vars.name?.trim() || "there")
-    .replaceAll("{{order_ref}}", vars.orderRef?.trim() || "your order")
+  return applySupportMacroVars(body, {
+    name: vars.name,
+    order_ref: vars.orderRef,
+    tracking: vars.tracking,
+    order_status: vars.orderStatus,
+  })
+}
+
+function draftMacroVars(
+  name: string,
+  orderRef: string | null,
+  order: SupportReplyOrderSnapshot | null,
+): {
+  name: string
+  orderRef: string | null
+  tracking: string | null
+  orderStatus: string | null
+} {
+  return {
+    name,
+    orderRef,
+    tracking: order?.trackingNumber ?? null,
+    orderStatus: order?.status ?? null,
+  }
 }
 
 function toCitedHelp(slugs: string[]): SupportReplyCitedHelp[] {
@@ -178,7 +205,12 @@ ${macros || "(none)"}`
 
 function fallbackDraft(
   knowledge: SupportReplyKnowledge,
-  vars: { name?: string | null; orderRef?: string | null },
+  vars: {
+    name?: string | null
+    orderRef?: string | null
+    tracking?: string | null
+    orderStatus?: string | null
+  },
 ): { body: string; origin: SupportReplyDraftOrigin; slugs: string[]; exampleIds: string[] } {
   const example = knowledge.examples[0]
   if (example && example.score >= 0.7) {
@@ -235,10 +267,10 @@ async function generateDraftBody(args: {
     .filter((id) => !id.startsWith("case:"))
 
   if (!isSupportReplyDraftLlmEnabled()) {
-    const fallback = fallbackDraft(args.knowledge, {
-      name: args.greetingName,
-      orderRef: args.row.order_ref,
-    })
+    const fallback = fallbackDraft(
+      args.knowledge,
+      draftMacroVars(args.greetingName, args.row.order_ref, args.order),
+    )
     return { ...fallback, model: null, needsHumanReview: true }
   }
 
@@ -283,10 +315,10 @@ ${knowledgePrompt(args.knowledge)}`,
   })
 
   if (!output?.reply.trim()) {
-    const fallback = fallbackDraft(args.knowledge, {
-      name: args.greetingName,
-      orderRef: args.row.order_ref,
-    })
+    const fallback = fallbackDraft(
+      args.knowledge,
+      draftMacroVars(args.greetingName, args.row.order_ref, args.order),
+    )
     return { ...fallback, model: supportReplyDraftModelId(), needsHumanReview: true }
   }
 
@@ -372,10 +404,7 @@ export async function generateAndStoreDraft(
     generated = await generateDraftBody({ row, messages, knowledge, order, greetingName })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)
-    const fallback = fallbackDraft(knowledge, {
-      name: greetingName,
-      orderRef: row.order_ref,
-    })
+    const fallback = fallbackDraft(knowledge, draftMacroVars(greetingName, row.order_ref, order))
     generated = { ...fallback, model: null, needsHumanReview: true }
   }
 

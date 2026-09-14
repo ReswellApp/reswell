@@ -38,6 +38,7 @@ import {
   Ticket,
   BookOpen,
   Handshake,
+  Zap,
 } from 'lucide-react'
 import {
   Collapsible,
@@ -123,6 +124,8 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
       return <Code className={NAV_ICON_CLASS} aria-hidden />
     case 'rotateCcw':
       return <RotateCcw className={NAV_ICON_CLASS} aria-hidden />
+    case 'zap':
+      return <Zap className={NAV_ICON_CLASS} aria-hidden />
     default:
       return <LayoutDashboard className={NAV_ICON_CLASS} aria-hidden />
   }

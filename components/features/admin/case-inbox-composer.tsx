@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { SupportReplyCitedHelp } from "@/lib/types/supportReplyDraft"
+import type { SupportMacroVars } from "@/lib/utils/apply-support-macro-vars"
 
 export type ComposerMode = "reply" | "note"
 export type ComposerDisposition = "keep_open" | "waiting" | "resolve"
@@ -22,7 +23,7 @@ interface CaseInboxComposerProps {
   pending: boolean
   closed: boolean
   kindFilter: string | null
-  vars: { name?: string; order_ref?: string }
+  vars: SupportMacroVars
   replyPlaceholder?: string
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void

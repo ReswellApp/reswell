@@ -213,7 +213,18 @@ export function CaseInboxConversation({
             pending={pending}
             closed={!item.isOpen}
             kindFilter={kindFilter}
-            vars={{ order_ref: item.orderRef ?? undefined, name: item.fromName }}
+            vars={{
+              name: item.fromName,
+              order_ref: item.orderRef ?? undefined,
+              tracking:
+                orderContext && item.orderId === orderContext.id
+                  ? orderContext.tracking_number ?? undefined
+                  : undefined,
+              order_status:
+                orderContext && item.orderId === orderContext.id
+                  ? orderContext.status
+                  : undefined,
+            }}
             replyPlaceholder={
               aiLoading ? "Writing a reply…" : staffReplyPlaceholder(item.requesterRole)
             }

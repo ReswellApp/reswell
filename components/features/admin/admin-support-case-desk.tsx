@@ -219,7 +219,11 @@ export function AdminSupportCaseDesk({
                       ? "cancel_request"
                       : null
                 }
-                vars={{ order_ref: orderRef ?? undefined, name: customerLabel }}
+                vars={{
+                  order_ref: orderRef ?? undefined,
+                  name: customerLabel,
+                  order_status: refund?.orderStatus,
+                }}
                 onInsert={(text) => setMacroDraft(text)}
               />
               {macroDraft ? (
