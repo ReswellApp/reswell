@@ -293,6 +293,62 @@ async function attachResearchResult(
   return true
 }
 
+function existingCatalogAttachPatch(
+  row: BackfillListingRow,
+  brand: BrandMatchRow,
+  model: ModelMatchRow,
+): ListingBrandModelPatch {
+  const patch: ListingBrandModelPatch = {}
+  if (!row.brand_id) {
+    patch.brand_id = brand.id
+    patch.brand = brand.name
+  }
+  if (!row.brand_model_id) {
+    patch.brand_model_id = model.id
+    patch.model = model.name
+  }
+  return patch
+}
+
+/** Attach already-resolved catalog brand+model, record autofill, stamp cooldown, then clear unmatched. */
+async function attachExistingCatalogMatch(
+  supabase: SupabaseClient,
+  row: BackfillListingRow,
+  brand: BrandMatchRow,
+  model: ModelMatchRow,
+  source: "label_backfill" | "research_create",
+  researchNotes: string,
+): Promise<boolean> {
+  const patch = existingCatalogAttachPatch(row, brand, model)
+  if (patch.brand_id || patch.brand_model_id) {
+    const attached = await attachResearchResult(
+      supabase,
+      row,
+      patch,
+      { brand: false, model: false },
+      source,
+    )
+    if (!attached) return false
+  }
+
+  await upsertListingBrandModelUnmatched(supabase, {
+    listing_id: row.id,
+    listing_title: row.title,
+    needs_brand: false,
+    needs_model: false,
+    matched_brand_id: brand.id,
+    matched_brand_name: brand.name,
+    review_status: "unmatched",
+    review_reason: null,
+    proposed_brand_name: null,
+    proposed_model_name: null,
+    research_notes: researchNotes,
+    last_researched_at: new Date().toISOString(),
+  })
+  await clearListingBrandModelUnmatched(supabase, row.id)
+  return true
+}
+
 /**
  * Research unmatched live listings and, only when high-confidence + official
  * site verification passes, create the missing catalog brand/model and attach.
@@ -336,39 +392,16 @@ export async function runListingBrandModelResearch(
           : null)
 
       if (brand && model) {
-        const patch: ListingBrandModelPatch = {}
-        if (!row.brand_id) {
-          patch.brand_id = brand.id
-          patch.brand = brand.name
-        }
-        if (!row.brand_model_id) {
-          patch.brand_model_id = model.id
-          patch.model = model.name
-        }
-        const attached = await attachResearchResult(
+        const attached = await attachExistingCatalogMatch(
           supabase,
           row,
-          patch,
-          { brand: false, model: false },
+          brand,
+          model,
           "label_backfill",
+          "Matched existing catalog after label extract.",
         )
         if (attached) {
           summary.attached += 1
-          await upsertListingBrandModelUnmatched(supabase, {
-            listing_id: row.id,
-            listing_title: row.title,
-            needs_brand: false,
-            needs_model: false,
-            matched_brand_id: brand.id,
-            matched_brand_name: brand.name,
-            review_status: "unmatched",
-            review_reason: null,
-            proposed_brand_name: null,
-            proposed_model_name: null,
-            research_notes: "Matched existing catalog after label extract.",
-            last_researched_at: new Date().toISOString(),
-          })
-          await clearListingBrandModelUnmatched(supabase, row.id)
         } else {
           summary.errors += 1
         }
@@ -386,11 +419,13 @@ export async function runListingBrandModelResearch(
         brand = matchBrandFromLabel(research.brand_name, catalog.brands)
         if (brand) {
           models = catalog.modelsByBrand.get(brand.id) ?? []
-          model =
-            model ??
-            matchModelFromLabel(research.model_name, models) ??
-            matchModelFromLabel(candidates.modelName, models)
         }
+      }
+      if (brand && !model) {
+        models = catalog.modelsByBrand.get(brand.id) ?? models
+        model =
+          matchModelFromLabel(research?.model_name, models) ??
+          matchModelFromLabel(candidates.modelName, models)
       }
 
       const websiteForVerify =
@@ -425,7 +460,23 @@ export async function runListingBrandModelResearch(
       }
 
       if (decision.action === "attach_existing") {
-        summary.skipped += 1
+        if (!brand || !model) {
+          summary.skipped += 1
+          continue
+        }
+        const attached = await attachExistingCatalogMatch(
+          supabase,
+          row,
+          brand,
+          model,
+          "research_create",
+          "Matched existing catalog after research.",
+        )
+        if (attached) {
+          summary.attached += 1
+        } else {
+          summary.errors += 1
+        }
         continue
       }
 

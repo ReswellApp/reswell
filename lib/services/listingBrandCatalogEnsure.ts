@@ -18,7 +18,10 @@ import {
   type DirectoryBrandProfile,
 } from "@/lib/db/listingBrandModelBackfill"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
-import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
+import {
+  syncFinCatalogBrandToIndex,
+  syncFinCatalogModelToIndex,
+} from "@/lib/elasticsearch/fin-catalog-index"
 import {
   syncSellCatalogBrandToIndex,
   syncSellCatalogModelToIndex,
@@ -147,7 +150,9 @@ export async function ensureDirectoryModelForListingCoverage(
     return { ok: false, error: inserted.error }
   }
 
+  void syncFinCatalogModelToIndex(supabase, inserted.row.id)
   void syncSellCatalogModelToIndex(supabase, inserted.row.id)
+  void syncFinCatalogBrandToIndex(supabase, input.brandId)
   revalidateSellCatalogSearch()
   return {
     ok: true,

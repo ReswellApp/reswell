@@ -639,6 +639,14 @@ export async function listListingBrandModelUnmatched(
   return (data ?? []) as unknown as ListingBrandModelUnmatchedRow[]
 }
 
+/**
+ * PostgREST `or` filter: never researched, or last attempt older than the cooldown cutoff.
+ * Applied in the query so cooled-down head rows cannot starve later unmatched listings.
+ */
+export function unmatchedResearchCooldownOrFilter(researchedBefore: string): string {
+  return `last_researched_at.is.null,last_researched_at.lt."${researchedBefore}"`
+}
+
 /** Active unmatched listings the research pass should consider (oldest first). */
 export async function listUnmatchedListingsForResearch(
   supabase: SupabaseClient,
@@ -646,68 +654,83 @@ export async function listUnmatchedListingsForResearch(
 ): Promise<BackfillListingRow[]> {
   const limit = Math.min(Math.max(options?.limit ?? 15, 1), 50)
   const researchedBefore = options?.researchedBefore ?? null
-
-  const { data, error } = await supabase
-    .from("listing_brand_model_unmatched")
-    .select(
-      "listing_id, listing_title, last_researched_at, listing:listing_id ( id, title, brand, brand_id, model, brand_model_id, section, status, hidden_from_site )",
-    )
-    .order("first_seen_at", { ascending: true })
-    .limit(Math.max(limit * 4, 40))
-
-  if (error) {
-    console.error("listUnmatchedListingsForResearch:", error.message)
-    return []
-  }
+  const pageSize = Math.max(limit * 4, 40)
 
   const rows: BackfillListingRow[] = []
-  for (const raw of data ?? []) {
-    const listing = raw.listing as
-      | {
-          id: string
-          title: string | null
-          brand: string | null
-          brand_id: string | null
-          model: string | null
-          brand_model_id: string | null
-          section: string
-          status: string
-          hidden_from_site: boolean | null
-        }
-      | {
-          id: string
-          title: string | null
-          brand: string | null
-          brand_id: string | null
-          model: string | null
-          brand_model_id: string | null
-          section: string
-          status: string
-          hidden_from_site: boolean | null
-        }[]
-      | null
-    const row = Array.isArray(listing) ? listing[0] : listing
-    if (!row?.id) continue
-    const lastResearchedAt =
-      typeof (raw as { last_researched_at?: string | null }).last_researched_at === "string"
-        ? (raw as { last_researched_at: string }).last_researched_at
-        : null
-    if (researchedBefore && lastResearchedAt && lastResearchedAt >= researchedBefore) {
-      continue
+  let from = 0
+
+  for (;;) {
+    let query = supabase
+      .from("listing_brand_model_unmatched")
+      .select(
+        "listing_id, listing_title, last_researched_at, listing:listing_id ( id, title, brand, brand_id, model, brand_model_id, section, status, hidden_from_site )",
+      )
+      .order("first_seen_at", { ascending: true })
+
+    if (researchedBefore) {
+      query = query.or(unmatchedResearchCooldownOrFilter(researchedBefore))
     }
-    if (row.status !== "active" || row.hidden_from_site) continue
-    if (row.section !== "surfboards" && row.section !== "fins") continue
-    if (row.brand_id && row.brand_model_id) continue
-    rows.push({
-      id: row.id,
-      title: row.title,
-      brand: row.brand,
-      brand_id: row.brand_id,
-      model: row.model,
-      brand_model_id: row.brand_model_id,
-      section: row.section,
-    })
+
+    const { data, error } = await query.range(from, from + pageSize - 1)
+
+    if (error) {
+      console.error("listUnmatchedListingsForResearch:", error.message)
+      break
+    }
+
+    const batch = data ?? []
+    for (const raw of batch) {
+      const listing = raw.listing as
+        | {
+            id: string
+            title: string | null
+            brand: string | null
+            brand_id: string | null
+            model: string | null
+            brand_model_id: string | null
+            section: string
+            status: string
+            hidden_from_site: boolean | null
+          }
+        | {
+            id: string
+            title: string | null
+            brand: string | null
+            brand_id: string | null
+            model: string | null
+            brand_model_id: string | null
+            section: string
+            status: string
+            hidden_from_site: boolean | null
+          }[]
+        | null
+      const row = Array.isArray(listing) ? listing[0] : listing
+      if (!row?.id) continue
+      const lastResearchedAt =
+        typeof (raw as { last_researched_at?: string | null }).last_researched_at === "string"
+          ? (raw as { last_researched_at: string }).last_researched_at
+          : null
+      if (researchedBefore && lastResearchedAt && lastResearchedAt >= researchedBefore) {
+        continue
+      }
+      if (row.status !== "active" || row.hidden_from_site) continue
+      if (row.section !== "surfboards" && row.section !== "fins") continue
+      if (row.brand_id && row.brand_model_id) continue
+      rows.push({
+        id: row.id,
+        title: row.title,
+        brand: row.brand,
+        brand_id: row.brand_id,
+        model: row.model,
+        brand_model_id: row.brand_model_id,
+        section: row.section,
+      })
+      if (rows.length >= limit) break
+    }
+
     if (rows.length >= limit) break
+    if (batch.length < pageSize) break
+    from += pageSize
   }
 
   return rows
