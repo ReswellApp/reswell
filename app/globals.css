@@ -705,6 +705,15 @@ html[data-reswell-scroll-lock] body {
     min-width: 0;
   }
 
+  .admin-app [role='tablist'] {
+    display: flex;
+    height: auto;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.25rem;
+  }
+
   .admin-app .admin-filter-row {
     display: grid;
     width: 100%;

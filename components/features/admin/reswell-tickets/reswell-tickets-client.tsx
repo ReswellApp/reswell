@@ -69,11 +69,11 @@ export function ReswellTicketsClient() {
             />
           </div>
 
-          <div className="px-6 pb-8 sm:px-10">
-            <div className="relative z-10 mb-3 pt-5 text-4xl leading-none" aria-hidden>
+          <div className="px-4 pb-8 sm:px-10">
+            <div className="relative z-10 mb-3 pt-5 text-3xl leading-none sm:text-4xl" aria-hidden>
               🏄
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-neutral-900">Reswell Tickets</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-4xl">Reswell Tickets</h1>
             <p className="mt-2 max-w-xl text-sm text-neutral-500">
               Internal admin board for progress and bug fixes. Not the support inbox.
             </p>

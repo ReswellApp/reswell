@@ -29,7 +29,7 @@ export function SeoAdminClient({ initialItems, siteOrigin }: SeoAdminClientProps
 
   return (
     <Tabs defaultValue="metadata" className="space-y-4">
-      <TabsList>
+      <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
         <TabsTrigger value="metadata">Page metadata</TabsTrigger>
         <TabsTrigger value="redirects">Redirects</TabsTrigger>
         <TabsTrigger value="crawling">Crawling</TabsTrigger>
