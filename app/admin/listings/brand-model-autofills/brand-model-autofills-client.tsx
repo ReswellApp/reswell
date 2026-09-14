@@ -102,6 +102,11 @@ type UnmatchedRow = {
   currentBrandId: string | null
   currentBrandModelId: string | null
   brandKnownModelMissing: boolean
+  reviewStatus: "unmatched" | "needs_review"
+  reviewReason: string | null
+  proposedBrandName: string | null
+  proposedModelName: string | null
+  researchNotes: string | null
   firstSeenAt: string
   lastSeenAt: string
 }
@@ -760,6 +765,15 @@ export function BrandModelAutofillsAdminClient() {
                             >
                               {capitalizeWords(row.listingTitle)}
                             </Link>
+                            {row.reviewStatus === "needs_review" ? (
+                              <p className="mt-1 max-w-[280px] text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+                                Review
+                                {row.reviewReason ? `: ${row.reviewReason.replace(/_/g, " ")}` : ""}
+                                {row.proposedBrandName
+                                  ? ` · ${row.proposedBrandName}${row.proposedModelName ? ` ${row.proposedModelName}` : ""}`
+                                  : ""}
+                              </p>
+                            ) : null}
                           </div>
                         </TableCell>
                         <TableCell>

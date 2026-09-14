@@ -1,4 +1,4 @@
-import { brandLegacyRecallTokens } from "@/lib/utils/marketplace-brand-query"
+import { brandLegacyRecallTokens } from "./marketplace-brand-query.ts"
 
 /**
  * Pure, deterministic matching of a listing title against the brand/model catalog.
@@ -110,4 +110,58 @@ export function matchModelFromTitle(
   }
 
   return best
+}
+
+/**
+ * High-confidence match of a seller-typed brand label (or researched name) to a
+ * directory brand. Requires a unique exact / prefix / whole-word hit so generic
+ * tokens stay unmatched when several brands share them.
+ */
+export function matchBrandFromLabel(
+  label: string | null | undefined,
+  brands: BrandMatchRow[],
+): BrandMatchRow | null {
+  const phrase = normalizedPhrase(label)
+  if (phrase.length < MIN_BRAND_PHRASE_LEN) return null
+
+  const exact: BrandMatchRow[] = []
+  const prefixOrWord: BrandMatchRow[] = []
+
+  for (const brand of brands) {
+    const namePhrase = normalizedPhrase(brand.name)
+    const slugPhrase = normalizedPhrase(brand.slug?.replace(/-/g, " "))
+    if (namePhrase === phrase || slugPhrase === phrase) {
+      exact.push(brand)
+      continue
+    }
+    const namePadded = namePhrase ? ` ${namePhrase} ` : ""
+    const slugPadded = slugPhrase ? ` ${slugPhrase} ` : ""
+    const wordHit =
+      phraseAppearsIn(namePadded, phrase) || phraseAppearsIn(slugPadded, phrase)
+    const prefixHit =
+      namePhrase.startsWith(`${phrase} `) || slugPhrase.startsWith(`${phrase} `)
+    if (wordHit || prefixHit) prefixOrWord.push(brand)
+  }
+
+  if (exact.length === 1) return exact[0]
+  if (exact.length > 1) return null
+  if (prefixOrWord.length === 1) return prefixOrWord[0]
+  return null
+}
+
+/**
+ * High-confidence match of a seller-typed / researched model label against one
+ * brand's catalog. Exact normalized name only — generic shapes ("fish") must
+ * already exist as that brand's model name to attach.
+ */
+export function matchModelFromLabel(
+  label: string | null | undefined,
+  models: ModelMatchRow[],
+): ModelMatchRow | null {
+  const phrase = normalizedPhrase(label)
+  if (phrase.length < MIN_MODEL_PHRASE_LEN) return null
+
+  const exact = models.filter((model) => normalizedPhrase(model.name) === phrase)
+  if (exact.length === 1) return exact[0]
+  return null
 }
