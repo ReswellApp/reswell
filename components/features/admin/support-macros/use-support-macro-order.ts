@@ -25,11 +25,18 @@ export function useSupportMacroOrder(
 
     let cancelled = false
     setReady(false)
-    void getSupportMacroOrderAction({ order_id: orderId }).then((result) => {
-      if (cancelled) return
-      setFetched("data" in result ? result.data : null)
-      setReady(true)
-    })
+    void (async () => {
+      try {
+        const result = await getSupportMacroOrderAction({ order_id: orderId })
+        if (cancelled) return
+        setFetched("data" in result ? result.data : null)
+      } catch {
+        if (cancelled) return
+        setFetched(null)
+      } finally {
+        if (!cancelled) setReady(true)
+      }
+    })()
     return () => {
       cancelled = true
     }

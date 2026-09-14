@@ -45,8 +45,7 @@ export async function listActiveSupportMacros(
     .order("title", { ascending: true })
 
   if (error) {
-    console.warn("[support_macros] list skipped:", error.message)
-    return []
+    throw new Error(error.message)
   }
   return asRecords(data)
 }
