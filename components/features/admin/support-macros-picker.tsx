@@ -44,10 +44,22 @@ export function SupportMacrosPicker({
   hasOrderVars = true,
 }: SupportMacrosPickerProps) {
   const [macros, setMacros] = useState<SupportMacroRecord[] | null>(null)
+  const [loadError, setLoadError] = useState(false)
 
   const loadMacros = useCallback(async () => {
-    const result = await listActiveSupportMacrosAction()
-    if ("data" in result) setMacros(result.data)
+    try {
+      const result = await listActiveSupportMacrosAction()
+      if ("data" in result) {
+        setMacros(result.data)
+        setLoadError(false)
+        return
+      }
+      setMacros([])
+      setLoadError(true)
+    } catch {
+      setMacros([])
+      setLoadError(true)
+    }
   }, [])
 
   useEffect(() => {
@@ -59,9 +71,15 @@ export function SupportMacrosPicker({
   const visible = list.filter(
     (macro) => !macro.kind_filter || !kindFilter || macro.kind_filter === kindFilter,
   )
+  const waitingOnOrder = visible.some((macro) => macroNeedsOrderVars(macro.body)) && !orderVarsReady
+
+  function canInsert(macro: SupportMacroRecord): boolean {
+    if (!macroNeedsOrderVars(macro.body)) return true
+    return orderVarsReady && hasOrderVars
+  }
 
   function insert(macro: SupportMacroRecord) {
-    if (!orderVarsReady) {
+    if (macroNeedsOrderVars(macro.body) && !orderVarsReady) {
       toast.message("Loading order details…")
       return
     }
@@ -75,9 +93,24 @@ export function SupportMacrosPicker({
 
   function emptyCopy(): string {
     if (!loaded) return "Loading macros…"
+    if (loadError) return "Couldn’t load macros."
     if (list.length === 0) return "No macros yet."
     return "No macros for this ticket."
   }
+
+  const retryControl = (
+    <button
+      type="button"
+      className="text-[11px] text-muted-foreground underline"
+      onClick={() => {
+        setMacros(null)
+        setLoadError(false)
+        void loadMacros()
+      }}
+    >
+      Retry
+    </button>
+  )
 
   if (variant === "menu") {
     return (
@@ -89,13 +122,13 @@ export function SupportMacrosPicker({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="max-h-72 w-64 overflow-y-auto">
-          {!orderVarsReady ? (
+          {waitingOnOrder ? (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">Loading order details…</p>
           ) : null}
           {visible.map((macro) => (
             <DropdownMenuItem
               key={macro.id}
-              disabled={!orderVarsReady || (macroNeedsOrderVars(macro.body) && !hasOrderVars)}
+              disabled={!canInsert(macro)}
               onSelect={() => insert(macro)}
             >
               {macro.title}
@@ -103,6 +136,9 @@ export function SupportMacrosPicker({
           ))}
           {visible.length === 0 ? (
             <p className="px-2 py-1.5 text-xs text-muted-foreground">{emptyCopy()}</p>
+          ) : null}
+          {loadError ? (
+            <DropdownMenuItem onSelect={() => void loadMacros()}>Retry</DropdownMenuItem>
           ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
@@ -120,9 +156,11 @@ export function SupportMacrosPicker({
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <Label className="text-xs text-muted-foreground">Reply macros</Label>
-        <Link href="/admin/support-macros" className="text-[11px] text-muted-foreground underline">
-          {list.length === 0 && loaded ? "Add a macro" : "Manage"}
-        </Link>
+        {loadError ? retryControl : (
+          <Link href="/admin/support-macros" className="text-[11px] text-muted-foreground underline">
+            {list.length === 0 && loaded ? "Add a macro" : "Manage"}
+          </Link>
+        )}
       </div>
       {!loaded || visible.length === 0 ? (
         <p className="text-xs text-muted-foreground">{emptyCopy()}</p>
@@ -135,7 +173,7 @@ export function SupportMacrosPicker({
               size="sm"
               variant="outline"
               className="h-7 rounded-full text-xs"
-              disabled={!orderVarsReady || (macroNeedsOrderVars(macro.body) && !hasOrderVars)}
+              disabled={!canInsert(macro)}
               onClick={() => insert(macro)}
             >
               {macro.title}
@@ -143,7 +181,7 @@ export function SupportMacrosPicker({
           ))}
         </div>
       )}
-      {!orderVarsReady ? (
+      {waitingOnOrder ? (
         <p className="text-[11px] text-muted-foreground">Loading order details…</p>
       ) : null}
     </div>
