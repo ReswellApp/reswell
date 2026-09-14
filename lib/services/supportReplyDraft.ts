@@ -110,6 +110,8 @@ function draftMacroVars(
           status: order.status,
           fulfillment_method: order.fulfillmentMethod,
           delivery_status: order.deliveryStatus,
+          tracking_carrier: order.trackingCarrier,
+          carrier_delivered_at: order.carrierDeliveredAt,
         }
       : null,
   })

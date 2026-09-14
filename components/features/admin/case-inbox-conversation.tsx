@@ -98,26 +98,11 @@ export function CaseInboxConversation({
   onRegenerateAi,
   onRateAi,
 }: CaseInboxConversationProps) {
-  const kindFilter =
-    item.kind === "protection_claim"
-      ? "protection_claim"
-      : item.kind === "cancel_request"
-        ? "cancel_request"
-        : null
   const linkedOrder = orderContext && item.orderId === orderContext.id ? orderContext : null
   const macroVars = supportMacroVarsFromOrder({
     name: item.fromName,
     order_ref: item.orderRef,
-    tracking: linkedOrder?.tracking_number,
-    order: linkedOrder
-      ? {
-          status: linkedOrder.status,
-          fulfillment_method: linkedOrder.fulfillment_method,
-          delivery_status: linkedOrder.delivery_status,
-          tracking_carrier: linkedOrder.tracking_carrier,
-          carrier_delivered_at: linkedOrder.carrier_delivered_at,
-        }
-      : null,
+    order: linkedOrder,
   })
 
   return (
@@ -228,7 +213,7 @@ export function CaseInboxConversation({
             draft={draft}
             pending={pending}
             closed={!item.isOpen}
-            kindFilter={kindFilter}
+            kindFilter={item.kind}
             vars={macroVars}
             replyPlaceholder={
               aiLoading ? "Writing a reply…" : staffReplyPlaceholder(item.requesterRole)

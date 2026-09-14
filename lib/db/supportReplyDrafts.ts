@@ -17,6 +17,8 @@ export type SupportReplyOrderSnapshot = {
   fulfillmentMethod: string | null
   deliveryStatus: string | null
   trackingNumber: string | null
+  trackingCarrier: string | null
+  carrierDeliveredAt: string | null
 }
 
 export type ResolvedCaseForRetrieval = {
@@ -242,7 +244,9 @@ export async function getSupportReplyOrderSnapshot(
 ): Promise<SupportReplyOrderSnapshot | null> {
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_num, status, amount, fulfillment_method, delivery_status, tracking_number")
+    .select(
+      "id, order_num, status, amount, fulfillment_method, delivery_status, tracking_number, tracking_carrier, carrier_delivered_at",
+    )
     .eq("id", orderId)
     .maybeSingle()
 
@@ -255,6 +259,8 @@ export async function getSupportReplyOrderSnapshot(
     fulfillment_method: string | null
     delivery_status: string | null
     tracking_number: string | null
+    tracking_carrier: string | null
+    carrier_delivered_at: string | null
   }
   return {
     id: row.id,
@@ -264,5 +270,7 @@ export async function getSupportReplyOrderSnapshot(
     fulfillmentMethod: row.fulfillment_method,
     deliveryStatus: row.delivery_status,
     trackingNumber: row.tracking_number,
+    trackingCarrier: row.tracking_carrier,
+    carrierDeliveredAt: row.carrier_delivered_at,
   }
 }

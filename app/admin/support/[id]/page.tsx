@@ -61,13 +61,15 @@ export default async function AdminSupportCasePage({
     fulfillmentMethod: string | null
     deliveryStatus: string | null
     trackingNumber: string | null
+    trackingCarrier: string | null
+    carrierDeliveredAt: string | null
   } | null = null
   if (row.order_id) {
     const service = createServiceRoleClient()
     const { data } = await service
       .from("orders")
       .select(
-        "status, amount, shipping_amount, payment_method, fulfillment_method, delivery_status, tracking_number",
+        "status, amount, shipping_amount, payment_method, fulfillment_method, delivery_status, tracking_number, tracking_carrier, carrier_delivered_at",
       )
       .eq("id", row.order_id)
       .maybeSingle()
@@ -80,6 +82,8 @@ export default async function AdminSupportCasePage({
         fulfillmentMethod: (data.fulfillment_method as string | null) ?? null,
         deliveryStatus: (data.delivery_status as string | null) ?? null,
         trackingNumber: (data.tracking_number as string | null) ?? null,
+        trackingCarrier: (data.tracking_carrier as string | null) ?? null,
+        carrierDeliveredAt: (data.carrier_delivered_at as string | null) ?? null,
       }
     }
   }
@@ -98,6 +102,18 @@ export default async function AdminSupportCasePage({
       assigneeAdminId={row.assignee_admin_id}
       messages={result.messages}
       closed={row.status === "resolved"}
+      orderForMacros={
+        money
+          ? {
+              status: money.status,
+              fulfillment_method: money.fulfillmentMethod,
+              delivery_status: money.deliveryStatus,
+              tracking_number: money.trackingNumber,
+              tracking_carrier: money.trackingCarrier,
+              carrier_delivered_at: money.carrierDeliveredAt,
+            }
+          : null
+      }
       refund={
         money && row.order_id && row.order_ref
           ? {
