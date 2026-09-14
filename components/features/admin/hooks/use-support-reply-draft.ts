@@ -39,11 +39,15 @@ export function useSupportReplyDraft(caseId: string | null) {
       setLoading(false)
       return
     }
+    setDraft(null)
+    setError(null)
     void load(caseId, false)
     return () => {
       requestId.current += 1
     }
   }, [caseId, load])
+
+  const scopedDraft = draft && caseId && draft.caseId === caseId ? draft : null
 
   const regenerate = useCallback(() => {
     if (!caseId) return
@@ -52,16 +56,16 @@ export function useSupportReplyDraft(caseId: string | null) {
 
   const rate = useCallback(
     async (rating: "accepted" | "rejected") => {
-      if (!caseId) return
+      if (!caseId || !scopedDraft) return
       await rateSupportReplyDraftAction({
         case_id: caseId,
-        draft_id: draft?.id,
+        draft_id: scopedDraft.id,
         rating,
-        sent_body: draft?.body,
+        sent_body: scopedDraft.body,
       })
     },
-    [caseId, draft],
+    [caseId, scopedDraft],
   )
 
-  return { draft, loading, error, regenerate, rate }
+  return { draft: scopedDraft, loading, error, regenerate, rate }
 }

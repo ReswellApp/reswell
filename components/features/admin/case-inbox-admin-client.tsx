@@ -44,6 +44,7 @@ import type {
 } from "@/components/features/admin/case-inbox-composer"
 import { useSupportReplyDraft } from "@/components/features/admin/hooks/use-support-reply-draft"
 import {
+  inboxSuggestionBelongsToSelectedCase,
   parseStoredCaseComposerDraft,
   serializeStoredCaseComposerDraft,
 } from "@/lib/admin/case-inbox-draft"
@@ -250,8 +251,16 @@ export function CaseInboxAdminClient() {
 
   useEffect(() => {
     if (!selected?.isOpen || !aiDraft || composerMode !== "reply") return
+    if (
+      !inboxSuggestionBelongsToSelectedCase({
+        selectedCaseId: selected.id,
+        composerCaseId: draftCaseId,
+        suggestionCaseId: aiDraft.caseId,
+      })
+    ) {
+      return
+    }
     if (consumedAi.current?.id === aiDraft.id && consumedAi.current.body === aiDraft.body) return
-    if (draftCaseId !== aiDraft.caseId) return
     const current = draft.trim()
     const canReplace = !current || current === (aiAppliedBody ?? "").trim()
     if (!canReplace) return

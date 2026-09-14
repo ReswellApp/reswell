@@ -92,16 +92,18 @@ export function AdminSupportCaseDesk({
   }, [macroDraft])
 
   useEffect(() => {
-    if (macroDraft || aiLoading || !aiDraft?.body) return
+    if (aiLoading || !aiDraft?.body || aiDraft.caseId !== caseId) return
     if (replaceNextSeed.current) {
       replaceNextSeed.current = false
+      setMacroDraft("")
       setSeedMode("replace")
       setSeedText(aiDraft.body)
       return
     }
+    if (macroDraft) return
     setSeedMode("fill-empty")
     setSeedText(aiDraft.body)
-  }, [aiDraft, macroDraft, aiLoading])
+  }, [aiDraft, macroDraft, aiLoading, caseId])
 
   useEffect(() => {
     void listSupportStaffAction().then((res) => {
@@ -193,6 +195,7 @@ export function AdminSupportCaseDesk({
                     disabled={aiLoading}
                     onClick={() => {
                       replaceNextSeed.current = true
+                      setMacroDraft("")
                       regenerateAi()
                       setSeedText("")
                     }}

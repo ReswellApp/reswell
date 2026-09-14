@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  inboxSuggestionBelongsToSelectedCase,
   parseStoredCaseComposerDraft,
   serializeStoredCaseComposerDraft,
   storedDraftIsReplaceableSuggestion,
@@ -42,5 +43,40 @@ describe("case inbox composer draft storage", () => {
       suggestionId: null,
     })
     assert.equal(storedDraftIsReplaceableSuggestion(parsed), false)
+  })
+})
+
+describe("inboxSuggestionBelongsToSelectedCase", () => {
+  it("rejects a leftover suggestion from the previous conversation", () => {
+    assert.equal(
+      inboxSuggestionBelongsToSelectedCase({
+        selectedCaseId: "case-b",
+        composerCaseId: "case-a",
+        suggestionCaseId: "case-a",
+      }),
+      false,
+    )
+  })
+
+  it("rejects a suggestion whose case id does not match the selected ticket", () => {
+    assert.equal(
+      inboxSuggestionBelongsToSelectedCase({
+        selectedCaseId: "case-b",
+        composerCaseId: "case-b",
+        suggestionCaseId: "case-a",
+      }),
+      false,
+    )
+  })
+
+  it("accepts a suggestion only when selected, composer, and draft agree", () => {
+    assert.equal(
+      inboxSuggestionBelongsToSelectedCase({
+        selectedCaseId: "case-b",
+        composerCaseId: "case-b",
+        suggestionCaseId: "case-b",
+      }),
+      true,
+    )
   })
 })

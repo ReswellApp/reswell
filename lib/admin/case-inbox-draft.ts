@@ -36,3 +36,15 @@ export function serializeStoredCaseComposerDraft(draft: StoredCaseComposerDraft)
 export function storedDraftIsReplaceableSuggestion(draft: StoredCaseComposerDraft | null): boolean {
   return Boolean(draft?.suggestionId && draft.body.trim())
 }
+
+/** Apply a suggestion only when it belongs to the case currently in the composer. */
+export function inboxSuggestionBelongsToSelectedCase(args: {
+  selectedCaseId: string | null | undefined
+  composerCaseId: string | null | undefined
+  suggestionCaseId: string | null | undefined
+}): boolean {
+  const selected = args.selectedCaseId
+  return Boolean(
+    selected && args.composerCaseId === selected && args.suggestionCaseId === selected,
+  )
+}
