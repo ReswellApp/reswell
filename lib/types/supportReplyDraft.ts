@@ -44,3 +44,38 @@ export type SupportReplyExampleRow = {
   rated_by: string | null
   created_at: string
 }
+
+export type SupportReplyExampleCitedHelp = {
+  slug: string
+  title: string
+  href: string
+}
+
+export type SupportReplyExampleAdminView = {
+  id: string
+  caseId: string | null
+  kind: string | null
+  customerExcerpt: string
+  staffReply: string
+  citedHelpSlugs: string[]
+  citedHelp: SupportReplyExampleCitedHelp[]
+  rating: "accepted" | "edited" | "rejected"
+  draftId: string | null
+  ratedBy: string | null
+  createdAt: string
+}
+
+export type SupportReplyExampleRatingCounts = {
+  all: number
+  accepted: number
+  edited: number
+  rejected: number
+}
+
+export type SupportReplyExampleListResult = {
+  items: SupportReplyExampleAdminView[]
+  total: number
+  page: number
+  limit: number
+  counts: SupportReplyExampleRatingCounts
+}

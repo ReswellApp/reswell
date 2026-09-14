@@ -120,6 +120,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     items: [
       { href: '/admin/crm', label: 'CRM', description: 'Customer relationships', icon: ContactRound },
       { href: '/admin/contact-messages', label: 'Support tickets', description: 'Customer help cases', icon: MessageSquare },
+      { href: '/admin/support-reply-examples', label: 'Reply examples', description: 'Edit the replies drafts learn from', icon: Sparkles },
       { href: '/admin/messages', label: 'Marketplace messages', description: 'Buyer/seller threads', icon: MessageSquare },
       { href: '/admin/listings/brand-requests', label: 'Brand requests', description: 'Brand & model requests', icon: Tag },
     ],

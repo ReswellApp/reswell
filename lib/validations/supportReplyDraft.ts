@@ -2,6 +2,36 @@ import { z } from "zod"
 
 export const SUPPORT_REPLY_DRAFT_RATINGS = ["accepted", "edited", "rejected"] as const
 export const SUPPORT_REPLY_DRAFT_ORIGINS = ["llm", "example", "macro"] as const
+export const SUPPORT_REPLY_EXAMPLE_KINDS = [
+  "general",
+  "order_question",
+  "cancel_request",
+  "protection_claim",
+  "safety",
+  "payments",
+  "account",
+] as const
+export const SUPPORT_REPLY_EXAMPLE_PAGE_SIZE = 25
+
+const emptyToUndefined = (value: unknown) => {
+  if (value == null) return undefined
+  if (typeof value === "string" && value.trim() === "") return undefined
+  if (Array.isArray(value)) return value[0]
+  return value
+}
+
+const citedHelpSlugsSchema = z
+  .union([z.array(z.string()), z.string()])
+  .transform((value) => {
+    const parts = Array.isArray(value) ? value : value.split(/[\n,]+/)
+    return [...new Set(parts.map((part) => part.trim()).filter(Boolean))].slice(0, 8)
+  })
+  .pipe(z.array(z.string().trim().min(1).max(160)).max(8))
+
+const optionalKindSchema = z.preprocess(
+  emptyToUndefined,
+  z.enum(SUPPORT_REPLY_EXAMPLE_KINDS).optional(),
+)
 
 export const supportReplyDraftCaseIdSchema = z.object({
   case_id: z.string().uuid(),
@@ -21,8 +51,35 @@ export const supportReplyDraftLlmSchema = z.object({
   needs_human_review: z.boolean(),
 })
 
+export const supportReplyExampleListSchema = z.object({
+  rating: z.preprocess(emptyToUndefined, z.enum(SUPPORT_REPLY_DRAFT_RATINGS).optional()),
+  kind: optionalKindSchema,
+  q: z.preprocess(emptyToUndefined, z.string().trim().max(200).optional()),
+  page: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).optional()),
+  limit: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(100).optional()),
+})
+
+export const supportReplyExampleUpdateSchema = z.object({
+  id: z.string().uuid(),
+  customer_excerpt: z.string().trim().min(1, "Customer excerpt is required.").max(4000),
+  staff_reply: z.string().trim().min(1, "Staff reply is required.").max(12000),
+  rating: z.enum(SUPPORT_REPLY_DRAFT_RATINGS),
+  kind: z
+    .union([z.enum(SUPPORT_REPLY_EXAMPLE_KINDS), z.literal(""), z.null()])
+    .transform((value) => (value === "" || value == null ? null : value)),
+  cited_help_slugs: citedHelpSlugsSchema,
+})
+
+export const supportReplyExampleDeleteSchema = z.object({
+  id: z.string().uuid(),
+})
+
 export type SupportReplyDraftRating = z.infer<typeof supportReplyDraftFeedbackSchema>["rating"]
 export type SupportReplyDraftOrigin = (typeof SUPPORT_REPLY_DRAFT_ORIGINS)[number]
 export type SupportReplyDraftLlmOutput = z.infer<typeof supportReplyDraftLlmSchema>
 export type SupportReplyDraftCaseInput = z.infer<typeof supportReplyDraftCaseIdSchema>
 export type SupportReplyDraftFeedbackInput = z.infer<typeof supportReplyDraftFeedbackSchema>
+export type SupportReplyExampleKind = (typeof SUPPORT_REPLY_EXAMPLE_KINDS)[number]
+export type SupportReplyExampleListInput = z.infer<typeof supportReplyExampleListSchema>
+export type SupportReplyExampleUpdateInput = z.infer<typeof supportReplyExampleUpdateSchema>
+export type SupportReplyExampleDeleteInput = z.infer<typeof supportReplyExampleDeleteSchema>
