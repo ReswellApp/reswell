@@ -12,14 +12,20 @@ import type {
   SupportReplyExampleAdminView,
   SupportReplyExampleListResult,
 } from "@/lib/types/supportReplyDraft"
-import { supportReplyExamplesHref } from "@/lib/utils/support-reply-examples"
+import {
+  clampSupportReplyExamplesPage,
+  supportReplyExamplesHref,
+} from "@/lib/utils/support-reply-examples"
 import {
   SUPPORT_REPLY_DRAFT_RATINGS,
   SUPPORT_REPLY_EXAMPLE_KINDS,
   type SupportReplyDraftRating,
   type SupportReplyExampleKind,
 } from "@/lib/validations/supportReplyDraft"
-import { SupportReplyExampleCard } from "./support-reply-example-card"
+import {
+  SupportReplyExampleCard,
+  type SupportReplyExampleChange,
+} from "./support-reply-example-card"
 import { supportReplyExampleRatingLabel } from "./support-reply-example-rating"
 
 const SELECT_CLASS = "h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -57,6 +63,21 @@ export function SupportReplyExamplesAdminClient({
         page: next.page,
       }),
     )
+  }
+
+  function afterChange(change: SupportReplyExampleChange) {
+    const leftFilter = Boolean(
+      change.deleted ||
+        (filters.rating && change.rating && change.rating !== filters.rating) ||
+        (filters.kind && change.kind !== undefined && (change.kind ?? "") !== filters.kind),
+    )
+    const nextTotal = leftFilter ? Math.max(0, result.total - 1) : result.total
+    const nextPage = clampSupportReplyExamplesPage(result.page, nextTotal, result.limit)
+    if (nextPage !== result.page) {
+      go({ page: nextPage })
+      return
+    }
+    router.refresh()
   }
 
   const ratingChips: Array<{ id: SupportReplyDraftRating | undefined; label: string; count: number }> =
@@ -144,12 +165,12 @@ export function SupportReplyExamplesAdminClient({
       ) : (
         <div className="space-y-3">
           {result.items.map((example: SupportReplyExampleAdminView) => (
-            <SupportReplyExampleCard key={example.id} example={example} onChanged={() => router.refresh()} />
+            <SupportReplyExampleCard key={example.id} example={example} onChanged={afterChange} />
           ))}
         </div>
       )}
 
-      {result.total > result.limit ? (
+      {result.total > result.limit || result.page > 1 ? (
         <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
           <p>
             Page {result.page} of {pageCount}

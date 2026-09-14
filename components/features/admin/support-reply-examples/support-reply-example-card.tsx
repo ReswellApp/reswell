@@ -37,9 +37,15 @@ function kindLabel(kind: string | null): string | null {
   return SUPPORT_CASE_KIND_LABEL[kind as SupportCaseKind] ?? kind
 }
 
+export type SupportReplyExampleChange = {
+  deleted?: boolean
+  rating?: SupportReplyExampleAdminView["rating"]
+  kind?: string | null
+}
+
 interface SupportReplyExampleCardProps {
   example: SupportReplyExampleAdminView
-  onChanged: () => void
+  onChanged: (change: SupportReplyExampleChange) => void
 }
 
 export function SupportReplyExampleCard({ example, onChanged }: SupportReplyExampleCardProps) {
@@ -67,7 +73,7 @@ export function SupportReplyExampleCard({ example, onChanged }: SupportReplyExam
     }
     toast.success("Example updated")
     setEditing(false)
-    onChanged()
+    onChanged({ rating: draft.rating, kind: draft.kind || null })
   }
 
   async function remove() {
@@ -79,7 +85,7 @@ export function SupportReplyExampleCard({ example, onChanged }: SupportReplyExam
       return
     }
     toast.success("Example deleted")
-    onChanged()
+    onChanged({ deleted: true })
   }
 
   return (

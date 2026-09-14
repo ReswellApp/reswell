@@ -1,7 +1,11 @@
+import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { listAdminSupportReplyExamplesService } from "@/lib/services/supportReplyExamples"
 import { SupportReplyExamplesAdminClient } from "@/components/features/admin/support-reply-examples/support-reply-examples-admin-client"
-import { SUPPORT_REPLY_EXAMPLES_PATH } from "@/lib/utils/support-reply-examples"
+import {
+  SUPPORT_REPLY_EXAMPLES_PATH,
+  supportReplyExamplesHref,
+} from "@/lib/utils/support-reply-examples"
 import {
   SUPPORT_REPLY_EXAMPLE_PAGE_SIZE,
   supportReplyExampleListSchema,
@@ -40,6 +44,16 @@ export default async function AdminSupportReplyExamplesPage({
   const parsed = supportReplyExampleListSchema.safeParse(raw)
   const filters = parsed.success ? parsed.data : {}
   const loaded = await listAdminSupportReplyExamplesService(filters)
+  if ("data" in loaded && loaded.data.page !== (filters.page ?? 1)) {
+    redirect(
+      supportReplyExamplesHref({
+        rating: filters.rating,
+        kind: filters.kind,
+        q: filters.q,
+        page: loaded.data.page,
+      }),
+    )
+  }
 
   return (
     <div className="space-y-4">

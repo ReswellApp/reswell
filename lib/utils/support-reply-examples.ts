@@ -1,5 +1,15 @@
 export const SUPPORT_REPLY_EXAMPLES_PATH = "/admin/support-reply-examples"
 
+export function supportReplyExamplesPageCount(total: number, limit: number): number {
+  return Math.max(1, Math.ceil(Math.max(0, total) / Math.max(1, limit)))
+}
+
+export function clampSupportReplyExamplesPage(page: number, total: number, limit: number): number {
+  const maxPage = supportReplyExamplesPageCount(total, limit)
+  if (!Number.isFinite(page) || page < 1) return 1
+  return Math.min(Math.trunc(page), maxPage)
+}
+
 export function supportReplyExamplesHref(filters: {
   rating?: string
   kind?: string

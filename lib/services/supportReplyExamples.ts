@@ -8,6 +8,7 @@ import {
   updateSupportReplyExample,
 } from "@/lib/db/supportReplyDrafts"
 import { citedHelpFromSlugs } from "@/lib/services/supportReplyKnowledge"
+import { clampSupportReplyExamplesPage } from "@/lib/utils/support-reply-examples"
 import type {
   SupportReplyExampleAdminView,
   SupportReplyExampleListResult,
@@ -126,11 +127,30 @@ export async function listAdminSupportReplyExamplesService(
 
   if ("error" in listed) return listed
 
+  const safePage = clampSupportReplyExamplesPage(page, listed.total, limit)
+  if (safePage !== page) {
+    const relisted = await listSupportReplyExamplesPage(staff.supabase, {
+      ...filters,
+      offset: (safePage - 1) * limit,
+      limit,
+    })
+    if ("error" in relisted) return relisted
+    return {
+      data: {
+        items: relisted.rows.map(toSupportReplyExampleAdminView),
+        total: relisted.total,
+        page: safePage,
+        limit,
+        counts,
+      },
+    }
+  }
+
   return {
     data: {
       items: listed.rows.map(toSupportReplyExampleAdminView),
       total: listed.total,
-      page,
+      page: safePage,
       limit,
       counts,
     },
