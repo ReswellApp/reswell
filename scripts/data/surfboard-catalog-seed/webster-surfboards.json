@@ -1,0 +1,180 @@
+{
+  "generated_for": "Webster Surfboards official named standup catalog",
+  "source": "https://www.webstersurfboards.com.au/all-surfboards and post-sitemap.xml (official model pages — excludes apparel, surf shop merch, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "webster-surfboards",
+      "name": "Webster Surfboards",
+      "website_url": "https://www.webstersurfboards.com.au/",
+      "location_label": "Lennox Head, New South Wales, Australia",
+      "founder_name": "Wayne Webster",
+      "lead_shaper_name": "Wayne Webster",
+      "short_description": "Gold Coast performance and big-wave shapes from Wayne Webster — shortboards, fishes, step-ups, and guns.",
+      "models": [
+        {
+          "name": "BG Cannonball",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/CANNONBALL-BG-TOP.png",
+          "description": "Wave range 1-8 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM RAIL",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "BG Outlaw",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/OUTLAW-BG-TOP.png",
+          "description": "Wave range 2-6 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "BG Rascal",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/RASCAL-BG-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-6 FT LOW NOSE AND TAIL ROCKER V W/ DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Black Hula",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/BLACK-HULA-SURFBOARD-TOP_2.png",
+          "description": "Wave range 8-80 FT MEDIUM NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE MEDIUM RAIL W/ REFINED TAIL",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Cannonball",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/CANNONBALL-SHORTBOARD-TOP-1.png",
+          "description": "Wave range 1-6 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM RAIL",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Desert Storm",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/DESERT-STORM-SURFBOARD-TOP_2.png",
+          "description": "Wave range 8-80 FT MEDIUM NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE FLAT DECK W/ MEDIUM DOWN RAIL",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Desert Storm SU",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/DESERT-STORM-SURFBOARD-TOP-SU_2.png",
+          "description": "Wave range 4-10 FT MEDIUM NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE FLAT DECK W/ MEDIUM DOWN RAIL",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Desert Twin",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2023/02/desert-twin-feature.png",
+          "description": "Wave range 1-8 FT MEDIUM NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE LOW BOXY RAIL",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Disco Star",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/DISCO-STAR-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-8 FT LOW NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE LOW RAIL",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Freestyler",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/FREESTYLER-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-5 FT LOW NOSE AND TAIL ROCKER V W/ DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "High Roller",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/HIGH-ROLLER-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-6 FT MEDIUM NOSE AND TAIL ROCKER FLAT TO V-DOUBLE CONCAVE MEDIUM RAIL",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "K Cannonball",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/CANNONBALL-KIDS-TOP.png",
+          "description": "Wave range 1-5 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM BOXY RAIL",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "K Outlaw",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/OUTLAW-SURFBOARD-TOP-GROM_2.png",
+          "description": "Wave range 1-5 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "K Sniper",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/SNIPER-SURFBOARD-TOP-GROM_2.png",
+          "description": "Wave range 1-6 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mod Rocker",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/03/Mod-Rocker-Top-drop.png",
+          "description": "Wave range 1-5FT Fish / Small wave epoxy Low Nose and Tail Rocker Medium / Low Boxy Rail",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Napalm",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/NAPALM-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-8 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM BOXY RAIL",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Nitro",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/NITRO-BOARD-TOP_2.png",
+          "description": "Wave range 1-8 FT MEDIUM NOSE / LOW TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Outlaw",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/OUTLAW-SURFBOARD-TOP_2.png",
+          "description": "Wave range 2-6 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Punk Rocker",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/PUNK-ROCKER-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-6 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM BOXY RAIL",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rascal",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/RASCAL-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-6 FT LOW NOSE AND TAIL ROCKER V W/ DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sea Monkey",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/SEAMONKEY2-MIDLENGTH-TOP.png",
+          "description": "Wave range 1-8 FT MEDIUM NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE MEDIUM RAIL",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sniper",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/SNIPER-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-8 FT MEDIUM NOSE AND TAIL ROCKER DEEP SINGLE TO DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spartan",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/SPARTAN-SURFBOARD-TOP_2.png",
+          "description": "Wave range 5-15 FT MEDIUM NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE MEDIUM RAIL W/ REFINED TAIL",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "SYCHO",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2026/05/Sycho_74_Top_26-e1779861198174.png",
+          "description": "Wave range 5-15 FT MEDIUM NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE MEDIUM RAIL W/ REFINED TAIL",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "SYCHO SU",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2026/05/Sycho_64_Top_26-e1779861148243.png",
+          "description": "Wave range 4-10 FT MEDIUM NOSE AND TAIL ROCKER V TO DOUBLE CONCAVE MEDIUM RAIL W/ REFINED TAIL",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Turbo",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/TURBO-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-8 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM / LOW BOXY RAIL",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wacko",
+          "image_url": "https://www.webstersurfboards.com.au/wp-content/uploads/2022/02/WACKO-SURFBOARD-TOP_2.png",
+          "description": "Wave range 1-8 FT MEDIUM NOSE AND TAIL ROCKER SINGLE TO DOUBLE CONCAVE MEDIUM BOXY RAIL",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
