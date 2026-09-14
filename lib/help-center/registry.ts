@@ -1,4 +1,10 @@
 import { helpArticles } from "@/lib/help-center/articles"
+
+export {
+  getAllHelpRetrievalDocuments,
+  getHelpRetrievalDocument,
+  searchHelpRetrievalDocuments,
+} from "@/lib/help-center/retrieval-docs"
 import { helpTopicIndexes } from "@/lib/help-center/topics"
 import { getHelpRetrievalDocument, helpRetrievalHaystack } from "@/lib/help-center/retrieval-docs"
 import type {
