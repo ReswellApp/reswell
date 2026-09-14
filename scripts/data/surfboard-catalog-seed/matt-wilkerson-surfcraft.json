@@ -1,0 +1,49 @@
+{
+  "generated_for": "Matt Wilkerson Surfcraft official named standup catalog",
+  "source": "https://www.mjwsurf.com/ (official Squarespace model pages — excludes merch and the Larry Bertlemann replica page, which has no unique product-front photo)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "matt-wilkerson-surfcraft",
+      "name": "Matt Wilkerson Surfcraft",
+      "website_url": "https://www.mjwsurf.com/",
+      "location_label": "Noosa, Queensland, Australia",
+      "founder_name": "Matt Wilkerson",
+      "lead_shaper_name": "Matt Wilkerson",
+      "short_description": "Hand-shaped custom longboards, fishes, and twins by Matt Wilkerson on the Sunshine Coast — a Noosa label rooted in San Diego, Hawaii, and classic Volan craft.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/matt-wilkerson-surfcraft.jpg",
+      "models": [
+        {
+          "name": "Impala",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a6901b70100272acc1be5ff/1519366774977-IHA1G5KKHTVHVX72GJ46/imp1.JPG?format=jpg",
+          "description": "The Impala is an incredible small wave design. A modified Pig shape outline — pulled-in nose and wider tail curving into a baby squash for easy early wave entry and accelerated manoeuvrability, with modest width and medium rail volume. Single nose concave to vee off the tail. Single fin with side bite. Glassed with 7.5 Volan; overall board weight is medium to heavy.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mojo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a6901b70100272acc1be5ff/1527509108656-ZD69CUHYH8XUYDV50PU1/mojo1.JPG?format=jpg",
+          "description": "A 1960s replica built to catch everything with glide and style. Wide parallel outline for maximum trim and stability, single nose concave and rolled vee bottom, 50/50 classic rails, balanced rocker, and heavy glass. Square tail, single fin — a 10\" hatchet is recommended. Glassed in traditional 7.5 oz Volan.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Silver Ghost",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a6901b70100272acc1be5ff/1519360011209-X7GKORYNAMZI1S57JOFR/IMG_2816.jpg?format=jpg",
+          "description": "The Ghost is one of Matt Wilkerson's favourite boards for tearing up all size waves. Speed-shape outline with a pulled-in nose and tail, modest width, and medium rail volume. Single nose concave to vee off the tail. Glassed medium to heavy. Recommended as a single fin or box plus side-fin options.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cali Kat",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a6901b70100272acc1be5ff/1527507209325-9JFDYWZYEFMRHEGSJA98/IMG_2734.jpg?format=jpg",
+          "description": "A traditional fish design for unlimited speed. This versatile shape began as a kneeboard in San Diego waters — wider outline for stability and carry through flat sections. Wilkerson's interpretation uses 60/40 rails, glass-on handmade wood keel fins, and contemporary bottom contours: a slight rolled entry to single concave through the fins for a smooth ride.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Ala Moana",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5a6901b70100272acc1be5ff/1527512614582-K4ODDFSBKVRS8BJ8I002/alam1.JPG?format=jpg",
+          "description": "A late-70s / early-80s twin-fin design where fin placement is key. Beautiful overall template with a small flyer positioned to loosen the board in a variety of conditions. Bottom contours run single-entry concave into a vee with a slight double concave through the fins — a smooth, fast, manoeuvrable ride.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
