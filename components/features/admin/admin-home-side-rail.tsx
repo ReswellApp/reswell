@@ -25,7 +25,7 @@ export function AdminHomeSideRail({
   const items: AttentionItem[] = [
     {
       href: '/admin/contact-messages',
-      label: 'Open cases',
+      label: 'Open support tickets',
       value: badgeCounts['/admin/contact-messages'] ?? 0,
       tone: 'rose',
     },

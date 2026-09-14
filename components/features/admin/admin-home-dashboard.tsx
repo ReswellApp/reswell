@@ -1,4 +1,6 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
+import { LifeBuoy, ShoppingBag, Ticket } from 'lucide-react'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import { AdminHomeCountChart } from '@/components/features/admin/admin-home-count-chart'
 import { AdminHomeGreeting } from '@/components/features/admin/admin-home-greeting'
@@ -8,6 +10,7 @@ import { AdminMonthlyRevenueTable } from '@/components/features/admin/admin-mont
 import { AdminHomeRevenueFilter } from '@/components/features/admin/admin-home-revenue-filter'
 import { AdminHomeSideRail } from '@/components/features/admin/admin-home-side-rail'
 import { AdminRevenueChart } from '@/components/features/admin/admin-revenue-chart'
+import { Button } from '@/components/ui/button'
 import type { AdminHomePulse } from '@/lib/services/adminHomePulse'
 import type { AdminHomeCountTrend } from '@/lib/services/adminHomeGrowth'
 import type {
@@ -32,6 +35,12 @@ function countChartSubtitle(trend: AdminHomeCountTrend, noun: string): string {
   const grain = trend.aggregation === 'month' ? 'monthly' : 'daily'
   return `${trend.periodLabel} · ${grain} ${noun} (${BUSINESS_TIMEZONE_LABEL})`
 }
+
+const HOME_QUICK_LINKS = [
+  { href: '/admin/reswelltickets', label: 'Reswell tickets', icon: Ticket },
+  { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+  { href: '/admin/contact-messages', label: 'Support tickets', icon: LifeBuoy },
+] as const
 
 interface AdminHomeDashboardProps {
   badgeCounts?: AdminNavBadgeCounts
@@ -70,7 +79,7 @@ export function AdminHomeDashboard({
 }: AdminHomeDashboardProps) {
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Reswell admin
@@ -81,6 +90,16 @@ export function AdminHomeDashboard({
           <p className="mt-1 text-sm text-muted-foreground">
             GMS, platform revenue, AOV, new listings, and new users on one clock.
           </p>
+          <nav aria-label="Quick links" className="mt-3 flex flex-wrap items-center gap-2">
+            {HOME_QUICK_LINKS.map((item) => (
+              <Button key={item.href} asChild size="sm" variant="outline" className="h-8">
+                <Link href={item.href}>
+                  <item.icon aria-hidden />
+                  {item.label}
+                </Link>
+              </Button>
+            ))}
+          </nav>
         </div>
         <Suspense fallback={null}>
           <AdminHomeRevenueFilter selectedYearMonth={selectedYearMonth} range={range} />

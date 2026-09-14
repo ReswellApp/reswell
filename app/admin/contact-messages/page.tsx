@@ -4,7 +4,7 @@ import { CaseInboxAdminClient } from "@/components/features/admin/case-inbox-adm
 import { CaseInboxWorkspaceSkeleton } from "@/components/features/admin/case-inbox-workspace-skeleton"
 
 export const metadata = privatePageMetadata({
-  title: "Cases — Admin — Reswell",
+  title: "Support tickets — Admin — Reswell",
   description: "Unified customer help cases — general, orders, and Purchase Protection claims.",
   path: "/admin/contact-messages",
 })

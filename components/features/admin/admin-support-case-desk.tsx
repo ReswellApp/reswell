@@ -285,7 +285,7 @@ export function AdminSupportCaseDesk({
             <p className="mt-1 leading-relaxed">
               Inbox triage stays at{" "}
               <Link href={CASES_INBOX_HREF} className="underline underline-offset-2">
-                Cases
+                Support tickets
               </Link>
               . Replies stay on this case — they never go to Messages.
             </p>
