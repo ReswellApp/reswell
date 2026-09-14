@@ -33,6 +33,30 @@ export type CaseInboxView =
   | "all"
 export type CaseInboxPriority = "low" | "normal" | "high" | "urgent"
 export type CaseInboxSort = "smart" | "recent" | "oldest"
+
+export type InboxViewCounts = {
+  open: number
+  mine: number
+  unassigned: number
+  neu: number
+  waiting: number
+  claims: number
+  overdue: number
+  resolved: number
+  all: number
+}
+
+export const EMPTY_INBOX_VIEW_COUNTS: InboxViewCounts = {
+  open: 0,
+  mine: 0,
+  unassigned: 0,
+  neu: 0,
+  waiting: 0,
+  claims: 0,
+  overdue: 0,
+  resolved: 0,
+  all: 0,
+}
 export type CaseInboxOpenedBy = "requester" | "staff"
 export type CaseInboxRequesterRole = "buyer" | "seller" | "member" | "guest"
 

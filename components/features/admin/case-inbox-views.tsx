@@ -10,20 +10,10 @@ import {
   UserMinus,
   UserRound,
 } from "lucide-react"
-import type { CaseInboxView } from "@/lib/admin/case-inbox"
+import type { CaseInboxView, InboxViewCounts } from "@/lib/admin/case-inbox"
 import { cn } from "@/lib/utils"
 
-export type InboxViewCounts = {
-  open: number
-  mine: number
-  unassigned: number
-  neu: number
-  waiting: number
-  claims: number
-  overdue: number
-  resolved: number
-  all: number
-}
+export type { InboxViewCounts }
 
 const VIEWS: {
   id: CaseInboxView

@@ -61,6 +61,8 @@ interface CaseInboxConversationProps {
   aiHelp?: SupportReplyCitedHelp[]
   onRegenerateAi?: () => void
   onRateAi?: (rating: "accepted" | "rejected") => void
+  aiRating?: "accepted" | "rejected" | null
+  aiRatingPending?: boolean
 }
 
 function kindBadge(item: CaseInboxItem): string {
@@ -98,6 +100,8 @@ export function CaseInboxConversation({
   aiHelp,
   onRegenerateAi,
   onRateAi,
+  aiRating,
+  aiRatingPending,
 }: CaseInboxConversationProps) {
   const linkedOrder = orderContext && item.orderId === orderContext.id ? orderContext : null
   const { order: macroOrder, ready: orderVarsReady } = useSupportMacroOrder(
@@ -235,6 +239,8 @@ export function CaseInboxConversation({
             aiHelp={aiHelp}
             onRegenerateAi={onRegenerateAi}
             onRateAi={onRateAi}
+            aiRating={aiRating}
+            aiRatingPending={aiRatingPending}
           />
         </div>
       </div>

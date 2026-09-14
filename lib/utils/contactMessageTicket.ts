@@ -12,7 +12,7 @@ export function buildContactTicketDraft(msg: ContactMessageRow): string {
       : null
   const supportThreadLine =
     msg.support_conversation_id != null && msg.support_conversation_id.trim() !== ""
-      ? `- **Support DM:** \`${msg.support_conversation_id}\` (reply in /admin/contact-messages/${msg.id})`
+      ? `- **Support DM:** \`${msg.support_conversation_id}\` (reply in /admin/contact-messages?case=sc:${msg.id})`
       : null
 
   return [
