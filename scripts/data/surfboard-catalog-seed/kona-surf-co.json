@@ -1,0 +1,156 @@
+{
+  "generated_for": "Kona Surf Co official named standup catalog",
+  "source": "https://konasurfco.com/collections/kona-models/products.json plus KO'A softboard products (official Kona models only \u2014 excludes third-party factory boards, apparel, fins, rentals, and SUPs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "kona-surf-co",
+      "name": "Kona Surf Co",
+      "website_url": "https://www.konasurfco.com",
+      "location_label": "Wildwood, New Jersey",
+      "founder_name": "Mike Sciarra",
+      "lead_shaper_name": "Chris Sciarra",
+      "short_description": "Jersey Shore custom boards shaped at the Kona Boardhouse in Wildwood since 1969.",
+      "models": [
+        {
+          "name": "Bella",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSBELLA_Lime-450.jpg?v=1782839999",
+          "description": "The Bella is back, upgraded and refined for smoother lines and more glide. With subtle mid-length adjustments and a pronounced V-bottom contour starting about two feet from the nose, the Bella flows effortlessly from rail to rail, delivering smooth, controlled turns across a wide range of surf. Its rounded nose enhances paddling power and early entry, while the mid-entry rocker with lift and tail kick makes late takeoffs easy and confident. The 60/40 rails create a balanced feel, loose and forgiving yet grippy enough for clean carves when the face steepens. Versatile bottom contours and multiple fin setups let you fine tune performance to your style and conditions. Under six feet, the Bella truly shines, a stylish wave-catching machine that blends longboard glide with shortboard maneuverability. Outline: Rounded Nose with Wide Point Forward Rocker: Relaxed Nose and Tail Rocker Bottom Contours: Slight Vee starting in the nose that transitions into deeper Vee throughout the entire board, extending through the tail. Tail: Rounded Pin",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bullet 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSET2PU_Clear-Pink-450.jpg?v=1782536875",
+          "description": "The Bullet 2.0 is a highly versatile, all-around shortboard engineered to perform well across a wide range of surf conditions, from small waves to head-high surf, thanks to its balanced proportions, increased length, and wider nose and tail for easy paddling and takeoffs. Its staged and continuous rocker provides a smooth ride with relaxed entry and exit, while the single to double concave bottom ensures speed, lift, and responsiveness. The rounded squash tail offers smooth releases, stability, and deep carving, making it ideal for surfers seeking a reliable, adaptable board that combines stability, maneuverability, and speed for various surf environments. Outline: High Performance with Wide Point forward Rocker: Relaxed Entry and Exit Rocker Bottom Contours: Single to Double Concave Tail: Rounded Squash",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bullet Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSOARDS_Clear-Blue-450.jpg?v=1782840065",
+          "description": "The Bullet Pro is the high-performance evolution of the original Bullet, the pinnacle of our performance shortboard line. With the most rocker of any board in our lineup, its continuous curve, especially pronounced beneath your feet, delivers lightning-fast directional changes and responsiveness in critical sections. A subtle single concave transitions into a reduced double concave through the fins, generating controlled speed with smooth flow. The outline is refined and pulled in at both the nose and tail, designed to fit effortlessly into tight barrels without catching. The rocker excels on steep, late drops and thrives in overhead to double-overhead surf. Its pulled-in squash tail adds a touch of forgiveness while maintaining high-performance drive and release. Built for surfers pushing their limits in powerful conditions, the Bullet Pro is pure performance, speed, control, and precision where it counts. Outline: High Performance Outline with Wide Point Back Tucked in Nose Rocker: Performance High Rocker in Nose and Extra Tail Kick Bottom Contours: Slight Single and Double Tail: Slightly Rounded Squash Tail",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cruiser",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSUISER2_Clear-Blocks-450.jpg?v=1781099683",
+          "description": "The Cruiser is the quintessential classic longboard that perfectly blends sixties style with modern ease of riding, making it ideal for all surfers, especially beginners. Its traditional outline features a wide, rounded nose and a square tail, providing excellent stability, paddle power, and wave catching ability in small to medium surf conditions. The low rocker, combined with a slight spoon in the nose for noseriding and additional tail rocker for speed, offers a balanced mix of glide and maneuverability. Bottom contours a rolled belly with a spoon enhance stability and smooth rail to rail transitions, while 50/50 pinched rails maximize volume and paddling comfort. The square tail reacts quickly for tight, responsive turns, making the Cruiser the perfect confidence-builder for those looking to glide, have fun, and fall in love with surfing on those relaxed summer days. Outline: Longboard outline with Wide Point Forward. Rocker: Relaxed Nose with Bit Extra Tail Kick Bottom Contours: Rolled Belly Through out with Spoon Under the Nose Tail: Square Tail",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Dos Baja",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSAJAPU_Pink-450.jpg?v=1782412319",
+          "description": "The Dos Baja pulls from classic fish design, reworked with a modern mindset. A contemporary rocker, updated bottom contours, and finely foiled rails paired with a touch of extra foam under the chest for easier paddling give it performance that goes well beyond a traditional fish. Fast but easy to handle, the Dos Baja likes to run high lines, carry speed, and stay smooth through turns. Easy glide through the middle, solid hold through the turn. Built exclusively as a twin fin, the Dos Baja keeps strong paddle power and early entry, then feels lighter, sharper, and more responsive once youre on your feet. A familiar outline with a little extra spark classic at its roots with a modern touch. Outline: Classic fish outline with the wide point set slightly further back Rocker: Flat through the middle for speed and glide, with slightly extra kick in the nose and tail Bottom Contours: Single to double concave with subtle vee off the tail for fast lines and easy rail-to-rail transition Tail: Fish Tail",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Everyday",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSEVERY_LightBlue-450.jpg?v=1783745971",
+          "description": "The Everyday Mid Length is a versatile, user-friendly surfboard suitable for all skill levels and conditions, featuring increased length, volume, and paddle power for effortless wave catching and cruising. Its full nose and wider body provide confidence and stability, complemented by a mid rocker and extra kick on the squash tail that generate speed and reduce nose dives. The bottom contours a slight single concave transitioning into double concave and V enhance speed and hold for smooth, powerful turns with stability, especially with a firm back foot. Acting as a bridge between performance models and traditional longboards, this mini longboard is an ideal all-around board for daily surfing, combining ease of use with performance. Outline: Round Nose with Wide Point Foward Rocker: Lower Moderate Nose Rocker with Extra Tail Kick Bottom Contours: Single To Double To Slight Vee Tail: Rounded Squash",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hyper Mike",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSM-WOT_Grey-450.jpg?v=1781631812",
+          "description": "Mike Sciarra's Hyper Mike longboard masterfully combines traditional longboard aesthetics with modern design elements, making it a highly versatile, high performance hybrid suitable for a wide range of conditions from mushy waves to shoulder high surf. Its increased tail rocker allows for sharp, agile turns, while the 2+1 fin setup provides stability and control. The rounded square tail offers looseness and pivotability for smooth, responsive maneuvers, complemented by nose and tail curves, single to double concave bottom contours for speed and planing, and vee through the tail for fluid transitions. The tapered tail strikes an ideal balance between speed and control, enabling effortless rail to rail transitions and lively responsiveness. Overall, this modern longboard delivers a perfect blend of classic style and contemporary performance, making it an excellent choice across diverse conditions truly a versatile, high-performance longboard that will elevate your surf game. Outline: Longboard outline with Wide Point Forward. Rocker: Relaxed Nose with Extra Tail Kick Bottom Contours: Single to Double To Vee with Slight Spoon Under the Nose Tail: Rounded Square",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Jersey Jack",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSKSCJJ_Clear-Green-450.jpg?v=1781901069",
+          "description": "The Jersey Jack returns with refined performance updates for modern surf conditions. Designed as a highly versatile shortboard alternative, it thrives across a wide range of waves, from soft beach breaks to punchy reefs and points. A new double bat tail boosts lift and speed while offering a clean release point for quick, pivot-style turns. The forward wide point improves paddling efficiency and early entry, while the double bat tail adds control and smooth transition through turns. Underneath, a scooped single concave blending into a double concave through the fin cluster keeps it fast, lively, and responsive, maintaining drive and fluid rail-to-rail flow. The medium-low rocker profile enhances down-the-line speed while keeping the tail free and loose for performance in a variety of conditions. The Jersey Jack remains a dependable hybrid, fast, forgiving, and highly responsive, ideal for surfers looking for a compact board that delivers high-performance turning with everyday versatility. Outline: Performance Groveler Outline With Wide Point Forward Rocker: Mellow Nose Rocker and Little Extra Tail Kick Bottom Contours: Single to Double to Concave Tail: Double Bat Tail",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Kai 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSPUSRS_Clear-Blue-450_4f17f880-21f6-47ce-aa0f-72ece17cf3b7.jpg?v=1781901208",
+          "description": "The Kai 2.0 Wide is a highly versatile surfboard designed to excel in a variety of conditions, from mellow waves to more challenging surf, featuring a new swallow tail, forward wide point, and mellow wing for enhanced paddling, buoyancy, and control. Its scooped single concave and double Vee provide stability, responsiveness, and smooth maneuvering, making it an ideal all-around board for riders seeking speed, agility, and style across different wave types. Renowned for its ability to generate and carry speed throughout the ride, the Kai series remains a favorite for surfers wanting a dependable, board that combines effortless glide with smooth, controlled turns. Outline: Hyrbid Perfomance with Wide Point Forward Rocker: Moderate Nose and Tail Rocker Bottom Contours: Single to Double to Vee Tail: Swallow",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lemon Pop Softboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSEMPOP_FottheBirds-450.jpg?v=1784610632",
+          "description": "The Lemon Pop is a fun little board with way more foam than you wouldd think for its size. It has a fuller nose, a rounded tail, and a little flip in the nose, so it paddles easy, gets into waves quick, and still feels loose once you are up. It kind of has that fish feel, but with a little more shortboard response to it. Fast, forgiving, and easy to surf. It is one of those boards that can make an average day feel a lot better. Built with an EPS core, epoxy lamination, and a 4mm IXPE textured soft deck, you get the softer feel and durability of a soft top without making the board feel slow or bulky. The Lemon Pop is also part of the KOA collection. A portion of the proceeds from every KOA board goes toward coral reef restoration, so every board helps give a little back to the ocean. Easy to paddle, easy to throw around, and just a fun board to have when you want something different.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mini Buddha",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSHAEPS1_BlueFade-450.jpg?v=1782840127",
+          "description": "The Mini Buddha Hybrid is built for strength, stability, and longevity a solid, dependable board designed for larger surfers or anyone seeking extra flotation without losing performance. Its hybrid nose and added width up front boost stability and expand the sweet spot, giving you more confidence to shift weight and adjust positioning. The outline carries that width through the board, with volume blended into the deck to keep the rails lively and responsive. A squash tail softens turns while maintaining drive and speed, and the relaxed nose rocker with a subtle tail kick keeps transitions smooth and controlled. Underneath, a single-to-double concave paired with vee through the tail and a chine along the rails delivers speed, lift, and effortless maneuverability. The result is a board that feels both forgiving and fast, capable of handling a range of wave conditions with confidence. Perfect for surfers wanting extra paddle power and a smaller, easier-handling shape, the Mini Buddha Hybrid helps increase your wave count while keeping the ride smooth, balanced, and fun. Outline: Hybrid Midlength with Wide Point Forward Rocker: Moderate Nose and Tail Rocker Bottom Contours: Single to Double to Vee with Chine on Rail through front and mid section Tail: Squash",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moonshot",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSOTEPS_Clear-Pink-450.jpg?v=1781153168",
+          "description": "The Moon Shot features a traditional outline with a tucked-in square tail for smooth, responsive turns. A slight chine through the nose adds lift and helps prevent pearling, while the subtle concave under the nose gives extra lift and control when nose-riding. A flat section through the center blends into a soft vee through the tail, making the board easy to roll from rail to rail. The staged rocker includes a clean, fast midsection for drive and speed, with just the right amount of nose and tail kick for stability when stepping up or back. All around, the Moon Shot is a versatile longboard that shines in smaller surf yet holds its own when the waves get steeper a true all-arounder built for glide, style, and control. Outline: Longboard Outline With Wide Point Forward Rocker: Moderate Nose and Tail Rocker Bottom Contours: Spoon to Flat to V Tail: Square Tail",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Old School",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSOOLSB_Clear-Pink-450.jpg?v=1781813262",
+          "description": "The Old School screams classic, just like its name. This versatile, innovative board blends a timeless egg-inspired outline with modern performance features, making it a reliable choice across a wide range of conditions. A streamlined low-entry rocker and well-distributed foam make for effortless paddling and glide on smaller days, while the double-barrel concave and tucked-in tail deliver smooth, controlled turns when the surf picks up. The 60/40 rails through the midsection transition to sharper rails up front, enhancing responsiveness and maneuverability for quick, precise direction changes. Ride it as a twin fin for a loose, lively feel or add a small stabilizer for extra drive and control. The Old School gives you the option to run it as a single fin or 2+1 setup, making it an adaptable, go-to board for nearly any lineup. Simple, stylish, and built to perform, its a board that gets the job done from waist-high cruisers to clean, overhead walls. Outline: Hybrid Egg Like Outline with Wide Point Forward Rocker: Relaxed Entry Rocker with Little Extra Tail Kick Bottom Contours: Double Barrel All The Way Through Tail: Slight Wing With Tucked in Rounded Pin",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Owen",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SS-MINT_DeepTeal-450.jpg?v=1781299297",
+          "description": "Mike Owen's signature Owen longboard seamlessly combines classic longboard aesthetics with modern performance, featuring increased nose and tail rocker for quick, responsive rail to rail transitions and a versatile 2+1 fin setup for stability and customization across various conditions. Its rounded pin tail allows for smooth carving and controlled turns, while bottom contours single to double concave with vee through the tail maximize speed, trim, and agility.The Owen delivers a lively, refined ride that honors traditional longboarding while offering the responsiveness and versatility needed for modern surfing on punchy reef breaks, mellow rollers, or beach breaks, making it an adaptable and stylish choice for surfers seeking both performance and classic appeal. Outline: Longboard outline with Wide Point Forward with Slight Spoon under the Nose Rocker: Relaxed Nose with Extra Tail Kick Bottom Contours: Single to Double To Vee Tail: Rounded Pin",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Oyster Catcher",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSSTERC_Clear-Pink-450.jpg?v=1782240421",
+          "description": "The Oyster Catcher is the ultimate groveler, designed to turn even the worst waves into a fun filled session by maximizing wave count and paddling ease. Its rounded nose and scoop facilitate quick, early take offs, especially in waves under 6 feet, while the mid entry rocker offers lift and confidence in late drops. The 60/40 rails add looseness and control, adapting well from softer, rounded waves to steeper faces for carving. The bottom contour single to double concave provides lift and speed, and the slight tail bump combined with the rounded pin tail enhances hold and responsiveness in steeper conditions. With multiple fin configurations, the Oyster Catcher is a true wave catching machine, perfect for making the most of less than ideal surf and turning dull days into an exciting ride. Outline: Hybrid Round Nose Groveler with Wide Point Forward Rocker: Mid Entry & Tail Rocker Bottom Contours: Single to Double Concave Tail: Hybrid Round Nose Groveler with Wide Point Forward",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Papaya Softboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SS-LTBL_AquaBlue-1-450.jpg?v=1784610939",
+          "description": "The Papaya is one of those boards you can pretty much just grab and go surf. It has that classic egg style mid length shape, plenty of glide, and gets into waves really easy. The wide point sits a little forward with a fuller nose and low entry rocker, so it paddles fast and carries speed without feeling like a big soft top. There is a little extra kick in the tail, single concave through the bottom, and a pulled in rounded tail, so it still feels smooth and easy when you put it into a turn. It is a true single fin, which is where a lot of the fun comes from. Trim it, cruise it, move around on it, or just let it run. It has that laid back longboard feel, just in a smaller mid length package. The other thing we like about the Papaya is that it does not feel like one of those thick, clunky soft tops. It is foiled more like one of our regular surfboards, so it actually feels good under your feet and surfs the way you want it to. Built with a lightweight EPS core, epoxy lamination, and a cushy IXPE soft deck. Easy to paddle, easy to surf, and a really fun board for mellow days, clean little peelers, or anytime you just want to cruise and enjoy the glide.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Plantain Softboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSNTNSB_Aqua-450.jpg?v=1786562264",
+          "description": "The Plantain is our best selling shape and probably the best all around board in the lineup. It is one of those boards that just makes surfing easy. It has a little extra foam, paddles well, gets into waves early, and feels stable without feeling oversized or bulky. The fuller outline and rounded nose make it a great choice for beginners, but it also works for anyone looking for an easy, fun board with plenty of glide and stability. The rails are a little more foiled compared to your average soft top, so they feel cleaner and more responsive without that chunky soft top feel. That is what we like about the Plantain. It works great for someone learning, but it is not a board you are going to outgrow right away. Cruise it, catch little peelers, surf some shorebreak, or just keep it around for those fun summer days. Built with an EPS core, epoxy lamination, and a soft 4mm IXPE deck, it is forgiving, durable, and ready for a lot of time in the water.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Slingshot",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSERIES_Clear-Blue-450.jpg?v=1781207830",
+          "description": "The Slingshot is a versatile, high-performance shortboard designed to excel in bigger waves and demanding conditions, making it a true all-around performer. Its rounded tail, mellow tail rocker, and lowered rails promote smooth, responsive turns and enhanced stability, while the strategically added foil in the front half improves flotation and paddling ease. The single to double concave contour maximizes speed, control, and flow, seamlessly blending fast front speed with increased maneuverability in the tail. Built to inspire confidence in bigger surf and barrel riding, the Slingshot delivers speed, stability, and agility for surfers ready to throw down off the lip and conquer the waves with control. Outline: High Perfomance Outline with wide point slightly forward Rocker: Mid Nose Rocker with little extra tail kick Bottom Contours: Single to Slight Double Concave through the fins Tail: Thumb Tail",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Slingshot Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSOBRDS_White-White-450.jpg?v=1774932233",
+          "description": "The Sling Shot Pro is the high-performance evolution of the original Sling Shot, the pinnacle of our performance shortboard line. With the most rocker of all our boards, its continuous curve, especially pronounced beneath your feet, delivers lightning-fast directional changes and responsiveness in critical sections. A subtle single concave transitions into a reduced double concave through the fins, channeling speed while maintaining control. The outline is refined and pulled in at both the nose and tail, designed to fit seamlessly into tight barrels. The pronounced rocker excels on steep, late drops and thrives in overhead to double-overhead surf. Finished with a tight pin tail for added drive, reduced drag, and smooth rail transitions, the Sling Shot Pro is built for surfers pushing their limits in serious conditions. Outline: High Perfomance Outline Wide Point Back Tucked In The Nose Rocker: Moderate Nose and Tail Rocker Bottom Contours: Single to Double Concave to Vee Tail: Swallow",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Traveler V2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSAV2PU_Clear-Blue-450.jpg?v=1782277379",
+          "description": "The Traveler V2 is back and better, a versatile, performance-driven groveler built to excel from small beach breaks to head-high surf. Its refined curves and contours boost speed, agility, and control, offering a dynamic feel across a wide range of conditions. The outline features a rounded pin nose, centered wide point, and a fast, responsive tail that deliver quick, playful maneuvers without sacrificing hold. The mid rocker provides lift for late takeoffs, while the complex bottom contours, double concaves under the nose that flatten out through the center, transitioning to a subtle single and finishing with double concave and vee, create a perfect balance of drive, flow, and release. Extra volume under the chest improves paddling power and wave entry, tapering smoothly into a thinner tail for control and responsiveness. The rounded pin tail enhances speed and maneuverability, making the Traveler V2 a go-to for surfers who want a shortboard that stays lively and loose in smaller surf but still performs when the waves turn on. Outline: Hybrid Perfomance Shape with Wide Point Forward Rocker: Moderate Nose and Tail Rocker Bottom Contours: Slight Double in the Entry to Flat To Single to Double Vee out the tail Tail: Rounded Pin",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wasabi",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSASABI_Clear-Green-450.jpg?v=1782839593",
+          "description": "The Wasabi 2.0 is a versatile shortboard crafted for speed, control, and maneuverability in a wide range of conditions. Its outline features extra width in the nose and tail for increased drive, paired with a smooth, moderate rocker and a single-to-double concave bottom that transitions into Vee, delivering effortless speed and responsive turns. The swallow tail enhances stability, control, and acceleration, making it highly adaptable for riding everything from reef breaks to hurricane swells. Equipped with a 5-fin setup, it can be ridden as a quad or thruster, offering surfers a customizable, high-performance board that elevates their surfing experience from good to great. Outline: High Perfomance Outline with wide point slightly forward Rocker: Moderate Nose and Tail Rocker Bottom Contours: Single to Double Concave To Vee Tail: Swallow",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Zen XL",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSZENXL_Clear-Blue-450.jpg?v=1781731459",
+          "description": "The Zen XL is an elevated version of the popular Zen, designed specifically for larger surfers seeking high performance and fun in the water. Over 6 feet in length with ample volume, it offers improved paddling, glide, and wave catching ability, especially on smaller days when larger surfers often struggle. Its classic fish outline features a rounded nose, a forward wide point, and an extra length that enhances paddling and stability. The pronounced flat middle rocker ensures speed and responsiveness, while the nose lift prevents nose-dives on steep drops. The bottom contours a single to double concave with channels deliver down the line speed, and the slightly less pronounced swallow tail with double wings allows for quick pivots and drive off the bottom. The tucked-in rails further boost performance, making the Zen XL a fun, reliable, and technical fish tailored to bigger surfers who want to rip with confidence and control across various wave conditions. Outline: Performance Midlength with Wide point Center Rocker: Moderate Nose and Tail Rocker Bottom Contours: Single to Double To Channels out the tail Tail: Swallow with slight wing",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "ZoSO",
+          "image_url": "https://cdn.shopify.com/s/files/1/0702/2555/9827/files/SSERIES3_BabyBlue-Whi-450.jpg?v=1782412305",
+          "description": "The ZoSO is a versatile, innovative board that combines classic egg-inspired design with modern performance features, making it ideal for a wide range of conditions. Its streamlined low-entry rocker and well-distributed foam ensure effortless paddling and speed on smaller days, while its double-barrel concave and tail channels deliver smooth, controlled turns in shoulder-high to overhead surf. The chined rails in the midsection transitioning to sharper rails forward enhance responsiveness and maneuverability, allowing for quick, sharp turns. It can be ridden as a twin fin for a loose, lively feel or with a small stabilizer for increased drive and control, making the Zoso a truly all-around, outside-the-box choice for surfers seeking style, versatility, and fun. Outline: Hybrid Egg Like outline with Wide Point Forward Rocker: Relaxed Entry Rocker with little extra tail kick Bottom Contours: Single to Double to Channels out the tail Tail: Double Rounded with slight wing",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
