@@ -1,6 +1,7 @@
 /**
- * Human-readable ship-from line from surfboard listing locality (`/sell` → `listings.city` / `listings.state`).
- * Carrier rating uses the same fields first in `resolveListingShipFromForRating`.
+ * Public listing location only — city and state from `listings.city` / `listings.state`.
+ * Never pass street, ZIP, or a saved `addresses` row here. The seller street
+ * address is for label purchase only (`resolveSellerShipFromAddress`).
  */
 export function listingShipFromDisplayLine(city?: string | null, state?: string | null): string | null {
   const c = typeof city === "string" ? city.trim() : ""

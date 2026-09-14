@@ -17,6 +17,7 @@ import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { shippingLabelPostBodySchema } from "@/lib/validations/order-shipping-label"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { resolveSellerOrDropoffShipFrom } from "@/lib/services/dropoffLocationShipFrom"
 import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
 export const dynamic = "force-dynamic"
@@ -256,9 +257,15 @@ export async function POST(
   }
 
   if (body.action === "rates") {
-    const shipFrom = await resolveSellerShipFromAddress(
+    const { data: listingForShipFrom } = await supabase
+      .from("listings")
+      .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
+      .eq("id", o.listing_id)
+      .maybeSingle()
+    const shipFrom = await resolveSellerOrDropoffShipFrom(
       supabase,
       user.id,
+      [listingForShipFrom],
       body.seller_address_id?.trim() || null,
     )
     if (!shipFrom.ok) {

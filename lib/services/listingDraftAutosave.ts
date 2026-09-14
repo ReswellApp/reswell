@@ -128,6 +128,10 @@ export function buildSurfboardDraftListingRow(
     board_shipping_cost_mode: flags.shipping_available
       ? ((fd.boardShippingCostMode ?? "reswell") as BoardShippingCostMode)
       : null,
+    dropoff_location_id:
+      flags.shipping_available && fd.dropoffLocationId?.trim()
+        ? fd.dropoffLocationId.trim()
+        : null,
     ...packed,
     auto_price_drop_floor: (() => {
       if (fd.autoPriceDrop !== true) return null

@@ -226,6 +226,7 @@ function productNoun(section: string): string {
   if (section === "surfpacks") return "surfpack"
   if (section === "leashes") return "surf leash"
   if (section === "accessories") return "surf accessory"
+  if (section === "traction") return "surf traction pad"
   if (isReswellShopListing(section)) return "surf product"
   return "surfboard"
 }

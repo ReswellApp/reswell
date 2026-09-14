@@ -13,6 +13,7 @@ import { USED_LEASHES_CATEGORY_ID } from "@/lib/leash-listing-config"
 import { USED_APPAREL_CATEGORY_ID } from "@/lib/apparel-listing-config"
 import { USED_ACCESSORIES_CATEGORY_ID } from "@/lib/accessory-listing-config"
 import { USED_MAGAZINES_CATEGORY_ID } from "@/lib/magazine-listing-config"
+import { USED_TRACTION_CATEGORY_ID } from "@/lib/traction-listing-config"
 
 const PEER_SECTION_CATEGORY_ID: Partial<Record<PeerListingSection, string>> = {
   fins: USED_FINS_CATEGORY_ID,
@@ -23,6 +24,7 @@ const PEER_SECTION_CATEGORY_ID: Partial<Record<PeerListingSection, string>> = {
   apparel: USED_APPAREL_CATEGORY_ID,
   accessories: USED_ACCESSORIES_CATEGORY_ID,
   magazines: USED_MAGAZINES_CATEGORY_ID,
+  traction: USED_TRACTION_CATEGORY_ID,
 }
 
 /** Column value for `saved_searches.section` (`null` = any peer section). */

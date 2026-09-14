@@ -29,6 +29,7 @@ export function AdminGuard({
         pathname === '/admin/ad-sales' ||
         pathname === '/admin/search-curation' ||
         pathname === '/admin/shipping' ||
+        pathname === '/admin/dropoff-locations' ||
         pathname === '/admin/tools' ||
         pathname === '/admin/site-assets' ||
         pathname === '/admin/pnl' ||

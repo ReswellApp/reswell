@@ -244,7 +244,9 @@ export function computeSellStepChecklist(
     })
     shipping.push({
       id: "shipping-setup",
-      label: "Package size and weight",
+      label: form.dropoffLocationId?.trim()
+        ? "Dropoff location"
+        : "Package size and weight",
       complete: shippingConfigComplete,
       sectionId: "sell-section-shipping",
     })

@@ -29,18 +29,20 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
   { label: "Leashes", href: "/leashes" },
   { label: "Apparel", href: "/apparel" },
   { label: "Accessories", href: "/accessories" },
+  { label: "Traction", href: "/traction" },
 ]
 
 /** Peer gear shown in the desktop + mobile main category bar (others hidden until launch). */
 export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
+  { label: "Traction", href: "/traction" },
   { label: "Wetsuits", href: "/wetsuits" },
   { label: "Apparel", href: "/apparel" },
   { label: "Magazines", href: "/magazines" },
 ]
 
 /**
- * Full category rail — desktop header (Surfboards root, then Fins, Wetsuits, Apparel, Magazines).
+ * Full category rail — desktop header (Surfboards root, then Fins, Traction, Wetsuits, Apparel, Magazines).
  * Shape browse links (`/boards?type=…`) stay in filters — not in the top rail.
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
@@ -87,6 +89,8 @@ export const boardbagBrowseLinks: CategoryLink[] = [{ label: "All Boardbags", hr
 export const surfpackBrowseLinks: CategoryLink[] = [{ label: "All Surfpacks", href: "/surfpacks" }]
 
 export const leashBrowseLinks: CategoryLink[] = [{ label: "All Leashes", href: "/leashes" }]
+
+export const tractionBrowseLinks: CategoryLink[] = [{ label: "Traction", href: "/traction" }]
 
 export const apparelBrowseLinks: CategoryLink[] = [
   { label: "Apparel", href: "/apparel" },
@@ -139,6 +143,11 @@ export const categoryDirectorySections: CategoryDirectorySection[] = [
     title: "Accessories",
     description: "Used and pre-owned surf accessories from surfers.",
     links: accessoryBrowseLinks,
+  },
+  {
+    title: "Traction",
+    description: "Used and pre-owned traction pads from surfers.",
+    links: tractionBrowseLinks,
   },
 ]
 
@@ -316,6 +325,15 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
     browseAllLabel: "View all accessories",
     subcategories: [{ heading: "Accessories", links: accessoryBrowseLinks }],
   },
+  {
+    id: "traction",
+    title: "Traction",
+    description:
+      "Browse used traction pads by type. Every pad is listed by a real seller you can meet or have shipped.",
+    browseAllHref: "/traction",
+    browseAllLabel: "View all traction",
+    subcategories: [{ heading: "Traction", links: tractionBrowseLinks }],
+  },
 ]
 
 const HEADER_CATEGORIES_DROPDOWN_IDS = new Set([
@@ -327,6 +345,7 @@ const HEADER_CATEGORIES_DROPDOWN_IDS = new Set([
   "leashes",
   "apparel",
   "accessories",
+  "traction",
 ])
 
 /** Surfboard shapes shown in the header Categories dropdown. */

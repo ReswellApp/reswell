@@ -7,6 +7,7 @@ import { LeashesListingDetailPage } from "@/components/leashes-listing-detail-pa
 import { ApparelListingDetailPage } from "@/components/apparel-listing-detail-page"
 import { AccessoriesListingDetailPage } from "@/components/accessories-listing-detail-page"
 import { MagazinesListingDetailPage } from "@/components/magazines-listing-detail-page"
+import { TractionListingDetailPage } from "@/components/traction-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 import { ListingPdpProductJsonLd } from "@/components/features/listings/listing-pdp-product-json-ld"
@@ -72,6 +73,8 @@ export function ListingDetailPublicBody({
             return <AccessoriesListingDetailPage {...cachedPublicProps} />
           case "magazines":
             return <MagazinesListingDetailPage {...cachedPublicProps} />
+          case "traction":
+            return <TractionListingDetailPage {...cachedPublicProps} />
           case "new":
             return <ShopListingDetailPage listingParam={listingParam} prefetchedListing={listing} />
           default:

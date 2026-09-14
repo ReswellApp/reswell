@@ -52,6 +52,7 @@ export type ListingRowForBoardAlert = {
   wetsuit_size?: string | null
   apparel_kind?: string | null
   magazine_year?: number | string | null
+  traction_size?: string | null
 }
 
 function parseCommaSlugs(raw: string | undefined): string[] {
@@ -183,6 +184,7 @@ function keywordMatchesListing(listing: ListingRowForBoardAlert, q: string | und
     listing.fin_system,
     listing.fin_size,
     listing.wetsuit_size,
+    listing.traction_size,
   ]
     .map((x) => norm(x))
     .join(" ")
@@ -344,6 +346,10 @@ export function listingMatchesBoardSavedCriteria(
 
   if (listing.section === "magazines" || (section === "magazines" && !c.anySection)) {
     if (!yearMatches(listing.magazine_year, c.minYear, c.maxYear)) return false
+  }
+
+  if (listing.section === "traction" || (section === "traction" && !c.anySection)) {
+    if (!slugListOverlapsStored(c.sizes, listing.traction_size)) return false
   }
 
   return true

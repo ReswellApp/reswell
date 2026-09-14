@@ -8,6 +8,7 @@ import { USED_SURFPACKS_CATEGORY_ID } from "@/lib/surfpack-listing-config"
 import { USED_LEASHES_CATEGORY_ID } from "@/lib/leash-listing-config"
 import { USED_APPAREL_CATEGORY_ID } from "@/lib/apparel-listing-config"
 import { USED_ACCESSORIES_CATEGORY_ID } from "@/lib/accessory-listing-config"
+import { USED_TRACTION_CATEGORY_ID } from "@/lib/traction-listing-config"
 import { ADMIN_LISTING_SECTIONS } from "@/lib/validations/admin-listing-category"
 import { canonicalSurfboardCategoryName } from "@/lib/surfboard-category-display"
 
@@ -20,6 +21,7 @@ const FIXED_CATEGORY_SECTIONS: Record<string, { categoryId: string; fallbackName
   leashes: { categoryId: USED_LEASHES_CATEGORY_ID, fallbackName: "Leashes" },
   apparel: { categoryId: USED_APPAREL_CATEGORY_ID, fallbackName: "Apparel" },
   accessories: { categoryId: USED_ACCESSORIES_CATEGORY_ID, fallbackName: "Accessories" },
+  traction: { categoryId: USED_TRACTION_CATEGORY_ID, fallbackName: "Traction" },
 }
 
 const SUPER_ADMIN_EMAIL = "haydensbsb@gmail.com"

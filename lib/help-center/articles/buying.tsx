@@ -35,8 +35,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Start on {helpLink("/boards", "Surfboards")} or browse fins, wetsuits, boardbags,
-              surfpacks, leashes, apparel, accessories, and magazines. Use search and filters to
+              Start on {helpLink("/boards", "Surfboards")} or browse fins, traction, wetsuits,
+              boardbags, surfpacks, leashes, apparel, accessories, and magazines. Use search and
+              filters to
               narrow by brand, size, and price. Looking for a specific board that is not listed yet?
               Save it on {helpLink("/board-finder", "Board Finder")} and we will email you when a
               match is listed.
@@ -1039,13 +1040,14 @@ export const buyingHelpArticles: HelpArticle[] = [
       "apparel",
       "accessories",
       "magazines",
+      "traction",
       "shop",
     ],
     relatedSlugs: ["how-do-i-buy-a-board", "how-to-search", "what-can-i-sell"],
     quickAnswer: (
       <>
-        Peer listings cover surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel,
-        accessories, and magazines. You can also shop items Reswell sells directly at{" "}
+        Peer listings cover surfboards, fins, traction, wetsuits, boardbags, surfpacks, leashes,
+        apparel, accessories, and magazines. You can also shop items Reswell sells directly at{" "}
         {helpLink("/reswell/shop", "Shop from Reswell")}.
       </>
     ),
@@ -1059,6 +1061,7 @@ export const buyingHelpArticles: HelpArticle[] = [
               items={[
                 <>{helpLink("/boards", "Surfboards")}</>,
                 <>{helpLink("/fins", "Fins")}</>,
+                <>{helpLink("/traction", "Traction")}</>,
                 <>{helpLink("/wetsuits", "Wetsuits")}</>,
                 <>{helpLink("/boardbags", "Boardbags")}</>,
                 <>{helpLink("/surfpacks", "Surfpacks")}</>,

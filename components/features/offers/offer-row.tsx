@@ -24,6 +24,7 @@ import type {
 import { offerFulfillmentLabel } from "@/lib/utils/offer-message-display"
 import { dashboardListingForOffer, offerIsSoldPresentation } from "@/lib/utils/offers-dashboard-display"
 import { listingOfferTileCompactClass } from "@/lib/utils/dashboard-display-styles"
+import { offerMessagesHref } from "@/lib/utils/offer-messages-href"
 
 function money(n: unknown): string {
   const v = typeof n === "number" ? n : parseFloat(String(n ?? "0"))
@@ -161,10 +162,7 @@ export function OfferRow({
   const imageSrc = listingCardImageSrc(listing?.listing_images ?? null)
   const hasListingImage = Boolean(imageSrc)
   const listPrice = listing ? parseFloat(String(listing.price)) : 0
-  const otherId = role === "buyer" ? offer.seller_id : offer.buyer_id
-  const messagesHref = conversationId
-    ? `/messages/${conversationId}`
-    : `/messages/new?user=${otherId}&listing=${offer.listing_id}`
+  const messagesHref = offerMessagesHref(offer, role, conversationId)
 
   const showRespond =
     !isSold &&

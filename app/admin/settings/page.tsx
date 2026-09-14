@@ -86,6 +86,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/orders', label: 'Orders', description: 'All marketplace orders', icon: ShoppingBag },
       { href: '/admin/orders/terminal', label: 'In-person checkout', description: 'Terminal tap-to-pay or card checkout', icon: ShoppingBag },
       { href: '/admin/shipping', label: 'Shipping', description: 'Carriers & rates', icon: Truck },
+      { href: '/admin/dropoff-locations', label: 'Dropoff locations', description: 'Pack-and-ship sites and box sizes', icon: MapPin },
     ],
   },
   {

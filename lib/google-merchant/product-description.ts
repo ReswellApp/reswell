@@ -77,6 +77,7 @@ function productCategoryLabel(section: string): string {
   if (section === "magazines") return "surf magazine"
   if (section === "wetsuits") return "wetsuit"
   if (section === "apparel") return "surf apparel"
+  if (section === "traction") return "surf traction pad"
   return "surfboard"
 }
 

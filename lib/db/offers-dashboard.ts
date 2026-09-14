@@ -3,6 +3,7 @@ import type {
   DashboardOfferRow,
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
+import { mapListingConversationIdsForUser } from "@/lib/db/conversations"
 import { latestSellerCounterNoteFromTimeline, openingOfferNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import {
   partitionOffersByDirection,
@@ -64,6 +65,8 @@ export type DashboardOffersPartitioned = {
   received: DashboardOfferRow[]
   sellersById: Record<string, DashboardProfileLite>
   buyersById: Record<string, DashboardProfileLite>
+  /** Listing threads keyed by `listingId:buyerId:sellerId`. */
+  conversationIdByOfferKey: Record<string, string>
   fetchError?: string
 }
 
@@ -91,7 +94,14 @@ export async function fetchDashboardOffersPartitioned(
   const fetchError = buyerErr?.message ?? sellerErr?.message
   if (fetchError) {
     console.error("[fetchDashboardOffersPartitioned]", buyerErr ?? sellerErr)
-    return { sent: [], received: [], sellersById: {}, buyersById: {}, fetchError }
+    return {
+      sent: [],
+      received: [],
+      sellersById: {},
+      buyersById: {},
+      conversationIdByOfferKey: {},
+      fetchError,
+    }
   }
 
   const byId = new Map<string, OfferDashboardRowRaw>()
@@ -104,27 +114,31 @@ export async function fetchDashboardOffersPartitioned(
 
   const sellerIds = [...new Set(visible.map((o) => o.seller_id))]
   const buyerIds = [...new Set(visible.map((o) => o.buyer_id))]
+  const listingIds = [...new Set(visible.map((o) => o.listing_id))]
 
-  const [{ data: sellerProfiles }, { data: buyerProfiles }] = await Promise.all([
-    sellerIds.length > 0
-      ? supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url, shop_name, is_shop")
-          .in("id", sellerIds)
-      : Promise.resolve({ data: [] as DashboardProfileLite[] }),
-    buyerIds.length > 0
-      ? supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url, shop_name, is_shop")
-          .in("id", buyerIds)
-      : Promise.resolve({ data: [] as DashboardProfileLite[] }),
-  ])
+  const [{ data: sellerProfiles }, { data: buyerProfiles }, conversationIdByOfferKey] =
+    await Promise.all([
+      sellerIds.length > 0
+        ? supabase
+            .from("profiles")
+            .select("id, display_name, avatar_url, shop_name, is_shop")
+            .in("id", sellerIds)
+        : Promise.resolve({ data: [] as DashboardProfileLite[] }),
+      buyerIds.length > 0
+        ? supabase
+            .from("profiles")
+            .select("id, display_name, avatar_url, shop_name, is_shop")
+            .in("id", buyerIds)
+        : Promise.resolve({ data: [] as DashboardProfileLite[] }),
+      mapListingConversationIdsForUser(supabase, userId, listingIds),
+    ])
 
   return {
     sent,
     received,
     sellersById: mapProfiles((sellerProfiles ?? []) as DashboardProfileLite[]),
     buyersById: mapProfiles((buyerProfiles ?? []) as DashboardProfileLite[]),
+    conversationIdByOfferKey,
   }
 }
 

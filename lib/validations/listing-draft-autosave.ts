@@ -47,6 +47,7 @@ export const listingDraftAutosaveSchema = z.object({
   surfboardShippingTier: z.string().optional(),
   surfboardShippingPackBand: z.string().optional(),
   adminCustomShippingCarton: z.boolean().optional(),
+  dropoffLocationId: z.string().optional(),
 })
 
 export type ListingDraftAutosaveInput = z.infer<typeof listingDraftAutosaveSchema>

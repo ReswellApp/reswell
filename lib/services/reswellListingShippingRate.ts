@@ -1,4 +1,9 @@
 import { resolveListingShipFromForRating } from "@/lib/geocoding/resolve-listing-ship-from-for-rating"
+import {
+  dropoffLocationToShipFromParts,
+  firstDropoffLocationEmbed,
+  type DropoffShipFromSource,
+} from "@/lib/services/dropoffLocationShipFrom"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
   listingUsesAdminCustomSurfboardCarton,
@@ -45,14 +50,15 @@ import {
 } from "@/lib/surfboard-multi-board-parcel"
 
 /** Minimum listing slice required to rate a Reswell-shipped surfboard at checkout. */
-export type ReswellRateableListing = ListingPackedParcelSource & {
-  latitude?: number | string | null
-  longitude?: number | string | null
-  city?: string | null
-  state?: string | null
-  /** Listing price used as ParcelGuard insured value when insurance is enabled. */
-  price?: number | string | null
-}
+export type ReswellRateableListing = ListingPackedParcelSource &
+  DropoffShipFromSource & {
+    latitude?: number | string | null
+    longitude?: number | string | null
+    city?: string | null
+    state?: string | null
+    /** Listing price used as ParcelGuard insured value when insurance is enabled. */
+    price?: number | string | null
+  }
 
 export type ReswellListingRateRow = {
   /** Present when ShipEngine returned a label-purchasable rate. */
@@ -154,6 +160,31 @@ async function resolveListingShipFromAddress(
   listing: ReswellRateableListing,
   sellerShipFromName: string,
 ): Promise<{ ok: true; address: ShippingAddressInput } | { ok: false; error: string }> {
+  const dropoffEmbed = firstDropoffLocationEmbed(listing)
+  const dropoffParts = dropoffEmbed ? dropoffLocationToShipFromParts(dropoffEmbed) : null
+  if (dropoffParts) {
+    const postal =
+      dropoffParts.postal_code.length >= 5
+        ? dropoffParts.postal_code.slice(0, 5)
+        : dropoffParts.postal_code
+    const nameLine = sellerShipFromName.trim().length > 0 ? sellerShipFromName.trim() : "Reswell"
+    return {
+      ok: true,
+      address: {
+        name: nameLine,
+        phone: "",
+        company_name: "Reswell",
+        address_line1: dropoffParts.address_line1,
+        address_line2: "",
+        city_locality: dropoffParts.city_locality,
+        state_province: dropoffParts.state_province,
+        postal_code: postal,
+        country_code: "US",
+        residential: "no",
+      },
+    }
+  }
+
   const parts = await resolveListingShipFromForRating({
     city: listing.city,
     state: listing.state,

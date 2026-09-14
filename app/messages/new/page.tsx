@@ -21,8 +21,11 @@ import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listin
 import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
 import {
   ensureMarketplaceListingConversation,
+  ensureMarketplaceThread,
   sendMarketplaceListingMessage,
 } from '@/app/actions/messages'
+import { offerMessageAnchorId } from '@/lib/utils/offer-messages-href'
+import { isUuidString } from '@/lib/utils/isUuid'
 import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client'
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
@@ -53,6 +56,7 @@ function NewMessageComposeContent() {
 
   const otherUserId = searchParams.get('user')
   const listingId = searchParams.get('listing')
+  const offerId = searchParams.get('offer')
 
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -91,10 +95,27 @@ function NewMessageComposeContent() {
       } = await supabase.auth.getUser()
       if (!isActive()) return
       if (!user) {
-        router.replace(`/auth/login?redirect=${encodeURIComponent(`/messages/new?user=${otherUserId}&listing=${listingId}`)}`)
+        const loginParams = new URLSearchParams({
+          user: otherUserId,
+          listing: listingId,
+        })
+        if (offerId) loginParams.set('offer', offerId)
+        router.replace(`/auth/login?redirect=${encodeURIComponent(`/messages/new?${loginParams.toString()}`)}`)
         return
       }
       setCurrentUserId(user.id)
+
+      const opened = await ensureMarketplaceThread({
+        listing_id: listingId,
+        other_user_id: otherUserId,
+      })
+      if (!isActive()) return
+      if ('conversation_id' in opened && opened.conversation_id) {
+        const hash =
+          offerId && isUuidString(offerId) ? `#${offerMessageAnchorId(offerId)}` : ''
+        router.replace(`/messages/${opened.conversation_id}${hash}`)
+        return
+      }
 
       const [{ data: listingRow }, { data: profileRow }] = await Promise.all([
         supabase
@@ -148,7 +169,7 @@ function NewMessageComposeContent() {
     } finally {
       if (isActive()) setLoading(false)
     }
-  }, [listingId, otherUserId, router, supabase])
+  }, [listingId, offerId, otherUserId, router, supabase])
 
   useEffect(() => {
     let active = true

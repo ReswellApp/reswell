@@ -13,6 +13,7 @@ export const BROWSE_BUTTON_CATEGORIES = [
   "surfpacks",
   "accessories",
   "magazines",
+  "traction",
 ] as const
 
 export type BrowseButtonCategory = (typeof BROWSE_BUTTON_CATEGORIES)[number]
@@ -31,6 +32,7 @@ export const BROWSE_BUTTON_CATEGORY_LABELS: Record<BrowseButtonCategory, string>
   surfpacks: "Surfpacks",
   accessories: "Accessories",
   magazines: "Magazines",
+  traction: "Traction",
 }
 
 export const BROWSE_BUTTON_LABELS: Record<BrowseButtonKey, string> = {

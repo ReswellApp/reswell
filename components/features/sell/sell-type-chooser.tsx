@@ -35,6 +35,10 @@ function sellTypeOptions(
       title: "Fins",
     },
     {
+      href: "/sell/traction?new=1",
+      title: "Traction",
+    },
+    {
       href: "/sell/wetsuits?new=1",
       title: "Wetsuits",
     },

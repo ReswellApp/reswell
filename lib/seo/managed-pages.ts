@@ -210,6 +210,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse vintage and collectible surf magazines for sale. Collector issues and classic publications — shipped from Reswell.",
     path: "/magazines",
   }, { note: "Main /magazines browse hub." }),
+  page("traction", "marketplace", "Browse traction", {
+    title: "Surf Traction For Sale | Reswell",
+    description:
+      "Browse used and pre-owned surf traction pads for sale. Find tail pads, front pads, and deck grip from surfers on Reswell.",
+    path: "/traction",
+  }, { note: "Main /traction browse hub." }),
   page("boards:type=shortboard", "marketplace", "Boards — Shortboards", {
     title: "Shortboards For Sale | Reswell",
     description:

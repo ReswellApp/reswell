@@ -141,6 +141,11 @@ import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellListingPublishedScreen } from "@/components/features/sell/sell-listing-published-screen"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
+import { useSellShipFromAddress } from "@/components/features/sell/hooks/use-sell-ship-from-address"
+import {
+  listingLocalityHasPin,
+  type ListingLocalityFromAddress,
+} from "@/lib/sell-flow/listing-locality-from-address"
 import {
   sellFormSnapshotLooksFilled,
   useSellServerDraft,
@@ -148,6 +153,13 @@ import {
 import { clearSellServerDraftListingId, getSellServerDraftListingId, replaceSellDraftEditUrl, setSellServerDraftListingId } from "@/lib/sell-draft-local-meta"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
+import {
+  SellDropoffLocationCard,
+  matchPublicDropoffLocation,
+} from "@/components/features/sell/sell-dropoff-location-card"
+import { listActiveDropoffLocationsAction } from "@/lib/actions/listActiveDropoffLocations"
+import { dropoffRuleToPackageForm } from "@/lib/dropoff-location-box-rules"
+import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
@@ -642,6 +654,7 @@ function createInitialSellFormData() {
     reswellPackageHeightIn: "",
     reswellPackageWeightLb: "",
     reswellPackageWeightOz: "",
+    dropoffLocationId: "",
             autoPriceDrop: false,
     autoPriceDropFloor: "",
     showPriceMarkdown: false,
@@ -953,10 +966,70 @@ function SellPageContentInner({
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
+  const [dropoffLocations, setDropoffLocations] = useState<PublicDropoffLocation[]>([])
   const formDataRef = useRef(formData)
   useEffect(() => {
     formDataRef.current = formData
   }, [formData])
+
+  useEffect(() => {
+    let cancelled = false
+    void listActiveDropoffLocationsAction().then((rows) => {
+      if (!cancelled) setDropoffLocations(rows)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!formData.dropoffLocationId) return
+    const location = dropoffLocations.find((row) => row.id === formData.dropoffLocationId)
+    if (!location) return
+    const match = matchPublicDropoffLocation(
+      location,
+      formData.boardLength,
+      formData.boardWidthInches,
+    )
+    if (!match) {
+      setFormData((fd) => {
+        if (
+          !fd.reswellPackageLengthIn &&
+          !fd.reswellPackageWidthIn &&
+          !fd.reswellPackageHeightIn
+        ) {
+          return fd
+        }
+        return {
+          ...fd,
+          reswellPackageLengthIn: "",
+          reswellPackageWidthIn: "",
+          reswellPackageHeightIn: "",
+          reswellPackageWeightLb: "",
+          reswellPackageWeightOz: "",
+        }
+      })
+      return
+    }
+    const parcel = dropoffRuleToPackageForm(match.rule)
+    setFormData((fd) => {
+      if (
+        fd.reswellPackageLengthIn === parcel.reswellPackageLengthIn &&
+        fd.reswellPackageWidthIn === parcel.reswellPackageWidthIn &&
+        fd.reswellPackageHeightIn === parcel.reswellPackageHeightIn &&
+        fd.reswellPackageWeightLb === parcel.reswellPackageWeightLb &&
+        fd.reswellPackageWeightOz === parcel.reswellPackageWeightOz
+      ) {
+        return fd
+      }
+      return { ...fd, ...parcel, adminCustomShippingCarton: true }
+    })
+  }, [
+    dropoffLocations,
+    formData.boardLength,
+    formData.boardWidthInches,
+    formData.dropoffLocationId,
+  ])
 
   // One-shot brand/model prefill from the /sell cross-category catalog search wall.
   // Applied only after draft hydration: the IDB draft restore replaces the whole
@@ -1237,6 +1310,7 @@ function SellPageContentInner({
       reswellPackageHeightIn: formData.reswellPackageHeightIn,
       reswellPackageWeightLb: formData.reswellPackageWeightLb,
       reswellPackageWeightOz: formData.reswellPackageWeightOz,
+      dropoffLocationId: formData.dropoffLocationId,
       autoPriceDrop: formData.autoPriceDrop,
       autoPriceDropFloor: formData.autoPriceDropFloor,
       buyerOffers: formData.buyerOffers,
@@ -1498,6 +1572,8 @@ function SellPageContentInner({
         locationCity: listing.city ?? "",
         locationState: listing.state ?? "",
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", ") || "",
+        dropoffLocationId:
+          (listing as { dropoff_location_id?: string | null }).dropoff_location_id?.trim() ?? "",
       })
       const existingImages = (listing.listing_images || [])
         .slice()
@@ -1632,6 +1708,88 @@ function SellPageContentInner({
     SellSavedListingLocation[]
   >([])
   const savedLocationAutoAppliedRef = useRef(false)
+
+  const applyListingLocalityFromAddress = useCallback(
+    (loc: ListingLocalityFromAddress, source: "load" | "save") => {
+      if (editIdRef.current && source === "load") return
+      setFormData((f) => {
+        if (source === "load" && sellFormHasCommittedMapPins(f) && f.locationCity.trim()) {
+          return f
+        }
+        return {
+          ...f,
+          locationCity: loc.city,
+          locationState: loc.state,
+          locationDisplay: loc.displayName,
+          locationLat: loc.lat ?? 0,
+          locationLng: loc.lng ?? 0,
+        }
+      })
+      if (listingLocalityHasPin(loc) && loc.lat != null && loc.lng != null) {
+        const saved = rememberSellSavedListingLocation({
+          city: loc.city,
+          state: loc.state,
+          lat: loc.lat,
+          lng: loc.lng,
+          displayName: loc.displayName,
+        })
+        setSavedListingLocations(saved)
+        savedLocationAutoAppliedRef.current = true
+      }
+      setPickupShippingLocationUserCommits((c) => (c > 0 ? c : 1))
+      setLocationPrefillSuggested({
+        city: loc.city,
+        state: loc.state,
+        displayLabel: loc.displayName,
+      })
+      if (!getImpersonation() && loc.city.trim()) {
+        saveDefaultListingLocationClient({
+          city: loc.city,
+          state: loc.state || undefined,
+          lat: loc.lat ?? undefined,
+          lng: loc.lng ?? undefined,
+          display: loc.displayName,
+        })
+      }
+    },
+    [],
+  )
+
+  const handleSkipShippingForNow = useCallback(() => {
+    setFormData((fd) => ({
+      ...fd,
+      boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+      boardShippingCostMode: "reswell" as BoardShippingCostMode,
+      boardShippingPrice: "",
+      surfboardShippingTier: "" as SurfboardShippingTierId | "",
+      surfboardShippingTierCeilingConfirmed: false,
+      surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+      surfboardShippingPackBandCeilingConfirmed: false,
+      adminCustomShippingCarton: true,
+      reswellPackageLengthIn: "",
+      reswellPackageWidthIn: "",
+      reswellPackageHeightIn: "",
+      reswellPackageWeightLb: "",
+      reswellPackageWeightOz: "",
+      dropoffLocationId: "",
+    }))
+  }, [])
+
+  const boardShippingSelected =
+    flagsFromBoardFulfillment(formData.boardFulfillment).shipping_available &&
+    viewMode !== "quick" &&
+    !formData.dropoffLocationId
+
+  const shipFrom = useSellShipFromAddress({
+    shippingSelected: boardShippingSelected,
+    ready: draftHydrated && !editLoading && !getImpersonation(),
+    promptWhen:
+      viewMode === "advanced" || (viewMode === "guided" && flowStep === "shipping"),
+    allowDismissToPickup: true,
+    onDismissToPickup: handleSkipShippingForNow,
+    onLocalityReady: applyListingLocalityFromAddress,
+  })
+
   useEffect(() => {
     if (editId) return
     let cancelled = false
@@ -1695,6 +1853,8 @@ function SellPageContentInner({
   /** One-time auto-apply of the newest saved pin on a brand-new listing (no draft location yet). */
   useEffect(() => {
     if (editId || !draftHydrated || savedLocationAutoAppliedRef.current) return
+    if (!shipFrom.setupReady) return
+    if (shipFrom.listingLocality) return
     if (savedListingLocations.length === 0) return
     if (sellFormHasCommittedMapPins(formData)) {
       savedLocationAutoAppliedRef.current = true
@@ -1722,6 +1882,8 @@ function SellPageContentInner({
     formData.locationLat,
     formData.locationLng,
     formData.locationCity,
+    shipFrom.setupReady,
+    shipFrom.listingLocality,
   ])
 
   /**
@@ -1788,6 +1950,7 @@ function SellPageContentInner({
       reswellPackageHeightIn: formData.reswellPackageHeightIn,
       reswellPackageWeightLb: formData.reswellPackageWeightLb,
       reswellPackageWeightOz: formData.reswellPackageWeightOz,
+      dropoffLocationId: formData.dropoffLocationId,
       autoPriceDrop: formData.autoPriceDrop,
       autoPriceDropFloor: formData.autoPriceDropFloor,
       locationCity: formData.locationCity,
@@ -1875,30 +2038,6 @@ function SellPageContentInner({
   const quickListPhotosUploading =
     images.some((im) => im.uploadPhase === "uploading") || videoUploading
 
-  /**
-   * Quick publish path: flip to pickup-only and clear the shipping config so
-   * the seller isn't blocked on package size. Shipping can be added anytime by
-   * editing the listing.
-   */
-  const handleSkipShippingForNow = useCallback(() => {
-    setFormData((fd) => ({
-      ...fd,
-      boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
-      boardShippingCostMode: "reswell" as BoardShippingCostMode,
-      boardShippingPrice: "",
-      surfboardShippingTier: "" as SurfboardShippingTierId | "",
-      surfboardShippingTierCeilingConfirmed: false,
-      surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
-      surfboardShippingPackBandCeilingConfirmed: false,
-      adminCustomShippingCarton: true,
-      reswellPackageLengthIn: "",
-      reswellPackageWidthIn: "",
-      reswellPackageHeightIn: "",
-      reswellPackageWeightLb: "",
-      reswellPackageWeightOz: "",
-    }))
-  }, [])
-
   /** Quick list is pickup-only and does not ask for board shape. */
   useEffect(() => {
     if (viewMode !== "quick") return
@@ -1924,6 +2063,7 @@ function SellPageContentInner({
               reswellPackageHeightIn: "",
               reswellPackageWeightLb: "",
               reswellPackageWeightOz: "",
+              dropoffLocationId: "",
             }
           : {}),
         ...(needsCategory
@@ -2096,6 +2236,7 @@ function SellPageContentInner({
                 reswellPackageHeightIn: "",
                 reswellPackageWeightLb: "",
                 reswellPackageWeightOz: "",
+                dropoffLocationId: "",
               }
             : {
                 adminCustomShippingCarton: true,
@@ -3209,6 +3350,22 @@ function SellPageContentInner({
         return
       }
 
+      if (
+        fulfillmentFlags.shipping_available &&
+        !listingImpersonation &&
+        !fd.dropoffLocationId.trim()
+      ) {
+        const shipFromReady = await shipFrom.ensureShipFrom()
+        if (!shipFromReady) {
+          setLoading(false)
+          setPublishPreview(null)
+          setPublishValidationBanner(
+            "Add your ship-from address so we can print a shipping label after the sale.",
+          )
+          return
+        }
+      }
+
       const fulfillmentRow = {
         shipping_available: fulfillmentFlags.shipping_available,
         local_pickup: fulfillmentFlags.local_pickup,
@@ -3327,6 +3484,10 @@ function SellPageContentInner({
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
           board_shipping_cost_mode: fulfillmentRow.board_shipping_cost_mode,
+          dropoff_location_id:
+            fulfillmentRow.shipping_available && fd.dropoffLocationId.trim()
+              ? fd.dropoffLocationId.trim()
+              : null,
           ...packedRow,
           auto_price_drop_floor: fd.autoPriceDrop
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
@@ -3486,6 +3647,10 @@ function SellPageContentInner({
           local_pickup: fulfillmentRow.local_pickup,
           shipping_price: fulfillmentRow.shipping_price,
           board_shipping_cost_mode: fulfillmentRow.board_shipping_cost_mode,
+          dropoff_location_id:
+            fulfillmentRow.shipping_available && fd.dropoffLocationId.trim()
+              ? fd.dropoffLocationId.trim()
+              : null,
           ...packedRowNew,
           auto_price_drop_floor: fd.autoPriceDrop
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
@@ -3837,6 +4002,7 @@ function SellPageContentInner({
   }
 
   return (
+    <>
       <main
         className={cn(
           "flex-1 w-full",
@@ -4744,7 +4910,7 @@ function SellPageContentInner({
                 <SellFormSection
                   sectionId="sell-section-shipping"
                   title="Shipping"
-                  description="Pin where the board is, then choose pickup or shipping."
+                  description="Buyers see your city for pickup. Pack and ship it yourself, or drop it off in Santa Barbara and we pack and ship it for you."
                   complete={sellSectionCompletion["sell-section-shipping"] === true}
                 >
                   <div className="space-y-10">
@@ -4858,17 +5024,47 @@ function SellPageContentInner({
                                         Buyers pay at checkout. We email the UPS label.
                                       </span>
                                       <span className="hidden sm:inline">
-                                        Buyers pay shipping at checkout; we email you the UPS
-                                        label. Enter the outer box size and weight you&apos;ll
-                                        ship in.
+                                        Buyers pay shipping at checkout
+                                        {formData.dropoffLocationId
+                                          ? ". After it sells, drop the board at the location and we pack and ship it."
+                                          : "; we email you the UPS label. Enter the outer box size and weight you'll ship in."}
                                       </span>
                                     </p>
                                   </div>
                                 </SmoothCollapse>
-                                <SmoothCollapse
-                                  open={reswellShippingSelected}
-                                >
-                                  <div className="pt-2 sm:pt-3">
+                                <SmoothCollapse open={reswellShippingSelected}>
+                                  <div className="space-y-3 pt-2 sm:pt-3">
+                                    <SellDropoffLocationCard
+                                      locations={dropoffLocations}
+                                      selectedLocationId={formData.dropoffLocationId}
+                                      boardLength={formData.boardLength}
+                                      boardWidthInches={formData.boardWidthInches}
+                                      onSelect={(locationId) => {
+                                        const location = dropoffLocations.find(
+                                          (row) => row.id === locationId,
+                                        )
+                                        const match = location
+                                          ? matchPublicDropoffLocation(
+                                              location,
+                                              formData.boardLength,
+                                              formData.boardWidthInches,
+                                            )
+                                          : null
+                                        setFormData({
+                                          ...formData,
+                                          dropoffLocationId: locationId,
+                                          adminCustomShippingCarton: true,
+                                          ...(match ? dropoffRuleToPackageForm(match.rule) : {}),
+                                        })
+                                      }}
+                                      onClear={() =>
+                                        setFormData({
+                                          ...formData,
+                                          dropoffLocationId: "",
+                                        })
+                                      }
+                                    />
+                                    {formData.dropoffLocationId ? null : (
                                     <ReswellPackageDimensionsCard
                                       showHeading
                                       exactCartonMode
@@ -4913,6 +5109,7 @@ function SellPageContentInner({
                                         })
                                       }
                                     />
+                                    )}
                                   </div>
                                 </SmoothCollapse>
                               </div>
@@ -5115,6 +5312,8 @@ function SellPageContentInner({
           </div>
         </div>
       </main>
+      {shipFrom.dialog}
+    </>
   )
 }
 

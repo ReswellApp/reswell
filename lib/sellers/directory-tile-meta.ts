@@ -30,6 +30,7 @@ const SPECIALTY_LABELS: Record<PeerListingSection, string> = {
   apparel: "Apparel",
   accessories: "Accessories",
   magazines: "Magazines",
+  traction: "Traction",
 }
 
 /**

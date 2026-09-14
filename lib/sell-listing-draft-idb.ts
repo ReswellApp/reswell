@@ -29,6 +29,7 @@ export type SellListingDraftListingType =
   | "surfpacks"
   | "leashes"
   | "accessories"
+  | "traction"
 
 export type SellListingDraftFormSnapshot = Record<string, unknown>
 

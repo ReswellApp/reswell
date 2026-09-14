@@ -40,6 +40,8 @@ import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-list
 import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
 import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
+import { useSellShipFromAddress } from "@/components/features/sell/hooks/use-sell-ship-from-address"
+import { listingLocationFormPatch } from "@/lib/sell-flow/listing-locality-from-address"
 import { useSellListingDraftPersistence } from "@/components/features/sell/hooks/use-sell-listing-draft-persistence"
 import {
   sellFormSnapshotLooksFilled,
@@ -617,6 +619,23 @@ export default function SellFinsFlow({
     onHydrate: hydrateFinEdit,
   })
 
+  const editIdRef = useRef(editId)
+  editIdRef.current = editId
+
+  const shipFrom = useSellShipFromAddress({
+    shippingSelected: form.shippingAvailable,
+    ready: draftHydrated && !editLoading && !getImpersonation(),
+    promptWhen: true,
+    allowDismissToPickup: false,
+    onLocalityReady: (loc, source) => {
+      if (editIdRef.current && source === "load") return
+      setForm((prev) => {
+        if (source === "load" && prev.locationCity.trim()) return prev
+        return { ...prev, ...listingLocationFormPatch(loc) }
+      })
+    },
+  })
+
   usePendingPublishResume({
     listingKind: "fins",
     draftHydrated,
@@ -823,6 +842,16 @@ export default function SellFinsFlow({
     if (!user || !session?.access_token) {
       await persistDraftForSignIn()
       return
+    }
+
+    if (form.shippingAvailable && !getImpersonation()) {
+      const shipFromReady = await shipFrom.ensureShipFrom()
+      if (!shipFromReady) {
+        setPublishValidationBanner(
+          "Add your ship-from address so we can print a shipping label after the sale.",
+        )
+        return
+      }
     }
 
     const { data: actorProfile } = await supabase
@@ -1121,6 +1150,7 @@ export default function SellFinsFlow({
   }
 
   return (
+    <>
     <main
       aria-busy={editLoading || undefined}
       className={cn(
@@ -1539,5 +1569,7 @@ export default function SellFinsFlow({
         </div>
       </div>
     </main>
+    {shipFrom.dialog}
+    </>
   )
 }

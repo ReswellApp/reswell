@@ -14,6 +14,7 @@ export const PRICE_GUIDE_CATEGORY_SLUGS = [
   "apparel",
   "accessories",
   "magazines",
+  "traction",
 ] as const
 
 export type PriceGuideCategorySlug = (typeof PRICE_GUIDE_CATEGORY_SLUGS)[number]
@@ -28,6 +29,7 @@ const LABEL_BY_SLUG: Record<PriceGuideCategorySlug, string> = {
   apparel: "Apparel",
   accessories: "Accessories",
   magazines: "Magazines",
+  traction: "Traction",
 }
 
 const BLURB_BY_SLUG: Record<PriceGuideCategorySlug, string> = {
@@ -40,6 +42,7 @@ const BLURB_BY_SLUG: Record<PriceGuideCategorySlug, string> = {
   apparel: "Used surf apparel — what it lists and what it sells for.",
   accessories: "Traction, hardware, and small-goods pricing.",
   magazines: "Collector and reading-copy magazine values.",
+  traction: "Tail pad and deck-grip comps from the used market.",
 }
 
 const BROWSE_HREF_BY_SLUG: Record<PriceGuideCategorySlug, string> = {
@@ -52,6 +55,7 @@ const BROWSE_HREF_BY_SLUG: Record<PriceGuideCategorySlug, string> = {
   apparel: "/apparel",
   accessories: "/accessories",
   magazines: "/magazines",
+  traction: "/traction",
 }
 
 const SELL_HREF_BY_SLUG: Record<PriceGuideCategorySlug, string> = {
@@ -64,6 +68,7 @@ const SELL_HREF_BY_SLUG: Record<PriceGuideCategorySlug, string> = {
   apparel: "/sell/apparel",
   accessories: "/sell/accessories",
   magazines: "/sell/magazines",
+  traction: "/sell/traction",
 }
 
 const SLUG_SET = new Set<string>(PRICE_GUIDE_CATEGORY_SLUGS)

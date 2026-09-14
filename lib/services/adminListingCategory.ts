@@ -7,6 +7,7 @@ import { USED_LEASHES_CATEGORY_ID } from "@/lib/leash-listing-config"
 import { USED_APPAREL_CATEGORY_ID } from "@/lib/apparel-listing-config"
 import { USED_ACCESSORIES_CATEGORY_ID } from "@/lib/accessory-listing-config"
 import { USED_MAGAZINES_CATEGORY_ID } from "@/lib/magazine-listing-config"
+import { USED_TRACTION_CATEGORY_ID } from "@/lib/traction-listing-config"
 import { updateAdminListingSectionCategory } from "@/lib/db/listings"
 import { boardTypeFromCategoryId } from "@/lib/utils/board-type-from-category-id"
 import type { AdminListingSection } from "@/lib/validations/admin-listing-category"
@@ -24,6 +25,7 @@ const FIXED_CATEGORY_SECTIONS: Partial<Record<AdminListingSection, { categoryId:
   apparel: { categoryId: USED_APPAREL_CATEGORY_ID, label: "Apparel" },
   accessories: { categoryId: USED_ACCESSORIES_CATEGORY_ID, label: "Accessories" },
   magazines: { categoryId: USED_MAGAZINES_CATEGORY_ID, label: "Magazines" },
+  traction: { categoryId: USED_TRACTION_CATEGORY_ID, label: "Traction" },
 }
 
 export async function setAdminListingCategory(params: {

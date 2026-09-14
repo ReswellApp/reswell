@@ -39,6 +39,7 @@ import {
   type OffersRoleTab,
   userParticipationRole,
 } from "@/lib/utils/offers-dashboard-display"
+import { offerConversationKey } from "@/lib/utils/offer-messages-href"
 type OffersSort = "recent" | "price_desc" | "price_asc"
 type OffersStatusFilter = "all" | "active" | "pending" | "countered" | "accepted" | "completed"
 
@@ -119,6 +120,8 @@ export interface DashboardOffersViewProps {
   basePath?: string
   /** Seller listings that currently have buyers in cart. */
   cartOfferProspects?: ListingCartOfferProspect[]
+  /** Listing threads keyed by `listingId:buyerId:sellerId`. */
+  conversationIdByOfferKey?: Record<string, string>
 }
 
 export function DashboardOffersView({
@@ -131,6 +134,7 @@ export function DashboardOffersView({
   activeOnlyDefault = false,
   basePath = "/dashboard/offers",
   cartOfferProspects = [],
+  conversationIdByOfferKey = {},
 }: DashboardOffersViewProps) {
   const router = useRouter()
   const [tab, setTab] = useState<OffersRoleTab>(defaultTab)
@@ -400,6 +404,11 @@ export function DashboardOffersView({
                 listingTitle={dashboardListingForOffer(o)?.title ?? ""}
                 onRespondOpen={openRespond}
                 onViewCounterOpen={role === "buyer" ? openBuyerCounter : undefined}
+                conversationId={
+                  conversationIdByOfferKey[
+                    offerConversationKey(o.listing_id, o.buyer_id, o.seller_id)
+                  ] ?? null
+                }
               />
             )
           })}

@@ -141,6 +141,7 @@ type AdminListingSection =
   | 'apparel'
   | 'accessories'
   | 'magazines'
+  | 'traction'
 
 const ADMIN_LISTING_SECTION_VALUES: readonly AdminListingSection[] = [
   'surfboards',
@@ -153,6 +154,7 @@ const ADMIN_LISTING_SECTION_VALUES: readonly AdminListingSection[] = [
   'apparel',
   'accessories',
   'magazines',
+  'traction',
 ]
 
 /**
@@ -168,6 +170,7 @@ const PEER_SELL_ROUTE_BY_SECTION: Partial<Record<AdminListingSection, string>> =
   apparel: '/sell/apparel',
   accessories: '/sell/accessories',
   magazines: '/sell/magazines',
+  traction: '/sell/traction',
 }
 
 const ADMIN_LISTING_SECTION_LABELS: Record<AdminListingSection, string> = {
@@ -181,6 +184,7 @@ const ADMIN_LISTING_SECTION_LABELS: Record<AdminListingSection, string> = {
   apparel: 'Apparel',
   accessories: 'Accessories',
   magazines: 'Magazines',
+  traction: 'Traction',
 }
 
 function normalizeListingSection(section: string | undefined | null): AdminListingSection | null {
@@ -1002,6 +1006,7 @@ export default function AdminListingsPage() {
                     <SelectItem value="apparel">Apparel</SelectItem>
                     <SelectItem value="accessories">Accessories</SelectItem>
                     <SelectItem value="magazines">Magazines</SelectItem>
+                    <SelectItem value="traction">Traction</SelectItem>
                     <SelectItem value="new">New &amp; retail</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1150,7 +1155,8 @@ export default function AdminListingsPage() {
                     <SelectItem value="leashes">Leash</SelectItem>
                     <SelectItem value="apparel">Apparel</SelectItem>
                     <SelectItem value="accessories">Accessories</SelectItem>
-                <SelectItem value="magazines">Magazines</SelectItem>
+                    <SelectItem value="magazines">Magazines</SelectItem>
+                    <SelectItem value="traction">Traction</SelectItem>
                     <SelectItem value="new">Shop / retail</SelectItem>
                   </SelectContent>
                 </Select>

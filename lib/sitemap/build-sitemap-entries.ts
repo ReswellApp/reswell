@@ -7,6 +7,7 @@ import { fetchLeashListingSitemapEntries } from "@/lib/db/leash-listings"
 import { fetchApparelListingSitemapEntries } from "@/lib/db/apparel-listings"
 import { fetchAccessoryListingSitemapEntries } from "@/lib/db/accessory-listings"
 import { fetchMagazineListingSitemapEntries } from "@/lib/db/magazine-listings"
+import { fetchTractionListingSitemapEntries } from "@/lib/db/traction-listings"
 import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
 import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
 import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
@@ -130,6 +131,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/apparel`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/accessories`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/magazines`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
+    { url: `${BASE}/traction`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     {
       url: `${BASE}/what-is-reswell`,
       lastModified: now,
@@ -310,6 +312,7 @@ export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]
     apparelEntries,
     accessoryEntries,
     magazineEntries,
+    tractionEntries,
   ] = await Promise.all([
     fetchSurfboardListingSitemapEntries(supabase),
     fetchFinListingSitemapEntries(supabase),
@@ -320,6 +323,7 @@ export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]
     fetchApparelListingSitemapEntries(supabase),
     fetchAccessoryListingSitemapEntries(supabase),
     fetchMagazineListingSitemapEntries(supabase),
+    fetchTractionListingSitemapEntries(supabase),
   ])
 
   const peerEntries = [
@@ -331,6 +335,7 @@ export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]
     ...apparelEntries,
     ...accessoryEntries,
     ...magazineEntries,
+    ...tractionEntries,
   ]
 
   const normalized: { path: string; lastModified: Date }[] = [

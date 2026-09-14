@@ -65,6 +65,7 @@ export const GOOGLE_MERCHANT_PEER_SECTIONS = [
   "wetsuits",
   "magazines",
   "apparel",
+  "traction",
 ] as const
 
 export type GoogleMerchantPeerSection = (typeof GOOGLE_MERCHANT_PEER_SECTIONS)[number]
@@ -132,6 +133,7 @@ export const GOOGLE_MERCHANT_DEFAULT_WETSUITS_CUSTOM_LABEL = "Wetsuits"
 export const GOOGLE_MERCHANT_DEFAULT_MAGAZINES_CUSTOM_LABEL = "Magazines"
 export const GOOGLE_MERCHANT_DEFAULT_FINS_CUSTOM_LABEL = "Fins"
 export const GOOGLE_MERCHANT_DEFAULT_APPAREL_CUSTOM_LABEL = "Apparel"
+export const GOOGLE_MERCHANT_DEFAULT_TRACTION_CUSTOM_LABEL = "Traction"
 
 /** Default customLabel1 for OutSurfing shop listings (Shopping / PMax seller filter). */
 export const GOOGLE_MERCHANT_DEFAULT_OUTSURFING_SHOP_CUSTOM_LABEL = "OutSurfing"
@@ -169,6 +171,11 @@ export function getGoogleMerchantCustomLabel0ForSection(section: string): string
       return (
         process.env.GOOGLE_MERCHANT_APPAREL_CUSTOM_LABEL?.trim() ||
         GOOGLE_MERCHANT_DEFAULT_APPAREL_CUSTOM_LABEL
+      )
+    case "traction":
+      return (
+        process.env.GOOGLE_MERCHANT_TRACTION_CUSTOM_LABEL?.trim() ||
+        GOOGLE_MERCHANT_DEFAULT_TRACTION_CUSTOM_LABEL
       )
     default:
       return undefined

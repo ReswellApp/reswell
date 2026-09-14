@@ -79,6 +79,8 @@ function sellAgainHref(section: string): string {
       return "/sell/leashes"
     case "accessories":
       return "/sell/accessories"
+    case "traction":
+      return "/sell/traction"
     default:
       return "/sell"
   }

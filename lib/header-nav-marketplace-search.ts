@@ -19,7 +19,8 @@ export function marketplaceSearchSuggestSections(section: string): string[] {
     normalized === "fins" ||
     normalized === "wetsuits" ||
     normalized === "magazines" ||
-    normalized === "apparel"
+    normalized === "apparel" ||
+    normalized === "traction"
   ) {
     return [normalized]
   }
@@ -36,6 +37,7 @@ export type NavSearchSuggestSectionKey =
   | "wetsuits"
   | "magazines"
   | "apparel"
+  | "traction"
   | "marketplace"
 
 export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSectionKey {
@@ -45,7 +47,8 @@ export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSec
     normalized === "fins" ||
     normalized === "wetsuits" ||
     normalized === "magazines" ||
-    normalized === "apparel"
+    normalized === "apparel" ||
+    normalized === "traction"
   ) {
     return normalized
   }

@@ -36,4 +36,9 @@ describe("marketplace section intent vs brand names", () => {
       false,
     )
   })
+
+  it("scopes traction keyword searches to the traction browse hub", () => {
+    assert.equal(extractMarketplaceSectionIntent("traction"), "traction")
+    assert.equal(extractMarketplaceSectionIntent("creatures traction"), "traction")
+  })
 })

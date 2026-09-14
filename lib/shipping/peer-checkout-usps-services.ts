@@ -13,6 +13,7 @@ export const PEER_CHECKOUT_USPS_SERVICE_CODES: Partial<
 > = {
   fins: USPS_GROUND_PRIORITY_CODES,
   apparel: USPS_GROUND_PRIORITY_CODES,
+  traction: USPS_GROUND_PRIORITY_CODES,
   magazines: ["usps_media_mail"],
 }
 
@@ -158,7 +159,7 @@ function finServiceSortKey(serviceCode: string): number {
 export function peerCheckoutUsesUspsGroundPriorityChoice(
   section: string | null | undefined,
 ): boolean {
-  return section === "fins" || section === "apparel"
+  return section === "fins" || section === "apparel" || section === "traction"
 }
 
 export function peerCheckoutUsesUpsSurfboardChoice(

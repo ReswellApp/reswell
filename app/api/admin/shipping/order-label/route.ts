@@ -37,6 +37,7 @@ import {
   listingUsesAdminCustomSurfboardCarton,
   type ListingPackedParcelSource,
 } from "@/lib/reswell-packed-parcel-from-listing"
+import { resolveSellerOrDropoffShipFrom } from "@/lib/services/dropoffLocationShipFrom"
 import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
 export const dynamic = "force-dynamic"
@@ -452,9 +453,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action === "rates") {
-    const shipFrom = await resolveSellerShipFromAddress(
+    const shipFrom = await resolveSellerOrDropoffShipFrom(
       supabase,
       o.seller_id,
+      [listing],
       body.seller_address_id?.trim() || null,
     )
     if (!shipFrom.ok) {

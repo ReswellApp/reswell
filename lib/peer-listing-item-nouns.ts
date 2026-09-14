@@ -26,6 +26,7 @@ const SECTION_ITEM_NOUNS: Record<PeerListingSection, PeerItemNounForm> = {
   apparel: { singular: "item", plural: "items" },
   accessories: { singular: "accessory", plural: "accessories" },
   magazines: { singular: "magazine", plural: "magazines" },
+  traction: { singular: "traction pad", plural: "traction pads" },
 }
 
 const FALLBACK_NOUN: PeerItemNounForm = { singular: "item", plural: "items" }

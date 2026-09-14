@@ -37,11 +37,13 @@ export default async function DashboardOffersPage({
     redirect("/auth/login?redirect=/dashboard/offers")
   }
 
-  const [{ sent, received, sellersById, buyersById, fetchError }, cartOfferProspects] =
-    await Promise.all([
-      fetchDashboardOffersPartitioned(supabase, user.id),
-      fetchMyListingCartOfferProspects(supabase, user.id),
-    ])
+  const [
+    { sent, received, sellersById, buyersById, conversationIdByOfferKey, fetchError },
+    cartOfferProspects,
+  ] = await Promise.all([
+    fetchDashboardOffersPartitioned(supabase, user.id),
+    fetchMyListingCartOfferProspects(supabase, user.id),
+  ])
 
   const offers = mergeOffers(sent, received)
 
@@ -89,6 +91,7 @@ export default async function DashboardOffersPage({
         sellersById={sellersById}
         buyersById={buyersById}
         minPctByListingId={minPctByListingId}
+        conversationIdByOfferKey={conversationIdByOfferKey}
         cartOfferProspects={cartOfferProspects}
       />
     </div>

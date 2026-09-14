@@ -23,7 +23,7 @@ export const buyingRetrievalDocs = [
     sections: [
       {
         heading: "Find a listing",
-        text: "Shop surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel, accessories, and magazines. Use search and filters for brand, size, and price. Save a Board Finder alert if the exact board is not listed yet. Tap the heart to save a listing to Favorites.",
+        text: "Shop surfboards, fins, traction, wetsuits, boardbags, surfpacks, leashes, apparel, accessories, and magazines. Use search and filters for brand, size, and price. Save a Board Finder alert if the exact board is not listed yet. Tap the heart to save a listing to Favorites.",
       },
       {
         heading: "Buy it now or use the cart",
@@ -54,15 +54,16 @@ export const buyingRetrievalDocs = [
       "apparel",
       "accessories",
       "magazines",
+      "traction",
       "shop",
     ],
     relatedIds: ["buying/how-do-i-buy-a-board", "buying/how-to-search", "selling/what-can-i-sell"],
     quickAnswer:
-      "Peer listings cover surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel, accessories, and magazines. You can also shop items Reswell sells directly at Shop from Reswell.",
+      "Peer listings cover surfboards, fins, traction, wetsuits, boardbags, surfpacks, leashes, apparel, accessories, and magazines. You can also shop items Reswell sells directly at Shop from Reswell.",
     sections: [
       {
         heading: "Marketplace categories",
-        text: "Peer sellers list used surfboards and gear in these categories: Surfboards (/boards), Fins (/fins), Wetsuits (/wetsuits), Boardbags (/boardbags), Surfpacks (/surfpacks), Leashes (/leashes), Apparel (/apparel), Accessories (/accessories), and Magazines (/magazines). Every peer listing uses the same checkout, offers, messages, and Purchase Protection rules.",
+        text: "Peer sellers list used surfboards and gear in these categories: Surfboards (/boards), Fins (/fins), Traction (/traction), Wetsuits (/wetsuits), Boardbags (/boardbags), Surfpacks (/surfpacks), Leashes (/leashes), Apparel (/apparel), Accessories (/accessories), and Magazines (/magazines). Every peer listing uses the same checkout, offers, messages, and Purchase Protection rules.",
       },
       {
         heading: "Shop from Reswell",

@@ -77,6 +77,7 @@ export function mapListingSectionToFacebookMarketplaceCategory(
     case "surfpacks":
     case "leashes":
     case "accessories":
+    case "traction":
       return FACEBOOK_MARKETPLACE_CATEGORY.surfingAccessories
     case "surfboards":
     default:

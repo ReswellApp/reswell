@@ -72,7 +72,13 @@ const MAX_DESCRIPTION_LENGTH = 5000
 const DEFAULT_GOOGLE_PRODUCT_CATEGORY = "499811"
 
 /** Peer listing sections synced to the Meta Commerce catalog feed. */
-export const META_CATALOG_PEER_SECTIONS = ["surfboards", "fins", "wetsuits", "magazines"] as const
+export const META_CATALOG_PEER_SECTIONS = [
+  "surfboards",
+  "fins",
+  "wetsuits",
+  "magazines",
+  "traction",
+] as const
 
 export type MetaCatalogPeerSection = (typeof META_CATALOG_PEER_SECTIONS)[number]
 

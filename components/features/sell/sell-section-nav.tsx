@@ -68,7 +68,7 @@ export const SELL_WETSUITS_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[]
 
 /**
  * Section nav items for an accessory-type sell flow (wetsuits, boardbags,
- * surfpacks, leashes, apparel, accessories). `prefix` is the section slug used in
+ * surfpacks, leashes, apparel, accessories, traction). `prefix` is the section slug used in
  * each section's DOM id (e.g. "wetsuits" → "sell-wetsuits-section-photos-title").
  */
 export function buildSellSectionNavItems(

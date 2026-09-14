@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   LISTING_BUYER_OPEN_OFFER_STATUSES,
+  conversationRowsToOfferKeyMap,
   offerConversationKey,
   offerMessagesHref,
 } from "./offer-messages-href.ts"
@@ -35,6 +36,35 @@ describe("offerMessagesHref", () => {
     assert.equal(
       offerMessagesHref(offer, "seller"),
       "/messages/new?user=buyer-1&listing=listing-1",
+    )
+  })
+
+  it("includes the offer id on the compose fallback so the thread can land on it", () => {
+    assert.equal(
+      offerMessagesHref({ ...offer, id: "abc-123" }, "seller", null),
+      "/messages/new?user=buyer-1&listing=listing-1&offer=abc-123",
+    )
+  })
+})
+
+describe("conversationRowsToOfferKeyMap", () => {
+  it("indexes listing threads by buyer and seller", () => {
+    assert.deepEqual(
+      conversationRowsToOfferKeyMap([
+        {
+          id: "conv-1",
+          listing_id: "l1",
+          buyer_id: "b1",
+          seller_id: "s1",
+        },
+        {
+          id: "conv-skip",
+          listing_id: null,
+          buyer_id: "b1",
+          seller_id: "s1",
+        },
+      ]),
+      { "l1:b1:s1": "conv-1" },
     )
   })
 })

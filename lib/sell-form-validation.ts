@@ -77,6 +77,8 @@ export type SellFormValidationInput = {
    * Field name is historical.
    */
   adminCustomShippingCarton?: boolean
+  /** Pack-and-ship dropoff location. When set, carton comes from that location's box rules. */
+  dropoffLocationId?: string
   /** Scheduled price drop (2 weeks) — seller sets floor via `autoPriceDropFloor`. */
   autoPriceDrop: boolean
   autoPriceDropFloor: string
@@ -237,15 +239,24 @@ export function validateSellListingForm(
         return "Enter a flat shipping rate."
       }
     } else if (shippingMode !== "free") {
-      // Board `/sell` Reswell shipping — seller-entered packed box only (no pack-band autofill).
+      // Board `/sell` Reswell shipping — seller-entered packed box, or a dropoff location carton.
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
-      if (L == null || L <= 0) return "Enter packed box length in inches."
-      if (W == null || W <= 0) return "Enter packed box width in inches."
-      if (H == null || H <= 0) return "Enter packed box height in inches."
-      if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
-        return "Enter packed box weight (lb and oz)."
+      if (form.dropoffLocationId?.trim()) {
+        if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
+          return "This board doesn’t fit a dropoff box size. Check length and width, or pack and ship it yourself."
+        }
+        if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
+          return "This board doesn’t fit a dropoff box size. Check length and width, or pack and ship it yourself."
+        }
+      } else {
+        if (L == null || L <= 0) return "Enter packed box length in inches."
+        if (W == null || W <= 0) return "Enter packed box width in inches."
+        if (H == null || H <= 0) return "Enter packed box height in inches."
+        if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
+          return "Enter packed box weight (lb and oz)."
+        }
       }
       const totalOz = parseReswellPackedWeightToTotalOz(
         form.reswellPackageWeightLb,

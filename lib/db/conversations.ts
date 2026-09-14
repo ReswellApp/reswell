@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import {
+  conversationRowsToOfferKeyMap,
+  type ConversationOfferKeyRow,
+} from "@/lib/utils/offer-messages-href"
 
 export type ConversationRef = {
   id: string
@@ -159,4 +163,30 @@ export async function listConversationsForBuyerSellerPair(
 
   if (error || !data) return []
   return data as ConversationRef[]
+}
+
+/**
+ * Listing-scoped marketplace threads the user participates in, keyed by
+ * listingId:buyerId:sellerId (see offerConversationKey).
+ */
+export async function mapListingConversationIdsForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  listingIds: string[],
+): Promise<Record<string, string>> {
+  const uniqueListingIds = [...new Set(listingIds.filter(Boolean))]
+  if (uniqueListingIds.length === 0) return {}
+
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("id, listing_id, buyer_id, seller_id")
+    .in("listing_id", uniqueListingIds)
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+
+  if (error) {
+    console.error("[mapListingConversationIdsForUser]", error.message)
+    return {}
+  }
+
+  return conversationRowsToOfferKeyMap((data ?? []) as ConversationOfferKeyRow[])
 }

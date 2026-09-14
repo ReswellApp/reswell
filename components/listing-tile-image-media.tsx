@@ -107,9 +107,11 @@ function ListingTileCarouselSlide({
       aria-hidden={!active}
       loading={imagePriority && active ? "eager" : "lazy"}
       className={cn(
-        "absolute inset-0 transition-opacity duration-[280ms] ease-in-out",
+        // `scale-100` keeps a compositor layer so hover scale does not flash white.
+        "absolute inset-0 backface-hidden transform-gpu scale-100 ease-in-out",
+        "transition-[opacity,transform] duration-300",
         active ? "z-[2] opacity-100" : "z-[1] opacity-0",
-        "transition-transform duration-300 group-hover:scale-105",
+        "group-hover:scale-105",
         imageFit === "cover" && "object-cover",
         imageFit === "contain" && "object-contain",
         imageClassName,

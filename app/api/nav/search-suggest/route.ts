@@ -15,6 +15,7 @@ const NAV_SEARCH_SUGGEST_SECTIONS = [
   "wetsuits",
   "magazines",
   "apparel",
+  "traction",
   "new",
   "marketplace",
 ] as const satisfies readonly (NavSearchSuggestSectionKey | "")[]

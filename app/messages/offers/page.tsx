@@ -41,10 +41,11 @@ async function MessagesOffersContent({
     redirect("/auth/login?redirect=/messages/offers")
   }
 
-  const [{ sent, received, sellersById, buyersById }, cartOfferProspects] = await Promise.all([
-    fetchDashboardOffersPartitioned(supabase, user.id),
-    fetchMyListingCartOfferProspects(supabase, user.id),
-  ])
+  const [{ sent, received, sellersById, buyersById, conversationIdByOfferKey }, cartOfferProspects] =
+    await Promise.all([
+      fetchDashboardOffersPartitioned(supabase, user.id),
+      fetchMyListingCartOfferProspects(supabase, user.id),
+    ])
 
   const offers = mergeOffers(sent, received)
   const listingIds = [...new Set(offers.map((o) => o.listing_id))]
@@ -74,6 +75,7 @@ async function MessagesOffersContent({
       sellersById={sellersById}
       buyersById={buyersById}
       minPctByListingId={minPctByListingId}
+      conversationIdByOfferKey={conversationIdByOfferKey}
       cartOfferProspects={cartOfferProspects}
       activeOnlyDefault
       basePath="/messages/offers"

@@ -35,8 +35,9 @@ export const sellingHelpArticles: HelpArticle[] = [
           <>
             <p>
               Sign in and go to {helpLink("/sell", "Sell")}. Pick what you&apos;re listing —
-              surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel, accessories, or
-              magazines — then follow the flow for photos, details, pickup &amp; shipping, and price.
+              surfboards, fins, traction, wetsuits, boardbags, surfpacks, leashes, apparel,
+              accessories, or magazines — then follow the flow for photos, details, pickup &amp;
+              shipping, and price.
               Search the catalog by brand or model to jump-start a board listing. You can save a
               draft and come back later.
             </p>
@@ -1013,8 +1014,9 @@ export const sellingHelpArticles: HelpArticle[] = [
     relatedSlugs: ["how-to-list-a-board", "we-buy-your-surfboard", "what-can-i-buy"],
     quickAnswer: (
       <>
-        List used surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel, accessories,
-        and magazines. Listing is free. If you want Reswell to buy a surfboard directly, use{" "}
+        List used surfboards, fins, traction, wetsuits, boardbags, surfpacks, leashes, apparel,
+        accessories, and magazines. Listing is free. If you want Reswell to buy a surfboard
+        directly, use{" "}
         {helpLink("/we-buy", "We’ll buy")} instead of a peer listing.
       </>
     ),
@@ -1027,7 +1029,10 @@ export const sellingHelpArticles: HelpArticle[] = [
             <BulletList
               items={[
                 <>Surfboards — {helpLink("/sell/boards", "/sell/boards")}</>,
-                <>Fins, wetsuits, boardbags, surfpacks, leashes, apparel, accessories, magazines</>,
+                <>
+                  Fins, traction, wetsuits, boardbags, surfpacks, leashes, apparel, accessories,
+                  magazines
+                </>,
               ]}
             />
           </>

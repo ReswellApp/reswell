@@ -36,6 +36,8 @@ function matchingNoun(section: PeerListingSection | "any" | undefined): string {
       return "apparel"
     case "accessories":
       return "accessory"
+    case "traction":
+      return "traction"
     default:
       return "listing"
   }

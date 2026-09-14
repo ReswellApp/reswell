@@ -43,6 +43,7 @@ export type OwnedListingForEditRow = {
   shipping_packed_weight_oz?: number | string | null
   shipping_package_tier?: string | null
   shipping_package_band?: string | null
+  dropoff_location_id?: string | null
   brand?: string | null
   model?: string | null
   buyer_offers_enabled?: boolean | null

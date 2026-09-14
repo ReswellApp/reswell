@@ -39,6 +39,18 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   shipping_packed_weight_oz,
   shipping_package_tier,
   shipping_package_band,
+  dropoff_location_id,
+  dropoff_locations (
+    id,
+    name,
+    address_line1,
+    address_line2,
+    city,
+    state,
+    postal_code,
+    latitude,
+    longitude
+  ),
   dimensions
 `.trim()
 
