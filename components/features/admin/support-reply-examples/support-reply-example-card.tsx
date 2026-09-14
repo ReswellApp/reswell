@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { format, formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
@@ -49,12 +49,18 @@ interface SupportReplyExampleCardProps {
 }
 
 export function SupportReplyExampleCard({ example, onChanged }: SupportReplyExampleCardProps) {
+  const [view, setView] = useState(example)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<SupportReplyExampleDraft>(() => exampleToDraft(example))
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const created = new Date(example.createdAt)
-  const kind = kindLabel(example.kind)
+
+  useEffect(() => {
+    setView(example)
+  }, [example])
+
+  const created = new Date(view.createdAt)
+  const kind = kindLabel(view.kind)
 
   async function save() {
     setSaving(true)
@@ -71,9 +77,11 @@ export function SupportReplyExampleCard({ example, onChanged }: SupportReplyExam
       toast.error(result.error)
       return
     }
+    setView(result.data)
+    setDraft(exampleToDraft(result.data))
     toast.success("Example updated")
     setEditing(false)
-    onChanged({ rating: draft.rating, kind: draft.kind || null })
+    onChanged({ rating: result.data.rating, kind: result.data.kind })
   }
 
   async function remove() {
@@ -91,14 +99,14 @@ export function SupportReplyExampleCard({ example, onChanged }: SupportReplyExam
   return (
     <article className="space-y-3 rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <SupportReplyExampleRating rating={example.rating} />
+        <SupportReplyExampleRating rating={view.rating} />
         {kind ? <span className="text-xs text-muted-foreground">{kind}</span> : null}
         <span className="text-xs text-muted-foreground" title={format(created, "PPpp")}>
           {formatDistanceToNow(created, { addSuffix: true })}
         </span>
-        {example.caseId ? (
+        {view.caseId ? (
           <Link
-            href={adminSupportCaseHref(example.caseId)}
+            href={adminSupportCaseHref(view.caseId)}
             className="text-xs font-medium underline-offset-4 hover:underline"
           >
             Open case
@@ -113,21 +121,21 @@ export function SupportReplyExampleCard({ example, onChanged }: SupportReplyExam
           saving={saving}
           onChange={setDraft}
           onCancel={() => {
-            setDraft(exampleToDraft(example))
+            setDraft(exampleToDraft(view))
             setEditing(false)
           }}
           onSave={() => void save()}
         />
       ) : (
         <>
-          <SupportReplyExamplePreview example={example} />
+          <SupportReplyExamplePreview example={view} />
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={() => {
-                setDraft(exampleToDraft(example))
+                setDraft(exampleToDraft(view))
                 setEditing(true)
               }}
             >
