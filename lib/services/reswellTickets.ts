@@ -28,6 +28,7 @@ import {
 import type {
   ReswellTicket,
   ReswellTicketComment,
+  ReswellTicketCursorAgent,
   ReswellTicketFile,
   ReswellTicketFileKind,
   ReswellTicketStaff,
@@ -91,6 +92,19 @@ function toFile(row: ReswellTicketFileRow): ReswellTicketFile {
   }
 }
 
+function toCursorAgent(row: ReswellTicketRow): ReswellTicketCursorAgent | null {
+  if (!row.cursor_agent_id) return null
+  return {
+    agentId: row.cursor_agent_id,
+    agentUrl: row.cursor_agent_url,
+    agentStatus: row.cursor_agent_status,
+    runId: row.cursor_run_id,
+    runStatus: row.cursor_run_status,
+    prUrl: row.cursor_pr_url,
+    lastSyncedAt: row.cursor_last_synced_at,
+  }
+}
+
 function toTicket(
   row: ReswellTicketRow,
   staffById: Map<string, ReswellTicketStaff>,
@@ -115,6 +129,7 @@ function toTicket(
     comments: comments.map((comment) => toComment(comment, staffById)),
     subtasks: subtasks.map(toSubtask),
     files: files.map(toFile),
+    cursorAgent: toCursorAgent(row),
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -187,6 +202,15 @@ async function hydrateOne(
   const ticket = tickets[0]
   if (!ticket) throw new Error('Ticket not found')
   return ticket
+}
+
+export async function getReswellTicketService(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<ReswellTicket | null> {
+  const row = await getReswellTicketRow(supabase, id)
+  if (!row) return null
+  return hydrateOne(supabase, row)
 }
 
 export async function getReswellTicketsSnapshot(

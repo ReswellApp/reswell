@@ -11,6 +11,7 @@ import {
 import type { ReswellTicket, ReswellTicketFileKind, ReswellTicketStaff } from '@/lib/types/reswellTickets'
 import type { UpdateReswellTicketInput } from '@/lib/validations/reswellTickets'
 import { AssigneePicker } from './assignee-picker'
+import { TicketCursorAgent } from './ticket-cursor-agent'
 import { TicketDatePicker } from './date-picker'
 import { StatusPill } from './status-pill'
 import { TicketPeekSections } from './ticket-peek-sections'
@@ -30,6 +31,10 @@ interface TicketPeekProps {
   onAddFile: (input: { kind: ReswellTicketFileKind; url: string }) => void
   onDeleteFile: (id: string) => void
   onUploadImages: (files: File[]) => Promise<void>
+  onDispatchCursor: (force?: boolean) => Promise<void>
+  onSyncCursor: (silent?: boolean) => Promise<void>
+  onFollowUpCursor: (text: string) => Promise<void>
+  cursorBusy: boolean
   onClose: () => void
 }
 
@@ -47,6 +52,10 @@ export function TicketPeek({
   onAddFile,
   onDeleteFile,
   onUploadImages,
+  onDispatchCursor,
+  onSyncCursor,
+  onFollowUpCursor,
+  cursorBusy,
   onClose,
 }: TicketPeekProps) {
   const [title, setTitle] = useState(ticket.title)
@@ -125,6 +134,16 @@ export function TicketPeek({
             />
           </dd>
         </dl>
+
+        <div className="mt-6">
+          <TicketCursorAgent
+            ticket={ticket}
+            busy={cursorBusy}
+            onDispatch={onDispatchCursor}
+            onSync={onSyncCursor}
+            onFollowUp={onFollowUpCursor}
+          />
+        </div>
 
         <div className="mt-8">
           <TicketPeekSections
