@@ -368,15 +368,19 @@ export default function FaqPage() {
         </div>
 
         <p className="text-muted-foreground leading-relaxed mb-10">
-          Can&apos;t find what you&apos;re looking for? Our team reads every message. Start with{" "}
-          <Link href="/contact" className="text-primary underline">
-            Contact
+          Can&apos;t find what you&apos;re looking for? Start with the{" "}
+          <Link href="/help" className="text-primary underline">
+            Help Center
+          </Link>{" "}
+          or{" "}
+          <Link href="/support" className="text-primary underline">
+            contact support
           </Link>
-          , or head to the{" "}
+          . Head to{" "}
           <Link href="/protection-policy" className="text-primary underline">
             Purchase Protection
           </Link>{" "}
-          page if you need to file a refund claim.
+          if you need to file a claim.
         </p>
 
         <div className="space-y-12">

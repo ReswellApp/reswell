@@ -1,12 +1,17 @@
 import Link from "next/link"
 import { HelpCenterBreadcrumbs } from "@/components/features/help-center/help-center-breadcrumbs"
+import { HelpCenterNeedHelp } from "@/components/features/help-center/help-center-need-help"
 import { HelpCenterShell } from "@/components/features/help-center/help-center-shell"
-import { getHelpArticleHref } from "@/lib/help-center/registry"
-import { getTopicBreadcrumbs } from "@/lib/help-center/registry"
+import { getHelpArticleHref, getTopicBreadcrumbs } from "@/lib/help-center/registry"
 import type { HelpTopicIndex } from "@/lib/help-center/types"
 
 export function HelpCenterTopicView({ topic }: { topic: HelpTopicIndex }) {
   const breadcrumbs = getTopicBreadcrumbs(topic)
+  const articleCount = topic.sections.reduce(
+    (count, section) =>
+      count + section.groups.reduce((groupCount, group) => groupCount + group.articles.length, 0),
+    0,
+  )
 
   return (
     <HelpCenterShell showSearch>
@@ -16,6 +21,9 @@ export function HelpCenterTopicView({ topic }: { topic: HelpTopicIndex }) {
         <h1 className="mt-4 font-headline text-3xl font-bold text-neutral-900 sm:text-4xl">
           {topic.label}
         </h1>
+        <p className="mt-3 max-w-2xl text-base text-neutral-600">
+          {topic.description} {articleCount} articles.
+        </p>
 
         <hr className="mt-6 border-neutral-200" />
 
@@ -47,6 +55,8 @@ export function HelpCenterTopicView({ topic }: { topic: HelpTopicIndex }) {
             </section>
           ))}
         </div>
+
+        <HelpCenterNeedHelp className="mt-16" />
       </div>
     </HelpCenterShell>
   )
