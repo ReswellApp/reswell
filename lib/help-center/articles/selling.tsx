@@ -20,7 +20,7 @@ export const sellingHelpArticles: HelpArticle[] = [
     description:
       "Create a listing on Reswell — boards, fins, wetsuits, and more — with photos, details, pickup or shipping options, and your price. Listing is free.",
     keywords: ["list", "sell", "post", "fins", "wetsuit", "gear"],
-    relatedSlugs: ["listing-photos-and-pricing", "edit-or-remove-listing", "i-sold-an-item-whats-next"],
+    relatedSlugs: ["what-can-i-sell", "listing-photos-and-pricing", "edit-or-remove-listing", "we-buy-your-surfboard"],
     quickAnswer: (
       <>
         Tap {helpLink("/sell", "Sell")}, choose a category, add photos and details, choose pickup
@@ -34,9 +34,11 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Sign in and go to {helpLink("/sell", "Sell")}. Pick what you&apos;re listing (surfboards,
-              fins, wetsuits, and more), then follow the flow for photos, details, pickup &amp;
-              shipping, and price. You can save a draft and come back later.
+              Sign in and go to {helpLink("/sell", "Sell")}. Pick what you&apos;re listing —
+              surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel, accessories, or
+              magazines — then follow the flow for photos, details, pickup &amp; shipping, and price.
+              Search the catalog by brand or model to jump-start a board listing. You can save a
+              draft and come back later.
             </p>
             <p>
               Already have a listing? Edit it anytime from{" "}
@@ -415,14 +417,14 @@ export const sellingHelpArticles: HelpArticle[] = [
   {
     slug: "i-sold-an-item-whats-next",
     topicId: "selling",
-    sectionSlug: "getting-paid",
-    sectionTitle: "Getting paid",
-    groupTitle: "Receiving your earnings",
+    sectionSlug: "managing-orders",
+    sectionTitle: "Orders and payouts",
+    groupTitle: "After a sale",
     title: "I made a sale. What should I do next?",
     description:
       "Your listing sold on Reswell. Here is how to ship it, coordinate pickup, and get your earnings released.",
     keywords: ["sold", "ship", "next steps"],
-    relatedSlugs: ["how-long-to-get-paid", "marketplace-fees", "respond-to-offers"],
+    relatedSlugs: ["how-to-ship-an-order", "how-long-to-get-paid", "cancel-order-seller"],
     quickAnswer: (
       <>
         Open the sale in {helpLink("/dashboard/sales", "Sales")}. Ship with tracking or verify local
@@ -511,7 +513,7 @@ export const sellingHelpArticles: HelpArticle[] = [
     topicId: "selling",
     sectionSlug: "getting-paid",
     sectionTitle: "Getting paid",
-    groupTitle: "Receiving your earnings",
+    groupTitle: "Earnings",
     title: "How long does it take to get paid?",
     description:
       "When your Reswell sale earnings move from pending to ready, and how long bank cash outs take.",
@@ -570,7 +572,7 @@ export const sellingHelpArticles: HelpArticle[] = [
     topicId: "selling",
     sectionSlug: "getting-paid",
     sectionTitle: "Getting paid",
-    groupTitle: "Receiving your earnings",
+    groupTitle: "Earnings",
     title: "What are Reswell's selling fees?",
     description:
       "Reswell charges a 7% marketplace fee on the item price. Here is exactly what you keep and what Reswell covers.",
@@ -627,8 +629,8 @@ export const sellingHelpArticles: HelpArticle[] = [
     slug: "respond-to-offers",
     topicId: "selling",
     sectionSlug: "managing-orders",
-    sectionTitle: "Managing orders",
-    groupTitle: "Offers and messages",
+    sectionTitle: "Orders and payouts",
+    groupTitle: "After a sale",
     title: "How do I respond to messages and offers?",
     description:
       "Accept, counter, or decline buyer offers on Reswell from Messages or your Offers dashboard.",
@@ -701,8 +703,8 @@ export const sellingHelpArticles: HelpArticle[] = [
     slug: "seller-returns",
     topicId: "selling",
     sectionSlug: "managing-orders",
-    sectionTitle: "Managing orders",
-    groupTitle: "Returns and refunds",
+    sectionTitle: "Orders and payouts",
+    groupTitle: "Returns, cancels, and reviews",
     title: "How do returns work for sellers on Reswell?",
     description:
       "What happens when a buyer opens a return or Purchase Protection claim on your sale, and how to cooperate through the process.",
@@ -763,8 +765,8 @@ export const sellingHelpArticles: HelpArticle[] = [
     slug: "cancel-order-seller",
     topicId: "selling",
     sectionSlug: "managing-orders",
-    sectionTitle: "Managing orders",
-    groupTitle: "Returns and refunds",
+    sectionTitle: "Orders and payouts",
+    groupTitle: "Returns, cancels, and reviews",
     title: "How do I cancel an order?",
     description:
       "What to do when you cannot fulfill a Reswell sale and need to cancel or request a refund through support.",
@@ -829,8 +831,8 @@ export const sellingHelpArticles: HelpArticle[] = [
     slug: "leave-feedback-buyer",
     topicId: "selling",
     sectionSlug: "managing-orders",
-    sectionTitle: "Managing orders",
-    groupTitle: "Contacting your buyer",
+    sectionTitle: "Orders and payouts",
+    groupTitle: "Returns, cancels, and reviews",
     title: "How do I leave feedback for a buyer?",
     description:
       "Review a buyer after a completed sale and ask them to leave feedback for you.",
@@ -875,6 +877,234 @@ export const sellingHelpArticles: HelpArticle[] = [
               When a buyer leaves you a positive review, their Purchase Protection window on that
               order can close early. That is normal and means the transaction went smoothly.
             </HelpNote>
+          </>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "we-buy-your-surfboard",
+    topicId: "selling",
+    sectionSlug: "we-buy",
+    sectionTitle: "We’ll buy your surfboard",
+    groupTitle: "Sell a board to Reswell",
+    title: "Will Reswell buy my surfboard?",
+    description:
+      "How We’ll buy your surfboard works: submit photos and a price, get a quote in under 30 minutes, ship in the required box, and get paid to your wallet.",
+    keywords: ["we buy", "we'll buy", "reswell buy", "quote", "sell to reswell", "board buy"],
+    relatedSlugs: ["we-buy-shipping-and-boxes", "how-to-list-a-board", "how-cash-outs-work"],
+    quickAnswer: (
+      <>
+        Yes. Sign in and go to {helpLink("/we-buy", "We’ll buy your surfboard")}. Upload photos, a
+        title, and your asking price. We reply in under 30 minutes with an accept or our best offer.
+        If we miss that window, you automatically get an offer at 20% off your asking price. After
+        you accept, box the board, send packed measurements, then we buy the prepaid label. We pay
+        your wallet when the board arrives.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Submit a quote",
+        body: (
+          <>
+            <p>
+              Sign in and open {helpLink("/we-buy", "We’ll buy your surfboard")}, then tap{" "}
+              <strong>Get a quote</strong>. Add a title, asking price, and clear photos. Wallet
+              payouts need an account. Track submissions in{" "}
+              {helpLink("/dashboard/we-buy", "We’ll buy in your dashboard")}.
+            </p>
+            <p>
+              Prefer to reach peer buyers instead? {helpLink("/sell", "List on the marketplace")}.
+            </p>
+          </>
+        ),
+      },
+      {
+        heading: "How we respond",
+        body: (
+          <p>
+            We accept your asking price or send our best offer within <strong>30 minutes</strong>. If
+            we miss that window, you automatically receive an offer at <strong>20% off</strong> your
+            asking price.
+          </p>
+        ),
+      },
+      {
+        heading: "After you accept",
+        body: (
+          <>
+            <p>
+              You must ship in a carton no more than <strong>22 inches wide and 5 inches high</strong>.
+              Pack the board, then send outer measurements and weight. We purchase the prepaid label
+              only after those packed measurements — not at accept. Payment hits your Reswell wallet
+              once we receive the board. Cash out from {helpLink("/dashboard/earnings", "Earnings")}{" "}
+              when you are ready.
+            </p>
+            <HelpNote>
+              Full box rules are in{" "}
+              {helpLink("/help/selling/we-buy-shipping-and-boxes", "What box do I need for We’ll buy?")}.
+            </HelpNote>
+          </>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "we-buy-shipping-and-boxes",
+    topicId: "selling",
+    sectionSlug: "we-buy",
+    sectionTitle: "We’ll buy your surfboard",
+    groupTitle: "Sell a board to Reswell",
+    title: "What box do I need for We’ll buy your surfboard?",
+    description:
+      "Box size, packed measurements, and when Reswell buys the prepaid label for a We’ll buy quote.",
+    keywords: ["we buy box", "22 inches", "packed measurements", "prepaid label"],
+    relatedSlugs: ["we-buy-your-surfboard", "how-to-ship-an-order"],
+    quickAnswer: (
+      <>
+        Ship in a box no more than <strong>22 inches wide and 5 inches high</strong>. After you
+        accept a quote, pack the board and submit the outer measurements and weight. Reswell buys the
+        prepaid label then — not when the quote is accepted.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Required carton",
+        body: (
+          <p>
+            The board must ship in a carton no more than 22&quot; wide and 5&quot; high. If your
+            board will not fit those limits, We’ll buy is not the right path —{" "}
+            {helpLink("/sell", "list it on the marketplace")} with a proper board box instead.
+          </p>
+        ),
+      },
+      {
+        heading: "Packed measurements unlock the label",
+        body: (
+          <p>
+            Accepting a quote does not buy a label. Box the board first, then send packed length,
+            width, height, and weight on the quote. We purchase the prepaid label after that. Print
+            it and drop the package with the carrier.
+          </p>
+        ),
+      },
+      {
+        heading: "Payment",
+        body: (
+          <p>
+            We pay your wallet when the board arrives and is checked in — not when you drop it off.
+            Cash out to your bank from {helpLink("/dashboard/earnings", "Earnings")} once the
+            balance is ready.
+          </p>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "what-can-i-sell",
+    topicId: "selling",
+    sectionSlug: "listings",
+    sectionTitle: "Listings",
+    groupTitle: "Creating listings",
+    title: "What can I sell on Reswell?",
+    description:
+      "Peer categories you can list, and when We’ll buy your surfboard is a better fit than a marketplace listing.",
+    keywords: ["sell", "categories", "allowed", "prohibited"],
+    relatedSlugs: ["how-to-list-a-board", "we-buy-your-surfboard", "what-can-i-buy"],
+    quickAnswer: (
+      <>
+        List used surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel, accessories,
+        and magazines. Listing is free. If you want Reswell to buy a surfboard directly, use{" "}
+        {helpLink("/we-buy", "We’ll buy")} instead of a peer listing.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Peer marketplace categories",
+        body: (
+          <>
+            <p>Sell used physical surf gear in these {helpLink("/sell", "Sell")} flows:</p>
+            <BulletList
+              items={[
+                <>Surfboards — {helpLink("/sell/boards", "/sell/boards")}</>,
+                <>Fins, wetsuits, boardbags, surfpacks, leashes, apparel, accessories, magazines</>,
+              ]}
+            />
+          </>
+        ),
+      },
+      {
+        heading: "We’ll buy vs list it yourself",
+        body: (
+          <p>
+            We’ll buy is only for surfboards that fit the required shipping box. You get a quote
+            from Reswell and we handle the label after you pack it. A marketplace listing reaches
+            peer buyers and can include pickup, calculated shipping, and offers.
+          </p>
+        ),
+      },
+      {
+        heading: "Keep listings honest",
+        body: (
+          <HelpNote>
+            Photos and condition notes should match the item. Inaccurate listings are the main reason
+            for Purchase Protection claims. Do not ask buyers to pay outside Reswell.
+          </HelpNote>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "how-to-ship-an-order",
+    topicId: "selling",
+    sectionSlug: "managing-orders",
+    sectionTitle: "Orders and payouts",
+    groupTitle: "After a sale",
+    title: "How do I ship an order on Reswell?",
+    description:
+      "Pack the item, print a Reswell label or add your own tracking, and ship within the expected window.",
+    keywords: ["ship", "label", "tracking", "pack", "shipengine", "estimator"],
+    relatedSlugs: ["i-sold-an-item-whats-next", "we-buy-shipping-and-boxes", "package-delayed-or-lost"],
+    quickAnswer: (
+      <>
+        Open the sale, pack the item, and print the Reswell label if one was purchased at checkout —
+        or add your own tracking. Ship within {SHIPPING_DEADLINE_DAYS} days of confirmation. Use the{" "}
+        {helpLink("/shipping-estimator", "shipping estimator")} and {helpLink("/shipping", "Shipping guide")}{" "}
+        for box sizes and packing.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Reswell labels",
+        body: (
+          <p>
+            When the listing used Reswell-calculated rates, checkout buys the cheapest carrier label
+            and attaches tracking. On the sale page, tap <strong>Open label PDF</strong> or{" "}
+            <strong>Print label</strong>, drop the package, then tap{" "}
+            <strong>I&apos;ve dropped this off with the carrier</strong>.
+          </p>
+        ),
+      },
+      {
+        heading: "Your own label",
+        body: (
+          <p>
+            If you used a flat rate or your own carrier, buy a tracked label yourself.{" "}
+            <strong>Add tracking</strong> on the sale page so the buyer and Purchase Protection have
+            a record. Untracked shipments are harder to protect.
+          </p>
+        ),
+      },
+      {
+        heading: "Packing and timing",
+        body: (
+          <>
+            <p>
+              Use a proper board box for surfboards. Our {helpLink("/shipping", "Shipping guide")}{" "}
+              covers packing and box partners. Compare quotes with{" "}
+              {helpLink("/shipping-estimator", "the shipping estimator")} before you list. Ship within{" "}
+              {SHIPPING_DEADLINE_DAYS} days. Message the buyer if you are running behind.
+            </p>
           </>
         ),
       },

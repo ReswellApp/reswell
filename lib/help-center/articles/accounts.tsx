@@ -18,7 +18,7 @@ export const accountsHelpArticles: HelpArticle[] = [
     description:
       "Update your display name, photo, bio, saved addresses, and password from your Reswell profile settings.",
     keywords: ["profile", "password", "settings"],
-    relatedSlugs: ["account-access-deletion", "where-are-messages"],
+    relatedSlugs: ["notifications", "account-access-deletion", "where-are-messages"],
     sections: [
       {
         heading: "Profile information",
@@ -79,8 +79,9 @@ export const accountsHelpArticles: HelpArticle[] = [
               shipping addresses you use at checkout.
             </p>
             <HelpNote>
-              Reswell does not currently offer granular notification toggles in profile settings.
-              Important order and offer updates still reach you by email and in your dashboard.
+              The {helpLink("/dashboard/profile#notifications", "Notifications")} tab lets you opt
+              into SMS for Messages. Order, offer, and sale updates still arrive by email. See{" "}
+              {helpLink("/help/accounts/notifications", "How do notifications work?")}.
             </HelpNote>
           </>
         ),
@@ -97,7 +98,7 @@ export const accountsHelpArticles: HelpArticle[] = [
     description:
       "Locked out of your Reswell account or want it deleted? Here is how to get help and what to expect.",
     keywords: ["delete", "access", "login"],
-    relatedSlugs: ["update-profile-settings", "avoid-scams"],
+    relatedSlugs: ["update-profile-settings", "how-to-contact-support", "avoid-scams"],
     sections: [
       {
         heading: "If you cannot sign in",
@@ -314,13 +315,13 @@ export const accountsHelpArticles: HelpArticle[] = [
     slug: "where-are-messages",
     topicId: "accounts",
     sectionSlug: "messages-and-security",
-    sectionTitle: "Messages and security",
-    groupTitle: "Messages",
+    sectionTitle: "Messages, support, and safety",
+    groupTitle: "Messages and support",
     title: "Where do I find my messages?",
     description:
       "Open your Reswell Messages inbox for buyer and seller conversations, offers, and order threads.",
     keywords: ["messages", "inbox"],
-    relatedSlugs: ["avoid-scams", "update-profile-settings"],
+    relatedSlugs: ["how-to-contact-support", "how-to-contact-a-seller", "respond-to-offers"],
     sections: [
       {
         heading: "Opening Messages",
@@ -373,13 +374,13 @@ export const accountsHelpArticles: HelpArticle[] = [
     slug: "avoid-scams",
     topicId: "accounts",
     sectionSlug: "messages-and-security",
-    sectionTitle: "Messages and security",
+    sectionTitle: "Messages, support, and safety",
     groupTitle: "Staying safe",
     title: "What should I do if I think I am being scammed?",
     description:
       "Red flags to watch for on Reswell and how to report suspicious listings, messages, or payment requests.",
     keywords: ["scam", "fraud", "safety"],
-    relatedSlugs: ["where-are-messages", "account-access-deletion", "update-profile-settings"],
+    relatedSlugs: ["how-to-contact-support", "where-are-messages", "how-to-contact-a-seller"],
     sections: [
       {
         heading: "Common red flags",
@@ -446,6 +447,120 @@ export const accountsHelpArticles: HelpArticle[] = [
               threads when investigating a dispute.
             </HelpNote>
           </>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "notifications",
+    topicId: "accounts",
+    sectionSlug: "profile-and-settings",
+    sectionTitle: "Profile and settings",
+    groupTitle: "Your account",
+    title: "How do notifications work?",
+    description:
+      "Email, in-app, and optional SMS for messages — and where to change those settings.",
+    keywords: ["notifications", "sms", "email", "alerts", "text"],
+    relatedSlugs: ["update-profile-settings", "where-are-messages", "how-to-follow-a-shop"],
+    quickAnswer: (
+      <>
+        Reswell emails you about orders, offers, and sales. Messages can also send optional SMS if
+        you opt in under {helpLink("/dashboard/profile#notifications", "Profile → Notifications")}.
+        Followed shops and Board Finder alerts use email when those features are enabled.
+      </>
+    ),
+    sections: [
+      {
+        heading: "What we email",
+        body: (
+          <p>
+            Expect email for offers, accepted prices, purchases, sales, shipping updates, review
+            requests, and support case replies. Check spam for password resets and We’ll buy quote
+            emails.
+          </p>
+        ),
+      },
+      {
+        heading: "SMS for Messages",
+        body: (
+          <p>
+            Profile → Notifications has Message SMS. Opt in and add a phone number to get texts for
+            new messages. You can turn this off anytime.
+          </p>
+        ),
+      },
+      {
+        heading: "In-app",
+        body: (
+          <p>
+            The dashboard and Messages Activity tab surface favorites, follows, and offer activity.
+            There is not a full per-event email toggle list yet — important order traffic still
+            emails you.
+          </p>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "how-to-contact-support",
+    topicId: "accounts",
+    sectionSlug: "messages-and-security",
+    sectionTitle: "Messages, support, and safety",
+    groupTitle: "Messages and support",
+    title: "How do I contact Reswell support?",
+    description:
+      "Choose Help Center, Support hub, order Get help, or Contact — and what to include so we can reply faster.",
+    keywords: ["contact", "support", "help", "email", "ticket"],
+    relatedSlugs: ["get-help-with-a-purchase", "avoid-scams", "account-access-deletion"],
+    quickAnswer: (
+      <>
+        Search the {helpLink("/help", "Help Center")} first. For an order, use <strong>Get help</strong>{" "}
+        on the purchase or sale. For everything else, open {helpLink("/support", "Support")} or{" "}
+        {helpLink("/contact", "Contact")}. We read every message. Protection claims are typically
+        reviewed within 3 business days.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Pick the right door",
+        body: (
+          <BulletList
+            items={[
+              <>
+                {helpLink("/help", "Help Center")} for self-serve articles.
+              </>,
+              <>
+                {helpLink("/support", "Support hub")} to open a case with the team.
+              </>,
+              <>
+                <strong>Get help</strong> on a {helpLink("/dashboard/purchases", "purchase")} or{" "}
+                {helpLink("/dashboard/sales", "sale")} for that specific order.
+              </>,
+              <>
+                {helpLink("/contact", "Contact")} for general or account-ownership issues when you
+                cannot use the hub.
+              </>,
+            ]}
+          />
+        ),
+      },
+      {
+        heading: "What to send",
+        body: (
+          <p>
+            Your account email, order or listing link, tracking, dates, and photos. Keep chats in
+            Reswell Messages. Never send passwords or full card numbers.
+          </p>
+        ),
+      },
+      {
+        heading: "Safety issues",
+        body: (
+          <HelpNote>
+            Report scams, harassment, or unsafe meetups immediately via Support → Safety or scam, or{" "}
+            <strong>Report listing</strong> on the listing page. Do not pay off platform. See{" "}
+            {helpLink("/help/accounts/avoid-scams", "What should I do if I think I am being scammed?")}.
+          </HelpNote>
         ),
       },
     ],

@@ -14,18 +14,19 @@ export const buyingHelpArticles: HelpArticle[] = [
     topicId: "buying",
     sectionSlug: "shopping-on-reswell",
     sectionTitle: "Shopping on Reswell",
-    groupTitle: "Browsing and checkout",
+    groupTitle: "Finding gear",
     title: "How do I buy on Reswell?",
     description:
-      "Find boards, fins, wetsuits, and more, check out with Buy it now, and stay covered by Purchase Protection. You can also message the seller or make an offer first.",
+      "Find boards, fins, wetsuits, and more, check out with Buy it now or the cart, and stay covered by Purchase Protection. You can also message the seller or make an offer first.",
     keywords: ["buy", "checkout", "purchase", "board", "fins", "wetsuit", "gear"],
-    relatedSlugs: ["local-pickup-or-shipping", "how-do-i-pay", "how-do-offers-work"],
+    relatedSlugs: ["what-can-i-buy", "how-does-cart-work", "local-pickup-or-shipping", "how-do-i-pay", "how-do-offers-work"],
     quickAnswer: (
       <>
-        Browse the marketplace — {helpLink("/boards", "Surfboards")}, fins, wetsuits, and more — open a
-        listing, and tap <strong>Buy it now</strong> to check out in Reswell. You can also{" "}
-        <strong>Message Seller</strong> first or <strong>Make an offer</strong> when the seller has
-        offers turned on. Just keep payment inside Reswell checkout.
+        Browse a marketplace category — {helpLink("/boards", "Surfboards")}, fins, wetsuits, and more —
+        open a listing, and tap <strong>Buy it now</strong>, or <strong>Add to cart</strong> and check
+        out from {helpLink("/cart", "Cart")}. You can also <strong>Message Seller</strong> first or{" "}
+        <strong>Make an offer</strong> when the seller has offers on. Keep payment inside Reswell
+        checkout.
       </>
     ),
     sections: [
@@ -34,10 +35,11 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Start on {helpLink("/boards", "Surfboards")} or browse other categories like fins and
-              wetsuits. Use search and filters to narrow by brand, size, and price. Looking for a
-              specific board that is not listed yet? Save it on{" "}
-              {helpLink("/board-finder", "Board Finder")} and we will email you when a match is listed.
+              Start on {helpLink("/boards", "Surfboards")} or browse fins, wetsuits, boardbags,
+              surfpacks, leashes, apparel, accessories, and magazines. Use search and filters to
+              narrow by brand, size, and price. Looking for a specific board that is not listed yet?
+              Save it on {helpLink("/board-finder", "Board Finder")} and we will email you when a
+              match is listed.
               Tap any active listing to see photos, details, condition notes, and how the seller can
               get the item to you.
             </p>
@@ -58,9 +60,10 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              When you are ready, tap <strong>Buy it now</strong> on the listing. Checkout is where you
-              pick how you will get the item (if the seller offers both pickup and shipping), confirm
-              your details, and pay through Stripe.
+              When you are ready, tap <strong>Buy it now</strong> on the listing — or{" "}
+              <strong>Add to cart</strong> and continue from {helpLink("/cart", "Cart")}. Checkout is
+              where you pick how you will get the item (if the seller offers both pickup and shipping),
+              confirm your details, and pay through Stripe.
             </p>
             <NumberedSteps
               steps={[
@@ -219,9 +222,9 @@ export const buyingHelpArticles: HelpArticle[] = [
   {
     slug: "local-pickup-or-shipping",
     topicId: "buying",
-    sectionSlug: "shopping-on-reswell",
-    sectionTitle: "Shopping on Reswell",
-    groupTitle: "Browsing and checkout",
+    sectionSlug: "managing-purchases",
+    sectionTitle: "Orders and protection",
+    groupTitle: "After you pay",
     title: "How do I know if a listing offers pickup or shipping?",
     description:
       "Every listing shows how you can get the item. Here is how to read those options and what they mean at checkout.",
@@ -289,12 +292,12 @@ export const buyingHelpArticles: HelpArticle[] = [
     topicId: "buying",
     sectionSlug: "shopping-on-reswell",
     sectionTitle: "Shopping on Reswell",
-    groupTitle: "Search and favorites",
+    groupTitle: "Saving and following",
     title: "How do favorites work on Reswell?",
     description:
       "Save listings you are eyeing, compare them later, and jump back to buy when the timing is right.",
     keywords: ["favorite", "save", "wishlist"],
-    relatedSlugs: ["how-do-i-buy-a-board", "how-do-offers-work"],
+    relatedSlugs: ["how-do-i-buy-a-board", "how-to-follow-a-shop", "how-board-finder-works"],
     sections: [
       {
         heading: "Saving a listing",
@@ -353,12 +356,12 @@ export const buyingHelpArticles: HelpArticle[] = [
     topicId: "buying",
     sectionSlug: "checkout",
     sectionTitle: "Checkout",
-    groupTitle: "Paying at checkout",
+    groupTitle: "Paying",
     title: "How do I pay for a purchase?",
     description:
       "Pay securely at checkout through Stripe with card, Link, Apple Pay, Google Pay, or Klarna. Off platform payments are not accepted.",
     keywords: ["pay", "card", "checkout", "stripe", "apple pay", "google pay", "link"],
-    relatedSlugs: ["wallet-balance-at-checkout", "how-do-i-buy-a-board", "why-charged-tax"],
+    relatedSlugs: ["wallet-balance-at-checkout", "promo-codes", "how-does-cart-work", "why-charged-tax"],
     sections: [
       {
         heading: "Supported payment methods",
@@ -428,7 +431,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     topicId: "buying",
     sectionSlug: "checkout",
     sectionTitle: "Checkout",
-    groupTitle: "Paying at checkout",
+    groupTitle: "Paying",
     title: "Can I use wallet balance at checkout?",
     description:
       "Your wallet holds earnings from past sales. Here is how it works and how it connects to checkout and cash outs.",
@@ -485,13 +488,13 @@ export const buyingHelpArticles: HelpArticle[] = [
     slug: "buyer-returns",
     topicId: "buying",
     sectionSlug: "managing-purchases",
-    sectionTitle: "Managing purchases",
-    groupTitle: "Returns and refunds",
+    sectionTitle: "Orders and protection",
+    groupTitle: "Returns and claims",
     title: "How do returns work for buyers on Reswell?",
     description:
       "How to return an item, file a Purchase Protection claim, and start a refund request from your purchase page.",
     keywords: ["return", "refund"],
-    relatedSlugs: ["purchase-protection-claim", "how-to-contact-a-seller", "package-delayed-or-lost"],
+    relatedSlugs: ["purchase-protection-claim", "get-help-with-a-purchase", "how-to-contact-a-seller"],
     quickAnswer: (
       <>
         For covered problems on shipped orders, tap <strong>Get help</strong> on your purchase page
@@ -584,13 +587,13 @@ export const buyingHelpArticles: HelpArticle[] = [
     slug: "purchase-protection-claim",
     topicId: "buying",
     sectionSlug: "managing-purchases",
-    sectionTitle: "Managing purchases",
-    groupTitle: "Returns and refunds",
+    sectionTitle: "Orders and protection",
+    groupTitle: "Returns and claims",
     title: "How am I protected if I do not receive an item or it is not as described?",
     description:
       "What Purchase Protection covers, what it does not, and how to file a claim from your purchase page.",
     keywords: ["protection", "claim", "dispute"],
-    relatedSlugs: ["buyer-returns", "package-delayed-or-lost", "local-pickup-or-shipping"],
+    relatedSlugs: ["buyer-returns", "get-help-with-a-purchase", "package-delayed-or-lost"],
     quickAnswer: (
       <>
         {helpLink("/protection-policy", "Purchase Protection")} covers eligible checkout purchases when
@@ -677,13 +680,13 @@ export const buyingHelpArticles: HelpArticle[] = [
     slug: "package-delayed-or-lost",
     topicId: "buying",
     sectionSlug: "managing-purchases",
-    sectionTitle: "Managing purchases",
-    groupTitle: "Order issues",
+    sectionTitle: "Orders and protection",
+    groupTitle: "After you pay",
     title: "What should I do if my package is delayed or lost?",
     description:
       "Your order is late, tracking has stalled, or the package never showed up. Here is what to do, step by step.",
     keywords: ["delayed", "lost", "tracking"],
-    relatedSlugs: ["purchase-protection-claim", "how-to-contact-a-seller", "change-shipping-address"],
+    relatedSlugs: ["purchase-protection-claim", "get-help-with-a-purchase", "how-to-contact-a-seller"],
     sections: [
       {
         heading: "Check tracking first",
@@ -751,8 +754,8 @@ export const buyingHelpArticles: HelpArticle[] = [
     slug: "change-shipping-address",
     topicId: "buying",
     sectionSlug: "managing-purchases",
-    sectionTitle: "Managing purchases",
-    groupTitle: "Order issues",
+    sectionTitle: "Orders and protection",
+    groupTitle: "After you pay",
     title: "How can I change the shipping address on my purchase?",
     description:
       "Need to update your delivery address? Here is how to do it before the seller ships, and what to do if a label is already printed.",
@@ -822,13 +825,13 @@ export const buyingHelpArticles: HelpArticle[] = [
     slug: "how-to-contact-a-seller",
     topicId: "buying",
     sectionSlug: "managing-purchases",
-    sectionTitle: "Managing purchases",
-    groupTitle: "Contacting your seller",
+    sectionTitle: "Orders and protection",
+    groupTitle: "Sellers and reviews",
     title: "How to contact a seller",
     description:
       "Every way to reach a seller on Reswell, and why keeping the conversation on the platform helps if something goes wrong.",
     keywords: ["message", "seller", "contact"],
-    relatedSlugs: ["how-do-offers-work", "change-shipping-address", "buyer-returns"],
+    relatedSlugs: ["how-do-offers-work", "get-help-with-a-purchase", "where-are-messages"],
     sections: [
       {
         heading: "Where to start a conversation",
@@ -895,8 +898,8 @@ export const buyingHelpArticles: HelpArticle[] = [
     slug: "how-long-to-pay",
     topicId: "buying",
     sectionSlug: "managing-purchases",
-    sectionTitle: "Managing purchases",
-    groupTitle: "Order issues",
+    sectionTitle: "Orders and protection",
+    groupTitle: "After you pay",
     title: "How long do I have to pay for my Reswell purchase?",
     description:
       "When to complete checkout, how long offers stay open, and what to do after a seller accepts your offer.",
@@ -959,9 +962,9 @@ export const buyingHelpArticles: HelpArticle[] = [
   {
     slug: "why-charged-tax",
     topicId: "buying",
-    sectionSlug: "managing-purchases",
-    sectionTitle: "Managing purchases",
-    groupTitle: "Order issues",
+    sectionSlug: "checkout",
+    sectionTitle: "Checkout",
+    groupTitle: "Paying",
     title: "Why was I charged tax on my order?",
     description:
       "When sales tax applies on Reswell purchases and where to see it on your order.",
@@ -1012,6 +1015,449 @@ export const buyingHelpArticles: HelpArticle[] = [
               your order number and we will walk through the charge with you.
             </p>
           </>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "what-can-i-buy",
+    topicId: "buying",
+    sectionSlug: "shopping-on-reswell",
+    sectionTitle: "Shopping on Reswell",
+    groupTitle: "Finding gear",
+    title: "What can I buy on Reswell?",
+    description:
+      "Reswell is a peer marketplace for used surfboards and surf gear — plus a Reswell shop for items we sell directly.",
+    keywords: [
+      "categories",
+      "surfboards",
+      "fins",
+      "wetsuits",
+      "boardbags",
+      "surfpacks",
+      "leashes",
+      "apparel",
+      "accessories",
+      "magazines",
+      "shop",
+    ],
+    relatedSlugs: ["how-do-i-buy-a-board", "how-to-search", "what-can-i-sell"],
+    quickAnswer: (
+      <>
+        Peer listings cover surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel,
+        accessories, and magazines. You can also shop items Reswell sells directly at{" "}
+        {helpLink("/reswell/shop", "Shop from Reswell")}.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Marketplace categories",
+        body: (
+          <>
+            <p>Peer sellers list used surfboards and gear in these categories:</p>
+            <BulletList
+              items={[
+                <>{helpLink("/boards", "Surfboards")}</>,
+                <>{helpLink("/fins", "Fins")}</>,
+                <>{helpLink("/wetsuits", "Wetsuits")}</>,
+                <>{helpLink("/boardbags", "Boardbags")}</>,
+                <>{helpLink("/surfpacks", "Surfpacks")}</>,
+                <>{helpLink("/leashes", "Leashes")}</>,
+                <>{helpLink("/apparel", "Apparel")}</>,
+                <>{helpLink("/accessories", "Accessories")}</>,
+                <>{helpLink("/magazines", "Magazines")}</>,
+              ]}
+            />
+            <p>
+              Every peer listing uses the same checkout, offers, messages, and Purchase Protection
+              rules. See {helpLink("/help/buying/how-do-i-buy-a-board", "How do I buy on Reswell?")}{" "}
+              for the full walkthrough.
+            </p>
+          </>
+        ),
+      },
+      {
+        heading: "Shop from Reswell",
+        body: (
+          <p>
+            Some items are sold by Reswell, not a peer seller. Those live at{" "}
+            {helpLink("/reswell/shop", "Shop from Reswell")}. Checkout still happens on Reswell. If
+            you are unsure who the seller is, check the listing&apos;s About seller section.
+          </p>
+        ),
+      },
+      {
+        heading: "What is not sold here",
+        body: (
+          <HelpNote>
+            Reswell is for physical used surf gear. We do not process payments off the platform. If
+            a listing looks wrong for the category or asks you to pay elsewhere, report it and read{" "}
+            {helpLink("/help/accounts/avoid-scams", "What should I do if I think I am being scammed?")}.
+          </HelpNote>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "how-to-search",
+    topicId: "buying",
+    sectionSlug: "shopping-on-reswell",
+    sectionTitle: "Shopping on Reswell",
+    groupTitle: "Finding gear",
+    title: "How do I search and filter listings?",
+    description:
+      "Use marketplace search, category filters, and brand pages to find the right board or gear.",
+    keywords: ["search", "filter", "browse", "brand", "natural language"],
+    relatedSlugs: ["how-do-i-buy-a-board", "how-board-finder-works", "what-can-i-buy"],
+    quickAnswer: (
+      <>
+        Use the header search or a category page like {helpLink("/boards", "Surfboards")}. Type a
+        brand, model, or what you want in plain language, then narrow with filters. Brand pages and{" "}
+        {helpLink("/sold", "Recently sold")} are useful for comps.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Search from anywhere",
+        body: (
+          <p>
+            Site search understands brands, models, and everyday phrases like &quot;7&apos;2 fish
+            under 600 in San Diego&quot;. Results can span categories. Open a result to see photos,
+            condition, and pickup or shipping.
+          </p>
+        ),
+      },
+      {
+        heading: "Filters on category pages",
+        body: (
+          <p>
+            Each category has filters for the details that matter there — board type, length, volume,
+            condition, price, location, fin system, and more. Combine filters instead of scrolling an
+            unfiltered grid.
+          </p>
+        ),
+      },
+      {
+        heading: "Brands, sold comps, and alerts",
+        body: (
+          <>
+            <p>
+              {helpLink("/brands", "Brand pages")} collect models and live listings.{" "}
+              {helpLink("/sold", "Recently sold")} shows what actually closed. If nothing matches,
+              save a {helpLink("/board-finder", "Board Finder")} alert and we email you when a listing
+              fits.
+            </p>
+          </>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "how-board-finder-works",
+    topicId: "buying",
+    sectionSlug: "shopping-on-reswell",
+    sectionTitle: "Shopping on Reswell",
+    groupTitle: "Finding gear",
+    title: "How does Board Finder work?",
+    description:
+      "Save a search for a specific board or set of filters and get an email when a matching listing goes live.",
+    keywords: ["board finder", "alert", "saved search", "wishlist", "notify"],
+    relatedSlugs: ["how-to-search", "how-do-favorites-work", "how-do-i-buy-a-board"],
+    quickAnswer: (
+      <>
+        Go to {helpLink("/board-finder", "Board Finder")}, set brand, model, size, condition, or
+        price filters, and save the search. We email you when a new listing matches. You can keep up
+        to 5 saved searches per account.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Create an alert",
+        body: (
+          <p>
+            Open Board Finder and add the details you care about — brand, model, style, length,
+            condition, price range, volume, construction, or fin system. You need enough specificity
+            for a useful alert. Sign in to save it. Email opt-in is on by default when you save.
+          </p>
+        ),
+      },
+      {
+        heading: "Limits and managing alerts",
+        body: (
+          <p>
+            Each account can save up to 5 searches across marketplace categories. Manage or delete
+            them on the Board Finder page. A match email links you to the listing so you can favorite
+            it, message the seller, or buy.
+          </p>
+        ),
+      },
+      {
+        heading: "Favorites vs Board Finder",
+        body: (
+          <p>
+            Favorites save a specific live listing. Board Finder watches for listings that do not
+            exist yet. Use both if you are shopping a few boards and waiting on a particular model.
+          </p>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "how-to-follow-a-shop",
+    topicId: "buying",
+    sectionSlug: "shopping-on-reswell",
+    sectionTitle: "Shopping on Reswell",
+    groupTitle: "Saving and following",
+    title: "How do I follow a seller's shop?",
+    description:
+      "Follow shops you like to see new listings in your Following feed and get notified when they post.",
+    keywords: ["follow", "shop", "seller", "following", "followers"],
+    relatedSlugs: ["how-do-favorites-work", "how-to-contact-a-seller", "where-are-messages"],
+    quickAnswer: (
+      <>
+        Open a seller&apos;s shop page and tap <strong>Follow</strong>. New listings show up in{" "}
+        {helpLink("/following", "Following")}. Manage follows from{" "}
+        {helpLink("/dashboard/following", "Following in your dashboard")}.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Follow a shop",
+        body: (
+          <p>
+            Every peer listing has an About seller section that links to the shop. On the shop page,
+            tap <strong>Follow</strong>. You need to be signed in.
+          </p>
+        ),
+      },
+      {
+        heading: "Where new listings appear",
+        body: (
+          <p>
+            Followed shops appear in {helpLink("/following", "Following")} and{" "}
+            {helpLink("/dashboard/following", "your dashboard")}. Reswell can also send a
+            notification or email when a shop you follow lists something new, depending on your{" "}
+            {helpLink("/help/accounts/notifications", "notification settings")}.
+          </p>
+        ),
+      },
+      {
+        heading: "Unfollow",
+        body: (
+          <p>
+            Open the shop or your Following list and tap <strong>Following</strong> to unfollow.
+            Favorites on individual listings are separate — unfollowing a shop does not remove hearts.
+          </p>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "how-does-cart-work",
+    topicId: "buying",
+    sectionSlug: "checkout",
+    sectionTitle: "Checkout",
+    groupTitle: "Paying",
+    title: "How does the cart work?",
+    description: "Add listings to your cart, apply a promo code, and check out when you are ready.",
+    keywords: ["cart", "add to cart", "basket", "checkout"],
+    relatedSlugs: ["how-do-i-buy-a-board", "promo-codes", "how-do-i-pay"],
+    quickAnswer: (
+      <>
+        Tap <strong>Add to cart</strong> on a listing, then open {helpLink("/cart", "Cart")} to
+        review items, apply a promo code, and continue to checkout. <strong>Buy it now</strong> still
+        skips the cart if you want to pay immediately.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Adding items",
+        body: (
+          <p>
+            On a listing, tap <strong>Add to cart</strong>. You need to be signed in. Cart holds
+            marketplace listings you are still considering. Items can sell to someone else until you
+            complete payment.
+          </p>
+        ),
+      },
+      {
+        heading: "Review and check out",
+        body: (
+          <p>
+            Open {helpLink("/cart", "Cart")} to remove items, apply a promo code, and continue to
+            checkout. Delivery method, tax, and payment are confirmed on the checkout page — not on
+            the cart summary.
+          </p>
+        ),
+      },
+      {
+        heading: "Cart vs Buy it now",
+        body: (
+          <p>
+            Use the cart to compare or apply a code. Use <strong>Buy it now</strong> when you already
+            know you want that listing. Both routes pay through Reswell checkout.
+          </p>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "promo-codes",
+    topicId: "buying",
+    sectionSlug: "checkout",
+    sectionTitle: "Checkout",
+    groupTitle: "Paying",
+    title: "How do promo codes work?",
+    description:
+      "Apply a newsletter or Reswell-issued promo code on cart or checkout. Discounts apply to item price only.",
+    keywords: ["promo", "coupon", "discount", "code", "newsletter", "gift card"],
+    relatedSlugs: ["how-does-cart-work", "how-do-i-pay", "wallet-balance-at-checkout"],
+    quickAnswer: (
+      <>
+        Sign in, add items to {helpLink("/cart", "Cart")} or open checkout, and enter the code.
+        Newsletter welcome codes only work on the account email they were sent to. The discount
+        applies to item price, not shipping. Gift cards are not available yet. Sellers still receive
+        the full item price — Reswell covers the discount.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Where to apply a code",
+        body: (
+          <p>
+            Promo codes can be applied on Cart or checkout when you are signed in. Enter the code and
+            tap <strong>Apply</strong>. If you typed it on cart, checkout should pick it up.
+          </p>
+        ),
+      },
+      {
+        heading: "What codes cover",
+        body: (
+          <p>
+            The discount applies to item price only, not shipping or tax. Newsletter welcome codes
+            are tied to the email that received them. Admin-issued codes follow the rules shown when
+            they were sent.
+          </p>
+        ),
+      },
+      {
+        heading: "What is not available",
+        body: (
+          <HelpNote>
+            Gift cards are not available yet. A code that does not apply will show an error — check
+            that you are signed in with the right email and that the cart has eligible items.
+          </HelpNote>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "get-help-with-a-purchase",
+    topicId: "buying",
+    sectionSlug: "managing-purchases",
+    sectionTitle: "Orders and protection",
+    groupTitle: "Returns and claims",
+    title: "How do I get help with a purchase or sale?",
+    description:
+      "Where to open Get help, what to choose for claims, cancels, and questions, and how to track your case.",
+    keywords: ["get help", "support", "ticket", "help hub", "contact support", "case"],
+    relatedSlugs: [
+      "purchase-protection-claim",
+      "buyer-returns",
+      "how-to-contact-support",
+      "cancel-order-seller",
+    ],
+    quickAnswer: (
+      <>
+        Message the other person first. If you still need us, open the purchase or sale and tap{" "}
+        <strong>Get help</strong>, or start from {helpLink("/support", "Support")}. Choose a
+        purchase, sale, Purchase Protection claim, or another topic. We typically review protection
+        claims within <strong>3 business days</strong>.
+      </>
+    ),
+    sections: [
+      {
+        heading: "Start on the order",
+        body: (
+          <>
+            <p>
+              Buyers: open {helpLink("/dashboard/purchases", "Purchases")}, open the order, tap{" "}
+              <strong>Get help</strong>. Sellers: open {helpLink("/dashboard/sales", "Sales")}, open
+              the order, tap <strong>Get help with this sale</strong>. Pick a Purchase Protection
+              claim, cancel, or a question about the order. Tell us if you already contacted the
+              other person when asked.
+            </p>
+          </>
+        ),
+      },
+      {
+        heading: "Support hub when there is no order",
+        body: (
+          <p>
+            Use {helpLink("/support", "Support")} (or {helpLink("/dashboard/support", "Support in your dashboard")}{" "}
+            when signed in) for buying or selling questions, payments and payouts, account issues, or
+            safety reports. Search the Help Center from that page if an article already answers it.
+          </p>
+        ),
+      },
+      {
+        heading: "What to include",
+        body: (
+          <HelpNote>
+            Order number, listing link, tracking, dates, and photos. Keep the conversation in
+            Reswell Messages so we have a record. Track replies under Support. Do not send payment
+            details or passwords.
+          </HelpNote>
+        ),
+      },
+    ],
+  },
+  {
+    slug: "leave-seller-review",
+    topicId: "buying",
+    sectionSlug: "managing-purchases",
+    sectionTitle: "Orders and protection",
+    groupTitle: "Sellers and reviews",
+    title: "How do I leave a review for a seller?",
+    description:
+      "After delivery or pickup, review the seller from your purchase page. A positive review can close Purchase Protection early.",
+    keywords: ["review", "feedback", "rating", "stars"],
+    relatedSlugs: ["purchase-protection-claim", "leave-feedback-buyer", "get-help-with-a-purchase"],
+    quickAnswer: (
+      <>
+        Once the item is delivered or pickup is complete, open the purchase and tap{" "}
+        <strong>Review seller</strong>. Leave a star rating and comment. A positive review can close
+        your Purchase Protection window on that order early — finish any claim first if something is
+        wrong.
+      </>
+    ),
+    sections: [
+      {
+        heading: "When you can review",
+        body: (
+          <p>
+            You can leave a review after carrier tracking shows delivery, or after local pickup is
+            completed. Reswell also emails a review request.
+          </p>
+        ),
+      },
+      {
+        heading: "How to review",
+        body: (
+          <p>
+            Open {helpLink("/dashboard/purchases", "Purchases")}, open the order, and tap{" "}
+            <strong>Review seller</strong>. Keep feedback factual. Reviews help other buyers.
+          </p>
+        ),
+      },
+      {
+        heading: "Reviews and Purchase Protection",
+        body: (
+          <HelpNote>
+            A positive review can close the protection window early, even before 30 days. If the item
+            is wrong or damaged, file a {helpLink("/help/buying/purchase-protection-claim", "claim")}{" "}
+            before you leave a positive review.
+          </HelpNote>
         ),
       },
     ],

@@ -365,7 +365,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("help", "content", "Help center", {
     title: "Help Center — Reswell",
     description:
-      "Search articles and guides for buying, selling, and managing your Reswell account.",
+      "Updated guides for buying and selling surf gear on Reswell — checkout, We’ll buy, shipping, payouts, Purchase Protection, and your account.",
     path: "/help",
   }),
   page("support", "content", "Customer support", {

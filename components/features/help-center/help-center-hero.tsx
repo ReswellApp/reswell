@@ -1,11 +1,11 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { getHelpCenterTabs } from "@/lib/help-center/registry"
 import { helpTopicSectionPath } from "@/lib/help-center/paths"
 import type { HelpCenterTabId } from "@/lib/help-center/types"
 import { HelpCenterSearch } from "@/components/features/help-center/help-center-search"
+import { HelpCenterCategoryIcon } from "@/components/features/help-center/help-center-category-icon"
 import { cn } from "@/lib/utils"
 
 const tabs = getHelpCenterTabs()
@@ -22,8 +22,12 @@ export function HelpCenterHero({ activeTab, onTabChange }: HelpCenterHeroProps) 
     <section className="bg-white px-4 pb-12 pt-10 sm:px-6 sm:pt-14 sm:pb-16">
       <div className="mx-auto max-w-3xl text-center">
         <h1 className="font-headline text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-          Hello, how can we help you?
+          How can we help?
         </h1>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-600 sm:text-base">
+          Guides for buying, selling, We’ll buy, payouts, and your account — written for how Reswell
+          works today.
+        </p>
 
         <div className="relative mx-auto mt-8 max-w-2xl">
           <HelpCenterSearch />
@@ -31,7 +35,7 @@ export function HelpCenterHero({ activeTab, onTabChange }: HelpCenterHeroProps) 
       </div>
 
       <nav
-        className="mx-auto mt-10 flex max-w-md justify-center gap-8 sm:gap-12"
+        className="mx-auto mt-10 flex max-w-lg justify-center gap-8 sm:gap-12"
         aria-label="Help topics"
       >
         {tabs.map((t) => {
@@ -59,23 +63,26 @@ export function HelpCenterHero({ activeTab, onTabChange }: HelpCenterHeroProps) 
         })}
       </nav>
 
-      <div className="mx-auto mt-10 grid max-w-5xl gap-6 sm:grid-cols-3 sm:gap-8">
+      <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-neutral-600">{tab.description}</p>
+
+      <div
+        className={cn(
+          "mx-auto mt-10 grid max-w-5xl gap-5",
+          tab.categories.length > 3 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3",
+        )}
+      >
         {tab.categories.map((category) => (
           <Link
             key={category.sectionSlug}
             href={helpTopicSectionPath(tab.id, category.sectionSlug)}
-            className="group block rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-4"
+            className="group rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-6 text-left transition-colors hover:border-listingHeart/40 hover:bg-listingHeart/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-4"
           >
-            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-neutral-100">
-              <Image
-                src={category.imageSrc}
-                alt={category.imageAlt}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                sizes="(max-width: 640px) 100vw, 33vw"
-              />
-            </div>
-            <p className="mt-3 text-base font-bold text-neutral-900 sm:text-lg">{category.title}</p>
+            <HelpCenterCategoryIcon
+              icon={category.icon}
+              className="h-8 w-8 text-listingHeart"
+            />
+            <p className="mt-4 text-base font-bold text-neutral-900 sm:text-lg">{category.title}</p>
+            <p className="mt-1 text-sm leading-snug text-neutral-600">{category.description}</p>
           </Link>
         ))}
       </div>
