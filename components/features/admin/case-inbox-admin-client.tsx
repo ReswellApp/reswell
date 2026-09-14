@@ -113,7 +113,7 @@ export function CaseInboxAdminClient() {
   const composerRef = useRef<CaseInboxComposerHandle>(null)
   const skipNoteBlur = useRef(false)
   const [aiAppliedBody, setAiAppliedBody] = useState<string | null>(null)
-  const consumedAiId = useRef<string | null>(null)
+  const consumedAi = useRef<{ id: string; body: string } | null>(null)
 
   const onOrderContextLoaded = useCallback(
     (detail: AdminOrderDetail, extras: CaseOrderLabelContext) => {
@@ -245,12 +245,12 @@ export function CaseInboxAdminClient() {
   const loadedThreadIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    consumedAiId.current = null
+    consumedAi.current = null
   }, [selectedId])
 
   useEffect(() => {
     if (!selected?.isOpen || !aiDraft || composerMode !== "reply") return
-    if (consumedAiId.current === aiDraft.id) return
+    if (consumedAi.current?.id === aiDraft.id && consumedAi.current.body === aiDraft.body) return
     if (draftCaseId !== aiDraft.caseId) return
     const current = draft.trim()
     const canReplace = !current || current === (aiAppliedBody ?? "").trim()
@@ -505,7 +505,9 @@ export function CaseInboxAdminClient() {
         composerMode === "note" ? "Note added" : staffSentToast(current.requesterRole),
       )
       const sentMode = composerMode
-      if (sentMode === "reply" && aiDraft) consumedAiId.current = aiDraft.id
+      if (sentMode === "reply" && aiDraft) {
+        consumedAi.current = { id: aiDraft.id, body: aiDraft.body }
+      }
       setAiAppliedBody(null)
       setDraft("")
       const now = new Date().toISOString()
@@ -737,10 +739,15 @@ export function CaseInboxAdminClient() {
                   orderContext={orderContext}
                   orderExtras={orderExtras}
                   aiLoading={aiLoading}
-                  aiActive={Boolean(aiDraft) && draft.trim() === (aiAppliedBody ?? "").trim()}
+                  aiActive={Boolean(
+                    aiDraft && draft.trim() && draft.trim() === (aiAppliedBody ?? "").trim(),
+                  )}
                   aiError={aiError}
                   aiHelp={aiDraft?.citedHelp}
-                  onRegenerateAi={regenerateAi}
+                  onRegenerateAi={() => {
+                    consumedAi.current = null
+                    regenerateAi()
+                  }}
                   onRateAi={rateAi}
                 />
               </div>

@@ -142,11 +142,31 @@ export function rankExamplesForQuery<
     .slice(0, limit)
 }
 
+export function collectCustomerSupportTexts(
+  messages: Array<{ author_role: string; is_internal?: boolean; body: string }>,
+  fallbackSubject: string,
+): string[] {
+  const bits = messages
+    .filter((message) => message.author_role === "customer" && !message.is_internal)
+    .map((message) => message.body.trim())
+    .filter(Boolean)
+  if (bits.length > 0) return bits
+  const subject = fallbackSubject.trim()
+  return subject ? [subject] : []
+}
+
+export function lastCustomerSupportText(
+  messages: Array<{ author_role: string; is_internal?: boolean; body: string }>,
+  fallbackSubject: string,
+): string {
+  const bits = collectCustomerSupportTexts(messages, fallbackSubject)
+  return bits[bits.length - 1] ?? ""
+}
+
 export function supportReplyDraftFingerprint(input: {
   promptVersion: string
   caseId: string
   subject: string
-  preview: string
   status: string
   lastCustomerMessage: string
   lastMessageAt: string | null
@@ -155,7 +175,6 @@ export function supportReplyDraftFingerprint(input: {
     input.promptVersion,
     input.caseId,
     input.subject.trim(),
-    input.preview.trim(),
     input.status,
     input.lastCustomerMessage.trim(),
     input.lastMessageAt ?? "",

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  collectCustomerSupportTexts,
+  lastCustomerSupportText,
   rankBySupportReplyScore,
   rankExamplesForQuery,
   rankHelpArticlesForQuery,
@@ -103,7 +105,6 @@ describe("support reply retrieval", () => {
       promptVersion: "support-reply-draft-v1",
       caseId: "11111111-1111-1111-1111-111111111111",
       subject: "Order help",
-      preview: "Where is my board?",
       status: "submitted",
       lastCustomerMessage: "Where is my board?",
       lastMessageAt: "2026-09-14T00:00:00.000Z",
@@ -115,5 +116,21 @@ describe("support reply retrieval", () => {
     })
     assert.notEqual(first, second)
     assert.equal(first, supportReplyDraftFingerprint(base))
+  })
+
+  it("uses real customer messages and ignores staff preview text", () => {
+    const messages = [
+      { author_role: "customer", is_internal: false, body: "Where is my board?" },
+      { author_role: "agent", is_internal: false, body: "Looking into tracking now." },
+    ]
+    assert.deepEqual(collectCustomerSupportTexts(messages, "Order help"), ["Where is my board?"])
+    assert.equal(lastCustomerSupportText(messages, "Order help"), "Where is my board?")
+    assert.equal(
+      lastCustomerSupportText(
+        [{ author_role: "agent", is_internal: false, body: "Looking into tracking now." }],
+        "Order help",
+      ),
+      "Order help",
+    )
   })
 })

@@ -37,7 +37,11 @@ import {
   supportReplyDraftLlmSchema,
   type SupportReplyDraftOrigin,
 } from "@/lib/validations/supportReplyDraft"
-import { supportReplyDraftFingerprint } from "@/lib/utils/support-reply-retrieve"
+import {
+  collectCustomerSupportTexts,
+  lastCustomerSupportText,
+  supportReplyDraftFingerprint,
+} from "@/lib/utils/support-reply-retrieve"
 
 const FEATURE = APP_LLM_FEATURES.find((f) => f.id === "support_reply_draft")
 
@@ -82,10 +86,7 @@ async function requireStaffService(): Promise<
 }
 
 function lastCustomerText(row: SupportCaseRow, messages: SupportCaseMessageRow[]): string {
-  const customer = [...messages]
-    .reverse()
-    .find((message) => message.author_role === "customer" && !message.is_internal)
-  return (customer?.body || row.preview || row.subject).trim()
+  return lastCustomerSupportText(messages, row.subject)
 }
 
 function lastMessageAt(messages: SupportCaseMessageRow[]): string | null {
@@ -222,13 +223,7 @@ async function generateDraftBody(args: {
   model: string | null
   needsHumanReview: boolean
 }> {
-  const customerBits = args.messages
-    .filter((message) => message.author_role === "customer" && !message.is_internal)
-    .map((message) => message.body.trim())
-    .filter(Boolean)
-  if (args.row.preview.trim() && !customerBits.includes(args.row.preview.trim())) {
-    customerBits.unshift(args.row.preview.trim())
-  }
+  const customerBits = collectCustomerSupportTexts(args.messages, args.row.subject)
 
   const priorStaff = args.messages
     .filter((message) => message.author_role === "agent" && !message.is_internal)
@@ -344,7 +339,6 @@ export async function generateAndStoreDraft(
     promptVersion: SUPPORT_REPLY_PROMPT_VERSION,
     caseId: row.id,
     subject: row.subject,
-    preview: row.preview,
     status: row.status,
     lastCustomerMessage: lastCustomer,
     lastMessageAt: lastMessageAt(messages),
@@ -357,7 +351,7 @@ export async function generateAndStoreDraft(
     }
   }
 
-  const query = [row.subject, row.kind, lastCustomer, row.preview].filter(Boolean).join(" ")
+  const query = [row.subject, row.kind, lastCustomer].filter(Boolean).join(" ")
   const [knowledge, order, names] = await Promise.all([
     gatherSupportReplyKnowledge(service, {
       query,
