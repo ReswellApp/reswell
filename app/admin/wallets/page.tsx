@@ -404,7 +404,7 @@ export default function AdminWalletsPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Wallets</h1>
+            <h1 className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Wallets</h1>
             <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
               {loading ? 'Loading…' : `${compactNumber(stats.nonZero)} funded`}
             </span>
@@ -413,7 +413,7 @@ export default function AdminWalletsPage() {
             Reconciled Reswell Bucks balances, payouts, and lifetime totals across every account.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
           <Button
             type="button"
             variant="outline"

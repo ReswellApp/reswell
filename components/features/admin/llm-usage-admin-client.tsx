@@ -179,7 +179,7 @@ export function LlmUsageAdminClient() {
             value={String(days)}
             onValueChange={(v) => setDays(Number(v) as LlmUsageRangeDays)}
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

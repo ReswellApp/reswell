@@ -780,13 +780,13 @@ function DashboardHeader(props: {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
           <FilterBlock label="Range">
             <Select
               value={filters.range}
               onValueChange={(v) => props.onChangeFilters({ range: v as DashboardRangeKey })}
             >
-              <SelectTrigger className="h-9 w-[168px] border-slate-200 bg-white">
+              <SelectTrigger className="h-9 w-full border-slate-200 bg-white sm:w-[168px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -806,7 +806,7 @@ function DashboardHeader(props: {
                 props.onChangeFilters({ brandId: v === ALL_VALUE ? null : v })
               }
             >
-              <SelectTrigger className="h-9 w-[200px] border-slate-200 bg-white">
+              <SelectTrigger className="h-9 w-full border-slate-200 bg-white sm:w-[200px]">
                 <SelectValue placeholder="All brands" />
               </SelectTrigger>
               <SelectContent>
@@ -828,7 +828,7 @@ function DashboardHeader(props: {
                   props.onChangeFilters({ modelSlug: v === ALL_VALUE ? null : v })
                 }
               >
-                <SelectTrigger className="h-9 w-[200px] border-slate-200 bg-white">
+                <SelectTrigger className="h-9 w-full border-slate-200 bg-white sm:w-[200px]">
                   <SelectValue placeholder="All models" />
                 </SelectTrigger>
                 <SelectContent>
@@ -857,7 +857,7 @@ function DashboardHeader(props: {
                   props.onChangeFilters({ variantId: v === ALL_VALUE ? null : v })
                 }
               >
-                <SelectTrigger className="h-9 w-[260px] border-slate-200 bg-white">
+                <SelectTrigger className="h-9 w-full border-slate-200 bg-white sm:w-[260px]">
                   <SelectValue placeholder="All variants" />
                 </SelectTrigger>
                 <SelectContent>
@@ -885,7 +885,7 @@ function DashboardHeader(props: {
                 props.onChangeFilters({ boardType: v === ALL_VALUE ? null : v })
               }
             >
-              <SelectTrigger className="h-9 w-[180px] border-slate-200 bg-white">
+              <SelectTrigger className="h-9 w-full border-slate-200 bg-white sm:w-[180px]">
                 <SelectValue placeholder="All shapes" />
               </SelectTrigger>
               <SelectContent>
@@ -910,7 +910,7 @@ function DashboardHeader(props: {
                 props.onChangeFilters({ condition: v === ALL_VALUE ? null : v })
               }
             >
-              <SelectTrigger className="h-9 w-[176px] border-slate-200 bg-white">
+              <SelectTrigger className="h-9 w-full border-slate-200 bg-white sm:w-[176px]">
                 <SelectValue placeholder="Any condition" />
               </SelectTrigger>
               <SelectContent>
@@ -934,7 +934,7 @@ function DashboardHeader(props: {
                 props.onChangeFilters({ state: v === ALL_VALUE ? null : v })
               }
             >
-              <SelectTrigger className="h-9 w-[140px] border-slate-200 bg-white">
+              <SelectTrigger className="h-9 w-full border-slate-200 bg-white sm:w-[140px]">
                 <SelectValue placeholder="All states" />
               </SelectTrigger>
               <SelectContent>
@@ -952,7 +952,7 @@ function DashboardHeader(props: {
             </Select>
           </FilterBlock>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="col-span-2 flex items-center gap-2 sm:col-auto sm:ml-auto">
             <Button
               variant="outline"
               size="sm"
@@ -978,7 +978,7 @@ function DashboardHeader(props: {
 
 function FilterBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 w-full flex-col gap-1 sm:w-auto">
       <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
         {label}
       </span>

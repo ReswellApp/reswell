@@ -152,7 +152,7 @@ export function AdSalesAdminClient({ initialData }: { initialData: AdSalesDashbo
             load(next)
           }}
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -49,7 +49,7 @@ export function AdminPageHeader({
       ) : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h1 className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-[1.75rem]">
+          <h1 className="font-headline text-xl font-bold tracking-tight text-foreground sm:text-2xl sm:text-[1.75rem]">
             {title}
           </h1>
           {description ? <p className="max-w-2xl text-sm text-muted-foreground">{description}</p> : null}

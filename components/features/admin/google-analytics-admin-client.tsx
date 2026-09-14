@@ -452,7 +452,7 @@ export function GoogleAnalyticsAdminClient({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={String(rangeDays)} onValueChange={onRangeChange}>
-            <SelectTrigger className="h-9 w-[160px] bg-white">
+            <SelectTrigger className="h-9 w-full bg-white sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

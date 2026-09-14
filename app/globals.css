@@ -669,6 +669,76 @@ html[data-reswell-scroll-lock] body {
   }
 }
 
+/* iPhone / small-viewport admin: keep pages usable without horizontal page-scroll. */
+@media (max-width: 1023px) {
+  .admin-app {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  .admin-panel {
+    max-width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.625rem;
+  }
+
+  .admin-app .admin-surface {
+    max-width: 100%;
+  }
+
+  .admin-app :where(.admin-surface, .admin-panel, .rounded-lg, .rounded-xl, .rounded-2xl):has(> table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Stop iOS from zooming the page when focusing 14px inputs. */
+  .admin-app input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']),
+  .admin-app textarea,
+  .admin-app select {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 639px) {
+  .admin-app button[role='combobox'] {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .admin-app [role='tablist'] {
+    display: flex;
+    height: auto;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.25rem;
+  }
+
+  .admin-app .admin-filter-row {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .admin-app .admin-filter-row > * {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 639px) {
+  html[data-admin-app] [data-radix-dialog-content][class*='left-[50%]'] {
+    width: calc(100vw - 1.5rem);
+    max-width: calc(100vw - 1.5rem);
+    max-height: min(
+      90dvh,
+      calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+    );
+    overflow-y: auto;
+  }
+}
+
 .admin-surface {
   border-radius: 0.75rem;
   border: 1px solid hsl(var(--border) / 0.65);

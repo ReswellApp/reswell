@@ -963,9 +963,9 @@ export default function AdminListingsPage() {
               className={cn(siteSearchInputClassName(), 'h-10 rounded-lg')}
             />
           </SiteSearchBar>
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+          <div className="admin-filter-row flex flex-wrap items-center gap-2 lg:shrink-0">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-10 w-[200px] bg-white">
+              <SelectTrigger className="h-10 w-full bg-white sm:w-[200px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
@@ -1331,7 +1331,7 @@ export default function AdminListingsPage() {
                           <div className="flex items-center gap-1.5">
                             <Link
                               href={getListingViewHref(listing.section, listing.id, listing.slug)}
-                              className="line-clamp-1 max-w-[150px] font-medium text-foreground hover:underline"
+                              className="line-clamp-1 min-w-0 font-medium text-foreground hover:underline"
                             >
                               {capitalizeWords(listing.title)}
                             </Link>
@@ -1341,7 +1341,7 @@ export default function AdminListingsPage() {
                               </span>
                             ) : null}
                           </div>
-                          <span className="line-clamp-1 max-w-[150px] text-xs text-muted-foreground">
+                          <span className="line-clamp-1 min-w-0 text-xs text-muted-foreground">
                             {listing.categories?.name ?? 'Uncategorized'}
                           </span>
                         </div>

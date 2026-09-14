@@ -300,7 +300,7 @@ export function AdminFailedLabelsTab({ onOpenCountChange, onResolved }: AdminFai
         <div className="flex flex-wrap items-center gap-2">
           {stagesPresent.length > 1 ? (
             <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="h-9 w-[180px] rounded-full text-sm">
+              <SelectTrigger className="h-9 w-full rounded-full text-sm sm:w-[180px]">
                 <SelectValue placeholder="All stages" />
               </SelectTrigger>
               <SelectContent>
