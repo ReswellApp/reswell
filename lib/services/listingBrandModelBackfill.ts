@@ -16,11 +16,18 @@ import {
 } from "@/lib/db/listingBrandModelBackfill"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import {
+  runListingBrandModelResearch,
+  type ListingBrandModelResearchSummary,
+} from "@/lib/services/listingBrandModelResearch"
+import {
+  matchBrandFromLabel,
   matchBrandFromTitle,
+  matchModelFromLabel,
   matchModelFromTitle,
   type BrandMatchRow,
   type ModelMatchRow,
 } from "@/lib/utils/listing-brand-model-match"
+import type { ListingBrandModelAutofillSource } from "@/lib/validations/listing-brand-model-research"
 
 export type ListingBrandModelBackfillSectionSummary = {
   scanned: number
@@ -40,6 +47,7 @@ export type ListingBrandModelBackfillSummary = {
   capped: boolean
   by_section: Record<ListingBrandModelBackfillSection, ListingBrandModelBackfillSectionSummary>
   error_samples: Array<{ listingId: string; error: string }>
+  research: ListingBrandModelResearchSummary
 }
 
 /**
@@ -99,22 +107,36 @@ async function processSectionListings(
 
       let effectiveBrandId = row.brand_id
       let effectiveBrandName = row.brand?.trim() || null
+      let attachSource: ListingBrandModelAutofillSource = "title_backfill"
       if (!effectiveBrandId) {
-        const brand = matchBrandFromTitle(row.title, catalog.brands)
+        const brand =
+          matchBrandFromTitle(row.title, catalog.brands) ??
+          matchBrandFromLabel(row.brand, catalog.brands)
         if (brand) {
           patch.brand_id = brand.id
           patch.brand = brand.name
           effectiveBrandId = brand.id
           effectiveBrandName = brand.name
+          if (!matchBrandFromTitle(row.title, catalog.brands) && row.brand) {
+            attachSource = "label_backfill"
+          }
         }
       }
 
       if (!row.brand_model_id && effectiveBrandId) {
         const models = catalog.modelsByBrand.get(effectiveBrandId) ?? []
-        const model = matchModelFromTitle(row.title, models)
+        const model =
+          matchModelFromTitle(row.title, models) ?? matchModelFromLabel(row.model, models)
         if (model) {
           patch.brand_model_id = model.id
           patch.model = model.name
+          if (
+            attachSource === "title_backfill" &&
+            !matchModelFromTitle(row.title, models) &&
+            row.model
+          ) {
+            attachSource = "label_backfill"
+          }
         }
       }
 
@@ -147,6 +169,7 @@ async function processSectionListings(
           model_name: patch.model ?? null,
           attached_brand: Boolean(patch.brand_id),
           attached_model: Boolean(patch.brand_model_id),
+          source: attachSource,
         })
 
         await syncListingToIndex(supabase, row.id).catch((e) => {
@@ -189,11 +212,12 @@ async function processSectionListings(
 /**
  * Backfill catalog brand/model links on active surfboard and fin listings.
  *
- * For each active listing missing `brand_id` and/or `brand_model_id`, the title is
- * matched (whole-word, high precision) against the directory brand catalog, and —
- * scoped to the matched/existing brand — against that brand's `brand_models`. Fin
- * listings use fin-tagged brands and fin catalog models only. Existing links are
- * never overwritten.
+ * For each active listing missing `brand_id` and/or `brand_model_id`, the title
+ * (and seller brand/model fields) are matched (whole-word, high precision)
+ * against the directory catalog. Confirmed-missing rows are researched and, when
+ * an official site verifies the named model, created then attached. Low
+ * confidence stays on the unmatched review worklist. Existing links are never
+ * overwritten.
  */
 export async function runListingBrandModelBackfill(
   supabase: SupabaseClient,
@@ -216,9 +240,16 @@ export async function runListingBrandModelBackfill(
       fins: emptySectionSummary(),
     },
     error_samples: [],
+    research: {
+      attempted: 0,
+      brand_created: 0,
+      model_created: 0,
+      attached: 0,
+      queued_for_review: 0,
+      skipped: 0,
+      errors: 0,
+    },
   }
-
-  const sections: ListingBrandModelBackfillSection[] = ["surfboards", "fins"]
 
   const [surfboardBatch, finBatch, surfboardCatalog, finCatalog] = await Promise.all([
     collectActiveListingsNeedingBrandOrModel(supabase, "surfboards", maxPerSection),
@@ -250,6 +281,11 @@ export async function runListingBrandModelBackfill(
       summary.by_section.fins,
     )
   }
+
+  summary.research = await runListingBrandModelResearch(supabase, {
+    surfboards: surfboardCatalog,
+    fins: finCatalog,
+  })
 
   return summary
 }

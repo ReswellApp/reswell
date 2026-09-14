@@ -37,6 +37,18 @@
           "board_category_slug": "hybrid"
         },
         {
+          "name": "El Barong",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1745095272768-P25RG5MI0DRW7KGRD719/el+barong.png",
+          "description": "Mid-formance twin pin style board for that loose and cruisey feel. Length: 5'10\" to 6'10\". Width: 19 1/2\" to 20 1/2\". Thickness: 2 5/8\" to 3\". Fin(s): Twin or Twin + Trailer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hybrid Shorty",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1743699659219-JYIVDOE06C063Q5HERWN/hybrid+short.png",
+          "description": "A shortboard designed for transitioning from a mid-length or longboard to something shorter and more agile. Length: 5'10\" to 6'10\". Width: 20 5/8\" to 22 1/2\". Thickness: 2 5/8\" to 3 3/4\". Fin(s): Thruster or 5 Fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
           "name": "Log Jammin'",
           "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/67c7313c01f1c1001013cc8f/67d9a5eaf988834cccfde835/1765404889566/Log+Jammin+Top+Updated.png",
           "description": "Capable of tackling waves ranging from one-foot slop to overhead surf, the Log Jammin' stands out as a must-have midformance longboard. Length: 9–10 ft. Width: +/- 23\". Thickness: 3\". Fin(s): Single fin, 2+1.",
