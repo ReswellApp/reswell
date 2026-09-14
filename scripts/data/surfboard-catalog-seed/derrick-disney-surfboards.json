@@ -1,6 +1,6 @@
 {
   "generated_for": "Derrick Disney official named standup catalog",
-  "source": "https://www.derrickdisney.com/models (official model lineup — excludes custom deposits and one-off dimension SKUs)",
+  "source": "https://www.derrickdisney.com/models and /thruster, /twinzr-flex (official Squarespace model pages — excludes custom deposits and one-off dimension SKUs)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -65,6 +65,17 @@
           "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/159b119a-7961-4645-a48e-29f021380dac/farm+board+01.png",
           "description": "Mini glider in theory, this design is intended to trim quickly and maneuver easily for a lengthier board. Arriving in the 8'3\" - 10'3\" size range, the Farm Board is featured with a rolled up nose, to flat in the middle, to spiral vee in the tail with edge. This helps free up the front end from catching and transitions smoothly rail to rail. The wide point is behind center allowing for more curve to turn off of the back third of the board. Favorite size 9'6\"- 22 3/4\"- 3\".",
           "board_category_slug": "longboard"
+        },
+        {
+          "name": "Thruster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/1cba9dff-9ad4-4bf6-836a-6666129bbda9/EXPERIMENTAL+1200.jpg",
+          "description": "Squash shorty. A stab at making a thruster for good California waves. Thinner rails, lower entry rocker, single concave short board. 5'11 1/2\"- 19 1/4- 2 3/8.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twinzr Flextail",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/6513477019479b4990ab9240/e14f924f-bf45-4156-93f7-3e6510d7bd75/TWINZR+FISH+FLEXTAIL+1500PX.jpg",
+          "board_category_slug": "fish"
         }
       ]
     }
