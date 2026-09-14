@@ -215,7 +215,7 @@ export function PickupOnlySurfboardsAdminClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <Select value={stateFilter} onValueChange={setStateFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All states" />
           </SelectTrigger>
           <SelectContent>

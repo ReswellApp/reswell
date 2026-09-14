@@ -77,14 +77,14 @@ export default function AdminAddListingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+      <div className="flex items-start gap-3">
+        <Button variant="ghost" size="icon" className="mt-0.5 shrink-0" asChild>
           <Link href="/admin/listings">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Create listing for user</h1>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl">Create listing for user</h1>
           <p className="text-muted-foreground">
             Pick a user below — you'll be taken to the full listing form to create it on their behalf
           </p>

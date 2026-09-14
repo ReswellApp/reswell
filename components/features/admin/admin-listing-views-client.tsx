@@ -157,7 +157,7 @@ export function AdminListingViewsClient() {
               setPage(1)
             }}
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -152,7 +152,7 @@ export function AdminRevenueChart({
   const isHero = layout === 'hero'
 
   return (
-    <div className={cn(isHero ? 'admin-surface p-5' : 'rounded-2xl border border-border bg-card p-5')}>
+    <div className={cn(isHero ? 'admin-surface p-4 sm:p-5' : 'rounded-2xl border border-border bg-card p-4 sm:p-5')}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="font-headline text-base font-semibold text-foreground">

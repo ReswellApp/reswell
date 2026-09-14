@@ -806,9 +806,9 @@ export default function AdminUsersPage() {
               className={cn(siteSearchInputClassName(), 'h-10 rounded-lg')}
             />
           </SiteSearchBar>
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+          <div className="admin-filter-row flex flex-wrap items-center gap-2 lg:shrink-0">
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="h-10 w-[200px] bg-white">
+              <SelectTrigger className="h-10 w-full bg-white sm:w-[200px]">
                 <SelectValue placeholder="All roles" />
               </SelectTrigger>
               <SelectContent>
@@ -1197,7 +1197,7 @@ export default function AdminUsersPage() {
 
       {/* Bulk action bar */}
       {selectedRows.length > 0 ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex justify-center px-3">
           <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-border bg-popover/95 px-3 py-2 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-popover/80">
             <div className="flex items-center gap-2 pr-1">
               <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-primary px-2 text-xs font-semibold tabular-nums text-primary-foreground">

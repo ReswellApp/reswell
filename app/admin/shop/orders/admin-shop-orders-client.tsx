@@ -249,18 +249,18 @@ export function AdminShopOrdersClient() {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search order # or id…"
-          className="max-w-xs"
+          className="w-full sm:max-w-xs"
         />
         <Select
           value={fulfillment}
           onValueChange={(v) => setFulfillment(v as FulfillmentFilter)}
         >
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Fulfillment" />
           </SelectTrigger>
           <SelectContent>

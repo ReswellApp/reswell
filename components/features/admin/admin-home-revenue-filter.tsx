@@ -64,7 +64,7 @@ export function AdminHomeRevenueFilter({
   return (
     <Select value={value} onValueChange={onPeriodChange}>
       <SelectTrigger
-        className="h-8 w-full min-w-[168px] sm:w-[200px]"
+        className="h-8 w-full min-w-0 sm:min-w-[168px] sm:w-[200px]"
         aria-label="Dashboard period"
       >
         <CalendarRange className="mr-2 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />

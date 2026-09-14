@@ -136,14 +136,14 @@ export function AdminMarketplaceMessagesClient() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <form onSubmit={handleSearch} className="flex items-center gap-2">
-          <div className="relative">
+        <form onSubmit={handleSearch} className="flex min-w-0 w-full items-center gap-2 sm:max-w-md">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search names, listings, or message text…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-[min(100%,320px)] pl-9"
+              className="w-full pl-9"
             />
           </div>
           <Button type="submit" variant="secondary" size="sm">

@@ -165,7 +165,7 @@ export function AdminSidebarNav({
         const groupActive = group.items.some((item) => isNavActive(pathname, item.href))
         return (
           <Collapsible key={group.id} defaultOpen={forceOpen || groupActive}>
-            <CollapsibleTrigger className="flex h-8 w-full items-center justify-between gap-2 rounded-lg px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground data-[state=open]:[&_.admin-nav-chevron]:rotate-180">
+            <CollapsibleTrigger className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground lg:min-h-8 data-[state=open]:[&_.admin-nav-chevron]:rotate-180">
               <span className="flex min-w-0 flex-1 items-center gap-2">
                 <span className="truncate">{group.label}</span>
                 <NavUnreadCountBadge count={groupBadgeCount} className="h-4 min-w-4 text-[10px]" />
@@ -182,7 +182,7 @@ export function AdminSidebarNav({
                     href={item.href}
                     onClick={onNavigate}
                     className={cn(
-                      'flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors',
+                      'flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2.5 text-sm transition-colors lg:min-h-0 lg:py-2',
                       active
                         ? 'bg-slate-100 font-medium text-foreground dark:bg-muted'
                         : 'font-normal text-slate-600 hover:bg-slate-50 hover:text-foreground dark:text-muted-foreground dark:hover:bg-muted',

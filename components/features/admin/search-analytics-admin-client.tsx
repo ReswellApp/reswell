@@ -2092,12 +2092,12 @@ export function SearchAnalyticsAdminClient() {
                     aria-hidden
                   />
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                   <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     Range
                   </span>
                   <Select value={days} onValueChange={setDays}>
-                    <SelectTrigger className="h-9 w-[168px] border-slate-200 bg-white">
+                    <SelectTrigger className="h-9 w-full border-slate-200 bg-white sm:w-[168px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

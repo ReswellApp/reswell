@@ -1112,7 +1112,7 @@ export function GoogleMerchantDashboardClient({
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-9 w-[160px]">
+                  <SelectTrigger className="h-9 w-full sm:w-[160px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
