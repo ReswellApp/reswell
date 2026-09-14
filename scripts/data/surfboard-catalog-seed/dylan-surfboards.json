@@ -1,0 +1,192 @@
+{
+  "generated_for": "Dylan Surfboards official named standup catalog",
+  "source": "https://dylansurfboards.com/surfboard-sitemap.xml (official surfboard CPT pages — excludes apparel, fins, custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dylan-surfboards",
+      "name": "Dylan Surfboards",
+      "website_url": "https://dylansurfboards.com",
+      "location_label": "Port Kembla, New South Wales, Australia",
+      "founder_name": "Dylan Longbottom",
+      "lead_shaper_name": "Dylan Longbottom",
+      "short_description": "Port Kembla performance and alternative shapes from surfer-shaper Dylan Longbottom.",
+      "models": [
+        {
+          "name": "4X Mid Length",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/4xmid_update-1.png",
+          "description": "This model is perfect or those that just want to cruise and to make paddling much easier, set up as a twin fin plus the 4 channels for extra drive and a rounded pin tail for hold. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Gun",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/BigGun.jpg",
+          "description": "This my paddle in board for very large waves around the world, designed to get into waves early with a lot more volume under the chest and made a lot thicker than your standard step up boards. It has a big long rocker with a nice long drawn out planshape, low rails and a pulled in tail. It all depends on your weight/height/age ratio and where you surf to maximise volume, plus a super strong glass job.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "CAB SAV",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/cab_sav.png",
+          "description": "Cab Sav is a mid length cross step up board that has a wider point much further forward with a drawn in swallow tail that is good for when its pumping but also good to ride when its small. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "CAB SLAB",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/cab_slab.png",
+          "description": "This is a board i designed with Cronulla charger Fletcher Hayllar that we wanted for slabs and ride shorter with wide point a touch further forward to help us paddle into wave earlier without riding a longer board, but it also works great in the beach breaks as well for tuns making it a super fun all rounder. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cosmic Crusader",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/CosmicCrusader.jpg",
+          "description": "This is a super fun board made for easy paddling and generates speed a lot easier, has a lot more area up towards the nose with a standard shortboard tail making it easy to turn and full soft rails making it very forgiving. Perfect for beginners to intermediate, and for surfers that don’t get in the water frequently",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Double Slider",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2021/03/double_slider.jpg",
+          "description": "A new mid-length model that you can take out on any day of the week and just have heaps of fun. Super easy to paddle with more area up front and can ride up to 8 inches longer than your shortboard, low rails making it easy to turn plus have that fast smooth glide feeling on the wave. Instead of riding a long-board you can ride one of these and just cruise and glide in early or put in on rail with ease. Basic sizes but can make any dimensions to suit the individual IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Filthy Fish",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/filthyfish.png",
+          "description": "This a quad fish i designed for small beach breaks and wave pools, made the deck flatter so its more responsive along with a single flyer and lower rocker, really fast and loose for small waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Free Flow",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/FreeFlow.jpg",
+          "description": "This is my new updated model spawned from my old flowrider model, changed the rocker and moved the centre point back more under the feet plus made the wide point at the nose area a touch wider and the tail is a little wider than my X5 model, great all round high performance model. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gypsy",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/Gypsy.jpg",
+          "description": "This is my retro kind of model that has that old school thick beak nose to help glide into waves, this combined with a single flyer round pin tail and the single fin or 2+1 fin set up allows for long smooth turns and is also great for barrel riding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HOT SPOT",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2021/05/hot_spot.jpg",
+          "description": "Inspired by the RX5, I have moved the centre point back 2 inches so it is more balanced between your feet creating better turning ability and a looser feel. It has a deep single to double concave and slightly more tail rocker for more speed, with a slightly wider squash tail which I have changed from the round tail RX5, I like to ride it slightly wider but thinner… a great all round high performance board. Basic sizes but can make any dimensions to suit the individual. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hotrod",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/HotRod.jpg",
+          "description": "A mini mal like model which has that very full nose - but made a lot wider and thicker than all other boards, allowing it to paddle into waves super easy, while also being very stable on the waves. It consists of a standard short board tail to make it easy to turn, perfect for beginners or surfers that just want to cruise and catch waves easily.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Laurie Towner Pro Model",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2021/06/laurie_towner.jpg",
+          "description": "Laurie & Dylan have worked together for years fine tuning this shape. Paddling this exact board into some of the biggest hollow waves around the world where you need a lot of extra volume and keeping the rails very low to knife into those big drops. The bottom includes a single to double concave and the rocker has nice smooth long continuous curve with enough nose curve not to catch but low enough to get good paddle speed. Your high performance powerful wave surfing vehicle is here. Basic sizes but can make any dimensions to suit the individual. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Little Ripper",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/LittleRipper.jpg",
+          "description": "This is my high performance model for the kids, made to suit there age/height/weight ratio with more rocker and refined outline for sharper turns to allow the kids to progress quickly to high levels. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lucas Chumbo Pro Model",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2021/03/lucas_chumbo.jpg",
+          "description": "This is the new high performance big gun that allows us to actually surf large waves and not just survive or just go straight. I worked close with Lucas to give him more paddle power with the flat deck which continues the volume out to where it meets the low rail, the flat deck also make it way easier to turn for a big board and the low rails allowing the board to engage and hold and be able to change lines easy and smooth. The bottom is slight concave though to a strong double concave inside the vee, Luca and myself feel this model has changed big wave surfing making it safer, easier and guys more comfortable in extra large waves” Please Note: AVAILABLE IN ANY SIZE,WIDTH AND THICKNESS. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "MEX5",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2017/12/dylan_mex5.jpg",
+          "description": "My new Mex5 model is a combination of my 2 favourite models being my RX5 and Mexican, i have used the nice smooth bottom curve of the RX5 and used an outline like the Mexican with a slight hip and slightly more area under the chest for board and paddle speed, great for all conditions making it the perfect all rounder. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mexican",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/Mexican.jpg",
+          "description": "This is my high performance board for small to medium waves and suited for beach breaks and those rippable points/reef breaks, consists of a medium rocker and a much broader outline with generous width around the chest area for paddling and more area in front of the fins breaking with a hip to bring the tail back in, excellent board for everyday conditions and suited for everyone.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Predator",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/predator-1.png",
+          "description": "This is my step up model for those heavier days - more volume under the chest allows getting into bigger waves, which is critical to get a good line. This, combined with more rocker for gets those steep drops while fitting into hollow waves better, plus low rails for bite and hold - so there is no sliding and the nose is not too pulled in but narrow enough with a tighter tail area. Tested around the world by the worlds best, this board comes with a very strong glass job for strength and extra drive.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "RAPTOR",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2019/08/Raptor_Board-1.jpg",
+          "description": "The Raptor is a new board I've been working on where I fused the Predator model and my performance RX5 model that has a sexy curvy outline, pulled in swallow tail, lower rails and more rocker so we can ride it with a little extra volume. It’s a great all rounder for turns and barrels for waves 3 to 6 feet, it's a mix of old school curves with shorter new school performance and I like to ride it the same length as my own height or 1 inch longer. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Recovery",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/recovery-1.png",
+          "description": "After breaking my ribs badly and had to recover for a long time i had to start again on long boards and loved that gliding feeling they give you, so then i started making them shorter and come up with this design making it as easy to paddle in as possible but in a short board, become super fun riding small waves again. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "RX5",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/RX5_Board.jpg",
+          "description": "The new RX5 model is exactly the same as my original X5 model but it now has a little extra tail rocker and now comes in a round tail and 5 fin plug option, slightly wider up front than the X5 model and has the same concaves, my go to board when the waves are good.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Secret Squirrel",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/secretsquirrel.jpg",
+          "description": "This is a model for the groms coming off their first foamy or their dads' boards, made a lot shorter but still a lot taller than the child with a generous amount of volume in the width and thickness to allow them to learn to paddle by themselves and catch waves - plus it allows them to progress faster, also giving them extra stability and making it easy to duck dive.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Siamese Twiin",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2018/05/siamese_twiin.png",
+          "description": "Designed and tested this retro twinny in various conditions around the world and made it to suit those tiny days to have a tonne of fun, wide point very far forward with super fish outline and deep swallow tail along with a deep double concave to make it very fast. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spicy Moroccan",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2018/10/SPICY_MORROCAN.jpg",
+          "description": "New performance model board that you can ride 2-3 inches shorter than your height that has the same volume of your standard shortboard, it has a very curvy plan-shape with all the area and thickness distributed between the feet plus a strong hip squash tail and a single concave. Its something you would ride out your local beachbreak on your 1-4 foot day that has heaps of speed and will be very loose through turns making it a super fun model. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sumo",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/Sumo.jpg",
+          "description": "I designed the Sumo Model for guys generally weighing over 85kg's. With the increased area, you get greater paddle & drive speed. But I’ve re updated the shape to give the big guys a board that still feels loose.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Thunder Egg",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/ThunderEgg.jpg",
+          "description": "This is one of my super fun small wave models designed to generate speed in weak waves, has a much fuller nose and very wide tail plus full rails to allow extra buoyancy to allow better paddle speed and get through dead sections very easy, great board for practising airs.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Tow",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/tow-2.jpg",
+          "description": "This has been my pet project for over 12 years now - since testing my originals 'Big Shipsterns' and 'Teahupoo', it is a model that myself and the worlds best big wave riders have tested in every slab and bombie around the globe. With a lower smoother rocker and deep concaves, plus more parallel rails and very low thin rails allow this board to go at the maximum speeds possible on massive waves. What is crucial is getting the weight suited to the right location as the boards vary from 5 kilograms to 15 kilograms, its so strong it will last forever with 8 layers of 6 ounce glass.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Trippy Taco",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/TrippyTaco.jpg",
+          "description": "New super fun board for small beach breaks with more area in the nose and tail which makes this board glide across waves very easily, it also ensures it is not hard to pick up speed in weak surf.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Twister",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/twister-1.png",
+          "description": "This is my high performance fish that consists of double flyers that flute and act as teeth or fins on your rails - which give a little extra bite through turns. By doing this it brings a wide board back narrow through the tail and still allows you to skate through sections with all that area between your feet. The fuller nose, rocker is not too flat with a little more tail lift, it has been a personal favourite for years on those small beach break days. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "X5",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/X5.jpg",
+          "description": "This is my high performance model with the least amount of volume per size which is more refined and has more tail and nose rocker than all my other model, tails and nose areas are tighter and its perfect for when the waves are good which feels very lively under your feet and is the ideal high perfomance board.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
