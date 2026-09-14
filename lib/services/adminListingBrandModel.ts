@@ -16,12 +16,20 @@ export type SetAdminListingBrandModelResult =
       brand: string | null
       model: string | null
       slug: string | null
+      section: "surfboards" | "fins"
     }
   | { ok: false; status: number; error: string }
 
+const CATALOG_LINK_SECTIONS = new Set(["surfboards", "fins"])
+
+function isCatalogLinkSection(section: string): section is "surfboards" | "fins" {
+  return CATALOG_LINK_SECTIONS.has(section)
+}
+
 /**
- * Links a surfboard listing to the directory brand and/or catalog model (service role).
- * Clears the unmatched worklist row when both links are present; re-syncs Elasticsearch.
+ * Links a surfboard or fin listing to the directory brand and/or catalog model
+ * (service role). Clears the unmatched worklist row when both links are present;
+ * re-syncs Elasticsearch.
  */
 export async function setAdminListingBrandModel(
   listingId: string,
@@ -50,8 +58,12 @@ export async function setAdminListingBrandModel(
   if (!listing) {
     return { ok: false, status: 404, error: "Listing not found" }
   }
-  if (listing.section !== "surfboards") {
-    return { ok: false, status: 400, error: "Only surfboard listings support catalog brand/model links" }
+  if (!isCatalogLinkSection(listing.section)) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Only surfboard and fin listings support catalog brand/model links",
+    }
   }
 
   const patch: ListingBrandModelPatch = {}
@@ -59,7 +71,7 @@ export async function setAdminListingBrandModel(
   if (brandModelId) {
     const { data: modelRow, error: modelErr } = await service
       .from("brand_models")
-      .select("id, name, brand_id, brands:brand_id ( id, name )")
+      .select("id, name, brand_id, product_category_slug, brands:brand_id ( id, name )")
       .eq("id", brandModelId)
       .maybeSingle()
 
@@ -68,6 +80,17 @@ export async function setAdminListingBrandModel(
     }
     if (!modelRow?.id || !modelRow.brand_id) {
       return { ok: false, status: 404, error: "Catalog model not found" }
+    }
+
+    const modelCategory =
+      typeof modelRow.product_category_slug === "string"
+        ? modelRow.product_category_slug.trim()
+        : "surfboards"
+    if (listing.section === "fins" && modelCategory !== "fins") {
+      return { ok: false, status: 400, error: "Fin listings must link to a fin catalog model" }
+    }
+    if (listing.section === "surfboards" && modelCategory === "fins") {
+      return { ok: false, status: 400, error: "Surfboard listings must link to a surfboard catalog model" }
     }
 
     const joined = modelRow.brands as { id: string; name: string } | { id: string; name: string }[] | null
@@ -150,5 +173,6 @@ export async function setAdminListingBrandModel(
     brand: updated?.brand?.trim() || patch.brand || null,
     model: updated?.model?.trim() || patch.model || null,
     slug,
+    section: listing.section,
   }
 }

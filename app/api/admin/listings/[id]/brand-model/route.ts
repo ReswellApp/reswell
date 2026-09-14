@@ -42,7 +42,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       listingDetailHref({
         id: result.listingId,
         slug: result.slug ?? undefined,
-        section: "surfboards",
+        section: result.section,
       }),
     )
     revalidatePath("/admin/listings/brand-model-autofills")
