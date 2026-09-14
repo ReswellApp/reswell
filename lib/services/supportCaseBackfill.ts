@@ -7,8 +7,8 @@ import {
   listSupportCasesForRequester,
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
-import { listContactMessagesForUser } from "@/lib/db/contactMessages"
-import { listOrderSupportRequestsForUser } from "@/lib/db/order-support"
+import { listContactMessagesForUser, normalizeContactMessageRow } from "@/lib/db/contactMessages"
+import { listOrderSupportRequestsForUser, normalizeOrderSupportRow } from "@/lib/db/order-support"
 import { orderRequestTypeSubject, orderRequestTypeToKind } from "@/lib/utils/support-case-display"
 import { supportTicketDisplaySubject } from "@/lib/utils/support-ticket-display"
 import type { SupportCaseKind } from "@/lib/types/supportCase"
@@ -16,7 +16,7 @@ import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
 
 /**
  * Create a support_cases row for a legacy ticket if one does not exist yet.
- * Safe to call on every list/resolve — skipped when the FK already matches.
+ * Safe to call for a single ticket. Inbox list must not scan/ensure in bulk.
  */
 export async function ensureCaseForOrderSupport(
   supabase: SupabaseClient,
@@ -162,4 +162,114 @@ export async function backfillUserLegacyCases(
         }),
       ),
   ])
+}
+
+export type LegacySupportCaseBackfillSummary = {
+  scannedContact: number
+  scannedOrder: number
+  createdContact: number
+  createdOrder: number
+}
+
+/**
+ * Cron-only: copy recent legacy tickets into support_cases.
+ * Do not call from the inbox list/GET path.
+ */
+export async function backfillRecentLegacySupportCases(
+  supabase: SupabaseClient,
+  limit = 400,
+): Promise<LegacySupportCaseBackfillSummary> {
+  const [cmRes, osRes] = await Promise.all([
+    supabase
+      .from("contact_messages")
+      .select("id, name, email, subject, message, created_at, source, user_id")
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("order_support_requests")
+      .select("id, request_type, body, buyer_id, order_id, order_ref, requester_role")
+      .order("created_at", { ascending: false })
+      .limit(limit),
+  ])
+
+  const contactIds = (cmRes.data ?? []).map((raw) => String((raw as { id: string }).id))
+  const orderIds = (osRes.data ?? []).map((raw) => String((raw as { id: string }).id))
+  const [existingContact, existingOrder] = await Promise.all([
+    contactIds.length > 0
+      ? supabase.from("support_cases").select("contact_message_id").in("contact_message_id", contactIds)
+      : Promise.resolve({ data: [] as Array<{ contact_message_id: string | null }> }),
+    orderIds.length > 0
+      ? supabase
+          .from("support_cases")
+          .select("order_support_request_id")
+          .in("order_support_request_id", orderIds)
+      : Promise.resolve({ data: [] as Array<{ order_support_request_id: string | null }> }),
+  ])
+
+  const haveContact = new Set(
+    (existingContact.data ?? [])
+      .map((row) => row.contact_message_id)
+      .filter((id): id is string => Boolean(id)),
+  )
+  const haveOrder = new Set(
+    (existingOrder.data ?? [])
+      .map((row) => row.order_support_request_id)
+      .filter((id): id is string => Boolean(id)),
+  )
+
+  const missingContact = (cmRes.data ?? []).filter((raw) => {
+    const row = raw as { id: string; source?: string | null; subject?: string | null }
+    if (haveContact.has(String(row.id))) return false
+    return !isUnpublishedLiveChatTicket(row)
+  })
+  const missingOrder = (osRes.data ?? []).filter(
+    (raw) => !haveOrder.has(String((raw as { id: string }).id)),
+  )
+
+  const contactResults = await Promise.all(
+    missingContact.map((raw) => {
+      const row = normalizeContactMessageRow({
+        ...(raw as Record<string, unknown>),
+        support_status: "new",
+        internal_notes: null,
+        updated_at: (raw as { created_at: string }).created_at,
+      })
+      return ensureCaseForContactMessage(supabase, {
+        id: row.id,
+        subject: row.subject,
+        message: row.message,
+        email: row.email,
+        user_id: row.user_id,
+        source: row.source,
+      })
+    }),
+  )
+  const orderResults = await Promise.all(
+    missingOrder.map((raw) => {
+      const row = normalizeOrderSupportRow({
+        ...(raw as Record<string, unknown>),
+        support_status: "new",
+        assignee_admin_id: null,
+        internal_notes: null,
+        outcome: null,
+        updated_at: new Date().toISOString(),
+      })
+      return ensureCaseForOrderSupport(supabase, {
+        id: row.id,
+        request_type: row.request_type,
+        body: row.body,
+        buyer_id: row.buyer_id,
+        order_id: row.order_id,
+        order_ref: row.order_ref,
+        requester_role: row.requester_role,
+      })
+    }),
+  )
+
+  return {
+    scannedContact: (cmRes.data ?? []).length,
+    scannedOrder: (osRes.data ?? []).length,
+    createdContact: contactResults.filter(Boolean).length,
+    createdOrder: orderResults.filter(Boolean).length,
+  }
 }

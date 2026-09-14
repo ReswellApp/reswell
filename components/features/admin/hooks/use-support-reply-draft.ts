@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 import {
   getSupportReplyDraftAction,
   rateSupportReplyDraftAction,
@@ -12,6 +13,8 @@ export function useSupportReplyDraft(caseId: string | null) {
   const [draft, setDraft] = useState<SupportReplyDraftView | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [rating, setRating] = useState<"accepted" | "rejected" | null>(null)
+  const [ratingPending, setRatingPending] = useState(false)
   const requestId = useRef(0)
 
   const load = useCallback(async (id: string, force = false) => {
@@ -29,6 +32,7 @@ export function useSupportReplyDraft(caseId: string | null) {
       return
     }
     setDraft(result.data)
+    setRating(null)
     setLoading(false)
   }, [])
 
@@ -36,11 +40,13 @@ export function useSupportReplyDraft(caseId: string | null) {
     if (!caseId) {
       setDraft(null)
       setError(null)
+      setRating(null)
       setLoading(false)
       return
     }
     setDraft(null)
     setError(null)
+    setRating(null)
     void load(caseId, false)
     return () => {
       requestId.current += 1
@@ -55,17 +61,33 @@ export function useSupportReplyDraft(caseId: string | null) {
   }, [caseId, load])
 
   const rate = useCallback(
-    async (rating: "accepted" | "rejected") => {
-      if (!caseId || !scopedDraft) return
-      await rateSupportReplyDraftAction({
+    async (next: "accepted" | "rejected") => {
+      if (!caseId || !scopedDraft || ratingPending) return
+      setRatingPending(true)
+      const result = await rateSupportReplyDraftAction({
         case_id: caseId,
         draft_id: scopedDraft.id,
-        rating,
+        rating: next,
         sent_body: scopedDraft.body,
       })
+      setRatingPending(false)
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      setRating(next)
+      toast.success(next === "accepted" ? "Marked as a good draft" : "Marked as not useful")
     },
-    [caseId, scopedDraft],
+    [caseId, scopedDraft, ratingPending],
   )
 
-  return { draft: scopedDraft, loading, error, regenerate, rate }
+  return {
+    draft: scopedDraft,
+    loading,
+    error,
+    rating,
+    ratingPending,
+    regenerate,
+    rate,
+  }
 }
