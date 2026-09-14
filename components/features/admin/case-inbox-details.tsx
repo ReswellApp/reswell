@@ -245,7 +245,7 @@ export function CaseInboxDetails({
               <CaseOrderContextPanel orderId={item.orderId} orderSupportRequestId={item.order?.id ?? null} onLoaded={onOrderContextLoaded} />
               <AdminIssueItemReturnPanel orderId={item.orderId} canIssue={isAdmin} variant="embedded" onComplete={onRefundComplete} />
               {item.order && orderContext && item.orderId === orderContext.id ? (
-                <CaseIssueRefundPanel caseId={item.id} orderId={orderContext.id} orderRef={item.orderRef ?? orderContext.order_num ?? item.id} orderStatus={orderContext.status} amount={orderContext.amount} shippingAmount={orderContext.shipping_amount} paymentMethod={orderContext.payment_method} repairCreditTotal={item.order.repair_credit_total} canIssueRefund={isAdmin} onComplete={onRefundComplete} />
+                <CaseIssueRefundPanel caseId={item.id} orderId={orderContext.id} orderRef={item.orderRef ?? orderContext.order_num ?? item.id} orderStatus={orderContext.status} amount={orderContext.amount} shippingAmount={orderContext.shipping_amount} paymentMethod={orderContext.payment_method} fulfillmentMethod={orderContext.fulfillment_method} deliveryStatus={orderContext.delivery_status} repairCreditTotal={item.order.repair_credit_total} canIssueRefund={isAdmin} onComplete={onRefundComplete} />
               ) : null}
             </>
           ) : (

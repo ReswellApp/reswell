@@ -96,6 +96,8 @@ function successMessageForDisposition(
           "Refund complete — buyer credited for the full order (item + shipping they paid); listing on seller vacation." +
           formatLabelVoidSuffix(labelVoid)
         )
+      case "cancel_uncollected":
+        return "Refund complete — buyer credited the full order amount; listing held on seller vacation (pickup never happened)."
       case "public_relist":
         return "Refund complete — buyer credited for the full order (item + shipping); listing is back on the market for everyone."
       case "exclusive_relist":
@@ -113,6 +115,8 @@ function successMessageForDisposition(
         "Refund issued — buyer’s card will be refunded for the full order (item + shipping they paid); listing held on seller vacation." +
         formatLabelVoidSuffix(labelVoid)
       )
+    case "cancel_uncollected":
+      return "Refund issued — buyer’s card will be refunded the full order amount; listing held on seller vacation (pickup never happened)."
     case "public_relist":
       return "Refund issued — full order (item + shipping) refunded; listing is back on the market for everyone (no exclusive repurchase window)."
     case "exclusive_relist":

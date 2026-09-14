@@ -58,12 +58,14 @@ export default async function AdminSupportCasePage({
     amount: number
     shippingAmount: number
     paymentMethod: string
+    fulfillmentMethod: string | null
+    deliveryStatus: string | null
   } | null = null
   if (row.order_id) {
     const service = createServiceRoleClient()
     const { data } = await service
       .from("orders")
-      .select("status, amount, shipping_amount, payment_method")
+      .select("status, amount, shipping_amount, payment_method, fulfillment_method, delivery_status")
       .eq("id", row.order_id)
       .maybeSingle()
     if (data) {
@@ -72,6 +74,8 @@ export default async function AdminSupportCasePage({
         amount: Number(data.amount ?? 0),
         shippingAmount: Number(data.shipping_amount ?? 0),
         paymentMethod: String(data.payment_method ?? "wallet"),
+        fulfillmentMethod: (data.fulfillment_method as string | null) ?? null,
+        deliveryStatus: (data.delivery_status as string | null) ?? null,
       }
     }
   }
@@ -97,6 +101,8 @@ export default async function AdminSupportCasePage({
               amount: money.amount,
               shippingAmount: money.shippingAmount,
               paymentMethod: money.paymentMethod,
+              fulfillmentMethod: money.fulfillmentMethod,
+              deliveryStatus: money.deliveryStatus,
               repairCreditTotal: sidecar?.repair_credit_total ?? 0,
             }
           : null

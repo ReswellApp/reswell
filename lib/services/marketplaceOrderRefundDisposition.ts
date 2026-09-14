@@ -18,6 +18,11 @@ export const MARKETPLACE_ORDER_REFUND_DISPOSITIONS = [
   "vacation_hold",
   /** Never-shipped cancel: best-effort void unused outbound label, then vacation hold. */
   "cancel_unshipped",
+  /**
+   * Local pickup never collected: full order amount, vacation hold, no repurchase
+   * message. No shipping label to void.
+   */
+  "cancel_uncollected",
   /** Public relist for anyone immediately — no exclusive window / buy-again card. */
   "public_relist",
 ] as const
@@ -43,6 +48,19 @@ export function resolveMarketplaceOrderRefundDisposition(
   return parseMarketplaceOrderRefundDisposition(value) ?? DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION
 }
 
+/** Suggested plan when opening the admin refund picker. */
+export function defaultMarketplaceOrderRefundDisposition(input?: {
+  fulfillmentMethod?: string | null
+  deliveryStatus?: string | null
+}): MarketplaceOrderRefundDisposition {
+  const fulfillment = (input?.fulfillmentMethod ?? "").trim().toLowerCase()
+  const delivery = (input?.deliveryStatus ?? "").trim().toLowerCase()
+  if ((fulfillment === "pickup" || fulfillment === "local_pickup") && delivery !== "picked_up") {
+    return "cancel_uncollected"
+  }
+  return DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION
+}
+
 export type MarketplaceOrderRefundSideEffectPlan = {
   disposition: MarketplaceOrderRefundDisposition
   /** sold → active with site visibility */
@@ -59,6 +77,7 @@ export function planMarketplaceOrderRefundSideEffects(
   switch (disposition) {
     case "item_issue":
     case "vacation_hold":
+    case "cancel_uncollected":
       return {
         disposition,
         listingVisibility: "vacation",
@@ -130,6 +149,13 @@ export const ADMIN_REFUND_DISPOSITION_OPTIONS: readonly AdminRefundDispositionOp
     description:
       "Refunds the buyer the full order total (item + the shipping they paid). Voids any unused outbound ShipEngine label so Reswell can recover postage to the ShipEngine balance. Listing goes on seller vacation — no “buy it again” message. Does not buy a return label.",
     recommendedWhen: "Order confirmed but never shipped / label purchased but unused.",
+  },
+  {
+    value: "cancel_uncollected",
+    label: "Cancel never picked up",
+    description:
+      "Refunds the buyer the full order total. Local pickup never happened, so there is no shipping label to void. Reverse seller earnings. Listing goes on seller vacation — no “buy it again” message.",
+    recommendedWhen: "Local pickup order confirmed but the buyer never collected the item.",
   },
   {
     value: "public_relist",

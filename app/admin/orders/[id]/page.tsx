@@ -581,6 +581,8 @@ export default function AdminOrderDetailPage() {
                 amount={o.amount}
                 shippingAmount={o.shipping_amount}
                 paymentMethod={o.payment_method}
+                fulfillmentMethod={o.fulfillment_method}
+                deliveryStatus={o.delivery_status}
                 onComplete={bumpRefetch}
               />
             </div>
