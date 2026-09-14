@@ -6,7 +6,10 @@ import { Inbox, PanelRight, RefreshCw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
 import type { SupportCaseEventRow } from "@/lib/db/supportCases"
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
-import { listAdminSupportInboxAction } from "@/lib/actions/adminSupportInbox"
+import {
+  listAdminSupportInboxAction,
+} from "@/lib/actions/adminSupportInbox"
+import type { AdminSupportInboxResult } from "@/lib/services/adminSupportInbox"
 import { sendSupportCaseAdminReplyAction } from "@/lib/actions/supportCaseThread"
 import { getSupportCaseThreadAdminAction } from "@/lib/actions/supportCaseThread"
 import {
@@ -27,13 +30,16 @@ import {
   type CaseInboxSort,
   type CaseInboxTypeFilter,
   type CaseInboxView,
+  type InboxViewCounts,
+  EMPTY_INBOX_VIEW_COUNTS,
 } from "@/lib/admin/case-inbox"
 import { staffSentToast } from "@/lib/admin/case-inbox-counterpart"
+import { parseInboxCaseParam } from "@/lib/utils/support-case-paths"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
-import { CaseInboxViews, type InboxViewCounts } from "@/components/features/admin/case-inbox-views"
+import { CaseInboxViews } from "@/components/features/admin/case-inbox-views"
 import { CaseInboxListPane } from "@/components/features/admin/case-inbox-list-pane"
 import { CaseInboxConversation } from "@/components/features/admin/case-inbox-conversation"
 import { CaseInboxDetails } from "@/components/features/admin/case-inbox-details"
@@ -69,7 +75,13 @@ function readCaseDraft(caseId: string) {
   )
 }
 
-export function CaseInboxAdminClient() {
+export function CaseInboxAdminClient({
+  initialInbox = null,
+  initialError = null,
+}: {
+  initialInbox?: AdminSupportInboxResult | null
+  initialError?: string | null
+}) {
   const pathname = usePathname() ?? "/admin/contact-messages"
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -82,10 +94,17 @@ export function CaseInboxAdminClient() {
     tab: searchParams.get("tab"),
   })
 
-  const [items, setItems] = useState<CaseInboxItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [items, setItems] = useState<CaseInboxItem[]>(initialInbox?.items ?? [])
+  const [counts, setCounts] = useState<InboxViewCounts>(
+    initialInbox?.counts ?? EMPTY_INBOX_VIEW_COUNTS,
+  )
+  const [hasMore, setHasMore] = useState(initialInbox?.hasMore ?? false)
+  const [nextOffset, setNextOffset] = useState(initialInbox?.nextOffset ?? 0)
+  const [loading, setLoading] = useState(!initialInbox)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
   const [sort, setSort] = useState<CaseInboxSort>("smart")
   const [view, setView] = useState<CaseInboxView>(parsed.view)
   const [typeOverlay, setTypeOverlay] = useState<CaseInboxTypeFilter>(parsed.typeOverlay)
@@ -112,6 +131,8 @@ export function CaseInboxAdminClient() {
   const [savePending, startSave] = useTransition()
   const [replyPending, startReply] = useTransition()
   const composerRef = useRef<CaseInboxComposerHandle>(null)
+  const selectedKeyRef = useRef<string | null>(selectedKey)
+  selectedKeyRef.current = selectedKey
   const skipNoteBlur = useRef(false)
   const [aiAppliedBody, setAiAppliedBody] = useState<string | null>(null)
   const consumedAi = useRef<{ id: string; body: string } | null>(null)
@@ -136,24 +157,80 @@ export function CaseInboxAdminClient() {
     [pathname, router],
   )
 
-  const load = useCallback(async (mode: "initial" | "refresh" = "initial") => {
-    if (mode === "refresh") setRefreshing(true)
-    else setLoading(true)
+  const load = useCallback(
+    async (args: {
+      mode?: "initial" | "refresh" | "page"
+      offset?: number
+      search?: string
+      view: CaseInboxView
+      type: CaseInboxTypeFilter
+      sort: CaseInboxSort
+      selectedKey: string | null
+    }) => {
+      const mode = args.mode ?? "initial"
+      const offset = args.offset ?? 0
+      if (mode === "refresh") setRefreshing(true)
+      else if (mode === "page") setLoadingMore(true)
+      else setLoading(true)
 
-    const res = await listAdminSupportInboxAction()
-    if ("error" in res) {
-      toast.error(res.error)
-      setItems([])
-    } else {
-      setItems(res.items)
-    }
-    setLoading(false)
-    setRefreshing(false)
-  }, [])
+      const res = await listAdminSupportInboxAction({
+        view: args.view,
+        type: args.view === "claims" ? "all" : args.type,
+        search: args.search ?? "",
+        sort: args.sort,
+        offset,
+        selected_key: args.selectedKey,
+      })
+      if ("error" in res) {
+        toast.error(res.error)
+        if (mode !== "page") {
+          setItems([])
+          setHasMore(false)
+        }
+      } else {
+        setItems((prev) => {
+          if (mode === "page") {
+            const seen = new Set(prev.map((item) => item.key))
+            return [...prev, ...res.items.filter((item) => !seen.has(item.key))]
+          }
+          return res.items
+        })
+        setCounts(res.counts)
+        setHasMore(res.hasMore)
+        setNextOffset(res.nextOffset)
+      }
+      setLoading(false)
+      setRefreshing(false)
+      setLoadingMore(false)
+    },
+    [],
+  )
 
   useEffect(() => {
-    void load("initial")
-  }, [load])
+    if (initialError) toast.error(initialError)
+  }, [initialError])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => window.clearTimeout(timer)
+  }, [search])
+
+  const skipFirstQuery = useRef(Boolean(initialInbox))
+  useEffect(() => {
+    if (skipFirstQuery.current) {
+      skipFirstQuery.current = false
+      return
+    }
+    void load({
+      mode: "initial",
+      offset: 0,
+      search: debouncedSearch,
+      view,
+      type: typeOverlay,
+      sort,
+      selectedKey: selectedKeyRef.current,
+    })
+  }, [debouncedSearch, view, typeOverlay, sort, load])
 
   useEffect(() => {
     void listSupportStaffAction().then((res) => {
@@ -168,26 +245,34 @@ export function CaseInboxAdminClient() {
   const effectiveType: CaseInboxTypeFilter =
     view === "claims" ? "claims" : typeOverlay
 
-  const filtered = useMemo(
-    () =>
-      sortInboxItems(
-        filterInboxItems(items, {
-          status: viewFilters.status,
-          type: effectiveType,
-          assignee: viewFilters.assignee,
-          currentStaffId,
-          search,
-          overdueOnly: viewFilters.overdueOnly,
-        }),
-        sort,
-      ),
-    [items, viewFilters, effectiveType, currentStaffId, search, sort],
-  )
+  const filtered = useMemo(() => {
+    if (debouncedSearch) {
+      return sortInboxItems(items, sort)
+    }
+    return sortInboxItems(
+      filterInboxItems(items, {
+        status: viewFilters.status,
+        type: effectiveType,
+        assignee: viewFilters.assignee,
+        currentStaffId,
+        search: "",
+        overdueOnly: viewFilters.overdueOnly,
+      }),
+      sort,
+    )
+  }, [items, viewFilters, effectiveType, currentStaffId, debouncedSearch, sort])
 
-  const selected = useMemo(
-    () => items.find((item) => item.key === selectedKey) ?? null,
-    [items, selectedKey],
-  )
+  const selected = useMemo(() => {
+    if (!selectedKey) return null
+    const byKey = items.find((item) => item.key === selectedKey)
+    if (byKey) return byKey
+    const raw = parseInboxCaseParam(selectedKey)
+    return (
+      items.find(
+        (item) => item.id === raw || item.contact?.id === raw || item.order?.id === raw,
+      ) ?? null
+    )
+  }, [items, selectedKey])
 
   const listItems = useMemo(
     () => pinSelectedInboxItem(filtered, selected),
@@ -240,6 +325,8 @@ export function CaseInboxAdminClient() {
     draft: aiDraft,
     loading: aiLoading,
     error: aiError,
+    rating: aiRating,
+    ratingPending: aiRatingPending,
     regenerate: regenerateAi,
     rate: rateAi,
   } = useSupportReplyDraft(selected?.isOpen ? selectedId : null)
@@ -284,7 +371,7 @@ export function CaseInboxAdminClient() {
       aiDraft?.caseId === selectedId &&
       draft.trim() === aiDraft.body.trim()
     const matchesAppliedSuggestion =
-      composerMode === "reply" && Boolean(aiAppliedBody) && draft.trim() === aiAppliedBody.trim()
+      composerMode === "reply" && Boolean(aiAppliedBody) && draft.trim() === aiAppliedBody?.trim()
     const suggestionId = matchesLiveSuggestion
       ? aiDraft.id
       : matchesAppliedSuggestion
@@ -332,21 +419,6 @@ export function CaseInboxAdminClient() {
       cancelled = true
     }
   }, [selectedId, threadReloadToken])
-
-  const counts = useMemo((): InboxViewCounts => {
-    const openItems = items.filter((item) => item.isOpen)
-    return {
-      open: openItems.length,
-      mine: openItems.filter((item) => item.assigneeAdminId === currentStaffId).length,
-      unassigned: openItems.filter((item) => !item.assigneeAdminId).length,
-      neu: items.filter((item) => item.isNew).length,
-      waiting: openItems.filter((item) => item.status === "waiting_on_you").length,
-      claims: openItems.filter((item) => item.kind === "protection_claim").length,
-      overdue: openItems.filter((item) => item.slaState === "overdue").length,
-      resolved: items.filter((item) => !item.isOpen).length,
-      all: items.length,
-    }
-  }, [items, currentStaffId])
 
   const staffNames = useMemo(() => {
     const map: Record<string, string> = {}
@@ -604,8 +676,11 @@ export function CaseInboxAdminClient() {
     return () => window.removeEventListener("keydown", onKey)
   })
 
-  const emptyLabel =
-    items.length === 0 ? "No conversations yet." : "Nothing in this view."
+  const emptyLabel = debouncedSearch
+    ? "No conversations match that search."
+    : items.length === 0
+      ? "No conversations yet."
+      : "Nothing in this view."
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
@@ -660,7 +735,15 @@ export function CaseInboxAdminClient() {
             className="h-8 w-8"
             onClick={() => {
               setThreadReloadToken((n) => n + 1)
-              void load("refresh")
+              void load({
+                mode: "refresh",
+                offset: 0,
+                search: debouncedSearch,
+                view,
+                type: typeOverlay,
+                sort,
+                selectedKey: selectedKeyRef.current,
+              })
             }}
             disabled={refreshing}
             aria-label="Refresh inbox and conversation"
@@ -694,11 +777,29 @@ export function CaseInboxAdminClient() {
             typeFilter={typeOverlay}
             showTypeFilter={view !== "claims"}
             loading={loading}
+            loadingMore={loadingMore}
+            hasMore={hasMore}
             emptyLabel={emptyLabel}
+            searchHint={
+              debouncedSearch
+                ? "Searching subjects, people, and message history"
+                : undefined
+            }
             onSearch={setSearch}
             onSort={setSort}
             onTypeFilter={setTypeOverlay}
             onSelect={setSelectedKey}
+            onLoadMore={() =>
+              void load({
+                mode: "page",
+                offset: nextOffset,
+                search: debouncedSearch,
+                view,
+                type: typeOverlay,
+                sort,
+                selectedKey: selectedKeyRef.current,
+              })
+            }
           />
         </section>
 
@@ -758,6 +859,8 @@ export function CaseInboxAdminClient() {
                     regenerateAi()
                   }}
                   onRateAi={rateAi}
+                  aiRating={aiRating}
+                  aiRatingPending={aiRatingPending}
                 />
               </div>
               <div
@@ -808,14 +911,38 @@ export function CaseInboxAdminClient() {
                     setOrderContext(null)
                     setOrderExtras(null)
                     setThreadReloadToken((n) => n + 1)
-                    void load("refresh")
+                    void load({
+                      mode: "refresh",
+                      offset: 0,
+                      search: debouncedSearch,
+                      view,
+                      type: typeOverlay,
+                      sort,
+                      selectedKey: selectedKeyRef.current,
+                    })
                   }}
                   onSellerOutreachSent={() => {
                     setThreadReloadToken((n) => n + 1)
-                    void load("refresh")
+                    void load({
+                      mode: "refresh",
+                      offset: 0,
+                      search: debouncedSearch,
+                      view,
+                      type: typeOverlay,
+                      sort,
+                      selectedKey: selectedKeyRef.current,
+                    })
                   }}
                   onRefundComplete={() => {
-                    void load("refresh")
+                    void load({
+                      mode: "refresh",
+                      offset: 0,
+                      search: debouncedSearch,
+                      view,
+                      type: typeOverlay,
+                      sort,
+                      selectedKey: selectedKeyRef.current,
+                    })
                     setThreadReloadToken((n) => n + 1)
                   }}
                 />

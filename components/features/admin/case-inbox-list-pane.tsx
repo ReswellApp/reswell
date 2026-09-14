@@ -50,11 +50,15 @@ interface CaseInboxListPaneProps {
   typeFilter: CaseInboxTypeFilter
   showTypeFilter: boolean
   loading: boolean
+  loadingMore?: boolean
+  hasMore?: boolean
   emptyLabel: string
+  searchHint?: string
   onSearch: (value: string) => void
   onSort: (value: CaseInboxSort) => void
   onTypeFilter: (value: CaseInboxTypeFilter) => void
   onSelect: (key: string) => void
+  onLoadMore?: () => void
 }
 
 export function CaseInboxListPane({
@@ -67,11 +71,15 @@ export function CaseInboxListPane({
   typeFilter,
   showTypeFilter,
   loading,
+  loadingMore = false,
+  hasMore = false,
   emptyLabel,
+  searchHint,
   onSearch,
   onSort,
   onTypeFilter,
   onSelect,
+  onLoadMore,
 }: CaseInboxListPaneProps) {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -102,7 +110,7 @@ export function CaseInboxListPane({
               value={search}
               onChange={(e) => onSearch(e.target.value)}
               disabled={loading}
-              placeholder="Search cases…"
+              placeholder="Search cases and history…"
               className="h-8 border-border/60 bg-muted/20 pl-8 text-sm"
               aria-label="Search conversations"
             />
@@ -142,7 +150,9 @@ export function CaseInboxListPane({
         <p className="text-[10px] tabular-nums text-muted-foreground">
           {loading
             ? "Loading conversations…"
-            : `${items.length} ${items.length === 1 ? "conversation" : "conversations"}`}
+            : `${items.length} ${items.length === 1 ? "conversation" : "conversations"}${
+                searchHint ? ` · ${searchHint}` : ""
+              }`}
         </p>
       </div>
 
@@ -251,6 +261,18 @@ export function CaseInboxListPane({
             })}
           </ul>
         )}
+        {!loading && hasMore && onLoadMore ? (
+          <div className="border-t border-border/40 px-3 py-2">
+            <button
+              type="button"
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              className="w-full rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+            >
+              {loadingMore ? "Loading older conversations…" : "Load older conversations"}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   )

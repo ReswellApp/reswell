@@ -34,6 +34,8 @@ interface CaseInboxComposerProps {
   aiHelp?: SupportReplyCitedHelp[]
   onRegenerateAi?: () => void
   onRateAi?: (rating: "accepted" | "rejected") => void
+  aiRating?: "accepted" | "rejected" | null
+  aiRatingPending?: boolean
 }
 
 export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxComposerProps>(
@@ -56,6 +58,8 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
       aiHelp = [],
       onRegenerateAi,
       onRateAi,
+      aiRating = null,
+      aiRatingPending = false,
     },
     ref,
   ) {
@@ -128,18 +132,28 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
                 <button
                   type="button"
                   onClick={() => onRateAi("accepted")}
-                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground"
+                  disabled={aiRatingPending}
+                  aria-pressed={aiRating === "accepted"}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground disabled:opacity-50",
+                    aiRating === "accepted" && "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
+                  )}
                   aria-label="This draft is good"
                 >
-                  <ThumbsUp className="h-3 w-3" />
+                  <ThumbsUp className={cn("h-3 w-3", aiRating === "accepted" && "fill-current")} />
                 </button>
                 <button
                   type="button"
                   onClick={() => onRateAi("rejected")}
-                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground"
+                  disabled={aiRatingPending}
+                  aria-pressed={aiRating === "rejected"}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground disabled:opacity-50",
+                    aiRating === "rejected" && "bg-destructive/10 text-destructive",
+                  )}
                   aria-label="This draft is not useful"
                 >
-                  <ThumbsDown className="h-3 w-3" />
+                  <ThumbsDown className={cn("h-3 w-3", aiRating === "rejected" && "fill-current")} />
                 </button>
               </>
             ) : null}

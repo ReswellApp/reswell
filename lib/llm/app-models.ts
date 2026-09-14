@@ -136,7 +136,6 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     enabledEnvVar: "SUPPORT_REPLY_DRAFT_ENABLED",
     surfaces: [
       "/admin/contact-messages",
-      "/admin/support/[id]",
       "GET /api/cron/support-reply-drafts",
     ],
     sourceFiles: [
