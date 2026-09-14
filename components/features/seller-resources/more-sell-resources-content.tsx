@@ -37,6 +37,7 @@ const GUIDES = [
   { title: "Selling fees", href: helpArticlePath("selling", "marketplace-fees") },
   { title: "Connect payouts", href: helpArticlePath("selling", "connect-payout-account") },
   { title: "I made a sale — what's next?", href: helpArticlePath("selling", "i-sold-an-item-whats-next") },
+  { title: "We’ll buy your surfboard", href: helpArticlePath("selling", "we-buy-your-surfboard") },
   { title: "Purchase Protection", href: "/protection-policy" },
   { title: "Help Center — selling", href: helpTopicPath("selling") },
   { title: "Shipping estimator", href: "/shipping-estimator" },

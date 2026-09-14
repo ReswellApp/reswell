@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Search } from "lucide-react"
-import { filterHelpCenterArticles, getHelpArticleHref } from "@/lib/help-center/registry"
+import { filterHelpCenterArticles, getHelpArticleHref, getHelpTopic } from "@/lib/help-center/registry"
 import { cn } from "@/lib/utils"
 
 interface SupportHubSearchProps {
@@ -45,7 +45,10 @@ export function SupportHubSearch({ value, onChange }: SupportHubSearchProps) {
                 href={getHelpArticleHref(article)}
                 className="block px-4 py-3 text-sm text-foreground transition-colors hover:bg-listingHeart/[0.06]"
               >
-                {article.title}
+                <span className="font-medium">{article.title}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {getHelpTopic(article.topicId)?.label ?? article.topicId}
+                </span>
               </Link>
             </li>
           ))}

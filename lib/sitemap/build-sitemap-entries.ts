@@ -19,6 +19,9 @@ import { CITY_SURF_SHOPS, surfShopHref } from "@/lib/city-landing-surf-shops"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { CAREERS_GENERAL_APPLY_HREF, careerRoleApplyHref, careerRoleHref, careerRoles } from "@/lib/careers"
 import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
+import { getAllHelpRetrievalDocuments } from "@/lib/help-center/retrieval-docs"
+import { helpTopicIndexes } from "@/lib/help-center/topics"
+import { helpTopicPath } from "@/lib/help-center/paths"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
 export type { SitemapUrlEntry } from "@/lib/sitemap/types"
@@ -150,6 +153,19 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/we-buy`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE}/help`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
+    ...helpTopicIndexes.map((topic) => ({
+      url: `${BASE}${helpTopicPath(topic.id)}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    })),
+    ...getAllHelpRetrievalDocuments().map((doc) => ({
+      url: `${BASE}${doc.url}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.45,
+    })),
     { url: `${BASE}/public-api`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/llms.txt`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
     { url: `${BASE}/openapi.json`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },

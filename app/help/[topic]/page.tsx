@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { HelpCenterTopicView } from "@/components/features/help-center/help-center-topic-view"
-import { getHelpTopic, isHelpTopicId } from "@/lib/help-center/registry"
+import { getAllTopicParams, getHelpTopic, isHelpTopicId } from "@/lib/help-center/registry"
 import { helpTopicPath } from "@/lib/help-center/paths"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 import type { HelpCenterTabId } from "@/lib/help-center/types"
@@ -10,7 +10,7 @@ type PageProps = {
 }
 
 export function generateStaticParams() {
-  return [{ topic: "buying" }, { topic: "selling" }, { topic: "accounts" }]
+  return getAllTopicParams()
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps) {
   if (!topic) return {}
   return pageSeoMetadata({
     title: `${topic.label} — Help Center — Reswell`,
-    description: `Browse ${topic.label.toLowerCase()} articles in the Reswell Help Center.`,
+    description: topic.description,
     path: helpTopicPath(topicParam),
   })
 }

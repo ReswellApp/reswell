@@ -9,6 +9,12 @@ import { helpArticlePath } from "@/lib/help-center/paths"
 
 const SELL_FAQS = [
   {
+    question: "Will Reswell buy my surfboard?",
+    answer:
+      "Yes. Submit photos and your asking price on We’ll buy. We reply in under 30 minutes. After you accept, box the board and send packed measurements — then we buy the prepaid label and pay your wallet when it arrives.",
+    href: helpArticlePath("selling", "we-buy-your-surfboard"),
+  },
+  {
     question: "How do I list something for sale?",
     answer:
       "Search our catalog by brand or model to jumpstart your listing, or list by type. Add photos, price, condition, and pickup or shipping. Posting is free.",
