@@ -1437,7 +1437,7 @@ export function BrandCatalogOverviewClient(props: {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Select value={sort} onValueChange={(v) => setSort(v as BrandSortKey)}>
-                <SelectTrigger className="h-9 w-[180px]">
+                <SelectTrigger className="h-9 w-full sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1463,7 +1463,7 @@ export function BrandCatalogOverviewClient(props: {
               Filters
             </span>
             <Select value={filters.brandId} onValueChange={(v) => patch({ brandId: v })}>
-              <SelectTrigger className="h-8 w-[160px] text-xs">
+              <SelectTrigger className="h-8 w-full text-xs sm:w-[160px]">
                 <SelectValue placeholder="Brand" />
               </SelectTrigger>
               <SelectContent>

@@ -71,8 +71,8 @@ export function AdminSidebarPanel({
   }, [groups, query])
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="px-4 pb-3 pt-12 lg:pt-5">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2.5rem))] lg:pt-5">
         <Link href="/admin/home" onClick={onNavigate} className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--admin-teal))] text-white">
             <Store className="h-4 w-4" aria-hidden />
@@ -85,10 +85,10 @@ export function AdminSidebarPanel({
             ref={searchRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search"
-            className="h-9 rounded-full border-border/80 bg-slate-50 pl-9 pr-14 text-sm dark:bg-muted"
+            placeholder="Search pages"
+            className="h-11 rounded-full border-border/80 bg-slate-50 pl-9 pr-4 text-base lg:h-9 lg:pr-14 lg:text-sm dark:bg-muted"
           />
-          <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md border border-border bg-white px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground dark:bg-card">
+          <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border bg-white px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-flex dark:bg-card">
             ⌘S
           </kbd>
         </div>
@@ -104,12 +104,12 @@ export function AdminSidebarPanel({
         />
       </div>
 
-      <div className="border-t border-border/70 p-3">
+      <div className="border-t border-border/70 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50 dark:hover:bg-muted"
+              className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-50 dark:hover:bg-muted"
             >
               <Avatar className="h-9 w-9">
                 {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}

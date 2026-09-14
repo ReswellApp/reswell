@@ -204,7 +204,7 @@ export function BrowseClicksAdminClient() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={days} onValueChange={setDays}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

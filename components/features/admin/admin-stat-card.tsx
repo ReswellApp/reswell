@@ -42,7 +42,7 @@ export function AdminStatCard({
   )
 
   const sharedClass = cn(
-    bare ? 'px-5 py-5 text-left' : 'admin-surface px-5 py-4 text-left',
+    bare ? 'px-3 py-3 text-left sm:px-5 sm:py-5' : 'admin-surface px-4 py-3 text-left sm:px-5 sm:py-4',
     onClick && 'transition-colors hover:bg-slate-50 dark:hover:bg-muted/40',
     active && 'bg-slate-50 dark:bg-muted/40',
     className,

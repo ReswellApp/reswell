@@ -17,15 +17,15 @@ interface AdminStatStripProps {
 
 export function AdminStatStrip({ items, className }: AdminStatStripProps) {
   return (
-    <div className={cn('admin-surface grid gap-0 sm:grid-cols-2 xl:grid-cols-4', className)}>
+    <div className={cn('admin-surface grid grid-cols-2 gap-0 xl:grid-cols-4', className)}>
       {items.map((item, index) => (
         <AdminStatCard
           key={item.label}
           {...item}
           bare
           className={cn(
-            index > 0 && 'border-t border-border/70 sm:border-t-0',
-            index % 2 === 1 && 'sm:border-l',
+            index % 2 === 1 && 'border-l border-border/70',
+            index >= 2 && 'border-t border-border/70 xl:border-t-0',
             index > 0 && 'xl:border-l',
           )}
         />

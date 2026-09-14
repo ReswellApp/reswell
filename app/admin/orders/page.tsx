@@ -432,7 +432,7 @@ export default function AdminOrdersPage() {
               className={cn(siteSearchInputClassName(), 'h-10 rounded-lg')}
             />
           </SiteSearchBar>
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+          <div className="admin-filter-row flex flex-wrap items-center gap-2 lg:shrink-0">
             <Select
               value={PRIMARY_OPEN_FILTERS.has(openFilter) ? openFilter : 'view-all'}
               onValueChange={(v) => {
@@ -445,7 +445,7 @@ export default function AdminOrdersPage() {
                 setOpenFilter(v)
               }}
             >
-              <SelectTrigger className="h-10 w-[200px] bg-white">
+              <SelectTrigger className="h-10 w-full bg-white sm:w-[200px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
@@ -618,11 +618,11 @@ export default function AdminOrdersPage() {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead>Product Name</TableHead>
-                <TableHead>Customer Name</TableHead>
+                <TableHead className="hidden md:table-cell">Customer Name</TableHead>
                 <TableHead>
                   <SortHeader label="Order ID" sortKey="created_at" />
                 </TableHead>
-                <TableHead>
+                <TableHead className="hidden sm:table-cell">
                   <SortHeader label="Amount" sortKey="amount" />
                 </TableHead>
                 <TableHead>Status</TableHead>
@@ -667,7 +667,7 @@ export default function AdminOrdersPage() {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <PartyCell party={r.buyer} fallbackId={r.buyer_id} />
                     </TableCell>
                     <TableCell>
@@ -680,7 +680,7 @@ export default function AdminOrdersPage() {
                         </span>
                       </Link>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <p className="font-semibold tabular-nums text-foreground">{formatUsd(Number(r.amount))}</p>
                       <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         {r.payment_method === 'reswell_bucks' ? (
@@ -704,7 +704,7 @@ export default function AdminOrdersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-1.5">
-                        <Button variant="outline" size="sm" className="h-8 bg-white" asChild>
+                        <Button variant="outline" size="sm" className="hidden h-8 bg-white sm:inline-flex" asChild>
                           <Link href={`/admin/orders/${r.id}`}>
                             <Eye className="mr-1.5 h-3.5 w-3.5" /> Details
                           </Link>
