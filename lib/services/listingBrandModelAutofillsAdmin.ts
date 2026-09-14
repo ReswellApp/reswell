@@ -184,6 +184,11 @@ export type AdminListingBrandModelUnmatched = {
   currentBrandModelId: string | null
   /** Brand is in the catalog, but the title's model isn't — just add the model under that brand. */
   brandKnownModelMissing: boolean
+  reviewStatus: "unmatched" | "needs_review"
+  reviewReason: string | null
+  proposedBrandName: string | null
+  proposedModelName: string | null
+  researchNotes: string | null
   firstSeenAt: string
   lastSeenAt: string
 }
@@ -233,6 +238,11 @@ function toUnmatchedAdminRow(
     currentBrandId: listing?.brand_id ?? null,
     currentBrandModelId: listing?.brand_model_id ?? null,
     brandKnownModelMissing: needsModel && !needsBrand && !!matchedBrandName,
+    reviewStatus: row.review_status === "needs_review" ? "needs_review" : "unmatched",
+    reviewReason: row.review_reason?.trim() || null,
+    proposedBrandName: row.proposed_brand_name?.trim() || null,
+    proposedModelName: row.proposed_model_name?.trim() || null,
+    researchNotes: row.research_notes?.trim() || null,
     firstSeenAt: row.first_seen_at,
     lastSeenAt: row.last_seen_at,
   }

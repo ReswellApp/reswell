@@ -2,14 +2,15 @@ import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { runListingBrandModelBackfill } from "@/lib/services/listingBrandModelBackfill"
 
-export const maxDuration = 60
+export const maxDuration = 120
 
 /**
- * Daily: scans active surfboard and fin listings missing a directory brand / catalog
- * model and attaches confident matches found in the listing title (whole-word match
- * against the brand catalog, then that brand's models). Fin listings are scoped to
- * fin-tagged brands and fin catalog models. Existing links are never overwritten.
- * Protected with CRON_SECRET (same pattern as other cron routes).
+ * Every 12 hours: scans active surfboard and fin listings missing a directory
+ * brand / catalog model. High-confidence title or seller-field matches attach to
+ * existing catalog rows. Confirmed-missing brands/models are researched against
+ * the official shaper site, created, and attached. Low-confidence cases stay on
+ * the unmatched review worklist — nothing is invented. Existing links are never
+ * overwritten. Protected with CRON_SECRET.
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")

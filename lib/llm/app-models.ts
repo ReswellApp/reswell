@@ -12,6 +12,7 @@ export type AppLlmFeatureId =
   | "business_intelligence"
   | "search_daily_report"
   | "support_reply_draft"
+  | "listing_brand_model_research"
 
 export interface AppLlmFeatureDefinition {
   id: AppLlmFeatureId
@@ -142,6 +143,26 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/supportReplyDraft.ts",
       "lib/services/supportReplyKnowledge.ts",
       "lib/db/supportReplyDrafts.ts",
+    ],
+  },
+  {
+    id: "listing_brand_model_research",
+    name: "Listing brand/model research",
+    purpose:
+      "When a live listing cannot be matched to the catalog, researches the seller’s brand/model (official shaper site only) and creates the missing catalog row only at high confidence. Low-confidence cases stay on the admin unmatched worklist.",
+    gatewayFeatureTag: "feature:listing-brand-model-research",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-flash",
+    modelEnvVar: "LISTING_BRAND_MODEL_RESEARCH_MODEL",
+    enabledEnvVar: "LISTING_BRAND_MODEL_RESEARCH_ENABLED",
+    surfaces: [
+      "GET /api/cron/backfill-listing-brand-model",
+      "/admin/listings/brand-model-autofills",
+    ],
+    sourceFiles: [
+      "lib/services/listingBrandModelResearch.ts",
+      "lib/services/listingBrandModelBackfill.ts",
+      "lib/utils/listing-brand-model-research-decision.ts",
     ],
   },
 ] as const

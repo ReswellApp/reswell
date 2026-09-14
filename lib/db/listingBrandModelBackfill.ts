@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { FIN_CATALOG_PRODUCT_CATEGORY } from "@/lib/brand-catalog-fin-variants"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import { listBrandIdsMatchingProductCategories } from "@/lib/db/brand-product-categories"
+import type {
+  ListingBrandModelAutofillSource,
+  ListingBrandModelResearchReviewStatus,
+} from "@/lib/validations/listing-brand-model-research"
 import type { BrandMatchRow, ModelMatchRow } from "@/lib/utils/listing-brand-model-match"
 
 /** Peer listing sections the brand/model backfill cron processes. */
@@ -332,6 +336,7 @@ export type ListingBrandModelAutofillInsert = {
   model_name: string | null
   attached_brand: boolean
   attached_model: boolean
+  source?: ListingBrandModelAutofillSource
 }
 
 /** Append an audit row so admins can cross-verify auto-attached brands/models. */
@@ -520,6 +525,12 @@ export type ListingBrandModelUnmatchedUpsert = {
   needs_model: boolean
   matched_brand_id: string | null
   matched_brand_name: string | null
+  review_status?: ListingBrandModelResearchReviewStatus
+  review_reason?: string | null
+  proposed_brand_name?: string | null
+  proposed_model_name?: string | null
+  research_notes?: string | null
+  last_researched_at?: string | null
 }
 
 /** Record (or refresh) a listing the cron could not fully match. */
@@ -557,6 +568,12 @@ export type ListingBrandModelUnmatchedRow = {
   needs_model: boolean
   matched_brand_id: string | null
   matched_brand_name: string | null
+  review_status: ListingBrandModelResearchReviewStatus
+  review_reason: string | null
+  proposed_brand_name: string | null
+  proposed_model_name: string | null
+  research_notes: string | null
+  last_researched_at: string | null
   first_seen_at: string
   last_seen_at: string
   listing: {
@@ -580,6 +597,12 @@ const UNMATCHED_ADMIN_SELECT = `
   needs_model,
   matched_brand_id,
   matched_brand_name,
+  review_status,
+  review_reason,
+  proposed_brand_name,
+  proposed_model_name,
+  research_notes,
+  last_researched_at,
   first_seen_at,
   last_seen_at,
   listing:listing_id (
@@ -614,4 +637,143 @@ export async function listListingBrandModelUnmatched(
   }
 
   return (data ?? []) as unknown as ListingBrandModelUnmatchedRow[]
+}
+
+/** Active unmatched listings the research pass should consider (oldest first). */
+export async function listUnmatchedListingsForResearch(
+  supabase: SupabaseClient,
+  options?: { limit?: number; researchedBefore?: string | null },
+): Promise<BackfillListingRow[]> {
+  const limit = Math.min(Math.max(options?.limit ?? 15, 1), 50)
+  const researchedBefore = options?.researchedBefore ?? null
+
+  const { data, error } = await supabase
+    .from("listing_brand_model_unmatched")
+    .select(
+      "listing_id, listing_title, last_researched_at, listing:listing_id ( id, title, brand, brand_id, model, brand_model_id, section, status, hidden_from_site )",
+    )
+    .order("first_seen_at", { ascending: true })
+    .limit(Math.max(limit * 4, 40))
+
+  if (error) {
+    console.error("listUnmatchedListingsForResearch:", error.message)
+    return []
+  }
+
+  const rows: BackfillListingRow[] = []
+  for (const raw of data ?? []) {
+    const listing = raw.listing as
+      | {
+          id: string
+          title: string | null
+          brand: string | null
+          brand_id: string | null
+          model: string | null
+          brand_model_id: string | null
+          section: string
+          status: string
+          hidden_from_site: boolean | null
+        }
+      | {
+          id: string
+          title: string | null
+          brand: string | null
+          brand_id: string | null
+          model: string | null
+          brand_model_id: string | null
+          section: string
+          status: string
+          hidden_from_site: boolean | null
+        }[]
+      | null
+    const row = Array.isArray(listing) ? listing[0] : listing
+    if (!row?.id) continue
+    const lastResearchedAt =
+      typeof (raw as { last_researched_at?: string | null }).last_researched_at === "string"
+        ? (raw as { last_researched_at: string }).last_researched_at
+        : null
+    if (researchedBefore && lastResearchedAt && lastResearchedAt >= researchedBefore) {
+      continue
+    }
+    if (row.status !== "active" || row.hidden_from_site) continue
+    if (row.section !== "surfboards" && row.section !== "fins") continue
+    if (row.brand_id && row.brand_model_id) continue
+    rows.push({
+      id: row.id,
+      title: row.title,
+      brand: row.brand,
+      brand_id: row.brand_id,
+      model: row.model,
+      brand_model_id: row.brand_model_id,
+      section: row.section,
+    })
+    if (rows.length >= limit) break
+  }
+
+  return rows
+}
+
+export type DirectoryBrandProfile = {
+  id: string
+  name: string
+  slug: string
+  website_url: string | null
+  location_label: string | null
+  founder_name: string | null
+  short_description: string | null
+}
+
+const BRAND_PROFILE_SELECT =
+  "id, name, slug, website_url, location_label, founder_name, short_description" as const
+
+export async function getDirectoryBrandProfile(
+  supabase: SupabaseClient,
+  brandId: string,
+): Promise<DirectoryBrandProfile | null> {
+  const { data, error } = await supabase
+    .from("brands")
+    .select(BRAND_PROFILE_SELECT)
+    .eq("id", brandId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("getDirectoryBrandProfile:", error.message)
+    return null
+  }
+  if (!data?.id || !data.name?.trim() || !data.slug?.trim()) return null
+  return {
+    id: data.id,
+    name: data.name.trim(),
+    slug: data.slug.trim(),
+    website_url: data.website_url?.trim() || null,
+    location_label: data.location_label?.trim() || null,
+    founder_name: data.founder_name?.trim() || null,
+    short_description: data.short_description?.trim() || null,
+  }
+}
+
+export async function findDirectoryBrandBySlug(
+  supabase: SupabaseClient,
+  slug: string,
+): Promise<DirectoryBrandProfile | null> {
+  const { data, error } = await supabase
+    .from("brands")
+    .select(BRAND_PROFILE_SELECT)
+    .eq("slug", slug)
+    .maybeSingle()
+
+  if (error) {
+    console.error("findDirectoryBrandBySlug:", error.message)
+    return null
+  }
+  if (!data?.id || !data.name?.trim() || !data.slug?.trim()) return null
+  return {
+    id: data.id,
+    name: data.name.trim(),
+    slug: data.slug.trim(),
+    website_url: data.website_url?.trim() || null,
+    location_label: data.location_label?.trim() || null,
+    founder_name: data.founder_name?.trim() || null,
+    short_description: data.short_description?.trim() || null,
+  }
 }
