@@ -1,6 +1,6 @@
 {
   "generated_for": "G Boards official named softboard catalog",
-  "source": "https://gboards.com.au/collections/all (Shopify product lines — excludes fins, leashes, board bags, SUPs, rescue/nipper equipment, and custom deposits)",
+  "source": "https://gboards.com.au/collections/all and https://gboards.com.au/products/g-lite-twin-fin (Shopify product lines — excludes fins, leashes, board bags, SUPs, rescue/nipper equipment, and custom deposits)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -22,6 +22,12 @@
           "name": "G-Lite Swallow Tail",
           "image_url": "https://cdn.shopify.com/s/files/1/2273/3477/files/Gboard_Glite_softboard_6_0__Top_915e020a-902c-45e1-98a3-c5a4a40252cc.jpg?v=1705634933",
           "description": "Where performance meets safety. The G-Lite Swallow Tail pairs Gboards' closed-cell soft construction with a swallow tail and thruster or twin-fin setups for a hi-performance softboard that still carries the brand's built-in safety features.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "G-Lite Twin Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/2273/3477/products/IMG_2565.jpg?v=1600397744",
+          "description": "G-Lite hi-performance softboard with Bells sand finish. Suits single-tab fin boxes.",
           "board_category_slug": "fish"
         },
         {
