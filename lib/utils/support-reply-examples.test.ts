@@ -3,6 +3,8 @@ import { describe, it } from "node:test"
 import {
   SUPPORT_REPLY_EXAMPLES_PATH,
   clampSupportReplyExamplesPage,
+  supportReplyExampleSearchOrClause,
+  supportReplyExampleSearchPattern,
   supportReplyExamplesHref,
 } from "./support-reply-examples.ts"
 
@@ -41,5 +43,25 @@ describe("clamp support reply examples page", () => {
   it("floors invalid pages to 1", () => {
     assert.equal(clampSupportReplyExamplesPage(0, 50, 25), 1)
     assert.equal(clampSupportReplyExamplesPage(-2, 50, 25), 1)
+  })
+})
+
+describe("support reply example search pattern", () => {
+  it("keeps commas, periods, and parentheses", () => {
+    assert.equal(supportReplyExampleSearchPattern("Hi, thanks."), "Hi, thanks.")
+    assert.equal(supportReplyExampleSearchPattern("refund (UPS)"), "refund (UPS)")
+    assert.equal(
+      supportReplyExampleSearchOrClause("Hi, thanks."),
+      'customer_excerpt.ilike."%Hi, thanks.%",staff_reply.ilike."%Hi, thanks.%"',
+    )
+  })
+
+  it("escapes ilike wildcards instead of deleting them", () => {
+    assert.equal(supportReplyExampleSearchPattern("100% refund_"), "100\\% refund\\_")
+  })
+
+  it("does not treat punctuation-only text as no search", () => {
+    assert.equal(supportReplyExampleSearchPattern("..."), "...")
+    assert.equal(supportReplyExampleSearchPattern("   "), null)
   })
 })

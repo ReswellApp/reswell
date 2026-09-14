@@ -10,6 +10,24 @@ export function clampSupportReplyExamplesPage(page: number, total: number, limit
   return Math.min(Math.trunc(page), maxPage)
 }
 
+/** Escape ILIKE wildcards; keep punctuation. Strip only `"` so PostgREST quoted filters stay valid. */
+export function supportReplyExampleSearchPattern(q?: string): string | null {
+  const trimmed = q?.trim() ?? ""
+  if (!trimmed) return null
+  const escaped = trimmed
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
+    .replace(/"/g, "")
+  return escaped || null
+}
+
+export function supportReplyExampleSearchOrClause(q?: string): string | null {
+  const pattern = supportReplyExampleSearchPattern(q)
+  if (!pattern) return null
+  return `customer_excerpt.ilike."%${pattern}%",staff_reply.ilike."%${pattern}%"`
+}
+
 export function supportReplyExamplesHref(filters: {
   rating?: string
   kind?: string

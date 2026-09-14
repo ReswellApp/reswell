@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportReplyDraftRow, SupportReplyExampleRow } from "@/lib/types/supportReplyDraft"
+import { supportReplyExampleSearchOrClause } from "@/lib/utils/support-reply-examples"
 import type { SupportReplyDraftOrigin, SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 
 const DRAFT_SELECT =
@@ -108,16 +109,6 @@ export type SupportReplyExampleListFilters = {
   q?: string
 }
 
-function sanitizeExampleSearch(value: string): string {
-  return value.replace(/[%_,.()\\]/g, "").trim()
-}
-
-function exampleSearchClause(q?: string): string | null {
-  const cleaned = q ? sanitizeExampleSearch(q) : ""
-  if (!cleaned) return null
-  return `customer_excerpt.ilike.%${cleaned}%,staff_reply.ilike.%${cleaned}%`
-}
-
 export async function listSupportReplyExamplesPage(
   supabase: SupabaseClient,
   filters: SupportReplyExampleListFilters & { offset: number; limit: number },
@@ -130,7 +121,7 @@ export async function listSupportReplyExamplesPage(
 
   if (filters.rating) query = query.eq("rating", filters.rating)
   if (filters.kind) query = query.eq("kind", filters.kind)
-  const search = exampleSearchClause(filters.q)
+  const search = supportReplyExampleSearchOrClause(filters.q)
   if (search) query = query.or(search)
 
   const { data, error, count } = await query
@@ -148,7 +139,7 @@ export async function countSupportReplyExamples(
   let query = supabase.from("support_reply_examples").select("id", { count: "exact", head: true })
   if (filters.rating) query = query.eq("rating", filters.rating)
   if (filters.kind) query = query.eq("kind", filters.kind)
-  const search = exampleSearchClause(filters.q)
+  const search = supportReplyExampleSearchOrClause(filters.q)
   if (search) query = query.or(search)
 
   const { count, error } = await query
