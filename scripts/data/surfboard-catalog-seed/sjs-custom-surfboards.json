@@ -1,6 +1,6 @@
 {
   "generated_for": "SJS Custom official named standup catalog",
-  "source": "https://sjscustom.com.au/ (Scott James Surfboards homepage model lineup — excludes sold stock dimension SKUs, display racks, and merch)",
+  "source": "https://sjscustom.com.au/ (Scott James Surfboards homepage model lineup + Shopify products.json — excludes display racks and merch)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -71,6 +71,36 @@
           "image_url": "https://sjscustom.com.au/cdn/shop/files/IMG_0806_480x480@2x.jpg",
           "description": "Fun small-wave twin fin for waist-high and under surf. Double concave deck, beveled rails, blunt nose, and double-winged diamond tail. Scoop concave bottom for instant speed and skatey feel.",
           "board_category_slug": "groveler"
+        },
+        {
+          "name": "Phoenix",
+          "image_url": "https://cdn.shopify.com/s/files/1/0601/6024/5942/files/IMG_6107.jpg?v=1779761251",
+          "description": "A fresh model hitting the racks — a winged swallow tail design that features Scotty's scoop and dropped fliers set in a vee bottom, double concave deck and beveled rails. Fast and loose is the name of the game here.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "60s Pig",
+          "image_url": "https://cdn.shopify.com/s/files/1/0601/6024/5942/files/IPzLBZwFS4yujXhqkLNj5w.jpg?v=1700023302",
+          "description": "9'4 x 22 3/4 x 2 3/4 cutlaps tinted glass, glassed 6/4/4 patch x 6/4 patch satin sanded finish.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Winged Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0601/6024/5942/files/IMG_6124.jpg?v=1779760741",
+          "description": "Another classic outline and overall design that can handle almost anything the ocean can serve it. An easy shape to mould into almost any size range. The beak nose and beveled rails keep the foam on the deck and the rails low and responsive. Bottom sees a double concave into vee under four channels with a mellow entry rocker and easy, flowing tail rocker.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Grand Tourer Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0601/6024/5942/files/IMG_5524.jpg?v=1719614205",
+          "description": "A great all-round mid-length twin style board. Features the double concave scoop which gets the board up and on the water fast and loosens it up to give it a real free-flowing twin fin feel. Flat deck and beveled rails give it that easy to paddle and easy to turn combo.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Carbon fiber Rock N Roller",
+          "image_url": "https://cdn.shopify.com/s/files/1/0601/6024/5942/files/IMG_5267.jpg?v=1774498690",
+          "description": "The top end of Scotty's designs when it comes to performance twin fins (optional trailer also). A step away from traditional designs — all features are function over form. Loose and fast is the first design philosophy, then elements that give the design control. Glassed in carbon vac-bagged glass by Lucid Glass.",
+          "board_category_slug": "shortboard"
         }
       ]
     }
