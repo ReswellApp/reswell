@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { unmatchedResearchCooldownOrFilter } from "./listingBrandModelBackfill.ts"
+import { unmatchedResearchCooldownOrFilter } from "./listing-brand-model-research-queue.ts"
 
 describe("unmatchedResearchCooldownOrFilter", () => {
   it("includes never-researched rows and those older than the cutoff", () => {

@@ -7,6 +7,7 @@ import type {
   ListingBrandModelResearchReviewStatus,
 } from "@/lib/validations/listing-brand-model-research"
 import type { BrandMatchRow, ModelMatchRow } from "@/lib/utils/listing-brand-model-match"
+import { unmatchedResearchCooldownOrFilter } from "@/lib/utils/listing-brand-model-research-queue"
 
 /** Peer listing sections the brand/model backfill cron processes. */
 export type ListingBrandModelBackfillSection = "surfboards" | "fins"
@@ -637,14 +638,6 @@ export async function listListingBrandModelUnmatched(
   }
 
   return (data ?? []) as unknown as ListingBrandModelUnmatchedRow[]
-}
-
-/**
- * PostgREST `or` filter: never researched, or last attempt older than the cooldown cutoff.
- * Applied in the query so cooled-down head rows cannot starve later unmatched listings.
- */
-export function unmatchedResearchCooldownOrFilter(researchedBefore: string): string {
-  return `last_researched_at.is.null,last_researched_at.lt."${researchedBefore}"`
 }
 
 /** Active unmatched listings the research pass should consider (oldest first). */
