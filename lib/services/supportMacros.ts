@@ -1,4 +1,5 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { getSupportReplyOrderSnapshot } from "@/lib/db/supportReplyDrafts"
 import {
   deleteSupportMacro,
   insertSupportMacro,
@@ -7,6 +8,7 @@ import {
   updateSupportMacro,
   type SupportMacroRecord,
 } from "@/lib/db/supportMacros"
+import type { SupportMacroLinkedOrder } from "@/lib/utils/support-macro-order-vars"
 import type {
   CreateSupportMacroInput,
   DeleteSupportMacroInput,
@@ -115,6 +117,32 @@ export async function updateSupportMacroService(
   } catch (error) {
     console.error("[support_macros] update failed:", error)
     return { error: "Could not update macro" }
+  }
+}
+
+export async function getSupportMacroOrderService(
+  orderId: string,
+): Promise<{ success: true; data: SupportMacroLinkedOrder | null } | ServiceError> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+
+  try {
+    const row = await getSupportReplyOrderSnapshot(dbClient(staff.supabase), orderId)
+    if (!row) return { success: true, data: null }
+    return {
+      success: true,
+      data: {
+        status: row.status,
+        fulfillment_method: row.fulfillmentMethod,
+        delivery_status: row.deliveryStatus,
+        tracking_number: row.trackingNumber,
+        tracking_carrier: row.trackingCarrier,
+        carrier_delivered_at: row.carrierDeliveredAt,
+      },
+    }
+  } catch (error) {
+    console.error("[support_macros] order lookup failed:", error)
+    return { error: "Could not load order" }
   }
 }
 

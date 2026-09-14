@@ -225,6 +225,8 @@ export function AdminSupportCaseDesk({
                   order_ref: orderRef,
                   order: orderForMacros,
                 })}
+                orderVarsReady
+                hasOrderVars={orderForMacros !== null}
                 onInsert={(text) => setMacroDraft(text)}
               />
               {macroDraft ? (

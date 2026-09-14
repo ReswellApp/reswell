@@ -20,11 +20,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 
+function macroNeedsOrderVars(body: string): boolean {
+  return body.includes("{{tracking}}") || body.includes("{{order_status}}")
+}
+
 interface SupportMacrosPickerProps {
   kindFilter?: string | null
   vars?: SupportMacroVars
   onInsert: (text: string) => void
   variant?: "chips" | "menu"
+  /** False while a linked order is still loading for substitution. */
+  orderVarsReady?: boolean
+  /** True when tracking / fulfillment fields are available. */
+  hasOrderVars?: boolean
 }
 
 export function SupportMacrosPicker({
@@ -32,8 +40,10 @@ export function SupportMacrosPicker({
   vars = {},
   onInsert,
   variant = "chips",
+  orderVarsReady = true,
+  hasOrderVars = true,
 }: SupportMacrosPickerProps) {
-  const [macros, setMacros] = useState<SupportMacroRecord[]>([])
+  const [macros, setMacros] = useState<SupportMacroRecord[] | null>(null)
 
   const loadMacros = useCallback(async () => {
     const result = await listActiveSupportMacrosAction()
@@ -44,13 +54,29 @@ export function SupportMacrosPicker({
     void loadMacros()
   }, [loadMacros])
 
-  const visible = macros.filter(
+  const list = macros ?? []
+  const loaded = macros !== null
+  const visible = list.filter(
     (macro) => !macro.kind_filter || !kindFilter || macro.kind_filter === kindFilter,
   )
 
   function insert(macro: SupportMacroRecord) {
+    if (!orderVarsReady) {
+      toast.message("Loading order details…")
+      return
+    }
+    if (macroNeedsOrderVars(macro.body) && !hasOrderVars) {
+      toast.error("Order details are not available for this ticket.")
+      return
+    }
     onInsert(applySupportMacroVars(macro.body, vars))
     toast.message(`Inserted “${macro.title}”`)
+  }
+
+  function emptyCopy(): string {
+    if (!loaded) return "Loading macros…"
+    if (list.length === 0) return "No macros yet."
+    return "No macros for this ticket."
   }
 
   if (variant === "menu") {
@@ -63,13 +89,20 @@ export function SupportMacrosPicker({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="max-h-72 w-64 overflow-y-auto">
+          {!orderVarsReady ? (
+            <p className="px-2 py-1.5 text-xs text-muted-foreground">Loading order details…</p>
+          ) : null}
           {visible.map((macro) => (
-            <DropdownMenuItem key={macro.id} onSelect={() => insert(macro)}>
+            <DropdownMenuItem
+              key={macro.id}
+              disabled={!orderVarsReady || (macroNeedsOrderVars(macro.body) && !hasOrderVars)}
+              onSelect={() => insert(macro)}
+            >
               {macro.title}
             </DropdownMenuItem>
           ))}
           {visible.length === 0 ? (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">No macros for this ticket.</p>
+            <p className="px-2 py-1.5 text-xs text-muted-foreground">{emptyCopy()}</p>
           ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
@@ -83,39 +116,36 @@ export function SupportMacrosPicker({
     )
   }
 
-  if (visible.length === 0) {
-    return (
-      <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Reply macros</Label>
-        <Link href="/admin/support-macros" className="text-xs text-muted-foreground underline">
-          Add a macro
-        </Link>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <Label className="text-xs text-muted-foreground">Reply macros</Label>
         <Link href="/admin/support-macros" className="text-[11px] text-muted-foreground underline">
-          Manage
+          {list.length === 0 && loaded ? "Add a macro" : "Manage"}
         </Link>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {visible.map((macro) => (
-          <Button
-            key={macro.id}
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-7 rounded-full text-xs"
-            onClick={() => insert(macro)}
-          >
-            {macro.title}
-          </Button>
-        ))}
-      </div>
+      {!loaded || visible.length === 0 ? (
+        <p className="text-xs text-muted-foreground">{emptyCopy()}</p>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {visible.map((macro) => (
+            <Button
+              key={macro.id}
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 rounded-full text-xs"
+              disabled={!orderVarsReady || (macroNeedsOrderVars(macro.body) && !hasOrderVars)}
+              onClick={() => insert(macro)}
+            >
+              {macro.title}
+            </Button>
+          ))}
+        </div>
+      )}
+      {!orderVarsReady ? (
+        <p className="text-[11px] text-muted-foreground">Loading order details…</p>
+      ) : null}
     </div>
   )
 }

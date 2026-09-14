@@ -38,6 +38,10 @@ export const deleteSupportMacroSchema = z.object({
   id: z.string().uuid(),
 })
 
+export const supportMacroOrderIdSchema = z.object({
+  order_id: z.string().uuid(),
+})
+
 export type CreateSupportMacroInput = z.infer<typeof createSupportMacroSchema>
 export type UpdateSupportMacroInput = z.infer<typeof updateSupportMacroSchema>
 export type DeleteSupportMacroInput = z.infer<typeof deleteSupportMacroSchema>

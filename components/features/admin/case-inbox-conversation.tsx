@@ -31,6 +31,7 @@ import {
   staffReplyPlaceholder,
 } from "@/lib/admin/case-inbox-counterpart"
 import { supportMacroVarsFromOrder } from "@/lib/utils/support-macro-order-vars"
+import { useSupportMacroOrder } from "@/components/features/admin/support-macros/use-support-macro-order"
 
 interface CaseInboxConversationProps {
   item: CaseInboxItem
@@ -99,10 +100,14 @@ export function CaseInboxConversation({
   onRateAi,
 }: CaseInboxConversationProps) {
   const linkedOrder = orderContext && item.orderId === orderContext.id ? orderContext : null
+  const { order: macroOrder, ready: orderVarsReady } = useSupportMacroOrder(
+    item.orderId,
+    linkedOrder,
+  )
   const macroVars = supportMacroVarsFromOrder({
     name: item.fromName,
     order_ref: item.orderRef,
-    order: linkedOrder,
+    order: macroOrder,
   })
 
   return (
@@ -215,6 +220,8 @@ export function CaseInboxConversation({
             closed={!item.isOpen}
             kindFilter={item.kind}
             vars={macroVars}
+            orderVarsReady={orderVarsReady}
+            hasOrderVars={macroOrder !== null}
             replyPlaceholder={
               aiLoading ? "Writing a reply…" : staffReplyPlaceholder(item.requesterRole)
             }

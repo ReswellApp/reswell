@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import {
   createSupportMacroService,
   deleteSupportMacroService,
+  getSupportMacroOrderService,
   listActiveSupportMacrosService,
   listSupportMacrosAdminService,
   updateSupportMacroService,
@@ -11,6 +12,7 @@ import {
 import {
   createSupportMacroSchema,
   deleteSupportMacroSchema,
+  supportMacroOrderIdSchema,
   updateSupportMacroSchema,
 } from "@/lib/validations/supportMacros"
 
@@ -36,6 +38,12 @@ export async function listSupportMacrosAdminAction() {
 
 export async function listActiveSupportMacrosAction() {
   return listActiveSupportMacrosService()
+}
+
+export async function getSupportMacroOrderAction(raw: unknown) {
+  const parsed = supportMacroOrderIdSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  return getSupportMacroOrderService(parsed.data.order_id)
 }
 
 export async function createSupportMacroAction(raw: unknown) {

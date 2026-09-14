@@ -24,6 +24,8 @@ interface CaseInboxComposerProps {
   closed: boolean
   kindFilter: string | null
   vars: SupportMacroVars
+  orderVarsReady?: boolean
+  hasOrderVars?: boolean
   replyPlaceholder?: string
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
@@ -46,6 +48,8 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
       closed,
       kindFilter,
       vars,
+      orderVarsReady = true,
+      hasOrderVars = true,
       replyPlaceholder = "Write a reply they will see…",
       onModeChange,
       onDraftChange,
@@ -182,6 +186,8 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
               variant="menu"
               kindFilter={kindFilter}
               vars={vars}
+              orderVarsReady={orderVarsReady}
+              hasOrderVars={hasOrderVars}
               onInsert={onInsertMacro}
             />
             <div className="ml-auto flex flex-wrap gap-2">
