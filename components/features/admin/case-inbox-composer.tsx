@@ -1,11 +1,12 @@
 "use client"
 
 import { forwardRef, useImperativeHandle, useRef } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, RefreshCw, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react"
 import { SupportMacrosPicker } from "@/components/features/admin/support-macros-picker"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import type { SupportReplyCitedHelp } from "@/lib/types/supportReplyDraft"
 
 export type ComposerMode = "reply" | "note"
 export type ComposerDisposition = "keep_open" | "waiting" | "resolve"
@@ -27,6 +28,12 @@ interface CaseInboxComposerProps {
   onDraftChange: (value: string) => void
   onInsertMacro: (text: string) => void
   onSend: (disposition: ComposerDisposition) => void
+  aiLoading?: boolean
+  aiActive?: boolean
+  aiError?: string | null
+  aiHelp?: SupportReplyCitedHelp[]
+  onRegenerateAi?: () => void
+  onRateAi?: (rating: "accepted" | "rejected") => void
 }
 
 export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxComposerProps>(
@@ -43,6 +50,12 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
       onDraftChange,
       onInsertMacro,
       onSend,
+      aiLoading = false,
+      aiActive = false,
+      aiError = null,
+      aiHelp = [],
+      onRegenerateAi,
+      onRateAi,
     },
     ref,
   ) {
@@ -89,6 +102,54 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
             {mode === "note" ? "Staff only · not emailed" : "⌘↵ to send"}
           </span>
         </div>
+        {mode === "reply" && !closed && (aiLoading || aiActive || aiError) ? (
+          <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Sparkles className="h-3 w-3" aria-hidden />
+            <span>
+              {aiLoading
+                ? "Writing a reply…"
+                : aiError
+                  ? aiError
+                  : "Suggested reply — edit before you send"}
+            </span>
+            {onRegenerateAi ? (
+              <button
+                type="button"
+                onClick={onRegenerateAi}
+                disabled={aiLoading || pending}
+                className="ml-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground disabled:opacity-50"
+              >
+                <RefreshCw className={cn("h-3 w-3", aiLoading && "animate-spin")} />
+                Rewrite
+              </button>
+            ) : null}
+            {aiActive && onRateAi ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onRateAi("accepted")}
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground"
+                  aria-label="This draft is good"
+                >
+                  <ThumbsUp className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRateAi("rejected")}
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground"
+                  aria-label="This draft is not useful"
+                >
+                  <ThumbsDown className="h-3 w-3" />
+                </button>
+              </>
+            ) : null}
+            {aiHelp[0] ? (
+              <span className="w-full truncate pl-4 text-[10px]">
+                From help: {aiHelp.map((article) => article.title).join(" · ")}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         {closed && mode === "reply" ? (
           <p className="rounded-md bg-muted/50 px-3 py-2 text-[13px] text-muted-foreground">
             This conversation is closed. Switch to Note for a staff-only comment.

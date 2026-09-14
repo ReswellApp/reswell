@@ -21,6 +21,8 @@ type SupportCaseThreadProps = {
   role: "member" | "staff"
   closed?: boolean
   seedText?: string
+  /** fill-empty keeps an in-progress reply; replace is for macros / rewrite. */
+  seedMode?: "fill-empty" | "replace"
   originalRequest?: { body: string; createdAt: string; name: string } | null
   staffNames?: Record<string, string>
   counterpartLabel?: string
@@ -54,6 +56,7 @@ export function SupportCaseThread({
   role,
   closed = false,
   seedText,
+  seedMode = "replace",
   originalRequest = null,
   staffNames,
   counterpartLabel = "Member",
@@ -69,8 +72,13 @@ export function SupportCaseThread({
   }, [canReply, initial])
 
   useEffect(() => {
-    if (seedText) setDraft(seedText)
-  }, [seedText])
+    if (!seedText) return
+    if (seedMode === "fill-empty") {
+      setDraft((prev) => (prev.trim() ? prev : seedText))
+      return
+    }
+    setDraft(seedText)
+  }, [seedText, seedMode])
 
   const displayMessages = useMemo(() => {
     const live = [...messages].sort(
