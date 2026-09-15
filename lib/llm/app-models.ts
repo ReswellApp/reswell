@@ -136,10 +136,12 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     enabledEnvVar: "SUPPORT_REPLY_DRAFT_ENABLED",
     surfaces: [
       "/admin/contact-messages",
+      "/admin/support-reply-examples",
       "GET /api/cron/support-reply-drafts",
     ],
     sourceFiles: [
       "lib/services/supportReplyDraft.ts",
+      "lib/services/supportReplyExamples.ts",
       "lib/services/supportReplyKnowledge.ts",
       "lib/db/supportReplyDrafts.ts",
     ],

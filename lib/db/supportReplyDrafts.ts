@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportReplyDraftRow, SupportReplyExampleRow } from "@/lib/types/supportReplyDraft"
+import { supportReplyExampleSearchOrClause } from "@/lib/utils/support-reply-examples"
 import type { SupportReplyDraftOrigin, SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 
 const DRAFT_SELECT =
@@ -100,6 +101,112 @@ export async function listSupportReplyExamples(
     return []
   }
   return (data ?? []) as SupportReplyExampleRow[]
+}
+
+export type SupportReplyExampleListFilters = {
+  rating?: SupportReplyDraftRating
+  kind?: string
+  q?: string
+}
+
+export async function listSupportReplyExamplesPage(
+  supabase: SupabaseClient,
+  filters: SupportReplyExampleListFilters & { offset: number; limit: number },
+): Promise<{ rows: SupportReplyExampleRow[]; total: number } | { error: string }> {
+  let query = supabase
+    .from("support_reply_examples")
+    .select(EXAMPLE_SELECT, { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(filters.offset, filters.offset + filters.limit - 1)
+
+  if (filters.rating) query = query.eq("rating", filters.rating)
+  if (filters.kind) query = query.eq("kind", filters.kind)
+  const search = supportReplyExampleSearchOrClause(filters.q)
+  if (search) query = query.or(search)
+
+  const { data, error, count } = await query
+  if (error) {
+    console.error("[support_reply_examples] list failed:", error.message)
+    return { error: "Could not load reply examples." }
+  }
+  return { rows: (data ?? []) as SupportReplyExampleRow[], total: count ?? 0 }
+}
+
+export async function countSupportReplyExamples(
+  supabase: SupabaseClient,
+  filters: SupportReplyExampleListFilters = {},
+): Promise<number> {
+  let query = supabase.from("support_reply_examples").select("id", { count: "exact", head: true })
+  if (filters.rating) query = query.eq("rating", filters.rating)
+  if (filters.kind) query = query.eq("kind", filters.kind)
+  const search = supportReplyExampleSearchOrClause(filters.q)
+  if (search) query = query.or(search)
+
+  const { count, error } = await query
+  if (error) {
+    console.warn("[support_reply_examples] count skipped:", error.message)
+    return 0
+  }
+  return count ?? 0
+}
+
+export async function getSupportReplyExampleById(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<SupportReplyExampleRow | null> {
+  const { data, error } = await supabase
+    .from("support_reply_examples")
+    .select(EXAMPLE_SELECT)
+    .eq("id", id)
+    .maybeSingle()
+  if (error) {
+    console.warn("[support_reply_examples] get skipped:", error.message)
+    return null
+  }
+  return (data as SupportReplyExampleRow | null) ?? null
+}
+
+export async function updateSupportReplyExample(
+  supabase: SupabaseClient,
+  row: {
+    id: string
+    customerExcerpt: string
+    staffReply: string
+    citedHelpSlugs: string[]
+    rating: SupportReplyDraftRating
+    kind: string | null
+  },
+): Promise<SupportReplyExampleRow | { error: string }> {
+  const { data, error } = await supabase
+    .from("support_reply_examples")
+    .update({
+      customer_excerpt: row.customerExcerpt.slice(0, 4000),
+      staff_reply: row.staffReply.slice(0, 12000),
+      cited_help_slugs: row.citedHelpSlugs,
+      rating: row.rating,
+      kind: row.kind,
+    })
+    .eq("id", row.id)
+    .select(EXAMPLE_SELECT)
+    .single()
+
+  if (error || !data) {
+    console.error("[support_reply_examples] update failed:", error?.message)
+    return { error: "Could not save that example." }
+  }
+  return data as SupportReplyExampleRow
+}
+
+export async function deleteSupportReplyExample(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<{ success: true } | { error: string }> {
+  const { error } = await supabase.from("support_reply_examples").delete().eq("id", id)
+  if (error) {
+    console.error("[support_reply_examples] delete failed:", error.message)
+    return { error: "Could not delete that example." }
+  }
+  return { success: true }
 }
 
 export async function insertSupportReplyExample(
