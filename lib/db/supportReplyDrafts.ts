@@ -530,3 +530,25 @@ export async function listSupportReplyOrdersForCustomer(
   }
   return (data as Parameters<typeof toOrderSnapshot>[0][]).map(toOrderSnapshot)
 }
+
+/** Sum of repair credit already issued on cases for this order. Used as a double-pay warning. */
+export async function getSupportReplyRepairCreditTotal(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("order_support_requests")
+    .select("repair_credit_total")
+    .eq("order_id", orderId)
+    .limit(20)
+  if (error || !data) {
+    if (error) console.warn("[support_reply_drafts] repair credit skipped:", error.message)
+    return 0
+  }
+  let total = 0
+  for (const row of data) {
+    const n = Number((row as { repair_credit_total?: unknown }).repair_credit_total ?? 0)
+    if (Number.isFinite(n) && n > 0) total += n
+  }
+  return Math.round(total * 100) / 100
+}

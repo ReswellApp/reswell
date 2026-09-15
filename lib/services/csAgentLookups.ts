@@ -4,6 +4,7 @@ import {
 } from "@/lib/help-center/plain-text"
 import {
   findSupportReplyOrderSnapshot,
+  getSupportReplyRepairCreditTotal,
   listSupportReplyOrdersForCustomer,
   type SupportReplyOrderSnapshot,
 } from "@/lib/db/supportReplyDrafts"
@@ -183,17 +184,20 @@ export function createCsAgentLookups(
           return { found: false, reason: "No order for this customer matches that reference." }
         }
         remember(order)
+        const repairCreditTotal = await getSupportReplyRepairCreditTotal(service, order.id)
         const assessment = assessCsAgentRefundEligibility({
           status: order.status,
           amount: order.amount,
           paymentMethod: order.paymentMethod,
           fulfillmentMethod: order.fulfillmentMethod,
           deliveryStatus: order.deliveryStatus,
+          repairCreditTotal,
         })
         return {
           found: true,
           id: order.id,
           orderNum: order.orderNum,
+          repairCreditTotal,
           ...assessment,
         }
       },

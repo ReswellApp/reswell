@@ -50,4 +50,20 @@ describe("assessCsAgentRefundEligibility", () => {
     assert.match(result.staffNote, /double-pay/)
     assert.match(result.customerFacing, /do not tell the customer/i)
   })
+
+  it("omits the double-pay warning when repair credit is not passed or is zero", () => {
+    const without = assessCsAgentRefundEligibility({
+      status: "confirmed",
+      amount: 350,
+      paymentMethod: "stripe",
+    })
+    const zero = assessCsAgentRefundEligibility({
+      status: "confirmed",
+      amount: 350,
+      paymentMethod: "stripe",
+      repairCreditTotal: 0,
+    })
+    assert.doesNotMatch(without.staffNote, /double-pay/)
+    assert.doesNotMatch(zero.staffNote, /double-pay/)
+  })
 })
