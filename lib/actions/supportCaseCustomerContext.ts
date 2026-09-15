@@ -4,10 +4,20 @@ import { revalidatePath } from "next/cache"
 import {
   getSupportCaseCustomerContextService,
   linkSupportCaseOrderService,
+  listSupportCaseCustomerOrdersService,
+  listSupportCaseCustomerTicketsService,
 } from "@/lib/services/supportCaseCustomerContext"
 
 export async function getSupportCaseCustomerContextAction(caseId: string) {
   return getSupportCaseCustomerContextService({ case_id: caseId })
+}
+
+export async function listSupportCaseCustomerOrdersAction(raw: unknown) {
+  return listSupportCaseCustomerOrdersService(raw)
+}
+
+export async function listSupportCaseCustomerTicketsAction(raw: unknown) {
+  return listSupportCaseCustomerTicketsService(raw)
 }
 
 export async function linkSupportCaseOrderAction(raw: unknown) {

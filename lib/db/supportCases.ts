@@ -220,6 +220,102 @@ export async function listSupportCasesByRequesterEmail(
   return (data ?? []) as SupportCaseRow[]
 }
 
+const CUSTOMER_TICKET_SELECT =
+  "id, subject, status, kind, order_ref, priority, updated_at, created_at"
+
+export type SupportCaseCustomerTicketRow = {
+  id: string
+  subject: string
+  status: SupportCaseStatus
+  kind: SupportCaseKind
+  order_ref: string | null
+  priority: SupportCaseRow["priority"]
+  updated_at: string
+  created_at: string
+}
+
+export type SupportCaseCustomerTicketFilter = {
+  userId?: string | null
+  email?: string | null
+  excludeCaseId?: string | null
+  openOnly?: boolean
+  offset?: number
+  limit?: number
+}
+
+function customerTicketIdentityClause(
+  filter: Pick<SupportCaseCustomerTicketFilter, "userId" | "email">,
+): { userId: string | null; email: string | null } {
+  return {
+    userId: filter.userId?.trim() || null,
+    email: filter.email?.trim() || null,
+  }
+}
+
+export async function listSupportCasesForCustomerPage(
+  supabase: SupabaseClient,
+  filter: SupportCaseCustomerTicketFilter,
+): Promise<{ rows: SupportCaseCustomerTicketRow[]; hasMore: boolean }> {
+  const { userId, email } = customerTicketIdentityClause(filter)
+  if (!userId && !email) return { rows: [], hasMore: false }
+
+  const limit = filter.limit ?? 8
+  const offset = filter.offset ?? 0
+  const take = limit + 1
+
+  let query = supabase.from("support_cases").select(CUSTOMER_TICKET_SELECT)
+  if (userId && email) {
+    query = query.or(`requester_user_id.eq.${userId},requester_email.eq.${email}`)
+  } else if (userId) {
+    query = query.eq("requester_user_id", userId)
+  } else if (email) {
+    query = query.eq("requester_email", email)
+  }
+  if (filter.excludeCaseId) query = query.neq("id", filter.excludeCaseId)
+  if (filter.openOnly) query = query.neq("status", "resolved")
+
+  const { data, error } = await query
+    .order("updated_at", { ascending: false })
+    .range(offset, offset + take - 1)
+
+  if (error) {
+    console.warn("[support_cases] customer tickets skipped:", error.message)
+    return { rows: [], hasMore: false }
+  }
+
+  const rows = (data ?? []) as SupportCaseCustomerTicketRow[]
+  return {
+    rows: rows.slice(0, limit),
+    hasMore: rows.length > limit,
+  }
+}
+
+export async function countSupportCasesForCustomer(
+  supabase: SupabaseClient,
+  filter: Omit<SupportCaseCustomerTicketFilter, "offset" | "limit">,
+): Promise<number> {
+  const { userId, email } = customerTicketIdentityClause(filter)
+  if (!userId && !email) return 0
+
+  let query = supabase.from("support_cases").select("id", { count: "exact", head: true })
+  if (userId && email) {
+    query = query.or(`requester_user_id.eq.${userId},requester_email.eq.${email}`)
+  } else if (userId) {
+    query = query.eq("requester_user_id", userId)
+  } else if (email) {
+    query = query.eq("requester_email", email)
+  }
+  if (filter.excludeCaseId) query = query.neq("id", filter.excludeCaseId)
+  if (filter.openOnly) query = query.neq("status", "resolved")
+
+  const { count, error } = await query
+  if (error) {
+    console.warn("[support_cases] customer ticket count skipped:", error.message)
+    return 0
+  }
+  return count ?? 0
+}
+
 export async function getSupportCaseById(
   supabase: SupabaseClient,
   id: string,

@@ -51,6 +51,7 @@ import type {
   ComposerDisposition,
   ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
+import type { SupportCaseCustomerContext } from "@/lib/services/supportCaseCustomerContext"
 import { useSupportReplyDraft } from "@/components/features/admin/hooks/use-support-reply-draft"
 import {
   inboxSuggestionBelongsToSelectedCase,
@@ -81,9 +82,13 @@ function readCaseDraft(caseId: string) {
 export function CaseInboxAdminClient({
   initialInbox = null,
   initialError = null,
+  initialCustomerContext = null,
+  initialCustomerCaseKey = null,
 }: {
   initialInbox?: AdminSupportInboxResult | null
   initialError?: string | null
+  initialCustomerContext?: SupportCaseCustomerContext | null
+  initialCustomerCaseKey?: string | null
 }) {
   const pathname = usePathname() ?? "/admin/contact-messages"
   const router = useRouter()
@@ -906,6 +911,11 @@ export function CaseInboxAdminClient({
                   staff={staff}
                   currentStaffId={currentStaffId}
                   isAdmin={isAdmin}
+                  initialCustomerContext={
+                    findInboxItemBySelection([selected], initialCustomerCaseKey)
+                      ? initialCustomerContext
+                      : null
+                  }
                   osOutcome={osOutcome}
                   pinnedNote={pinnedNote}
                   savePending={savePending}

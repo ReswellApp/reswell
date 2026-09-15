@@ -39,6 +39,13 @@ describe("findInboxItemBySelection", () => {
     assert.equal(findInboxItemBySelection([row], `os:${orderSupportId}`)?.key, row.key)
     assert.equal(findInboxItemBySelection([row], orderId)?.key, row.key)
   })
+
+  it("treats those same-thread keys as a customer-panel SSR seed match", () => {
+    assert.ok(findInboxItemBySelection([row], `cm:${contactId}`))
+    assert.ok(findInboxItemBySelection([row], `os:${orderSupportId}`))
+    assert.ok(findInboxItemBySelection([row], orderId))
+    assert.equal(findInboxItemBySelection([row], "sc:someone-else"), null)
+  })
 })
 
 describe("nextInboxSelectedKey", () => {
