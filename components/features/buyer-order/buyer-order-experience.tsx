@@ -64,6 +64,8 @@ export type BuyerOrderExperienceProps = {
     canSubmit: boolean
     existing: ExistingSellerReview | null
   }
+  /** Email deep link (`?review=1`) — open the Review seller dialog. */
+  autoOpenSellerReview?: boolean
   /** Seller's rating of you on this order, if they have submitted one (read-only). */
   reviewFromSeller: ExistingSellerReview | null
 }
@@ -383,6 +385,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
             sellerName={props.sellerName}
             canReview={props.sellerReview.canSubmit}
             existingReview={props.sellerReview.existing}
+            autoOpen={props.autoOpenSellerReview}
           />
         )}
 

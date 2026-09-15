@@ -1,0 +1,93 @@
+<!--
+  Reswell · Klaviyo flow — Review the seller (buyer follow-up)
+  Paste into the second email on the Review Requested flow.
+
+  Flow setup
+  1. Email 1: review-seller-requested-email.html
+  2. Time delay: 3 days (or 4–5)
+  3. Conditional split: Has not opened Email 1
+     Yes → this email. No → exit.
+  4. Optional extra split / filter: Has not clicked Email 1
+     (best proxy we have today for “already reviewed” — there is no
+     Buyer Reviewed Seller metric yet)
+
+  Trigger filter: `reswell_metric_seed` is not true.
+
+  Suggested subject: Still a minute for {{ event.seller_display_name|default:'your seller' }}?
+  Suggested preview: A sentence or two helps the next buyer.
+
+  purchase_url is a clean path — append ?review=1 then UTMs with &.
+  If your Klaviyo shell already has a logo or footer, delete the logo row below.
+  Leave Klaviyo's unsubscribe / address footer in the template shell.
+
+  Use Arial / Helvetica only. Do not use {% if %} / {% for %}.
+-->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;background:#FFFFFF;">
+  <tr>
+    <td align="center" style="padding:32px 16px 40px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;max-width:560px;">
+
+        <!-- Logo -->
+        <tr>
+          <td align="center" style="padding:0 0 32px 0;">
+            <a href="https://www.reswell.app?utm_source=klaviyo&utm_medium=email&utm_campaign=review_requested_reminder&utm_content=logo" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="140" height="35" style="display:block;width:140px;max-width:100%;height:auto;border:0;" />
+            </a>
+          </td>
+        </tr>
+
+        <!-- Headline -->
+        <tr>
+          <td align="center" style="padding:0 8px 28px 8px;">
+            <h1 style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-0.03em;color:#04070E;text-align:center;">
+              Still a minute for a review?
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 0 16px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.6;color:#04070E;">
+            Hi {{ first_name|default:'there' }},
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 16px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.6;color:#04070E;">
+            Circling back on <strong style="font-weight:600;">{{ event|lookup:'Title' }}</strong>. If you have a minute, a review of {{ event|lookup:'seller_display_name'|default:'the seller' }} still helps the next buyer shop with confidence.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 28px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.6;color:#04070E;">
+            It doesn&rsquo;t need to be long. How it matched the listing, how it felt, how communication went &mdash; a sentence or two is enough.
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:0 0 28px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td align="center" bgcolor="#5574AD" style="border-radius:50px;">
+                  <a href="{{ event|lookup:'purchase_url' }}?review=1&utm_source=klaviyo&utm_medium=email&utm_campaign=review_requested_reminder&utm_content=review_seller_cta" style="display:inline-block;padding:14px 32px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.02em;">
+                    Review the seller
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 0 16px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.6;color:#04070E;">
+            If you already left one, thank you &mdash; you can ignore this.
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.6;color:#04070E;">
+            The Reswell team
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

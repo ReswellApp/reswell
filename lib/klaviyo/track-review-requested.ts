@@ -3,13 +3,14 @@
  * (automatically on delivery/pickup, or as a rare manual retry from the sale page).
  *
  * **Metric name in Klaviyo:** `Review Requested` — profile is the **buyer** so metric-triggered
- * flows email them. Seller display context lives under `request_from` (nested), not top-level scalars.
+ * flows email them. Seller email stays under `request_from` (nested). Display name is also on
+ * top-level `seller_display_name` for the review-the-seller template.
  *
- * **Building the flow:** Flows → Metric → **Review Requested** → email; use e.g.
- * `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.messages_url }}`, `{{ event.purchase_url }}`,
- * `{{ event.request_from.display_name }}`.
- *
- * When a review invite token exists, `review_url` points to `/review/[token]` (direct review page).
+ * **Building the flow:** Flows → Metric → **Review Requested** → email.
+ * Template: `lib/klaviyo/review-seller-requested-email.html`.
+ * CTA: `{{ event.purchase_url }}` (or `review_url`) — both are `/dashboard/purchases/{id}`,
+ * where the Review seller button lives. Do not send buyers to `/review/[token]` from email;
+ * that path 404s when the token is missing or the viewer is not the buyer.
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -17,7 +18,7 @@ import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { orderReviewInviteUrl } from "@/lib/utils/order-review-invite-token"
+import { orderPurchasePath } from "@/lib/utils/order-review-invite-token"
 
 function displayNameFromProfileRow(data: {
   display_name?: string | null
@@ -76,7 +77,7 @@ export type KlaviyoReviewRequestedPayload = {
   conversationId: string
   messageId: string
   sentAt: string
-  /** Stable deep link token — included as `review_url` when present. */
+  /** Invite token still created for `/review/[token]` redirects; email CTA uses the purchase page. */
   reviewToken?: string | null
   /**
    * From server action session + profiles row — avoids service role for seller display fields.
@@ -132,12 +133,9 @@ export async function trackKlaviyoReviewRequested(
         })
       : null
   const listingUrl = listingPath != null ? `${origin}${listingPath}` : null
-  const purchaseUrl = `${origin}/dashboard/purchases/${payload.orderId}`
+  const purchaseUrl = `${origin}${orderPurchasePath(payload.orderId)}`
   const messagesUrl = `${origin}/messages/${payload.conversationId}`
-  const reviewUrl =
-    payload.reviewToken?.trim()
-      ? orderReviewInviteUrl(payload.reviewToken.trim(), origin)
-      : purchaseUrl
+  const reviewUrl = purchaseUrl
 
   await sendKlaviyoServerEvent({
     metricName: "Review Requested",
@@ -157,6 +155,7 @@ export async function trackKlaviyoReviewRequested(
       messages_url: messagesUrl,
       conversation_id: payload.conversationId,
       message_id: payload.messageId,
+      seller_display_name: requestFrom.display_name,
       request_from: {
         user_id: payload.sellerUserId,
         email: requestFrom.email ?? "",

@@ -15,7 +15,8 @@ export function pathnameRequiresAuthSession(pathname: string): boolean {
   const isProtectedRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/messages") ||
-    pathname.startsWith("/admin")
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/review/")
 
   return isProtectedRoute || isOffersShortcut
 }

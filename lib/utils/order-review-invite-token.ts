@@ -12,3 +12,23 @@ export function orderReviewInvitePath(token: string): string {
 export function orderReviewInviteUrl(token: string, origin: string): string {
   return `${origin.replace(/\/+$/, "")}${orderReviewInvitePath(token)}`
 }
+
+/** Buyer purchase page — the working place to leave a seller review. */
+export function orderPurchasePath(orderId: string): string {
+  return `/dashboard/purchases/${orderId.trim()}`
+}
+
+/** Opens the purchase page and prompts the Review seller dialog. */
+export function orderPurchaseReviewPath(orderId: string): string {
+  return `${orderPurchasePath(orderId)}?review=1`
+}
+
+export function decodeOrderReviewInviteToken(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return ""
+  try {
+    return decodeURIComponent(trimmed)
+  } catch {
+    return trimmed
+  }
+}

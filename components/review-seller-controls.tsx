@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Star } from "lucide-react"
 import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
@@ -45,6 +45,8 @@ type ReviewSellerControlsProps = {
   compact?: boolean
   /** Called after a new review is saved (e.g. refetch client-loaded purchase lists). */
   onSuccess?: () => void
+  /** Open the review dialog on mount (email /review=1 deep link). */
+  autoOpen?: boolean
 }
 
 export function ReviewSellerControls({
@@ -54,9 +56,15 @@ export function ReviewSellerControls({
   existingReview,
   compact,
   onSuccess,
+  autoOpen,
 }: ReviewSellerControlsProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(Boolean(autoOpen && canReview && !existingReview))
+
+  useEffect(() => {
+    if (!autoOpen) return
+    document.getElementById("review-seller")?.scrollIntoView({ block: "center" })
+  }, [autoOpen])
 
   if (existingReview) {
     return (
@@ -95,7 +103,7 @@ export function ReviewSellerControls({
   }
 
   return (
-    <>
+    <div id="review-seller">
       <Button
         type="button"
         variant={compact ? "outline" : "default"}
@@ -117,6 +125,6 @@ export function ReviewSellerControls({
           router.refresh()
         }}
       />
-    </>
+    </div>
   )
 }
