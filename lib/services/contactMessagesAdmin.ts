@@ -110,6 +110,7 @@ export async function updateContactMessageAdminService(
         if (existing.email.trim()) {
           await trackKlaviyoSupportTicketResponse({
             supportTicketId: shadow.id,
+            supportCaseId: shadow.id,
             email: existing.email.trim(),
             externalId: existing.user_id,
             response: `Your support case is now ${payload.support_status.replaceAll("_", " ")}.`,
@@ -373,8 +374,10 @@ export async function sendSupportTicketAdminReplyService(
   }
 
   if (row.email.trim()) {
+    const shadow = await getSupportCaseByContactMessageId(serviceRole, row.id)
     void trackKlaviyoSupportTicketResponse({
       supportTicketId: row.id,
+      supportCaseId: shadow?.id,
       email: row.email.trim(),
       externalId: row.user_id,
       response: trimmed,

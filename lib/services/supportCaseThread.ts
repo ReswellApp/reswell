@@ -246,6 +246,7 @@ export async function sendSupportCaseAdminReplyService(
   if (row.requester_email?.trim()) {
     void trackKlaviyoSupportTicketResponse({
       supportTicketId: row.id,
+      supportCaseId: row.id,
       email: row.requester_email.trim(),
       externalId: row.requester_user_id,
       response: body,

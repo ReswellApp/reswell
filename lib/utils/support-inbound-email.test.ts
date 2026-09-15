@@ -1,7 +1,9 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
+import { formatSupportCaseReference } from "./support-case-display.ts"
 import {
+  buildKlaviyoSupportInboundThreading,
   collectSupportInboundCaseHints,
   extractEmailAddress,
   extractUuidFromPlusAddress,
@@ -47,6 +49,23 @@ describe("support inbound email parsing", () => {
       `support+${CASE_ID}@reswell.app`,
     )
     assert.equal(formatSupportInboundReplyTo("not-an-email", CASE_ID), null)
+  })
+
+  it("threads Klaviyo case_ref and reply_to on the support case UUID, not a contact_messages id", () => {
+    const contactMessageId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    assert.notEqual(
+      formatSupportCaseReference(contactMessageId),
+      formatSupportCaseReference(CASE_ID),
+    )
+    const fields = buildKlaviyoSupportInboundThreading({
+      supportTicketId: contactMessageId,
+      supportCaseId: CASE_ID,
+      mailbox: "support@reswell.app",
+    })
+    assert.equal(fields.threadingCaseId, CASE_ID)
+    assert.equal(fields.caseRef, formatSupportCaseReference(CASE_ID))
+    assert.equal(fields.caseRef, "RS-550E8400")
+    assert.equal(fields.replyTo, `support+${CASE_ID}@reswell.app`)
   })
 
   it("finds case ids from subject, body, URL, and plus-address", () => {
