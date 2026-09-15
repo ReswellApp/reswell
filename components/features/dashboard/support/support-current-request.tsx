@@ -3,8 +3,8 @@ import { ArrowRight, Plus } from "lucide-react"
 import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
 import {
   formatSupportCaseReference,
+  splitSupportCaseSubject,
   SUPPORT_CASE_STATUS_DESCRIPTION,
-  SUPPORT_CASE_STATUS_LABEL,
 } from "@/lib/utils/support-case-display"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
 import { Button } from "@/components/ui/button"
@@ -19,63 +19,82 @@ function requestPreview(item: UserSupportCaseListItem): string {
 
 export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem }) {
   const waiting = item.status === "waiting_on_you"
+  const { roleLabel, title } = splitSupportCaseSubject(item.subject)
+  const actionLabel = waiting ? "Reply" : "Open"
+  const orderAlreadyInTitle = Boolean(item.orderRef && title.includes(item.orderRef))
   const meta = [
     formatSupportCaseReference(item.id),
-    item.orderRef ? `Order ${item.orderRef}` : null,
+    item.orderRef && !orderAlreadyInTitle ? `Order ${item.orderRef}` : null,
   ].filter(Boolean)
 
   return (
     <section aria-labelledby="support-current-heading">
-      <h2
-        id="support-current-heading"
-        className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
-      >
-        Current request
-      </h2>
       <Link
         href={item.href}
         className={cn(
-          "mt-3 block rounded-2xl border bg-card p-5 shadow-sm transition-colors",
-          "hover:border-listingHeart/35 hover:bg-listingHeart/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-listingHeart focus-visible:ring-offset-2",
-          waiting ? "border-listingHeart/40" : "border-border/70",
+          "mt-0 block rounded-2xl border p-5 shadow-sm transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-listingHeart focus-visible:ring-offset-2",
+          waiting
+            ? "border-amber-300/80 bg-amber-50 hover:border-amber-400 hover:bg-amber-50/80 dark:border-amber-800/70 dark:bg-amber-950/40 dark:hover:bg-amber-950/55"
+            : "border-listingHeart/30 bg-listingHeart/[0.08] hover:border-listingHeart/45 hover:bg-listingHeart/[0.12]",
         )}
       >
         <div className="flex items-start justify-between gap-3">
-          <p className="min-w-0 text-[17px] font-semibold tracking-tight text-foreground [overflow-wrap:anywhere]">
-            {item.subject}
-          </p>
+          <div className="min-w-0">
+            <p
+              id="support-current-heading"
+              className={cn(
+                "flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
+                waiting ? "text-amber-800 dark:text-amber-200" : "text-listingHeart",
+              )}
+            >
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  waiting ? "bg-amber-600" : "bg-listingHeart",
+                )}
+                aria-hidden
+              />
+              Open request
+            </p>
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-[17px] font-semibold tracking-tight text-foreground">
+              {roleLabel ? (
+                <span
+                  className={cn(
+                    "inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium",
+                    waiting
+                      ? "bg-amber-200/80 text-amber-950 dark:bg-amber-900/70 dark:text-amber-50"
+                      : "bg-listingHeart/15 text-listingHeart",
+                  )}
+                >
+                  {roleLabel}
+                </span>
+              ) : null}
+              <span className="min-w-0 [overflow-wrap:anywhere]">{title}</span>
+            </p>
+          </div>
           <span
             className={cn(
-              "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
-              item.unreadCount > 0 || waiting
-                ? "bg-listingHeart text-white"
-                : "bg-listingHeart/10 text-listingHeart",
+              "inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] font-medium text-white",
+              waiting ? "bg-amber-700 dark:bg-amber-600" : "bg-listingHeart",
             )}
           >
-            {item.unreadCount > 0
-              ? item.unreadCount === 1
-                ? "New message"
-                : `${item.unreadCount} new`
-              : waiting
-                ? "Reply needed"
-                : SUPPORT_CASE_STATUS_LABEL[item.status]}
-          </span>
-        </div>
-        {meta.length > 0 ? (
-          <p className="mt-1 font-mono text-[11px] text-muted-foreground">{meta.join(" · ")}</p>
-        ) : null}
-        <p className="mt-3 line-clamp-2 text-[14px] leading-relaxed text-muted-foreground">
-          {requestPreview(item)}
-        </p>
-        <div className="mt-4 flex items-center justify-between gap-3 text-[13px]">
-          <p className="text-muted-foreground">
-            Updated <LocalDateTime iso={item.updatedAt} dateStyle="medium" timeStyle="short" />
-          </p>
-          <span className="inline-flex items-center gap-1 font-medium text-listingHeart">
-            {waiting ? "Reply" : "Open"}
+            {actionLabel}
             <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </span>
         </div>
+        <p className="mt-2 line-clamp-2 text-[14px] leading-relaxed text-muted-foreground">
+          {requestPreview(item)}
+        </p>
+        <p className="mt-3 text-[12px] text-muted-foreground">
+          {meta.length > 0 ? (
+            <>
+              <span className="font-mono">{meta.join(" · ")}</span>
+              <span className="mx-1.5 text-border">·</span>
+            </>
+          ) : null}
+          Updated <LocalDateTime iso={item.updatedAt} dateStyle="medium" timeStyle="short" />
+        </p>
       </Link>
     </section>
   )

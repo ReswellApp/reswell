@@ -5,8 +5,10 @@ import { MyListingsClient } from "@/components/features/dashboard/my-listings-cl
 
 function parseListingsStatus(
   value: string | undefined,
-): "all" | "draft" | "active" | "sold" {
-  if (value === "draft" || value === "active" || value === "sold") return value
+): "all" | "draft" | "active" | "vacation" | "sold" {
+  if (value === "draft" || value === "active" || value === "vacation" || value === "sold") {
+    return value
+  }
   return "all"
 }
 

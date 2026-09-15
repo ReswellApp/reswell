@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -37,7 +37,10 @@ import {
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
 import { ListingVacationModeButton } from "@/components/features/sell/listing-vacation-mode-button"
-import { canUseListingVacationMode } from "@/lib/listing-vacation-mode"
+import {
+  canUseListingVacationMode,
+  listingIsOnVacation,
+} from "@/lib/listing-vacation-mode"
 import { RelistListingButton } from "@/components/features/listings/relist-listing-button"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
@@ -60,7 +63,7 @@ import {
 
 type SortOption = "recent" | "oldest" | "price_desc" | "price_asc" | "views"
 type EngagementFilter = "all" | "in_carts" | "saved"
-type StatusFilter = "all" | "draft" | "active" | "sold"
+type StatusFilter = "all" | "draft" | "active" | "vacation" | "sold"
 
 function listingTypeLabel(section: string): string {
   if (isPeerListingSection(section)) return PEER_LISTING_SECTION_LABELS[section]
@@ -80,6 +83,7 @@ function emptyListingsMessage({
 }): string {
   if (statusFilter === "draft") return "No draft listings."
   if (statusFilter === "active") return "No active listings."
+  if (statusFilter === "vacation") return "No listings are on vacation."
   if (statusFilter === "sold") return "No sold listings."
   if (sectionFilter !== "all") {
     return `No ${listingTypeLabel(sectionFilter).toLowerCase()} listings.`
@@ -141,6 +145,16 @@ function isDraftListing(listing: MyListingRow): boolean {
   return listing.status === "draft"
 }
 
+function listingVacationEnabled(
+  listing: Pick<MyListingRow, "id" | "status" | "hidden_from_site">,
+  vacationById: Record<string, boolean>,
+): boolean {
+  return listingIsOnVacation({
+    status: listing.status,
+    hiddenFromSite: vacationById[listing.id] ?? listing.hidden_from_site === true,
+  })
+}
+
 function partitionVisibleListings({
   listings,
   searchQuery,
@@ -148,6 +162,7 @@ function partitionVisibleListings({
   engagementFilter,
   statusFilter,
   sectionFilter,
+  vacationById,
 }: {
   listings: MyListingRow[]
   searchQuery: string
@@ -155,6 +170,7 @@ function partitionVisibleListings({
   engagementFilter: EngagementFilter
   statusFilter: StatusFilter
   sectionFilter: string
+  vacationById: Record<string, boolean>
 }): {
   pinnedDraft: MyListingRow | null
   visibleListings: MyListingRow[]
@@ -165,7 +181,13 @@ function partitionVisibleListings({
     if (engagementFilter === "in_carts" && listing.cartCount <= 0) return false
     if (engagementFilter === "saved" && listing.favoriteCount <= 0) return false
     if (statusFilter === "draft" && listing.status !== "draft") return false
-    if (statusFilter === "active" && listing.status !== "active") return false
+    if (statusFilter === "active") {
+      if (listing.status !== "active") return false
+      if (listingVacationEnabled(listing, vacationById)) return false
+    }
+    if (statusFilter === "vacation" && !listingVacationEnabled(listing, vacationById)) {
+      return false
+    }
     if (statusFilter === "sold" && listing.status !== "sold") return false
     if (sectionFilter !== "all" && listing.section !== sectionFilter) return false
     if (!q) return true
@@ -300,6 +322,22 @@ export function MyListingsClient({
   const [endListingId, setEndListingId] = useState<string | null>(null)
   const [vacationById, setVacationById] = useState<Record<string, boolean>>({})
 
+  useEffect(() => {
+    setVacationById((current) => {
+      let changed = false
+      const next = { ...current }
+      for (const [listingId, enabled] of Object.entries(current)) {
+        const row = listings.find((listing) => listing.id === listingId)
+        if (!row) continue
+        if ((row.hidden_from_site === true) === enabled) {
+          delete next[listingId]
+          changed = true
+        }
+      }
+      return changed ? next : current
+    })
+  }, [listings])
+
   const listingTypeOptions = useMemo(() => {
     const unique = new Set(
       listings.map((listing) => listing.section).filter((section) => section.length > 0),
@@ -348,8 +386,9 @@ export function MyListingsClient({
         engagementFilter,
         statusFilter,
         sectionFilter,
+        vacationById,
       }),
-    [listings, searchQuery, sort, engagementFilter, statusFilter, sectionFilter],
+    [listings, searchQuery, sort, engagementFilter, statusFilter, sectionFilter, vacationById],
   )
 
   function handleViewAllDrafts() {
@@ -369,9 +408,13 @@ export function MyListingsClient({
       ? visibleListings.length === 1
         ? "1 draft"
         : `${visibleListings.length} drafts`
-      : visibleListings.length === 1
-        ? "1 listing"
-        : `${visibleListings.length} listings`
+      : statusFilter === "vacation"
+        ? visibleListings.length === 1
+          ? "1 listing on vacation"
+          : `${visibleListings.length} listings on vacation`
+        : visibleListings.length === 1
+          ? "1 listing"
+          : `${visibleListings.length} listings`
   const endListing = endListingId
     ? listings.find((listing) => listing.id === endListingId)
     : undefined
@@ -470,6 +513,7 @@ export function MyListingsClient({
               <SelectItem value="all">Status: All</SelectItem>
               <SelectItem value="draft">Status: Drafts</SelectItem>
               <SelectItem value="active">Status: Active</SelectItem>
+              <SelectItem value="vacation">Status: On vacation</SelectItem>
               <SelectItem value="sold">Status: Sold</SelectItem>
             </SelectContent>
           </Select>

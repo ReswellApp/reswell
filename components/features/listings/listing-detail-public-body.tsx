@@ -25,6 +25,18 @@ type PublicListingRow = Record<string, unknown> & {
 
 export type { PublicListingRow }
 
+const EMBEDDED_RELATED_CONTENT_SECTIONS = new Set([
+  "surfboards",
+  "fins",
+  "traction",
+  "wetsuits",
+  "apparel",
+  "magazines",
+  "boardbags",
+  "leashes",
+  "surfpacks",
+])
+
 function normalizePublicListingRow(listing: PublicListingRow): PublicListingRow {
   return {
     ...listing,
@@ -86,7 +98,7 @@ export function ListingDetailPublicBody({
             return null
         }
       })()}
-      {listing.section === "surfboards" ? null : (
+      {EMBEDDED_RELATED_CONTENT_SECTIONS.has(listing.section) ? null : (
         <ListingRelatedContentSection listingId={listing.id} />
       )}
     </>

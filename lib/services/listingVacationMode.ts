@@ -1,3 +1,4 @@
+import { after } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
@@ -23,6 +24,22 @@ type VacationModeListingRow = {
   section: string | null
   price: string | number | null
   listing_images: KlaviyoListingImage[] | null
+}
+
+function runAfterResponse(work: () => Promise<void>): void {
+  const run = () => {
+    void work().catch((error) => {
+      console.error(
+        "[listingVacationMode] after-write work:",
+        error instanceof Error ? error.message : error,
+      )
+    })
+  }
+  try {
+    after(run)
+  } catch {
+    run()
+  }
 }
 
 export async function setListingVacationModeForSeller(params: {
@@ -108,37 +125,56 @@ export async function setListingVacationModeForSeller(params: {
     }
   }
 
-  await syncListingToIndex(params.supabase, listingId)
-  void syncListingToGoogleMerchantBestEffort(params.supabase, listingId)
-  await revalidateAfterListingSiteModeration(params.supabase, [listingId])
+  try {
+    await revalidateAfterListingSiteModeration(service, [listingId])
+  } catch (error) {
+    console.error(
+      "[listingVacationMode] revalidate after hide/unhide:",
+      error instanceof Error ? error.message : error,
+    )
+  }
 
-  if (hiddenFromSite && source === "seller_inactivity") {
-    const row = listing as VacationModeListingRow
-    const images = Array.isArray(row.listing_images) ? row.listing_images : null
+  syncListingToGoogleMerchantBestEffort(service, listingId)
+
+  const row = listing as VacationModeListingRow
+  runAfterResponse(async () => {
     try {
-      const klaviyoResult = await trackKlaviyoListingAutoVacation({
-        sellerUserId: params.userId,
-        listingId,
-        listingTitle: typeof row.title === "string" ? row.title : "",
-        listingSlug: row.slug,
-        listingSection: typeof row.section === "string" && row.section.trim() ? row.section : "surfboards",
-        price: row.price,
-        listingImages: images,
-      })
-      if (!klaviyoResult.ok && !klaviyoResult.skipped) {
-        console.error(
-          "[listingVacationMode] klaviyo Listing Auto Vacation:",
-          klaviyoResult.status,
-          klaviyoResult.detail.slice(0, 200),
-        )
-      }
-    } catch (e) {
+      await syncListingToIndex(service, listingId)
+    } catch (error) {
       console.error(
-        "[listingVacationMode] klaviyo Listing Auto Vacation:",
-        e instanceof Error ? e.message : e,
+        "[listingVacationMode] elasticsearch sync:",
+        error instanceof Error ? error.message : error,
       )
     }
-  }
+
+    if (hiddenFromSite && source === "seller_inactivity") {
+      const images = Array.isArray(row.listing_images) ? row.listing_images : null
+      try {
+        const klaviyoResult = await trackKlaviyoListingAutoVacation({
+          sellerUserId: params.userId,
+          listingId,
+          listingTitle: typeof row.title === "string" ? row.title : "",
+          listingSlug: row.slug,
+          listingSection:
+            typeof row.section === "string" && row.section.trim() ? row.section : "surfboards",
+          price: row.price,
+          listingImages: images,
+        })
+        if (!klaviyoResult.ok && !klaviyoResult.skipped) {
+          console.error(
+            "[listingVacationMode] klaviyo Listing Auto Vacation:",
+            klaviyoResult.status,
+            klaviyoResult.detail.slice(0, 200),
+          )
+        }
+      } catch (e) {
+        console.error(
+          "[listingVacationMode] klaviyo Listing Auto Vacation:",
+          e instanceof Error ? e.message : e,
+        )
+      }
+    }
+  })
 
   return { ok: true, changed: true }
 }

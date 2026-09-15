@@ -73,39 +73,30 @@ export function ListingVacationModeButton({
       disabled={disabled || busy}
       onClick={() => void handleClick()}
       className={cn(
-        "h-auto min-h-9 min-w-[5.5rem] flex-col gap-0 rounded-full py-1.5 shadow-none",
+        "min-w-[5.5rem] rounded-full shadow-none",
+        className,
         vacationMode
           ? "bg-amber-600 text-white hover:bg-amber-600/90 dark:bg-amber-600 dark:hover:bg-amber-600/90"
           : "border-amber-500/40 text-amber-800 hover:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/15",
-        className,
       )}
       aria-pressed={vacationMode}
       aria-label={
-        vacationMode ? "Go live" : "Vacation mode (temporarily hide)"
+        vacationMode ? "Go live — show listing" : "Vacation mode (temporarily hide)"
+      }
+      title={
+        vacationMode
+          ? "Show this listing on the site again"
+          : "Temporarily hide from browse and search"
       }
     >
       {busy ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : vacationMode ? (
+        <Sun className="h-3.5 w-3.5" />
       ) : (
-        <span className="inline-flex items-center gap-1">
-          {vacationMode ? (
-            <Sun className="h-3.5 w-3.5" />
-          ) : (
-            <Palmtree className="h-3.5 w-3.5" />
-          )}
-          {vacationMode ? "Go live" : "Vacation"}
-        </span>
+        <Palmtree className="h-3.5 w-3.5" />
       )}
-      {busy ? null : (
-        <span
-          className={cn(
-            "text-[10px] font-normal leading-tight",
-            vacationMode ? "text-white/80" : "text-amber-800/80 dark:text-amber-300/80",
-          )}
-        >
-          {vacationMode ? "show listing" : "(temporarily hide)"}
-        </span>
-      )}
+      {busy ? "Updating…" : vacationMode ? "Go live" : "Vacation"}
     </Button>
   )
 }

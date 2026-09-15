@@ -6,6 +6,7 @@ import {
   inboxCaseKey,
   inboxContactKey,
   inboxSelectionKey,
+  isSupportCaseThreadRoute,
   parseInboxCaseParam,
   supportCaseResponseHref,
 } from "./support-case-paths.ts"
@@ -48,5 +49,16 @@ describe("parseInboxCaseParam", () => {
 describe("supportCaseResponseHref", () => {
   it("stays on the member thread", () => {
     assert.equal(supportCaseResponseHref("abc"), "/support/abc")
+  })
+})
+
+describe("isSupportCaseThreadRoute", () => {
+  it("matches the member case panel, not the hub", () => {
+    assert.equal(isSupportCaseThreadRoute("/support/abc"), true)
+    assert.equal(isSupportCaseThreadRoute("/support/abc/"), true)
+    assert.equal(isSupportCaseThreadRoute("/support"), false)
+    assert.equal(isSupportCaseThreadRoute("/dashboard/support"), false)
+    assert.equal(isSupportCaseThreadRoute("/messages/abc"), false)
+    assert.equal(isSupportCaseThreadRoute(null), false)
   })
 })

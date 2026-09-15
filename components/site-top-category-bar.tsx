@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { cn } from "@/lib/utils"
 import { isMessageThreadDetailRoute } from "@/lib/utils/message-thread-routes"
+import { isSupportCaseThreadRoute } from "@/lib/utils/support-case-paths"
 import {
   boardBrowseNavItemIsActive,
   siteHeaderMobileCategoryNavLinks,
@@ -97,5 +98,6 @@ export function shouldShowSiteTopCategoryBar(pathname: string | null): boolean {
   // Keep the category slider on the /messages inbox (like other dashboard
   // pages), but hide it inside the full-height conversation thread shell.
   if (isMessageThreadDetailRoute(pathname)) return false
+  if (isSupportCaseThreadRoute(pathname)) return false
   return true
 }

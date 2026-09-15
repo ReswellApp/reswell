@@ -117,9 +117,14 @@ async function renderListingOwnerManageActions({
             Delinquent — this listing is hidden while your account is restricted.
           </p>
         ) : hiddenFromSite ? (
-          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-            On vacation — temporarily hidden from browse and search.
-          </p>
+          <div className="w-full rounded-xl border border-amber-300/70 bg-amber-50 px-3.5 py-2.5 dark:border-amber-700/60 dark:bg-amber-950/40">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+              On vacation — hidden from shoppers
+            </p>
+            <p className="mt-0.5 text-[13px] text-amber-800/80 dark:text-amber-300/80">
+              Browse, search, and checkout will not show this listing until you go live.
+            </p>
+          </div>
         ) : null}
         <div className="flex min-w-0 flex-wrap gap-2">
           <Button asChild className="rounded-full">

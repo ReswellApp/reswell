@@ -136,6 +136,8 @@ export function EndListingDialog({
         resetState()
         onOpenChange(false)
         router.refresh()
+      } catch {
+        toast.error("Could not update vacation mode")
       } finally {
         setLoading(false)
       }

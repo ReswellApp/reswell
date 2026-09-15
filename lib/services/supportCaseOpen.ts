@@ -6,8 +6,7 @@ import {
 } from "@/lib/db/supportCases"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 
-const WELCOME =
-  "Thanks — we received this. Reply here anytime. We’ll also email you."
+const WELCOME = "Thanks — we received this. Reply here anytime."
 
 /** Create the case + opening customer message. Soft-fails if the table is missing. */
 export async function createSupportCaseWithOpeningMessage(

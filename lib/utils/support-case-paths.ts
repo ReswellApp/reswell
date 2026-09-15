@@ -41,6 +41,13 @@ export function supportCaseResponseHref(caseId: string): string {
   return `/support/${caseId}`
 }
 
+/** Member case thread (`/support/[id]`) — not the hub. */
+export function isSupportCaseThreadRoute(pathname: string | null): boolean {
+  if (!pathname) return false
+  const normalized = pathname.replace(/\/$/, "") || "/"
+  return /^\/support\/[^/]+$/.test(normalized)
+}
+
 export function supportCaseResponseAbsoluteUrl(origin: string, caseId: string): string {
   const base = origin.replace(/\/$/, "")
   return `${base}${supportCaseResponseHref(caseId)}`

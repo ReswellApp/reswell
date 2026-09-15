@@ -10,6 +10,7 @@ import {
 } from "@/lib/actions/supportCaseThread"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { isSupportStatusUpdateMessage } from "@/lib/messages/parse-support-thread-message"
+import { displaySupportCaseSystemBody } from "@/lib/utils/support-case-display"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
@@ -173,7 +174,7 @@ export function SupportCaseThread({
                   key={message.id}
                   className="px-6 text-center text-[12px] leading-relaxed text-muted-foreground"
                 >
-                  {message.body}
+                  {displaySupportCaseSystemBody(message.body)}
                 </p>
               )
             }

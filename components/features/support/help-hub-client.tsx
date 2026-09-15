@@ -26,6 +26,7 @@ import {
 } from "@/lib/messages/support-journey-config"
 import type { HelpHubOrderOption } from "@/lib/services/supportCases"
 import type { HelpHubIntentId, OrderHelpIssueId, UserSupportCaseListItem } from "@/lib/types/supportCase"
+import { isSupportCaseOpen } from "@/lib/utils/support-case-display"
 import {
   messagesSupportTopicLabels,
   type MessagesSupportTopic,
@@ -434,9 +435,12 @@ export function HelpHubClient({
               ? "Sign in to continue"
               : intent?.title ?? "Get help"
 
+  const hasOpenCase = signedIn && cases.some((item) => isSupportCaseOpen(item.status))
   const subtitle =
     phase === "intents"
-      ? "Choose a topic — we’ll ask a few questions, then you can add details."
+      ? hasOpenCase
+        ? "Continue your open request, or start another below."
+        : "Choose a topic — we’ll ask a few questions, then you can add details."
       : phase === "order_pick"
         ? roleFilter === "seller"
           ? "Pick the sale this is about."

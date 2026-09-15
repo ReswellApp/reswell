@@ -849,6 +849,7 @@ export function CaseInboxAdminClient({
                   staff={staff}
                   staffNames={staffNames}
                   currentStaffId={currentStaffId}
+                  orderContext={orderContext}
                   composerRef={composerRef}
                   mode={composerMode}
                   draft={draft}

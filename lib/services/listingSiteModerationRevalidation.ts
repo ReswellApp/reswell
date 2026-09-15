@@ -1,19 +1,25 @@
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { BOARDS_BROWSE_CACHE_TAG } from "@/lib/cache/boards-browse-catalog"
+import {
+  HOME_MOST_VIEWED_CACHE_TAG,
+  HOME_RECENTLY_ADDED_FINS_CACHE_TAG,
+  HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG,
+  HOME_RECENTLY_LISTED_GRID_CACHE_TAG,
+  HOME_STABLE_CATALOG_CACHE_TAG,
+} from "@/lib/cache/home-public-catalog"
+import { NAV_SEARCH_SUGGEST_CACHE_TAG } from "@/lib/cache/nav-search-suggest"
+import { NAV_SUGGESTED_SURFBOARDS_CACHE_TAG } from "@/lib/cache/nav-suggested-surfboards"
+import { PRICE_GUIDE_CACHE_TAG } from "@/lib/cache/price-guide"
 import {
   revalidateSellersAfterListingChange,
   revalidateSellersDirectoryCatalog,
 } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
-import {
-  revalidateHomePublicCatalog,
-  revalidateHomeRecentlyAddedFinsCatalog,
-  revalidateHomeRecentlyAddedSurfboardsCatalog,
-} from "@/lib/cache/revalidate-home-public-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
-import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
-import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
+import { revalidateTopCitiesDirectory } from "@/lib/cache/revalidate-top-cities-directory"
+
+const EXPIRE_NOW = { expire: 0 } as const
 
 type ListingModerationRow = {
   id: string
@@ -23,6 +29,29 @@ type ListingModerationRow = {
 
 type ListingDeletionRow = ListingModerationRow & {
   status?: string | null
+}
+
+/**
+ * Hard-expire browse/home/search caches so a hide cannot linger on discovery
+ * surfaces. Does not SWR-bust the global listing-PDP catalog tag.
+ */
+function expireListingDiscoveryCatalogs(): void {
+  revalidateTag(BOARDS_BROWSE_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(HOME_STABLE_CATALOG_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(HOME_RECENTLY_ADDED_FINS_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(HOME_MOST_VIEWED_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(HOME_RECENTLY_LISTED_GRID_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(NAV_SUGGESTED_SURFBOARDS_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(NAV_SEARCH_SUGGEST_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(PRICE_GUIDE_CACHE_TAG, EXPIRE_NOW)
+  revalidatePath("/priceguide", "layout")
+  revalidatePath("/boards", "page")
+  revalidatePath("/", "layout")
+  revalidatePath("/", "page")
+  revalidatePath("/search")
+  revalidatePath("/sold")
+  revalidateTopCitiesDirectory()
 }
 
 async function revalidateListingCatalogSurfaces(
@@ -40,15 +69,7 @@ async function revalidateListingCatalogSurfaces(
     if (sellerUserId) sellerUserIds.add(sellerUserId)
   }
 
-  revalidateBoardsBrowseCatalog()
-  revalidateHomePublicCatalog()
-  revalidateHomeRecentlyAddedSurfboardsCatalog()
-  revalidateHomeRecentlyAddedFinsCatalog()
-  revalidateNavSuggestedSurfboards()
-  revalidateNavSearchSuggest()
-  revalidatePath("/sold")
-  revalidatePath("/search")
-  revalidatePath("/")
+  expireListingDiscoveryCatalogs()
 
   if (options?.includeSoldFeed) {
     revalidateMarketplaceSoldFeedCatalog()
@@ -73,7 +94,17 @@ export async function revalidateAfterListingSiteModeration(
     .select("id, slug, user_id")
     .in("id", listingIds)
 
-  await revalidateListingCatalogSurfaces(supabase, (data ?? []) as ListingModerationRow[])
+  const rows = (data ?? []) as ListingModerationRow[]
+  if (rows.length === 0) {
+    for (const listingId of listingIds) {
+      const trimmed = listingId.trim()
+      if (trimmed) revalidateListingDetailPage(trimmed)
+    }
+    expireListingDiscoveryCatalogs()
+    return
+  }
+
+  await revalidateListingCatalogSurfaces(supabase, rows)
 }
 
 /**

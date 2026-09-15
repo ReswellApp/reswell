@@ -29,7 +29,11 @@ import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-
 import { ImageGallery } from "@/components/image-gallery"
 import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { orderedListingGalleryImages } from "@/lib/listing-image-display"
 import { ContactSellerForm } from "@/components/contact-seller-form"
+import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
+import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
+import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
 import { cn } from "@/lib/utils"
 import {
@@ -66,6 +70,7 @@ import {
 import {
   HomePeerListingScrollTile,
   HomeListingScrollRow,
+  type HomePeerScrollListing,
 } from "@/components/features/home"
 import {
   HOME_PEER_LISTING_WITH_PROFILE_SELECT,
@@ -145,12 +150,16 @@ async function renderWetsuitsListingDetailPage({
   const brandId = (wetsuit.brand_id as string | null)?.trim() ?? ""
 
   // Wave 1: everything that depends only on the listing row runs in parallel.
+  const listPriceNum =
+    typeof wetsuit.price === "number" ? wetsuit.price : Number.parseFloat(String(wetsuit.price)) || 0
+
   const [
     sellerReviewSummaryRes,
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerWetsuitsRes,
     indexBrand,
+    similarWetsuitsRaw,
     [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getCachedSellerReviewSummary(sellerId),
@@ -167,6 +176,12 @@ async function renderWetsuitsListingDetailPage({
       .order("created_at", { ascending: false })
       .limit(SELLER_WETSUITS_PDP_LIMIT),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
+    fetchSimilarPeerListingsForListingPdp(supabase, {
+      excludeListingId: wetsuit.id as string,
+      section: WETSUITS_SECTION,
+      priceUsd: listPriceNum,
+      facet: { column: "wetsuit_size", value: wetsuit.wetsuit_size as string | null },
+    }),
     Promise.all([
       !isSold ? getListingCartHolderCount(supabase, wetsuit.id) : Promise.resolve(0),
       !isSold ? getListingFavoriteCount(supabase, wetsuit.id) : Promise.resolve(0),
@@ -178,8 +193,10 @@ async function renderWetsuitsListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
   const sellerWetsuits = hydrateHomePeerListingRows((sellerWetsuitsRes.data ?? []) as Record<string, unknown>[])
+  const similarWetsuits = hydrateHomePeerListingRows(similarWetsuitsRaw)
 
   const sellerWetsuitIds = (sellerWetsuits ?? []).map((f) => f.id)
+  const similarWetsuitIds = similarWetsuits.map((r) => String(r.id))
 
   // Wave 2: viewer-dependent lookups in parallel, favorites coalesced into one query.
   const [favoriteRowsRes, acceptedOffer] = await Promise.all([
@@ -188,7 +205,7 @@ async function renderWetsuitsListingDetailPage({
           .from("favorites")
           .select("listing_id")
           .eq("user_id", user.id)
-          .in("listing_id", [wetsuit.id, ...sellerWetsuitIds])
+          .in("listing_id", [wetsuit.id, ...sellerWetsuitIds, ...similarWetsuitIds])
       : Promise.resolve({ data: null }),
     user && user.id !== wetsuit.user_id && wetsuit.status === "active"
       ? fetchAcceptedOfferForBuyerListing(supabase, user.id, wetsuit.id)
@@ -200,15 +217,9 @@ async function renderWetsuitsListingDetailPage({
   )
   const isFavorited = favoritedIds.has(wetsuit.id)
   const sellerWetsuitFavoritedIds = sellerWetsuitIds.filter((id) => favoritedIds.has(id))
+  const similarWetsuitFavoritedIds = similarWetsuitIds.filter((id) => favoritedIds.has(id))
 
-  const images: GalleryImage[] =
-    (wetsuit.listing_images as GalleryImage[] | null)
-      ?.slice()
-      .sort(
-        (a, b) =>
-          (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) ||
-          (a.sort_order ?? 0) - (b.sort_order ?? 0),
-      ) || []
+  const images = orderedListingGalleryImages(wetsuit.listing_images as GalleryImage[] | null)
 
   const video = primaryListingVideo(
     (
@@ -254,8 +265,6 @@ async function renderWetsuitsListingDetailPage({
     wetsuit as unknown as MetaListingProductSource,
   )
 
-  const listPriceNum =
-    typeof wetsuit.price === "number" ? wetsuit.price : Number.parseFloat(String(wetsuit.price)) || 0
   const publicListPriceUsd = publicListingListPriceUsd(wetsuit.price)
   const compareAtPriceUsd = publicListingCompareAtPriceUsd(
     (wetsuit as { compare_at_price?: string | number | null }).compare_at_price,
@@ -325,6 +334,11 @@ async function renderWetsuitsListingDetailPage({
       shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
     } else if (shippingOffered && boardShippingCostMode === "reswell") {
       shippingPriceCaption = "Shipping rate calculated at checkout"
+    } else if (shippingOffered && boardShippingCostMode === "flat") {
+      shippingPriceCaption =
+        shippingFlatRate > 0
+          ? `+ $${shippingFlatRate.toFixed(2)} shipping`
+          : "Flat shipping at checkout"
     }
   }
 
@@ -485,6 +499,9 @@ async function renderWetsuitsListingDetailPage({
               showPurchaseProtection={canPeerPurchase}
               agreedPriceUsd={buyerAgreedPriceUsd}
                 compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
+              afterPrice={
+                specRows.length > 0 ? <ListingBoardSpecTable rows={specRows} /> : null
+              }
             >
               {canPeerPurchase ? (
                 <ListingDetailPeerPurchaseActionsLoader
@@ -556,6 +573,7 @@ async function renderWetsuitsListingDetailPage({
                   ) : null}
                 </>
               )}
+              <ListingBoardSpecTable rows={specRows} className="mt-5" />
               {!isSold && !isOwnListing && listingPurchasable && wetsuit.status === "active" ? (
                 <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
                   <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
@@ -571,7 +589,7 @@ async function renderWetsuitsListingDetailPage({
                   <Link href="/protection-policy" className="text-foreground underline decoration-dashed underline-offset-2 hover:no-underline">
                     Purchase Protection
                   </Link>
-                  .
+                  . Fees may apply — see policy for coverage and exclusions.
                 </p>
               ) : null}
               {canPeerPurchase && (
@@ -674,7 +692,7 @@ async function renderWetsuitsListingDetailPage({
           </div>
 
           <div className="col-span-full min-w-0 max-w-full max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
-            <Accordion type="multiple" defaultValue={["about", "specs", "shipping"]} className="w-full">
+            <Accordion type="multiple" defaultValue={["about", "shipping"]} className="w-full">
               <AccordionItem value="about" className="border-border/55">
                 <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline [&[data-state=open]>svg]:text-foreground">
                   About this listing
@@ -688,32 +706,6 @@ async function renderWetsuitsListingDetailPage({
                   </div>
                 </AccordionContent>
               </AccordionItem>
-
-              {specRows.length > 0 ? (
-                <AccordionItem value="specs" className="border-border/55">
-                  <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
-                    Wetsuit specs
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-6 pt-0">
-                    <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-                      {specRows.map((row) => (
-                        <div key={row.label} className="flex items-baseline justify-between gap-4 border-b border-border/40 pb-2">
-                          <dt className="text-[14px] text-muted-foreground">{row.label}</dt>
-                          <dd className="text-right text-[15px] font-medium text-foreground">
-                            {row.href ? (
-                              <Link href={row.href} className="underline decoration-dashed underline-offset-2 hover:no-underline">
-                                {row.value}
-                              </Link>
-                            ) : (
-                              row.value
-                            )}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </AccordionContent>
-                </AccordionItem>
-              ) : null}
 
               <ListingFulfillmentAccordionItem
                 pickupOffered={pickupOffered}
@@ -750,7 +742,27 @@ async function renderWetsuitsListingDetailPage({
               </div>
             ) : null}
           </div>
+
+            {similarWetsuits.length > 0 ? (
+              <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
+                <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar wetsuits</h2>
+                  <HomeListingScrollRow uniformCardHeights>
+                    {similarWetsuits.map((row) => (
+                      <HomePeerListingScrollTile
+                        key={String(row.id)}
+                        listing={row as unknown as HomePeerScrollListing}
+                        userId={user?.id ?? null}
+                        isFavorited={similarWetsuitFavoritedIds.includes(String(row.id))}
+                      />
+                    ))}
+                  </HomeListingScrollRow>
+                </section>
+              </div>
+            ) : null}
         </div>
+
+        <ListingRelatedContentSection listingId={wetsuit.id as string} variant="embedded" />
 
         {sellerWetsuits && sellerWetsuits.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">

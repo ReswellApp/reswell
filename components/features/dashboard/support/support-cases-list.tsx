@@ -3,10 +3,15 @@ import Link from "next/link"
 import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
 import {
   isSupportCaseOpen,
+  splitSupportCaseSubject,
   SUPPORT_CASE_STATUS_LABEL,
 } from "@/lib/utils/support-case-display"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
 import { SupportCurrentRequest, SupportEmptyRequest } from "@/components/features/dashboard/support/support-current-request"
+import {
+  SupportHubActionDrawer,
+  SupportHubActionGroup,
+} from "@/components/features/support/support-hub-action-row"
 
 interface SupportCasesListProps {
   cases: UserSupportCaseListItem[]
@@ -43,7 +48,7 @@ function HistoryRow({
       >
         <div className="min-w-0">
           <p className="flex items-center gap-2 truncate text-[14px] font-medium text-foreground">
-            <span className="truncate">{item.subject}</span>
+            <span className="truncate">{splitSupportCaseSubject(item.subject).title}</span>
             {item.unreadCount > 0 ? (
               <span className="shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
                 {item.unreadCount > 99 ? "99+" : item.unreadCount}
@@ -78,23 +83,9 @@ function CaseDrawer({
   children: ReactNode
 }) {
   return (
-    <details className="group" defaultOpen={defaultOpen}>
-      <summary className="cursor-pointer list-none rounded-lg py-1 marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
-        <span className="flex items-center justify-between gap-3 text-[13px] text-muted-foreground transition-colors hover:text-foreground">
-          <span>{title}</span>
-          <span className="tabular-nums">
-            {count}
-            <span className="ml-2 group-open:hidden" aria-hidden>
-              +
-            </span>
-            <span className="ml-2 hidden group-open:inline" aria-hidden>
-              –
-            </span>
-          </span>
-        </span>
-      </summary>
-      <ul className="mt-1 divide-y divide-border/40">{children}</ul>
-    </details>
+    <SupportHubActionDrawer title={title} hint={String(count)} defaultOpen={defaultOpen}>
+      <ul className="-mx-2 divide-y divide-border/40">{children}</ul>
+    </SupportHubActionDrawer>
   )
 }
 
@@ -106,30 +97,33 @@ export function SupportCasesList({
   const { current, otherOpen, closed } = partitionCases(cases)
   const showPastOpen = historyOpen || !current
 
-  return (
-    <div className="space-y-8">
-      {showCurrent ? (
-        current ? <SupportCurrentRequest item={current} /> : <SupportEmptyRequest />
+  const history = (
+    <>
+      {otherOpen.length > 0 ? (
+        <CaseDrawer title="Other open requests" count={otherOpen.length}>
+          {otherOpen.map((item) => (
+            <HistoryRow key={`${item.backend}-${item.id}`} item={item} showStatus />
+          ))}
+        </CaseDrawer>
       ) : null}
 
-      {otherOpen.length > 0 || closed.length > 0 ? (
-        <div className="space-y-4 border-t border-border/50 pt-6">
-          {otherOpen.length > 0 ? (
-            <CaseDrawer title="Other open requests" count={otherOpen.length}>
-              {otherOpen.map((item) => (
-                <HistoryRow key={`${item.backend}-${item.id}`} item={item} showStatus />
-              ))}
-            </CaseDrawer>
-          ) : null}
+      {closed.length > 0 ? (
+        <CaseDrawer title="Past conversations" count={closed.length} defaultOpen={showPastOpen}>
+          {closed.map((item) => (
+            <HistoryRow key={`${item.backend}-${item.id}`} item={item} />
+          ))}
+        </CaseDrawer>
+      ) : null}
+    </>
+  )
 
-          {closed.length > 0 ? (
-            <CaseDrawer title="Past conversations" count={closed.length} defaultOpen={showPastOpen}>
-              {closed.map((item) => (
-                <HistoryRow key={`${item.backend}-${item.id}`} item={item} />
-              ))}
-            </CaseDrawer>
-          ) : null}
-        </div>
+  if (!showCurrent) return history
+
+  return (
+    <div className="space-y-6">
+      {current ? <SupportCurrentRequest item={current} /> : <SupportEmptyRequest />}
+      {otherOpen.length > 0 || closed.length > 0 ? (
+        <SupportHubActionGroup>{history}</SupportHubActionGroup>
       ) : null}
     </div>
   )

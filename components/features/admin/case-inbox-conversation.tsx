@@ -11,6 +11,7 @@ import {
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
+import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import { CaseInboxCommandBar } from "@/components/features/admin/case-inbox-command-bar"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
 import {
@@ -56,6 +57,7 @@ interface CaseInboxConversationProps {
   onDraftChange: (value: string) => void
   onInsertMacro: (text: string) => void
   onSend: (disposition: ComposerDisposition) => void
+  orderContext?: AdminOrderDetail | null
   aiLoading?: boolean
   aiActive?: boolean
   aiError?: string | null
@@ -91,6 +93,7 @@ export function CaseInboxConversation({
   onDraftChange,
   onInsertMacro,
   onSend,
+  orderContext = null,
   aiLoading,
   aiActive,
   aiError,

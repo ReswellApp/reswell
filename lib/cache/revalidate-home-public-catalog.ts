@@ -3,6 +3,7 @@ import {
   HOME_MOST_VIEWED_CACHE_TAG,
   HOME_RECENTLY_ADDED_FINS_CACHE_TAG,
   HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG,
+  HOME_RECENTLY_LISTED_GRID_CACHE_TAG,
   HOME_RECENTLY_SOLD_CACHE_TAG,
   HOME_STABLE_CATALOG_CACHE_TAG,
   HOME_TRENDING_BRANDS_CACHE_TAG,
@@ -44,6 +45,12 @@ export function revalidateHomeRecentlyAddedFinsCatalog(): void {
 /** Bust the most-viewed strip (e.g. after homepage hide on a high-traffic listing). */
 export function revalidateHomeMostViewedCatalog(): void {
   revalidateTag(HOME_MOST_VIEWED_CACHE_TAG, 'max')
+  revalidatePath("/", "page")
+}
+
+/** Bust the homepage recently listed grid after publish, sold, or hide. */
+export function revalidateHomeRecentlyListedGridCatalog(): void {
+  revalidateTag(HOME_RECENTLY_LISTED_GRID_CACHE_TAG, "max")
   revalidatePath("/", "page")
 }
 

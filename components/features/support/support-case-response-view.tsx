@@ -1,6 +1,9 @@
 import Link from "next/link"
 import { ArrowLeft, LifeBuoy, Package } from "lucide-react"
-import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+import {
+  formatSupportCaseReference,
+  splitSupportCaseSubject,
+} from "@/lib/utils/support-case-display"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
@@ -30,9 +33,12 @@ export function SupportCaseResponseView({
   messages,
   repairCreditTotal = 0,
 }: SupportCaseResponseViewProps) {
+  const { roleLabel, title } = splitSupportCaseSubject(subject)
+  const orderAlreadyInTitle = Boolean(orderRef && title.includes(orderRef))
   const subtitleParts = [
+    roleLabel,
     formatSupportCaseReference(caseId),
-    orderRef ? `Order ${orderRef}` : null,
+    orderRef && !orderAlreadyInTitle ? `Order ${orderRef}` : null,
   ].filter(Boolean)
 
   return (
@@ -52,7 +58,7 @@ export function SupportCaseResponseView({
         </div>
 
         <div className="min-w-0 flex-1 px-2.5">
-          <p className="truncate text-[15px] font-semibold text-foreground">{subject}</p>
+          <p className="truncate text-[15px] font-semibold text-foreground">{title}</p>
           <p className="truncate text-[12px] text-muted-foreground">
             {subtitleParts.join(" · ")}
           </p>

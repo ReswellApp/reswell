@@ -716,10 +716,17 @@ export function ConversationThreadClient({
 
   const otherUser = conversation.buyer_id === currentUserId ? conversation.seller : conversation.buyer
   const otherUserId = getOtherUserIdFromConversation(conversation, currentUserId ?? '')
+  const hasMultipleListingThreads = listingThreads.length > 1
   const backHref =
     backHrefProp ??
-    (listingThreads.length > 1 ? `/messages/with/${otherUserId}` : '/messages')
-  const showListingSwitcher = listingThreads.length > 1
+    (hasMultipleListingThreads ? `/messages/with/${otherUserId}` : '/messages')
+  const showListingSwitcher = hasMultipleListingThreads
+  // Inbox stays visible on desktop, so hide Back unless this person has more
+  // than one listing thread — then Back returns to that listing list.
+  const hideEmbeddedDesktopBack = embedded && !hasMultipleListingThreads
+  const backAriaLabel = hasMultipleListingThreads
+    ? 'Back to listing conversations'
+    : 'Back to messages'
   const isSellerViewer = !!currentUserId && currentUserId === conversation.seller_id
   const sellerOfferListing = displayListing ?? conversation.listing
   const sellerOfferListingId = sellerOfferListing?.id ?? conversation.listing_id
@@ -755,12 +762,15 @@ export function ConversationThreadClient({
           )}
         >
           <div className="flex items-center gap-1 sm:gap-2">
-            <Link href={backHref} className={cn("shrink-0", embedded && "lg:hidden")}>
+            <Link
+              href={backHref}
+              className={cn("shrink-0", hideEmbeddedDesktopBack && "lg:hidden")}
+            >
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-11 w-11 rounded-full text-foreground hover:bg-muted/80"
-                aria-label="Back to messages"
+                aria-label={backAriaLabel}
               >
                 <ArrowLeft className="h-[22px] w-[22px]" strokeWidth={2} />
               </Button>
