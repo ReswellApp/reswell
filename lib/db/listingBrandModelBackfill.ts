@@ -7,6 +7,7 @@ import type {
   ListingBrandModelResearchReviewStatus,
 } from "@/lib/validations/listing-brand-model-research"
 import type { BrandMatchRow, ModelMatchRow } from "@/lib/utils/listing-brand-model-match"
+import { unmatchedResearchCooldownOrFilter } from "@/lib/utils/listing-brand-model-research-queue"
 
 /** Peer listing sections the brand/model backfill cron processes. */
 export type ListingBrandModelBackfillSection = "surfboards" | "fins"
@@ -646,68 +647,83 @@ export async function listUnmatchedListingsForResearch(
 ): Promise<BackfillListingRow[]> {
   const limit = Math.min(Math.max(options?.limit ?? 15, 1), 50)
   const researchedBefore = options?.researchedBefore ?? null
-
-  const { data, error } = await supabase
-    .from("listing_brand_model_unmatched")
-    .select(
-      "listing_id, listing_title, last_researched_at, listing:listing_id ( id, title, brand, brand_id, model, brand_model_id, section, status, hidden_from_site )",
-    )
-    .order("first_seen_at", { ascending: true })
-    .limit(Math.max(limit * 4, 40))
-
-  if (error) {
-    console.error("listUnmatchedListingsForResearch:", error.message)
-    return []
-  }
+  const pageSize = Math.max(limit * 4, 40)
 
   const rows: BackfillListingRow[] = []
-  for (const raw of data ?? []) {
-    const listing = raw.listing as
-      | {
-          id: string
-          title: string | null
-          brand: string | null
-          brand_id: string | null
-          model: string | null
-          brand_model_id: string | null
-          section: string
-          status: string
-          hidden_from_site: boolean | null
-        }
-      | {
-          id: string
-          title: string | null
-          brand: string | null
-          brand_id: string | null
-          model: string | null
-          brand_model_id: string | null
-          section: string
-          status: string
-          hidden_from_site: boolean | null
-        }[]
-      | null
-    const row = Array.isArray(listing) ? listing[0] : listing
-    if (!row?.id) continue
-    const lastResearchedAt =
-      typeof (raw as { last_researched_at?: string | null }).last_researched_at === "string"
-        ? (raw as { last_researched_at: string }).last_researched_at
-        : null
-    if (researchedBefore && lastResearchedAt && lastResearchedAt >= researchedBefore) {
-      continue
+  let from = 0
+
+  for (;;) {
+    let query = supabase
+      .from("listing_brand_model_unmatched")
+      .select(
+        "listing_id, listing_title, last_researched_at, listing:listing_id ( id, title, brand, brand_id, model, brand_model_id, section, status, hidden_from_site )",
+      )
+      .order("first_seen_at", { ascending: true })
+
+    if (researchedBefore) {
+      query = query.or(unmatchedResearchCooldownOrFilter(researchedBefore))
     }
-    if (row.status !== "active" || row.hidden_from_site) continue
-    if (row.section !== "surfboards" && row.section !== "fins") continue
-    if (row.brand_id && row.brand_model_id) continue
-    rows.push({
-      id: row.id,
-      title: row.title,
-      brand: row.brand,
-      brand_id: row.brand_id,
-      model: row.model,
-      brand_model_id: row.brand_model_id,
-      section: row.section,
-    })
+
+    const { data, error } = await query.range(from, from + pageSize - 1)
+
+    if (error) {
+      console.error("listUnmatchedListingsForResearch:", error.message)
+      break
+    }
+
+    const batch = data ?? []
+    for (const raw of batch) {
+      const listing = raw.listing as
+        | {
+            id: string
+            title: string | null
+            brand: string | null
+            brand_id: string | null
+            model: string | null
+            brand_model_id: string | null
+            section: string
+            status: string
+            hidden_from_site: boolean | null
+          }
+        | {
+            id: string
+            title: string | null
+            brand: string | null
+            brand_id: string | null
+            model: string | null
+            brand_model_id: string | null
+            section: string
+            status: string
+            hidden_from_site: boolean | null
+          }[]
+        | null
+      const row = Array.isArray(listing) ? listing[0] : listing
+      if (!row?.id) continue
+      const lastResearchedAt =
+        typeof (raw as { last_researched_at?: string | null }).last_researched_at === "string"
+          ? (raw as { last_researched_at: string }).last_researched_at
+          : null
+      if (researchedBefore && lastResearchedAt && lastResearchedAt >= researchedBefore) {
+        continue
+      }
+      if (row.status !== "active" || row.hidden_from_site) continue
+      if (row.section !== "surfboards" && row.section !== "fins") continue
+      if (row.brand_id && row.brand_model_id) continue
+      rows.push({
+        id: row.id,
+        title: row.title,
+        brand: row.brand,
+        brand_id: row.brand_id,
+        model: row.model,
+        brand_model_id: row.brand_model_id,
+        section: row.section,
+      })
+      if (rows.length >= limit) break
+    }
+
     if (rows.length >= limit) break
+    if (batch.length < pageSize) break
+    from += pageSize
   }
 
   return rows
