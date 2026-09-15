@@ -1,4 +1,5 @@
 import type { ContactMessageRow } from "@/lib/db/contactMessages"
+import { ADMIN_SUPPORT_INBOX_PATH, inboxContactKey } from "./support-case-paths.ts"
 
 export function buildContactTicketDraft(msg: ContactMessageRow): string {
   const created = new Date(msg.created_at).toISOString()
@@ -12,7 +13,7 @@ export function buildContactTicketDraft(msg: ContactMessageRow): string {
       : null
   const supportThreadLine =
     msg.support_conversation_id != null && msg.support_conversation_id.trim() !== ""
-      ? `- **Support DM:** \`${msg.support_conversation_id}\` (reply in /admin/contact-messages?case=sc:${msg.id})`
+      ? `- **Support DM:** \`${msg.support_conversation_id}\` (reply in ${ADMIN_SUPPORT_INBOX_PATH}?case=${inboxContactKey(msg.id)})`
       : null
 
   return [

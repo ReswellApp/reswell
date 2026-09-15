@@ -7,7 +7,25 @@
 export const ADMIN_SUPPORT_INBOX_PATH = "/admin/contact-messages"
 
 export function inboxCaseKey(caseId: string): string {
-  return `sc:${caseId}`
+  return `sc:${parseInboxCaseParam(caseId) ?? caseId.trim()}`
+}
+
+export function inboxContactKey(contactMessageId: string): string {
+  return `cm:${parseInboxCaseParam(contactMessageId) ?? contactMessageId.trim()}`
+}
+
+export function inboxOrderSupportKey(orderSupportId: string): string {
+  return `os:${parseInboxCaseParam(orderSupportId) ?? orderSupportId.trim()}`
+}
+
+/** Keep an explicit sc/cm/os prefix; default a bare id to a support_case key. */
+export function inboxSelectionKey(raw: string): string {
+  const trimmed = raw.trim()
+  const prefixed = trimmed.match(/^(sc|cm|os):(.+)$/i)
+  if (prefixed?.[1] && prefixed[2]) {
+    return `${prefixed[1].toLowerCase()}:${prefixed[2]}`
+  }
+  return inboxCaseKey(trimmed)
 }
 
 /** Accept `sc:{uuid}`, `cm:{uuid}`, `os:{uuid}`, or a raw uuid. */
@@ -29,5 +47,5 @@ export function supportCaseResponseAbsoluteUrl(origin: string, caseId: string): 
 }
 
 export function adminSupportCaseHref(caseId: string): string {
-  return `${ADMIN_SUPPORT_INBOX_PATH}?case=${encodeURIComponent(inboxCaseKey(caseId))}`
+  return `${ADMIN_SUPPORT_INBOX_PATH}?case=${encodeURIComponent(inboxSelectionKey(caseId))}`
 }
