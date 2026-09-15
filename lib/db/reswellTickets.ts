@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { RESWELL_TICKET_LIST_SELECT } from '@/lib/types/reswellTickets'
 import type {
+  CursorAgentStatus,
+  CursorRunStatus,
   ReswellTicketEffort,
   ReswellTicketFileKind,
   ReswellTicketPriority,
@@ -18,6 +20,13 @@ export interface ReswellTicketRow {
   effort_level: ReswellTicketEffort | null
   description: string
   description_image_url: string | null
+  cursor_agent_id: string | null
+  cursor_agent_url: string | null
+  cursor_agent_status: CursorAgentStatus | null
+  cursor_run_id: string | null
+  cursor_run_status: CursorRunStatus | null
+  cursor_pr_url: string | null
+  cursor_last_synced_at: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -76,6 +85,13 @@ export interface UpdateReswellTicketRowInput {
   effort_level?: ReswellTicketEffort | null
   description?: string
   description_image_url?: string | null
+  cursor_agent_id?: string | null
+  cursor_agent_url?: string | null
+  cursor_agent_status?: CursorAgentStatus | null
+  cursor_run_id?: string | null
+  cursor_run_status?: CursorRunStatus | null
+  cursor_pr_url?: string | null
+  cursor_last_synced_at?: string | null
 }
 
 function throwDb(context: string, message: string): never {
