@@ -10,6 +10,7 @@ import { MagazinesListingDetailPage } from "@/components/magazines-listing-detai
 import { TractionListingDetailPage } from "@/components/traction-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
+import { ListingDetailAdminBarGate } from "@/components/features/listings/listing-detail-admin-bar-gate"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 import { ListingPdpProductJsonLd } from "@/components/features/listings/listing-pdp-product-json-ld"
 import { isGoogleMerchantPeerSection } from "@/lib/google-merchant/config"
@@ -54,6 +55,9 @@ export function ListingDetailPublicBody({
         <ListingPdpProductJsonLd listing={listing as GoogleMerchantListingRow} />
       ) : null}
       <ListingViewTracker listingId={listing.id} />
+      {sectionProps.anonymousPublicView === true ? null : (
+        <ListingDetailAdminBarGate listing={listing} anonymousPublicView={false} />
+      )}
       {(() => {
         switch (listing.section) {
           case "surfboards":

@@ -35,6 +35,7 @@ export function BrandEditorDialog({
   mode,
   brand,
   createPrefill,
+  initialName,
   onSaved,
   redirectOnCreate = true,
 }: {
@@ -44,6 +45,8 @@ export function BrandEditorDialog({
   brand: BrandRow | null
   /** When set with mode create, form fields load from a pending `brand_requests` row. */
   createPrefill?: BrandCreatePrefillFromRequest | null
+  /** Prefill name/slug for a blank create (e.g. listing admin bar). */
+  initialName?: string
   onSaved?: () => void
   /** Public /brands flow navigates to the new brand page; admin tools stay put and refresh. */
   redirectOnCreate?: boolean
@@ -93,9 +96,10 @@ export function BrandEditorDialog({
       setProductCategories(["surfboards"])
       if (fileInputRef.current) fileInputRef.current.value = ""
     } else if (mode === "create") {
+      const hint = initialName?.trim() ?? ""
       setSourceBrandRequestId(null)
-      setSlug("")
-      setName("")
+      setSlug(hint ? slugifyBrandName(hint) : "")
+      setName(hint)
       setShortDescription("")
       setWebsiteUrl("")
       setLogoUrl("")
@@ -106,7 +110,7 @@ export function BrandEditorDialog({
       setProductCategories(["surfboards"])
       if (fileInputRef.current) fileInputRef.current.value = ""
     }
-  }, [open, mode, brand, createPrefill])
+  }, [open, mode, brand, createPrefill, initialName])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
