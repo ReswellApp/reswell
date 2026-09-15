@@ -10,6 +10,7 @@ import {
   SUPPORT_CASE_KIND_LABEL,
 } from "@/lib/utils/support-case-display"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
+import { inboxItemPassesMineFilter } from "@/lib/admin/case-inbox-selection"
 import { supportTicketDisplaySubject } from "@/lib/utils/support-ticket-display"
 import {
   caseSlaState,
@@ -33,6 +34,31 @@ export type CaseInboxView =
   | "all"
 export type CaseInboxPriority = "low" | "normal" | "high" | "urgent"
 export type CaseInboxSort = "smart" | "recent" | "oldest"
+export const DEFAULT_INBOX_SORT: CaseInboxSort = "recent"
+
+export type InboxViewCounts = {
+  open: number
+  mine: number
+  unassigned: number
+  neu: number
+  waiting: number
+  claims: number
+  overdue: number
+  resolved: number
+  all: number
+}
+
+export const EMPTY_INBOX_VIEW_COUNTS: InboxViewCounts = {
+  open: 0,
+  mine: 0,
+  unassigned: 0,
+  neu: 0,
+  waiting: 0,
+  claims: 0,
+  overdue: 0,
+  resolved: 0,
+  all: 0,
+}
 export type CaseInboxOpenedBy = "requester" | "staff"
 export type CaseInboxRequesterRole = "buyer" | "seller" | "member" | "guest"
 
@@ -163,28 +189,9 @@ export function inboxViewFromSearchParams(params: {
           ? "order"
           : "all"
 
-  const rawView = params.view
-  if (
-    rawView === "open" ||
-    rawView === "mine" ||
-    rawView === "unassigned" ||
-    rawView === "new" ||
-    rawView === "waiting" ||
-    rawView === "claims" ||
-    rawView === "overdue" ||
-    rawView === "resolved" ||
-    rawView === "all"
-  ) {
-    return { view: rawView, typeOverlay }
+  if (params.view === "resolved" || params.status === "resolved") {
+    return { view: "resolved", typeOverlay }
   }
-
-  if (params.assignee === "mine") return { view: "mine", typeOverlay }
-  if (params.assignee === "unassigned") return { view: "unassigned", typeOverlay }
-  if (params.status === "new") return { view: "new", typeOverlay }
-  if (params.status === "waiting") return { view: "waiting", typeOverlay }
-  if (params.status === "resolved") return { view: "resolved", typeOverlay }
-  if (params.status === "all") return { view: "all", typeOverlay }
-  if (typeOverlay === "claims") return { view: "claims", typeOverlay: "all" }
   return { view: "open", typeOverlay }
 }
 
@@ -400,7 +407,12 @@ export function filterInboxItems(
     if (args.type === "order" && item.backend !== "order_support") return false
     if (args.type === "claims" && item.kind !== "protection_claim") return false
 
-    if (args.assignee === "mine" && item.assigneeAdminId !== args.currentStaffId) return false
+    if (
+      args.assignee === "mine" &&
+      !inboxItemPassesMineFilter(item.assigneeAdminId, args.currentStaffId)
+    ) {
+      return false
+    }
     if (args.assignee === "unassigned" && item.assigneeAdminId) return false
 
     if (!q) return true
@@ -417,7 +429,12 @@ export function filterInboxItems(
 }
 
 export {
+  findInboxItemBySelection,
   firstNonEmptyText,
+  inboxItemPassesMineFilter,
+  inboxLoadQueryKey,
+  mergeInboxPageItems,
   nextInboxSelectedKey,
   pinSelectedInboxItem,
+  shouldApplyInboxLoad,
 } from "@/lib/admin/case-inbox-selection"

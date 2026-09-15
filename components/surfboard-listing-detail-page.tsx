@@ -76,6 +76,7 @@ import {
 } from "@/lib/marketplace-slug-metadata"
 import { formatDistanceToNow } from "date-fns"
 import { ListingPdpRecentSections } from "@/components/features/listings/listing-pdp-recent-sections"
+import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { fetchSignedInPdpRecentlyViewedSurfboards } from "@/lib/services/pdp-recent-strip-listings"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
@@ -853,6 +854,8 @@ async function renderSurfboardListingDetailPage({
               </div>
             ) : null}
           </div>
+
+          <ListingRelatedContentSection listingId={board.id} variant="embedded" />
 
           {/* Seller's other boards — full-width horizontal scroll row */}
           {sellerBoards && sellerBoards.length > 0 && (

@@ -1,6 +1,6 @@
 {
   "generated_for": "FUNNER Surf Craft official Shopify surfboard catalog",
-  "source": "https://funner.surf/products.json (Surfboard product_type only — excludes apparel, fins, cloth, and lumber)",
+  "source": "https://funner.surf/products.json (Surfboard product_type only — excludes apparel, fins, cloth, and lumber; 2026-09 rename The Clovis Twin → The Clovis, The Forager Twin → The Forager)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -28,7 +28,7 @@
           "board_category_slug": "longboard"
         },
         {
-          "name": "The Clovis Twin",
+          "name": "The Clovis",
           "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/IMG_0890.jpg?v=1780333902",
           "description": "An alternative shortboard experience. The Clovis rips at warp speed. Super fast. Super responsive. The most high-performance surf craft in our lineup.",
           "board_category_slug": "shortboard"
@@ -45,9 +45,9 @@
           "board_category_slug": "longboard"
         },
         {
-          "name": "The Forager Twin",
+          "name": "The Forager",
           "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/MidTwinWildIris_9676a8ce-95d8-4abc-8af3-e0b9ff9cb0c9.png?v=1739906583",
-          "description": "A fully charged wave riding experience. The Forager Twin is your best bud when the surf is pumping. A delight of epic proportions feasting on speedy carves in shoulder-overhead surf. The most powerful surf craft in our lineup.",
+          "description": "A fully charged wave riding experience. The Forager is your best bud when the surf is pumping. A delight of epic proportions feasting on speedy carves in shoulder-overhead surf. The most powerful surf craft in our lineup.",
           "board_category_slug": "hybrid"
         },
         {

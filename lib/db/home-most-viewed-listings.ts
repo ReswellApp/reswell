@@ -12,18 +12,29 @@ export const HOME_MOST_VIEWED_PER_SECTION_LIMIT = 10
 
 type MostViewedSection = "surfboards" | "fins"
 
+export type HomeMostViewedFetchOptions = {
+  conditions?: readonly string[]
+}
+
 async function fetchMostViewedListingRowsForSection(
   supabase: SupabaseClient,
   section: MostViewedSection,
   limit: number,
+  options?: HomeMostViewedFetchOptions,
 ): Promise<unknown[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("listings")
     .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
     .eq("status", "active")
     .eq("section", section)
     .eq("hidden_from_site", false)
     .eq("hidden_from_homepage", false)
+
+  if (options?.conditions && options.conditions.length > 0) {
+    query = query.in("condition", [...options.conditions])
+  }
+
+  const { data, error } = await query
     .order("views", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -39,13 +50,15 @@ async function fetchMostViewedListingRowsForSection(
 export async function fetchHomeMostViewedSurfboardRows(
   supabase: SupabaseClient,
   limit = HOME_MOST_VIEWED_PER_SECTION_LIMIT,
+  options?: HomeMostViewedFetchOptions,
 ): Promise<unknown[]> {
-  return fetchMostViewedListingRowsForSection(supabase, "surfboards", limit)
+  return fetchMostViewedListingRowsForSection(supabase, "surfboards", limit, options)
 }
 
 export async function fetchHomeMostViewedFinRows(
   supabase: SupabaseClient,
   limit = HOME_MOST_VIEWED_PER_SECTION_LIMIT,
+  options?: HomeMostViewedFetchOptions,
 ): Promise<unknown[]> {
-  return fetchMostViewedListingRowsForSection(supabase, "fins", limit)
+  return fetchMostViewedListingRowsForSection(supabase, "fins", limit, options)
 }

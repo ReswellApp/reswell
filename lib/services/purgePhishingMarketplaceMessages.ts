@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { deleteMarketplaceMessageAsAdmin } from "@/lib/db/adminMarketplaceMessages"
+import {
+  deleteMarketplaceConversationAsAdmin,
+  deleteMarketplaceMessageAsAdmin,
+} from "@/lib/db/adminMarketplaceMessages"
 import {
   messageAppearsToBePhishing,
   PHISHING_MESSAGE_SQL_PREFILTER_PATTERNS,
@@ -20,6 +23,8 @@ export type PurgePhishingMarketplaceMessagesResult = {
   failed: number
   deletedMessageIds: string[]
   affectedConversationIds: string[]
+  deletedConversationIds: string[]
+  conversationDeleteFailed: number
   errors: string[]
 }
 
@@ -70,6 +75,8 @@ export async function purgePhishingMarketplaceMessages(
     failed: 0,
     deletedMessageIds: [],
     affectedConversationIds: [],
+    deletedConversationIds: [],
+    conversationDeleteFailed: 0,
     errors: [],
   }
 
@@ -93,5 +100,33 @@ export async function purgePhishingMarketplaceMessages(
   }
 
   result.affectedConversationIds = Array.from(affectedConversationIds)
+
+  for (const conversationId of result.affectedConversationIds) {
+    const { count, error: countError } = await supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("conversation_id", conversationId)
+
+    if (countError) {
+      result.conversationDeleteFailed += 1
+      result.errors.push(`${conversationId}: ${countError.message}`)
+      continue
+    }
+    if ((count ?? 0) > 0) continue
+
+    const deleteThread = await deleteMarketplaceConversationAsAdmin(supabase, conversationId)
+    if (deleteThread.ok) {
+      result.deletedConversationIds.push(conversationId)
+      continue
+    }
+
+    result.conversationDeleteFailed += 1
+    if (deleteThread.kind === "db_error") {
+      result.errors.push(`${conversationId}: ${deleteThread.error.message}`)
+    } else {
+      result.errors.push(`${conversationId}: thread not found`)
+    }
+  }
+
   return result
 }

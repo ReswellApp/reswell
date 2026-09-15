@@ -1,4 +1,3 @@
-import { generateText, Output } from "ai"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import {
@@ -17,24 +16,32 @@ import {
   upsertSupportReplyDraft,
   type SupportReplyOrderSnapshot,
 } from "@/lib/db/supportReplyDrafts"
+import { applySupportMacroVars, type SupportMacroVars } from "@/lib/utils/apply-support-macro-vars"
+import { supportMacroVarsFromOrder } from "@/lib/utils/support-macro-order-vars"
 import { supportReplyGreetingName } from "@/lib/utils/support-reply-greeting"
 import {
   APP_LLM_FEATURES,
-  gatewayTagsForFeature,
   isAppLlmFeatureEnabled,
   resolveConfiguredModel,
 } from "@/lib/llm/app-models"
+import { defaultCsAgentReason } from "@/lib/llm/cs-agent"
+import { generateCsAgentDraft } from "@/lib/llm/cs-agent-generate"
+import { createCsAgentLookups, listPriorTicketsForCsAgent } from "@/lib/services/csAgentLookups"
+import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
 import {
   citedHelpFromSlugs,
   gatherSupportReplyKnowledge,
   SUPPORT_REPLY_PROMPT_VERSION,
   type SupportReplyKnowledge,
 } from "@/lib/services/supportReplyKnowledge"
-import type { SupportReplyCitedHelp, SupportReplyDraftView } from "@/lib/types/supportReplyDraft"
+import type {
+  SupportReplyCitedHelp,
+  SupportReplyDraftCitations,
+  SupportReplyDraftView,
+} from "@/lib/types/supportReplyDraft"
 import {
   supportReplyDraftCaseIdSchema,
   supportReplyDraftFeedbackSchema,
-  supportReplyDraftLlmSchema,
   type SupportReplyDraftOrigin,
 } from "@/lib/validations/supportReplyDraft"
 import {
@@ -46,7 +53,7 @@ import {
 const FEATURE = APP_LLM_FEATURES.find((f) => f.id === "support_reply_draft")
 
 export function supportReplyDraftModelId(): string {
-  if (!FEATURE) return "google/gemini-2.5-flash"
+  if (!FEATURE) return "google/gemini-2.5-pro"
   return resolveConfiguredModel(FEATURE)
 }
 
@@ -94,13 +101,25 @@ function lastMessageAt(messages: SupportCaseMessageRow[]): string | null {
   return last?.created_at ?? null
 }
 
-function applyMacroVars(
-  body: string,
-  vars: { name?: string | null; orderRef?: string | null },
-): string {
-  return body
-    .replaceAll("{{name}}", vars.name?.trim() || "there")
-    .replaceAll("{{order_ref}}", vars.orderRef?.trim() || "your order")
+function draftMacroVars(
+  name: string,
+  orderRef: string | null,
+  order: SupportReplyOrderSnapshot | null,
+): SupportMacroVars {
+  return supportMacroVarsFromOrder({
+    name,
+    order_ref: orderRef,
+    tracking: order?.trackingNumber ?? null,
+    order: order
+      ? {
+          status: order.status,
+          fulfillment_method: order.fulfillmentMethod,
+          delivery_status: order.deliveryStatus,
+          tracking_carrier: order.trackingCarrier,
+          carrier_delivered_at: order.carrierDeliveredAt,
+        }
+      : null,
+  })
 }
 
 function toCitedHelp(slugs: string[]): SupportReplyCitedHelp[] {
@@ -120,6 +139,8 @@ function toView(
     origin: SupportReplyDraftOrigin
     model: string | null
     cited_help_slugs: string[]
+    reason?: string | null
+    citations?: SupportReplyDraftCitations
   },
   cached: boolean,
   needsHumanReview: boolean,
@@ -130,56 +151,26 @@ function toView(
     body: row.body,
     origin: row.origin,
     model: row.model,
+    reason: row.reason ?? null,
     citedHelp: toCitedHelp(row.cited_help_slugs),
+    citedOrders: row.citations?.orders ?? [],
+    citedTickets: row.citations?.tickets ?? [],
     needsHumanReview,
     cached,
   }
 }
 
-function compactOrder(order: SupportReplyOrderSnapshot | null): string {
-  if (!order) return "No order is linked."
-  const parts = [
-    `Order ${order.orderNum ?? order.id.slice(0, 8)}`,
-    `status ${order.status}`,
-    order.fulfillmentMethod ? `fulfillment ${order.fulfillmentMethod}` : null,
-    order.deliveryStatus ? `delivery ${order.deliveryStatus}` : null,
-    order.trackingNumber ? `tracking ${order.trackingNumber}` : null,
-    `amount $${order.amount.toFixed(2)}`,
-  ]
-  return parts.filter(Boolean).join(" · ")
-}
-
-function knowledgePrompt(knowledge: SupportReplyKnowledge): string {
-  const help = knowledge.helpArticles
-    .map(
-      (article) =>
-        `- ${article.title} (${article.href})\n  ${article.description}\n  ${article.body.slice(0, 700)}`,
-    )
-    .join("\n")
-  const examples = knowledge.examples
-    .map(
-      (example) =>
-        `- [${example.rating}] customer: ${example.customerExcerpt.slice(0, 400)}\n  staff: ${example.staffReply.slice(0, 700)}`,
-    )
-    .join("\n")
-  const macros = knowledge.macros
-    .map((macro) => `- ${macro.title}: ${macro.body}`)
-    .join("\n")
-
-  return `Help center articles (current, treat as policy):
-${help || "(none matched)"}
-
-Similar sent replies Hayden approved or edited:
-${examples || "(none yet — learn from future sends)"}
-
-Saved macros (tone/structure only — adapt, do not paste blindly if facts differ):
-${macros || "(none)"}`
-}
-
 function fallbackDraft(
   knowledge: SupportReplyKnowledge,
-  vars: { name?: string | null; orderRef?: string | null },
-): { body: string; origin: SupportReplyDraftOrigin; slugs: string[]; exampleIds: string[] } {
+  vars: SupportMacroVars,
+): {
+  body: string
+  origin: SupportReplyDraftOrigin
+  slugs: string[]
+  exampleIds: string[]
+  reason: string
+  citations: SupportReplyDraftCitations
+} {
   const example = knowledge.examples[0]
   if (example && example.score >= 0.7) {
     return {
@@ -187,29 +178,51 @@ function fallbackDraft(
       origin: "example",
       slugs: knowledge.helpArticles.map((article) => article.slug),
       exampleIds: [example.id].filter((id) => !id.startsWith("case:")),
+      reason: defaultCsAgentReason({
+        origin: "example",
+        hasOrder: false,
+        hasTickets: false,
+        helpTitles: knowledge.helpArticles.map((article) => article.title),
+      }),
+      citations: { orders: [], tickets: [] },
     }
   }
   const macro = knowledge.macros[0]
   if (macro) {
     return {
-      body: applyMacroVars(macro.body, vars),
+      body: applySupportMacroVars(macro.body, vars),
       origin: "macro",
       slugs: knowledge.helpArticles.map((article) => article.slug),
       exampleIds: [],
+      reason: defaultCsAgentReason({
+        origin: "macro",
+        hasOrder: false,
+        hasTickets: false,
+        helpTitles: knowledge.helpArticles.map((article) => article.title),
+      }),
+      citations: { orders: [], tickets: [] },
     }
   }
   return {
-    body: applyMacroVars(
+    body: applySupportMacroVars(
       "Hi {{name}}, thanks for writing in. I am looking into this and will follow up shortly.",
       vars,
     ),
     origin: "macro",
     slugs: [],
     exampleIds: [],
+    reason: defaultCsAgentReason({
+      origin: "macro",
+      hasOrder: false,
+      hasTickets: false,
+      helpTitles: [],
+    }),
+    citations: { orders: [], tickets: [] },
   }
 }
 
 async function generateDraftBody(args: {
+  service: SupabaseClient
   row: SupportCaseRow
   messages: SupportCaseMessageRow[]
   knowledge: SupportReplyKnowledge
@@ -222,6 +235,8 @@ async function generateDraftBody(args: {
   exampleIds: string[]
   model: string | null
   needsHumanReview: boolean
+  reason: string
+  citations: SupportReplyDraftCitations
 }> {
   const customerBits = collectCustomerSupportTexts(args.messages, args.row.subject)
 
@@ -235,71 +250,59 @@ async function generateDraftBody(args: {
     .filter((id) => !id.startsWith("case:"))
 
   if (!isSupportReplyDraftLlmEnabled()) {
-    const fallback = fallbackDraft(args.knowledge, {
-      name: args.greetingName,
-      orderRef: args.row.order_ref,
-    })
+    const fallback = fallbackDraft(
+      args.knowledge,
+      draftMacroVars(args.greetingName, args.row.order_ref, args.order),
+    )
     return { ...fallback, model: null, needsHumanReview: true }
   }
 
-  const { output } = await generateText({
-    model: supportReplyDraftModelId(),
-    output: Output.object({ schema: supportReplyDraftLlmSchema }),
-    system: `You draft customer-service replies for Hayden at Reswell, a used-surfboard marketplace with Purchase Protection.
-
-Write a ready-to-send reply in Hayden's voice: warm, concise, specific, first-person staff ("we" / Reswell Support). Do not mention that you are an AI.
-
-Rules:
-- Ground every policy claim in the provided help-center excerpts or similar sent replies.
-- Never invent refunds, claim approvals, tracking numbers, or payouts.
-- If facts are missing, ask one clear question instead of guessing.
-- Do not promise a timeline Reswell has not published.
-- Safety / scam reports: take them seriously, ask for the listing or conversation link, and say staff will review.
-- Keep it under 180 words unless the thread needs a short numbered list.
-- Sign off simply as Reswell Support (no invented personal name).
-- Greet them as ${args.greetingName}. Never address them by email.
-- If the last staff message already answered them, write a short follow-up, not a repeat.`,
-    prompt: `Draft the next customer-visible reply.
-
-Case: ${args.row.subject}
-Kind: ${args.row.kind}
-Status: ${args.row.status}
-Requester: ${args.greetingName} (${args.row.requester_role})
-${compactOrder(args.order)}
-
-Customer messages:
-${customerBits.slice(-6).join("\n---\n") || "(original request only)"}
-
-Already sent by staff:
-${priorStaff.slice(-4).join("\n---\n") || "(none yet)"}
-
-${knowledgePrompt(args.knowledge)}`,
-    temperature: 0.3,
-    providerOptions: {
-      gateway: {
-        tags: gatewayTagsForFeature("support_reply_draft"),
-      },
-    },
+  const priorTickets = await listPriorTicketsForCsAgent(args.service, {
+    caseId: args.row.id,
+    requesterUserId: args.row.requester_user_id,
+    requesterEmail: args.row.requester_email,
+    linkedOrderId: args.row.order_id,
   })
 
-  if (!output?.reply.trim()) {
-    const fallback = fallbackDraft(args.knowledge, {
-      name: args.greetingName,
-      orderRef: args.row.order_ref,
-    })
-    return { ...fallback, model: supportReplyDraftModelId(), needsHumanReview: true }
-  }
+  const lookupSession = createCsAgentLookups(args.service, {
+    caseId: args.row.id,
+    requesterUserId: args.row.requester_user_id,
+    requesterEmail: args.row.requester_email,
+    linkedOrderId: args.row.order_id,
+  })
+  const generated = await generateCsAgentDraft({
+    model: supportReplyDraftModelId(),
+    pack: {
+      greetingName: args.greetingName,
+      caseSubject: args.row.subject,
+      caseKind: args.row.kind,
+      caseStatus: args.row.status,
+      requesterRole: args.row.requester_role,
+      customerMessages: customerBits,
+      staffMessages: priorStaff,
+      order: args.order,
+      priorTickets,
+      help: args.knowledge.helpArticles,
+      examples: args.knowledge.examples,
+      macros: args.knowledge.macros,
+    },
+    lookups: lookupSession.lookups,
+  })
 
-  const cited = output.cited_help_slugs.filter((slug) =>
-    args.knowledge.helpArticles.some((article) => article.slug === slug),
-  )
   return {
-    body: output.reply.trim(),
+    body: generated.reply,
     origin: "llm",
-    slugs: cited.length > 0 ? cited : args.knowledge.helpArticles.map((article) => article.slug).slice(0, 3),
+    slugs: generated.citedHelpSlugs,
     exampleIds,
     model: supportReplyDraftModelId(),
-    needsHumanReview: output.needs_human_review,
+    needsHumanReview: generated.needsHumanReview,
+    reason: generated.reason,
+    citations: citationsFromAgent({
+      orders: [args.order, ...lookupSession.resolvedOrders()],
+      orderRefs: generated.citedOrderRefs,
+      tickets: priorTickets,
+      ticketIds: generated.citedTicketIds,
+    }),
   }
 }
 
@@ -369,13 +372,17 @@ export async function generateAndStoreDraft(
 
   let generated
   try {
-    generated = await generateDraftBody({ row, messages, knowledge, order, greetingName })
+    generated = await generateDraftBody({
+      service,
+      row,
+      messages,
+      knowledge,
+      order,
+      greetingName,
+    })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)
-    const fallback = fallbackDraft(knowledge, {
-      name: greetingName,
-      orderRef: row.order_ref,
-    })
+    const fallback = fallbackDraft(knowledge, draftMacroVars(greetingName, row.order_ref, order))
     generated = { ...fallback, model: null, needsHumanReview: true }
   }
 
@@ -388,6 +395,8 @@ export async function generateAndStoreDraft(
     citedHelpSlugs: generated.slugs,
     retrievedExampleIds: generated.exampleIds,
     origin: generated.origin,
+    reason: generated.reason,
+    citations: generated.citations,
   })
   if (!saved) return { error: "Could not save the draft." }
 

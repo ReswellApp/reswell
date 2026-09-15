@@ -1,12 +1,15 @@
 "use client"
 
-import Link from "next/link"
 import { format } from "date-fns"
-import { CheckCircle2, RotateCcw } from "lucide-react"
+import { RotateCcw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import type { SupportCaseEventRow } from "@/lib/db/supportCases"
-import type { SupportCaseCustomerOrder } from "@/lib/services/supportCaseCustomerContext"
+import type {
+  SupportCaseCustomerContext,
+  SupportCaseCustomerOrder,
+} from "@/lib/services/supportCaseCustomerContext"
+import { thisOrderSnapshotFromAdminOrder } from "@/lib/admin/case-customer-panel"
 import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { CaseInboxItem, CaseInboxPriority } from "@/lib/admin/case-inbox"
@@ -30,16 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { inboxInitials } from "@/lib/admin/case-inbox"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
-import { inboxCounterpartLabel, staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
+import { staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
 import { cn } from "@/lib/utils"
 
 const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
-  "submitted",
-  "in_review",
   "in_progress",
-  "waiting_on_you",
   "resolved",
 ]
 
@@ -73,7 +72,6 @@ interface CaseInboxDetailsProps {
   onAssigned: (id: string | null) => void
   onStatus: (status: SupportCaseStatus) => void
   onPriority: (priority: CaseInboxPriority) => void
-  onResolve: () => void
   onReopen: () => void
   onOrderOutcome: (outcome: string) => void
   onPinnedNote: (note: string) => void
@@ -82,6 +80,7 @@ interface CaseInboxDetailsProps {
   onOrderLinked: (order: SupportCaseCustomerOrder) => void
   onSellerOutreachSent: () => void
   onRefundComplete: () => void
+  initialCustomerContext?: SupportCaseCustomerContext | null
 }
 
 export function CaseInboxDetails({
@@ -98,7 +97,6 @@ export function CaseInboxDetails({
   onAssigned,
   onStatus,
   onPriority,
-  onResolve,
   onReopen,
   onOrderOutcome,
   onPinnedNote,
@@ -107,22 +105,18 @@ export function CaseInboxDetails({
   onOrderLinked,
   onSellerOutreachSent,
   onRefundComplete,
+  initialCustomerContext = null,
 }: CaseInboxDetailsProps) {
   return (
-    <aside className="flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/50 bg-muted/10 lg:w-[400px] lg:shrink-0 lg:border-l lg:border-t-0">
-      <div className="shrink-0 border-b border-border/50 px-4 py-3">
-        {item.isOpen ? (
-          <Button type="button" className="w-full" disabled={savePending} onClick={onResolve}>
-            <CheckCircle2 className="mr-1.5 h-4 w-4" />
-            Resolve conversation
-          </Button>
-        ) : (
+    <aside className="flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/50 bg-[#fafafa] dark:bg-muted/10 md:border-l md:border-t-0">
+      {!item.isOpen ? (
+        <div className="shrink-0 border-b border-border/50 px-4 py-3">
           <Button type="button" variant="outline" className="w-full" disabled={savePending} onClick={onReopen}>
             <RotateCcw className="mr-1.5 h-4 w-4" />
             Reopen conversation
           </Button>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <Tabs
         key={item.key}
@@ -137,43 +131,29 @@ export function CaseInboxDetails({
         </TabsList>
 
         <TabsContent value="overview" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-5 pt-3">
-          <section className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {inboxCounterpartLabel(item.requesterRole)}
-            </p>
-            <div className="flex items-start gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
-                {inboxInitials(item.fromName)}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{item.fromName}</p>
-                {item.fromEmail ? <p className="truncate text-xs text-muted-foreground">{item.fromEmail}</p> : null}
-                {item.userId ? (
-                  <Link href={`/admin/users/${item.userId}`} className="text-xs font-medium underline-offset-2 hover:underline">
-                    View complete profile
-                  </Link>
-                ) : <p className="text-xs text-muted-foreground">Guest / no account</p>}
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-2 border-t border-border/50 pt-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {inboxCounterpartLabel(item.requesterRole)} activity
-            </p>
-            <CaseCustomerContext
-              caseId={item.id}
-              linkedOrderId={item.orderId}
-              onOrderLinked={onOrderLinked}
-            />
-          </section>
+          <CaseCustomerContext
+            caseId={item.id}
+            linkedOrderId={item.orderId}
+            linkedOrderRef={item.orderRef}
+            thisOrder={
+              orderContext && item.orderId === orderContext.id
+                ? thisOrderSnapshotFromAdminOrder(orderContext)
+                : null
+            }
+            initialContext={initialCustomerContext}
+            onOrderLinked={onOrderLinked}
+          />
 
           <section className="space-y-3 border-t border-border/50 pt-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Workflow</p>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-muted-foreground">Status</Label>
-                <Select value={item.status} onValueChange={(value) => onStatus(value as SupportCaseStatus)} disabled={savePending}>
+                <Select
+                  value={item.status === "resolved" ? "resolved" : "in_progress"}
+                  onValueChange={(value) => onStatus(value as SupportCaseStatus)}
+                  disabled={savePending}
+                >
                   <SelectTrigger className="h-9 bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {WORKFLOW_STATUS_VALUES.map((status) => (

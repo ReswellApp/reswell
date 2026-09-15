@@ -49,6 +49,12 @@
           "board_category_slug": "shortboard"
         },
         {
+          "name": "Performer Mal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/Myproject.jpg?v=1650316692",
+          "description": "Tinted cut-lap performance longboard with a full polish. FCS single-box single-fin setup built for glide, trim, and classic mal surfing.",
+          "board_category_slug": "longboard"
+        },
+        {
           "name": "Slab Hunter",
           "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/slabhunterdeck.png?v=1649806569",
           "description": "Originally designed for Ryan Edmond for chasing slabbing waves — forward outline with volume under the chest for easy paddling and wave entry. Medium single to double concave for quick under-the-hood turns and pump through bowls. Also works on long point waves; an all-around step-up from 3 ft to 3× overhead.",
@@ -71,6 +77,12 @@
           "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/coupeDeck.png?v=1649805360",
           "description": "High volume performance groveler with single to double to vee for speed, zing, and release. One of JCD's most versatile and popular boards — speed through a ride with vee exit for a responsive fast small-wave grovel machine. Volume and performance crammed into a small-wave go-to. Wave size 1–5 ft.",
           "board_category_slug": "groveler"
+        },
+        {
+          "name": "Twin Step",
+          "image_url": "https://cdn.shopify.com/s/files/1/0562/1959/8984/products/IMG_2354.jpg?v=1669244229",
+          "description": "Designed off the Black Apache thruster model with a slightly flattened deck to carry more volume toward the rail while keeping a performance rail. Less width overall with a narrowed tail, rounded pin, and channel combo for hold off the bottom and in the tube. Medium entry and full tail rocker with single to double concave. Built for early entries, speed, and hold from 3–8 ft.",
+          "board_category_slug": "step-up-gun"
         },
         {
           "name": "Twingle Mid",

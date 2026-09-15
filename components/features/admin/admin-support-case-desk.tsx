@@ -20,6 +20,10 @@ import {
 } from "@/lib/utils/support-case-display"
 import type { SupportCaseKind } from "@/lib/types/supportCase"
 import { adminSupportCaseHref, supportCaseResponseHref } from "@/lib/utils/support-case-paths"
+import {
+  supportMacroVarsFromOrder,
+  type SupportMacroLinkedOrder,
+} from "@/lib/utils/support-macro-order-vars"
 import type { CarrierClaimStatus } from "@/lib/types/protectionClaimDesk"
 
 const CASES_INBOX_HREF = "/admin/contact-messages"
@@ -48,6 +52,7 @@ type AdminSupportCaseDeskProps = {
   closed?: boolean
   claimDesk?: ClaimDeskInitials | null
   assigneeAdminId?: string | null
+  orderForMacros?: SupportMacroLinkedOrder | null
   refund?: {
     orderStatus: string
     amount: number
@@ -55,6 +60,7 @@ type AdminSupportCaseDeskProps = {
     paymentMethod: string
     fulfillmentMethod?: string | null
     deliveryStatus?: string | null
+    trackingNumber?: string | null
     repairCreditTotal: number
   } | null
 }
@@ -73,6 +79,7 @@ export function AdminSupportCaseDesk({
   closed = false,
   claimDesk = null,
   assigneeAdminId: initialAssignee = null,
+  orderForMacros = null,
   refund = null,
 }: AdminSupportCaseDeskProps) {
   const [assigneeAdminId, setAssigneeAdminId] = useState(initialAssignee)
@@ -189,6 +196,9 @@ export function AdminSupportCaseDesk({
                         ? "Suggested reply is in the box — edit before you send"
                         : "Reply drafts appear here when ready"}
                   </span>
+                  {aiDraft?.reason ? (
+                    <span className="w-full text-[10px] text-muted-foreground">{aiDraft.reason}</span>
+                  ) : null}
                   <Button
                     type="button"
                     size="sm"
@@ -212,14 +222,14 @@ export function AdminSupportCaseDesk({
                 </div>
               ) : null}
               <SupportMacrosPicker
-                kindFilter={
-                  kind === "protection_claim"
-                    ? "protection_claim"
-                    : kind === "cancel_request"
-                      ? "cancel_request"
-                      : null
-                }
-                vars={{ order_ref: orderRef ?? undefined, name: customerLabel }}
+                kindFilter={kind}
+                vars={supportMacroVarsFromOrder({
+                  name: customerLabel,
+                  order_ref: orderRef,
+                  order: orderForMacros,
+                })}
+                orderVarsReady
+                hasOrderVars={orderForMacros !== null}
                 onInsert={(text) => setMacroDraft(text)}
               />
               {macroDraft ? (

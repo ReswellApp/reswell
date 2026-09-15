@@ -3,12 +3,13 @@ import {
   HOME_PEER_LISTING_WITH_PROFILE_SELECT,
   hydrateHomePeerListingRows,
 } from "@/lib/db/home-peer-listing-feed"
+import { HOME_RECENTLY_LISTED_FEATURE_CONDITIONS } from "@/lib/home-recently-listed-quality"
 
 /** Recently listed homepage grid — 16 tiles on mobile (2×8), 15 on desktop (5×3). */
 export const HOME_RECENTLY_LISTED_GRID_TILE_COUNT = 16
 export const HOME_RECENTLY_LISTED_GRID_DESKTOP_TILE_COUNT = 15
-/** Fetch buffer per pool (most viewed + newest, each section). */
-export const HOME_RECENTLY_LISTED_GRID_PER_SECTION_FETCH = 12
+/** Fetch buffer per pool (most viewed + newest, each section). Oversized so title filters still fill the grid. */
+export const HOME_RECENTLY_LISTED_GRID_PER_SECTION_FETCH = 32
 
 type RecentGridSection = "surfboards" | "fins"
 
@@ -24,6 +25,7 @@ async function fetchRecentlyListedRowsForSection(
     .eq("section", section)
     .eq("hidden_from_site", false)
     .eq("hidden_from_homepage", false)
+    .in("condition", [...HOME_RECENTLY_LISTED_FEATURE_CONDITIONS])
     .order("created_at", { ascending: false })
     .limit(limit)
 

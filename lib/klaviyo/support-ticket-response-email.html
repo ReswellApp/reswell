@@ -7,13 +7,16 @@
 
   Trigger filter: reswell_metric_seed is not true (if you use bootstrap seeds)
 
-  Suggested subject: New reply from Reswell Support
+  Suggested subject: Reswell Support {{ event.case_ref }}
   Suggested preview: {{ event.response|truncatewords:18 }}
+  Reply-To: {{ event.reply_to }}  (requires SUPPORT_INBOUND_REPLY_TO + inbound webhook)
 
   Event properties (from track-support-ticket-response.ts):
   - {{ event.response }} — staff reply body
   - {{ event.ticket_url }} — Help deep link
   - {{ event.support_ticket_id }}
+  - {{ event.case_ref }} — RS-XXXXXXXX
+  - {{ event.reply_to }} — plus-addressed inbound mailbox
   - {{ event.response_type }} — admin_inbox_reply | support_dm_reply | status_update
   - {{ event.support_status }} — when response_type is status_update
 
@@ -89,7 +92,7 @@
         </tr>
         <tr>
           <td align="center" style="padding:0 0 28px 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:1.5;color:#64748B;">
-            Replies in Help go straight to our support team — not the marketplace Messages inbox.
+            Reply to this email to continue this case, or open it in Help — not the marketplace Messages inbox.
           </td>
         </tr>
 

@@ -420,7 +420,7 @@ async function loadHomeRecentlyListedGridCatalogUncached(): Promise<HomeRecently
 
 export const getCachedHomeRecentlyListedGridCatalog = unstable_cache(
   loadHomeRecentlyListedGridCatalogUncached,
-  ["home-recently-listed-grid-catalog-v3"],
+  ["home-recently-listed-grid-catalog-v4"],
   {
     revalidate: HOME_RECENTLY_LISTED_GRID_REVALIDATE_SECONDS,
     tags: [HOME_RECENTLY_LISTED_GRID_CACHE_TAG],

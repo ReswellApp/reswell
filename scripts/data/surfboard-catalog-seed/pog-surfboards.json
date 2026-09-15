@@ -1,6 +1,6 @@
 {
   "generated_for": "POG Surfboards official named standup catalog",
-  "source": "https://www.pogsurfboards.com (WordPress model galleries — No Brainers, Fish Shop, and Longboard pages; excludes merch, custom deposits, and dimension-specific one-offs)",
+  "source": "https://www.pogsurfboards.com (WordPress model galleries — No Brainers, Fish Shop, and Longboard pages including Gun and Mini Mal; excludes merch, custom deposits, and dimension-specific one-offs)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -65,6 +65,18 @@
           "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Soul-Fish-Top.jpg",
           "description": "The Soul Fish is not really a fish at all but a modernised single fin for the retro purist. Pulled-in nose and reduced tail area produce longer cleaner lines, complimented by a pin, rounded pin, or small swallow. A go-to for reef and solid point breaks.",
           "board_category_slug": "fish"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/5.png",
+          "description": "Looking for a high performance big wave board? Paul custom designs serious boards for waves of consequence. If you love riding the big stuff, you'll love the speed and power a gun surfboard.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mini Mal",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/1.png",
+          "description": "The mini mals are a lighter weight and smaller version of the full size mal. Perfect for throwing around on the weekend or for those learning to surf. These can also be made for experienced surfers who know what they want. They're the perfect international travel size for mal riders.",
+          "board_category_slug": "longboard"
         },
         {
           "name": "Mal",

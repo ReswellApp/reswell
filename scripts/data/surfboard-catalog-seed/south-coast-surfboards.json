@@ -1,6 +1,6 @@
 {
   "generated_for": "South Coast Surfboards official named standup catalog",
-  "source": "https://www.southcoastsurfboards.com (Shopify factory-stock + longs/mids/smalls collections)",
+  "source": "https://www.southcoastsurfboards.com/pages/* (official Chizza model pages + Shopify factory-stock — excludes custom deposits and one-off dimension SKUs)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -52,6 +52,12 @@
           "name": "Low Pro",
           "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-3acf66bdba82f14bca87.webp",
           "description": "The newest collaboration between Ian Chisholm & CJ Nelson. 9’4 x 23 x 3 | Size Range 9’0 to 10ft | | Fin Options - Single Fin, glass on or Fin Box |"
+        },
+        {
+          "name": "Mini Slasher",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1971.png",
+          "description": "The Mini Slasher is a refined, high-performance mid-length that blends effortless glide with progressive performance. Designed for fast, seamless rail-to-rail surfing, smooth trim and confident tip time, it remains responsive and composed from smaller waves through to overhead conditions. Ideal for lighter surfers or those seeking the flow and elegance of a longer board without the weight of a traditional log — delivering speed, precision and effortless manoeuvrability.",
+          "board_category_slug": "hybrid"
         },
         {
           "name": "Mullet",
@@ -109,6 +115,12 @@
           "description": "9’9 23 3/4 by 3 3/8 stepflow glassed in volan with multi foam density stringers either side cedar 1/8 full high gloss polish one off"
         },
         {
+          "name": "Stylemaster",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG_3964.png",
+          "description": "The Rincon Stylemaster is the ultimate trim machine, inspired by the classic longboards of the 1960s. A subtle rolled bottom combined with a smooth, flat rocker from nose to tail creates effortless speed, trim and glide, while providing plenty of stability for long nose rides. An exceptional paddler, the Stylemaster is designed to make the most of small, soft and slower waves. Classic 60s feel. Effortless trim. Timeless glide. Available from 9'1\" to 10ft.",
+          "board_category_slug": "longboard"
+        },
+        {
           "name": "Stretch Twinzer FISH",
           "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-cedd6462f76ae5ab5a87.webp",
           "description": "8’6 by 23 by 3 laminated in 6 ounce bottom and 6 and 4 deck"
@@ -117,6 +129,12 @@
           "name": "Thunderbolt",
           "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/mirror-5ea62575d46422914b55.webp",
           "description": "9’1 by 22 1/2 by 2 3/4 eps thunderbolt construction ar18 in excellent condition rare only 20 ever made wont be produced again"
+        },
+        {
+          "name": "Tempo",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1943.png",
+          "description": "The Tempo is a refined, performance-driven evolution of the traditional keel-fin fish. Featuring a more modern outline and narrower tail, it delivers greater control, responsiveness and top-to-bottom performance while retaining generous volume for effortless paddle power and speed. Available as a twin, quad or twinzer, it's a highly versatile fish designed to perform across 2–6 ft conditions. Available from 5'6 to 9'6.",
+          "board_category_slug": "fish"
         },
         {
           "name": "Triumph",

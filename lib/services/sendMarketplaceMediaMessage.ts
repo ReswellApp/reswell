@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
+import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
 import { getMessagePolicyViolationForSenderInConversation } from "@/lib/messages/message-policy-enforcement"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
@@ -196,8 +197,10 @@ export async function sendMarketplaceMediaMessage(input: {
     const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conversationId)
     const supportStaffReply = senderId === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
     if (supportStaffReply) {
+      const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
       void trackKlaviyoSupportTicketResponse({
         supportTicketId: ticketMeta.id,
+        supportCaseId: shadow?.id,
         email: ticketMeta.email.trim(),
         externalId: ticketMeta.user_id,
         response: content,

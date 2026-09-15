@@ -17,11 +17,12 @@ import {
   scoreSupportReplyOverlap,
   tokenizeSupportReplyQuery,
 } from "@/lib/utils/support-reply-retrieve"
+import { CS_AGENT_PROMPT_VERSION } from "@/lib/llm/cs-agent"
 
-export type RetrievedHelpArticle = ReturnType<typeof rankHelpArticlesForQuery>[number]
+export type RetrievedHelpArticle = HelpArticlePlainText & { score: number }
 export type RetrievedReplyExample = ReturnType<typeof rankExamplesForQuery>[number]
 
-export const SUPPORT_REPLY_PROMPT_VERSION = "support-reply-draft-v1"
+export const SUPPORT_REPLY_PROMPT_VERSION = CS_AGENT_PROMPT_VERSION
 
 export type SupportReplyKnowledge = {
   helpArticles: RetrievedHelpArticle[]
@@ -30,7 +31,7 @@ export type SupportReplyKnowledge = {
 }
 
 export function retrieveHelpArticlesForQuery(query: string, limit = 4): RetrievedHelpArticle[] {
-  return rankHelpArticlesForQuery(getHelpCenterPlainTextCorpus(), query, limit)
+  return rankHelpArticlesForQuery(getHelpCenterPlainTextCorpus(), query, limit) as RetrievedHelpArticle[]
 }
 
 export function retrieveExamplesForQuery(
@@ -79,21 +80,20 @@ export async function gatherSupportReplyKnowledge(
     if (!replyByCase.has(reply.case_id)) replyByCase.set(reply.case_id, reply.body)
   }
 
-  const historical: RetrievedReplyExample[] = rankedCases
-    .map((row) => {
-      const staffReply = replyByCase.get(row.id)
-      if (!staffReply?.trim()) return null
-      return {
+  const historical: RetrievedReplyExample[] = rankedCases.flatMap((row) => {
+    const staffReply = replyByCase.get(row.id)
+    if (!staffReply?.trim()) return []
+    return [
+      {
         id: `case:${row.id}`,
         kind: row.kind,
         customerExcerpt: row.preview || row.subject,
         staffReply: staffReply.trim(),
         rating: "accepted" as const,
         score: scoreSupportReplyOverlap(tokens, `${row.subject} ${row.preview}`),
-      }
-    })
-    .filter((row): row is RetrievedReplyExample => row !== null)
-    .slice(0, 3)
+      },
+    ]
+  }).slice(0, 3)
 
   const seenReplies = new Set(learned.map((row) => row.staffReply.toLowerCase()))
   const mergedExamples = [

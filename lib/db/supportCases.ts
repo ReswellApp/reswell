@@ -140,24 +140,180 @@ export async function insertSupportCaseMessage(
     author_role: "customer" | "agent" | "system"
     body: string
     is_internal?: boolean
+    inbound_email_id?: string | null
   },
-): Promise<{ id: string | null; error: Error | null }> {
+): Promise<{ id: string | null; error: Error | null; duplicate?: boolean }> {
+  const insert: Record<string, unknown> = {
+    case_id: row.case_id,
+    author_user_id: row.author_user_id ?? null,
+    author_role: row.author_role,
+    body: row.body,
+    is_internal: row.is_internal ?? false,
+  }
+  if (row.inbound_email_id?.trim()) {
+    insert.inbound_email_id = row.inbound_email_id.trim()
+  }
+
   const { data, error } = await supabase
     .from("support_case_messages")
-    .insert({
-      case_id: row.case_id,
-      author_user_id: row.author_user_id ?? null,
-      author_role: row.author_role,
-      body: row.body,
-      is_internal: row.is_internal ?? false,
-    })
+    .insert(insert)
     .select("id")
     .single()
   if (error) {
+    if (error.code === "23505" && row.inbound_email_id?.trim()) {
+      return { id: null, error: null, duplicate: true }
+    }
     console.warn("[support_case_messages] insert skipped:", error.message)
     return { id: null, error: new Error(error.message) }
   }
   return { id: data?.id ? String(data.id) : null, error: null }
+}
+
+export async function getSupportCaseMessageByInboundEmailId(
+  supabase: SupabaseClient,
+  inboundEmailId: string,
+): Promise<{ id: string; case_id: string } | null> {
+  const { data, error } = await supabase
+    .from("support_case_messages")
+    .select("id, case_id")
+    .eq("inbound_email_id", inboundEmailId)
+    .maybeSingle()
+  if (error || !data) return null
+  return { id: String(data.id), case_id: String(data.case_id) }
+}
+
+export async function getSupportCaseByCaseNumber(
+  supabase: SupabaseClient,
+  caseNumber: string,
+): Promise<SupportCaseRow | null> {
+  const { data, error } = await supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    .ilike("case_number", caseNumber.trim())
+    .maybeSingle()
+  if (error || !data) return null
+  return data as SupportCaseRow
+}
+
+export async function listSupportCasesByRequesterEmail(
+  supabase: SupabaseClient,
+  email: string,
+  opts?: { openOnly?: boolean; limit?: number },
+): Promise<SupportCaseRow[]> {
+  const exact = email.trim()
+  if (!exact) return []
+  let query = supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    // Case-insensitive exact match. Escape `_` / `%` so they cannot match another customer.
+    .ilike("requester_email", escapeIlikePattern(exact))
+    .order("updated_at", { ascending: false })
+    .limit(opts?.limit ?? 8)
+
+  if (opts?.openOnly) query = query.neq("status", "resolved")
+
+  const { data, error } = await query
+  if (error) {
+    console.warn("[support_cases] email list skipped:", error.message)
+    return []
+  }
+  return (data ?? []) as SupportCaseRow[]
+}
+
+const CUSTOMER_TICKET_SELECT =
+  "id, subject, status, kind, order_ref, priority, updated_at, created_at"
+
+export type SupportCaseCustomerTicketRow = {
+  id: string
+  subject: string
+  status: SupportCaseStatus
+  kind: SupportCaseKind
+  order_ref: string | null
+  priority: SupportCaseRow["priority"]
+  updated_at: string
+  created_at: string
+}
+
+export type SupportCaseCustomerTicketFilter = {
+  userId?: string | null
+  email?: string | null
+  excludeCaseId?: string | null
+  openOnly?: boolean
+  offset?: number
+  limit?: number
+}
+
+function customerTicketIdentityClause(
+  filter: Pick<SupportCaseCustomerTicketFilter, "userId" | "email">,
+): { userId: string | null; email: string | null } {
+  return {
+    userId: filter.userId?.trim() || null,
+    email: filter.email?.trim() || null,
+  }
+}
+
+export async function listSupportCasesForCustomerPage(
+  supabase: SupabaseClient,
+  filter: SupportCaseCustomerTicketFilter,
+): Promise<{ rows: SupportCaseCustomerTicketRow[]; hasMore: boolean }> {
+  const { userId, email } = customerTicketIdentityClause(filter)
+  if (!userId && !email) return { rows: [], hasMore: false }
+
+  const limit = filter.limit ?? 8
+  const offset = filter.offset ?? 0
+  const take = limit + 1
+
+  let query = supabase.from("support_cases").select(CUSTOMER_TICKET_SELECT)
+  if (userId && email) {
+    query = query.or(`requester_user_id.eq.${userId},requester_email.eq.${email}`)
+  } else if (userId) {
+    query = query.eq("requester_user_id", userId)
+  } else if (email) {
+    query = query.eq("requester_email", email)
+  }
+  if (filter.excludeCaseId) query = query.neq("id", filter.excludeCaseId)
+  if (filter.openOnly) query = query.neq("status", "resolved")
+
+  const { data, error } = await query
+    .order("updated_at", { ascending: false })
+    .range(offset, offset + take - 1)
+
+  if (error) {
+    console.warn("[support_cases] customer tickets skipped:", error.message)
+    return { rows: [], hasMore: false }
+  }
+
+  const rows = (data ?? []) as SupportCaseCustomerTicketRow[]
+  return {
+    rows: rows.slice(0, limit),
+    hasMore: rows.length > limit,
+  }
+}
+
+export async function countSupportCasesForCustomer(
+  supabase: SupabaseClient,
+  filter: Omit<SupportCaseCustomerTicketFilter, "offset" | "limit">,
+): Promise<number> {
+  const { userId, email } = customerTicketIdentityClause(filter)
+  if (!userId && !email) return 0
+
+  let query = supabase.from("support_cases").select("id", { count: "exact", head: true })
+  if (userId && email) {
+    query = query.or(`requester_user_id.eq.${userId},requester_email.eq.${email}`)
+  } else if (userId) {
+    query = query.eq("requester_user_id", userId)
+  } else if (email) {
+    query = query.eq("requester_email", email)
+  }
+  if (filter.excludeCaseId) query = query.neq("id", filter.excludeCaseId)
+  if (filter.openOnly) query = query.neq("status", "resolved")
+
+  const { count, error } = await query
+  if (error) {
+    console.warn("[support_cases] customer ticket count skipped:", error.message)
+    return 0
+  }
+  return count ?? 0
 }
 
 export async function getSupportCaseById(
@@ -285,7 +441,7 @@ export async function updateSupportCaseAdmin(
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (args.status !== undefined) {
     patch.status = args.status
-    if (args.status === "resolved") patch.resolved_at = new Date().toISOString()
+    patch.resolved_at = args.status === "resolved" ? new Date().toISOString() : null
   }
   if (args.assignee_admin_id !== undefined) patch.assignee_admin_id = args.assignee_admin_id
   if (args.internal_notes !== undefined) patch.internal_notes = args.internal_notes
@@ -364,17 +520,187 @@ export async function listSupportCasesAdmin(
   supabase: SupabaseClient,
   limit = 200,
 ): Promise<SupportCaseRow[]> {
-  const { data, error } = await supabase
-    .from("support_cases")
-    .select(CASE_SELECT)
-    .order("updated_at", { ascending: false })
-    .limit(limit)
+  return listSupportCasesAdminFiltered(supabase, { limit })
+}
+
+export type AdminSupportCaseListFilter = {
+  status?: "open" | "resolved" | "submitted" | "waiting_on_you" | "all"
+  assignee?: "anyone" | "mine" | "unassigned"
+  currentStaffId?: string | null
+  overdueOnly?: boolean
+  kind?: SupportCaseKind
+  type?: "all" | "general" | "order"
+  ids?: string[]
+  excludeLiveChat?: boolean
+  limit: number
+  offset?: number
+  order?: "updated_desc" | "updated_asc" | "created_asc"
+}
+
+function escapeIlikePattern(raw: string): string {
+  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_").replace(/"/g, '\\"')
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+type LooseCaseQuery = {
+  eq: (column: string, value: unknown) => LooseCaseQuery
+  neq: (column: string, value: unknown) => LooseCaseQuery
+  is: (column: string, value: unknown) => LooseCaseQuery
+  or: (filters: string) => LooseCaseQuery
+  in: (column: string, values: string[]) => LooseCaseQuery
+  lt: (column: string, value: string) => LooseCaseQuery
+  order: (column: string, options: { ascending: boolean }) => LooseCaseQuery
+  range: (from: number, to: number) => LooseCaseQuery
+} & PromiseLike<{
+  data: unknown
+  count: number | null
+  error: { message: string } | null
+}>
+
+function applyAdminCaseFilters(
+  query: unknown,
+  filter: Omit<AdminSupportCaseListFilter, "limit" | "offset" | "order">,
+): LooseCaseQuery {
+  let next = query as LooseCaseQuery
+  if (filter.excludeLiveChat !== false) {
+    next = next.neq("source_channel", "live_chat")
+  }
+  if (filter.ids && filter.ids.length > 0) {
+    next = next.in("id", filter.ids)
+  }
+  if (filter.status === "open") next = next.neq("status", "resolved")
+  else if (filter.status === "resolved") next = next.eq("status", "resolved")
+  else if (filter.status === "submitted") next = next.eq("status", "submitted")
+  else if (filter.status === "waiting_on_you") next = next.eq("status", "waiting_on_you")
+
+  if (filter.assignee === "mine" && filter.currentStaffId) {
+    next = next.eq("assignee_admin_id", filter.currentStaffId)
+  } else if (filter.assignee === "unassigned") {
+    next = next.is("assignee_admin_id", null)
+  }
+
+  if (filter.overdueOnly) {
+    next = next.neq("status", "resolved").lt("sla_due_at", new Date().toISOString())
+  }
+  if (filter.kind) next = next.eq("kind", filter.kind)
+  if (filter.type === "general") {
+    next = next.is("order_id", null).is("order_support_request_id", null)
+  } else if (filter.type === "order") {
+    next = next.or("order_id.not.is.null,order_support_request_id.not.is.null")
+  }
+  return next
+}
+
+export async function listSupportCasesAdminFiltered(
+  supabase: SupabaseClient,
+  filter: AdminSupportCaseListFilter,
+): Promise<SupportCaseRow[]> {
+  const offset = filter.offset ?? 0
+  const ascending = filter.order === "updated_asc" || filter.order === "created_asc"
+  const orderCol = filter.order === "created_asc" ? "created_at" : "updated_at"
+
+  const query = applyAdminCaseFilters(
+    supabase.from("support_cases").select(CASE_SELECT),
+    filter,
+  )
+  const { data, error } = await query
+    .order(orderCol, { ascending })
+    .range(offset, offset + filter.limit - 1)
 
   if (error) {
     console.warn("[support_cases] admin list skipped:", error.message)
     return []
   }
   return (data ?? []) as SupportCaseRow[]
+}
+
+export async function countSupportCasesAdminFiltered(
+  supabase: SupabaseClient,
+  filter: Omit<AdminSupportCaseListFilter, "limit" | "offset" | "order">,
+): Promise<number> {
+  const query = applyAdminCaseFilters(
+    supabase.from("support_cases").select("id", { count: "exact", head: true }),
+    filter,
+  )
+  const { count, error } = await query
+  if (error) {
+    console.warn("[support_cases] admin count skipped:", error.message)
+    return 0
+  }
+  return count ?? 0
+}
+
+export async function listSupportCasesByIds(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<SupportCaseRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    .in("id", ids)
+
+  if (error) {
+    console.warn("[support_cases] list by ids skipped:", error.message)
+    return []
+  }
+  const byId = new Map((data ?? []).map((row) => [String((row as SupportCaseRow).id), row as SupportCaseRow]))
+  return ids.map((id) => byId.get(id)).filter((row): row is SupportCaseRow => Boolean(row))
+}
+
+/** Case ids whose subject/preview/email/order/history match `query`. */
+export async function searchSupportCaseIdsAdmin(
+  supabase: SupabaseClient,
+  query: string,
+  limit = 80,
+): Promise<string[]> {
+  const q = query.trim()
+  if (!q) return []
+
+  const pattern = `%${escapeIlikePattern(q)}%`
+  const caseOr = [
+    `subject.ilike."${pattern}"`,
+    `preview.ilike."${pattern}"`,
+    `requester_email.ilike."${pattern}"`,
+    `order_ref.ilike."${pattern}"`,
+    `case_number.ilike."${pattern}"`,
+  ].join(",")
+
+  const lookups: Array<PromiseLike<{ data: Array<{ id?: string; case_id?: string }> | null }>> = [
+    supabase
+      .from("support_cases")
+      .select("id")
+      .or(caseOr)
+      .order("updated_at", { ascending: false })
+      .limit(limit),
+    supabase.from("support_case_messages").select("case_id").ilike("body", pattern).limit(limit),
+  ]
+
+  if (UUID_RE.test(q)) {
+    lookups.push(
+      supabase
+        .from("support_cases")
+        .select("id")
+        .or(`id.eq.${q},contact_message_id.eq.${q},order_support_request_id.eq.${q},order_id.eq.${q}`)
+        .limit(8),
+    )
+  }
+
+  const results = await Promise.all(lookups)
+  const ids: string[] = []
+  const seen = new Set<string>()
+  for (const result of results) {
+    for (const raw of result.data ?? []) {
+      const id = String(raw.id ?? raw.case_id ?? "")
+      if (!id || seen.has(id)) continue
+      seen.add(id)
+      ids.push(id)
+      if (ids.length >= limit) return ids
+    }
+  }
+  return ids
 }
 
 export async function getSupportCaseByOrderSupportId(

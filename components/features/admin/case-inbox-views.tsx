@@ -1,46 +1,19 @@
 "use client"
 
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock3,
-  Inbox,
-  Shield,
-  Sparkles,
-  UserMinus,
-  UserRound,
-} from "lucide-react"
-import type { CaseInboxView } from "@/lib/admin/case-inbox"
+import { CheckCircle2, Inbox } from "lucide-react"
+import type { CaseInboxView, InboxViewCounts } from "@/lib/admin/case-inbox"
 import { cn } from "@/lib/utils"
 
-export type InboxViewCounts = {
-  open: number
-  mine: number
-  unassigned: number
-  neu: number
-  waiting: number
-  claims: number
-  overdue: number
-  resolved: number
-  all: number
-}
+export type { InboxViewCounts }
 
 const VIEWS: {
-  id: CaseInboxView
+  id: Extract<CaseInboxView, "open" | "resolved">
   label: string
   countKey: keyof InboxViewCounts
   icon: typeof Inbox
-  danger?: boolean
 }[] = [
   { id: "open", label: "Open", countKey: "open", icon: Inbox },
-  { id: "mine", label: "Mine", countKey: "mine", icon: UserRound },
-  { id: "unassigned", label: "Unassigned", countKey: "unassigned", icon: UserMinus },
-  { id: "new", label: "New", countKey: "neu", icon: Sparkles },
-  { id: "waiting", label: "Waiting", countKey: "waiting", icon: Clock3 },
-  { id: "claims", label: "Claims", countKey: "claims", icon: Shield },
-  { id: "overdue", label: "Overdue", countKey: "overdue", icon: AlertTriangle, danger: true },
   { id: "resolved", label: "Resolved", countKey: "resolved", icon: CheckCircle2 },
-  { id: "all", label: "All", countKey: "all", icon: Inbox },
 ]
 
 interface CaseInboxViewsProps {
@@ -61,7 +34,12 @@ export function CaseInboxViews({
   return (
     <nav
       aria-label="Inbox views"
-      className={cn(compact ? "flex flex-wrap gap-1" : "flex flex-col gap-0.5 p-2", className)}
+      className={cn(
+        compact
+          ? "flex flex-nowrap gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          : "flex flex-col gap-0.5 p-2",
+        className,
+      )}
     >
       {compact ? null : (
         <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -80,11 +58,10 @@ export function CaseInboxViews({
             onClick={() => onChange(view.id)}
             className={cn(
               "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
-              compact && "py-1 text-[12px]",
+              compact && "shrink-0 py-1 text-[12px]",
               selected
                 ? "bg-foreground text-background"
                 : "text-foreground hover:bg-muted/70",
-              view.danger && !selected && count > 0 && "text-destructive",
             )}
           >
             {compact ? null : <Icon className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />}
