@@ -1,10 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
-import type { SupportReplyDraftRow, SupportReplyExampleRow } from "@/lib/types/supportReplyDraft"
+import type {
+  SupportReplyDraftCitations,
+  SupportReplyDraftRow,
+  SupportReplyExampleRow,
+} from "@/lib/types/supportReplyDraft"
 import { supportReplyExampleSearchOrClause } from "@/lib/utils/support-reply-examples"
 import type { SupportReplyDraftOrigin, SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 
 const DRAFT_SELECT =
+  "id, case_id, body, model, prompt_version, source_fingerprint, cited_help_slugs, retrieved_example_ids, origin, reason, citations, created_at, updated_at"
+
+const DRAFT_SELECT_LEGACY =
   "id, case_id, body, model, prompt_version, source_fingerprint, cited_help_slugs, retrieved_example_ids, origin, created_at, updated_at"
 
 const EXAMPLE_SELECT =
@@ -20,6 +27,9 @@ export type SupportReplyOrderSnapshot = {
   trackingNumber: string | null
   trackingCarrier: string | null
   carrierDeliveredAt: string | null
+  paymentMethod: string | null
+  buyerId: string | null
+  sellerId: string | null
 }
 
 export type ResolvedCaseForRetrieval = {
@@ -30,20 +40,95 @@ export type ResolvedCaseForRetrieval = {
   status: SupportCaseStatus
 }
 
+function emptyCitations(): SupportReplyDraftCitations {
+  return { orders: [], tickets: [] }
+}
+
+function parseCitations(raw: unknown): SupportReplyDraftCitations {
+  if (!raw || typeof raw !== "object") return emptyCitations()
+  const value = raw as { orders?: unknown; tickets?: unknown }
+  const orders = Array.isArray(value.orders)
+    ? value.orders.flatMap((item) => {
+        if (!item || typeof item !== "object") return []
+        const row = item as { id?: unknown; orderRef?: unknown }
+        if (typeof row.id !== "string" || typeof row.orderRef !== "string") return []
+        return [{ id: row.id, orderRef: row.orderRef }]
+      })
+    : []
+  const tickets = Array.isArray(value.tickets)
+    ? value.tickets.flatMap((item) => {
+        if (!item || typeof item !== "object") return []
+        const row = item as { id?: unknown; subject?: unknown; href?: unknown }
+        if (typeof row.id !== "string" || typeof row.subject !== "string") return []
+        return [
+          {
+            id: row.id,
+            subject: row.subject,
+            href: typeof row.href === "string" ? row.href : "",
+          },
+        ]
+      })
+    : []
+  return { orders, tickets }
+}
+
+function toDraftRow(data: Record<string, unknown>): SupportReplyDraftRow {
+  return {
+    id: String(data.id),
+    case_id: String(data.case_id),
+    body: String(data.body ?? ""),
+    model: typeof data.model === "string" ? data.model : null,
+    prompt_version: String(data.prompt_version ?? ""),
+    source_fingerprint: String(data.source_fingerprint ?? ""),
+    cited_help_slugs: Array.isArray(data.cited_help_slugs)
+      ? data.cited_help_slugs.filter((slug): slug is string => typeof slug === "string")
+      : [],
+    retrieved_example_ids: Array.isArray(data.retrieved_example_ids)
+      ? data.retrieved_example_ids.filter((id): id is string => typeof id === "string")
+      : [],
+    origin: data.origin as SupportReplyDraftRow["origin"],
+    reason: typeof data.reason === "string" && data.reason.trim() ? data.reason : null,
+    citations: parseCitations(data.citations),
+    created_at: String(data.created_at ?? ""),
+    updated_at: String(data.updated_at ?? ""),
+  }
+}
+
+function isMissingHarnessColumn(message: string): boolean {
+  return (
+    message.includes("reason") ||
+    message.includes("citations") ||
+    message.includes("Could not find the") ||
+    message.includes("schema cache")
+  )
+}
+
 export async function getSupportReplyDraftByCaseId(
   supabase: SupabaseClient,
   caseId: string,
 ): Promise<SupportReplyDraftRow | null> {
-  const { data, error } = await supabase
+  const first = await supabase
     .from("support_reply_drafts")
     .select(DRAFT_SELECT)
     .eq("case_id", caseId)
     .maybeSingle()
-  if (error) {
-    console.warn("[support_reply_drafts] get skipped:", error.message)
+  if (!first.error) {
+    return first.data ? toDraftRow(first.data as Record<string, unknown>) : null
+  }
+  if (!isMissingHarnessColumn(first.error.message)) {
+    console.warn("[support_reply_drafts] get skipped:", first.error.message)
     return null
   }
-  return (data as SupportReplyDraftRow | null) ?? null
+  const fallback = await supabase
+    .from("support_reply_drafts")
+    .select(DRAFT_SELECT_LEGACY)
+    .eq("case_id", caseId)
+    .maybeSingle()
+  if (fallback.error || !fallback.data) {
+    if (fallback.error) console.warn("[support_reply_drafts] get skipped:", fallback.error.message)
+    return null
+  }
+  return toDraftRow(fallback.data as Record<string, unknown>)
 }
 
 export async function upsertSupportReplyDraft(
@@ -57,33 +142,62 @@ export async function upsertSupportReplyDraft(
     citedHelpSlugs: string[]
     retrievedExampleIds: string[]
     origin: SupportReplyDraftOrigin
+    reason?: string | null
+    citations?: SupportReplyDraftCitations
   },
 ): Promise<SupportReplyDraftRow | null> {
   const now = new Date().toISOString()
-  const { data, error } = await supabase
+  const payload = {
+    case_id: row.caseId,
+    body: row.body,
+    model: row.model,
+    prompt_version: row.promptVersion,
+    source_fingerprint: row.sourceFingerprint,
+    cited_help_slugs: row.citedHelpSlugs,
+    retrieved_example_ids: row.retrievedExampleIds,
+    origin: row.origin,
+    reason: row.reason ?? null,
+    citations: row.citations ?? emptyCitations(),
+    updated_at: now,
+  }
+  const first = await supabase
     .from("support_reply_drafts")
-    .upsert(
-      {
-        case_id: row.caseId,
-        body: row.body,
-        model: row.model,
-        prompt_version: row.promptVersion,
-        source_fingerprint: row.sourceFingerprint,
-        cited_help_slugs: row.citedHelpSlugs,
-        retrieved_example_ids: row.retrievedExampleIds,
-        origin: row.origin,
-        updated_at: now,
-      },
-      { onConflict: "case_id" },
-    )
+    .upsert(payload, { onConflict: "case_id" })
     .select(DRAFT_SELECT)
     .single()
 
-  if (error) {
-    console.warn("[support_reply_drafts] upsert skipped:", error.message)
+  if (!first.error) return toDraftRow(first.data as Record<string, unknown>)
+
+  if (!isMissingHarnessColumn(first.error.message)) {
+    console.warn("[support_reply_drafts] upsert skipped:", first.error.message)
     return null
   }
-  return data as SupportReplyDraftRow
+
+  const legacy = {
+    case_id: payload.case_id,
+    body: payload.body,
+    model: payload.model,
+    prompt_version: payload.prompt_version,
+    source_fingerprint: payload.source_fingerprint,
+    cited_help_slugs: payload.cited_help_slugs,
+    retrieved_example_ids: payload.retrieved_example_ids,
+    origin: payload.origin,
+    updated_at: payload.updated_at,
+  }
+  const fallback = await supabase
+    .from("support_reply_drafts")
+    .upsert(legacy, { onConflict: "case_id" })
+    .select(DRAFT_SELECT_LEGACY)
+    .single()
+  if (fallback.error || !fallback.data) {
+    if (fallback.error) console.warn("[support_reply_drafts] upsert skipped:", fallback.error.message)
+    return null
+  }
+  return {
+    ...toDraftRow(fallback.data as Record<string, unknown>),
+    reason: row.reason ?? null,
+    citations: row.citations ?? emptyCitations(),
+  }
 }
 
 export async function listSupportReplyExamples(
@@ -345,30 +459,23 @@ export async function getSupportReplyRequesterNames(
   return { contactName, displayName }
 }
 
-export async function getSupportReplyOrderSnapshot(
-  supabase: SupabaseClient,
-  orderId: string,
-): Promise<SupportReplyOrderSnapshot | null> {
-  const { data, error } = await supabase
-    .from("orders")
-    .select(
-      "id, order_num, status, amount, fulfillment_method, delivery_status, tracking_number, tracking_carrier, carrier_delivered_at",
-    )
-    .eq("id", orderId)
-    .maybeSingle()
+const ORDER_SNAPSHOT_SELECT =
+  "id, order_num, status, amount, fulfillment_method, delivery_status, tracking_number, tracking_carrier, carrier_delivered_at, payment_method, buyer_id, seller_id"
 
-  if (error || !data) return null
-  const row = data as {
-    id: string
-    order_num: string | null
-    status: string
-    amount: number | null
-    fulfillment_method: string | null
-    delivery_status: string | null
-    tracking_number: string | null
-    tracking_carrier: string | null
-    carrier_delivered_at: string | null
-  }
+function toOrderSnapshot(row: {
+  id: string
+  order_num: string | null
+  status: string
+  amount: number | null
+  fulfillment_method: string | null
+  delivery_status: string | null
+  tracking_number: string | null
+  tracking_carrier: string | null
+  carrier_delivered_at: string | null
+  payment_method?: string | null
+  buyer_id?: string | null
+  seller_id?: string | null
+}): SupportReplyOrderSnapshot {
   return {
     id: row.id,
     orderNum: row.order_num,
@@ -379,5 +486,47 @@ export async function getSupportReplyOrderSnapshot(
     trackingNumber: row.tracking_number,
     trackingCarrier: row.tracking_carrier,
     carrierDeliveredAt: row.carrier_delivered_at,
+    paymentMethod: row.payment_method ?? null,
+    buyerId: row.buyer_id ?? null,
+    sellerId: row.seller_id ?? null,
   }
+}
+
+export async function getSupportReplyOrderSnapshot(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<SupportReplyOrderSnapshot | null> {
+  return findSupportReplyOrderSnapshot(supabase, { id: orderId })
+}
+
+export async function findSupportReplyOrderSnapshot(
+  supabase: SupabaseClient,
+  query: { id?: string; orderNum?: string },
+): Promise<SupportReplyOrderSnapshot | null> {
+  let builder = supabase.from("orders").select(ORDER_SNAPSHOT_SELECT)
+  if (query.id) builder = builder.eq("id", query.id)
+  else if (query.orderNum) builder = builder.ilike("order_num", query.orderNum.trim())
+  else return null
+
+  const { data, error } = await builder.maybeSingle()
+  if (error || !data) return null
+  return toOrderSnapshot(data as Parameters<typeof toOrderSnapshot>[0])
+}
+
+export async function listSupportReplyOrdersForCustomer(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 40,
+): Promise<SupportReplyOrderSnapshot[]> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select(ORDER_SNAPSHOT_SELECT)
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+  if (error || !data) {
+    if (error) console.warn("[support_reply_drafts] customer orders skipped:", error.message)
+    return []
+  }
+  return (data as Parameters<typeof toOrderSnapshot>[0][]).map(toOrderSnapshot)
 }

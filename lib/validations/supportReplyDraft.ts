@@ -76,6 +76,12 @@ export const supportReplyDraftLlmSchema = z.object({
   needs_human_review: z.boolean(),
 })
 
+export const csAgentLlmSchema = supportReplyDraftLlmSchema.extend({
+  reason: z.string().trim().max(280),
+  cited_order_refs: z.array(z.string().trim().min(1).max(80)).max(8),
+  cited_ticket_ids: z.array(z.string().uuid()).max(8),
+})
+
 export const supportReplyExampleListSchema = z.object({
   rating: optionalRatingSchema,
   kind: optionalKindSchema,
@@ -102,6 +108,7 @@ export const supportReplyExampleDeleteSchema = z.object({
 export type SupportReplyDraftRating = z.infer<typeof supportReplyDraftFeedbackSchema>["rating"]
 export type SupportReplyDraftOrigin = (typeof SUPPORT_REPLY_DRAFT_ORIGINS)[number]
 export type SupportReplyDraftLlmOutput = z.infer<typeof supportReplyDraftLlmSchema>
+export type CsAgentLlmOutput = z.infer<typeof csAgentLlmSchema>
 export type SupportReplyDraftCaseInput = z.infer<typeof supportReplyDraftCaseIdSchema>
 export type SupportReplyDraftFeedbackInput = z.infer<typeof supportReplyDraftFeedbackSchema>
 export type SupportReplyExampleKind = (typeof SUPPORT_REPLY_EXAMPLE_KINDS)[number]

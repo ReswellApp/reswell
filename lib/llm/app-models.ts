@@ -128,7 +128,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "support_reply_draft",
     name: "Support reply drafts",
     purpose:
-      "Drafts a ready-to-send customer-service reply when Hayden opens a ticket. Retrieves /help-center articles, similar resolved tickets, and rated sent replies so the model improves as staff send and rate drafts.",
+      "Reswell-only CS agent harness: drafts a review-before-send reply from a context pack (thread, order, prior tickets, help, rated examples, macros) plus server-resolved tools (order, tracking, refund eligibility, help, prior tickets). Never auto-sends. No fine-tune.",
     gatewayFeatureTag: "feature:support-reply-draft",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-flash",
@@ -140,7 +140,10 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "GET /api/cron/support-reply-drafts",
     ],
     sourceFiles: [
+      "lib/llm/cs-agent.ts",
+      "lib/llm/cs-agent-generate.ts",
       "lib/services/supportReplyDraft.ts",
+      "lib/services/csAgentLookups.ts",
       "lib/services/supportReplyExamples.ts",
       "lib/services/supportReplyKnowledge.ts",
       "lib/db/supportReplyDrafts.ts",

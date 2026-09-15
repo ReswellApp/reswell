@@ -21,7 +21,11 @@ import {
   type ComposerDisposition,
   type ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
-import type { SupportReplyCitedHelp } from "@/lib/types/supportReplyDraft"
+import type {
+  SupportReplyCitedHelp,
+  SupportReplyCitedOrder,
+  SupportReplyCitedTicket,
+} from "@/lib/types/supportReplyDraft"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
@@ -59,6 +63,9 @@ interface CaseInboxConversationProps {
   aiActive?: boolean
   aiError?: string | null
   aiHelp?: SupportReplyCitedHelp[]
+  aiReason?: string | null
+  aiOrders?: SupportReplyCitedOrder[]
+  aiTickets?: SupportReplyCitedTicket[]
   onRegenerateAi?: () => void
   onRateAi?: (rating: "accepted" | "rejected") => void
   aiRating?: "accepted" | "rejected" | null
@@ -98,6 +105,9 @@ export function CaseInboxConversation({
   aiActive,
   aiError,
   aiHelp,
+  aiReason,
+  aiOrders,
+  aiTickets,
   onRegenerateAi,
   onRateAi,
   aiRating,
@@ -237,6 +247,9 @@ export function CaseInboxConversation({
             aiActive={aiActive}
             aiError={aiError}
             aiHelp={aiHelp}
+            aiReason={aiReason}
+            aiOrders={aiOrders}
+            aiTickets={aiTickets}
             onRegenerateAi={onRegenerateAi}
             onRateAi={onRateAi}
             aiRating={aiRating}

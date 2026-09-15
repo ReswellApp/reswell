@@ -882,6 +882,9 @@ export function CaseInboxAdminClient({
                   )}
                   aiError={aiError}
                   aiHelp={aiDraft?.citedHelp}
+                  aiReason={aiDraft?.reason}
+                  aiOrders={aiDraft?.citedOrders}
+                  aiTickets={aiDraft?.citedTickets}
                   onRegenerateAi={() => {
                     consumedAi.current = null
                     regenerateAi()
