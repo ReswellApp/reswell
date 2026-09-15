@@ -1,6 +1,6 @@
 {
   "generated_for": "Folklore Surf official named standup catalog",
-  "source": "https://flklrsurf.com/pages/logs and Shopify showroom/collection pages (named production models only \u2014 excludes apparel, prints, fins, and dimension SKUs)",
+  "source": "https://flklrsurf.com/pages/logs and Shopify products.json (named production models only — excludes apparel, prints, fins, and dimension SKUs)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -29,6 +29,12 @@
           "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/products/flklrsurf-el-capi-surfboard-peach-00.jpg?v=1599489351",
           "description": "A smooth sea never made a skilled sailor. You'll feel at home at the helm of El Capi (the captain). From wind chops to barrels, you'll be styling and sailing all day. Our new re-design version of the Captain loves to charge in the water.",
           "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Good Joo-Joo",
+          "image_url": "https://cdn.shopify.com/s/files/1/1766/8745/products/flklrsurf-gjj-orange-00.jpg?v=1590937701",
+          "description": "A double cut-lap twin fin glassed 6/6oz top and bottom with a deep bottom concave — built for top-to-bottom surfing in 3–7 foot waves.",
+          "board_category_slug": "fish"
         },
         {
           "name": "Mokana",
