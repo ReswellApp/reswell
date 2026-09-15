@@ -31,11 +31,8 @@ export function staffWorkflowStatusLabel(
   status: SupportCaseStatus,
   item: Pick<CaseInboxItem, "requesterRole" | "openedBy">,
 ): string {
-  if (status === "waiting_on_you") return staffWaitingStatusLabel(item)
-  if (status === "submitted") return "New"
-  if (status === "in_review") return "In review"
-  if (status === "in_progress") return "Open"
-  return "Resolved"
+  if (status === "resolved") return "Resolved"
+  return "Open"
 }
 
 export function staffReplyPlaceholder(role: InboxCounterpartRole): string {

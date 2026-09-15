@@ -10,6 +10,7 @@ import {
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
 import {
+  DEFAULT_INBOX_SORT,
   EMPTY_INBOX_VIEW_COUNTS,
   inboxViewFromSearchParams,
   sortInboxItems,
@@ -261,7 +262,7 @@ export async function listAdminSupportInboxService(
     view: "open",
     type: "all",
     search: "",
-    sort: "smart",
+    sort: DEFAULT_INBOX_SORT,
     offset: 0,
     limit: INBOX_PAGE_SIZE,
     selected_key: null,

@@ -121,8 +121,8 @@ export function CaseInboxListPane({
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end">
+              <SelectItem value="recent">Newest</SelectItem>
               <SelectItem value="smart">Priority</SelectItem>
-              <SelectItem value="recent">Recent</SelectItem>
               <SelectItem value="oldest">Oldest</SelectItem>
             </SelectContent>
           </Select>
@@ -174,7 +174,7 @@ export function CaseInboxListPane({
                     type="button"
                     onClick={() => onSelect(item.key)}
                     className={cn(
-                      "flex w-full gap-2.5 px-3 py-2.5 text-left transition-colors",
+                      "flex w-full gap-2.5 px-3 py-2 text-left transition-colors",
                       active ? "bg-muted" : "hover:bg-muted/40",
                     )}
                   >

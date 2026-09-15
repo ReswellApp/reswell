@@ -128,10 +128,10 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "support_reply_draft",
     name: "Support reply drafts",
     purpose:
-      "Drafts a ready-to-send customer-service reply when Hayden opens a ticket. Retrieves /help-center articles, similar resolved tickets, and rated sent replies so the model improves as staff send and rate drafts.",
+      "Drafts a ready-to-send customer-service reply when staff open a ticket. Retrieves /help-center articles, similar resolved tickets, and rated sent replies so the model improves as staff send and rate drafts.",
     gatewayFeatureTag: "feature:support-reply-draft",
     transport: "vercel_ai_gateway",
-    defaultModel: "google/gemini-2.5-flash",
+    defaultModel: "google/gemini-2.5-pro",
     modelEnvVar: "SUPPORT_REPLY_DRAFT_MODEL",
     enabledEnvVar: "SUPPORT_REPLY_DRAFT_ENABLED",
     surfaces: [

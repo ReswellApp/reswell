@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Inbox, PanelRight, RefreshCw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
@@ -18,6 +19,7 @@ import {
 } from "@/lib/actions/supportCaseAssign"
 import { updateSupportCaseInboxAction } from "@/lib/actions/supportCaseInbox"
 import {
+  DEFAULT_INBOX_SORT,
   filterInboxItems,
   inboxViewFromSearchParams,
   nextInboxSelectedKey,
@@ -105,7 +107,7 @@ export function CaseInboxAdminClient({
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [sort, setSort] = useState<CaseInboxSort>("smart")
+  const [sort, setSort] = useState<CaseInboxSort>(DEFAULT_INBOX_SORT)
   const [view, setView] = useState<CaseInboxView>(parsed.view)
   const [typeOverlay, setTypeOverlay] = useState<CaseInboxTypeFilter>(parsed.typeOverlay)
   const [selectedKey, setSelectedKey] = useState<string | null>(searchParams.get("case"))
@@ -688,32 +690,13 @@ export function CaseInboxAdminClient({
         <div className="min-w-0">
           <h1 className="text-sm font-semibold tracking-tight text-foreground">Support operations</h1>
           <p className="hidden text-[11px] text-muted-foreground sm:block">
-            {counts.open} active conversations
+            Admin only ·{" "}
+            <Link href="/help" className="underline-offset-2 hover:underline">
+              Help / FAQ
+            </Link>
+            {" · "}
+            {counts.open} open conversations
           </p>
-        </div>
-        <div className="hidden items-center gap-1.5 lg:flex">
-          {([
-            ["new", "New", counts.neu],
-            ["unassigned", "Unassigned", counts.unassigned],
-            ["waiting", "Waiting", counts.waiting],
-            ["claims", "Claims", counts.claims],
-            ["overdue", "Overdue", counts.overdue],
-          ] as const).map(([target, label, count]) => (
-            <button
-              key={target}
-              type="button"
-              onClick={() => setView(target)}
-              className={cn(
-                "rounded-md border px-2 py-1 text-[11px] font-medium tabular-nums transition-colors",
-                view === target
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
-                target === "overdue" && count > 0 && view !== target && "text-destructive",
-              )}
-            >
-              {label} {count}
-            </button>
-          ))}
         </div>
         <div className="ml-auto flex items-center gap-1">
           {selected ? (
@@ -721,9 +704,10 @@ export function CaseInboxAdminClient({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 lg:hidden"
+              className={cn("h-8 w-8", detailsOpen && "bg-muted")}
               onClick={() => setDetailsOpen((open) => !open)}
-              aria-label="Toggle conversation details"
+              aria-label={detailsOpen ? "Hide conversation details" : "Show conversation details"}
+              aria-pressed={detailsOpen}
             >
               <PanelRight className="h-4 w-4" />
             </Button>
@@ -754,17 +738,17 @@ export function CaseInboxAdminClient({
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="hidden h-full w-[168px] shrink-0 flex-col overflow-y-auto border-r border-border/60 xl:flex">
+        <aside className="hidden h-full w-[168px] shrink-0 flex-col overflow-y-auto border-r border-border/60 2xl:flex">
           <CaseInboxViews active={view} counts={counts} onChange={setView} />
         </aside>
 
         <section
           className={cn(
-            "h-full min-h-0 flex-col overflow-hidden border-border/60 md:flex md:w-[300px] md:shrink-0 md:border-r lg:w-[320px]",
+            "h-full min-h-0 flex-col overflow-hidden border-border/60 md:flex md:w-[260px] md:shrink-0 md:border-r xl:w-[280px]",
             selectedKey ? "hidden md:flex" : "flex w-full",
           )}
         >
-          <div className="shrink-0 border-b border-border/40 px-2 py-2 xl:hidden">
+          <div className="shrink-0 border-b border-border/40 px-2 py-2 2xl:hidden">
             <CaseInboxViews compact active={view} counts={counts} onChange={setView} />
           </div>
           <CaseInboxListPane
@@ -820,7 +804,7 @@ export function CaseInboxAdminClient({
               <div
                 className={cn(
                   "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-                  detailsOpen ? "hidden lg:flex" : "flex",
+                  detailsOpen ? "hidden md:flex" : "flex",
                 )}
               >
                 <CaseInboxConversation
@@ -828,6 +812,7 @@ export function CaseInboxAdminClient({
                   item={selected}
                   messages={threadMessages}
                   threadCaseId={threadCaseId ?? selected.id}
+                  staff={staff}
                   staffNames={staffNames}
                   currentStaffId={currentStaffId}
                   composerRef={composerRef}
@@ -837,6 +822,10 @@ export function CaseInboxAdminClient({
                   savePending={savePending}
                   onBack={() => setSelectedKey(null)}
                   onTake={takeSelected}
+                  onAssigned={(id) => {
+                    applyAssignee(selected.key, id)
+                    setThreadReloadToken((n) => n + 1)
+                  }}
                   onStatus={(status) => persistInbox({ status })}
                   onPriority={(priority) => persistInbox({ priority })}
                   onResolve={() => persistInbox({ status: "resolved" })}
@@ -846,8 +835,6 @@ export function CaseInboxAdminClient({
                     setDraft((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))
                   }
                   onSend={sendComposer}
-                  orderContext={orderContext}
-                  orderExtras={orderExtras}
                   aiLoading={aiLoading}
                   aiActive={Boolean(
                     aiDraft && draft.trim() && draft.trim() === (aiAppliedBody ?? "").trim(),
@@ -866,7 +853,7 @@ export function CaseInboxAdminClient({
               <div
                 className={cn(
                   "h-full min-h-0 overflow-hidden",
-                  detailsOpen ? "flex flex-1 lg:flex-none" : "hidden lg:flex",
+                  detailsOpen ? "flex min-w-0 flex-1 md:w-[320px] md:flex-none xl:w-[340px]" : "hidden",
                 )}
               >
                 <CaseInboxDetails
@@ -886,7 +873,6 @@ export function CaseInboxAdminClient({
                   }}
                   onStatus={(status) => persistInbox({ status })}
                   onPriority={(priority) => persistInbox({ priority })}
-                  onResolve={() => persistInbox({ status: "resolved" })}
                   onReopen={() => persistInbox({ status: "in_progress" })}
                   onOrderOutcome={(outcome) => {
                     setOsOutcome(outcome)

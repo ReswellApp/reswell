@@ -311,3 +311,32 @@ export async function deleteMarketplaceMessageAsAdmin(
 
   return { ok: true, conversationId }
 }
+
+export type DeleteMarketplaceConversationAsAdminResult =
+  | { ok: true; conversationId: string }
+  | { ok: false; kind: "not_found" }
+  | { ok: false; kind: "db_error"; error: PostgrestError }
+
+/**
+ * Hard-delete a marketplace thread (service role). Messages cascade.
+ */
+export async function deleteMarketplaceConversationAsAdmin(
+  supabase: SupabaseClient,
+  conversationId: string,
+): Promise<DeleteMarketplaceConversationAsAdminResult> {
+  const { data: deleted, error: delErr } = await supabase
+    .from("conversations")
+    .delete()
+    .eq("id", conversationId)
+    .select("id")
+    .maybeSingle()
+
+  if (delErr) {
+    return { ok: false, kind: "db_error", error: delErr }
+  }
+  if (!deleted?.id) {
+    return { ok: false, kind: "not_found" }
+  }
+
+  return { ok: true, conversationId: deleted.id }
+}

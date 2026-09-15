@@ -3,7 +3,7 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import { CaseInboxAdminClient } from "@/components/features/admin/case-inbox-admin-client"
 import { CaseInboxWorkspaceSkeleton } from "@/components/features/admin/case-inbox-workspace-skeleton"
 import { listAdminSupportInboxService } from "@/lib/services/adminSupportInbox"
-import { inboxViewFromSearchParams } from "@/lib/admin/case-inbox"
+import { DEFAULT_INBOX_SORT, inboxViewFromSearchParams } from "@/lib/admin/case-inbox"
 import { INBOX_PAGE_SIZE } from "@/lib/admin/case-inbox-query"
 
 export const metadata = privatePageMetadata({
@@ -37,7 +37,7 @@ export default async function AdminContactMessagesPage({
     view: parsed.view,
     type: parsed.typeOverlay,
     search: "",
-    sort: "smart",
+    sort: DEFAULT_INBOX_SORT,
     offset: 0,
     limit: INBOX_PAGE_SIZE,
     selected_key: params.case ?? null,

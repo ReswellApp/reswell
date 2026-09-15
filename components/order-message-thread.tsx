@@ -29,6 +29,12 @@ export type OrderThreadMessage = {
   metadata?: unknown | null
 }
 
+function sendFailureToast(error: unknown): string {
+  if (error === "Unauthorized") return "Sign in again to send messages."
+  if (typeof error === "string" && error.trim()) return error
+  return "Could not send message"
+}
+
 export function OrderMessageThread({
   conversationId,
   initialMessages,
@@ -90,7 +96,8 @@ export function OrderMessageThread({
             setBody("")
             return
           }
-          throw new Error(result.error)
+          toast.error(sendFailureToast(result.error))
+          return
         }
         setBlockedPolicyNotice(null)
         setBody("")
@@ -98,7 +105,7 @@ export function OrderMessageThread({
         window.setTimeout(() => setSentFlash(false), 2000)
         router.refresh()
       } catch {
-        toast.error("Could not send message")
+        toast.error("Could not send message. Check your connection and try again.")
       } finally {
         setSending(false)
       }
@@ -135,7 +142,8 @@ export function OrderMessageThread({
           setBody("")
           return
         }
-        throw new Error(result.error)
+        toast.error(sendFailureToast(result.error))
+        return
       }
 
       const inserted = result.message as OrderThreadMessage
@@ -145,7 +153,7 @@ export function OrderMessageThread({
       setSentFlash(true)
       window.setTimeout(() => setSentFlash(false), 2000)
     } catch {
-      toast.error("Could not send message")
+      toast.error("Could not send message. Check your connection and try again.")
     } finally {
       setSending(false)
     }

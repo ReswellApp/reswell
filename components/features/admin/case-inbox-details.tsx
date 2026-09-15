@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { format } from "date-fns"
-import { CheckCircle2, RotateCcw } from "lucide-react"
+import { RotateCcw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import type { SupportCaseEventRow } from "@/lib/db/supportCases"
@@ -36,10 +36,7 @@ import { inboxCounterpartLabel, staffWorkflowStatusLabel } from "@/lib/admin/cas
 import { cn } from "@/lib/utils"
 
 const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
-  "submitted",
-  "in_review",
   "in_progress",
-  "waiting_on_you",
   "resolved",
 ]
 
@@ -73,7 +70,6 @@ interface CaseInboxDetailsProps {
   onAssigned: (id: string | null) => void
   onStatus: (status: SupportCaseStatus) => void
   onPriority: (priority: CaseInboxPriority) => void
-  onResolve: () => void
   onReopen: () => void
   onOrderOutcome: (outcome: string) => void
   onPinnedNote: (note: string) => void
@@ -98,7 +94,6 @@ export function CaseInboxDetails({
   onAssigned,
   onStatus,
   onPriority,
-  onResolve,
   onReopen,
   onOrderOutcome,
   onPinnedNote,
@@ -109,20 +104,15 @@ export function CaseInboxDetails({
   onRefundComplete,
 }: CaseInboxDetailsProps) {
   return (
-    <aside className="flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/50 bg-muted/10 lg:w-[400px] lg:shrink-0 lg:border-l lg:border-t-0">
-      <div className="shrink-0 border-b border-border/50 px-4 py-3">
-        {item.isOpen ? (
-          <Button type="button" className="w-full" disabled={savePending} onClick={onResolve}>
-            <CheckCircle2 className="mr-1.5 h-4 w-4" />
-            Resolve conversation
-          </Button>
-        ) : (
+    <aside className="flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/50 bg-[#fafafa] dark:bg-muted/10 md:border-l md:border-t-0">
+      {!item.isOpen ? (
+        <div className="shrink-0 border-b border-border/50 px-4 py-3">
           <Button type="button" variant="outline" className="w-full" disabled={savePending} onClick={onReopen}>
             <RotateCcw className="mr-1.5 h-4 w-4" />
             Reopen conversation
           </Button>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <Tabs
         key={item.key}
@@ -139,7 +129,7 @@ export function CaseInboxDetails({
         <TabsContent value="overview" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-5 pt-3">
           <section className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {inboxCounterpartLabel(item.requesterRole)}
+              Customer
             </p>
             <div className="flex items-start gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
@@ -173,7 +163,11 @@ export function CaseInboxDetails({
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-muted-foreground">Status</Label>
-                <Select value={item.status} onValueChange={(value) => onStatus(value as SupportCaseStatus)} disabled={savePending}>
+                <Select
+                  value={item.status === "resolved" ? "resolved" : "in_progress"}
+                  onValueChange={(value) => onStatus(value as SupportCaseStatus)}
+                  disabled={savePending}
+                >
                   <SelectTrigger className="h-9 bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {WORKFLOW_STATUS_VALUES.map((status) => (

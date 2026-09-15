@@ -13,8 +13,16 @@ function encodeObjectPath(path: string): string {
 }
 
 export function listingObjectPublicUrl(supabaseUrl: string, pathInBucket: string): string {
+  return publicStorageObjectUrl(supabaseUrl, "listings", pathInBucket)
+}
+
+export function publicStorageObjectUrl(
+  supabaseUrl: string,
+  bucket: string,
+  pathInBucket: string,
+): string {
   const base = supabaseUrl.replace(/\/$/, "")
-  return `${base}/storage/v1/object/public/listings/${encodeObjectPath(pathInBucket)}`
+  return `${base}/storage/v1/object/public/${bucket}/${encodeObjectPath(pathInBucket)}`
 }
 
 export async function uploadStorageObjectWithProgress(opts: {

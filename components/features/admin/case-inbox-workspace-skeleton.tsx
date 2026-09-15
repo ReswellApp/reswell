@@ -47,25 +47,19 @@ export function CaseInboxWorkspaceSkeleton() {
       <header className="flex h-[49px] shrink-0 items-center gap-3 border-b border-border/60 px-3">
         <div className="space-y-1.5">
           <Skeleton className="h-3.5 w-32" />
-          <Skeleton className="h-2.5 w-24" />
-        </div>
-        <div className="ml-3 hidden gap-1.5 lg:flex">
-          <Skeleton className="h-6 w-14" />
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-2.5 w-52" />
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="hidden w-[168px] shrink-0 space-y-2 border-r border-border/60 p-3 xl:block">
+        <aside className="hidden w-[168px] shrink-0 space-y-2 border-r border-border/60 p-3 2xl:block">
           <Skeleton className="mb-4 h-3 w-12" />
           {VIEWS.map((view) => (
             <Skeleton key={view} className="h-7 w-full" />
           ))}
         </aside>
 
-        <section className="flex w-full shrink-0 flex-col border-r border-border/60 md:w-[320px]">
+        <section className="flex w-full shrink-0 flex-col border-r border-border/60 md:w-[260px] xl:w-[280px]">
           <CaseInboxListSkeleton />
         </section>
 
@@ -99,12 +93,6 @@ export function CaseInboxWorkspaceSkeleton() {
           </div>
         </section>
 
-        <aside className="hidden w-[400px] shrink-0 space-y-4 border-l border-border/60 p-4 lg:block">
-          <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-36 w-full" />
-        </aside>
       </div>
     </div>
   )

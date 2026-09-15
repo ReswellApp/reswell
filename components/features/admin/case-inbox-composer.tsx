@@ -73,7 +73,7 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
     return (
       <div
         className={cn(
-          "rounded-2xl border px-3 py-2.5 shadow-lg shadow-black/10",
+          "rounded-xl border px-3 py-2",
           mode === "note"
             ? "border-amber-200/80 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/40"
             : "border-border/70 bg-background",
@@ -111,10 +111,10 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
             <Sparkles className="h-3 w-3" aria-hidden />
             <span>
               {aiLoading
-                ? "Writing a reply…"
+                ? "Reswell agent is writing…"
                 : aiError
                   ? aiError
-                  : "Suggested reply — edit before you send"}
+                  : "Reswell agent draft — edit before you send"}
             </span>
             {onRegenerateAi ? (
               <button
@@ -179,7 +179,7 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
                 onSend("keep_open")
               }
             }}
-            rows={3}
+            rows={2}
             maxLength={12000}
             placeholder={
               mode === "note"

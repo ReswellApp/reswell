@@ -65,7 +65,19 @@ export function AdminSidebarPanel({
     return groups
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => item.label.toLowerCase().includes(term)),
+        items: group.items
+          .map((item) => {
+            const parentMatch = item.label.toLowerCase().includes(term)
+            const matchedChildren = item.children?.filter((child) =>
+              child.label.toLowerCase().includes(term),
+            )
+            if (parentMatch) return item
+            if (matchedChildren && matchedChildren.length > 0) {
+              return { ...item, children: matchedChildren }
+            }
+            return null
+          })
+          .filter((item): item is (typeof group.items)[number] => item !== null),
       }))
       .filter((group) => group.items.length > 0)
   }, [groups, query])

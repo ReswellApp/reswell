@@ -10,6 +10,10 @@ import {
   fetchHomeMostViewedFinRows,
   fetchHomeMostViewedSurfboardRows,
 } from "@/lib/db/home-most-viewed-listings"
+import {
+  filterHomeRecentlyListedFeatureListings,
+  HOME_RECENTLY_LISTED_FEATURE_CONDITIONS,
+} from "@/lib/home-recently-listed-quality"
 
 function listingViewCount(listing: HomePeerScrollListing): number {
   const views = (listing as HomePeerScrollListing & { views?: number | null }).views
@@ -87,18 +91,19 @@ export async function loadHomeRecentlyListedGridRows(
   supabase: SupabaseClient,
   perSectionLimit = HOME_RECENTLY_LISTED_GRID_PER_SECTION_FETCH,
 ): Promise<HomePeerScrollListing[]> {
+  const featureConditions = { conditions: HOME_RECENTLY_LISTED_FEATURE_CONDITIONS }
   const [mostViewedSurfboards, mostViewedFins, newestSurfboards, newestFins] = await Promise.all([
-    fetchHomeMostViewedSurfboardRows(supabase, perSectionLimit),
-    fetchHomeMostViewedFinRows(supabase, perSectionLimit),
+    fetchHomeMostViewedSurfboardRows(supabase, perSectionLimit, featureConditions),
+    fetchHomeMostViewedFinRows(supabase, perSectionLimit, featureConditions),
     fetchHomeRecentlyListedSurfboardRows(supabase, perSectionLimit),
     fetchHomeRecentlyListedFinRows(supabase, perSectionLimit),
   ])
 
   const mixed = composeRecentlyListedGridListings(
-    mostViewedSurfboards as HomePeerScrollListing[],
-    mostViewedFins as HomePeerScrollListing[],
-    newestSurfboards as HomePeerScrollListing[],
-    newestFins as HomePeerScrollListing[],
+    filterHomeRecentlyListedFeatureListings(mostViewedSurfboards as HomePeerScrollListing[]),
+    filterHomeRecentlyListedFeatureListings(mostViewedFins as HomePeerScrollListing[]),
+    filterHomeRecentlyListedFeatureListings(newestSurfboards as HomePeerScrollListing[]),
+    filterHomeRecentlyListedFeatureListings(newestFins as HomePeerScrollListing[]),
   )
 
   return mixed.length > 0 ? mixed : []

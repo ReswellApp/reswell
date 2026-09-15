@@ -21,7 +21,7 @@ import {
 export type RetrievedHelpArticle = ReturnType<typeof rankHelpArticlesForQuery>[number]
 export type RetrievedReplyExample = ReturnType<typeof rankExamplesForQuery>[number]
 
-export const SUPPORT_REPLY_PROMPT_VERSION = "support-reply-draft-v1"
+export const SUPPORT_REPLY_PROMPT_VERSION = "support-reply-draft-v2"
 
 export type SupportReplyKnowledge = {
   helpArticles: RetrievedHelpArticle[]

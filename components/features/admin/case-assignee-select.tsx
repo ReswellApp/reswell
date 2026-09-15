@@ -23,6 +23,7 @@ type CaseAssigneeSelectProps = {
   staff: StaffAssigneeRow[]
   currentUserId: string | null
   onAssigned: (assigneeAdminId: string | null) => void
+  compact?: boolean
 }
 
 export function CaseAssigneeSelect({
@@ -32,6 +33,7 @@ export function CaseAssigneeSelect({
   staff,
   currentUserId,
   onAssigned,
+  compact = false,
 }: CaseAssigneeSelectProps) {
   const [pending, startTransition] = useTransition()
 
@@ -50,6 +52,29 @@ export function CaseAssigneeSelect({
       onAssigned(assignee_admin_id)
       toast.success(assignee_admin_id ? "Assigned" : "Unassigned")
     })
+  }
+
+  if (compact) {
+    return (
+      <Select
+        value={assigneeAdminId ?? UNASSIGNED}
+        onValueChange={assign}
+        disabled={pending}
+      >
+        <SelectTrigger className="h-7 w-[150px] shrink-0 border-0 bg-transparent px-1 shadow-none text-xs font-medium text-foreground" aria-label="Assignee">
+          <SelectValue placeholder="Unassigned" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+          {staff.map((person) => (
+            <SelectItem key={person.id} value={person.id}>
+              {(person.display_name ?? "Staff").trim() || "Staff"}
+              {person.id === currentUserId ? " (you)" : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
   }
 
   return (

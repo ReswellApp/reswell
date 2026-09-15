@@ -96,6 +96,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/llm-usage', label: 'LLM Usage', description: 'Model spend and feature cost attribution', icon: Sparkles },
       { href: '/admin/search-quality', label: 'Search Quality', description: 'Rate listings per search and train the NL helper', icon: Sparkles },
       { href: '/admin/search-curation', label: 'Search Curation', description: 'Synonyms, overrides, and zero-result fixes', icon: Wrench },
+      { href: '/admin/related-content', label: 'Related content', description: 'Match blogs and listings to listing pages', icon: BookOpen },
       { href: '/admin/price-guide', label: 'Price Guide', description: 'Editorial pricing for brands and models', icon: BookOpen },
       { href: '/admin/used-board-market-dashboard', label: 'Used Board Market Catalog', description: 'Resale market trends', icon: Waves },
     ],
@@ -119,7 +120,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     label: 'Customer service',
     items: [
       { href: '/admin/crm', label: 'CRM', description: 'Customer relationships', icon: ContactRound },
-      { href: '/admin/contact-messages', label: 'Support tickets', description: 'Customer help cases', icon: MessageSquare },
+      { href: '/admin/contact-messages', label: 'Support tickets', description: 'Inbox, canned replies, and draft examples', icon: MessageSquare },
       { href: '/admin/messages', label: 'Marketplace messages', description: 'Buyer/seller threads', icon: MessageSquare },
       { href: '/admin/listings/brand-requests', label: 'Brand requests', description: 'Brand & model requests', icon: Tag },
     ],

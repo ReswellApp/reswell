@@ -38,11 +38,13 @@ export type AdminNavIconKey =
   | 'ticket'
   | 'bookOpen'
   | 'handshake'
+  | 'zap'
 
 export interface AdminNavItemConfig {
   href: string
   label: string
   icon: AdminNavIconKey
+  children?: AdminNavItemConfig[]
 }
 
 export interface AdminNavGroupConfig {
@@ -61,6 +63,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/google-analytics',
   '/admin/ad-sales',
   '/admin/search-curation',
+  '/admin/related-content',
   '/admin/partner-embeds',
   '/admin/shipping',
   '/admin/dropoff-locations',
@@ -118,6 +121,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/llm-usage', label: 'LLM Usage', icon: 'sparkles' },
       { href: '/admin/search-quality', label: 'Search Quality', icon: 'sparkles' },
       { href: '/admin/search-curation', label: 'Search Curation', icon: 'wrench' },
+      { href: '/admin/related-content', label: 'Related content', icon: 'bookOpen' },
       { href: '/admin/price-guide', label: 'Price Guide', icon: 'bookOpen' },
       { href: '/admin/used-board-market-dashboard', label: 'Used Board Market Catalog', icon: 'waves' },
     ],
@@ -152,7 +156,15 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Customer service',
     items: [
       { href: '/admin/crm', label: 'CRM', icon: 'contactRound' },
-      { href: '/admin/contact-messages', label: 'Support tickets', icon: 'lifeBuoy' },
+      {
+        href: '/admin/contact-messages',
+        label: 'Support tickets',
+        icon: 'lifeBuoy',
+        children: [
+          { href: '/admin/support-macros', label: 'Reply macros', icon: 'zap' },
+          { href: '/admin/support-reply-examples', label: 'Reply examples', icon: 'sparkles' },
+        ],
+      },
       { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },
       {
         href: '/admin/refund-thread-notifications',
@@ -182,11 +194,24 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
   },
 ]
 
+export function adminNavItemHrefs(item: AdminNavItemConfig): string[] {
+  return [item.href, ...(item.children ?? []).flatMap(adminNavItemHrefs)]
+}
+
+export function flattenAdminNavItems(groups: AdminNavGroupConfig[]): AdminNavItemConfig[] {
+  return groups.flatMap((group) => group.items.flatMap((item) => [item, ...(item.children ?? [])]))
+}
+
 export function getAdminNavGroupsForUser(isAdmin: boolean): AdminNavGroupConfig[] {
   const allow = (href: string) => isAdmin || !EMPLOYEE_EXCLUDED_HREFS.has(href)
 
   return ADMIN_NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => allow(item.href)),
+    items: group.items
+      .filter((item) => allow(item.href))
+      .map((item) => ({
+        ...item,
+        children: item.children?.filter((child) => allow(child.href)),
+      })),
   })).filter((group) => group.items.length > 0)
 }

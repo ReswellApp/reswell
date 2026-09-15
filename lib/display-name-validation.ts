@@ -86,5 +86,16 @@ export function validateDisplayName(
   if (hasBlocked) {
     return { valid: false, error: "Please choose a different display name." }
   }
+  if (displayNameImpersonatesReswellSupport(lower)) {
+    return { valid: false, error: "Please choose a different display name." }
+  }
   return { valid: true }
+}
+
+/** Blocks marketplace impersonation like “RESWELL SUPPORT”. */
+function displayNameImpersonatesReswellSupport(lower: string): boolean {
+  const compact = lower.replace(/[\s._-]+/g, "")
+  if (compact.includes("reswellsupport")) return true
+  if (/\breswell\s+support\b/.test(lower)) return true
+  return false
 }

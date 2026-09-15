@@ -33,6 +33,7 @@ export type CaseInboxView =
   | "all"
 export type CaseInboxPriority = "low" | "normal" | "high" | "urgent"
 export type CaseInboxSort = "smart" | "recent" | "oldest"
+export const DEFAULT_INBOX_SORT: CaseInboxSort = "recent"
 
 export type InboxViewCounts = {
   open: number
@@ -187,28 +188,9 @@ export function inboxViewFromSearchParams(params: {
           ? "order"
           : "all"
 
-  const rawView = params.view
-  if (
-    rawView === "open" ||
-    rawView === "mine" ||
-    rawView === "unassigned" ||
-    rawView === "new" ||
-    rawView === "waiting" ||
-    rawView === "claims" ||
-    rawView === "overdue" ||
-    rawView === "resolved" ||
-    rawView === "all"
-  ) {
-    return { view: rawView, typeOverlay }
+  if (params.view === "resolved" || params.status === "resolved") {
+    return { view: "resolved", typeOverlay }
   }
-
-  if (params.assignee === "mine") return { view: "mine", typeOverlay }
-  if (params.assignee === "unassigned") return { view: "unassigned", typeOverlay }
-  if (params.status === "new") return { view: "new", typeOverlay }
-  if (params.status === "waiting") return { view: "waiting", typeOverlay }
-  if (params.status === "resolved") return { view: "resolved", typeOverlay }
-  if (params.status === "all") return { view: "all", typeOverlay }
-  if (typeOverlay === "claims") return { view: "claims", typeOverlay: "all" }
   return { view: "open", typeOverlay }
 }
 

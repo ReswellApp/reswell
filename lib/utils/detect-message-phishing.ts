@@ -21,6 +21,17 @@ const COPY_LINK_RESWELL_SCAM_PATTERN =
 const RESWELL_SCAM_WITH_EXTERNAL_LINK_PATTERN =
   /\breswell\b[\s\S]{0,400}\b(?:https?:\/\/[^\s/]+\.(?:be|ly|gd|at|co)\/|tinu\.be\/)\S*/i
 
+/** Fake “sale complete, confirm payout” blast (PORTAL_CONFIRM: evil.com/CODE). */
+const PORTAL_CONFIRM_PATTERN = /\bportal[_\s-]?confirm\b/i
+
+const CONFIRM_TOKEN_BARE_DOMAIN_PATTERN =
+  /\b(?:portal|account|payment|bank(?:ing)?)[_\s-]?(?:confirm|verify|check)\s*:\s*[a-z0-9.-]+\.[a-z]{2,}\/\S+/i
+
+const RESWELL_ITEM_SOLD_LURE_PATTERN = /\byour\s+reswell\s+item\s+has\s+been\s+sold\b/i
+
+const PAYMENT_DETAILS_ACCOUNT_LURE_PATTERN =
+  /\bpayment\s+details\s+linked\s+to\s+your\s+account\b/i
+
 /** Broad SQL ilike pre-filters before running {@link messageAppearsToBePhishing}. */
 export const PHISHING_MESSAGE_SQL_PREFILTER_PATTERNS = [
   "%tinu.be%",
@@ -28,6 +39,9 @@ export const PHISHING_MESSAGE_SQL_PREFILTER_PATTERNS = [
   "%reswell support team%",
   "%temporarily restricted pending%",
   "%copy and paste this link%",
+  "%PORTAL_CONFIRM%",
+  "%your RESWELL item has been sold%",
+  "%payment details linked to your account%",
 ] as const
 
 export function messageAppearsToBePhishing(text: string): boolean {
@@ -40,6 +54,10 @@ export function messageAppearsToBePhishing(text: string): boolean {
   if (VERIFY_ACCOUNT_WITH_LINK_PATTERN.test(t)) return true
   if (COPY_LINK_RESWELL_SCAM_PATTERN.test(t)) return true
   if (RESWELL_SCAM_WITH_EXTERNAL_LINK_PATTERN.test(t)) return true
+  if (PORTAL_CONFIRM_PATTERN.test(t)) return true
+  if (CONFIRM_TOKEN_BARE_DOMAIN_PATTERN.test(t)) return true
+  if (RESWELL_ITEM_SOLD_LURE_PATTERN.test(t)) return true
+  if (PAYMENT_DETAILS_ACCOUNT_LURE_PATTERN.test(t)) return true
 
   return false
 }

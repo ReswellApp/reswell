@@ -38,6 +38,7 @@ import {
   Ticket,
   BookOpen,
   Handshake,
+  Zap,
 } from 'lucide-react'
 import {
   Collapsible,
@@ -45,7 +46,12 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
-import type { AdminNavGroupConfig, AdminNavIconKey } from '@/lib/admin-nav'
+import {
+  adminNavItemHrefs,
+  type AdminNavGroupConfig,
+  type AdminNavIconKey,
+  type AdminNavItemConfig,
+} from '@/lib/admin-nav'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import { sumAdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import { NavUnreadCountBadge } from '@/components/nav-unread-count-badge'
@@ -123,6 +129,8 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
       return <Code className={NAV_ICON_CLASS} aria-hidden />
     case 'rotateCcw':
       return <RotateCcw className={NAV_ICON_CLASS} aria-hidden />
+    case 'zap':
+      return <Zap className={NAV_ICON_CLASS} aria-hidden />
     default:
       return <LayoutDashboard className={NAV_ICON_CLASS} aria-hidden />
   }
@@ -135,6 +143,72 @@ function isNavActive(pathname: string, href: string): boolean {
     return norm === hrefPath
   }
   return norm === hrefPath || norm.startsWith(`${hrefPath}/`)
+}
+
+function AdminNavItem({
+  item,
+  pathname,
+  badgeCounts,
+  onNavigate,
+}: {
+  item: AdminNavItemConfig
+  pathname: string
+  badgeCounts: AdminNavBadgeCounts
+  onNavigate?: () => void
+}) {
+  const childActive = item.children?.some((child) => isNavActive(pathname, child.href)) ?? false
+  const active = isNavActive(pathname, item.href) && !childActive
+  const itemBadgeCount = badgeCounts[item.href] ?? 0
+
+  return (
+    <div>
+      <Link
+        href={item.href}
+        onClick={onNavigate}
+        className={cn(
+          'flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2.5 text-sm transition-colors lg:min-h-0 lg:py-2',
+          active
+            ? 'bg-slate-100 font-medium text-foreground dark:bg-muted'
+            : 'font-normal text-slate-600 hover:bg-slate-50 hover:text-foreground dark:text-muted-foreground dark:hover:bg-muted',
+        )}
+      >
+        <span className="flex min-w-0 items-center">
+          <AdminNavItemIcon icon={item.icon} />
+          <span className="truncate">{item.label}</span>
+        </span>
+        <NavUnreadCountBadge count={itemBadgeCount} className="h-4 min-w-4 text-[10px]" />
+      </Link>
+      {item.children && item.children.length > 0 ? (
+        <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border/70 pl-2">
+          {item.children.map((child) => {
+            const nestedActive = isNavActive(pathname, child.href)
+            return (
+              <Link
+                key={child.href}
+                href={child.href}
+                onClick={onNavigate}
+                className={cn(
+                  'flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2.5 text-sm transition-colors lg:min-h-0 lg:py-2',
+                  nestedActive
+                    ? 'bg-slate-100 font-medium text-foreground dark:bg-muted'
+                    : 'font-normal text-slate-600 hover:bg-slate-50 hover:text-foreground dark:text-muted-foreground dark:hover:bg-muted',
+                )}
+              >
+                <span className="flex min-w-0 items-center">
+                  <AdminNavItemIcon icon={child.icon} />
+                  <span className="truncate">{child.label}</span>
+                </span>
+                <NavUnreadCountBadge
+                  count={badgeCounts[child.href] ?? 0}
+                  className="h-4 min-w-4 text-[10px]"
+                />
+              </Link>
+            )
+          })}
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 interface AdminSidebarNavProps {
@@ -160,9 +234,11 @@ export function AdminSidebarNav({
       {groups.map((group) => {
         const groupBadgeCount = sumAdminNavBadgeCounts(
           badgeCounts,
-          group.items.map((item) => item.href),
+          group.items.flatMap(adminNavItemHrefs),
         )
-        const groupActive = group.items.some((item) => isNavActive(pathname, item.href))
+        const groupActive = group.items.some((item) =>
+          adminNavItemHrefs(item).some((href) => isNavActive(pathname, href)),
+        )
         return (
           <Collapsible key={group.id} defaultOpen={forceOpen || groupActive}>
             <CollapsibleTrigger className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground lg:min-h-8 data-[state=open]:[&_.admin-nav-chevron]:rotate-180">
@@ -173,29 +249,15 @@ export function AdminSidebarNav({
               <ChevronDown className="admin-nav-chevron h-3.5 w-3.5 shrink-0 transition-transform duration-200" />
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-0.5 pt-1">
-              {group.items.map((item) => {
-                const active = isNavActive(pathname, item.href)
-                const itemBadgeCount = badgeCounts[item.href] ?? 0
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onNavigate}
-                    className={cn(
-                      'flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2.5 text-sm transition-colors lg:min-h-0 lg:py-2',
-                      active
-                        ? 'bg-slate-100 font-medium text-foreground dark:bg-muted'
-                        : 'font-normal text-slate-600 hover:bg-slate-50 hover:text-foreground dark:text-muted-foreground dark:hover:bg-muted',
-                    )}
-                  >
-                    <span className="flex min-w-0 items-center">
-                      <AdminNavItemIcon icon={item.icon} />
-                      <span className="truncate">{item.label}</span>
-                    </span>
-                    <NavUnreadCountBadge count={itemBadgeCount} className="h-4 min-w-4 text-[10px]" />
-                  </Link>
-                )
-              })}
+              {group.items.map((item) => (
+                <AdminNavItem
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                  badgeCounts={badgeCounts}
+                  onNavigate={onNavigate}
+                />
+              ))}
             </CollapsibleContent>
           </Collapsible>
         )

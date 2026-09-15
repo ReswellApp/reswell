@@ -20,7 +20,7 @@ export const listAdminSupportInboxQuerySchema = z.object({
   view: adminSupportInboxViewSchema.optional().default("open"),
   type: adminSupportInboxTypeSchema.optional().default("all"),
   search: z.string().trim().max(200).optional().default(""),
-  sort: adminSupportInboxSortSchema.optional().default("smart"),
+  sort: adminSupportInboxSortSchema.optional().default("recent"),
   offset: z.number().int().min(0).max(10_000).optional().default(0),
   limit: z.number().int().min(1).max(100).optional().default(50),
   selected_key: z.string().trim().max(80).nullable().optional(),

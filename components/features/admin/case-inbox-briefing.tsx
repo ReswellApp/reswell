@@ -39,8 +39,8 @@ export function CaseInboxBriefing({
   return (
     <div
       className={cn(
-        "mx-3 mt-3 shrink-0 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5",
-        expanded && "max-h-[40%] overflow-y-auto",
+        "mx-3 mt-2 shrink-0 rounded-lg border border-border/60 bg-muted/20 px-3 py-2",
+        expanded && "max-h-[28%] overflow-y-auto",
       )}
     >
       <div className="flex items-center gap-2">
@@ -55,7 +55,9 @@ export function CaseInboxBriefing({
           </Button>
         ) : null}
       </div>
-      <p className="mt-1 text-sm leading-relaxed text-foreground">{briefing.summary}</p>
+      <p className={cn("mt-1 text-sm leading-snug text-foreground", !expanded && "line-clamp-2")}>
+        {briefing.summary}
+      </p>
       {expanded ? (
         <>
           {briefing.latestUpdate ? <p className="mt-0.5 text-sm text-foreground">Latest: “{briefing.latestUpdate}”</p> : null}
@@ -71,7 +73,7 @@ export function CaseInboxBriefing({
           ) : null}
         </>
       ) : null}
-      {showLabel && item.orderId ? (
+      {expanded && showLabel && item.orderId ? (
         <AdminShippingLabelPreviewButton orderId={item.orderId} className="mt-2.5" />
       ) : null}
     </div>

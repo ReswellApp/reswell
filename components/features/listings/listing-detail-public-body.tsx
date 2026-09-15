@@ -9,6 +9,7 @@ import { AccessoriesListingDetailPage } from "@/components/accessories-listing-d
 import { MagazinesListingDetailPage } from "@/components/magazines-listing-detail-page"
 import { TractionListingDetailPage } from "@/components/traction-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
+import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 import { ListingPdpProductJsonLd } from "@/components/features/listings/listing-pdp-product-json-ld"
 import { isGoogleMerchantPeerSection } from "@/lib/google-merchant/config"
@@ -81,6 +82,9 @@ export function ListingDetailPublicBody({
             return null
         }
       })()}
+      {listing.section === "surfboards" ? null : (
+        <ListingRelatedContentSection listingId={listing.id} />
+      )}
     </>
   )
 }

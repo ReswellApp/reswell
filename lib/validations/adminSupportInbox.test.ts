@@ -8,6 +8,7 @@ describe("listAdminSupportInboxQuerySchema", () => {
     const parsed = listAdminSupportInboxQuerySchema.parse({})
     assert.equal(parsed.view, "open")
     assert.equal(parsed.search, "")
+    assert.equal(parsed.sort, "recent")
     assert.equal(parsed.offset, 0)
     assert.equal(parsed.limit, 50)
   })

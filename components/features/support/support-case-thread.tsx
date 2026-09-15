@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
-import { format, formatDistanceToNow } from "date-fns"
+import { format, formatDistanceToNowStrict } from "date-fns"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -26,6 +26,12 @@ type SupportCaseThreadProps = {
   originalRequest?: { body: string; createdAt: string; name: string } | null
   staffNames?: Record<string, string>
   counterpartLabel?: string
+}
+
+function deskTime(value: string): string {
+  return formatDistanceToNowStrict(new Date(value))
+    .replace(/ minutes?/, " min")
+    .replace(/ seconds?/, " sec")
 }
 
 function bubbleAlign(authorRole: SupportCaseThreadMessage["author_role"], viewer: "member" | "staff") {
@@ -111,7 +117,10 @@ export function SupportCaseThread({
   useEffect(() => {
     const el = listRef.current
     if (!el) return
-    el.scrollTop = el.scrollHeight
+    const frame = window.requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [displayMessages.length, caseId])
 
   function send() {
@@ -150,8 +159,8 @@ export function SupportCaseThread({
       <div
         ref={listRef}
         className={cn(
-          "min-h-0 flex-1 overflow-y-auto",
-          role === "staff" ? "min-h-[12rem] space-y-4 px-2 py-4" : "space-y-3 px-1 py-3",
+          "min-h-0 flex-1 overflow-y-auto overflow-x-hidden",
+          role === "staff" ? "space-y-3 px-2 py-3" : "space-y-3 px-1 py-3",
         )}
       >
         {displayMessages.length === 0 ? (
@@ -194,7 +203,7 @@ export function SupportCaseThread({
                   >
                     {authorLabel(message, role, staffNames, counterpartLabel)}
                     {" · "}
-                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                    {deskTime(message.created_at)}
                   </p>
                   <div
                     className={cn(
@@ -202,9 +211,13 @@ export function SupportCaseThread({
                       role === "staff" ? "text-sm" : "text-[15px]",
                       note
                         ? "rounded-lg border border-amber-200/80 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-50"
-                        : mine
-                          ? "rounded-2xl bg-foreground text-background"
-                          : "rounded-2xl bg-muted text-foreground",
+                        : role === "staff" && mine
+                          ? "rounded-2xl bg-indigo-50 text-foreground dark:bg-indigo-950/50 dark:text-indigo-50"
+                          : role === "staff"
+                            ? "rounded-2xl border border-border/60 bg-background text-foreground shadow-sm"
+                            : mine
+                              ? "rounded-2xl bg-foreground text-background"
+                              : "rounded-2xl bg-muted text-foreground",
                     )}
                     title={format(new Date(message.created_at), "PPpp")}
                   >
