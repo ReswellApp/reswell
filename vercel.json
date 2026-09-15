@@ -58,6 +58,10 @@
       "schedule": "20 * * * *"
     },
     {
+      "path": "/api/cron/meta-catalog-daily-rotation",
+      "schedule": "5 0 * * *"
+    },
+    {
       "path": "/api/cron/elasticsearch-reindex",
       "schedule": "20 4,16 * * *"
     },
