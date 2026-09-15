@@ -141,7 +141,7 @@ function emptyContext(flags: CustomerPanelFlag[]): SupportCaseCustomerContext {
 }
 
 function withRelatedCases(
-  context: SupportCaseCustomerContext,
+  context: Omit<SupportCaseCustomerContext, "relatedCases">,
 ): SupportCaseCustomerContext {
   return { ...context, relatedCases: context.tickets }
 }
