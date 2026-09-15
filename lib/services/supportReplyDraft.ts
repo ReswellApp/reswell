@@ -257,53 +257,11 @@ async function generateDraftBody(args: {
     return { ...fallback, model: null, needsHumanReview: true }
   }
 
-<<<<<<< HEAD
-  const { output } = await generateText({
-    model: supportReplyDraftModelId(),
-    output: Output.object({ schema: supportReplyDraftLlmSchema }),
-    system: `You are the Reswell support desk agent. You draft the next customer-visible reply for staff to review and send. Reswell is a used-surfboard marketplace with Purchase Protection.
-
-Write in Reswell Support's voice: warm, concise, specific, first-person staff ("we"). Do not mention that you are an AI, a model, or a draft.
-
-Rules:
-- Use the linked order snapshot and help-center excerpts as ground truth. Quote real order refs, tracking, and statuses only when they appear in the prompt.
-- Ground every policy claim in the provided help-center excerpts or similar sent replies.
-- Never invent refunds, claim approvals, tracking numbers, payouts, or arrival dates.
-- If a fact is missing, ask one clear question or say you are checking — do not guess.
-- Do not promise a timeline Reswell has not published.
-- Safety / scam reports: take them seriously, ask for the listing or conversation link, and say staff will review.
-- Keep it under 180 words unless a short numbered list is clearer.
-- No sign-off name other than Reswell Support.
-- Greet them as ${args.greetingName}. Never address them by email.
-- If the last staff message already answered them, write a short follow-up, not a repeat.`,
-    prompt: `Draft the next customer-visible reply.
-
-Case: ${args.row.subject}
-Kind: ${args.row.kind}
-Status: ${args.row.status}
-Requester: ${args.greetingName} (${args.row.requester_role})
-${compactOrder(args.order)}
-
-Customer messages:
-${customerBits.slice(-6).join("\n---\n") || "(original request only)"}
-
-Already sent by staff:
-${priorStaff.slice(-4).join("\n---\n") || "(none yet)"}
-
-${knowledgePrompt(args.knowledge)}`,
-    temperature: 0.3,
-    providerOptions: {
-      gateway: {
-        tags: gatewayTagsForFeature("support_reply_draft"),
-      },
-    },
-=======
   const priorTickets = await listPriorTicketsForCsAgent(args.service, {
     caseId: args.row.id,
     requesterUserId: args.row.requester_user_id,
     requesterEmail: args.row.requester_email,
     linkedOrderId: args.row.order_id,
->>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
   })
 
   const lookupSession = createCsAgentLookups(args.service, {

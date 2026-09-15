@@ -3,12 +3,8 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import { CaseInboxAdminClient } from "@/components/features/admin/case-inbox-admin-client"
 import { CaseInboxWorkspaceSkeleton } from "@/components/features/admin/case-inbox-workspace-skeleton"
 import { listAdminSupportInboxService } from "@/lib/services/adminSupportInbox"
-<<<<<<< HEAD
-import { DEFAULT_INBOX_SORT, inboxViewFromSearchParams } from "@/lib/admin/case-inbox"
-=======
 import { getSupportCaseCustomerContextService } from "@/lib/services/supportCaseCustomerContext"
-import { inboxViewFromSearchParams } from "@/lib/admin/case-inbox"
->>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
+import { DEFAULT_INBOX_SORT, inboxViewFromSearchParams } from "@/lib/admin/case-inbox"
 import { INBOX_PAGE_SIZE } from "@/lib/admin/case-inbox-query"
 import { parseInboxCaseParam } from "@/lib/utils/support-case-paths"
 
@@ -39,24 +35,13 @@ export default async function AdminContactMessagesPage({
     tab: params.tab ?? null,
   })
 
-<<<<<<< HEAD
-  const initial = await listAdminSupportInboxService({
-    view: parsed.view,
-    type: parsed.typeOverlay,
-    search: "",
-    sort: DEFAULT_INBOX_SORT,
-    offset: 0,
-    limit: INBOX_PAGE_SIZE,
-    selected_key: params.case ?? null,
-  })
-=======
   const selectedCaseId = parseInboxCaseParam(params.case)
   const [initial, initialCustomer] = await Promise.all([
     listAdminSupportInboxService({
       view: parsed.view,
       type: parsed.typeOverlay,
       search: "",
-      sort: "smart",
+      sort: DEFAULT_INBOX_SORT,
       offset: 0,
       limit: INBOX_PAGE_SIZE,
       selected_key: params.case ?? null,
@@ -65,7 +50,6 @@ export default async function AdminContactMessagesPage({
       ? getSupportCaseCustomerContextService({ case_id: selectedCaseId })
       : Promise.resolve(null),
   ])
->>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
 
   return (
     <Suspense fallback={<CaseInboxWorkspaceSkeleton />}>

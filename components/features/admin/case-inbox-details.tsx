@@ -131,38 +131,6 @@ export function CaseInboxDetails({
         </TabsList>
 
         <TabsContent value="overview" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-5 pt-3">
-<<<<<<< HEAD
-          <section className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Customer
-            </p>
-            <div className="flex items-start gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
-                {inboxInitials(item.fromName)}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{item.fromName}</p>
-                {item.fromEmail ? <p className="truncate text-xs text-muted-foreground">{item.fromEmail}</p> : null}
-                {item.userId ? (
-                  <Link href={`/admin/users/${item.userId}`} className="text-xs font-medium underline-offset-2 hover:underline">
-                    View complete profile
-                  </Link>
-                ) : <p className="text-xs text-muted-foreground">Guest / no account</p>}
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-2 border-t border-border/50 pt-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {inboxCounterpartLabel(item.requesterRole)} activity
-            </p>
-            <CaseCustomerContext
-              caseId={item.id}
-              linkedOrderId={item.orderId}
-              onOrderLinked={onOrderLinked}
-            />
-          </section>
-=======
           <CaseCustomerContext
             caseId={item.id}
             linkedOrderId={item.orderId}
@@ -175,7 +143,6 @@ export function CaseInboxDetails({
             initialContext={initialCustomerContext}
             onOrderLinked={onOrderLinked}
           />
->>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
 
           <section className="space-y-3 border-t border-border/50 pt-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Workflow</p>

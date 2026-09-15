@@ -156,7 +156,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Customer service',
     items: [
       { href: '/admin/crm', label: 'CRM', icon: 'contactRound' },
-<<<<<<< HEAD
       {
         href: '/admin/contact-messages',
         label: 'Support tickets',
@@ -166,11 +165,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
           { href: '/admin/support-reply-examples', label: 'Reply examples', icon: 'sparkles' },
         ],
       },
-=======
-      { href: '/admin/contact-messages', label: 'Support tickets', icon: 'lifeBuoy' },
-      { href: '/admin/support-macros', label: 'Reply macros', icon: 'zap' },
-      { href: '/admin/support-reply-examples', label: 'Reply examples', icon: 'sparkles' },
->>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
       { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },
       {
         href: '/admin/refund-thread-notifications',

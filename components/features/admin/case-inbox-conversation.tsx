@@ -19,16 +19,11 @@ import {
   type ComposerDisposition,
   type ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
-<<<<<<< HEAD
-import type { SupportReplyCitedHelp } from "@/lib/types/supportReplyDraft"
-=======
 import type {
   SupportReplyCitedHelp,
   SupportReplyCitedOrder,
   SupportReplyCitedTicket,
 } from "@/lib/types/supportReplyDraft"
-import { Badge } from "@/components/ui/badge"
->>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
 import { Button } from "@/components/ui/button"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"

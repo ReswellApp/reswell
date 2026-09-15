@@ -1,21 +1,5 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-<<<<<<< HEAD
-
-import { validateDisplayName } from "./display-name-validation.ts"
-
-describe("validateDisplayName", () => {
-  it("rejects Reswell Support impersonation", () => {
-    assert.equal(validateDisplayName("RESWELL SUPPORT").valid, false)
-    assert.equal(validateDisplayName("Reswell Support").valid, false)
-    assert.equal(validateDisplayName("reswell-support").valid, false)
-    assert.equal(validateDisplayName("ReswellSupport").valid, false)
-  })
-
-  it("allows ordinary names", () => {
-    assert.equal(validateDisplayName("Jordan").valid, true)
-    assert.equal(validateDisplayName("Creswell").valid, true)
-=======
 import { validateDisplayName } from "./display-name-validation.ts"
 
 function assertBlocked(name: string) {
@@ -35,12 +19,15 @@ describe("validateDisplayName impersonation", () => {
     assertBlocked("Help Res Well")
     assertBlocked("reswell")
     assertBlocked("res well")
+    assert.equal(validateDisplayName("reswell-support").valid, false)
+    assert.equal(validateDisplayName("ReswellSupport").valid, false)
   })
 
   it("allows ordinary names that only mention Reswell as a community identity", () => {
     assert.equal(validateDisplayName("Hayden").valid, true)
+    assert.equal(validateDisplayName("Jordan").valid, true)
+    assert.equal(validateDisplayName("Creswell").valid, true)
     assert.equal(validateDisplayName("Reswell Fan").valid, true)
     assert.equal(validateDisplayName("helpful buyer").valid, true)
->>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
   })
 })

@@ -22,11 +22,7 @@ import { CS_AGENT_PROMPT_VERSION } from "@/lib/llm/cs-agent"
 export type RetrievedHelpArticle = HelpArticlePlainText & { score: number }
 export type RetrievedReplyExample = ReturnType<typeof rankExamplesForQuery>[number]
 
-<<<<<<< HEAD
-export const SUPPORT_REPLY_PROMPT_VERSION = "support-reply-draft-v2"
-=======
 export const SUPPORT_REPLY_PROMPT_VERSION = CS_AGENT_PROMPT_VERSION
->>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
 
 export type SupportReplyKnowledge = {
   helpArticles: RetrievedHelpArticle[]
