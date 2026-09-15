@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
@@ -132,8 +132,17 @@ function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
   return parts.length ? parts.join("\n") : null
 }
 
-export default async function OrderDetailPage(props: { params: Promise<{ id: string }> }) {
+function wantsReviewPrompt(value: string | string[] | undefined): boolean {
+  const raw = Array.isArray(value) ? value[0] : value
+  return raw === "1" || raw === "true"
+}
+
+export default async function OrderDetailPage(props: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ review?: string | string[] }>
+}) {
   const raw = (await props.params).id
+  const searchParams = await props.searchParams
   const id = decodeURIComponent(typeof raw === "string" ? raw.trim() : "").trim()
   if (!id || !UUID_RE.test(id)) {
     notFound()
@@ -191,6 +200,9 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
     .maybeSingle()
 
   if (error || !row) {
+    if (wantsReviewPrompt(searchParams.review)) {
+      redirect("/dashboard/purchases")
+    }
     notFound()
   }
 
@@ -348,6 +360,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           canSubmit: canSubmitSellerReviewForOrder,
           existing: existingSellerReview,
         }}
+        autoOpenSellerReview={wantsReviewPrompt(searchParams.review)}
         reviewFromSeller={reviewFromSeller}
       />
 

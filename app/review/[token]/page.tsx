@@ -1,9 +1,12 @@
 import type { Metadata } from "next"
-import { notFound, redirect } from "next/navigation"
-import { OrderReviewInviteView } from "@/components/features/reviews/order-review-invite-view"
+import { redirect } from "next/navigation"
 import { loadOrderReviewInvitePageContext } from "@/lib/services/orderReviewInvite"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
+import {
+  decodeOrderReviewInviteToken,
+  orderPurchaseReviewPath,
+} from "@/lib/utils/order-review-invite-token"
 
 type PageProps = { params: Promise<{ token: string }> }
 
@@ -17,13 +20,14 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 }
 
 /**
- * Direct review link for buyers — token is stored on `order_review_invites` and sent via Klaviyo.
+ * Legacy email deep link. Always send the buyer to the purchase page (Review seller)
+ * instead of 404ing when the token is stale or belongs to another account.
  */
 export default async function OrderReviewInvitePage(props: PageProps) {
   const { token } = await props.params
-  const trimmed = token?.trim()
+  const trimmed = decodeOrderReviewInviteToken(token ?? "")
   if (!trimmed) {
-    notFound()
+    redirect("/dashboard/purchases")
   }
 
   const supabase = await createClient()
@@ -37,9 +41,9 @@ export default async function OrderReviewInvitePage(props: PageProps) {
   }
 
   const context = await loadOrderReviewInvitePageContext(trimmed, user.id)
-  if (!context) {
-    notFound()
+  if (context) {
+    redirect(orderPurchaseReviewPath(context.orderId))
   }
 
-  return <OrderReviewInviteView {...context} />
+  redirect("/dashboard/purchases")
 }

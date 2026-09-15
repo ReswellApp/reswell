@@ -8,9 +8,7 @@
  * - `fulfillment` — fired once after pickup code verified or shipping delivered (skipped if buyer already reviewed)
  *
  * **Template:** `lib/klaviyo/review-seller-requested-email.html` (use `phase` = fulfillment).
- * **Template variables:** `{{ event.review_url }}`, `{{ event.order_num }}`, `{{ event.Title }}`,
- * `{{ event.purchase_url }}`, `{{ event.seller_display_name }}`,
- * `{{ event.request_from.display_name }}`, `{{ event.phase }}`.
+ * CTA: `{{ event.purchase_url }}` / `{{ event.review_url }}` — both `/dashboard/purchases/{id}`.
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -19,7 +17,7 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { OrderReviewInvitePhase } from "@/lib/types/order-review-invite"
-import { orderReviewInviteUrl } from "@/lib/utils/order-review-invite-token"
+import { orderPurchasePath } from "@/lib/utils/order-review-invite-token"
 
 function displayNameFromProfileRow(data: {
   display_name?: string | null
@@ -107,8 +105,8 @@ export async function trackKlaviyoReviewInvite(payload: KlaviyoReviewInvitePaylo
         })
       : null
   const listingUrl = listingPath != null ? `${origin}${listingPath}` : null
-  const purchaseUrl = `${origin}/dashboard/purchases/${payload.orderId}`
-  const reviewUrl = orderReviewInviteUrl(payload.reviewToken, origin)
+  const purchaseUrl = `${origin}${orderPurchasePath(payload.orderId)}`
+  const reviewUrl = purchaseUrl
 
   await sendKlaviyoServerEvent({
     metricName: "Review Invite Sent",

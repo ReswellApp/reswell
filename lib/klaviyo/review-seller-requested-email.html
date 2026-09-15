@@ -12,10 +12,11 @@
   Suggested preview: It takes about a minute and helps the next buyer.
 
   Event variables (from track-review-requested.ts / track-review-invite.ts):
-  - Title, seller_display_name, review_url, purchase_url, listing_url, order_num
+  - Title, seller_display_name, purchase_url, review_url, listing_url, order_num
   - request_from.display_name (same seller name, nested)
 
-  review_url is a clean path — append UTMs with ?.
+  purchase_url and review_url are the same clean path (/dashboard/purchases/{id}).
+  Append ?review=1 so the Review seller dialog opens. Then UTMs with &.
   If your Klaviyo shell already has a logo or footer, delete the logo row below.
   Leave Klaviyo's unsubscribe / address footer in the template shell.
 
@@ -73,7 +74,7 @@
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
               <tr>
                 <td align="center" bgcolor="#5574AD" style="border-radius:50px;">
-                  <a href="{{ event|lookup:'review_url' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=review_requested&utm_content=review_seller_cta" style="display:inline-block;padding:14px 32px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.02em;">
+                  <a href="{{ event|lookup:'purchase_url' }}?review=1&utm_source=klaviyo&utm_medium=email&utm_campaign=review_requested&utm_content=review_seller_cta" style="display:inline-block;padding:14px 32px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.02em;">
                     Review the seller
                   </a>
                 </td>
