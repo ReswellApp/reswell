@@ -200,10 +200,13 @@ export async function listSupportCasesByRequesterEmail(
   email: string,
   opts?: { openOnly?: boolean; limit?: number },
 ): Promise<SupportCaseRow[]> {
+  const exact = email.trim()
+  if (!exact) return []
   let query = supabase
     .from("support_cases")
     .select(CASE_SELECT)
-    .ilike("requester_email", email.trim())
+    // Case-insensitive exact match. Escape `_` / `%` so they cannot match another customer.
+    .ilike("requester_email", escapeIlikePattern(exact))
     .order("updated_at", { ascending: false })
     .limit(opts?.limit ?? 8)
 

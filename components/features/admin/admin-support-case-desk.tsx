@@ -196,6 +196,9 @@ export function AdminSupportCaseDesk({
                         ? "Suggested reply is in the box — edit before you send"
                         : "Reply drafts appear here when ready"}
                   </span>
+                  {aiDraft?.reason ? (
+                    <span className="w-full text-[10px] text-muted-foreground">{aiDraft.reason}</span>
+                  ) : null}
                   <Button
                     type="button"
                     size="sm"
