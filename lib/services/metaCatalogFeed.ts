@@ -162,7 +162,7 @@ export async function buildMetaCatalogFeed(
   return items
 }
 
-async function resolveMetaCatalogShopContext(
+export async function resolveMetaCatalogShopContext(
   supabase: SupabaseClient,
 ): Promise<MetaCatalogFeedContext> {
   const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId] = await Promise.all([
@@ -250,6 +250,10 @@ export function metaCatalogFeedToCsv(items: MetaCatalogFeedItem[]): string {
 }
 
 export function metaCityCatalogFeedToCsv(items: MetaCatalogFeedItem[]): string {
+  return catalogItemsToCsv(items, META_CITY_CATALOG_CSV_HEADERS)
+}
+
+export function metaCatalogDailyRotationFeedToCsv(items: MetaCatalogFeedItem[]): string {
   return catalogItemsToCsv(items, META_CITY_CATALOG_CSV_HEADERS)
 }
 
