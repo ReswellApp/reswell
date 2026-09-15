@@ -2,8 +2,8 @@ import { unstable_cache } from "next/cache"
 import type { MessagesInboxPayload } from "@/lib/db/messagesInbox"
 import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
 
-/** v3: staff-outbound + unticketed support-orientation DMs stay in marketplace inbox. */
-export const MESSAGES_INBOX_CACHE_KEY_PREFIX = "messages-inbox-v3"
+/** v4: Activity includes Reswell support replies. */
+export const MESSAGES_INBOX_CACHE_KEY_PREFIX = "messages-inbox-v4"
 
 export function messagesInboxTag(userId: string): string {
   return `${MESSAGES_INBOX_CACHE_KEY_PREFIX}:${userId}`

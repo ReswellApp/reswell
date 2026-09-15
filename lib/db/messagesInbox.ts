@@ -23,6 +23,8 @@ export type MessagesInboxNotification = {
   is_read: boolean
   created_at: string
   listings: MessagesInboxActivityListing | null
+  support_case_id?: string | null
+  support_subject?: string | null
 }
 
 export type MessagesInboxPayload = {

@@ -5,6 +5,7 @@ import {
   formatSupportCaseReference,
   splitSupportCaseSubject,
   SUPPORT_CASE_STATUS_DESCRIPTION,
+  SUPPORT_DESK_NAME,
 } from "@/lib/utils/support-case-display"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
 import { Button } from "@/components/ui/button"
@@ -18,9 +19,17 @@ function requestPreview(item: UserSupportCaseListItem): string {
 }
 
 export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem }) {
-  const waiting = item.status === "waiting_on_you"
+  const unread = item.unreadCount > 0
+  const waiting = !unread && item.status === "waiting_on_you"
   const { roleLabel, title } = splitSupportCaseSubject(item.subject)
-  const actionLabel = waiting ? "Reply" : "Open"
+  const heading = unread
+    ? item.unreadCount === 1
+      ? "New message from Reswell"
+      : `${item.unreadCount} new messages from Reswell`
+    : waiting
+      ? "Reply needed"
+      : "Open request"
+  const actionLabel = unread ? "Read" : waiting ? "Reply" : "Open"
   const orderAlreadyInTitle = Boolean(item.orderRef && title.includes(item.orderRef))
   const meta = [
     formatSupportCaseReference(item.id),
@@ -34,9 +43,11 @@ export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem 
         className={cn(
           "mt-0 block rounded-2xl border p-5 shadow-sm transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-listingHeart focus-visible:ring-offset-2",
-          waiting
-            ? "border-amber-300/80 bg-amber-50 hover:border-amber-400 hover:bg-amber-50/80 dark:border-amber-800/70 dark:bg-amber-950/40 dark:hover:bg-amber-950/55"
-            : "border-listingHeart/30 bg-listingHeart/[0.08] hover:border-listingHeart/45 hover:bg-listingHeart/[0.12]",
+          unread
+            ? "border-listingHeart/50 bg-listingHeart/[0.14] hover:border-listingHeart/70 hover:bg-listingHeart/[0.18]"
+            : waiting
+              ? "border-amber-300/80 bg-amber-50 hover:border-amber-400 hover:bg-amber-50/80 dark:border-amber-800/70 dark:bg-amber-950/40 dark:hover:bg-amber-950/55"
+              : "border-listingHeart/30 bg-listingHeart/[0.08] hover:border-listingHeart/45 hover:bg-listingHeart/[0.12]",
         )}
       >
         <div className="flex items-start justify-between gap-3">
@@ -45,17 +56,23 @@ export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem 
               id="support-current-heading"
               className={cn(
                 "flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]",
-                waiting ? "text-amber-800 dark:text-amber-200" : "text-listingHeart",
+                unread
+                  ? "text-listingHeart"
+                  : waiting
+                    ? "text-amber-800 dark:text-amber-200"
+                    : "text-listingHeart",
               )}
             >
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  waiting ? "bg-amber-600" : "bg-listingHeart",
+                  unread && "animate-pulse bg-red-500",
+                  !unread && waiting && "bg-amber-600",
+                  !unread && !waiting && "bg-listingHeart",
                 )}
                 aria-hidden
               />
-              Open request
+              {heading}
             </p>
             <p className="mt-2 flex flex-wrap items-center gap-2 text-[17px] font-semibold tracking-tight text-foreground">
               {roleLabel ? (
@@ -73,19 +90,36 @@ export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem 
               <span className="min-w-0 [overflow-wrap:anywhere]">{title}</span>
             </p>
           </div>
-          <span
-            className={cn(
-              "inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] font-medium text-white",
-              waiting ? "bg-amber-700 dark:bg-amber-600" : "bg-listingHeart",
-            )}
-          >
-            {actionLabel}
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          <span className="flex shrink-0 flex-col items-end gap-1.5">
+            {unread ? (
+              <span className="inline-flex h-5 items-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold tabular-nums text-white">
+                {item.unreadCount > 99 ? "99+" : item.unreadCount} new
+              </span>
+            ) : null}
+            <span
+              className={cn(
+                "inline-flex h-8 items-center gap-1 rounded-full px-3 text-[13px] font-medium text-white",
+                waiting ? "bg-amber-700 dark:bg-amber-600" : "bg-listingHeart",
+              )}
+            >
+              {actionLabel}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </span>
           </span>
         </div>
-        <p className="mt-2 line-clamp-2 text-[14px] leading-relaxed text-muted-foreground">
-          {requestPreview(item)}
-        </p>
+        <div className="mt-2">
+          {unread ? (
+            <p className="text-[12px] font-medium text-listingHeart">{SUPPORT_DESK_NAME}</p>
+          ) : null}
+          <p
+            className={cn(
+              "line-clamp-2 text-[14px] leading-relaxed",
+              unread ? "font-medium text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {requestPreview(item)}
+          </p>
+        </div>
         <p className="mt-3 text-[12px] text-muted-foreground">
           {meta.length > 0 ? (
             <>

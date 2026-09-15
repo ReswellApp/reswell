@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { format, formatDistanceToNowStrict } from "date-fns"
-import { Loader2 } from "lucide-react"
+import { LifeBuoy, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   sendSupportCaseAdminReplyAction,
@@ -10,7 +10,8 @@ import {
 } from "@/lib/actions/supportCaseThread"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { isSupportStatusUpdateMessage } from "@/lib/messages/parse-support-thread-message"
-import { displaySupportCaseSystemBody } from "@/lib/utils/support-case-display"
+import { displaySupportCaseSystemBody, SUPPORT_DESK_NAME } from "@/lib/utils/support-case-display"
+import { MessageComposerBar } from "@/components/features/messages/message-composer-bar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
@@ -155,15 +156,25 @@ export function SupportCaseThread({
     })
   }
 
+  const member = role === "member"
+
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col">
+    <div
+      className={cn(
+        "flex min-h-0 flex-col",
+        member ? "h-full flex-1 lg:h-auto lg:flex-none" : "h-full flex-1",
+      )}
+    >
       <div
         ref={listRef}
         className={cn(
-          "min-h-0 flex-1 overflow-y-auto overflow-x-hidden",
-          role === "staff" ? "space-y-3 px-2 py-3" : "space-y-3 px-1 py-3",
+          "flex min-h-0 flex-col overflow-y-auto overflow-x-hidden",
+          member
+            ? "flex-1 px-3 py-4 lg:flex-none lg:max-h-[min(36rem,calc(100dvh-18rem))]"
+            : "flex-1 space-y-3 px-2 py-3",
         )}
       >
+        <div className={cn(member ? "flex flex-col gap-3" : "space-y-3")}>
         {displayMessages.length === 0 ? (
           <p className="px-3 py-10 text-center text-sm text-muted-foreground">No messages yet.</p>
         ) : (
@@ -172,7 +183,7 @@ export function SupportCaseThread({
               return (
                 <p
                   key={message.id}
-                  className="px-6 text-center text-[12px] leading-relaxed text-muted-foreground"
+                  className="mx-auto max-w-[22rem] rounded-full bg-muted/70 px-3 py-1.5 text-center text-[12px] leading-relaxed text-muted-foreground"
                 >
                   {displaySupportCaseSystemBody(message.body)}
                 </p>
@@ -182,14 +193,29 @@ export function SupportCaseThread({
             const align = bubbleAlign(message.author_role, role)
             const mine = align === "end"
             const note = message.is_internal
+            const fromSupport = message.author_role === "agent"
 
             return (
-              <div key={message.id} className={cn("flex", mine && !note ? "justify-end" : "justify-start")}>
+              <div
+                key={message.id}
+                className={cn(
+                  "flex gap-2",
+                  mine && !note ? "justify-end" : "justify-start",
+                )}
+              >
+                {member && fromSupport && !note ? (
+                  <span
+                    className="mt-5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-listingHeart text-white"
+                    aria-hidden
+                  >
+                    <LifeBuoy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </span>
+                ) : null}
                 <div
                   className={cn(
                     role === "staff"
                       ? "max-w-[82%] space-y-1 lg:max-w-[72%]"
-                      : "max-w-[85%] space-y-1",
+                      : "max-w-[min(85%,20rem)] space-y-1 sm:max-w-[22rem]",
                     note && "w-full max-w-none",
                   )}
                 >
@@ -202,7 +228,9 @@ export function SupportCaseThread({
                       mine && !note && "text-right",
                     )}
                   >
-                    {authorLabel(message, role, staffNames, counterpartLabel)}
+                    {member && fromSupport
+                      ? SUPPORT_DESK_NAME
+                      : authorLabel(message, role, staffNames, counterpartLabel)}
                     {" · "}
                     {deskTime(message.created_at)}
                   </p>
@@ -218,7 +246,7 @@ export function SupportCaseThread({
                             ? "rounded-2xl border border-border/60 bg-background text-foreground shadow-sm"
                             : mine
                               ? "rounded-2xl bg-foreground text-background"
-                              : "rounded-2xl bg-muted text-foreground",
+                              : "rounded-2xl border border-listingHeart/15 bg-listingHeart/[0.08] text-foreground",
                     )}
                     title={format(new Date(message.created_at), "PPpp")}
                   >
@@ -229,30 +257,42 @@ export function SupportCaseThread({
             )
           })
         )}
+        </div>
       </div>
 
       {canReply && !closed ? (
-        <div className="shrink-0 space-y-2 border-t border-border/60 bg-background px-1 py-3">
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            rows={3}
-            placeholder={
-              role === "staff" ? `Reply to the ${counterpartLabel.toLowerCase()}…` : "Reply to Support…"
-            }
-            className="resize-y text-sm"
-            maxLength={12000}
-          />
-          <div className="flex justify-end">
-            <Button type="button" size="sm" onClick={send} disabled={pending || !draft.trim()}>
-              {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-              Send
-            </Button>
+        member ? (
+          <div className="shrink-0 border-t border-border/60 bg-background px-3 py-3">
+            <MessageComposerBar
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onSubmit={send}
+              sending={pending}
+              showMedia={false}
+              placeholder={`Reply to ${SUPPORT_DESK_NAME}`}
+            />
           </div>
-        </div>
-      ) : closed && role === "staff" ? (
+        ) : (
+          <div className="shrink-0 space-y-2 border-t border-border/60 bg-background px-1 py-3">
+            <Textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={3}
+              placeholder={`Reply to the ${counterpartLabel.toLowerCase()}…`}
+              className="resize-y text-sm"
+              maxLength={12000}
+            />
+            <div className="flex justify-end">
+              <Button type="button" size="sm" onClick={send} disabled={pending || !draft.trim()}>
+                {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Send
+              </Button>
+            </div>
+          </div>
+        )
+      ) : closed ? (
         <p className="shrink-0 border-t border-border/50 px-3 py-3 text-center text-[13px] text-muted-foreground">
-          This case is closed.
+          This request is closed.
         </p>
       ) : null}
     </div>

@@ -3,6 +3,8 @@ import { listConversationIdsLinkedToSupportTickets } from "@/lib/db/contactMessa
 import { listConversationIdsLinkedToOrderSupport } from "@/lib/db/order-support"
 import { loadMessagesInboxForUser, type MessagesInboxPayload } from "@/lib/db/messagesInbox"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
+import { loadSupportInboxActivityNotifications } from "@/lib/services/supportInboxActivity"
+import { mergeInboxActivityNotifications } from "@/lib/utils/support-inbox-activity"
 import {
   isSupportInboxConversation,
   type InboxConversationRow,
@@ -43,8 +45,16 @@ export async function getMessagesInboxForUser(userId: string): Promise<MessagesI
   const supportResolved = await resolveSupportRecipientUserId()
   const supportUserId = supportResolved.ok ? supportResolved.userId : null
 
+  let supportActivity: MessagesInboxPayload["notifications"] = []
+  try {
+    const supabase = createServiceRoleClient()
+    supportActivity = await loadSupportInboxActivityNotifications(supabase, userId)
+  } catch (err) {
+    console.warn("[messagesInbox] support activity skipped", err)
+  }
+
   return {
-    ...payload,
     conversations: await retainMarketplaceInboxConversations(payload.conversations, supportUserId),
+    notifications: mergeInboxActivityNotifications(payload.notifications, supportActivity),
   }
 }

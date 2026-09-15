@@ -1,7 +1,21 @@
 import { listingDetailHref } from "@/lib/listing-href"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
+import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
+import {
+  isSupportActivityType,
+  mergeInboxActivityNotifications,
+  supportCaseToInboxNotification,
+} from "@/lib/utils/support-inbox-activity"
+
+export {
+  SUPPORT_REPLY_ACTIVITY_TYPE,
+  isSupportActivityType,
+  mergeInboxActivityNotifications,
+  supportCaseToInboxNotification,
+} from "@/lib/utils/support-inbox-activity"
 
 export function activityKindLabel(type: string | undefined): string {
+  if (isSupportActivityType(type)) return "Support"
   const t = (type || "").toLowerCase()
   if (t.includes("favorite") || t.includes("save") || t === "listing_saved") return "Favorite"
   if (t.includes("follow")) return "Follow"
@@ -27,6 +41,10 @@ export function filterInboxActivityNotifications(
 }
 
 export function inboxActivityNotificationHref(n: MessagesInboxNotification): string {
+  if (n.support_case_id) return supportCaseResponseHref(n.support_case_id)
+  if (isSupportActivityType(n.type) && n.id.startsWith("support:")) {
+    return supportCaseResponseHref(n.id.slice("support:".length))
+  }
   const listing = n.listings
   if (n.listing_id && listing?.section) {
     return listingDetailHref(listing)

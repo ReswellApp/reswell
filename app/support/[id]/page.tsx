@@ -13,7 +13,7 @@ export async function generateMetadata({
   const { id } = await params
   return privatePageMetadata({
     title: "Support case — Reswell",
-    description: "Reply to Reswell Support about your help case.",
+    description: "Reply to Reswell Help about your help case.",
     path: supportCaseResponseHref(id),
   })
 }

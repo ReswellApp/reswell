@@ -42,6 +42,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { forceReleaseBodyScrollLock, useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
+import { isSupportCaseThreadRoute } from "@/lib/utils/support-case-paths"
 import { HeaderSellerResourcesNav } from "@/components/header-seller-resources-nav"
 import {
   boardBrowseNavItemIsActive,
@@ -522,6 +523,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   const { openLogin, openSignUp } = useAuthModal()
   const isMobileViewport = useIsMobile()
+  const hideMobileBrowseChrome = isSupportCaseThreadRoute(pathname)
 
   const resolvedDisplayName = useMemo(
     () => (user ? headerDisplayName(profileDisplayName, user) : ""),
@@ -1124,6 +1126,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <NavMessagesDropdown
                   userId={user.id}
                   unreadMessages={unreadMessages}
+                  unreadSupport={unreadSupport}
                   triggerClassName="h-10 w-10 shrink-0"
                   iconClassName="h-[22px] w-[22px]"
                 />
@@ -1175,7 +1178,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           className={cn(
             "container mx-auto min-w-0",
             isMobileViewport
-              ? "flex flex-col gap-2 py-2 pb-2.5"
+              ? hideMobileBrowseChrome
+                ? "flex flex-col py-2"
+                : "flex flex-col gap-2 py-2 pb-2.5"
               : "flex min-h-[56px] items-center gap-2 py-2 sm:min-h-[64px] sm:py-2.5 md:min-h-[80px] md:gap-4 md:py-3",
           )}
         >
@@ -1198,6 +1203,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                       <NavMessagesDropdown
                         userId={user.id}
                         unreadMessages={unreadMessages}
+                        unreadSupport={unreadSupport}
                         triggerClassName={cn(mobileActionIconButtonClassName, "shrink-0")}
                         iconClassName={mobileActionIconClassName}
                         iconStrokeWidth={mobileActionStrokeWidth}
@@ -1228,6 +1234,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   )}
                 </div>
               </div>
+              {hideMobileBrowseChrome ? null : (
               <div className="flex min-w-0 items-center gap-2">
                 <button
                   type="button"
@@ -1251,6 +1258,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   <HeaderNavSearch variant="mobile" userId={user?.id ?? null} />
                 </Suspense>
               </div>
+              )}
             </>
           ) : (
             <>
@@ -1362,7 +1370,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             {user ? (
               <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
                 <CartHeaderLink authResolved={authLoaded} userId={user.id} />
-                <NavMessagesDropdown userId={user.id} unreadMessages={unreadMessages} />
+                <NavMessagesDropdown
+                  userId={user.id}
+                  unreadMessages={unreadMessages}
+                  unreadSupport={unreadSupport}
+                />
 
                 <div className="ml-2 shrink-0 sm:ml-3 md:ml-4 max-[360px]:hidden">
                   {accountMenu}
@@ -1411,6 +1423,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             )}
 
             {/* Menu toggle: phone & tablet only (below lg). Desktop/Mac use category bar + primary nav. */}
+            {hideMobileBrowseChrome ? null : (
             <button
               type="button"
               className={cn(
@@ -1431,16 +1444,23 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <Menu className="h-5 w-5" />
               )}
             </button>
+            )}
           </div>
             </>
           )}
         </div>
 
-        <HeaderDesktopCategoryBar pathname={pathname} headerSearchParams={headerSearchParams} />
+        {hideMobileBrowseChrome ? (
+          <div className="hidden lg:block">
+            <HeaderDesktopCategoryBar pathname={pathname} headerSearchParams={headerSearchParams} />
+          </div>
+        ) : (
+          <HeaderDesktopCategoryBar pathname={pathname} headerSearchParams={headerSearchParams} />
+        )}
       </header>
 
       {/* Mobile slide-out menu (pure CSS, no Radix Dialog) */}
-      {mobileMenuOpen && (
+      {mobileMenuOpen && !hideMobileBrowseChrome && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
           {/* Backdrop */}
           <button

@@ -2,7 +2,10 @@ import Link from "next/link"
 import { ArrowLeft, LifeBuoy, Package } from "lucide-react"
 import {
   formatSupportCaseReference,
+  isSupportCaseOpen,
   splitSupportCaseSubject,
+  SUPPORT_CASE_STATUS_LABEL,
+  SUPPORT_DESK_NAME,
 } from "@/lib/utils/support-case-display"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
@@ -33,16 +36,16 @@ export function SupportCaseResponseView({
   messages,
   repairCreditTotal = 0,
 }: SupportCaseResponseViewProps) {
-  const { roleLabel, title } = splitSupportCaseSubject(subject)
-  const orderAlreadyInTitle = Boolean(orderRef && title.includes(orderRef))
+  const { title } = splitSupportCaseSubject(subject)
+  const open = isSupportCaseOpen(status)
   const subtitleParts = [
-    roleLabel,
+    title,
     formatSupportCaseReference(caseId),
-    orderRef && !orderAlreadyInTitle ? `Order ${orderRef}` : null,
+    orderRef && !title.includes(orderRef) ? `Order ${orderRef}` : null,
   ].filter(Boolean)
 
   return (
-    <div className="mx-auto flex h-[min(calc(100dvh-8rem),720px)] min-h-[28rem] w-full max-w-2xl flex-col">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl flex-1 flex-col bg-background lg:h-auto lg:flex-none lg:pt-2">
       <header className="flex shrink-0 items-center gap-1 border-b border-border/60 bg-background px-1 py-2 sm:px-2">
         <Button asChild variant="ghost" size="icon" className="h-11 w-11 shrink-0 rounded-full">
           <Link href="/dashboard/support" aria-label="Back to Support">
@@ -51,18 +54,29 @@ export function SupportCaseResponseView({
         </Button>
 
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-background"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-listingHeart text-white"
           aria-hidden
         >
           <LifeBuoy className="h-5 w-5" strokeWidth={1.75} />
         </div>
 
         <div className="min-w-0 flex-1 px-2.5">
-          <p className="truncate text-[15px] font-semibold text-foreground">{title}</p>
+          <p className="truncate text-[15px] font-semibold text-foreground">{SUPPORT_DESK_NAME}</p>
           <p className="truncate text-[12px] text-muted-foreground">
             {subtitleParts.join(" · ")}
           </p>
         </div>
+
+        <span
+          className={cn(
+            "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
+            open
+              ? "bg-listingHeart/12 text-listingHeart"
+              : "bg-muted text-muted-foreground",
+          )}
+        >
+          {SUPPORT_CASE_STATUS_LABEL[status]}
+        </span>
 
         {orderHref ? (
           <Button asChild variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-full">
@@ -82,7 +96,7 @@ export function SupportCaseResponseView({
         </p>
       ) : null}
 
-      <div className={cn("flex min-h-0 flex-1 flex-col px-1 sm:px-2")}>
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-none">
         <SupportCaseThread
           caseId={caseId}
           messages={messages}

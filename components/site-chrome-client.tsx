@@ -28,6 +28,7 @@ import {
   isMessageThreadDetailRoute,
   isMessagesDesktopShellRoute,
 } from "@/lib/utils/message-thread-routes"
+import { isSupportCaseThreadRoute } from "@/lib/utils/support-case-paths"
 import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inbox"
 import { useMobileLg } from "@/hooks/use-mobile-lg"
 import { cn } from "@/lib/utils"
@@ -61,7 +62,8 @@ function hideFooter(pathname: string | null): boolean {
     pathname.startsWith("/sell/") ||
     pathname.startsWith("/import/") ||
     pathname === "/admin" ||
-    pathname.startsWith("/admin/")
+    pathname.startsWith("/admin/") ||
+    isSupportCaseThreadRoute(pathname)
   )
 }
 
@@ -83,7 +85,9 @@ export function SiteChromeClient({
   // Lock the viewport to a fixed-height app shell on conversation threads at
   // every breakpoint: the page itself never scrolls, only the message list
   // does, and the composer pins to the bottom — an app-like, not page-like feel.
-  const lockThreadViewport = isMessageThreadDetailRoute(pathname)
+  const lockThreadViewport =
+    isMessageThreadDetailRoute(pathname) ||
+    (isSupportCaseThreadRoute(pathname) && isMobileLg)
   // Desktop inbox split view: cap the shell height so the chat list scrolls inside the card.
   const lockDesktopMessagesShell =
     !isMobileLg && isMessagesDesktopShellRoute(pathname)

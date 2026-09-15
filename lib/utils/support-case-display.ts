@@ -4,6 +4,9 @@ import type {
 } from "@/lib/types/supportCase"
 import type { ContactMessageSupportStatus } from "@/lib/db/contactMessages"
 
+/** Member-facing desk name — casual, not a call-center title. */
+export const SUPPORT_DESK_NAME = "Reswell Help"
+
 export const SUPPORT_CASE_STATUS_LABEL: Record<SupportCaseStatus, string> = {
   submitted: "Submitted",
   in_review: "In review",

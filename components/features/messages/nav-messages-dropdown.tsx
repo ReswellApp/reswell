@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
-import { Bell, ChevronDown, Heart, MessageSquare, X } from "lucide-react"
+import { Bell, ChevronDown, Heart, LifeBuoy, MessageSquare, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -27,10 +27,12 @@ import {
   countUnreadInboxActivityNotifications,
   filterInboxActivityNotifications,
   inboxActivityNotificationHref,
+  isSupportActivityType,
 } from "@/lib/utils/messages-inbox-activity"
 import { formatInboxChatPreviewText } from "@/lib/utils/messages-inbox-preview"
 import { cn } from "@/lib/utils"
 import { dispatchUnreadCountRefresh } from "@/lib/utils/unread-message-count-events"
+import { useLiveUnreadSupportCount } from "@/components/features/support/use-live-unread-support-count"
 
 const NAV_PREVIEW_LIMIT = 8
 
@@ -39,6 +41,7 @@ type NavMessagesTab = "activity" | "messages"
 interface NavMessagesDropdownProps {
   userId: string
   unreadMessages: number
+  unreadSupport?: number
   triggerClassName?: string
   iconClassName?: string
   iconStrokeWidth?: number
@@ -58,7 +61,7 @@ function NavMessagesEmptyState({ tab }: { tab: NavMessagesTab }) {
       <p className="text-[15px] font-semibold text-foreground">Nothing here yet</p>
       <p className="mt-1.5 max-w-[220px] text-[13px] leading-relaxed text-muted-foreground">
         {tab === "activity"
-          ? "When someone favorites your listing or follows you, updates will show here."
+          ? "Favorites, follows, and Reswell support replies show up here."
           : "When you contact a seller or receive a message, it will appear here."}
       </p>
     </div>
@@ -178,6 +181,12 @@ function NavMessagesPanelBody({
                 const href = inboxActivityNotificationHref(n)
                 const thumb =
                   listing?.listing_images && listingTitleThumbnailSrc(listing.listing_images)
+                const supportReply = isSupportActivityType(n.type)
+                const title = supportReply
+                  ? n.support_subject
+                  : listing?.title
+                    ? capitalizeWords(listing.title)
+                    : null
                 return (
                   <li key={n.id}>
                     <button
@@ -188,8 +197,17 @@ function NavMessagesPanelBody({
                         !n.is_read && "bg-blue-50/40 dark:bg-blue-950/15",
                       )}
                     >
-                      <div className="relative aspect-[3/4] w-11 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/35">
-                        {thumb ? (
+                      <div
+                        className={cn(
+                          "relative aspect-[3/4] h-[3.67rem] w-11 shrink-0 self-center overflow-hidden rounded-lg ring-1",
+                          supportReply
+                            ? "flex items-center justify-center bg-listingHeart text-white ring-listingHeart/20"
+                            : "bg-muted ring-border/35",
+                        )}
+                      >
+                        {supportReply ? (
+                          <LifeBuoy className="h-4 w-4" strokeWidth={1.75} />
+                        ) : thumb ? (
                           <Image
                             src={thumb}
                             alt=""
@@ -205,20 +223,20 @@ function NavMessagesPanelBody({
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        {listing?.title ? (
+                        {title ? (
                           <p className="truncate text-[12px] font-medium text-muted-foreground">
-                            {capitalizeWords(listing.title)}
+                            {title}
                           </p>
                         ) : null}
-                        <div className="mt-0.5 flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <span className="mr-1.5 inline-flex rounded-full bg-muted/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.06em] text-muted-foreground ring-1 ring-border/40">
+                        <div className="mt-0.5 flex items-center justify-between gap-2">
+                          <p className="flex min-w-0 items-center gap-1.5">
+                            <span className="inline-flex shrink-0 rounded-full bg-muted/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.06em] text-muted-foreground ring-1 ring-border/40">
                               {activityKindLabel(n.type)}
                             </span>
-                            <span className="text-[13px] font-medium leading-snug text-foreground">
+                            <span className="truncate text-[13px] font-medium text-foreground">
                               {n.message || "Someone saved your item"}
                             </span>
-                          </div>
+                          </p>
                           <time
                             className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
                             dateTime={n.created_at}
@@ -325,6 +343,7 @@ function NavMessagesPanelBody({
 export function NavMessagesDropdown({
   userId,
   unreadMessages,
+  unreadSupport = 0,
   triggerClassName,
   iconClassName,
   iconStrokeWidth,
@@ -332,8 +351,11 @@ export function NavMessagesDropdown({
 }: NavMessagesDropdownProps) {
   const router = useRouter()
   const isMobile = useIsMobile()
+  const liveSupportUnread = useLiveUnreadSupportCount(unreadSupport)
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<NavMessagesTab>("messages")
+  const [tab, setTab] = useState<NavMessagesTab>(() =>
+    unreadSupport > 0 ? "activity" : "messages",
+  )
   const [loading, setLoading] = useState(false)
   const [conversations, setConversations] = useState<InboxConversationRow[]>([])
   const [notifications, setNotifications] = useState<MessagesInboxNotification[]>([])
@@ -342,10 +364,11 @@ export function NavMessagesDropdown({
     () => filterInboxActivityNotifications(notifications),
     [notifications],
   )
-  const unreadActivityCount = useMemo(
-    () => countUnreadInboxActivityNotifications(notifications),
-    [notifications],
-  )
+  const unreadActivityCount = useMemo(() => {
+    const fromInbox = countUnreadInboxActivityNotifications(notifications)
+    return Math.max(fromInbox, liveSupportUnread)
+  }, [notifications, liveSupportUnread])
+  const tickerCount = unreadMessages + liveSupportUnread
   const chatGroups = useMemo(
     () => groupConversationsByCounterparty(conversations, userId).slice(0, NAV_PREVIEW_LIMIT),
     [conversations, userId],
@@ -367,7 +390,7 @@ export function NavMessagesDropdown({
   useEffect(() => {
     if (!open) return
     void loadInbox()
-  }, [open, loadInbox])
+  }, [open, liveSupportUnread, loadInbox])
 
   useEffect(() => {
     function onUnreadRefresh() {
@@ -398,7 +421,9 @@ export function NavMessagesDropdown({
       setTab(next)
       if (next === "activity" && unreadActivityCount > 0) {
         void markInboxNotificationsRead().then(() => {
-          setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+          setNotifications((prev) =>
+            prev.map((n) => (isSupportActivityType(n.type) ? n : { ...n, is_read: true })),
+          )
           window.dispatchEvent(new CustomEvent("unreadCountRefresh"))
         })
       }
@@ -439,7 +464,7 @@ export function NavMessagesDropdown({
       onClick={isMobile ? () => handleOpenChange(true) : undefined}
     >
       <TriggerIcon className={cn("h-6 w-6", iconClassName)} strokeWidth={iconStrokeWidth} />
-      <NavUnreadCountBadge count={unreadMessages} overlay />
+      <NavUnreadCountBadge count={tickerCount} overlay />
     </Button>
   )
 
