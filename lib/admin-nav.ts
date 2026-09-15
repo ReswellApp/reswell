@@ -38,6 +38,7 @@ export type AdminNavIconKey =
   | 'ticket'
   | 'bookOpen'
   | 'handshake'
+  | 'zap'
 
 export interface AdminNavItemConfig {
   href: string
@@ -153,6 +154,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin/crm', label: 'CRM', icon: 'contactRound' },
       { href: '/admin/contact-messages', label: 'Support tickets', icon: 'lifeBuoy' },
+      { href: '/admin/support-macros', label: 'Reply macros', icon: 'zap' },
       { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },
       {
         href: '/admin/refund-thread-notifications',

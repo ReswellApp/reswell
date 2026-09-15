@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { SupportReplyCitedHelp } from "@/lib/types/supportReplyDraft"
+import type { SupportMacroVars } from "@/lib/utils/apply-support-macro-vars"
 
 export type ComposerMode = "reply" | "note"
 export type ComposerDisposition = "keep_open" | "waiting" | "resolve"
@@ -22,7 +23,9 @@ interface CaseInboxComposerProps {
   pending: boolean
   closed: boolean
   kindFilter: string | null
-  vars: { name?: string; order_ref?: string }
+  vars: SupportMacroVars
+  orderVarsReady?: boolean
+  hasOrderVars?: boolean
   replyPlaceholder?: string
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
@@ -47,6 +50,8 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
       closed,
       kindFilter,
       vars,
+      orderVarsReady = true,
+      hasOrderVars = true,
       replyPlaceholder = "Write a reply they will see…",
       onModeChange,
       onDraftChange,
@@ -195,6 +200,8 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
               variant="menu"
               kindFilter={kindFilter}
               vars={vars}
+              orderVarsReady={orderVarsReady}
+              hasOrderVars={hasOrderVars}
               onInsert={onInsertMacro}
             />
             <div className="ml-auto flex flex-wrap gap-2">

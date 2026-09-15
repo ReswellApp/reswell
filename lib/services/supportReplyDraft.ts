@@ -17,6 +17,8 @@ import {
   upsertSupportReplyDraft,
   type SupportReplyOrderSnapshot,
 } from "@/lib/db/supportReplyDrafts"
+import { applySupportMacroVars, type SupportMacroVars } from "@/lib/utils/apply-support-macro-vars"
+import { supportMacroVarsFromOrder } from "@/lib/utils/support-macro-order-vars"
 import { supportReplyGreetingName } from "@/lib/utils/support-reply-greeting"
 import {
   APP_LLM_FEATURES,
@@ -94,13 +96,25 @@ function lastMessageAt(messages: SupportCaseMessageRow[]): string | null {
   return last?.created_at ?? null
 }
 
-function applyMacroVars(
-  body: string,
-  vars: { name?: string | null; orderRef?: string | null },
-): string {
-  return body
-    .replaceAll("{{name}}", vars.name?.trim() || "there")
-    .replaceAll("{{order_ref}}", vars.orderRef?.trim() || "your order")
+function draftMacroVars(
+  name: string,
+  orderRef: string | null,
+  order: SupportReplyOrderSnapshot | null,
+): SupportMacroVars {
+  return supportMacroVarsFromOrder({
+    name,
+    order_ref: orderRef,
+    tracking: order?.trackingNumber ?? null,
+    order: order
+      ? {
+          status: order.status,
+          fulfillment_method: order.fulfillmentMethod,
+          delivery_status: order.deliveryStatus,
+          tracking_carrier: order.trackingCarrier,
+          carrier_delivered_at: order.carrierDeliveredAt,
+        }
+      : null,
+  })
 }
 
 function toCitedHelp(slugs: string[]): SupportReplyCitedHelp[] {
@@ -178,7 +192,7 @@ ${macros || "(none)"}`
 
 function fallbackDraft(
   knowledge: SupportReplyKnowledge,
-  vars: { name?: string | null; orderRef?: string | null },
+  vars: SupportMacroVars,
 ): { body: string; origin: SupportReplyDraftOrigin; slugs: string[]; exampleIds: string[] } {
   const example = knowledge.examples[0]
   if (example && example.score >= 0.7) {
@@ -192,14 +206,14 @@ function fallbackDraft(
   const macro = knowledge.macros[0]
   if (macro) {
     return {
-      body: applyMacroVars(macro.body, vars),
+      body: applySupportMacroVars(macro.body, vars),
       origin: "macro",
       slugs: knowledge.helpArticles.map((article) => article.slug),
       exampleIds: [],
     }
   }
   return {
-    body: applyMacroVars(
+    body: applySupportMacroVars(
       "Hi {{name}}, thanks for writing in. I am looking into this and will follow up shortly.",
       vars,
     ),
@@ -235,10 +249,10 @@ async function generateDraftBody(args: {
     .filter((id) => !id.startsWith("case:"))
 
   if (!isSupportReplyDraftLlmEnabled()) {
-    const fallback = fallbackDraft(args.knowledge, {
-      name: args.greetingName,
-      orderRef: args.row.order_ref,
-    })
+    const fallback = fallbackDraft(
+      args.knowledge,
+      draftMacroVars(args.greetingName, args.row.order_ref, args.order),
+    )
     return { ...fallback, model: null, needsHumanReview: true }
   }
 
@@ -283,10 +297,10 @@ ${knowledgePrompt(args.knowledge)}`,
   })
 
   if (!output?.reply.trim()) {
-    const fallback = fallbackDraft(args.knowledge, {
-      name: args.greetingName,
-      orderRef: args.row.order_ref,
-    })
+    const fallback = fallbackDraft(
+      args.knowledge,
+      draftMacroVars(args.greetingName, args.row.order_ref, args.order),
+    )
     return { ...fallback, model: supportReplyDraftModelId(), needsHumanReview: true }
   }
 
@@ -372,10 +386,7 @@ export async function generateAndStoreDraft(
     generated = await generateDraftBody({ row, messages, knowledge, order, greetingName })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)
-    const fallback = fallbackDraft(knowledge, {
-      name: greetingName,
-      orderRef: row.order_ref,
-    })
+    const fallback = fallbackDraft(knowledge, draftMacroVars(greetingName, row.order_ref, order))
     generated = { ...fallback, model: null, needsHumanReview: true }
   }
 

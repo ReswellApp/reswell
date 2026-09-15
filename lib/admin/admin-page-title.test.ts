@@ -7,6 +7,7 @@ describe('getAdminPageTitle', () => {
   it('returns the exact nav label for a top-level page', () => {
     assert.equal(getAdminPageTitle('/admin/listings', ADMIN_NAV_GROUPS), 'Listings')
     assert.equal(getAdminPageTitle('/admin/home', ADMIN_NAV_GROUPS), 'Home')
+    assert.equal(getAdminPageTitle('/admin/support-macros', ADMIN_NAV_GROUPS), 'Reply macros')
   })
 
   it('uses the closest parent for detail routes', () => {
