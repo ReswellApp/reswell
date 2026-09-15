@@ -27,6 +27,7 @@ import {
 import { defaultCsAgentReason } from "@/lib/llm/cs-agent"
 import { generateCsAgentDraft } from "@/lib/llm/cs-agent-generate"
 import { createCsAgentLookups, listPriorTicketsForCsAgent } from "@/lib/services/csAgentLookups"
+import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
 import {
   citedHelpFromSlugs,
   gatherSupportReplyKnowledge,
@@ -43,7 +44,6 @@ import {
   supportReplyDraftFeedbackSchema,
   type SupportReplyDraftOrigin,
 } from "@/lib/validations/supportReplyDraft"
-import { adminSupportCaseHref } from "@/lib/utils/support-case-paths"
 import {
   collectCustomerSupportTexts,
   lastCustomerSupportText,
@@ -221,29 +221,6 @@ function fallbackDraft(
   }
 }
 
-function citationsFromAgent(args: {
-  order: SupportReplyOrderSnapshot | null
-  orderRefs: string[]
-  tickets: Array<{ id: string; subject: string }>
-  ticketIds: string[]
-}): SupportReplyDraftCitations {
-  const orders = args.orderRefs.flatMap((ref) => {
-    const needle = ref.trim().toLowerCase()
-    if (!args.order) return []
-    const matches =
-      args.order.id.toLowerCase() === needle ||
-      (args.order.orderNum?.trim().toLowerCase() ?? "") === needle
-    if (!matches) return []
-    return [{ id: args.order.id, orderRef: args.order.orderNum ?? args.order.id.slice(0, 8) }]
-  })
-  const tickets = args.ticketIds.flatMap((id) => {
-    const ticket = args.tickets.find((row) => row.id === id)
-    if (!ticket) return []
-    return [{ id: ticket.id, subject: ticket.subject, href: adminSupportCaseHref(ticket.id) }]
-  })
-  return { orders, tickets }
-}
-
 async function generateDraftBody(args: {
   service: SupabaseClient
   row: SupportCaseRow
@@ -287,6 +264,12 @@ async function generateDraftBody(args: {
     linkedOrderId: args.row.order_id,
   })
 
+  const lookupSession = createCsAgentLookups(args.service, {
+    caseId: args.row.id,
+    requesterUserId: args.row.requester_user_id,
+    requesterEmail: args.row.requester_email,
+    linkedOrderId: args.row.order_id,
+  })
   const generated = await generateCsAgentDraft({
     model: supportReplyDraftModelId(),
     pack: {
@@ -303,12 +286,7 @@ async function generateDraftBody(args: {
       examples: args.knowledge.examples,
       macros: args.knowledge.macros,
     },
-    lookups: createCsAgentLookups(args.service, {
-      caseId: args.row.id,
-      requesterUserId: args.row.requester_user_id,
-      requesterEmail: args.row.requester_email,
-      linkedOrderId: args.row.order_id,
-    }),
+    lookups: lookupSession.lookups,
   })
 
   return {
@@ -320,7 +298,7 @@ async function generateDraftBody(args: {
     needsHumanReview: generated.needsHumanReview,
     reason: generated.reason,
     citations: citationsFromAgent({
-      order: args.order,
+      orders: [args.order, ...lookupSession.resolvedOrders()],
       orderRefs: generated.citedOrderRefs,
       tickets: priorTickets,
       ticketIds: generated.citedTicketIds,

@@ -14,11 +14,16 @@ import {
 } from "@/lib/db/supportCases"
 import { retrieveHelpArticlesForQuery } from "@/lib/services/supportReplyKnowledge"
 import { assessCsAgentRefundEligibility } from "@/lib/utils/cs-agent-refund"
-import { csAgentOrderIsInScope } from "@/lib/utils/cs-agent-scope"
+import { csAgentEmailsMatch, csAgentOrderIsInScope } from "@/lib/utils/cs-agent-scope"
 import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import type { CsAgentPriorTicket } from "@/lib/llm/cs-agent"
 import type { CsAgentToolLookups } from "@/lib/llm/cs-agent-generate"
+
+export type CsAgentLookupSession = {
+  lookups: CsAgentToolLookups
+  resolvedOrders: () => SupportReplyOrderSnapshot[]
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -66,7 +71,7 @@ export async function listPriorTicketsForCsAgent(
   scope: CsAgentLookupScope,
   limit = 8,
 ): Promise<CsAgentPriorTicket[]> {
-  const [byUser, byEmail] = await Promise.all([
+  const [byUser, byEmailRaw] = await Promise.all([
     scope.requesterUserId
       ? listSupportCasesForRequester(service, scope.requesterUserId, "all")
       : Promise.resolve([] as SupportCaseRow[]),
@@ -74,6 +79,9 @@ export async function listPriorTicketsForCsAgent(
       ? listSupportCasesByRequesterEmail(service, scope.requesterEmail, { limit: 12 })
       : Promise.resolve([] as SupportCaseRow[]),
   ])
+  const byEmail = byEmailRaw.filter((row) =>
+    csAgentEmailsMatch(row.requester_email, scope.requesterEmail),
+  )
   const seen = new Set<string>()
   const merged: CsAgentPriorTicket[] = []
   for (const row of [...byUser, ...byEmail]) {
@@ -129,83 +137,94 @@ async function resolveScopedOrder(
 export function createCsAgentLookups(
   service: SupabaseClient,
   scope: CsAgentLookupScope,
-): CsAgentToolLookups {
+): CsAgentLookupSession {
+  const resolved: SupportReplyOrderSnapshot[] = []
+  const remember = (order: SupportReplyOrderSnapshot) => {
+    if (!resolved.some((row) => row.id === order.id)) resolved.push(order)
+  }
+
   return {
-    lookupOrder: async (query) => {
-      const order = await resolveScopedOrder(service, scope, query)
-      if (!order) {
-        return { found: false, reason: "No order for this customer matches that reference." }
-      }
-      return compactOrder(order)
-    },
-    lookupTracking: async (query) => {
-      const order = await resolveScopedOrder(service, scope, query)
-      if (!order) {
-        return { found: false, reason: "No order for this customer matches that reference." }
-      }
-      const trackingNumber = order.trackingNumber?.trim() || null
-      return {
-        found: true,
-        id: order.id,
-        orderNum: order.orderNum,
-        status: order.status,
-        deliveryStatus: order.deliveryStatus,
-        trackingNumber,
-        trackingCarrier: order.trackingCarrier,
-        carrierDeliveredAt: order.carrierDeliveredAt,
-        trackingUrl:
-          trackingNumber ? carrierTrackingUrl(trackingNumber, order.trackingCarrier) : null,
-        note: trackingNumber
-          ? "Use only this tracking number. Do not invent another."
-          : "No tracking number is on file. Do not invent one.",
-      }
-    },
-    refundEligibility: async (query) => {
-      const order = await resolveScopedOrder(service, scope, query)
-      if (!order) {
-        return { found: false, reason: "No order for this customer matches that reference." }
-      }
-      const assessment = assessCsAgentRefundEligibility({
-        status: order.status,
-        amount: order.amount,
-        paymentMethod: order.paymentMethod,
-        fulfillmentMethod: order.fulfillmentMethod,
-        deliveryStatus: order.deliveryStatus,
-      })
-      return {
-        found: true,
-        id: order.id,
-        orderNum: order.orderNum,
-        ...assessment,
-      }
-    },
-    helpArticle: async (query) => {
-      const q = query.trim()
-      if (!q) return { articles: [] }
-      const bySlug = findHelpArticlesBySlugs([q])
-      const ranked = bySlug.length > 0 ? bySlug : retrieveHelpArticlesForQuery(q, 3)
-      return {
-        articles: ranked.slice(0, 3).map((article) => ({
-          slug: article.slug,
-          title: article.title,
-          href: article.href,
-          description: article.description,
-          excerpt: article.body.slice(0, 700),
-        })),
-      }
-    },
-    priorTickets: async (query) => {
-      const tickets = await listPriorTicketsForCsAgent(service, scope, 8)
-      const q = query?.trim().toLowerCase()
-      const filtered = q
-        ? tickets.filter(
-            (ticket) =>
-              ticket.subject.toLowerCase().includes(q) ||
-              ticket.kind.toLowerCase().includes(q) ||
-              (ticket.orderRef?.toLowerCase().includes(q) ?? false),
-          )
-        : tickets
-      return { tickets: filtered }
+    resolvedOrders: () => [...resolved],
+    lookups: {
+      lookupOrder: async (query) => {
+        const order = await resolveScopedOrder(service, scope, query)
+        if (!order) {
+          return { found: false, reason: "No order for this customer matches that reference." }
+        }
+        remember(order)
+        return compactOrder(order)
+      },
+      lookupTracking: async (query) => {
+        const order = await resolveScopedOrder(service, scope, query)
+        if (!order) {
+          return { found: false, reason: "No order for this customer matches that reference." }
+        }
+        remember(order)
+        const trackingNumber = order.trackingNumber?.trim() || null
+        return {
+          found: true,
+          id: order.id,
+          orderNum: order.orderNum,
+          status: order.status,
+          deliveryStatus: order.deliveryStatus,
+          trackingNumber,
+          trackingCarrier: order.trackingCarrier,
+          carrierDeliveredAt: order.carrierDeliveredAt,
+          trackingUrl:
+            trackingNumber ? carrierTrackingUrl(trackingNumber, order.trackingCarrier) : null,
+          note: trackingNumber
+            ? "Use only this tracking number. Do not invent another."
+            : "No tracking number is on file. Do not invent one.",
+        }
+      },
+      refundEligibility: async (query) => {
+        const order = await resolveScopedOrder(service, scope, query)
+        if (!order) {
+          return { found: false, reason: "No order for this customer matches that reference." }
+        }
+        remember(order)
+        const assessment = assessCsAgentRefundEligibility({
+          status: order.status,
+          amount: order.amount,
+          paymentMethod: order.paymentMethod,
+          fulfillmentMethod: order.fulfillmentMethod,
+          deliveryStatus: order.deliveryStatus,
+        })
+        return {
+          found: true,
+          id: order.id,
+          orderNum: order.orderNum,
+          ...assessment,
+        }
+      },
+      helpArticle: async (query) => {
+        const q = query.trim()
+        if (!q) return { articles: [] }
+        const bySlug = findHelpArticlesBySlugs([q])
+        const ranked = bySlug.length > 0 ? bySlug : retrieveHelpArticlesForQuery(q, 3)
+        return {
+          articles: ranked.slice(0, 3).map((article) => ({
+            slug: article.slug,
+            title: article.title,
+            href: article.href,
+            description: article.description,
+            excerpt: article.body.slice(0, 700),
+          })),
+        }
+      },
+      priorTickets: async (query) => {
+        const tickets = await listPriorTicketsForCsAgent(service, scope, 8)
+        const q = query?.trim().toLowerCase()
+        const filtered = q
+          ? tickets.filter(
+              (ticket) =>
+                ticket.subject.toLowerCase().includes(q) ||
+                ticket.kind.toLowerCase().includes(q) ||
+                (ticket.orderRef?.toLowerCase().includes(q) ?? false),
+            )
+          : tickets
+        return { tickets: filtered }
+      },
     },
   }
 }

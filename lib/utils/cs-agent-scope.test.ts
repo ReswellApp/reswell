@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { csAgentOrderIsInScope } from "./cs-agent-scope.ts"
+import { csAgentEmailsMatch, csAgentOrderIsInScope } from "./cs-agent-scope.ts"
 
 const order = {
   id: "order-1",
@@ -25,6 +25,12 @@ describe("csAgentOrderIsInScope", () => {
       csAgentOrderIsInScope(order, { requesterUserId: "seller-1", linkedOrderId: null }),
       true,
     )
+  })
+
+  it("treats requester emails as exact and case-insensitive", () => {
+    assert.equal(csAgentEmailsMatch("Ada_West@reswell.app", "ada_west@reswell.app"), true)
+    assert.equal(csAgentEmailsMatch("Ada_West@reswell.app", "AdaXWest@reswell.app"), false)
+    assert.equal(csAgentEmailsMatch("a@b.com", null), false)
   })
 
   it("hides another customer's order", () => {
