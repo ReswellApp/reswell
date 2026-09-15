@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { createClient } from "@supabase/supabase-js"
-import { banUserAccounts } from "@/lib/services/banUserAccount"
 import { deleteMarketplaceMessageAsAdmin } from "@/lib/db/adminMarketplaceMessages"
+import { banUserAccounts } from "@/lib/services/banUserAccount"
+import { pageUntilExhausted } from "@/lib/utils/page-until-exhausted"
 
 function loadEnvFile(relativePath: string): void {
   const filePath = resolve(process.cwd(), relativePath)
@@ -54,18 +55,23 @@ async function findFakeSupportAccounts(supabase: ReturnType<typeof createClient>
   const accountsById = new Map<string, FakeSupportAccount>()
 
   for (const pattern of patterns) {
-    const { data: profiles, error } = await supabase
-      .from("profiles")
-      .select("id, display_name, created_at")
-      .ilike("display_name", pattern)
-      .order("created_at", { ascending: false })
+    const profiles = await pageUntilExhausted(async (from, to) => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, display_name, created_at")
+        .ilike("display_name", pattern)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to)
 
-    if (error) {
-      console.error(`Error searching for pattern ${pattern}:`, error.message)
-      continue
-    }
+      if (error) {
+        throw new Error(`Failed to search profiles for pattern ${pattern}: ${error.message}`)
+      }
 
-    for (const profile of profiles ?? []) {
+      return data ?? []
+    })
+
+    for (const profile of profiles) {
       if (!profile.id) continue
       
       // Get the auth user email
@@ -106,17 +112,21 @@ async function findMessagesFromUsers(
 ): Promise<MessageRow[]> {
   if (userIds.length === 0) return []
 
-  const { data, error } = await supabase
-    .from("messages")
-    .select("id, conversation_id, sender_id, content, created_at")
-    .in("sender_id", userIds)
-    .order("created_at", { ascending: true })
+  return pageUntilExhausted(async (from, to) => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("id, conversation_id, sender_id, content, created_at")
+      .in("sender_id", userIds)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to)
 
-  if (error) {
-    throw new Error(`Failed to find messages: ${error.message}`)
-  }
+    if (error) {
+      throw new Error(`Failed to find messages: ${error.message}`)
+    }
 
-  return (data ?? []) as MessageRow[]
+    return (data ?? []) as MessageRow[]
+  })
 }
 
 async function deleteMessages(
@@ -201,10 +211,15 @@ async function main(): Promise<void> {
 
   console.log("\n🚨 EXECUTING - Banning accounts and deleting messages...\n")
 
+  let deletedCount = 0
+  let deleteFailed = 0
+
   // First, delete all messages
   if (messages.length > 0) {
     console.log("📨 Deleting messages...")
     const deleteResult = await deleteMessages(supabase, messages)
+    deletedCount = deleteResult.deleted
+    deleteFailed = deleteResult.failed
     console.log(`\n✅ Deleted ${deleteResult.deleted} message(s)`)
     if (deleteResult.failed > 0) {
       console.log(`⚠️  Failed to delete ${deleteResult.failed} message(s)`)
@@ -227,9 +242,9 @@ async function main(): Promise<void> {
   console.log("\n✅ COMPLETE")
   console.log("===================")
   console.log(`Total accounts banned: ${banResult.banned.length}`)
-  console.log(`Total messages deleted: ${messages.length}`)
+  console.log(`Total messages deleted: ${deletedCount}`)
   
-  if (banResult.failed.length > 0 || messages.length > 0) {
+  if (banResult.failed.length > 0 || deleteFailed > 0) {
     process.exit(1)
   }
 }
