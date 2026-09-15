@@ -314,6 +314,7 @@ export function CaseInboxAdminClient({
       selectedKey,
       loading,
     })
+    // undefined = keep the current key, including an unresolved ?case=
     if (nextKey !== undefined) setSelectedKey(nextKey)
   }, [filtered, items, selectedKey, loading])
 

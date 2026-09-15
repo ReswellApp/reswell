@@ -94,8 +94,22 @@ describe("nextInboxSelectedKey", () => {
         selectedKey: "sc:missing-contact",
         loading: false,
       }),
-      null,
+      undefined,
     )
+  })
+
+  it("keeps an unresolved ?case= across a second pass so the first row cannot rewrite the URL", () => {
+    const args = {
+      items: [{ key: "sc:first" }, { key: "sc:second" }],
+      filtered: [{ key: "sc:first" }, { key: "sc:second" }],
+      loading: false,
+    }
+    let selectedKey: string | null = "sc:missing-contact"
+    for (let pass = 0; pass < 2; pass += 1) {
+      const nextKey = nextInboxSelectedKey({ ...args, selectedKey })
+      if (nextKey !== undefined) selectedKey = nextKey
+    }
+    assert.equal(selectedKey, "sc:missing-contact")
   })
 })
 

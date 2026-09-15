@@ -58,15 +58,16 @@ export function nextInboxSelectedKey(args: {
   filtered: InboxSelectableItem[]
   selectedKey: string | null
   loading: boolean
-}): string | null | undefined {
+}): string | undefined {
   if (args.loading) return undefined
   const matched = findInboxItemBySelection(args.items, args.selectedKey)
   if (matched) {
     return matched.key === args.selectedKey ? undefined : matched.key
   }
   if (args.selectedKey) {
-    // Unresolved deep link — never steal the first sorted row.
-    return null
+    // Hold the unresolved ?case=. Returning null would clear selectedKey,
+    // re-run this helper, and then pick filtered[0] — rewriting the URL.
+    return undefined
   }
   if (args.filtered.length > 0) return args.filtered[0]!.key
   return undefined
