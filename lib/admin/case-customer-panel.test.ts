@@ -5,6 +5,7 @@ import {
   emptyCustomerCommerce,
   merchandiseAmount,
   thisOrderSnapshotFromAdminOrder,
+  shouldApplyCustomerPanelPage,
   toSupportCaseCustomerOrder,
   toSupportCaseCustomerTicket,
 } from "./case-customer-panel.ts"
@@ -119,5 +120,10 @@ describe("case customer panel helpers", () => {
     assert.equal(snapshot.trackingNumber, "1Z999")
     assert.equal(snapshot.payoutStatus, "held")
     assert.equal(emptyCustomerCommerce().purchases, 0)
+  })
+
+  it("drops stale load-more pages after the case generation moves on", () => {
+    assert.equal(shouldApplyCustomerPanelPage(1, 2), false)
+    assert.equal(shouldApplyCustomerPanelPage(3, 3), true)
   })
 })

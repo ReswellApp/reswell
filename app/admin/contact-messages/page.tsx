@@ -59,7 +59,7 @@ export default async function AdminContactMessagesPage({
         initialCustomerContext={
           initialCustomer && "data" in initialCustomer ? initialCustomer.data : null
         }
-        initialCustomerCaseId={selectedCaseId}
+        initialCustomerCaseKey={params.case ?? null}
       />
     </Suspense>
   )

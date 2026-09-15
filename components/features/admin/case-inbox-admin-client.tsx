@@ -83,12 +83,12 @@ export function CaseInboxAdminClient({
   initialInbox = null,
   initialError = null,
   initialCustomerContext = null,
-  initialCustomerCaseId = null,
+  initialCustomerCaseKey = null,
 }: {
   initialInbox?: AdminSupportInboxResult | null
   initialError?: string | null
   initialCustomerContext?: SupportCaseCustomerContext | null
-  initialCustomerCaseId?: string | null
+  initialCustomerCaseKey?: string | null
 }) {
   const pathname = usePathname() ?? "/admin/contact-messages"
   const router = useRouter()
@@ -908,7 +908,9 @@ export function CaseInboxAdminClient({
                   currentStaffId={currentStaffId}
                   isAdmin={isAdmin}
                   initialCustomerContext={
-                    selected.id === initialCustomerCaseId ? initialCustomerContext : null
+                    findInboxItemBySelection([selected], initialCustomerCaseKey)
+                      ? initialCustomerContext
+                      : null
                   }
                   osOutcome={osOutcome}
                   pinnedNote={pinnedNote}

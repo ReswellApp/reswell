@@ -23,8 +23,10 @@ import {
   CUSTOMER_PANEL_PAGE_SIZE,
   buildCustomerPanelFlags,
   emptyCustomerCommerce,
+  thisOrderSnapshotFromAdminOrder,
   toSupportCaseCustomerOrder,
   toSupportCaseCustomerTicket,
+  type CaseInboxThisOrderSnapshot,
   type CustomerPanelCommerce,
   type CustomerPanelFlag,
   type SupportCaseCustomerOrder,
@@ -39,6 +41,7 @@ import {
 import { parseInboxCaseParam } from "@/lib/utils/support-case-paths"
 
 export type {
+  CaseInboxThisOrderSnapshot,
   CustomerPanelCommerce,
   CustomerPanelFlag,
   SupportCaseCustomerOrder,
@@ -69,6 +72,7 @@ export type SupportCaseCustomerContext = {
   orders: SupportCaseCustomerOrder[]
   ordersHasMore: boolean
   ordersTotal: number
+  thisOrder: CaseInboxThisOrderSnapshot | null
 }
 
 type StaffServiceContext =
@@ -137,7 +141,18 @@ function emptyContext(flags: CustomerPanelFlag[]): SupportCaseCustomerContext {
     orders: [],
     ordersHasMore: false,
     ordersTotal: 0,
+    thisOrder: null,
   }
+}
+
+async function loadThisOrderSnapshot(
+  service: ReturnType<typeof createServiceRoleClient>,
+  orderId: string | null,
+): Promise<CaseInboxThisOrderSnapshot | null> {
+  if (!orderId) return null
+  const result = await getOrderDetailForAdmin(service, orderId)
+  if (result.error || !result.data) return null
+  return thisOrderSnapshotFromAdminOrder(result.data)
 }
 
 function withRelatedCases(
@@ -171,7 +186,7 @@ export async function getSupportCaseCustomerContextService(
   }
 
   if (!resolved.profile) {
-    const [tickets, ticketsTotal, ticketsOpen] = await Promise.all([
+    const [tickets, ticketsTotal, ticketsOpen, thisOrder] = await Promise.all([
       listSupportCasesForCustomerPage(staff.service, ticketFilter),
       countSupportCasesForCustomer(staff.service, {
         userId: identity.userId,
@@ -183,6 +198,7 @@ export async function getSupportCaseCustomerContextService(
         email: identity.email,
         openOnly: true,
       }),
+      loadThisOrderSnapshot(staff.service, supportCase.order_id),
     ])
     return {
       data: withRelatedCases({
@@ -201,19 +217,20 @@ export async function getSupportCaseCustomerContextService(
         ticketsHasMore: tickets.hasMore,
         ticketsTotal,
         ticketsOpen,
+        thisOrder,
       }),
     }
   }
 
   const profile = resolved.profile
-  const [orders, ordersTotal, listingCounts, commerce, customerTickets, ticketsTotal, ticketsOpen, ban] =
+  const [orders, ordersTotal, listingCounts, commerce, customerTickets, ticketsTotal, ticketsOpen, ban, thisOrder] =
     await Promise.all([
       dbListAdminUserDetailOrdersPage(staff.service, profile.id, {
         limit: CUSTOMER_PANEL_PAGE_SIZE,
         offset: 0,
         role: "all",
       }),
-      dbCountAdminUserDetailOrders(staff.service, profile.id, "all"),
+      dbCountAdminUserDetailOrders(staff.service, profile.id, { role: "all" }),
       dbGetAdminUserListingCounts(staff.service, profile.id),
       dbGetAdminUserOrderCommerce(staff.service, profile.id),
       listSupportCasesForCustomerPage(staff.service, ticketFilter),
@@ -228,6 +245,7 @@ export async function getSupportCaseCustomerContextService(
         openOnly: true,
       }),
       fetchSellerBanState(staff.service, profile.id),
+      loadThisOrderSnapshot(staff.service, supportCase.order_id),
     ])
 
   const location = profile.location?.trim() || profile.city?.trim() || null
@@ -272,6 +290,7 @@ export async function getSupportCaseCustomerContextService(
       orders: orders.rows.map((order) => toSupportCaseCustomerOrder(order, profile.id)),
       ordersHasMore: orders.hasMore,
       ordersTotal,
+      thisOrder,
     }),
   }
 }
@@ -304,7 +323,10 @@ export async function listSupportCaseCustomerOrdersService(
       role: parsed.data.role,
       search: parsed.data.search,
     }),
-    dbCountAdminUserDetailOrders(staff.service, profile.id, parsed.data.role),
+    dbCountAdminUserDetailOrders(staff.service, profile.id, {
+      role: parsed.data.role,
+      search: parsed.data.search,
+    }),
   ])
 
   return {

@@ -35,9 +35,9 @@ export type SupportCaseCustomerTicket = {
 
 export type CustomerPanelCommerce = {
   purchases: number
-  purchaseSpend: number
+  purchaseSpend: number | null
   sales: number
-  salesVolume: number
+  salesVolume: number | null
   listings: number
   activeListings: number
   soldListings: number
@@ -214,4 +214,11 @@ export function thisOrderSnapshotFromAdminOrder(order: {
     payoutHoldReason: order.payout?.hold_reason ?? null,
     pickupCode: order.pickup_code,
   }
+}
+
+export function shouldApplyCustomerPanelPage(
+  requestGeneration: number,
+  currentGeneration: number,
+): boolean {
+  return requestGeneration === currentGeneration
 }

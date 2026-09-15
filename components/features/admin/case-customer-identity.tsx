@@ -73,13 +73,19 @@ export function CaseCustomerIdentity({ context }: CaseCustomerIdentityProps) {
           <div>
             <p className="text-sm font-semibold">{context.commerce.purchases}</p>
             <p className="text-[10px] text-muted-foreground">
-              Purchases · {formatCustomerUsd(context.commerce.purchaseSpend)}
+              Purchases
+              {context.commerce.purchaseSpend != null
+                ? ` · ${formatCustomerUsd(context.commerce.purchaseSpend)}`
+                : ""}
             </p>
           </div>
           <div>
             <p className="text-sm font-semibold">{context.commerce.sales}</p>
             <p className="text-[10px] text-muted-foreground">
-              Sales · {formatCustomerUsd(context.commerce.salesVolume)}
+              Sales
+              {context.commerce.salesVolume != null
+                ? ` · ${formatCustomerUsd(context.commerce.salesVolume)}`
+                : ""}
             </p>
           </div>
           <div>

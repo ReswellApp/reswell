@@ -74,7 +74,7 @@ export function CaseInboxThisOrderCard({
               {orderStatusLabel(order.status)}
             </Badge>
           ) : (
-            <p className="text-[11px] text-muted-foreground">Loading pay and ship…</p>
+            <p className="text-[11px] text-muted-foreground">Pay and ship unavailable.</p>
           )}
         </div>
         {order?.listingTitle ? (

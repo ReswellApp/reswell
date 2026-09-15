@@ -59,7 +59,7 @@ export function CaseCustomerContext({
       <CaseInboxThisOrderCard
         linkedOrderId={linkedOrderId}
         linkedOrderRef={linkedOrderRef}
-        order={thisOrder}
+        order={thisOrder ?? panel.context.thisOrder}
       />
       <CaseCustomerTickets
         tickets={panel.context.tickets}

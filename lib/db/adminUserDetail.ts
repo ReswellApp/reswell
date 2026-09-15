@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
+import { pageUntilExhausted } from "@/lib/utils/page-until-exhausted"
 
 const ADMIN_USER_DETAIL_PROFILE_SELECT = [
   "id",
@@ -336,11 +337,17 @@ export async function dbListAdminUserDetailOrdersPage(
   }
 }
 
+export type AdminUserOrderListFilter = {
+  role?: "all" | "buyer" | "seller"
+  search?: string
+}
+
 export async function dbCountAdminUserDetailOrders(
   supabase: SupabaseClient,
   userId: string,
-  role: "all" | "buyer" | "seller" = "all",
+  filter: AdminUserOrderListFilter = {},
 ): Promise<number> {
+  const role = filter.role ?? "all"
   let query = supabase
     .from("orders")
     .select("id", { count: "exact", head: true })
@@ -349,6 +356,11 @@ export async function dbCountAdminUserDetailOrders(
   if (role === "buyer") query = query.eq("buyer_id", userId)
   else if (role === "seller") query = query.eq("seller_id", userId)
   else query = query.or(`seller_id.eq.${userId},buyer_id.eq.${userId}`)
+
+  const search = filter.search?.trim()
+  if (search) {
+    query = query.ilike("order_num", `%${escapeIlikePattern(search)}%`)
+  }
 
   const { count, error } = await query
   if (error) {
@@ -363,9 +375,9 @@ export async function dbGetAdminUserOrderCommerce(
   userId: string,
 ): Promise<{
   purchases: number
-  purchaseSpend: number
+  purchaseSpend: number | null
   sales: number
-  salesVolume: number
+  salesVolume: number | null
 }> {
   const confirmed = () =>
     supabase
@@ -374,24 +386,30 @@ export async function dbGetAdminUserOrderCommerce(
       .eq("is_admin_test", false)
       .eq("status", "confirmed")
 
-  const lean = () =>
-    supabase
-      .from("orders")
-      .select("buyer_id, seller_id, amount, shipping_amount")
-      .eq("is_admin_test", false)
-      .eq("status", "confirmed")
-      .or(`seller_id.eq.${userId},buyer_id.eq.${userId}`)
-      .limit(200)
-
+  let spendFailed = false
   const [purchaseCount, saleCount, spendRows] = await Promise.all([
     confirmed().eq("buyer_id", userId),
     confirmed().eq("seller_id", userId),
-    lean(),
+    pageUntilExhausted(async (from, to) => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("buyer_id, seller_id, amount, shipping_amount")
+        .eq("is_admin_test", false)
+        .eq("status", "confirmed")
+        .or(`seller_id.eq.${userId},buyer_id.eq.${userId}`)
+        .range(from, to)
+      if (error) {
+        console.error("[admin user detail] order commerce", error)
+        spendFailed = true
+        return []
+      }
+      return data ?? []
+    }),
   ])
 
   let purchaseSpend = 0
   let salesVolume = 0
-  for (const row of spendRows.data ?? []) {
+  for (const row of spendRows) {
     const record = row as {
       buyer_id?: string | null
       seller_id?: string | null
@@ -405,9 +423,9 @@ export async function dbGetAdminUserOrderCommerce(
 
   return {
     purchases: purchaseCount.error ? 0 : purchaseCount.count ?? 0,
-    purchaseSpend,
+    purchaseSpend: spendFailed ? null : purchaseSpend,
     sales: saleCount.error ? 0 : saleCount.count ?? 0,
-    salesVolume,
+    salesVolume: spendFailed ? null : salesVolume,
   }
 }
 

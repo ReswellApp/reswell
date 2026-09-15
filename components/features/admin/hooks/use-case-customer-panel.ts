@@ -12,6 +12,7 @@ import type {
   SupportCaseCustomerContext,
   SupportCaseCustomerOrder,
 } from "@/lib/services/supportCaseCustomerContext"
+import { shouldApplyCustomerPanelPage } from "@/lib/admin/case-customer-panel"
 import type { OrderRoleFilter } from "@/components/features/admin/case-customer-order-browser"
 
 export function useCaseCustomerPanel({
@@ -34,6 +35,7 @@ export function useCaseCustomerPanel({
   const [role, setRole] = useState<OrderRoleFilter>("all")
   const [pending, startTransition] = useTransition()
   const skipDefaultOrdersForCase = useRef<string | null>(caseId)
+  const generationRef = useRef(0)
   const seedRef = useRef(initialContext)
   seedRef.current = initialContext
 
@@ -43,11 +45,14 @@ export function useCaseCustomerPanel({
   }, [search])
 
   useEffect(() => {
+    const generation = ++generationRef.current
     let cancelled = false
     skipDefaultOrdersForCase.current = caseId
     setSearch("")
     setDebouncedSearch("")
     setRole("all")
+    setOrdersLoadingMore(false)
+    setTicketsLoadingMore(false)
     const seed = seedRef.current
     if (seed) {
       setContext(seed)
@@ -57,7 +62,7 @@ export function useCaseCustomerPanel({
       setContext(null)
     }
     void getSupportCaseCustomerContextAction(caseId).then((result) => {
-      if (cancelled) return
+      if (cancelled || !shouldApplyCustomerPanelPage(generation, generationRef.current)) return
       if ("error" in result) {
         if (!seed) {
           toast.error(result.error)
@@ -78,6 +83,7 @@ export function useCaseCustomerPanel({
     if (isDefault && skipDefaultOrdersForCase.current === caseId) return
 
     skipDefaultOrdersForCase.current = null
+    const generation = generationRef.current
     let cancelled = false
     setOrdersLoadingMore(true)
     void listSupportCaseCustomerOrdersAction({
@@ -86,8 +92,10 @@ export function useCaseCustomerPanel({
       role,
       search: debouncedSearch,
     }).then((result) => {
-      if (cancelled) return
+      const stale =
+        cancelled || !shouldApplyCustomerPanelPage(generation, generationRef.current)
       setOrdersLoadingMore(false)
+      if (stale) return
       if ("error" in result) {
         toast.error(result.error)
         return
@@ -100,11 +108,13 @@ export function useCaseCustomerPanel({
     })
     return () => {
       cancelled = true
+      setOrdersLoadingMore(false)
     }
   }, [caseId, debouncedSearch, role])
 
   function loadMoreOrders() {
     if (!context) return
+    const generation = generationRef.current
     setOrdersLoadingMore(true)
     void listSupportCaseCustomerOrdersAction({
       case_id: caseId,
@@ -113,6 +123,7 @@ export function useCaseCustomerPanel({
       search: debouncedSearch,
     }).then((result) => {
       setOrdersLoadingMore(false)
+      if (!shouldApplyCustomerPanelPage(generation, generationRef.current)) return
       if ("error" in result) {
         toast.error(result.error)
         return
@@ -132,12 +143,14 @@ export function useCaseCustomerPanel({
 
   function loadMoreTickets() {
     if (!context) return
+    const generation = generationRef.current
     setTicketsLoadingMore(true)
     void listSupportCaseCustomerTicketsAction({
       case_id: caseId,
       offset: context.tickets.length,
     }).then((result) => {
       setTicketsLoadingMore(false)
+      if (!shouldApplyCustomerPanelPage(generation, generationRef.current)) return
       if ("error" in result) {
         toast.error(result.error)
         return
