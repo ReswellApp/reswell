@@ -183,8 +183,8 @@ const INITIAL_STATE: TractionFormState = {
   locationLat: null,
   locationLng: null,
   locationDisplay: "",
-  shippingAvailable: false,
-  localPickup: true,
+  shippingAvailable: true,
+  localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
   reswellPackageLengthIn: "",
@@ -364,8 +364,8 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
         locationLat: listing.latitude != null ? Number(listing.latitude) : null,
         locationLng: listing.longitude != null ? Number(listing.longitude) : null,
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
-        shippingAvailable: Boolean(listing.shipping_available),
-        localPickup: listing.local_pickup !== false,
+        shippingAvailable: true,
+        localPickup: false,
         shippingMode,
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
         ...loadedReswellPackage,
@@ -611,7 +611,6 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
         locationCity: form.locationCity,
         locationState: form.locationState,
         shippingAvailable: form.shippingAvailable,
-        localPickup: form.localPickup,
         shippingMode: form.shippingMode,
         shippingPrice: form.shippingPrice,
         reswellPackageLengthIn: form.reswellPackageLengthIn,
@@ -704,12 +703,7 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
       scrollTractionSellSectionIntoView("sell-traction-section-delivery")
       return
     }
-    if (!form.shippingAvailable && !form.localPickup) {
-      failValidation("Choose shipping, local pickup, or both.")
-      scrollTractionSellSectionIntoView("sell-traction-section-delivery")
-      return
-    }
-    if (form.shippingAvailable && normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "reswell") {
+    if (normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "reswell") {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
@@ -720,7 +714,6 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
       }
     }
     if (
-      form.shippingAvailable &&
       normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat" &&
       (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
     ) {
@@ -741,13 +734,10 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
       locationState: form.locationState,
       locationLat: form.locationLat ?? undefined,
       locationLng: form.locationLng ?? undefined,
-      shippingAvailable: form.shippingAvailable,
-      localPickup: form.localPickup,
-      shippingCostMode: form.shippingAvailable
-        ? normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin)
-        : null,
+      shippingAvailable: true,
+      localPickup: false,
+      shippingCostMode: normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin),
       shippingPrice:
-        form.shippingAvailable &&
         normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat"
           ? Number(form.shippingPrice || 0)
           : null,
@@ -1214,121 +1204,71 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
                           *
                         </span>
                       </h3>
-                      <p className="mt-1 text-sm text-muted-foreground">You can select both options.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Traction listings require shipping.</p>
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-traction-delivery-shipping"
-                          checked={form.shippingAvailable}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              shippingAvailable: want,
-                              localPickup: want || prev.localPickup ? prev.localPickup : true,
-                              ...(want
-                                ? {}
-                                : {
-                                    shippingMode: "reswell" as const,
-                                    shippingPrice: "",
-                                    reswellPackageLengthIn: "",
-                                    reswellPackageWidthIn: "",
-                                    reswellPackageHeightIn: "",
-                                    reswellPackageWeightLb: "",
-                                    reswellPackageWeightOz: "",
-                                  }),
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
                         <div className="min-w-0 space-y-0.5">
-                          <Label
-                            htmlFor="sell-traction-delivery-shipping"
-                            className="flex cursor-pointer flex-wrap items-center gap-2 text-sm font-medium leading-snug"
-                          >
-                            Shipping
+                          <div className="flex flex-wrap items-center gap-2 text-sm font-medium leading-snug">
+                            Shipping (required)
                             <Badge
                               variant="default"
                               className="h-auto border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
                             >
                               Items sell faster
                             </Badge>
-                          </Label>
+                          </div>
+                          <p className="text-xs text-muted-foreground">All traction listings must offer shipping to reach more buyers.</p>
                         </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-traction-delivery-pickup"
-                          checked={form.localPickup}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              localPickup: want,
-                              shippingAvailable:
-                                want || prev.shippingAvailable ? prev.shippingAvailable : true,
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="sell-traction-delivery-pickup"
-                          className="cursor-pointer pt-0.5 text-sm font-medium leading-snug"
-                        >
-                          Local pickup
-                        </Label>
                       </div>
                     </div>
                   </div>
 
-                  {form.shippingAvailable ? (
-                    <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Shipping cost in the Continental U.S.{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <SellShippingCostModeRadios
-                        idPrefix="sell-traction"
-                        value={form.shippingMode}
-                        onChange={(mode) => setField("shippingMode", mode)}
-                        flatRateSlot={
-                        <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
-                          <Label htmlFor="traction-shipping-price" className="text-sm font-semibold text-foreground">
-                            Shipping rate{" "}
-                            <span className="text-destructive" aria-hidden>
-                              *
-                            </span>
-                          </Label>
-                          <div className="relative max-w-md">
-                            <span
-                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
-                              aria-hidden
-                            >
-                              $
-                            </span>
-                            <Input
-                              id="traction-shipping-price"
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={form.shippingPrice}
-                              onChange={(e) => setField("shippingPrice", e.target.value)}
-                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
-                            />
-                          </div>
+                  <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Shipping cost in the Continental U.S.{" "}
+                      <span className="text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </h3>
+                    <SellShippingCostModeRadios
+                      idPrefix="sell-traction"
+                      value={form.shippingMode}
+                      onChange={(mode) => setField("shippingMode", mode)}
+                      flatRateSlot={
+                      <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
+                        <Label htmlFor="traction-shipping-price" className="text-sm font-semibold text-foreground">
+                          Shipping rate{" "}
+                          <span className="text-destructive" aria-hidden>
+                            *
+                          </span>
+                        </Label>
+                        <div className="relative max-w-md">
+                          <span
+                            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
+                            aria-hidden
+                          >
+                            $
+                          </span>
+                          <Input
+                            id="traction-shipping-price"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={form.shippingPrice}
+                            onChange={(e) => setField("shippingPrice", e.target.value)}
+                            className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
+                          />
                         </div>
-                        }
-                      />
-                    </div>
-                  ) : null}
+                      </div>
+                      }
+                    />
+                  </div>
                 </div>
               </SellFormSection>
 
-              {form.shippingAvailable && form.shippingMode === "reswell" ? (
+              {form.shippingMode === "reswell" ? (
                 <SellFormSection
                   sectionId="sell-traction-section-reswell-package"
                   title="Reswell shipping: packed size & weight"
