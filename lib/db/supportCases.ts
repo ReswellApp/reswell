@@ -140,24 +140,81 @@ export async function insertSupportCaseMessage(
     author_role: "customer" | "agent" | "system"
     body: string
     is_internal?: boolean
+    inbound_email_id?: string | null
   },
-): Promise<{ id: string | null; error: Error | null }> {
+): Promise<{ id: string | null; error: Error | null; duplicate?: boolean }> {
+  const insert: Record<string, unknown> = {
+    case_id: row.case_id,
+    author_user_id: row.author_user_id ?? null,
+    author_role: row.author_role,
+    body: row.body,
+    is_internal: row.is_internal ?? false,
+  }
+  if (row.inbound_email_id?.trim()) {
+    insert.inbound_email_id = row.inbound_email_id.trim()
+  }
+
   const { data, error } = await supabase
     .from("support_case_messages")
-    .insert({
-      case_id: row.case_id,
-      author_user_id: row.author_user_id ?? null,
-      author_role: row.author_role,
-      body: row.body,
-      is_internal: row.is_internal ?? false,
-    })
+    .insert(insert)
     .select("id")
     .single()
   if (error) {
+    if (error.code === "23505" && row.inbound_email_id?.trim()) {
+      return { id: null, error: null, duplicate: true }
+    }
     console.warn("[support_case_messages] insert skipped:", error.message)
     return { id: null, error: new Error(error.message) }
   }
   return { id: data?.id ? String(data.id) : null, error: null }
+}
+
+export async function getSupportCaseMessageByInboundEmailId(
+  supabase: SupabaseClient,
+  inboundEmailId: string,
+): Promise<{ id: string; case_id: string } | null> {
+  const { data, error } = await supabase
+    .from("support_case_messages")
+    .select("id, case_id")
+    .eq("inbound_email_id", inboundEmailId)
+    .maybeSingle()
+  if (error || !data) return null
+  return { id: String(data.id), case_id: String(data.case_id) }
+}
+
+export async function getSupportCaseByCaseNumber(
+  supabase: SupabaseClient,
+  caseNumber: string,
+): Promise<SupportCaseRow | null> {
+  const { data, error } = await supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    .ilike("case_number", caseNumber.trim())
+    .maybeSingle()
+  if (error || !data) return null
+  return data as SupportCaseRow
+}
+
+export async function listSupportCasesByRequesterEmail(
+  supabase: SupabaseClient,
+  email: string,
+  opts?: { openOnly?: boolean; limit?: number },
+): Promise<SupportCaseRow[]> {
+  let query = supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    .ilike("requester_email", email.trim())
+    .order("updated_at", { ascending: false })
+    .limit(opts?.limit ?? 8)
+
+  if (opts?.openOnly) query = query.neq("status", "resolved")
+
+  const { data, error } = await query
+  if (error) {
+    console.warn("[support_cases] email list skipped:", error.message)
+    return []
+  }
+  return (data ?? []) as SupportCaseRow[]
 }
 
 export async function getSupportCaseById(
@@ -285,7 +342,7 @@ export async function updateSupportCaseAdmin(
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (args.status !== undefined) {
     patch.status = args.status
-    if (args.status === "resolved") patch.resolved_at = new Date().toISOString()
+    patch.resolved_at = args.status === "resolved" ? new Date().toISOString() : null
   }
   if (args.assignee_admin_id !== undefined) patch.assignee_admin_id = args.assignee_admin_id
   if (args.internal_notes !== undefined) patch.internal_notes = args.internal_notes
