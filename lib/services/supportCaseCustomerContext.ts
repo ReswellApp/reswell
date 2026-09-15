@@ -1,36 +1,51 @@
 import {
+  dbCountAdminUserDetailOrders,
   dbFindAdminUserDetailProfileByEmail,
   dbGetAdminUserDetailProfile,
   dbGetAdminUserListingCounts,
-  dbListAdminUserDetailOrders,
-  type AdminUserDetailOrderRow,
+  dbGetAdminUserOrderCommerce,
+  dbListAdminUserDetailOrdersPage,
   type AdminUserDetailProfileRow,
 } from "@/lib/db/adminUserDetail"
 import { getOrderDetailForAdmin } from "@/lib/db/adminOrders"
 import {
+  countSupportCasesForCustomer,
   insertSupportCaseEvent,
   linkSupportCaseToOrderAdmin,
-  listSupportCasesForRequester,
+  listSupportCasesForCustomerPage,
   resolveSupportCaseByAnyId,
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
+import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
+  CUSTOMER_PANEL_PAGE_SIZE,
+  buildCustomerPanelFlags,
+  emptyCustomerCommerce,
+  thisOrderSnapshotFromAdminOrder,
+  toSupportCaseCustomerOrder,
+  toSupportCaseCustomerTicket,
+  type CaseInboxThisOrderSnapshot,
+  type CustomerPanelCommerce,
+  type CustomerPanelFlag,
+  type SupportCaseCustomerOrder,
+  type SupportCaseCustomerTicket,
+} from "@/lib/admin/case-customer-panel"
+import {
   linkSupportCaseOrderSchema,
   supportCaseCustomerContextSchema,
+  supportCaseCustomerOrdersPageSchema,
+  supportCaseCustomerTicketsPageSchema,
 } from "@/lib/validations/supportCaseCustomerContext"
+import { parseInboxCaseParam } from "@/lib/utils/support-case-paths"
 
-export type SupportCaseCustomerOrder = {
-  id: string
-  orderRef: string | null
-  role: "buyer" | "seller"
-  amount: number
-  merchandiseAmount: number
-  status: string
-  createdAt: string
-  listingId: string | null
-  listingTitle: string | null
+export type {
+  CaseInboxThisOrderSnapshot,
+  CustomerPanelCommerce,
+  CustomerPanelFlag,
+  SupportCaseCustomerOrder,
+  SupportCaseCustomerTicket,
 }
 
 export type SupportCaseCustomerContext = {
@@ -46,24 +61,18 @@ export type SupportCaseCustomerContext = {
     verified: boolean
   } | null
   matchedByEmail: boolean
-  commerce: {
-    purchases: number
-    purchaseSpend: number
-    sales: number
-    salesVolume: number
-    listings: number
-    activeListings: number
-    soldListings: number
-  }
-  relatedCases: {
-    id: string
-    subject: string
-    status: string
-    kind: string
-    orderRef: string | null
-    updatedAt: string
-  }[]
+  flags: CustomerPanelFlag[]
+  commerce: CustomerPanelCommerce
+  tickets: SupportCaseCustomerTicket[]
+  ticketsHasMore: boolean
+  ticketsTotal: number
+  ticketsOpen: number
+  /** @deprecated Use `tickets` — kept for older rail callers. */
+  relatedCases: SupportCaseCustomerTicket[]
   orders: SupportCaseCustomerOrder[]
+  ordersHasMore: boolean
+  ordersTotal: number
+  thisOrder: CaseInboxThisOrderSnapshot | null
 }
 
 type StaffServiceContext =
@@ -88,6 +97,10 @@ async function requireStaffService(): Promise<StaffServiceContext> {
   }
 }
 
+function resolveCaseId(raw: string): string {
+  return parseInboxCaseParam(raw) ?? raw.trim()
+}
+
 async function resolveCaseProfile(
   service: ReturnType<typeof createServiceRoleClient>,
   supportCase: SupportCaseRow,
@@ -106,25 +119,46 @@ async function resolveCaseProfile(
   }
 }
 
-function merchandiseAmount(order: AdminUserDetailOrderRow): number {
-  return Math.max(0, order.amount - order.shipping_amount)
+function ticketIdentity(supportCase: SupportCaseRow, profileId: string | null) {
+  return {
+    userId: profileId ?? supportCase.requester_user_id,
+    email: supportCase.requester_email,
+    excludeCaseId: supportCase.id,
+  }
 }
 
-function toCustomerOrder(
-  order: AdminUserDetailOrderRow,
-  userId: string,
-): SupportCaseCustomerOrder {
+function emptyContext(flags: CustomerPanelFlag[]): SupportCaseCustomerContext {
   return {
-    id: order.id,
-    orderRef: order.order_num,
-    role: order.seller_id === userId ? "seller" : "buyer",
-    amount: order.amount,
-    merchandiseAmount: merchandiseAmount(order),
-    status: order.status,
-    createdAt: order.created_at,
-    listingId: order.listing_id,
-    listingTitle: order.listing_title,
+    profile: null,
+    matchedByEmail: false,
+    flags,
+    commerce: emptyCustomerCommerce(),
+    tickets: [],
+    ticketsHasMore: false,
+    ticketsTotal: 0,
+    ticketsOpen: 0,
+    relatedCases: [],
+    orders: [],
+    ordersHasMore: false,
+    ordersTotal: 0,
+    thisOrder: null,
   }
+}
+
+async function loadThisOrderSnapshot(
+  service: ReturnType<typeof createServiceRoleClient>,
+  orderId: string | null,
+): Promise<CaseInboxThisOrderSnapshot | null> {
+  if (!orderId) return null
+  const result = await getOrderDetailForAdmin(service, orderId)
+  if (result.error || !result.data) return null
+  return thisOrderSnapshotFromAdminOrder(result.data)
+}
+
+function withRelatedCases(
+  context: Omit<SupportCaseCustomerContext, "relatedCases">,
+): SupportCaseCustomerContext {
+  return { ...context, relatedCases: context.tickets }
 }
 
 export async function getSupportCaseCustomerContextService(
@@ -135,66 +169,93 @@ export async function getSupportCaseCustomerContextService(
 
   const staff = await requireStaffService()
   if (!staff.ok) return { error: staff.error }
-  const supportCase = await resolveSupportCaseByAnyId(staff.service, parsed.data.case_id)
+  const supportCase = await resolveSupportCaseByAnyId(
+    staff.service,
+    resolveCaseId(parsed.data.case_id),
+  )
   if (!supportCase) return { error: "Case not found." }
 
   const resolved = await resolveCaseProfile(staff.service, supportCase)
+  const identity = ticketIdentity(supportCase, resolved.profile?.id ?? null)
+  const ticketFilter = {
+    userId: identity.userId,
+    email: identity.email,
+    excludeCaseId: identity.excludeCaseId,
+    limit: CUSTOMER_PANEL_PAGE_SIZE,
+    offset: 0,
+  }
+
   if (!resolved.profile) {
+    const [tickets, ticketsTotal, ticketsOpen, thisOrder] = await Promise.all([
+      listSupportCasesForCustomerPage(staff.service, ticketFilter),
+      countSupportCasesForCustomer(staff.service, {
+        userId: identity.userId,
+        email: identity.email,
+        excludeCaseId: identity.excludeCaseId,
+      }),
+      countSupportCasesForCustomer(staff.service, {
+        userId: identity.userId,
+        email: identity.email,
+        openOnly: true,
+      }),
+      loadThisOrderSnapshot(staff.service, supportCase.order_id),
+    ])
     return {
-      data: {
-        profile: null,
-        matchedByEmail: false,
-        commerce: {
-          purchases: 0,
-          purchaseSpend: 0,
-          sales: 0,
-          salesVolume: 0,
-          listings: 0,
-          activeListings: 0,
-          soldListings: 0,
-        },
-        relatedCases: [],
-        orders: [],
-      },
+      data: withRelatedCases({
+        ...emptyContext(
+          buildCustomerPanelFlags({
+            hasProfile: false,
+            matchedByEmail: false,
+            isShop: false,
+            verified: false,
+            sellerBanned: false,
+            isStaff: false,
+            openTicketCount: ticketsOpen,
+          }),
+        ),
+        tickets: tickets.rows.map(toSupportCaseCustomerTicket),
+        ticketsHasMore: tickets.hasMore,
+        ticketsTotal,
+        ticketsOpen,
+        thisOrder,
+      }),
     }
   }
+
   const profile = resolved.profile
+  const [orders, ordersTotal, listingCounts, commerce, customerTickets, ticketsTotal, ticketsOpen, ban, thisOrder] =
+    await Promise.all([
+      dbListAdminUserDetailOrdersPage(staff.service, profile.id, {
+        limit: CUSTOMER_PANEL_PAGE_SIZE,
+        offset: 0,
+        role: "all",
+      }),
+      dbCountAdminUserDetailOrders(staff.service, profile.id, { role: "all" }),
+      dbGetAdminUserListingCounts(staff.service, profile.id),
+      dbGetAdminUserOrderCommerce(staff.service, profile.id),
+      listSupportCasesForCustomerPage(staff.service, ticketFilter),
+      countSupportCasesForCustomer(staff.service, {
+        userId: identity.userId,
+        email: identity.email,
+        excludeCaseId: identity.excludeCaseId,
+      }),
+      countSupportCasesForCustomer(staff.service, {
+        userId: identity.userId,
+        email: identity.email,
+        openOnly: true,
+      }),
+      fetchSellerBanState(staff.service, profile.id),
+      loadThisOrderSnapshot(staff.service, supportCase.order_id),
+    ])
 
-  const [orders, listingCounts, customerCases] = await Promise.all([
-    dbListAdminUserDetailOrders(staff.service, profile.id, 500),
-    dbGetAdminUserListingCounts(staff.service, profile.id),
-    listSupportCasesForRequester(staff.service, profile.id),
-  ])
-  let purchases = 0
-  let purchaseSpend = 0
-  let sales = 0
-  let salesVolume = 0
-  for (const order of orders) {
-    if (order.status !== "confirmed") continue
-    const merchandise = merchandiseAmount(order)
-    if (order.buyer_id === profile.id) {
-      purchases += 1
-      purchaseSpend += merchandise
-    }
-    if (order.seller_id === profile.id) {
-      sales += 1
-      salesVolume += merchandise
-    }
-  }
-
-  const location =
-    profile.location?.trim() ||
-    profile.city?.trim() ||
-    null
+  const location = profile.location?.trim() || profile.city?.trim() || null
+  const tickets = customerTickets.rows.map(toSupportCaseCustomerTicket)
 
   return {
-    data: {
+    data: withRelatedCases({
       profile: {
         id: profile.id,
-        displayName:
-          profile.display_name?.trim() ||
-          profile.email?.trim() ||
-          "Customer",
+        displayName: profile.display_name?.trim() || profile.email?.trim() || "Customer",
         email: profile.email,
         phone: profile.phone,
         location,
@@ -204,28 +265,115 @@ export async function getSupportCaseCustomerContextService(
         verified: profile.shop_verified,
       },
       matchedByEmail: resolved.matchedByEmail,
+      flags: buildCustomerPanelFlags({
+        hasProfile: true,
+        matchedByEmail: resolved.matchedByEmail,
+        isShop: profile.is_shop,
+        verified: profile.shop_verified,
+        sellerBanned: isSellerBanActive(ban),
+        isStaff: profile.is_admin || profile.is_employee,
+        openTicketCount: ticketsOpen,
+      }),
       commerce: {
-        purchases,
-        purchaseSpend,
-        sales,
-        salesVolume,
+        purchases: commerce.purchases,
+        purchaseSpend: commerce.purchaseSpend,
+        sales: commerce.sales,
+        salesVolume: commerce.salesVolume,
         listings: listingCounts.total,
         activeListings: listingCounts.active,
         soldListings: listingCounts.sold,
       },
-      relatedCases: customerCases
-        .filter((row) => row.id !== supportCase.id)
-        .slice(0, 5)
-        .map((row) => ({
-          id: row.id,
-          subject: row.subject,
-          status: row.status,
-          kind: row.kind,
-          orderRef: row.order_ref,
-          updatedAt: row.updated_at,
-        })),
-      orders: orders.slice(0, 100).map((order) => toCustomerOrder(order, profile.id)),
-    },
+      tickets,
+      ticketsHasMore: customerTickets.hasMore,
+      ticketsTotal,
+      ticketsOpen,
+      orders: orders.rows.map((order) => toSupportCaseCustomerOrder(order, profile.id)),
+      ordersHasMore: orders.hasMore,
+      ordersTotal,
+      thisOrder,
+    }),
+  }
+}
+
+export async function listSupportCaseCustomerOrdersService(
+  raw: unknown,
+): Promise<
+  | { orders: SupportCaseCustomerOrder[]; hasMore: boolean; total: number }
+  | { error: string }
+> {
+  const parsed = supportCaseCustomerOrdersPageSchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid order page." }
+
+  const staff = await requireStaffService()
+  if (!staff.ok) return { error: staff.error }
+  const supportCase = await resolveSupportCaseByAnyId(
+    staff.service,
+    resolveCaseId(parsed.data.case_id),
+  )
+  if (!supportCase) return { error: "Case not found." }
+
+  const resolved = await resolveCaseProfile(staff.service, supportCase)
+  const profile = resolved.profile
+  if (!profile) return { orders: [], hasMore: false, total: 0 }
+
+  const [page, total] = await Promise.all([
+    dbListAdminUserDetailOrdersPage(staff.service, profile.id, {
+      limit: parsed.data.limit,
+      offset: parsed.data.offset,
+      role: parsed.data.role,
+      search: parsed.data.search,
+    }),
+    dbCountAdminUserDetailOrders(staff.service, profile.id, {
+      role: parsed.data.role,
+      search: parsed.data.search,
+    }),
+  ])
+
+  return {
+    orders: page.rows.map((order) => toSupportCaseCustomerOrder(order, profile.id)),
+    hasMore: page.hasMore,
+    total,
+  }
+}
+
+export async function listSupportCaseCustomerTicketsService(
+  raw: unknown,
+): Promise<
+  | { tickets: SupportCaseCustomerTicket[]; hasMore: boolean; total: number }
+  | { error: string }
+> {
+  const parsed = supportCaseCustomerTicketsPageSchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid ticket page." }
+
+  const staff = await requireStaffService()
+  if (!staff.ok) return { error: staff.error }
+  const supportCase = await resolveSupportCaseByAnyId(
+    staff.service,
+    resolveCaseId(parsed.data.case_id),
+  )
+  if (!supportCase) return { error: "Case not found." }
+
+  const resolved = await resolveCaseProfile(staff.service, supportCase)
+  const identity = ticketIdentity(supportCase, resolved.profile?.id ?? null)
+  const [page, total] = await Promise.all([
+    listSupportCasesForCustomerPage(staff.service, {
+      userId: identity.userId,
+      email: identity.email,
+      excludeCaseId: identity.excludeCaseId,
+      limit: parsed.data.limit,
+      offset: parsed.data.offset,
+    }),
+    countSupportCasesForCustomer(staff.service, {
+      userId: identity.userId,
+      email: identity.email,
+      excludeCaseId: identity.excludeCaseId,
+    }),
+  ])
+
+  return {
+    tickets: page.rows.map(toSupportCaseCustomerTicket),
+    hasMore: page.hasMore,
+    total,
   }
 }
 
@@ -237,7 +385,10 @@ export async function linkSupportCaseOrderService(
 
   const staff = await requireStaffService()
   if (!staff.ok) return { error: staff.error }
-  const supportCase = await resolveSupportCaseByAnyId(staff.service, parsed.data.case_id)
+  const supportCase = await resolveSupportCaseByAnyId(
+    staff.service,
+    resolveCaseId(parsed.data.case_id),
+  )
   if (!supportCase) return { error: "Case not found." }
 
   const resolved = await resolveCaseProfile(staff.service, supportCase)

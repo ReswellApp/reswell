@@ -8,6 +8,7 @@ describe('getAdminPageTitle', () => {
     assert.equal(getAdminPageTitle('/admin/listings', ADMIN_NAV_GROUPS), 'Listings')
     assert.equal(getAdminPageTitle('/admin/related-content', ADMIN_NAV_GROUPS), 'Related content')
     assert.equal(getAdminPageTitle('/admin/home', ADMIN_NAV_GROUPS), 'Home')
+<<<<<<< HEAD
     assert.equal(getAdminPageTitle('/admin/contact-messages', ADMIN_NAV_GROUPS), 'Support tickets')
   })
 
@@ -17,6 +18,9 @@ describe('getAdminPageTitle', () => {
       getAdminPageTitle('/admin/support-reply-examples', ADMIN_NAV_GROUPS),
       'Reply examples',
     )
+=======
+    assert.equal(getAdminPageTitle('/admin/support-macros', ADMIN_NAV_GROUPS), 'Reply macros')
+>>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
   })
 
   it('uses the closest parent for detail routes', () => {

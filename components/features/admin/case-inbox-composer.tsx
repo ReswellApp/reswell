@@ -6,7 +6,12 @@ import { SupportMacrosPicker } from "@/components/features/admin/support-macros-
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import type { SupportReplyCitedHelp } from "@/lib/types/supportReplyDraft"
+import type {
+  SupportReplyCitedHelp,
+  SupportReplyCitedOrder,
+  SupportReplyCitedTicket,
+} from "@/lib/types/supportReplyDraft"
+import type { SupportMacroVars } from "@/lib/utils/apply-support-macro-vars"
 
 export type ComposerMode = "reply" | "note"
 export type ComposerDisposition = "keep_open" | "waiting" | "resolve"
@@ -22,7 +27,9 @@ interface CaseInboxComposerProps {
   pending: boolean
   closed: boolean
   kindFilter: string | null
-  vars: { name?: string; order_ref?: string }
+  vars: SupportMacroVars
+  orderVarsReady?: boolean
+  hasOrderVars?: boolean
   replyPlaceholder?: string
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
@@ -32,6 +39,9 @@ interface CaseInboxComposerProps {
   aiActive?: boolean
   aiError?: string | null
   aiHelp?: SupportReplyCitedHelp[]
+  aiReason?: string | null
+  aiOrders?: SupportReplyCitedOrder[]
+  aiTickets?: SupportReplyCitedTicket[]
   onRegenerateAi?: () => void
   onRateAi?: (rating: "accepted" | "rejected") => void
   aiRating?: "accepted" | "rejected" | null
@@ -47,6 +57,8 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
       closed,
       kindFilter,
       vars,
+      orderVarsReady = true,
+      hasOrderVars = true,
       replyPlaceholder = "Write a reply they will see…",
       onModeChange,
       onDraftChange,
@@ -56,6 +68,9 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
       aiActive = false,
       aiError = null,
       aiHelp = [],
+      aiReason = null,
+      aiOrders = [],
+      aiTickets = [],
       onRegenerateAi,
       onRateAi,
       aiRating = null,
@@ -157,9 +172,16 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
                 </button>
               </>
             ) : null}
-            {aiHelp[0] ? (
+            {aiReason ? (
+              <span className="w-full pl-4 text-[10px] text-muted-foreground">{aiReason}</span>
+            ) : null}
+            {aiHelp[0] || aiOrders[0] || aiTickets[0] ? (
               <span className="w-full truncate pl-4 text-[10px]">
-                From help: {aiHelp.map((article) => article.title).join(" · ")}
+                {[
+                  ...aiOrders.map((order) => `Order ${order.orderRef}`),
+                  ...aiTickets.map((ticket) => ticket.subject),
+                  ...aiHelp.map((article) => article.title),
+                ].join(" · ")}
               </span>
             ) : null}
           </div>
@@ -195,6 +217,8 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
               variant="menu"
               kindFilter={kindFilter}
               vars={vars}
+              orderVarsReady={orderVarsReady}
+              hasOrderVars={hasOrderVars}
               onInsert={onInsertMacro}
             />
             <div className="ml-auto flex flex-wrap gap-2">

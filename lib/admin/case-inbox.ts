@@ -10,6 +10,7 @@ import {
   SUPPORT_CASE_KIND_LABEL,
 } from "@/lib/utils/support-case-display"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
+import { inboxItemPassesMineFilter } from "@/lib/admin/case-inbox-selection"
 import { supportTicketDisplaySubject } from "@/lib/utils/support-ticket-display"
 import {
   caseSlaState,
@@ -406,7 +407,12 @@ export function filterInboxItems(
     if (args.type === "order" && item.backend !== "order_support") return false
     if (args.type === "claims" && item.kind !== "protection_claim") return false
 
-    if (args.assignee === "mine" && item.assigneeAdminId !== args.currentStaffId) return false
+    if (
+      args.assignee === "mine" &&
+      !inboxItemPassesMineFilter(item.assigneeAdminId, args.currentStaffId)
+    ) {
+      return false
+    }
     if (args.assignee === "unassigned" && item.assigneeAdminId) return false
 
     if (!q) return true
@@ -423,7 +429,12 @@ export function filterInboxItems(
 }
 
 export {
+  findInboxItemBySelection,
   firstNonEmptyText,
+  inboxItemPassesMineFilter,
+  inboxLoadQueryKey,
+  mergeInboxPageItems,
   nextInboxSelectedKey,
   pinSelectedInboxItem,
+  shouldApplyInboxLoad,
 } from "@/lib/admin/case-inbox-selection"

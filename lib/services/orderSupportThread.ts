@@ -12,6 +12,7 @@ import {
   insertMemberMessageInConversation,
   insertSupportStaffThreadMessage,
 } from "@/lib/services/supportTicketThreadNotifications"
+import { getSupportCaseByOrderSupportId } from "@/lib/db/supportCases"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { formatSupportCaseReference, orderRequestTypeSubject } from "@/lib/utils/support-case-display"
@@ -203,13 +204,22 @@ export async function sendOrderSupportAdminReplyService(
 
   const email = await memberEmailForUserId(row.buyer_id)
   if (email) {
+    let supportCaseId: string | null = null
+    try {
+      const service = createServiceRoleClient()
+      const shadow = await getSupportCaseByOrderSupportId(service, row.id)
+      supportCaseId = shadow?.id ?? null
+    } catch {
+      supportCaseId = null
+    }
     void trackKlaviyoSupportTicketResponse({
       supportTicketId: row.id,
+      supportCaseId,
       email,
       externalId: row.buyer_id,
       response: trimmed,
       responseType: "admin_inbox_reply",
-      ticketUrl: orderCaseTicketUrl(row.id),
+      ticketUrl: orderCaseTicketUrl(supportCaseId ?? row.id),
       uniqueId: `order-support-admin-reply-${posted.messageId}`,
     })
   }

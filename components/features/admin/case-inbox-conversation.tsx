@@ -19,7 +19,16 @@ import {
   type ComposerDisposition,
   type ComposerMode,
 } from "@/components/features/admin/case-inbox-composer"
+<<<<<<< HEAD
 import type { SupportReplyCitedHelp } from "@/lib/types/supportReplyDraft"
+=======
+import type {
+  SupportReplyCitedHelp,
+  SupportReplyCitedOrder,
+  SupportReplyCitedTicket,
+} from "@/lib/types/supportReplyDraft"
+import { Badge } from "@/components/ui/badge"
+>>>>>>> ec0327c5cd55e6cddb43092aa1c302943de40493
 import { Button } from "@/components/ui/button"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
@@ -27,6 +36,8 @@ import {
   inboxCounterpartLabel,
   staffReplyPlaceholder,
 } from "@/lib/admin/case-inbox-counterpart"
+import { supportMacroVarsFromOrder } from "@/lib/utils/support-macro-order-vars"
+import { useSupportMacroOrder } from "@/components/features/admin/support-macros/use-support-macro-order"
 
 interface CaseInboxConversationProps {
   item: CaseInboxItem
@@ -54,6 +65,9 @@ interface CaseInboxConversationProps {
   aiActive?: boolean
   aiError?: string | null
   aiHelp?: SupportReplyCitedHelp[]
+  aiReason?: string | null
+  aiOrders?: SupportReplyCitedOrder[]
+  aiTickets?: SupportReplyCitedTicket[]
   onRegenerateAi?: () => void
   onRateAi?: (rating: "accepted" | "rejected") => void
   aiRating?: "accepted" | "rejected" | null
@@ -86,17 +100,24 @@ export function CaseInboxConversation({
   aiActive,
   aiError,
   aiHelp,
+  aiReason,
+  aiOrders,
+  aiTickets,
   onRegenerateAi,
   onRateAi,
   aiRating,
   aiRatingPending,
 }: CaseInboxConversationProps) {
-  const kindFilter =
-    item.kind === "protection_claim"
-      ? "protection_claim"
-      : item.kind === "cancel_request"
-        ? "cancel_request"
-        : null
+  const linkedOrder = orderContext && item.orderId === orderContext.id ? orderContext : null
+  const { order: macroOrder, ready: orderVarsReady } = useSupportMacroOrder(
+    item.orderId,
+    linkedOrder,
+  )
+  const macroVars = supportMacroVarsFromOrder({
+    name: item.fromName,
+    order_ref: item.orderRef,
+    order: macroOrder,
+  })
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
@@ -197,8 +218,10 @@ export function CaseInboxConversation({
             draft={draft}
             pending={pending}
             closed={!item.isOpen}
-            kindFilter={kindFilter}
-            vars={{ order_ref: item.orderRef ?? undefined, name: item.fromName }}
+            kindFilter={item.kind}
+            vars={macroVars}
+            orderVarsReady={orderVarsReady}
+            hasOrderVars={macroOrder !== null}
             replyPlaceholder={
               aiLoading ? "Reswell agent is writing a reply…" : staffReplyPlaceholder(item.requesterRole)
             }
@@ -210,6 +233,9 @@ export function CaseInboxConversation({
             aiActive={aiActive}
             aiError={aiError}
             aiHelp={aiHelp}
+            aiReason={aiReason}
+            aiOrders={aiOrders}
+            aiTickets={aiTickets}
             onRegenerateAi={onRegenerateAi}
             onRateAi={onRateAi}
             aiRating={aiRating}

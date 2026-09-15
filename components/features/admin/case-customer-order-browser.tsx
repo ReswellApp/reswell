@@ -1,66 +1,58 @@
-"use client"
-
-import { useMemo, useState } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
-import { ExternalLink, Link2, ShoppingBag, Store } from "lucide-react"
+import { ExternalLink, Link2, Loader2, ShoppingBag, Store } from "lucide-react"
 import type { SupportCaseCustomerOrder } from "@/lib/services/supportCaseCustomerContext"
+import { formatCustomerUsd } from "@/lib/admin/case-customer-panel"
+import { orderStatusLabel } from "@/lib/order-status"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
-type OrderRoleFilter = "all" | "buyer" | "seller"
+export type OrderRoleFilter = "all" | "buyer" | "seller"
 
 interface CaseCustomerOrderBrowserProps {
   orders: SupportCaseCustomerOrder[]
+  total: number
+  hasMore: boolean
+  loadingMore: boolean
   linkedOrderId: string | null
   pending: boolean
+  search: string
+  role: OrderRoleFilter
+  onSearchChange: (value: string) => void
+  onRoleChange: (role: OrderRoleFilter) => void
+  onLoadMore: () => void
   onConnect: (order: SupportCaseCustomerOrder) => void
 }
 
-function usd(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
 export function CaseCustomerOrderBrowser({
-  orders: allOrders,
+  orders,
+  total,
+  hasMore,
+  loadingMore,
   linkedOrderId,
   pending,
+  search,
+  role,
+  onSearchChange,
+  onRoleChange,
+  onLoadMore,
   onConnect,
 }: CaseCustomerOrderBrowserProps) {
-  const [search, setSearch] = useState("")
-  const [role, setRole] = useState<OrderRoleFilter>("all")
-  const orders = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return allOrders.filter((order) => {
-      if (role !== "all" && order.role !== role) return false
-      if (!query) return true
-      return (
-        order.orderRef?.toLowerCase().includes(query) ||
-        order.listingTitle?.toLowerCase().includes(query) ||
-        order.id.toLowerCase().includes(query)
-      )
-    })
-  }, [allOrders, role, search])
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Find and connect an order
+          Past orders
         </p>
         <span className="text-[10px] tabular-nums text-muted-foreground">
-          {orders.length} shown
+          {total} total
         </span>
       </div>
       <Input
         value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        placeholder="Search order number or item…"
+        onChange={(event) => onSearchChange(event.target.value)}
+        placeholder="Search order number…"
         className="h-8 bg-background text-xs"
       />
       <div className="flex gap-1">
@@ -68,7 +60,7 @@ export function CaseCustomerOrderBrowser({
           <button
             key={value}
             type="button"
-            onClick={() => setRole(value)}
+            onClick={() => onRoleChange(value)}
             className={cn(
               "rounded-md px-2 py-1 text-[10px] font-medium",
               role === value
@@ -96,7 +88,7 @@ export function CaseCustomerOrderBrowser({
                 <p className="truncate text-[10px] text-muted-foreground">
                   #{order.orderRef ?? order.id.slice(0, 8)} ·{" "}
                   {format(new Date(order.createdAt), "MMM d, yyyy")} ·{" "}
-                  {usd(order.merchandiseAmount)}
+                  {formatCustomerUsd(order.merchandiseAmount)} · {orderStatusLabel(order.status)}
                 </p>
               </div>
               <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
@@ -119,6 +111,19 @@ export function CaseCustomerOrderBrowser({
           ))
         )}
       </div>
+      {hasMore ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-full text-[11px]"
+          disabled={loadingMore}
+          onClick={onLoadMore}
+        >
+          {loadingMore ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" aria-hidden /> : null}
+          Load more orders
+        </Button>
+      ) : null}
     </div>
   )
 }

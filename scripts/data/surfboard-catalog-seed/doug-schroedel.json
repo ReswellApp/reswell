@@ -1,6 +1,6 @@
 {
   "generated_for": "Doug Schroedel / Schroedel Surfboards official named standup catalog",
-  "source": "http://www.schroedel.com/Surfboard%20Dynamics%20Swallow.htm and http://www.schroedel.com/Surfboard%20Dynamics%20Fish.htm (official Schroedel Surfboard Dynamics model lineup — excludes generic tail categories, custom guns, surfwear, and order forms)",
+  "source": "http://www.schroedel.com/Surfboard%20Dynamics.htm (official Schroedel Surfboard Dynamics model lineup — Swallow/Fish pages plus Sleek mid-length; excludes generic tail categories, custom guns, surfwear, and order forms)",
   "product_category_slug": "surfboards",
   "brands": [
     {
@@ -35,6 +35,12 @@
           "image_url": "http://www.schroedel.com/images/SCHRODEL%20LOOSTAR%20.jpg",
           "description": "L-Star fish model from Schroedel Surfboards' official dynamics pages — a named swallow-tail design for fast, responsive riding in small to medium surf.",
           "board_category_slug": "fish"
+        },
+        {
+          "name": "Sleek",
+          "image_url": "http://www.schroedel.com/images/76RLB-rideslikebuttersleek-.jpg",
+          "description": "Mid-length shape for experienced surfers who want paddle power without a longboard or a twig. Continuous rocker, tighter tail, and a fuller nose for early glide entry. Medium-low semi-soft rails with a sleek low profile foil. Available from 7'6\" to 9'2\" in round pin or squash tail; widths 20½\" to 21\"+.",
+          "board_category_slug": "hybrid"
         }
       ]
     }

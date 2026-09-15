@@ -34,7 +34,7 @@ const IMPERSONATION_PATTERNS = [
   /reswell\s*official/i,
   /official\s*reswell/i,
   /reswell\s*help/i,
-  /help\s*reswell/i,
+  /help\s*res\s*well/i,
   /^reswell$/i,
   /^res\s*well$/i,
 ]
