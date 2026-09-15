@@ -4,6 +4,7 @@ import { z } from "zod"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
+import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import {
@@ -656,8 +657,10 @@ export async function sendConversationReply(input: {
     const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
 
     if (supportStaffReply) {
+      const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
       void trackKlaviyoSupportTicketResponse({
         supportTicketId: ticketMeta.id,
+        supportCaseId: shadow?.id,
         email: ticketMeta.email.trim(),
         externalId: ticketMeta.user_id,
         response: body,
@@ -850,8 +853,10 @@ export async function sendConversationLocationReply(input: unknown) {
     const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
 
     if (supportStaffReply) {
+      const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
       void trackKlaviyoSupportTicketResponse({
         supportTicketId: ticketMeta.id,
+        supportCaseId: shadow?.id,
         email: ticketMeta.email.trim(),
         externalId: ticketMeta.user_id,
         response: body,

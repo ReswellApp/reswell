@@ -68,6 +68,24 @@ export function extractUuidFromPlusAddress(raw: string | null | undefined): stri
   return compactUuid(local.slice(plus + 1))
 }
 
+/**
+ * Klaviyo inbound threading must use the support_cases UUID (mapped to
+ * `case_number` / plus-address), never a legacy contact_messages id.
+ */
+export function buildKlaviyoSupportInboundThreading(input: {
+  supportTicketId: string
+  supportCaseId?: string | null
+  mailbox?: string | null
+}): { threadingCaseId: string; caseRef: string; replyTo: string | null } {
+  const threadingCaseId = input.supportCaseId?.trim() || input.supportTicketId.trim()
+  const mailbox = input.mailbox?.trim() || ""
+  return {
+    threadingCaseId,
+    caseRef: `RS-${threadingCaseId.replace(/-/g, "").slice(0, 8).toUpperCase()}`,
+    replyTo: mailbox ? formatSupportInboundReplyTo(mailbox, threadingCaseId) : null,
+  }
+}
+
 export function formatSupportInboundReplyTo(
   mailbox: string,
   caseId: string,
