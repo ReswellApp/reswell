@@ -1,58 +1,79 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
-import Link from "next/link"
-import { format } from "date-fns"
-import {
-  Loader2,
-  Mail,
-  MapPin,
-  Phone,
-  UserRound,
-} from "lucide-react"
+import { useEffect, useRef, useState, useTransition } from "react"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   getSupportCaseCustomerContextAction,
   linkSupportCaseOrderAction,
+  listSupportCaseCustomerOrdersAction,
+  listSupportCaseCustomerTicketsAction,
 } from "@/lib/actions/supportCaseCustomerContext"
 import type {
   SupportCaseCustomerContext,
   SupportCaseCustomerOrder,
 } from "@/lib/services/supportCaseCustomerContext"
-import { CaseCustomerOrderBrowser } from "@/components/features/admin/case-customer-order-browser"
-import { Badge } from "@/components/ui/badge"
+import type { CaseInboxThisOrderSnapshot } from "@/lib/admin/case-customer-panel"
+import { CaseCustomerIdentity } from "@/components/features/admin/case-customer-identity"
+import { CaseCustomerOrderBrowser, type OrderRoleFilter } from "@/components/features/admin/case-customer-order-browser"
+import { CaseCustomerTickets } from "@/components/features/admin/case-customer-tickets"
+import { CaseInboxThisOrderCard } from "@/components/features/admin/case-inbox-this-order-card"
 
 interface CaseCustomerContextProps {
   caseId: string
   linkedOrderId: string | null
+  linkedOrderRef: string | null
+  thisOrder: CaseInboxThisOrderSnapshot | null
+  initialContext?: SupportCaseCustomerContext | null
   onOrderLinked: (order: SupportCaseCustomerOrder) => void
-}
-
-function usd(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value)
 }
 
 export function CaseCustomerContext({
   caseId,
   linkedOrderId,
+  linkedOrderRef,
+  thisOrder,
+  initialContext = null,
   onOrderLinked,
 }: CaseCustomerContextProps) {
-  const [context, setContext] = useState<SupportCaseCustomerContext | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [context, setContext] = useState<SupportCaseCustomerContext | null>(initialContext)
+  const [loading, setLoading] = useState(!initialContext)
+  const [ordersLoadingMore, setOrdersLoadingMore] = useState(false)
+  const [ticketsLoadingMore, setTicketsLoadingMore] = useState(false)
+  const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [role, setRole] = useState<OrderRoleFilter>("all")
   const [pending, startTransition] = useTransition()
+  const skipOrdersQuery = useRef(true)
+  const seedRef = useRef(initialContext)
+  seedRef.current = initialContext
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250)
+    return () => window.clearTimeout(timer)
+  }, [search])
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
+    skipOrdersQuery.current = true
+    setSearch("")
+    setDebouncedSearch("")
+    setRole("all")
+    const seed = seedRef.current
+    if (seed) {
+      setContext(seed)
+      setLoading(false)
+    } else {
+      setLoading(true)
+      setContext(null)
+    }
     void getSupportCaseCustomerContextAction(caseId).then((result) => {
       if (cancelled) return
       if ("error" in result) {
-        toast.error(result.error)
-        setContext(null)
+        if (!seed) {
+          toast.error(result.error)
+          setContext(null)
+        }
       } else {
         setContext(result.data)
       }
@@ -62,6 +83,89 @@ export function CaseCustomerContext({
       cancelled = true
     }
   }, [caseId])
+
+  useEffect(() => {
+    if (skipOrdersQuery.current) {
+      skipOrdersQuery.current = false
+      return
+    }
+    let cancelled = false
+    setOrdersLoadingMore(true)
+    void listSupportCaseCustomerOrdersAction({
+      case_id: caseId,
+      offset: 0,
+      role,
+      search: debouncedSearch,
+    }).then((result) => {
+      if (cancelled) return
+      setOrdersLoadingMore(false)
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      setContext((prev) =>
+        prev
+          ? { ...prev, orders: result.orders, ordersHasMore: result.hasMore, ordersTotal: result.total }
+          : prev,
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [caseId, debouncedSearch, role])
+
+  function loadMoreOrders() {
+    if (!context) return
+    setOrdersLoadingMore(true)
+    void listSupportCaseCustomerOrdersAction({
+      case_id: caseId,
+      offset: context.orders.length,
+      role,
+      search: debouncedSearch,
+    }).then((result) => {
+      setOrdersLoadingMore(false)
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      setContext((prev) =>
+        prev
+          ? {
+              ...prev,
+              orders: [...prev.orders, ...result.orders],
+              ordersHasMore: result.hasMore,
+              ordersTotal: result.total,
+            }
+          : prev,
+      )
+    })
+  }
+
+  function loadMoreTickets() {
+    if (!context) return
+    setTicketsLoadingMore(true)
+    void listSupportCaseCustomerTicketsAction({
+      case_id: caseId,
+      offset: context.tickets.length,
+    }).then((result) => {
+      setTicketsLoadingMore(false)
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      setContext((prev) =>
+        prev
+          ? {
+              ...prev,
+              tickets: [...prev.tickets, ...result.tickets],
+              relatedCases: [...prev.tickets, ...result.tickets],
+              ticketsHasMore: result.hasMore,
+              ticketsTotal: result.total,
+            }
+          : prev,
+      )
+    })
+  }
 
   function connectOrder(order: SupportCaseCustomerOrder) {
     if (
@@ -89,81 +193,54 @@ export function CaseCustomerContext({
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-4 text-xs text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-        Loading customer activity…
+        Loading customer…
       </div>
     )
   }
 
-  if (!context?.profile) {
+  if (!context) {
     return (
       <div className="rounded-lg border border-dashed border-border/70 px-3 py-4">
-        <p className="text-xs font-medium">No Reswell account matched</p>
-        <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-          Purchases and sales will appear after this email is connected to a member account.
-        </p>
+        <p className="text-xs font-medium">Could not load customer history</p>
       </div>
     )
   }
 
-  const profile = context.profile
   return (
-    <section className="space-y-3">
-      <div className="rounded-lg border border-border/60 bg-background p-3">
-        <div className="flex items-start gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-            <UserRound className="h-4 w-4 text-muted-foreground" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <Link href={`/admin/users/${profile.id}`} className="truncate text-sm font-semibold hover:underline">
-                {profile.displayName}
-              </Link>
-              {profile.verified ? <Badge variant="secondary" className="h-5 text-[9px]">Verified</Badge> : null}
-              {context.matchedByEmail ? <Badge variant="outline" className="h-5 text-[9px]">Email match</Badge> : null}
-            </div>
-            <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
-              {profile.email ? <p className="flex items-center gap-1"><Mail className="h-3 w-3" />{profile.email}</p> : null}
-              {profile.phone ? <p className="flex items-center gap-1"><Phone className="h-3 w-3" />{profile.phone}</p> : null}
-              {profile.location ? <p className="flex items-center gap-1"><MapPin className="h-3 w-3" />{profile.location}</p> : null}
-              <p>Member since {format(new Date(profile.createdAt), "MMM yyyy")}</p>
-            </div>
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/50 pt-3 text-center">
-          <div><p className="text-sm font-semibold">{context.commerce.purchases}</p><p className="text-[10px] text-muted-foreground">Purchases · {usd(context.commerce.purchaseSpend)}</p></div>
-          <div><p className="text-sm font-semibold">{context.commerce.sales}</p><p className="text-[10px] text-muted-foreground">Sales · {usd(context.commerce.salesVolume)}</p></div>
-          <div><p className="text-sm font-semibold">{context.commerce.activeListings}</p><p className="text-[10px] text-muted-foreground">Active listings</p></div>
-        </div>
-      </div>
-
-      {context.relatedCases.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Previous support cases
-          </p>
-          <div className="divide-y divide-border/50 rounded-lg border border-border/60 bg-background">
-            {context.relatedCases.map((supportCase) => (
-              <Link
-                key={supportCase.id}
-                href={`/admin/contact-messages?view=all&case=${supportCase.id}`}
-                className="flex items-center justify-between gap-2 px-3 py-2 text-xs hover:bg-muted/40"
-              >
-                <span className="min-w-0 truncate">{supportCase.subject}</span>
-                <span className="shrink-0 capitalize text-[10px] text-muted-foreground">
-                  {supportCase.status.replaceAll("_", " ")}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <CaseCustomerOrderBrowser
-        orders={context.orders}
+    <section className="space-y-4">
+      <CaseCustomerIdentity context={context} />
+      <CaseInboxThisOrderCard
         linkedOrderId={linkedOrderId}
-        pending={pending}
-        onConnect={connectOrder}
+        linkedOrderRef={linkedOrderRef}
+        order={thisOrder}
       />
+      <CaseCustomerTickets
+        tickets={context.tickets}
+        total={context.ticketsTotal}
+        hasMore={context.ticketsHasMore}
+        loadingMore={ticketsLoadingMore}
+        onLoadMore={loadMoreTickets}
+      />
+      {context.profile ? (
+        <CaseCustomerOrderBrowser
+          orders={context.orders}
+          total={context.ordersTotal}
+          hasMore={context.ordersHasMore}
+          loadingMore={ordersLoadingMore}
+          linkedOrderId={linkedOrderId}
+          pending={pending}
+          search={search}
+          role={role}
+          onSearchChange={setSearch}
+          onRoleChange={setRole}
+          onLoadMore={loadMoreOrders}
+          onConnect={connectOrder}
+        />
+      ) : (
+        <p className="rounded-lg border border-dashed border-border/70 px-3 py-3 text-xs text-muted-foreground">
+          Purchases and sales appear after this email is connected to a member account.
+        </p>
+      )}
     </section>
   )
 }

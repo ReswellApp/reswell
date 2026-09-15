@@ -1,12 +1,15 @@
 "use client"
 
-import Link from "next/link"
 import { format } from "date-fns"
 import { CheckCircle2, RotateCcw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import type { SupportCaseEventRow } from "@/lib/db/supportCases"
-import type { SupportCaseCustomerOrder } from "@/lib/services/supportCaseCustomerContext"
+import type {
+  SupportCaseCustomerContext,
+  SupportCaseCustomerOrder,
+} from "@/lib/services/supportCaseCustomerContext"
+import { thisOrderSnapshotFromAdminOrder } from "@/lib/admin/case-customer-panel"
 import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { CaseInboxItem, CaseInboxPriority } from "@/lib/admin/case-inbox"
@@ -30,9 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { inboxInitials } from "@/lib/admin/case-inbox"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
-import { inboxCounterpartLabel, staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
+import { staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
 import { cn } from "@/lib/utils"
 
 const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
@@ -82,6 +84,7 @@ interface CaseInboxDetailsProps {
   onOrderLinked: (order: SupportCaseCustomerOrder) => void
   onSellerOutreachSent: () => void
   onRefundComplete: () => void
+  initialCustomerContext?: SupportCaseCustomerContext | null
 }
 
 export function CaseInboxDetails({
@@ -107,6 +110,7 @@ export function CaseInboxDetails({
   onOrderLinked,
   onSellerOutreachSent,
   onRefundComplete,
+  initialCustomerContext = null,
 }: CaseInboxDetailsProps) {
   return (
     <aside className="flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/50 bg-muted/10 lg:w-[400px] lg:shrink-0 lg:border-l lg:border-t-0">
@@ -137,36 +141,18 @@ export function CaseInboxDetails({
         </TabsList>
 
         <TabsContent value="overview" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-5 pt-3">
-          <section className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {inboxCounterpartLabel(item.requesterRole)}
-            </p>
-            <div className="flex items-start gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
-                {inboxInitials(item.fromName)}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{item.fromName}</p>
-                {item.fromEmail ? <p className="truncate text-xs text-muted-foreground">{item.fromEmail}</p> : null}
-                {item.userId ? (
-                  <Link href={`/admin/users/${item.userId}`} className="text-xs font-medium underline-offset-2 hover:underline">
-                    View complete profile
-                  </Link>
-                ) : <p className="text-xs text-muted-foreground">Guest / no account</p>}
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-2 border-t border-border/50 pt-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {inboxCounterpartLabel(item.requesterRole)} activity
-            </p>
-            <CaseCustomerContext
-              caseId={item.id}
-              linkedOrderId={item.orderId}
-              onOrderLinked={onOrderLinked}
-            />
-          </section>
+          <CaseCustomerContext
+            caseId={item.id}
+            linkedOrderId={item.orderId}
+            linkedOrderRef={item.orderRef}
+            thisOrder={
+              orderContext && item.orderId === orderContext.id
+                ? thisOrderSnapshotFromAdminOrder(orderContext)
+                : null
+            }
+            initialContext={initialCustomerContext}
+            onOrderLinked={onOrderLinked}
+          />
 
           <section className="space-y-3 border-t border-border/50 pt-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Workflow</p>

@@ -252,47 +252,163 @@ export async function dbGetAdminUserAuthUser(
   return data.user ?? null
 }
 
+const ADMIN_USER_ORDER_SELECT =
+  "id, order_num, seller_id, buyer_id, amount, shipping_amount, status, is_admin_test, created_at, listing_id, listings(title)"
+
+function escapeIlikePattern(raw: string): string {
+  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_").replace(/"/g, '\\"')
+}
+
+function mapAdminUserDetailOrderRow(row: unknown): AdminUserDetailOrderRow {
+  const record = row as Record<string, unknown>
+  const listing = record.listings
+  let listingTitle: string | null = null
+  if (listing && typeof listing === "object" && !Array.isArray(listing)) {
+    listingTitle = asText((listing as { title?: unknown }).title)
+  }
+  return {
+    id: String(record.id),
+    order_num: asText(record.order_num),
+    seller_id: asText(record.seller_id),
+    buyer_id: asText(record.buyer_id),
+    amount: num(record.amount),
+    shipping_amount: num(record.shipping_amount),
+    status: typeof record.status === "string" ? record.status : "",
+    is_admin_test: record.is_admin_test === true,
+    created_at: typeof record.created_at === "string" ? record.created_at : "",
+    listing_id: asText(record.listing_id),
+    listing_title: listingTitle,
+  }
+}
+
 export async function dbListAdminUserDetailOrders(
   supabase: SupabaseClient,
   userId: string,
   limit = 500,
 ): Promise<AdminUserDetailOrderRow[]> {
-  const { data, error } = await supabase
-    .from("orders")
-    .select(
-      "id, order_num, seller_id, buyer_id, amount, shipping_amount, status, is_admin_test, created_at, listing_id, listings(title)",
-    )
-    .or(`seller_id.eq.${userId},buyer_id.eq.${userId}`)
-    .eq("is_admin_test", false)
-    .order("created_at", { ascending: false })
-    .limit(limit)
+  const page = await dbListAdminUserDetailOrdersPage(supabase, userId, {
+    limit,
+    offset: 0,
+    role: "all",
+  })
+  return page.rows
+}
 
-  if (error) {
-    console.error("[admin user detail] orders", error)
-    return []
+export async function dbListAdminUserDetailOrdersPage(
+  supabase: SupabaseClient,
+  userId: string,
+  filter: {
+    limit: number
+    offset: number
+    role?: "all" | "buyer" | "seller"
+    search?: string
+  },
+): Promise<{ rows: AdminUserDetailOrderRow[]; hasMore: boolean }> {
+  const role = filter.role ?? "all"
+  const take = filter.limit + 1
+  let query = supabase
+    .from("orders")
+    .select(ADMIN_USER_ORDER_SELECT)
+    .eq("is_admin_test", false)
+
+  if (role === "buyer") query = query.eq("buyer_id", userId)
+  else if (role === "seller") query = query.eq("seller_id", userId)
+  else query = query.or(`seller_id.eq.${userId},buyer_id.eq.${userId}`)
+
+  const search = filter.search?.trim()
+  if (search) {
+    query = query.ilike("order_num", `%${escapeIlikePattern(search)}%`)
   }
 
-  return (data ?? []).map((row) => {
-    const record = row as Record<string, unknown>
-    const listing = record.listings
-    let listingTitle: string | null = null
-    if (listing && typeof listing === "object" && !Array.isArray(listing)) {
-      listingTitle = asText((listing as { title?: unknown }).title)
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .range(filter.offset, filter.offset + take - 1)
+
+  if (error) {
+    console.error("[admin user detail] orders page", error)
+    return { rows: [], hasMore: false }
+  }
+
+  const mapped = (data ?? []).map(mapAdminUserDetailOrderRow)
+  return {
+    rows: mapped.slice(0, filter.limit),
+    hasMore: mapped.length > filter.limit,
+  }
+}
+
+export async function dbCountAdminUserDetailOrders(
+  supabase: SupabaseClient,
+  userId: string,
+  role: "all" | "buyer" | "seller" = "all",
+): Promise<number> {
+  let query = supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("is_admin_test", false)
+
+  if (role === "buyer") query = query.eq("buyer_id", userId)
+  else if (role === "seller") query = query.eq("seller_id", userId)
+  else query = query.or(`seller_id.eq.${userId},buyer_id.eq.${userId}`)
+
+  const { count, error } = await query
+  if (error) {
+    console.error("[admin user detail] orders count", error)
+    return 0
+  }
+  return count ?? 0
+}
+
+export async function dbGetAdminUserOrderCommerce(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{
+  purchases: number
+  purchaseSpend: number
+  sales: number
+  salesVolume: number
+}> {
+  const confirmed = () =>
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("is_admin_test", false)
+      .eq("status", "confirmed")
+
+  const lean = () =>
+    supabase
+      .from("orders")
+      .select("buyer_id, seller_id, amount, shipping_amount")
+      .eq("is_admin_test", false)
+      .eq("status", "confirmed")
+      .or(`seller_id.eq.${userId},buyer_id.eq.${userId}`)
+      .limit(200)
+
+  const [purchaseCount, saleCount, spendRows] = await Promise.all([
+    confirmed().eq("buyer_id", userId),
+    confirmed().eq("seller_id", userId),
+    lean(),
+  ])
+
+  let purchaseSpend = 0
+  let salesVolume = 0
+  for (const row of spendRows.data ?? []) {
+    const record = row as {
+      buyer_id?: string | null
+      seller_id?: string | null
+      amount?: unknown
+      shipping_amount?: unknown
     }
-    return {
-      id: String(record.id),
-      order_num: asText(record.order_num),
-      seller_id: asText(record.seller_id),
-      buyer_id: asText(record.buyer_id),
-      amount: num(record.amount),
-      shipping_amount: num(record.shipping_amount),
-      status: typeof record.status === "string" ? record.status : "",
-      is_admin_test: record.is_admin_test === true,
-      created_at: typeof record.created_at === "string" ? record.created_at : "",
-      listing_id: asText(record.listing_id),
-      listing_title: listingTitle,
-    }
-  })
+    const merchandise = Math.max(0, num(record.amount) - num(record.shipping_amount))
+    if (record.buyer_id === userId) purchaseSpend += merchandise
+    if (record.seller_id === userId) salesVolume += merchandise
+  }
+
+  return {
+    purchases: purchaseCount.error ? 0 : purchaseCount.count ?? 0,
+    purchaseSpend,
+    sales: saleCount.error ? 0 : saleCount.count ?? 0,
+    salesVolume,
+  }
 }
 
 export async function dbListAdminUserTippedSales(
