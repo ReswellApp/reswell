@@ -56,10 +56,10 @@ export function SellEarningsBreakdown({
     <SmoothCollapse open={price !== null} className={className}>
       <div className="rounded-lg border border-listingHeart/25 bg-listingHeart/[0.04] p-4">
         <div className="flex items-baseline justify-between gap-3">
-          <span className="text-sm font-semibold text-foreground">
-            What you&rsquo;ll receive
+          <span className="min-w-0 text-sm font-semibold text-foreground">
+            What you&rsquo;ll receive, only when it sells
           </span>
-          <span className="text-lg font-bold tabular-nums text-listingHeart">
+          <span className="shrink-0 text-lg font-bold tabular-nums text-listingHeart">
             {formatUsd(sellerEarnings)}
           </span>
         </div>

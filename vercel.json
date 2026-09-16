@@ -124,6 +124,10 @@
     {
       "path": "/api/cron/review-fraud-messages",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/auto-price-drop",
+      "schedule": "35 * * * *"
     }
   ]
 }

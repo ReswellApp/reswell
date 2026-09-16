@@ -16,6 +16,7 @@ import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sell
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
+import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 
 export async function POST(request: NextRequest) {
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
   }
 
   const insertPayload = {
-    ...listingData,
+    ...omitClientAutoPriceDropSchedule(listingData),
     user_id: targetUserId,
     slug,
     status: "active" as const,

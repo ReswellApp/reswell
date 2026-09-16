@@ -24,6 +24,7 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
+import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
 
 /** Admin impersonation saves include photos + shipping columns; give the write time to finish. */
 export const maxDuration = 60
@@ -148,9 +149,13 @@ async function putImpersonatedListing(request: NextRequest) {
    */
   const sellerUserId = existingListing.user_id
 
-  const { slug: _listingSlugFromBody, ...listingFields } = listingData as Record<string, unknown> & {
+  const { slug: _listingSlugFromBody, ...listingFieldsRaw } = listingData as Record<
+    string,
+    unknown
+  > & {
     slug?: unknown
   }
+  const listingFields = omitClientAutoPriceDropSchedule(listingFieldsRaw)
 
   const publishingFromDraft =
     existingListing.status === "draft" && publishFromDraft === true

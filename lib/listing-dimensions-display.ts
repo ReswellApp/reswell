@@ -256,6 +256,8 @@ const LEGACY_LISTING_DIMENSION_DB_KEYS = [
 const LISTING_SCHEMA_CACHE_OPTIONAL_KEYS = [
   ...LEGACY_LISTING_DIMENSION_DB_KEYS,
   "fins_included",
+  "auto_price_drop_floor",
+  "auto_price_drop_scheduled_for",
 ] as const
 
 /** Drop listing columns that may lag schema cache / migrations (retry insert/update). */

@@ -157,7 +157,6 @@ import {
   SellDropoffLocationCard,
   matchPublicDropoffLocation,
 } from "@/components/features/sell/sell-dropoff-location-card"
-import { listActiveDropoffLocationsAction } from "@/lib/actions/listActiveDropoffLocations"
 import { dropoffRuleToPackageForm } from "@/lib/dropoff-location-box-rules"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
@@ -223,6 +222,7 @@ import {
   SellFacetChipGroup,
 } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
+import { SellAutoPriceDropFields } from "@/components/features/sell/sell-auto-price-drop-fields"
 import { resolveCompareAtPriceOnUpdate } from "@/lib/listing-compare-at-price"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
@@ -623,14 +623,6 @@ function flatShippingRateComplete(raw: string): boolean {
   return Number.isFinite(n) && n >= 0
 }
 
-/** Mirrors the auto-drop floor rule in `pricePublishFieldsComplete` (sell-section-completion). */
-function priceDropFloorComplete(floorRaw: string, priceRaw: string): boolean {
-  const floor = Number.parseFloat(floorRaw.trim().replace(/,/g, ""))
-  if (!Number.isFinite(floor) || floor < 0.01 || floor > 999_999.99) return false
-  const price = Number.parseFloat(priceRaw.trim().replace(/,/g, ""))
-  return Number.isFinite(price) ? floor < price : true
-}
-
 function createInitialSellFormData() {
   return {
     title: "",
@@ -655,8 +647,9 @@ function createInitialSellFormData() {
     reswellPackageWeightLb: "",
     reswellPackageWeightOz: "",
     dropoffLocationId: "",
-            autoPriceDrop: false,
+    autoPriceDrop: false,
     autoPriceDropFloor: "",
+    autoPriceDropScheduledFor: null as string | null,
     showPriceMarkdown: false,
     loadedPublishedPriceUsd: null as number | null,
     loadedCompareAtPriceUsd: null as number | null,
@@ -973,12 +966,28 @@ function SellPageContentInner({
   }, [formData])
 
   useEffect(() => {
-    let cancelled = false
-    void listActiveDropoffLocationsAction().then((rows) => {
-      if (!cancelled) setDropoffLocations(rows)
-    })
+    const controller = new AbortController()
+    void (async () => {
+      try {
+        const res = await fetch("/api/sell/dropoff-locations", {
+          signal: controller.signal,
+          credentials: "include",
+        })
+        if (!res.ok) return
+        const json = (await res.json().catch(() => null)) as {
+          data?: { locations?: PublicDropoffLocation[] }
+        } | null
+        if (controller.signal.aborted) return
+        setDropoffLocations(json?.data?.locations ?? [])
+      } catch (error) {
+        if (controller.signal.aborted) return
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[sell] dropoff locations:", error)
+        }
+      }
+    })()
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [])
 
@@ -1516,6 +1525,11 @@ function SellPageContentInner({
             .auto_price_drop_floor
           if (f == null || f === "") return ""
           return String(f)
+        })(),
+        autoPriceDropScheduledFor: (() => {
+          const raw = (listing as { auto_price_drop_scheduled_for?: string | null })
+            .auto_price_drop_scheduled_for
+          return typeof raw === "string" && raw.trim() ? raw : null
         })(),
         showPriceMarkdown: (() => {
           const compareAt = Number.parseFloat(
@@ -3142,7 +3156,9 @@ function SellPageContentInner({
     try {
       // Same session resolution as photo upload — retries through brief auth lock /
       // token-refresh aborts so Save does not surface "signal is aborted without reason".
-      const session = await resolveClientSessionForMutation(supabase)
+      const session = await retryOnceOnSellSubmitAbort(() =>
+        resolveClientSessionForMutation(supabase),
+      )
       const user = session?.user
       const accessToken = session?.access_token
       if (!user || !accessToken) {
@@ -4813,64 +4829,22 @@ function SellPageContentInner({
 
                         <Separator className="my-5" />
 
-                        <div className="space-y-4">
-                          <div className="flex gap-4">
-                            <Switch
-                              id="sell-auto-price-drop"
-                              checked={formData.autoPriceDrop}
-                              onCheckedChange={(v) =>
-                                setFormData({ ...formData, autoPriceDrop: v === true })
-                              }
-                              className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
-                              aria-label="Drop the price in 2 weeks if not sold"
-                            />
-                            <div className="min-w-0 space-y-1">
-                              <Label
-                                htmlFor="sell-auto-price-drop"
-                                className="text-sm font-medium text-foreground cursor-pointer"
-                              >
-                                Drop the price in 2 weeks
-                              </Label>
-                              <p className="text-sm text-muted-foreground leading-relaxed">
-                                If it hasn&apos;t sold, we can lower your list price after two weeks.
-                                You choose the floor — we won&apos;t go below that price.
-                              </p>
-                            </div>
-                          </div>
-                          {formData.autoPriceDrop ? (
-                            <div className="space-y-2 sm:pl-14">
-                              <Label htmlFor="sell-auto-price-drop-floor">
-                                Lowest price after 2 weeks ($){" "}
-                                <SellRequiredMark
-                                  complete={priceDropFloorComplete(
-                                    formData.autoPriceDropFloor,
-                                    formData.price,
-                                  )}
-                                />
-                              </Label>
-                              <Input
-                                id="sell-auto-price-drop-floor"
-                                type="number"
-                                inputMode="decimal"
-                                min="0.01"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={formData.autoPriceDropFloor}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    autoPriceDropFloor: e.target.value,
-                                  })
-                                }
-                                className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
-                              />
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                Must be less than your list price. When automation ships, this is the
-                                minimum your listing will show after the scheduled drop.
-                              </p>
-                            </div>
-                          ) : null}
-                        </div>
+                        <SellAutoPriceDropFields
+                          enabled={formData.autoPriceDrop}
+                          onEnabledChange={(enabled) =>
+                            setFormData({
+                              ...formData,
+                              autoPriceDrop: enabled,
+                              ...(enabled ? {} : { autoPriceDropScheduledFor: null }),
+                            })
+                          }
+                          floor={formData.autoPriceDropFloor}
+                          onFloorChange={(floor) =>
+                            setFormData({ ...formData, autoPriceDropFloor: floor })
+                          }
+                          listingPrice={formData.price}
+                          scheduledFor={formData.autoPriceDropScheduledFor}
+                        />
 
                         <Separator className="my-5" />
 

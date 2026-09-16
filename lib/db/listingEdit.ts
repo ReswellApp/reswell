@@ -47,6 +47,8 @@ export type OwnedListingForEditRow = {
   brand?: string | null
   model?: string | null
   buyer_offers_enabled?: boolean | null
+  auto_price_drop_floor?: number | string | null
+  auto_price_drop_scheduled_for?: string | null
   seller_purchase_price_usd?: number | string | null
   wetsuit_size?: string | null
   apparel_kind?: string | null

@@ -2,6 +2,7 @@ import { after, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser, resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
+import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import {
   IMPERSONATION_COOKIE,
@@ -38,6 +39,7 @@ const OWNER_LISTING_UPDATE_FORBIDDEN = new Set([
   "status",
   "hidden_from_site",
   "site_visibility_reason",
+  "auto_price_drop_scheduled_for",
 ])
 
 function listingFieldsForOwnerUpdate(raw: Record<string, unknown>): Record<string, unknown> {
@@ -245,7 +247,9 @@ export async function PUT(
     return NextResponse.json({ error: "Sold listings cannot be edited" }, { status: 400 })
   }
 
-  const listingFields = listingFieldsForOwnerUpdate(listingData)
+  const listingFields = omitClientAutoPriceDropSchedule(
+    listingFieldsForOwnerUpdate(listingData),
+  )
   const publishingFromDraft = existingListing.status === "draft" && publishFromDraft
 
   if (publishingFromDraft) {
