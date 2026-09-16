@@ -72,6 +72,9 @@ async function creditBuyerRepair(
 
   const prevBalance = parseFloat(String(wallet.balance ?? 0))
   const newBalance = roundMoney(prevBalance + opts.amountUsd)
+  const newLifetimeEarned = roundMoney(
+    parseFloat(String(wallet.lifetime_earned ?? 0)) + opts.amountUsd,
+  )
   const desc =
     opts.note?.trim() ||
     `Purchase Protection repair credit — ${opts.orderRef} ($${opts.amountUsd.toFixed(2)})`
@@ -100,6 +103,7 @@ async function creditBuyerRepair(
     .from("wallets")
     .update({
       balance: newBalance.toFixed(2),
+      lifetime_earned: newLifetimeEarned.toFixed(2),
       updated_at: opts.nowIso,
     })
     .eq("id", wallet.id)
