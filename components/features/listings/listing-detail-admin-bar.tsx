@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { Eye, EyeOff, Layers2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { BookOpen, Eye, EyeOff, Layers2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ListingDetailAdminCatalogDialogs } from "@/components/features/listings/listing-detail-admin-catalog-dialogs"
 import { ListingDetailAdminMoreMenu } from "@/components/features/listings/listing-detail-admin-more-menu"
+import { ListingDetailAdminRelatedBlogDialog } from "@/components/features/listings/listing-detail-admin-related-blog-dialog"
 import { useListingDetailAdminBar } from "@/components/features/listings/hooks/use-listing-detail-admin-bar"
 import type { ListingAdminBarSnapshot } from "@/lib/listing-detail-admin-bar"
 import { cn } from "@/lib/utils"
@@ -30,6 +31,7 @@ export function ListingDetailAdminBar({ listing }: { listing: ListingAdminBarSna
   const [brandOpen, setBrandOpen] = React.useState(false)
   const [modelOpen, setModelOpen] = React.useState(false)
   const [linkOpen, setLinkOpen] = React.useState(false)
+  const [blogOpen, setBlogOpen] = React.useState(false)
   const busy = actions.busy !== null
 
   return (
@@ -78,6 +80,10 @@ export function ListingDetailAdminBar({ listing }: { listing: ListingAdminBarSna
             <Layers2 />
             Model
           </Button>
+          <Button type="button" size="sm" variant="ghost" className={actionClass} onClick={() => setBlogOpen(true)}>
+            <BookOpen />
+            Blog
+          </Button>
           <Button
             type="button"
             size="sm"
@@ -114,6 +120,7 @@ export function ListingDetailAdminBar({ listing }: { listing: ListingAdminBarSna
         linkOpen={linkOpen}
         onLinkOpenChange={setLinkOpen}
       />
+      <ListingDetailAdminRelatedBlogDialog listing={listing} open={blogOpen} onOpenChange={setBlogOpen} />
     </div>
   )
 }
