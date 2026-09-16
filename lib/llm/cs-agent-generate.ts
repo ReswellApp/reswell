@@ -137,6 +137,7 @@ export async function generateCsAgentDraft(args: {
   model: string
   pack: CsAgentContextPack
   lookups: CsAgentToolLookups
+  rootPrompt?: string | null
 }): Promise<CsAgentDraftOutput> {
   const allowed = allowedFromPack(args.pack)
   const { output } = await generateText({
@@ -144,7 +145,7 @@ export async function generateCsAgentDraft(args: {
     tools: createCsAgentTools(args.lookups, allowed),
     stopWhen: isStepCount(6),
     output: Output.object({ schema: csAgentLlmSchema }),
-    system: csAgentSystemPrompt(args.pack.greetingName),
+    system: csAgentSystemPrompt(args.pack.greetingName, args.rootPrompt),
     prompt: formatCsAgentContextPack(args.pack),
     temperature: 0.3,
     providerOptions: {

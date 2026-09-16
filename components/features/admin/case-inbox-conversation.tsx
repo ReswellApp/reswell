@@ -55,6 +55,8 @@ interface CaseInboxConversationProps {
   onResolve: () => void
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
+  rewritePrompt?: string
+  onRewritePromptChange?: (value: string) => void
   onInsertMacro: (text: string) => void
   onSend: (disposition: ComposerDisposition) => void
   orderContext?: AdminOrderDetail | null
@@ -91,6 +93,8 @@ export function CaseInboxConversation({
   onResolve,
   onModeChange,
   onDraftChange,
+  rewritePrompt = "",
+  onRewritePromptChange,
   onInsertMacro,
   onSend,
   orderContext = null,
@@ -225,6 +229,8 @@ export function CaseInboxConversation({
             }
             onModeChange={onModeChange}
             onDraftChange={onDraftChange}
+            rewritePrompt={rewritePrompt}
+            onRewritePromptChange={onRewritePromptChange}
             onInsertMacro={onInsertMacro}
             onSend={onSend}
             aiLoading={aiLoading}

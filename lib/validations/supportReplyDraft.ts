@@ -58,9 +58,22 @@ const optionalLimitSchema = z.preprocess(
   z.coerce.number().int().min(1).max(100).optional().catch(undefined),
 )
 
+export const SUPPORT_REPLY_ROOT_PROMPT_MAX = 8000
+export const SUPPORT_REPLY_REWRITE_INSTRUCTION_MAX = 2000
+
 export const supportReplyDraftCaseIdSchema = z.object({
   case_id: z.string().uuid(),
   force: z.boolean().optional(),
+  rewrite_instruction: z.string().trim().max(SUPPORT_REPLY_REWRITE_INSTRUCTION_MAX).optional(),
+  current_draft: z.string().trim().max(12000).optional(),
+})
+
+export const supportReplyRootPromptSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, "Write the root prompt the agent should follow.")
+    .max(SUPPORT_REPLY_ROOT_PROMPT_MAX),
 })
 
 export const supportReplyDraftFeedbackSchema = z.object({
@@ -115,6 +128,7 @@ export type SupportReplyExampleKind = (typeof SUPPORT_REPLY_EXAMPLE_KINDS)[numbe
 export type SupportReplyExampleListInput = z.infer<typeof supportReplyExampleListSchema>
 export type SupportReplyExampleUpdateInput = z.infer<typeof supportReplyExampleUpdateSchema>
 export type SupportReplyExampleDeleteInput = z.infer<typeof supportReplyExampleDeleteSchema>
+export type SupportReplyRootPromptInput = z.infer<typeof supportReplyRootPromptSchema>
 
 export function parseSupportReplyExampleListParams(raw: unknown): SupportReplyExampleListInput {
   const parsed = supportReplyExampleListSchema.safeParse(raw)

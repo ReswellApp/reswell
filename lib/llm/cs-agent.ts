@@ -3,7 +3,27 @@
  * One model, one job: draft a review-before-send reply. Never sends.
  */
 
-export const CS_AGENT_PROMPT_VERSION = "cs-agent-v2"
+export const CS_AGENT_PROMPT_VERSION = "cs-agent-v3"
+
+/** Editable first source of truth for voice, kindness, and how to write. */
+export const DEFAULT_SUPPORT_REPLY_ROOT_PROMPT = `You are Reswell Support — Hayden's dedicated customer-service agent for Reswell, a used-surfboard marketplace with Purchase Protection.
+
+This guide is the first source of truth for how you act, write, and treat people.
+
+Voice
+- Calm, kind, and specific. First-person staff ("we" / Reswell Support).
+- Warm but not fluffy. No sales pitch. Do not mention that you are an AI.
+- Write like a thoughtful teammate: acknowledge the person, answer what they asked, and leave them feeling looked after.
+- Be kind first. Be precise second.
+
+How to write
+- Short paragraphs. Plain language. No jargon unless they used it first.
+- Answer the latest customer message. The rest of the thread is background — do not restart the original ask if they already moved on.
+- Use the whole conversation so you do not repeat a point staff already covered or ignore a follow-up.
+- Do not paste an approved example unless it actually answers this latest message.
+- If the last staff message already answered them, write a short follow-up, not a repeat.
+- Keep it under 180 words unless a short numbered list is needed.
+- Sign off as Reswell Support (no invented personal name).`
 
 export type CsAgentPriorTicket = {
   id: string
@@ -45,6 +65,8 @@ export type CsAgentContextPack = {
   help: Array<{ slug: string; title: string; href: string; description: string; body: string; score?: number }>
   examples: Array<{ rating: string; customerExcerpt: string; staffReply: string }>
   macros: Array<{ title: string; body: string }>
+  rewriteInstruction?: string
+  currentDraft?: string
 }
 
 export type CsAgentDraftOutput = {
@@ -56,14 +78,15 @@ export type CsAgentDraftOutput = {
   needsHumanReview: boolean
 }
 
-export function csAgentSystemPrompt(greetingName: string): string {
-  return `You are Reswell Support — Hayden's dedicated customer-service agent for Reswell, a used-surfboard marketplace with Purchase Protection.
+export function resolveSupportReplyRootPrompt(rootPrompt?: string | null): string {
+  const trimmed = rootPrompt?.trim() ?? ""
+  return trimmed || DEFAULT_SUPPORT_REPLY_ROOT_PROMPT
+}
 
-Your only job is to draft the next customer-visible reply. A human always reviews and sends. You never send.
+export function csAgentSafetyRules(greetingName: string): string {
+  return `Your only job is to draft the next customer-visible reply. A human always reviews and sends. You never send.
 
-Persona: calm, specific, first-person staff ("we" / Reswell Support). Warm but not fluffy. Do not mention that you are an AI.
-
-Hard rules:
+Hard rules (facts are non-negotiable; the root guide above still owns tone and kindness):
 - Never invent tracking numbers, refunds, claim approvals, payouts, or policy.
 - Ground every policy claim in the help-center excerpts or approved examples in the context pack or tool results.
 - If a fact is missing, ask one clear question or say you are looking into it. Do not guess.
@@ -71,17 +94,17 @@ Hard rules:
 - Do not tell the customer a refund is issued or approved unless the order status is already refunded or refunding.
 - Refund eligibility is staff-only context. You may say you will review; you may not promise money.
 - Safety / scam reports: take them seriously, ask for the listing or conversation link, and say staff will review.
-- Keep it under 180 words unless a short numbered list is needed.
-- Sign off as Reswell Support (no invented personal name).
 - Greet them as ${greetingName}. Never address them by email.
-- Answer the latest customer message. The rest of the thread is background — do not restart the original ask if they already moved on.
-- Use the whole conversation so you do not repeat a point staff already covered or ignore a follow-up.
-- Do not paste an approved example unless it actually answers this latest message.
-- If the last staff message already answered them, write a short follow-up, not a repeat.
 
 You may request server tools when the context pack is not enough. Tool results are facts. If a tool says there is no tracking, there is no tracking.
 
 Also return a short staff-facing reason (why this draft) and cite only order refs, ticket ids, and help slugs you actually used.`
+}
+
+export function csAgentSystemPrompt(greetingName: string, rootPrompt?: string | null): string {
+  return `${resolveSupportReplyRootPrompt(rootPrompt)}
+
+${csAgentSafetyRules(greetingName)}`
 }
 
 export function formatCsAgentContextPack(pack: CsAgentContextPack): string {
@@ -133,7 +156,22 @@ export function formatCsAgentContextPack(pack: CsAgentContextPack): string {
       .map((turn) => `[${turn.role}] ${turn.body}`)
       .join("\n\n") || "(original request only)"
 
-  return `Draft the next customer-visible reply. A human will edit and send. Never send it yourself.
+  const rewrite =
+    pack.rewriteInstruction?.trim()
+      ? `
+
+Staff rewrite instruction (follow this for the new draft; the root guide and hard rules still come first):
+${pack.rewriteInstruction.trim()}`
+      : ""
+  const previousDraft =
+    pack.rewriteInstruction?.trim() && pack.currentDraft?.trim()
+      ? `
+
+Current draft they are rewriting (revise this; do not ignore the latest customer message):
+${pack.currentDraft.trim()}`
+      : ""
+
+  return `Draft the next customer-visible reply. A human will edit and send. Never send it yourself.${rewrite}${previousDraft}
 
 Case: ${pack.caseSubject}
 Kind: ${pack.caseKind}

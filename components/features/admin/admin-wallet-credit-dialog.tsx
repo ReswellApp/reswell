@@ -13,6 +13,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import {
+  ADMIN_WALLET_CREDIT_CONFIRM_ABOVE_USD,
+  ADMIN_WALLET_CREDIT_HARD_MAX_USD,
+} from '@/lib/validations/admin-user-wallet'
 
 export interface AdminWalletCreditSummary {
   balance: number
@@ -60,31 +64,26 @@ export function AdminWalletCreditDialog({
   const noteId = useId()
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState(defaultNote)
+  const [confirmingOverLimit, setConfirmingOverLimit] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const recipient = displayName?.trim() || email?.trim() || 'this user'
+  const parsedAmount = parseCreditAmount(amount)
 
   useEffect(() => {
     if (!open) return
     setAmount('')
     setNote(defaultNote)
+    setConfirmingOverLimit(false)
   }, [open, defaultNote])
 
   function close() {
     if (submitting) return
+    setConfirmingOverLimit(false)
     onOpenChange(false)
   }
 
-  async function confirmCredit() {
+  async function submitCredit(amountUsd: number, confirmedOverLimit: boolean) {
     if (!userId) return
-    const amountUsd = parseCreditAmount(amount)
-    if (amountUsd == null) {
-      toast.error('Enter an amount greater than $0')
-      return
-    }
-    if (amountUsd > 5000) {
-      toast.error('Amount cannot exceed $5,000')
-      return
-    }
 
     setSubmitting(true)
     try {
@@ -95,6 +94,7 @@ export function AdminWalletCreditDialog({
         body: JSON.stringify({
           amount_usd: amountUsd,
           note: note.trim() || undefined,
+          confirm_over_limit: confirmedOverLimit || undefined,
         }),
       })
       const body = (await res.json().catch(() => null)) as {
@@ -122,62 +122,122 @@ export function AdminWalletCreditDialog({
     }
   }
 
+  async function requestCredit() {
+    if (!userId) return
+    if (parsedAmount == null) {
+      toast.error('Enter an amount greater than $0')
+      return
+    }
+    if (parsedAmount > ADMIN_WALLET_CREDIT_HARD_MAX_USD) {
+      toast.error(`Amount cannot exceed $${ADMIN_WALLET_CREDIT_HARD_MAX_USD.toLocaleString('en-US')}`)
+      return
+    }
+    if (parsedAmount > ADMIN_WALLET_CREDIT_CONFIRM_ABOVE_USD) {
+      setConfirmingOverLimit(true)
+      return
+    }
+    await submitCredit(parsedAmount, false)
+  }
+
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add wallet credit</DialogTitle>
-          <DialogDescription>
-            Adds spendable balance for <span className="font-medium text-foreground">{recipient}</span>.
-            This shows on Earnings and can be used at checkout. Maximum $5,000.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <label htmlFor={amountId} className="text-sm font-medium">
-              Amount (USD)
-            </label>
-            <Input
-              id={amountId}
-              type="number"
-              inputMode="decimal"
-              min="0.01"
-              max="5000"
-              step="0.01"
-              placeholder="80.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor={noteId} className="text-sm font-medium">
-              Note <span className="font-normal text-muted-foreground">(optional)</span>
-            </label>
-            <Input
-              id={noteId}
-              maxLength={500}
-              placeholder="Purchase Protection repair credit"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={close} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={() => void confirmCredit()} disabled={submitting || !userId}>
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Crediting…
-              </>
-            ) : (
-              <>
-                <Plus className="mr-2 h-4 w-4" /> Add credit
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+        {confirmingOverLimit && parsedAmount != null ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Are you sure?</DialogTitle>
+              <DialogDescription>
+                You are about to credit{' '}
+                <span className="font-medium text-foreground">${parsedAmount.toFixed(2)}</span> to{' '}
+                <span className="font-medium text-foreground">{recipient}</span>. That is more than the $
+                {ADMIN_WALLET_CREDIT_CONFIRM_ABOVE_USD} limit.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmingOverLimit(false)}
+                disabled={submitting}
+              >
+                Back
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void submitCredit(parsedAmount, true)}
+                disabled={submitting || !userId}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Crediting…
+                  </>
+                ) : (
+                  'Confirm'
+                )}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>Add wallet credit</DialogTitle>
+              <DialogDescription>
+                Adds spendable balance for <span className="font-medium text-foreground">{recipient}</span>.
+                This shows on Earnings and can be used at checkout. Amounts over $
+                {ADMIN_WALLET_CREDIT_CONFIRM_ABOVE_USD} need confirmation.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label htmlFor={amountId} className="text-sm font-medium">
+                  Amount (USD)
+                </label>
+                <Input
+                  id={amountId}
+                  type="number"
+                  inputMode="decimal"
+                  min="0.01"
+                  max={ADMIN_WALLET_CREDIT_HARD_MAX_USD}
+                  step="0.01"
+                  placeholder="80.00"
+                  value={amount}
+                  onChange={(e) => {
+                    setConfirmingOverLimit(false)
+                    setAmount(e.target.value)
+                  }}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor={noteId} className="text-sm font-medium">
+                  Note <span className="font-normal text-muted-foreground">(optional)</span>
+                </label>
+                <Input
+                  id={noteId}
+                  maxLength={500}
+                  placeholder="Purchase Protection repair credit"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={close} disabled={submitting}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={() => void requestCredit()} disabled={submitting || !userId}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Crediting…
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" /> Add credit
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

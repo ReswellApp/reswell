@@ -4,6 +4,7 @@ import {
   inboxSuggestionBelongsToSelectedCase,
   parseStoredCaseComposerDraft,
   serializeStoredCaseComposerDraft,
+  shouldApplyInboxSuggestion,
   storedDraftIsReplaceableSuggestion,
 } from "./case-inbox-draft.ts"
 
@@ -19,6 +20,8 @@ describe("case inbox composer draft storage", () => {
       body: "Old suggested reply",
       mode: "reply",
       suggestionId: "draft-1",
+      dismissed: false,
+      rewritePrompt: "",
     })
     assert.equal(storedDraftIsReplaceableSuggestion(parsed), true)
   })
@@ -33,6 +36,25 @@ describe("case inbox composer draft storage", () => {
     assert.equal(storedDraftIsReplaceableSuggestion(parsed), false)
   })
 
+  it("restores a dismissed empty composer and rewrite prompt", () => {
+    const stored = serializeStoredCaseComposerDraft({
+      body: "",
+      mode: "reply",
+      suggestionId: null,
+      dismissed: true,
+      rewritePrompt: "Offer a box",
+    })
+    const parsed = parseStoredCaseComposerDraft(stored)
+    assert.deepEqual(parsed, {
+      body: "",
+      mode: "reply",
+      suggestionId: null,
+      dismissed: true,
+      rewritePrompt: "Offer a box",
+    })
+    assert.equal(storedDraftIsReplaceableSuggestion(parsed), false)
+  })
+
   it("reads the legacy session shape without a suggestion id", () => {
     const parsed = parseStoredCaseComposerDraft(
       JSON.stringify({ body: "Legacy typed draft", mode: "note" }),
@@ -41,6 +63,8 @@ describe("case inbox composer draft storage", () => {
       body: "Legacy typed draft",
       mode: "note",
       suggestionId: null,
+      dismissed: false,
+      rewritePrompt: "",
     })
     assert.equal(storedDraftIsReplaceableSuggestion(parsed), false)
   })
@@ -75,6 +99,88 @@ describe("inboxSuggestionBelongsToSelectedCase", () => {
         selectedCaseId: "case-b",
         composerCaseId: "case-b",
         suggestionCaseId: "case-b",
+      }),
+      true,
+    )
+  })
+})
+
+describe("shouldApplyInboxSuggestion", () => {
+  const next = "Thanks for writing in."
+
+  it("fills an empty composer on first load", () => {
+    assert.equal(
+      shouldApplyInboxSuggestion({
+        currentBody: "",
+        appliedBody: null,
+        nextBody: next,
+        rewriteRequested: false,
+        dismissed: false,
+      }),
+      true,
+    )
+  })
+
+  it("does not refill after Hayden deletes the suggestion", () => {
+    assert.equal(
+      shouldApplyInboxSuggestion({
+        currentBody: "",
+        appliedBody: next,
+        nextBody: next,
+        rewriteRequested: false,
+        dismissed: false,
+      }),
+      false,
+    )
+  })
+
+  it("does not refill when the empty composer was dismissed", () => {
+    assert.equal(
+      shouldApplyInboxSuggestion({
+        currentBody: "",
+        appliedBody: null,
+        nextBody: next,
+        rewriteRequested: false,
+        dismissed: true,
+      }),
+      false,
+    )
+  })
+
+  it("does not overwrite a typed reply", () => {
+    assert.equal(
+      shouldApplyInboxSuggestion({
+        currentBody: "I already started this",
+        appliedBody: next,
+        nextBody: "A newer draft",
+        rewriteRequested: false,
+        dismissed: false,
+      }),
+      false,
+    )
+  })
+
+  it("replaces a still-showing suggestion when Rewrite returns a new draft", () => {
+    assert.equal(
+      shouldApplyInboxSuggestion({
+        currentBody: next,
+        appliedBody: next,
+        nextBody: "Shorter rewrite.",
+        rewriteRequested: true,
+        dismissed: false,
+      }),
+      true,
+    )
+  })
+
+  it("applies a Rewrite into a cleared composer", () => {
+    assert.equal(
+      shouldApplyInboxSuggestion({
+        currentBody: "",
+        appliedBody: next,
+        nextBody: "Shorter rewrite.",
+        rewriteRequested: true,
+        dismissed: true,
       }),
       true,
     )

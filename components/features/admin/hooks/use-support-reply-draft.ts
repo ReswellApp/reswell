@@ -17,12 +17,21 @@ export function useSupportReplyDraft(caseId: string | null) {
   const [ratingPending, setRatingPending] = useState(false)
   const requestId = useRef(0)
 
-  const load = useCallback(async (id: string, force = false) => {
+  const load = useCallback(async (
+    id: string,
+    force = false,
+    rewrite?: { instruction?: string; currentDraft?: string },
+  ) => {
     const ticket = ++requestId.current
     setLoading(true)
     setError(null)
     const result = force
-      ? await regenerateSupportReplyDraftAction({ case_id: id })
+      ? await regenerateSupportReplyDraftAction({
+          case_id: id,
+          force: true,
+          rewrite_instruction: rewrite?.instruction,
+          current_draft: rewrite?.currentDraft,
+        })
       : await getSupportReplyDraftAction({ case_id: id })
     if (ticket !== requestId.current) return
     if ("error" in result) {
@@ -55,10 +64,13 @@ export function useSupportReplyDraft(caseId: string | null) {
 
   const scopedDraft = draft && caseId && draft.caseId === caseId ? draft : null
 
-  const regenerate = useCallback(() => {
-    if (!caseId) return
-    void load(caseId, true)
-  }, [caseId, load])
+  const regenerate = useCallback(
+    (rewrite?: { instruction?: string; currentDraft?: string }) => {
+      if (!caseId) return
+      void load(caseId, true, rewrite)
+    },
+    [caseId, load],
+  )
 
   const rate = useCallback(
     async (next: "accepted" | "rejected") => {

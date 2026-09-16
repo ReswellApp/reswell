@@ -147,6 +147,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/supportReplyExamples.ts",
       "lib/services/supportReplyKnowledge.ts",
       "lib/db/supportReplyDrafts.ts",
+      "lib/db/supportReplyRootPrompt.ts",
     ],
   },
   {

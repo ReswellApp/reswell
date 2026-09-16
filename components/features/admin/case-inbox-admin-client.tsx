@@ -60,6 +60,7 @@ import {
   inboxSuggestionBelongsToSelectedCase,
   parseStoredCaseComposerDraft,
   serializeStoredCaseComposerDraft,
+  shouldApplyInboxSuggestion,
 } from "@/lib/admin/case-inbox-draft"
 import { Button } from "@/components/ui/button"
 import {
@@ -156,7 +157,10 @@ export function CaseInboxAdminClient({
     }),
   )
   const [aiAppliedBody, setAiAppliedBody] = useState<string | null>(null)
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false)
+  const [rewritePrompt, setRewritePrompt] = useState("")
   const consumedAi = useRef<{ id: string; body: string } | null>(null)
+  const rewriteRequested = useRef(false)
 
   const onOrderContextLoaded = useCallback(
     (detail: AdminOrderDetail, extras: CaseOrderLabelContext) => {
@@ -338,6 +342,10 @@ export function CaseInboxAdminClient({
       setDraft("")
       setComposerMode("reply")
       setDraftCaseId(null)
+      setAiAppliedBody(null)
+      setSuggestionDismissed(false)
+      setRewritePrompt("")
+      rewriteRequested.current = false
       return
     }
     skipNoteBlur.current = true
@@ -351,6 +359,9 @@ export function CaseInboxAdminClient({
       setComposerMode(savedDraft?.mode ?? "reply")
       setDraftCaseId(selected.id)
       setAiAppliedBody(savedDraft?.suggestionId ? savedDraft.body : null)
+      setSuggestionDismissed(savedDraft?.dismissed === true)
+      setRewritePrompt(savedDraft?.rewritePrompt ?? "")
+      rewriteRequested.current = false
     }
     if (!selected.orderId) {
       setOrderContext(null)
@@ -386,21 +397,28 @@ export function CaseInboxAdminClient({
       return
     }
     if (consumedAi.current?.id === aiDraft.id && consumedAi.current.body === aiDraft.body) return
-    const current = draft.trim()
-    const canReplace = !current || current === (aiAppliedBody ?? "").trim()
-    if (!canReplace) return
-    if (current === aiDraft.body.trim()) {
-      if (aiAppliedBody !== aiDraft.body) setAiAppliedBody(aiDraft.body)
+    if (
+      !shouldApplyInboxSuggestion({
+        currentBody: draft,
+        appliedBody: aiAppliedBody,
+        nextBody: aiDraft.body,
+        rewriteRequested: rewriteRequested.current,
+        dismissed: suggestionDismissed,
+      })
+    ) {
       return
     }
+    rewriteRequested.current = false
+    setSuggestionDismissed(false)
     setDraft(aiDraft.body)
     setAiAppliedBody(aiDraft.body)
-  }, [aiDraft, selected, composerMode, draftCaseId, draft, aiAppliedBody])
+  }, [aiDraft, selected, composerMode, draftCaseId, draft, aiAppliedBody, suggestionDismissed])
 
   useEffect(() => {
     if (!selectedId || draftCaseId !== selectedId) return
     const key = `${CASE_DRAFT_STORAGE_PREFIX}${selectedId}`
-    if (!draft.trim()) {
+    const prompt = rewritePrompt.trim()
+    if (!draft.trim() && !suggestionDismissed && !prompt) {
       window.sessionStorage.removeItem(key)
       return
     }
@@ -421,9 +439,11 @@ export function CaseInboxAdminClient({
         body: draft,
         mode: composerMode,
         suggestionId,
+        dismissed: suggestionDismissed,
+        rewritePrompt: prompt,
       }),
     )
-  }, [selectedId, draftCaseId, draft, composerMode, aiDraft, aiAppliedBody])
+  }, [selectedId, draftCaseId, draft, composerMode, aiDraft, aiAppliedBody, suggestionDismissed, rewritePrompt])
 
   useEffect(() => {
     if (!selectedId) {
@@ -882,7 +902,14 @@ export function CaseInboxAdminClient({
                   onPriority={(priority) => persistInbox({ priority })}
                   onResolve={() => persistInbox({ status: "resolved" })}
                   onModeChange={setComposerMode}
-                  onDraftChange={setDraft}
+                  onDraftChange={(value) => {
+                    if (!value.trim() && draft.trim()) {
+                      setSuggestionDismissed(true)
+                    }
+                    setDraft(value)
+                  }}
+                  rewritePrompt={rewritePrompt}
+                  onRewritePromptChange={setRewritePrompt}
                   onInsertMacro={(text) =>
                     setDraft((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))
                   }
@@ -898,7 +925,12 @@ export function CaseInboxAdminClient({
                   aiTickets={aiDraft?.citedTickets}
                   onRegenerateAi={() => {
                     consumedAi.current = null
-                    regenerateAi()
+                    rewriteRequested.current = true
+                    setSuggestionDismissed(false)
+                    regenerateAi({
+                      instruction: rewritePrompt,
+                      currentDraft: draft,
+                    })
                   }}
                   onRateAi={rateAi}
                   aiRating={aiRating}

@@ -4,9 +4,11 @@ import {
   SUPPORT_REPLY_EXAMPLE_PAGE_SIZE,
   SUPPORT_REPLY_EXAMPLE_SEARCH_MAX,
   parseSupportReplyExampleListParams,
+  supportReplyDraftCaseIdSchema,
   supportReplyExampleDeleteSchema,
   supportReplyExampleListSchema,
   supportReplyExampleUpdateSchema,
+  supportReplyRootPromptSchema,
 } from "./supportReplyDraft.ts"
 
 describe("support reply example review schemas", () => {
@@ -89,6 +91,29 @@ describe("support reply example review schemas", () => {
       cited_help_slugs: [],
     })
     assert.equal(parsed.success, false)
+  })
+
+  it("accepts an optional rewrite instruction on regenerate", () => {
+    const parsed = supportReplyDraftCaseIdSchema.safeParse({
+      case_id: "11111111-1111-4111-8111-111111111111",
+      force: true,
+      rewrite_instruction: "  Make it shorter  ",
+      current_draft: "  Hi there  ",
+    })
+    assert.equal(parsed.success, true)
+    if (!parsed.success) return
+    assert.equal(parsed.data.rewrite_instruction, "Make it shorter")
+    assert.equal(parsed.data.current_draft, "Hi there")
+  })
+
+  it("requires a non-empty root prompt", () => {
+    assert.equal(supportReplyRootPromptSchema.safeParse({ body: "   " }).success, false)
+    const parsed = supportReplyRootPromptSchema.safeParse({
+      body: "  Be kind and specific.  ",
+    })
+    assert.equal(parsed.success, true)
+    if (!parsed.success) return
+    assert.equal(parsed.data.body, "Be kind and specific.")
   })
 
   it("requires a uuid to delete", () => {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   CS_AGENT_PROMPT_VERSION,
+  DEFAULT_SUPPORT_REPLY_ROOT_PROMPT,
   csAgentSystemPrompt,
   defaultCsAgentReason,
   filterCsAgentCitations,
@@ -10,7 +11,7 @@ import {
 
 describe("cs agent harness", () => {
   it("pins a dedicated prompt version for draft fingerprints", () => {
-    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v2")
+    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v3")
   })
 
   it("forbids invented facts and auto-send in the system prompt", () => {
@@ -22,6 +23,13 @@ describe("cs agent harness", () => {
     assert.match(prompt, /latest customer message/i)
     assert.match(prompt, /whole conversation/i)
     assert.doesNotMatch(prompt, /fine-tune/i)
+  })
+
+  it("puts the editable root prompt first as the source of truth for voice", () => {
+    const prompt = csAgentSystemPrompt("Hayden", "Be kind. Offer a box when it helps.")
+    assert.ok(prompt.startsWith("Be kind. Offer a box when it helps."))
+    assert.match(prompt, /never invent/i)
+    assert.match(DEFAULT_SUPPORT_REPLY_ROOT_PROMPT, /kind first/i)
   })
 
   it("formats a context pack with thread, order, tickets, and help", () => {
@@ -80,6 +88,29 @@ describe("cs agent harness", () => {
     assert.match(pack, /\[customer\] Where is my board/)
     assert.match(pack, /\[staff\] Looking into tracking now/)
     assert.doesNotMatch(pack, /auto-send|already sent this reply/i)
+  })
+
+  it("includes a staff rewrite instruction and the draft they are revising", () => {
+    const pack = formatCsAgentContextPack({
+      greetingName: "Sam",
+      caseSubject: "Where is my board?",
+      caseKind: "order_question",
+      caseStatus: "submitted",
+      requesterRole: "buyer",
+      lastCustomerMessage: "Any update?",
+      thread: [{ role: "customer", body: "Any update?" }],
+      order: null,
+      priorTickets: [],
+      help: [],
+      examples: [],
+      macros: [],
+      rewriteInstruction: "Shorter, and offer a box.",
+      currentDraft: "Hi Sam, we are looking into tracking now.",
+    })
+    assert.match(pack, /Staff rewrite instruction/)
+    assert.match(pack, /Shorter, and offer a box/)
+    assert.match(pack, /Current draft they are rewriting/)
+    assert.match(pack, /looking into tracking now/)
   })
 
   it("drops citations the model invented", () => {

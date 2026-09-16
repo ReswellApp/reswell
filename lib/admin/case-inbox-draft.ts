@@ -4,6 +4,8 @@ export type StoredCaseComposerDraft = {
   body: string
   mode: CaseComposerMode
   suggestionId: string | null
+  dismissed?: boolean
+  rewritePrompt?: string
 }
 
 export function parseStoredCaseComposerDraft(raw: string | null): StoredCaseComposerDraft | null {
@@ -19,7 +21,10 @@ export function parseStoredCaseComposerDraft(raw: string | null): StoredCaseComp
       "suggestionId" in value && typeof value.suggestionId === "string" && value.suggestionId
         ? value.suggestionId
         : null
-    return { body: value.body, mode, suggestionId }
+    const dismissed = "dismissed" in value && value.dismissed === true
+    const rewritePrompt =
+      "rewritePrompt" in value && typeof value.rewritePrompt === "string" ? value.rewritePrompt : ""
+    return { body: value.body, mode, suggestionId, dismissed, rewritePrompt }
   } catch {
     return null
   }
@@ -30,11 +35,33 @@ export function serializeStoredCaseComposerDraft(draft: StoredCaseComposerDraft)
     body: draft.body,
     mode: draft.mode,
     suggestionId: draft.suggestionId,
+    dismissed: draft.dismissed === true,
+    rewritePrompt: draft.rewritePrompt ?? "",
   })
 }
 
 export function storedDraftIsReplaceableSuggestion(draft: StoredCaseComposerDraft | null): boolean {
   return Boolean(draft?.suggestionId && draft.body.trim())
+}
+
+/** Empty composer after Hayden cleared a suggestion is freeform — do not refill it. */
+export function shouldApplyInboxSuggestion(args: {
+  currentBody: string
+  appliedBody: string | null
+  nextBody: string
+  rewriteRequested: boolean
+  dismissed: boolean
+}): boolean {
+  const next = args.nextBody.trim()
+  if (!next) return false
+  if (args.rewriteRequested) return true
+  if (args.dismissed) return false
+  const current = args.currentBody.trim()
+  const applied = (args.appliedBody ?? "").trim()
+  if (current === next) return false
+  if (current && current !== applied) return false
+  if (!current && applied) return false
+  return true
 }
 
 /** Apply a suggestion only when it belongs to the case currently in the composer. */

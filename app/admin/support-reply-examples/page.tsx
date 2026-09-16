@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
-import { listAdminSupportReplyExamplesService } from "@/lib/services/supportReplyExamples"
+import {
+  getAdminSupportReplyRootPromptService,
+  listAdminSupportReplyExamplesService,
+} from "@/lib/services/supportReplyExamples"
+import { DEFAULT_SUPPORT_REPLY_ROOT_PROMPT } from "@/lib/llm/cs-agent"
 import { SupportReplyExamplesAdminClient } from "@/components/features/admin/support-reply-examples/support-reply-examples-admin-client"
 import {
   SUPPORT_REPLY_EXAMPLES_PATH,
@@ -42,7 +46,10 @@ export default async function AdminSupportReplyExamplesPage({
 }: AdminSupportReplyExamplesPageProps) {
   const raw = await searchParams
   const filters = parseSupportReplyExampleListParams(raw)
-  const loaded = await listAdminSupportReplyExamplesService(filters)
+  const [loaded, rootPrompt] = await Promise.all([
+    listAdminSupportReplyExamplesService(filters),
+    getAdminSupportReplyRootPromptService(),
+  ])
   if ("data" in loaded && loaded.data.page !== (filters.page ?? 1)) {
     redirect(
       supportReplyExamplesHref({
@@ -59,12 +66,17 @@ export default async function AdminSupportReplyExamplesPage({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Reply examples</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Sent and rated replies that later drafts retrieve as few-shot memory. Edit tone, mark a
-          row rejected so it is ignored, or delete it.
+          The root prompt is how the agent should act and write. Sent and rated replies below are
+          few-shot memory after that guide.
         </p>
       </div>
       <SupportReplyExamplesAdminClient
         result={"data" in loaded ? loaded.data : EMPTY}
+        rootPrompt={
+          "data" in rootPrompt
+            ? rootPrompt.data
+            : { body: DEFAULT_SUPPORT_REPLY_ROOT_PROMPT, updatedAt: null }
+        }
         filters={{ rating: filters.rating, kind: filters.kind, q: filters.q }}
         error={"error" in loaded ? loaded.error : undefined}
       />

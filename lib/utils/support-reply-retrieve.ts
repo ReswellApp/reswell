@@ -222,9 +222,11 @@ export function supportReplyDraftFingerprint(input: {
   status: string
   lastCustomerMessage: string
   lastMessageAt: string | null
+  rootPrompt?: string
 }): string {
   const payload = [
     input.promptVersion,
+    input.rootPrompt?.trim() ?? "",
     input.caseId,
     input.subject.trim(),
     input.status,

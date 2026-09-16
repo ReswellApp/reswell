@@ -118,6 +118,10 @@ describe("support reply retrieval", () => {
     })
     assert.notEqual(first, second)
     assert.equal(first, supportReplyDraftFingerprint(base))
+    assert.notEqual(
+      first,
+      supportReplyDraftFingerprint({ ...base, rootPrompt: "Be kinder." }),
+    )
   })
 
   it("uses real customer messages and ignores staff preview text", () => {

@@ -11,7 +11,9 @@ import { SUPPORT_CASE_KIND_LABEL } from "@/lib/utils/support-case-display"
 import type {
   SupportReplyExampleAdminView,
   SupportReplyExampleListResult,
+  SupportReplyRootPromptView,
 } from "@/lib/types/supportReplyDraft"
+import { SupportReplyRootPromptEditor } from "./support-reply-root-prompt-editor"
 import {
   clampSupportReplyExamplesPage,
   supportReplyExamplesHref,
@@ -33,6 +35,7 @@ const SELECT_CLASS = "h-10 rounded-md border border-input bg-background px-3 tex
 
 interface SupportReplyExamplesAdminClientProps {
   result: SupportReplyExampleListResult
+  rootPrompt: SupportReplyRootPromptView
   filters: {
     rating?: SupportReplyDraftRating
     kind?: SupportReplyExampleKind
@@ -43,6 +46,7 @@ interface SupportReplyExamplesAdminClientProps {
 
 export function SupportReplyExamplesAdminClient({
   result,
+  rootPrompt,
   filters,
   error,
 }: SupportReplyExamplesAdminClientProps) {
@@ -97,6 +101,7 @@ export function SupportReplyExamplesAdminClient({
 
   return (
     <div className="space-y-4">
+      <SupportReplyRootPromptEditor initial={rootPrompt} />
       <p className="text-sm text-muted-foreground">
         Rejected rows are ignored when drafts retrieve similar replies.{" "}
         <Link href="/admin/contact-messages" className="font-medium underline-offset-4 hover:underline">

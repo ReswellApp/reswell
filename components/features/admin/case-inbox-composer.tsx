@@ -33,6 +33,8 @@ interface CaseInboxComposerProps {
   replyPlaceholder?: string
   onModeChange: (mode: ComposerMode) => void
   onDraftChange: (value: string) => void
+  rewritePrompt?: string
+  onRewritePromptChange?: (value: string) => void
   onInsertMacro: (text: string) => void
   onSend: (disposition: ComposerDisposition) => void
   aiLoading?: boolean
@@ -62,6 +64,8 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
       replyPlaceholder = "Write a reply they will see…",
       onModeChange,
       onDraftChange,
+      rewritePrompt = "",
+      onRewritePromptChange,
       onInsertMacro,
       onSend,
       aiLoading = false,
@@ -121,7 +125,7 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
             {mode === "note" ? "Staff only · not emailed" : "⌘↵ to send"}
           </span>
         </div>
-        {mode === "reply" && !closed && (aiLoading || aiActive || aiError) ? (
+        {mode === "reply" && !closed ? (
           <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
             <Sparkles className="h-3 w-3" aria-hidden />
             <span>
@@ -129,14 +133,16 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
                 ? "Reswell agent is writing…"
                 : aiError
                   ? aiError
-                  : "Reswell agent draft — edit before you send"}
+                  : aiActive
+                    ? "Reswell agent draft — edit or delete to write freeform"
+                    : "Write freeform, or prompt the agent and rewrite"}
             </span>
             {onRegenerateAi ? (
               <button
                 type="button"
                 onClick={onRegenerateAi}
                 disabled={aiLoading || pending}
-                className="ml-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground disabled:opacity-50"
+                className="ml-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted disabled:opacity-50"
               >
                 <RefreshCw className={cn("h-3 w-3", aiLoading && "animate-spin")} />
                 Rewrite
@@ -172,10 +178,10 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
                 </button>
               </>
             ) : null}
-            {aiReason ? (
+            {aiActive && aiReason ? (
               <span className="w-full pl-4 text-[10px] text-muted-foreground">{aiReason}</span>
             ) : null}
-            {aiHelp[0] || aiOrders[0] || aiTickets[0] ? (
+            {aiActive && (aiHelp[0] || aiOrders[0] || aiTickets[0]) ? (
               <span className="w-full truncate pl-4 text-[10px]">
                 {[
                   ...aiOrders.map((order) => `Order ${order.orderRef}`),
@@ -186,30 +192,48 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
             ) : null}
           </div>
         ) : null}
+        {mode === "reply" && !closed && onRewritePromptChange ? (
+          <label className="mb-2 block">
+            <span className="mb-1 block text-[11px] font-medium text-muted-foreground">Prompt</span>
+            <Textarea
+              value={rewritePrompt}
+              onChange={(e) => onRewritePromptChange(e.target.value)}
+              rows={2}
+              maxLength={2000}
+              placeholder="Tell the agent how to write this reply — tone, what to offer, what to skip…"
+              className="min-h-[56px] resize-none bg-muted/40 text-sm"
+            />
+          </label>
+        ) : null}
         {closed && mode === "reply" ? (
           <p className="rounded-md bg-muted/50 px-3 py-2 text-[13px] text-muted-foreground">
             This conversation is closed. Switch to Note for a staff-only comment.
           </p>
         ) : (
-          <Textarea
-            ref={textareaRef}
-            value={draft}
-            onChange={(e) => onDraftChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && draft.trim()) {
-                e.preventDefault()
-                onSend("keep_open")
+          <label className="block">
+            {mode === "reply" ? (
+              <span className="mb-1 block text-[11px] font-medium text-muted-foreground">Reply</span>
+            ) : null}
+            <Textarea
+              ref={textareaRef}
+              value={draft}
+              onChange={(e) => onDraftChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && draft.trim()) {
+                  e.preventDefault()
+                  onSend("keep_open")
+                }
+              }}
+              rows={2}
+              maxLength={12000}
+              placeholder={
+                mode === "note"
+                  ? "Add a private note for the team…"
+                  : replyPlaceholder
               }
-            }}
-            rows={2}
-            maxLength={12000}
-            placeholder={
-              mode === "note"
-                ? "Add a private note for the team…"
-                : replyPlaceholder
-            }
-            className="resize-none bg-background text-sm"
-          />
+              className="resize-none bg-background text-sm"
+            />
+          </label>
         )}
         {closed && mode === "reply" ? null : (
           <div className="mt-2 flex flex-wrap items-center gap-2">

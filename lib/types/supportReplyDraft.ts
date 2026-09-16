@@ -100,3 +100,8 @@ export type SupportReplyExampleListResult = {
   limit: number
   counts: SupportReplyExampleRatingCounts
 }
+
+export type SupportReplyRootPromptView = {
+  body: string
+  updatedAt: string | null
+}

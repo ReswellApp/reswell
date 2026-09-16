@@ -26,6 +26,7 @@ import {
 } from "@/lib/llm/app-models"
 import { defaultCsAgentReason } from "@/lib/llm/cs-agent"
 import { generateCsAgentDraft } from "@/lib/llm/cs-agent-generate"
+import { getSupportReplyRootPromptBody } from "@/lib/db/supportReplyRootPrompt"
 import { createCsAgentLookups, listPriorTicketsForCsAgent } from "@/lib/services/csAgentLookups"
 import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
 import {
@@ -240,6 +241,9 @@ async function generateDraftBody(args: {
   knowledge: SupportReplyKnowledge
   order: SupportReplyOrderSnapshot | null
   greetingName: string
+  rootPrompt: string
+  rewriteInstruction?: string
+  currentDraft?: string
 }): Promise<{
   body: string
   origin: SupportReplyDraftOrigin
@@ -281,6 +285,7 @@ async function generateDraftBody(args: {
   })
   const generated = await generateCsAgentDraft({
     model: supportReplyDraftModelId(),
+    rootPrompt: args.rootPrompt,
     pack: {
       greetingName: args.greetingName,
       caseSubject: args.row.subject,
@@ -294,6 +299,8 @@ async function generateDraftBody(args: {
       help: args.knowledge.helpArticles,
       examples: args.knowledge.examples,
       macros: args.knowledge.macros,
+      rewriteInstruction: args.rewriteInstruction,
+      currentDraft: args.currentDraft,
     },
     lookups: lookupSession.lookups,
   })
@@ -334,21 +341,27 @@ export async function getOrCreateSupportReplyDraftService(
   const staff = await requireStaffService()
   if (!staff.ok) return { error: staff.error }
 
-  return generateAndStoreDraft(staff.service, parsed.data.case_id, parsed.data.force === true)
+  return generateAndStoreDraft(staff.service, parsed.data.case_id, parsed.data.force === true, {
+    rewriteInstruction: parsed.data.rewrite_instruction,
+    currentDraft: parsed.data.current_draft,
+  })
 }
 
 export async function generateAndStoreDraft(
   service: SupabaseClient,
   caseId: string,
   force = false,
+  rewrite?: { rewriteInstruction?: string; currentDraft?: string },
 ): Promise<{ data: SupportReplyDraftView } | { error: string }> {
   const loaded = await loadCaseContext(service, caseId)
   if ("error" in loaded) return loaded
 
   const { row, messages } = loaded
   const lastCustomer = lastCustomerText(row, messages)
+  const rootPrompt = await getSupportReplyRootPromptBody(service)
   const fingerprint = supportReplyDraftFingerprint({
     promptVersion: SUPPORT_REPLY_PROMPT_VERSION,
+    rootPrompt,
     caseId: row.id,
     subject: row.subject,
     status: row.status,
@@ -394,6 +407,9 @@ export async function generateAndStoreDraft(
       knowledge,
       order,
       greetingName,
+      rootPrompt,
+      rewriteInstruction: force ? rewrite?.rewriteInstruction : undefined,
+      currentDraft: force ? rewrite?.currentDraft : undefined,
     })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)

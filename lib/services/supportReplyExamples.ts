@@ -7,6 +7,11 @@ import {
   listSupportReplyExamplesPage,
   updateSupportReplyExample,
 } from "@/lib/db/supportReplyDrafts"
+import {
+  getSupportReplyRootPrompt,
+  upsertSupportReplyRootPrompt,
+} from "@/lib/db/supportReplyRootPrompt"
+import { DEFAULT_SUPPORT_REPLY_ROOT_PROMPT } from "@/lib/llm/cs-agent"
 import { citedHelpFromSlugs } from "@/lib/services/supportReplyKnowledge"
 import { clampSupportReplyExamplesPage } from "@/lib/utils/support-reply-examples"
 import type {
@@ -14,6 +19,7 @@ import type {
   SupportReplyExampleListResult,
   SupportReplyExampleRatingCounts,
   SupportReplyExampleRow,
+  SupportReplyRootPromptView,
 } from "@/lib/types/supportReplyDraft"
 import {
   SUPPORT_REPLY_DRAFT_RATINGS,
@@ -21,6 +27,7 @@ import {
   parseSupportReplyExampleListParams,
   supportReplyExampleDeleteSchema,
   supportReplyExampleUpdateSchema,
+  supportReplyRootPromptSchema,
 } from "@/lib/validations/supportReplyDraft"
 
 type ServiceError = { error: string }
@@ -193,4 +200,48 @@ export async function deleteAdminSupportReplyExampleService(
   if (!existing) return { error: "Example not found." }
 
   return deleteSupportReplyExample(staff.supabase, parsed.data.id)
+}
+
+export async function getAdminSupportReplyRootPromptService(): Promise<
+  { data: SupportReplyRootPromptView } | ServiceError
+> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+
+  const row = await getSupportReplyRootPrompt(staff.supabase)
+  return {
+    data: {
+      body: row?.body.trim() || DEFAULT_SUPPORT_REPLY_ROOT_PROMPT,
+      updatedAt: row?.updated_at || null,
+    },
+  }
+}
+
+export async function updateAdminSupportReplyRootPromptService(
+  raw: unknown,
+): Promise<{ success: true; data: SupportReplyRootPromptView } | ServiceError> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+
+  const parsed = supportReplyRootPromptSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+
+  const {
+    data: { user },
+  } = await staff.supabase.auth.getUser()
+
+  const saved = await upsertSupportReplyRootPrompt(
+    staff.supabase,
+    parsed.data.body,
+    user?.id ?? null,
+  )
+  if ("error" in saved) return saved
+
+  return {
+    success: true,
+    data: {
+      body: saved.body,
+      updatedAt: saved.updated_at,
+    },
+  }
 }

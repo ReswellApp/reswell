@@ -1,7 +1,10 @@
 import { summarizeStoredWalletBalanceRow } from "@/lib/getSellerBalance"
 import { getOrCreateWalletForUser } from "@/lib/db/wallets"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { adminWalletCreditSchema } from "@/lib/validations/admin-user-wallet"
+import {
+  ADMIN_WALLET_CREDIT_HARD_MAX_USD,
+  adminWalletCreditSchema,
+} from "@/lib/validations/admin-user-wallet"
 
 const ADMIN_WALLET_CREDIT_REFERENCE_TYPE = "wallet_refund"
 
@@ -138,7 +141,14 @@ export async function creditAdminUserWalletService(
 > {
   const parsed = adminWalletCreditSchema.safeParse(raw)
   if (!parsed.success) {
-    return { ok: false, message: "Enter a valid amount up to $5,000", status: 400 }
+    const needsConfirm = parsed.error.issues.some((issue) => issue.path.includes("confirm_over_limit"))
+    return {
+      ok: false,
+      message: needsConfirm
+        ? "Confirm amounts over $250"
+        : `Enter a valid amount up to $${ADMIN_WALLET_CREDIT_HARD_MAX_USD.toLocaleString("en-US")}`,
+      status: 400,
+    }
   }
 
   const supabase = getServiceOrThrow()
