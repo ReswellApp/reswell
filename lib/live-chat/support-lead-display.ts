@@ -9,8 +9,8 @@ export const LIVE_CHAT_SUPPORT_LEAD_FALLBACK: LiveChatSupportTeamMember = {
 }
 
 export const LIVE_CHAT_SUPPORT_WAITING_COPY = {
-  waiting: "We'll reply here, usually within one business day",
-  online: "We'll reply here as soon as we can",
+  waiting: "Reswell Team replies here",
+  online: "Reswell Team replies here",
 } as const
 
 export const LIVE_CHAT_SUPPORT_AVATAR_ALT = "Reswell customer support"

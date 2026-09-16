@@ -6,6 +6,7 @@ import { formatDistanceToNowStrict } from "date-fns"
 import { RelativeTime } from "@/components/ui/relative-time"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { ListingTile, ListingTileSoldStamp } from "@/components/listing-tile"
+import type { ListingImageForCard } from "@/lib/listing-image-display"
 import {
   homePeerListingGridCardClass,
   homeUniformScrollBodyClass,
@@ -40,7 +41,7 @@ export type SoldFeedListing = {
   board_type?: string | null
   board_length?: string | null
   sold_at: string
-  listing_images?: { url: string; is_primary?: boolean }[] | null
+  listing_images?: ListingImageForCard[] | null
   profiles?: {
     display_name?: string | null
     avatar_url?: string | null

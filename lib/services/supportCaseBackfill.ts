@@ -157,7 +157,7 @@ export async function backfillUserLegacyCases(
         ),
       ),
     ...tickets
-      .filter((row) => !haveContact.has(row.id))
+      .filter((row) => !haveContact.has(row.id) && row.source !== "live_chat")
       .map((row) =>
         ensureCaseForContactMessage(supabase, {
           id: row.id,

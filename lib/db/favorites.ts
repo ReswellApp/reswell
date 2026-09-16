@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { isListingVisibleInSavedList } from "@/lib/listing-public-visibility"
+import {
+  coalesceListingImagesForCard,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 
 /** Listing fields needed for the cart page favorites carousel (surfboard tiles). */
 export type CartCarouselFavoriteListing = {
@@ -18,7 +22,7 @@ export type CartCarouselFavoriteListing = {
   board_type: string | null
   local_pickup: boolean | null
   shipping_available: boolean | null
-  listing_images: { url: string; thumbnail_url?: string | null; is_primary?: boolean | null }[] | null
+  listing_images: ListingImageForCard[] | null
   categories: { name?: string | null } | null
   profiles: { display_name?: string | null; shop_verified?: boolean | null } | null
 }
@@ -55,7 +59,9 @@ export async function getFavoriteListingsForCartCarousel(
         shipping_available,
         hidden_from_site,
         archived_at,
-        listing_images ( url, thumbnail_url, is_primary ),
+        primary_image_url,
+        primary_thumbnail_url,
+        tile_gallery_images,
         categories ( name ),
         profiles!listings_user_id_fkey ( display_name, shop_verified )
       )
@@ -73,7 +79,7 @@ export async function getFavoriteListingsForCartCarousel(
   const listings: CartCarouselFavoriteListing[] = []
 
   for (const row of data ?? []) {
-    const raw = row as {
+    const raw = row as unknown as {
       listing:
         | (CartCarouselFavoriteListing & {
             hidden_from_site?: boolean | null
@@ -122,7 +128,7 @@ export async function getFavoriteListingsForCartCarousel(
       board_type: L.board_type,
       local_pickup: L.local_pickup,
       shipping_available: L.shipping_available,
-      listing_images: L.listing_images,
+      listing_images: coalesceListingImagesForCard(L),
       categories,
       profiles,
     })
@@ -153,7 +159,7 @@ export type SavedFavoriteListing = {
   dimensions?: string | null
   shipping_available?: boolean | null
   local_pickup?: boolean | null
-  listing_images: { url: string; is_primary: boolean }[]
+  listing_images: ListingImageForCard[]
   profiles?: { display_name?: string | null; shop_verified?: boolean } | null
   categories?: { name?: string | null } | null
 }
@@ -197,7 +203,9 @@ export async function getSavedFavoritesForUser(
         dimensions,
         shipping_available,
         local_pickup,
-        listing_images ( url, is_primary ),
+        primary_image_url,
+        primary_thumbnail_url,
+        tile_gallery_images,
         profiles!listings_user_id_fkey ( display_name, shop_verified ),
         categories ( name )
       )
@@ -213,12 +221,12 @@ export async function getSavedFavoritesForUser(
   const favorites: SavedFavoriteRow[] = []
 
   for (const row of data ?? []) {
-    const raw = row as {
+    const raw = row as unknown as {
       id: string
       created_at: string
       listing:
         | (SavedFavoriteListing & {
-            listing_images?: { url: string; is_primary: boolean }[] | null
+            listing_images?: ListingImageForCard[] | null
             profiles?:
               | { display_name?: string | null; shop_verified?: boolean }
               | { display_name?: string | null; shop_verified?: boolean }[]
@@ -229,7 +237,7 @@ export async function getSavedFavoritesForUser(
               | null
           })
         | (SavedFavoriteListing & {
-            listing_images?: { url: string; is_primary: boolean }[] | null
+            listing_images?: ListingImageForCard[] | null
             profiles?:
               | { display_name?: string | null; shop_verified?: boolean }
               | { display_name?: string | null; shop_verified?: boolean }[]
@@ -258,7 +266,7 @@ export async function getSavedFavoritesForUser(
       listing: {
         ...listing,
         price: typeof listing.price === "number" ? listing.price : Number(listing.price),
-        listing_images: listing.listing_images ?? [],
+        listing_images: coalesceListingImagesForCard(listing) ?? [],
         categories,
         profiles,
       },

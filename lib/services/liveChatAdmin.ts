@@ -1,4 +1,5 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { liveChatAgentDisplayName } from "@/lib/live-chat/team-display"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
 import { broadcastLiveChatMessage, broadcastLiveChatSessionStatus } from "@/lib/services/liveChatRealtime"
 import { formatPersonName } from "@/lib/utils/person-name"
@@ -139,12 +140,11 @@ export async function loadLiveChatAdminThreadService(sessionId: string): Promise
 
   const enrichedMessages: LiveChatAdminMessage[] = messages.map((m) => ({
     ...m,
-    agent_display_name:
-      m.sender_type === "bot"
-        ? "Reswell AI"
-        : m.sender_type === "agent" && m.sender_agent_id
-          ? (agentNames.get(m.sender_agent_id) ?? "Support")
-          : null,
+    agent_display_name: liveChatAgentDisplayName({
+      senderType: m.sender_type,
+      senderAgentId: m.sender_agent_id,
+      lookedUpName: m.sender_agent_id ? agentNames.get(m.sender_agent_id) : null,
+    }),
   }))
 
   const lastContent = messages.length > 0 ? messages[messages.length - 1]?.content : null

@@ -4,6 +4,7 @@ import type { CityLandingListing } from "@/lib/types/city-landing"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
+import { coalesceListingImagesForCard } from "@/lib/listing-image-display"
 
 const CITY_LANDING_LISTING_SELECT = `
   id,
@@ -33,7 +34,9 @@ const CITY_LANDING_LISTING_SELECT = `
   updated_at,
   hidden_from_site,
   archived_at,
-  listing_images (url, is_primary),
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
@@ -65,6 +68,9 @@ type CityLandingListingRow = {
   volume_liters?: number | null
   dimensions?: string | null
   updated_at?: string | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
+  tile_gallery_images?: unknown
   listing_images?: RecentListing["listing_images"]
   profiles?: RecentListing["profiles"]
   categories?: RecentListing["categories"]
@@ -98,7 +104,7 @@ function mapRowToRecentListing(row: CityLandingListingRow): CityLandingListing {
     dimensions: row.dimensions ?? null,
     board_length: boardLength,
     updated_at: row.updated_at ?? null,
-    listing_images: row.listing_images,
+    listing_images: coalesceListingImagesForCard(row),
     profiles: row.profiles,
     categories: row.categories,
   }

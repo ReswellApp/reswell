@@ -2,9 +2,9 @@ import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 /**
  * Shared homepage / PDP peer listing payloads.
- * Cover image uses denormalized `primary_*` columns — no `listing_images` join.
- * Call {@link hydrateHomePeerListingRows} after fetch so card UIs still receive
- * a synthetic `listing_images` array.
+ * Cover + tile carousel use denormalized `primary_*` / `tile_gallery_images` —
+ * no `listing_images` join. Call {@link hydrateHomePeerListingRows} after fetch
+ * so card UIs still receive a synthetic `listing_images` array.
  */
 export const HOME_PEER_LISTING_WITH_PROFILE_SELECT = `
   *,

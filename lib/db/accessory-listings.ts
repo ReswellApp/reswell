@@ -11,6 +11,7 @@ import { ACCESSORIES_SECTION } from "@/lib/accessory-listing-config"
 import type { AccessoriesBrowseFacetSelections } from "@/lib/accessories-browse-facets"
 import { normalizedAccessoriesBrowseSort } from "@/lib/accessories-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const ACCESSORIES_BROWSE_PAGE_SIZE = 40
 
@@ -57,7 +58,9 @@ const ACCESSORY_BROWSE_LISTING_SELECT = `
   brand,
   brand_id,
   model,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 export type AccessoriesBrowseQueryInput = {
@@ -130,7 +133,7 @@ export async function fetchAccessoriesBrowsePage(
   }
 
   return {
-    accessories: (data ?? []) as unknown as AccessoryBrowseListingRow[],
+    accessories: hydrateCardListingImages((data ?? []) as unknown as AccessoryBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

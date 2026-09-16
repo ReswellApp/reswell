@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const body: unknown = await req.json()
     const result = await createOrResumeLiveChatSessionService(body)
     if ("error" in result) {
-      return NextResponse.json({ error: result.error }, { status: 400 })
+      return NextResponse.json({ error: result.error }, { status: result.status ?? 400 })
     }
     return NextResponse.json({ data: result }, { status: 200 })
   } catch (error) {

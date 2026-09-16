@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { RESWELL_SHOP_SECTION } from "@/lib/reswell-shop"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  coalesceListingImagesForCard,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 
 export type ReswellShopBrowseListing = {
   id: string
@@ -28,7 +31,9 @@ export async function fetchReswellShopBrowseListings(
       price,
       compare_at_price,
       stock_quantity,
-      listing_images ( url, thumbnail_url, is_primary )
+      primary_image_url,
+      primary_thumbnail_url,
+      tile_gallery_images
     `,
     )
     .eq("section", RESWELL_SHOP_SECTION)
@@ -52,6 +57,6 @@ export async function fetchReswellShopBrowseListings(
     compare_at_price:
       row.compare_at_price == null ? null : Number(row.compare_at_price),
     stock_quantity: Math.max(0, Math.floor(Number(row.stock_quantity) || 0)),
-    listing_images: (row.listing_images as ListingImageForCard[] | null) ?? null,
+    listing_images: coalesceListingImagesForCard(row),
   }))
 }

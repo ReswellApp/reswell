@@ -25,6 +25,7 @@ import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
+import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
 
 /** Admin impersonation saves include photos + shipping columns; give the write time to finish. */
 export const maxDuration = 60
@@ -155,7 +156,18 @@ async function putImpersonatedListing(request: NextRequest) {
   > & {
     slug?: unknown
   }
-  const listingFields = omitClientAutoPriceDropSchedule(listingFieldsRaw)
+  const listingFields = await overlayListingRowWithDropoffParcel(
+    service,
+    {
+      dropoffLocationId:
+        typeof listingFieldsRaw.dropoff_location_id === "string"
+          ? listingFieldsRaw.dropoff_location_id
+          : null,
+      boardLength: catalog_snapshot?.boardLength,
+      boardWidthInches: catalog_snapshot?.boardWidthInches,
+    },
+    omitClientAutoPriceDropSchedule(listingFieldsRaw),
+  )
 
   const publishingFromDraft =
     existingListing.status === "draft" && publishFromDraft === true

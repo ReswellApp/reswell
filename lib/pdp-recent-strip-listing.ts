@@ -1,4 +1,7 @@
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  coalesceListingImagesForCard,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 
 /** Serializable surfboard row for PDP “recent” horizontal strips (client + API). */
 export type PdpRecentStripListing = {
@@ -44,7 +47,7 @@ export function pdpRecentStripListingFromRow(row: Record<string, unknown>): PdpR
     local_pickup:
       row.local_pickup === null || row.local_pickup === undefined ? null : row.local_pickup !== false,
     section: typeof row.section === "string" ? row.section : "surfboards",
-    listing_images: (row.listing_images as ListingImageForCard[] | null) ?? null,
+    listing_images: coalesceListingImagesForCard(row),
     categories: (cat as PdpRecentStripListing["categories"]) ?? null,
   }
 }

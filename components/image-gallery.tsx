@@ -426,12 +426,12 @@ export function ImageGallery({
           </div>
         ) : null}
 
-        {slideCount > 1 && !compactMobile && (
+        {slideCount > 1 && (
           <>
             <ListingImageCarouselNavButton
               direction="prev"
               variant="embed"
-              sideClassName="left-3"
+              sideClassName={cn("left-3", compactMobile && "max-md:hidden")}
               srLabel="Previous slide"
               onClick={(e) => {
                 e.stopPropagation()
@@ -441,7 +441,7 @@ export function ImageGallery({
             <ListingImageCarouselNavButton
               direction="next"
               variant="embed"
-              sideClassName="right-3"
+              sideClassName={cn("right-3", compactMobile && "max-md:hidden")}
               srLabel="Next slide"
               onClick={(e) => {
                 e.stopPropagation()

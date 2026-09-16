@@ -1,8 +1,24 @@
 import { getHelpArticleHref } from "@/lib/help-center/registry"
 import { helpCenterTopArticlesByTab } from "@/lib/help-center/top-articles"
 import type { HelpCenterTabId } from "@/lib/help-center/types"
+import { LIVE_CHAT_TEAM_NAME } from "@/lib/live-chat/team-display"
 
+export { LIVE_CHAT_TEAM_NAME }
 export const RESEWELL_BOT_NAME = "Reswell Bot"
+export const LIVE_CHAT_TEAM_GREETING =
+  "We hope you have been scoring waves — how can we help you?"
+
+/** Sent with CS-agent generation so the live-chat reply is customer-ready, not a staff draft. */
+export const LIVE_CHAT_CS_AGENT_SEND_NOTE =
+  "This reply will send immediately in live chat as Reswell Team. Write only the customer-facing message. Do not mention drafts, review, or that you are an AI. Do not ask them to wait for a human unless you cannot answer."
+
+/**
+ * Soft-launch: only marketplace admins (`profiles.is_admin`) see the public
+ * widget or call visitor APIs. Employees and members do not. Flip to `false`
+ * when live chat is ready for everyone.
+ */
+export const LIVE_CHAT_WIDGET_ADMIN_ONLY = true
+export const LIVE_CHAT_ADMIN_ONLY_LABEL = "Admin only"
 
 export const LIVE_CHAT_HOME_GREETING = "We're here to help"
 export const LIVE_CHAT_HOME_SUBGREETING = "Buying, selling, or just exploring — ask us anything."
@@ -11,8 +27,8 @@ export const LIVE_CHAT_HOME_TAGLINE = "Real people at Reswell"
 export const LIVE_CHAT_HOME_HEADER_IMAGE = "/images/live-chat/home-header-barrel.jpg"
 
 export const LIVE_CHAT_HOME_MESSAGE_CTA = "Message the team"
-export const LIVE_CHAT_HOME_MESSAGE_SUBONLINE = "We'll reply here as soon as we can"
-export const LIVE_CHAT_HOME_MESSAGE_SUBOFFLINE = "We usually reply within one business day"
+export const LIVE_CHAT_HOME_MESSAGE_SUBONLINE = "Reswell Team replies here"
+export const LIVE_CHAT_HOME_MESSAGE_SUBOFFLINE = "Reswell Team replies here"
 
 export const LIVE_CHAT_HOME_HELP_CTA = "Browse help guides"
 export const LIVE_CHAT_HOME_HELP_SECTION = "Popular guides"
@@ -21,7 +37,7 @@ export const LIVE_CHAT_HOME_TRUST = "Every order includes purchase protection."
 export const LIVE_CHAT_MESSAGES_EMPTY =
   "What can we help with? Share an order number, a listing link, or describe what you're running into — we'll get back to you."
 
-export const LIVE_CHAT_MESSAGES_REPLY_NOTE = "We usually reply within one business day"
+export const LIVE_CHAT_MESSAGES_REPLY_NOTE = "Reswell Team replies here"
 
 /** Tappable prompts on the empty chat state — pre-fill the composer to lower the blank-textarea barrier. */
 export const LIVE_CHAT_STARTER_TOPICS = [

@@ -3,6 +3,7 @@ import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
 import type { MagazinesBrowseFacetSelections } from "@/lib/magazines-browse-facets"
 import { normalizedMagazinesBrowseSort } from "@/lib/magazines-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const MAGAZINES_BROWSE_PAGE_SIZE = 40
 
@@ -41,7 +42,9 @@ const MAGAZINE_BROWSE_LISTING_SELECT = `
   created_at,
   magazine_year,
   brand,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 export type MagazinesBrowseQueryInput = {
@@ -119,7 +122,7 @@ export async function fetchMagazinesBrowsePage(
   }
 
   return {
-    magazines: (data ?? []) as unknown as MagazineBrowseListingRow[],
+    magazines: hydrateCardListingImages((data ?? []) as unknown as MagazineBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

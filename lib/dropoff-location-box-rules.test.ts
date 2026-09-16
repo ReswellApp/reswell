@@ -2,8 +2,11 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
 import {
+  applyDropoffPackedParcelToListingRow,
+  dropoffRuleToPackedListingFields,
   matchDropoffBoxRule,
   parseDropoffBoxRules,
+  sellFormFieldsFromDropoffLocation,
   type DropoffBoxRule,
 } from "./dropoff-location-box-rules.ts"
 
@@ -89,5 +92,56 @@ describe("matchDropoffBoxRule Santa Barbara", () => {
       boardWidthInches: "",
     })
     assert.equal(match, null)
+  })
+
+  it("writes the matched carton onto listing packed columns", () => {
+    const match = matchDropoffBoxRule(SANTA_BARBARA_RULES, {
+      boardLength: "6'0",
+      boardWidthInches: "22",
+    })
+    assert.ok(match)
+    const packed = dropoffRuleToPackedListingFields(match.rule)
+    assert.equal(packed.shipping_packed_length_in, 76)
+    assert.equal(packed.shipping_packed_width_in, 22)
+    assert.equal(packed.shipping_packed_height_in, 5)
+    assert.equal(packed.shipping_packed_weight_oz, 224)
+    assert.equal(packed.shipping_package_band, null)
+  })
+
+  it("fills sell-form package fields from the matched Santa Barbara box", () => {
+    const fields = sellFormFieldsFromDropoffLocation(
+      { id: "sb", boxRules: SANTA_BARBARA_RULES },
+      { boardLength: "6'0", boardWidthInches: "21.5" },
+    )
+    assert.ok(fields)
+    assert.equal(fields.dropoffLocationId, "sb")
+    assert.equal(fields.reswellPackageLengthIn, "76")
+    assert.equal(fields.reswellPackageWidthIn, "22")
+    assert.equal(fields.reswellPackageHeightIn, "5")
+    assert.equal(fields.reswellPackageWeightLb, "14")
+    assert.equal(fields.reswellPackageWeightOz, "0")
+  })
+
+  it("overwrites listing packed dims when a dropoff city matches", () => {
+    const row = applyDropoffPackedParcelToListingRow(
+      {
+        shipping_available: true,
+        shipping_packed_length_in: 90,
+        shipping_packed_width_in: 10,
+        shipping_packed_height_in: 10,
+        shipping_packed_weight_oz: 80,
+      },
+      {
+        dropoffLocationId: "sb",
+        boardLength: "6'2",
+        boardWidthInches: "21",
+        boxRules: SANTA_BARBARA_RULES,
+      },
+    )
+    assert.equal(row.dropoff_location_id, "sb")
+    assert.equal(row.shipping_packed_length_in, 84)
+    assert.equal(row.shipping_packed_width_in, 22)
+    assert.equal(row.shipping_packed_height_in, 5)
+    assert.equal(row.shipping_packed_weight_oz, 288)
   })
 })

@@ -20,6 +20,7 @@ const LISTING_SELECT = `
   created_at,
   primary_image_url,
   primary_thumbnail_url,
+  tile_gallery_images,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
@@ -51,6 +52,7 @@ function rowToRecentListing(row: ListingRow): RecentListing {
     listing_images: listingImagesFromPrimaryFields(
       row.primary_image_url as string | null | undefined,
       row.primary_thumbnail_url as string | null | undefined,
+      row.tile_gallery_images,
     ),
     profiles: row.profiles as RecentListing["profiles"],
     categories: row.categories as RecentListing["categories"],

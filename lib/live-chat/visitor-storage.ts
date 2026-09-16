@@ -1,12 +1,25 @@
-const VISITOR_TOKEN_KEY = "reswell-live-chat-visitor-token"
-const SESSION_PUBLIC_ID_KEY = "reswell-live-chat-session-public-id"
-const VISITOR_NAME_KEY = "reswell-live-chat-visitor-name"
-const VISITOR_EMAIL_KEY = "reswell-live-chat-visitor-email"
+const VISITOR_TOKEN_KEY = "reswell-live-chat-v2-visitor-token"
+const SESSION_PUBLIC_ID_KEY = "reswell-live-chat-v2-session-public-id"
+const VISITOR_NAME_KEY = "reswell-live-chat-v2-visitor-name"
+const VISITOR_EMAIL_KEY = "reswell-live-chat-v2-visitor-email"
+
+const LEGACY_KEYS = [
+  "reswell-live-chat-visitor-token",
+  "reswell-live-chat-session-public-id",
+  "reswell-live-chat-visitor-name",
+  "reswell-live-chat-visitor-email",
+] as const
+
+function dropLegacyKeys(): void {
+  if (typeof localStorage === "undefined") return
+  for (const key of LEGACY_KEYS) localStorage.removeItem(key)
+}
 
 export function getOrCreateLiveChatVisitorToken(): string {
   if (typeof localStorage === "undefined") {
     return crypto.randomUUID()
   }
+  dropLegacyKeys()
   let token = localStorage.getItem(VISITOR_TOKEN_KEY)
   if (!token) {
     token = crypto.randomUUID()
@@ -17,6 +30,7 @@ export function getOrCreateLiveChatVisitorToken(): string {
 
 export function getStoredLiveChatSessionPublicId(): string | null {
   if (typeof localStorage === "undefined") return null
+  dropLegacyKeys()
   return localStorage.getItem(SESSION_PUBLIC_ID_KEY)
 }
 
@@ -57,6 +71,7 @@ export function setStoredLiveChatVisitorEmail(email: string): void {
  */
 export function clearLiveChatBrowserState(): void {
   if (typeof localStorage === "undefined") return
+  dropLegacyKeys()
   localStorage.removeItem(SESSION_PUBLIC_ID_KEY)
   localStorage.removeItem(VISITOR_NAME_KEY)
   localStorage.removeItem(VISITOR_TOKEN_KEY)

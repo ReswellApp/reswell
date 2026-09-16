@@ -11,6 +11,7 @@ import { TRACTION_SECTION } from "@/lib/traction-listing-config"
 import type { TractionBrowseFacetSelections } from "@/lib/traction-browse-facets"
 import { normalizedTractionBrowseSort } from "@/lib/traction-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const TRACTION_BROWSE_PAGE_SIZE = 40
 
@@ -57,7 +58,9 @@ const TRACTION_BROWSE_LISTING_SELECT = `
   brand,
   brand_id,
   model,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 export type TractionBrowseQueryInput = {
@@ -130,7 +133,7 @@ export async function fetchTractionBrowsePage(
   }
 
   return {
-    traction: (data ?? []) as unknown as TractionBrowseListingRow[],
+    traction: hydrateCardListingImages((data ?? []) as unknown as TractionBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

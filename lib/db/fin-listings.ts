@@ -17,6 +17,7 @@ import {
   finSystemFilterPatterns,
 } from "@/lib/fin-listing-effective-facets"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const FINS_BROWSE_PAGE_SIZE = 40
 
@@ -80,7 +81,9 @@ const FIN_BROWSE_LISTING_SELECT = `
   model,
   fins_setup,
   fin_system,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 function facetOrGroups(patternsForSlug: (slug: string) => string[], slugs: string[]): string | null {
@@ -172,7 +175,7 @@ export async function fetchFinsBrowsePage(
   }
 
   return {
-    fins: (data ?? []) as unknown as FinBrowseListingRow[],
+    fins: hydrateCardListingImages((data ?? []) as unknown as FinBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

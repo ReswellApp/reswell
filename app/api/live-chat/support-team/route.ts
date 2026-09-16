@@ -4,9 +4,15 @@ import {
   getLiveChatSupportOnlineCountService,
   listLiveChatSupportOnlineMemberIdsService,
 } from "@/lib/services/liveChatPresence"
+import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
 
 export async function GET() {
   try {
+    const access = await assertLiveChatVisitorAccess()
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status })
+    }
+
     const [members, agentsOnlineCount, onlineMemberIds] = await Promise.all([
       getLiveChatSupportTeamDisplayService(),
       getLiveChatSupportOnlineCountService(),

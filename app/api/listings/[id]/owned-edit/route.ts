@@ -27,6 +27,7 @@ import {
 } from "@/lib/services/sync-listing-videos"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
+import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
 
@@ -247,8 +248,17 @@ export async function PUT(
     return NextResponse.json({ error: "Sold listings cannot be edited" }, { status: 400 })
   }
 
-  const listingFields = omitClientAutoPriceDropSchedule(
-    listingFieldsForOwnerUpdate(listingData),
+  const listingFields = await overlayListingRowWithDropoffParcel(
+    supabase,
+    {
+      dropoffLocationId:
+        typeof listingData.dropoff_location_id === "string"
+          ? listingData.dropoff_location_id
+          : null,
+      boardLength: body.catalog_snapshot?.boardLength,
+      boardWidthInches: body.catalog_snapshot?.boardWidthInches,
+    },
+    omitClientAutoPriceDropSchedule(listingFieldsForOwnerUpdate(listingData)),
   )
   const publishingFromDraft = existingListing.status === "draft" && publishFromDraft
 

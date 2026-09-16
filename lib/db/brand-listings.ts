@@ -31,6 +31,7 @@ const BRAND_MARKETPLACE_LISTING_SELECT = `
   archived_at,
   primary_image_url,
   primary_thumbnail_url,
+  tile_gallery_images,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
@@ -93,6 +94,7 @@ interface BrandMarketplaceListingRow {
   updated_at?: string | null
   primary_image_url?: string | null
   primary_thumbnail_url?: string | null
+  tile_gallery_images?: unknown
   listing_images?: RecentListing["listing_images"]
   profiles?: RecentListing["profiles"]
   categories?: RecentListing["categories"]
@@ -120,7 +122,11 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
     updated_at: row.updated_at ?? null,
     listing_images:
       row.listing_images ??
-      listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url),
+      listingImagesFromPrimaryFields(
+        row.primary_image_url,
+        row.primary_thumbnail_url,
+        row.tile_gallery_images,
+      ),
     profiles: row.profiles,
     categories: row.categories,
   }

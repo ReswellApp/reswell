@@ -109,6 +109,82 @@ export function dropoffRuleToPackageForm(rule: DropoffBoxRule): {
   }
 }
 
+/** Packed carton columns written to `listings.shipping_packed_*` after a dropoff match. */
+export function dropoffRuleToPackedListingFields(rule: DropoffBoxRule): {
+  shipping_packed_length_in: number
+  shipping_packed_width_in: number
+  shipping_packed_height_in: number
+  shipping_packed_weight_oz: number
+  shipping_package_band: null
+} {
+  return {
+    shipping_packed_length_in: rule.boxLengthIn,
+    shipping_packed_width_in: rule.boxWidthIn,
+    shipping_packed_height_in: rule.boxHeightIn,
+    shipping_packed_weight_oz: Math.round(rule.weightLb * 16 * 100) / 100,
+    shipping_package_band: null,
+  }
+}
+
+/**
+ * Sell-form package fields for a matched dropoff city.
+ * Returns null when the board does not fit that location's box rules.
+ */
+export function sellFormFieldsFromDropoffLocation(
+  location: { id: string; boxRules: DropoffBoxRule[] },
+  dims: BoardDimsForDropoff,
+): {
+  dropoffLocationId: string
+  adminCustomShippingCarton: true
+  reswellPackageLengthIn: string
+  reswellPackageWidthIn: string
+  reswellPackageHeightIn: string
+  reswellPackageWeightLb: string
+  reswellPackageWeightOz: string
+} | null {
+  const match = matchDropoffBoxRule(location.boxRules, dims)
+  if (!match) return null
+  return {
+    dropoffLocationId: location.id,
+    adminCustomShippingCarton: true,
+    ...dropoffRuleToPackageForm(match.rule),
+  }
+}
+
+/**
+ * When a dropoff city matches a box, those dims become the listing carton.
+ * Unmatched / unknown locations keep `dropoff_location_id` but do not invent a box.
+ */
+export function applyDropoffPackedParcelToListingRow(
+  row: Record<string, unknown>,
+  args: {
+    dropoffLocationId?: string | null
+    boardLength?: string | null
+    boardWidthInches?: string | null
+    boxRules: DropoffBoxRule[] | null
+  },
+): Record<string, unknown> {
+  const id = args.dropoffLocationId?.trim() ?? ""
+  if (!id || row.shipping_available !== true) {
+    return { ...row, dropoff_location_id: null }
+  }
+  if (!args.boxRules?.length) {
+    return { ...row, dropoff_location_id: id }
+  }
+  const match = matchDropoffBoxRule(args.boxRules, {
+    boardLength: args.boardLength,
+    boardWidthInches: args.boardWidthInches,
+  })
+  if (!match) {
+    return { ...row, dropoff_location_id: id }
+  }
+  return {
+    ...row,
+    dropoff_location_id: id,
+    ...dropoffRuleToPackedListingFields(match.rule),
+  }
+}
+
 export function formatDropoffBoxSize(rule: Pick<DropoffBoxRule, "boxLengthIn" | "boxWidthIn" | "boxHeightIn">): string {
   return `${formatInches(rule.boxLengthIn)}\u00d7${formatInches(rule.boxWidthIn)}\u00d7${formatInches(rule.boxHeightIn)}`
 }

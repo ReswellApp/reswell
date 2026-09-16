@@ -153,11 +153,8 @@ import {
 import { clearSellServerDraftListingId, getSellServerDraftListingId, replaceSellDraftEditUrl, setSellServerDraftListingId } from "@/lib/sell-draft-local-meta"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
-import {
-  SellDropoffLocationCard,
-  matchPublicDropoffLocation,
-} from "@/components/features/sell/sell-dropoff-location-card"
-import { dropoffRuleToPackageForm } from "@/lib/dropoff-location-box-rules"
+import { SellDropoffLocationCard } from "@/components/features/sell/sell-dropoff-location-card"
+import { sellFormFieldsFromDropoffLocation } from "@/lib/dropoff-location-box-rules"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
@@ -960,6 +957,10 @@ function SellPageContentInner({
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
   const [dropoffLocations, setDropoffLocations] = useState<PublicDropoffLocation[]>([])
+  const [dropoffLocationsStatus, setDropoffLocationsStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading")
+  const [dropoffLocationsReload, setDropoffLocationsReload] = useState(0)
   const formDataRef = useRef(formData)
   useEffect(() => {
     formDataRef.current = formData
@@ -967,20 +968,23 @@ function SellPageContentInner({
 
   useEffect(() => {
     const controller = new AbortController()
+    setDropoffLocationsStatus("loading")
     void (async () => {
       try {
         const res = await fetch("/api/sell/dropoff-locations", {
           signal: controller.signal,
           credentials: "include",
         })
-        if (!res.ok) return
+        if (!res.ok) throw new Error(`dropoff locations ${res.status}`)
         const json = (await res.json().catch(() => null)) as {
           data?: { locations?: PublicDropoffLocation[] }
         } | null
         if (controller.signal.aborted) return
         setDropoffLocations(json?.data?.locations ?? [])
+        setDropoffLocationsStatus("ready")
       } catch (error) {
         if (controller.signal.aborted) return
+        setDropoffLocationsStatus("error")
         if (process.env.NODE_ENV === "development") {
           console.warn("[sell] dropoff locations:", error)
         }
@@ -989,28 +993,26 @@ function SellPageContentInner({
     return () => {
       controller.abort()
     }
-  }, [])
+  }, [dropoffLocationsReload])
 
   useEffect(() => {
     if (!formData.dropoffLocationId) return
+    if (dropoffLocationsStatus !== "ready") return
     const location = dropoffLocations.find((row) => row.id === formData.dropoffLocationId)
-    if (!location) return
-    const match = matchPublicDropoffLocation(
-      location,
-      formData.boardLength,
-      formData.boardWidthInches,
-    )
-    if (!match) {
+    if (!location) {
+      setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
+      return
+    }
+    const fields = sellFormFieldsFromDropoffLocation(location, {
+      boardLength: formData.boardLength,
+      boardWidthInches: formData.boardWidthInches,
+    })
+    if (!fields) {
       setFormData((fd) => {
-        if (
-          !fd.reswellPackageLengthIn &&
-          !fd.reswellPackageWidthIn &&
-          !fd.reswellPackageHeightIn
-        ) {
-          return fd
-        }
+        if (!fd.dropoffLocationId) return fd
         return {
           ...fd,
+          dropoffLocationId: "",
           reswellPackageLengthIn: "",
           reswellPackageWidthIn: "",
           reswellPackageHeightIn: "",
@@ -1020,21 +1022,23 @@ function SellPageContentInner({
       })
       return
     }
-    const parcel = dropoffRuleToPackageForm(match.rule)
     setFormData((fd) => {
       if (
-        fd.reswellPackageLengthIn === parcel.reswellPackageLengthIn &&
-        fd.reswellPackageWidthIn === parcel.reswellPackageWidthIn &&
-        fd.reswellPackageHeightIn === parcel.reswellPackageHeightIn &&
-        fd.reswellPackageWeightLb === parcel.reswellPackageWeightLb &&
-        fd.reswellPackageWeightOz === parcel.reswellPackageWeightOz
+        fd.dropoffLocationId === fields.dropoffLocationId &&
+        fd.adminCustomShippingCarton === true &&
+        fd.reswellPackageLengthIn === fields.reswellPackageLengthIn &&
+        fd.reswellPackageWidthIn === fields.reswellPackageWidthIn &&
+        fd.reswellPackageHeightIn === fields.reswellPackageHeightIn &&
+        fd.reswellPackageWeightLb === fields.reswellPackageWeightLb &&
+        fd.reswellPackageWeightOz === fields.reswellPackageWeightOz
       ) {
         return fd
       }
-      return { ...fd, ...parcel, adminCustomShippingCarton: true }
+      return { ...fd, ...fields }
     })
   }, [
     dropoffLocations,
+    dropoffLocationsStatus,
     formData.boardLength,
     formData.boardWidthInches,
     formData.dropoffLocationId,
@@ -3288,6 +3292,15 @@ function SellPageContentInner({
         flagsFromBoardFulfillment(submitForm.boardFulfillment).shipping_available &&
         (submitForm.boardShippingCostMode === "reswell" || !submitForm.boardShippingCostMode)
       ) {
+        const dropoffLocation = dropoffLocations.find(
+          (row) => row.id === submitForm.dropoffLocationId,
+        )
+        const dropoffParcel = dropoffLocation
+          ? sellFormFieldsFromDropoffLocation(dropoffLocation, {
+              boardLength: submitForm.boardLength,
+              boardWidthInches: submitForm.boardWidthInches,
+            })
+          : null
         submitFormForSave = {
           ...submitForm,
           boardShippingCostMode: "reswell" as BoardShippingCostMode,
@@ -3297,6 +3310,7 @@ function SellPageContentInner({
           surfboardShippingTier:
             parseSurfboardShippingTierId(submitForm.surfboardShippingTier) ?? "shortboard",
           surfboardShippingTierCeilingConfirmed: true,
+          ...(dropoffParcel ?? {}),
         }
       }
 
@@ -5013,22 +5027,27 @@ function SellPageContentInner({
                                       selectedLocationId={formData.dropoffLocationId}
                                       boardLength={formData.boardLength}
                                       boardWidthInches={formData.boardWidthInches}
+                                      status={dropoffLocationsStatus}
+                                      onRetry={() =>
+                                        setDropoffLocationsReload((n) => n + 1)
+                                      }
                                       onSelect={(locationId) => {
                                         const location = dropoffLocations.find(
                                           (row) => row.id === locationId,
                                         )
-                                        const match = location
-                                          ? matchPublicDropoffLocation(
+                                        const fields = location
+                                          ? sellFormFieldsFromDropoffLocation(
                                               location,
-                                              formData.boardLength,
-                                              formData.boardWidthInches,
+                                              {
+                                                boardLength: formData.boardLength,
+                                                boardWidthInches: formData.boardWidthInches,
+                                              },
                                             )
                                           : null
+                                        if (!fields) return
                                         setFormData({
                                           ...formData,
-                                          dropoffLocationId: locationId,
-                                          adminCustomShippingCarton: true,
-                                          ...(match ? dropoffRuleToPackageForm(match.rule) : {}),
+                                          ...fields,
                                         })
                                       }}
                                       onClear={() =>
@@ -5038,10 +5057,12 @@ function SellPageContentInner({
                                         })
                                       }
                                     />
-                                    {formData.dropoffLocationId ? null : (
+                                    {formData.dropoffLocationId &&
+                                    !formData.reswellPackageLengthIn ? null : (
                                     <ReswellPackageDimensionsCard
                                       showHeading
                                       exactCartonMode
+                                      readOnly={Boolean(formData.dropoffLocationId)}
                                       lengthPlaceholder="0"
                                       className="border-0 bg-transparent p-0 shadow-none sm:border sm:bg-card sm:p-5 sm:shadow-sm"
                                       lengthIn={formData.reswellPackageLengthIn}

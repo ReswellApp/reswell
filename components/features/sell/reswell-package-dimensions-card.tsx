@@ -42,6 +42,8 @@ export interface ReswellPackageDimensionsCardProps {
   onHeightInChange: (value: string) => void
   onWeightLbChange: (value: string) => void
   onWeightOzChange: (value: string) => void
+  /** Matched dropoff carton — shown so sellers see what is stored on the listing. */
+  readOnly?: boolean
 }
 
 /** Compact cell: label inside the field so L/W/H can sit in one row on mobile. */
@@ -53,6 +55,7 @@ function CompactCell({
   placeholder,
   inputMode = "decimal",
   requiredComplete,
+  readOnly,
   className,
 }: {
   id: string
@@ -63,13 +66,15 @@ function CompactCell({
   inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"]
   /** When set, shows the sell-form required mark (red * → check when complete). */
   requiredComplete?: boolean
+  readOnly?: boolean
   className?: string
 }) {
   return (
     <label
       htmlFor={id}
       className={cn(
-        "flex min-w-0 flex-1 cursor-text flex-col gap-0.5 px-2.5 py-1.5 sm:px-3 sm:py-2",
+        "flex min-w-0 flex-1 flex-col gap-0.5 px-2.5 py-1.5 sm:px-3 sm:py-2",
+        readOnly ? "cursor-default" : "cursor-text",
         className,
       )}
     >
@@ -86,7 +91,11 @@ function CompactCell({
         autoComplete="off"
         placeholder={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        readOnly={readOnly}
+        onChange={(e) => {
+          if (readOnly) return
+          onChange(e.target.value)
+        }}
         className="w-full min-w-0 border-0 bg-transparent p-0 text-sm tabular-nums text-foreground outline-none placeholder:text-muted-foreground/45 sm:text-base"
       />
     </label>
@@ -181,6 +190,7 @@ export function ReswellPackageDimensionsCard({
   onHeightInChange,
   onWeightLbChange,
   onWeightOzChange,
+  readOnly = false,
 }: ReswellPackageDimensionsCardProps) {
   const uid = useId()
   const lengthId = `${uid}-length`
@@ -215,21 +225,31 @@ export function ReswellPackageDimensionsCard({
       {showHeading ? (
         <div className="space-y-0.5 sm:space-y-1">
           <h3 className="text-sm font-semibold text-foreground sm:text-base">
-            Package size and weight{" "}
-            <span className="text-destructive" aria-hidden="true">
-              *
-            </span>
+            {readOnly ? "Dropoff box size" : "Package size and weight"}{" "}
+            {readOnly ? null : (
+              <span className="text-destructive" aria-hidden="true">
+                *
+              </span>
+            )}
           </h3>
           <p className="text-xs text-muted-foreground leading-snug sm:text-sm sm:leading-relaxed">
-            <span className="sm:hidden">
-              Outer box you&apos;ll ship in. <MeasurementTipsTrigger label="Tips" />
-            </span>
-            <span className="hidden sm:inline">
-              {exactCartonMode
-                ? "Enter the exact outer box you'll ship in. Inaccurate measurements may incur additional charges from the carrier. "
-                : "Inaccurate measurements may incur additional charges from the carrier. "}
-              <MeasurementTipsTrigger label="Measurement tips" />
-            </span>
+            {readOnly ? (
+              <span>
+                Checkout and the shipping label use this carton. We pack the board in it after drop-off.
+              </span>
+            ) : (
+              <>
+                <span className="sm:hidden">
+                  Outer box you&apos;ll ship in. <MeasurementTipsTrigger label="Tips" />
+                </span>
+                <span className="hidden sm:inline">
+                  {exactCartonMode
+                    ? "Enter the exact outer box you'll ship in. Inaccurate measurements may incur additional charges from the carrier. "
+                    : "Inaccurate measurements may incur additional charges from the carrier. "}
+                  <MeasurementTipsTrigger label="Measurement tips" />
+                </span>
+              </>
+            )}
           </p>
         </div>
       ) : null}
@@ -287,7 +307,8 @@ export function ReswellPackageDimensionsCard({
               value={lengthIn}
               onChange={onLengthInChange}
               placeholder={lengthPlaceholder}
-              requiredComplete={lengthComplete}
+              requiredComplete={readOnly ? undefined : lengthComplete}
+              readOnly={readOnly}
             />
             <div className="w-px shrink-0 self-stretch bg-border" aria-hidden />
             <CompactCell
@@ -296,7 +317,8 @@ export function ReswellPackageDimensionsCard({
               value={widthIn}
               onChange={onWidthInChange}
               placeholder="0"
-              requiredComplete={widthComplete}
+              requiredComplete={readOnly ? undefined : widthComplete}
+              readOnly={readOnly}
             />
             <div className="w-px shrink-0 self-stretch bg-border" aria-hidden />
             <CompactCell
@@ -305,7 +327,8 @@ export function ReswellPackageDimensionsCard({
               value={heightIn}
               onChange={onHeightInChange}
               placeholder="0"
-              requiredComplete={heightComplete}
+              requiredComplete={readOnly ? undefined : heightComplete}
+              readOnly={readOnly}
             />
           </div>
           {dimsTooBig && dimTotal != null ? (
@@ -334,7 +357,8 @@ export function ReswellPackageDimensionsCard({
                 value={weightLb}
                 onChange={onWeightLbChange}
                 placeholder="0"
-                requiredComplete={weightComplete}
+                requiredComplete={readOnly ? undefined : weightComplete}
+                readOnly={readOnly}
               />
             </div>
             <span
@@ -355,7 +379,8 @@ export function ReswellPackageDimensionsCard({
                 value={weightOz}
                 onChange={onWeightOzChange}
                 placeholder="0"
-                requiredComplete={weightComplete}
+                requiredComplete={readOnly ? undefined : weightComplete}
+                readOnly={readOnly}
               />
             </div>
           </div>

@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
+import {
+  coalesceListingImagesForCard,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 
 export const CART_SELLER_ADDON_SECTIONS = [
   "fins",
@@ -23,7 +27,7 @@ export type CartSellerAddonRow = {
   board_type: string | null
   condition: string | null
   fin_system: string | null
-  listing_images: { url: string; thumbnail_url?: string | null; is_primary?: boolean | null }[] | null
+  listing_images: ListingImageForCard[] | null
   categories: { name?: string | null } | null
 }
 
@@ -47,7 +51,9 @@ const ADDON_SELECT = `
   board_type,
   condition,
   fin_system,
-  listing_images ( url, thumbnail_url, is_primary ),
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images,
   categories ( name )
 `
 
@@ -97,7 +103,7 @@ export async function fetchCartSellerAddonListings(
   const listings: CartSellerAddonRow[] = []
 
   for (const raw of data ?? []) {
-    const row = raw as AddonQueryRow
+    const row = raw as unknown as AddonQueryRow
     if (exclude.has(row.id)) continue
     if (!isListingPurchasable(row)) continue
     const lp = row.local_pickup !== false
@@ -117,7 +123,7 @@ export async function fetchCartSellerAddonListings(
       board_type: row.board_type,
       condition: row.condition,
       fin_system: row.fin_system,
-      listing_images: row.listing_images,
+      listing_images: coalesceListingImagesForCard(row),
       categories: normalizeCategories(row.categories),
     })
   }

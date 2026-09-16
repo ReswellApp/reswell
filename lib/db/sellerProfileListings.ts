@@ -27,6 +27,7 @@ const SELLER_PROFILE_LISTING_SELECT = `
   board_type,
   primary_image_url,
   primary_thumbnail_url,
+  tile_gallery_images,
   categories (name, slug)
 `
 
@@ -55,6 +56,7 @@ type SellerProfileListingRow = {
   board_type?: string | null
   primary_image_url?: string | null
   primary_thumbnail_url?: string | null
+  tile_gallery_images?: unknown
   categories?: { name?: string | null; slug?: string | null } | { name?: string | null; slug?: string | null }[] | null
 }
 
@@ -97,6 +99,7 @@ function mapListing(row: SellerProfileListingRow): SellerProfileListing {
     listing_images: listingImagesFromPrimaryFields(
       row.primary_image_url,
       row.primary_thumbnail_url,
+      row.tile_gallery_images,
     ),
     categories: normalizeCategories(row.categories),
     board_type: row.board_type,

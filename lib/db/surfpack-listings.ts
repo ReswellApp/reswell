@@ -11,6 +11,7 @@ import { SURFPACKS_SECTION } from "@/lib/surfpack-listing-config"
 import type { SurfpacksBrowseFacetSelections } from "@/lib/surfpacks-browse-facets"
 import { normalizedSurfpacksBrowseSort } from "@/lib/surfpacks-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const SURFPACKS_BROWSE_PAGE_SIZE = 40
 
@@ -57,7 +58,9 @@ const SURFPACK_BROWSE_LISTING_SELECT = `
   brand,
   brand_id,
   model,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 export type SurfpacksBrowseQueryInput = {
@@ -130,7 +133,7 @@ export async function fetchSurfpacksBrowsePage(
   }
 
   return {
-    surfpacks: (data ?? []) as unknown as SurfpackBrowseListingRow[],
+    surfpacks: hydrateCardListingImages((data ?? []) as unknown as SurfpackBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

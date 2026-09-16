@@ -44,6 +44,10 @@ export function formatSupportTicketReference(ticketId: string): string {
 
 import type { ContactMessageSource } from "@/lib/db/contactMessages"
 
+export function isLiveChatSupportChannel(source: string | null | undefined): boolean {
+  return source === "live_chat"
+}
+
 export function supportTicketDisplaySubject(subject: string | null, source: ContactMessageSource): string {
   if (subject?.trim()) {
     return subject.trim()

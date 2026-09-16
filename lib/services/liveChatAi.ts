@@ -40,6 +40,7 @@ import {
 import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
 import { areLiveChatAgentsOnlineService } from "@/lib/services/liveChatPresence"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
+import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
 
 const MAX_AI_REPLIES_PER_SESSION = 40
 const MAX_HISTORY_MESSAGES = 16
@@ -405,6 +406,9 @@ async function ensureCaseOnHandoff(
 }
 
 export async function liveChatAiService(publicId: string, raw: unknown): Promise<LiveChatAiServiceResult> {
+  const access = await assertLiveChatVisitorAccess()
+  if (!access.ok) return { error: access.error, status: access.status }
+
   const parsed = liveChatAiRequestSchema.safeParse(raw)
   if (!parsed.success) {
     return { error: "Invalid AI chat request", status: 400 }

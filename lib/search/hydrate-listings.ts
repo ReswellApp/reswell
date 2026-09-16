@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
+import { coalesceListingImagesForCard } from "@/lib/listing-image-display"
 
 const SELECT = `
   id,
@@ -17,7 +18,9 @@ const SELECT = `
   local_pickup,
   board_type,
   dimensions,
-  listing_images (url, thumbnail_url, is_primary),
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
@@ -64,7 +67,7 @@ export async function hydrateListingsByIds(
       local_pickup: row.local_pickup,
       board_type: row.board_type,
       board_length: boardLength,
-      listing_images: row.listing_images,
+      listing_images: coalesceListingImagesForCard(row),
       profiles: row.profiles,
       categories: row.categories,
     })

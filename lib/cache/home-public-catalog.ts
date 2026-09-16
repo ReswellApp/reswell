@@ -67,6 +67,7 @@ const featuredNewSelect = `
   compare_at_price,
   primary_image_url,
   primary_thumbnail_url,
+  tile_gallery_images,
   stock_quantity,
   categories (name)
 `
@@ -234,6 +235,7 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
           price: number
           primary_image_url?: string | null
           primary_thumbnail_url?: string | null
+          tile_gallery_images?: unknown
         }
         return {
           listing: {
@@ -244,6 +246,7 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
             listing_images: listingImagesFromPrimaryFields(
               row.primary_image_url,
               row.primary_thumbnail_url,
+              row.tile_gallery_images,
             ),
           },
           stockQuantity: qty,

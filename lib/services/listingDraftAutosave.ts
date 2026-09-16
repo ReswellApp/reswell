@@ -19,6 +19,7 @@ import {
 import { boardCategoryMap, resolveListingBoardTypeFromCategory } from "@/lib/utils/board-type-from-category-id"
 import { boardBrowseFacetFieldsForDb } from "@/lib/listing-facet-write"
 import { listingDimensionsColumnFromSurfboardSellForm } from "@/lib/listing-dimensions-storage"
+import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
 
 function shippingPriceToDb(
   fulfillment: BoardFulfillmentChoice,
@@ -312,7 +313,15 @@ export async function upsertSurfboardListingDraft(
     throw new Error("No board category configured")
   }
 
-  const row = buildSurfboardDraftListingRow(input, defaultCategoryId)
+  const row = await overlayListingRowWithDropoffParcel(
+    supabase,
+    {
+      dropoffLocationId: input.dropoffLocationId,
+      boardLength: resolveDraftBoardLength(input),
+      boardWidthInches: input.boardWidthInches,
+    },
+    buildSurfboardDraftListingRow(input, defaultCategoryId),
+  )
   const listingId = input.listingId?.trim() || null
 
   if (listingId) {
@@ -393,7 +402,15 @@ export async function upsertGuestSurfboardListingDraft(
     throw new Error("No board category configured")
   }
 
-  const row = buildSurfboardDraftListingRow(input, defaultCategoryId)
+  const row = await overlayListingRowWithDropoffParcel(
+    service,
+    {
+      dropoffLocationId: input.dropoffLocationId,
+      boardLength: resolveDraftBoardLength(input),
+      boardWidthInches: input.boardWidthInches,
+    },
+    buildSurfboardDraftListingRow(input, defaultCategoryId),
+  )
   const listingId = input.listingId?.trim() || null
 
   if (listingId) {

@@ -17,6 +17,7 @@ import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import { coalesceListingImagesForCard } from "@/lib/listing-image-display"
 import {
   fetchMarketplaceSoldFeedOrderPage,
   type MarketplaceSoldFeedCursor,
@@ -37,7 +38,9 @@ const SOLD_LISTING_SELECT = `
   updated_at,
   board_type,
   dimensions,
-  listing_images (url, thumbnail_url, is_primary),
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count),
   categories (name, slug)
 `
@@ -80,7 +83,7 @@ function mapSoldRow(
     board_type: row.board_type != null ? String(row.board_type) : null,
     board_length: boardLength,
     sold_at: soldAt,
-    listing_images: row.listing_images as SoldFeedListing["listing_images"],
+    listing_images: coalesceListingImagesForCard(row),
     profiles: row.profiles as SoldFeedListing["profiles"],
     categories: row.categories as SoldFeedListing["categories"],
   }

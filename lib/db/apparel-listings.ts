@@ -11,6 +11,7 @@ import { APPAREL_SECTION } from "@/lib/apparel-listing-config"
 import type { ApparelBrowseFacetSelections } from "@/lib/apparel-browse-facets"
 import { normalizedApparelBrowseSort } from "@/lib/apparel-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const APPAREL_BROWSE_PAGE_SIZE = 40
 
@@ -59,7 +60,9 @@ const APPAREL_BROWSE_LISTING_SELECT = `
   brand,
   brand_id,
   model,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 export type ApparelBrowseQueryInput = {
@@ -135,7 +138,7 @@ export async function fetchApparelBrowsePage(
   }
 
   return {
-    apparel: (data ?? []) as unknown as ApparelBrowseListingRow[],
+    apparel: hydrateCardListingImages((data ?? []) as unknown as ApparelBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

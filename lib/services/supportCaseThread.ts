@@ -23,6 +23,7 @@ import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 import { markSupportCaseReadForMember } from "@/lib/services/supportUnread"
 import { recordSentSupportReplyExample, scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
+import { isLiveChatSupportChannel } from "@/lib/utils/support-ticket-display"
 
 export type SupportCaseThreadMessage = SupportCaseMessageRow
 
@@ -87,7 +88,7 @@ export async function getSupportCaseThreadForMember(
 ): Promise<{ case: SupportCaseRow; messages: SupportCaseThreadMessage[] } | { error: string }> {
   const supabase = await createClient()
   const row = await resolveOrBackfillForMember(userId, caseId)
-  if (!row || row.requester_user_id !== userId) {
+  if (!row || row.requester_user_id !== userId || isLiveChatSupportChannel(row.source_channel)) {
     return { error: "Case not found." }
   }
   const messages = await listSupportCaseMessages(supabase, row.id)
@@ -163,7 +164,7 @@ export async function sendSupportCaseMemberReplyService(
   if (!user) return { error: "Sign in to reply." }
 
   const row = await resolveSupportCaseByAnyId(supabase, parsed.data.case_id)
-  if (!row || row.requester_user_id !== user.id) {
+  if (!row || row.requester_user_id !== user.id || isLiveChatSupportChannel(row.source_channel)) {
     return { error: "Case not found." }
   }
   if (row.status === "resolved") {

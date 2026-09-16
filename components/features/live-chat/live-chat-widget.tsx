@@ -8,12 +8,7 @@ import { cn } from "@/lib/utils"
 import { LiveChatHomeView } from "@/components/features/live-chat/live-chat-home-view"
 import { LiveChatHelpArticleView } from "@/components/features/live-chat/live-chat-help-article-view"
 import { LiveChatHelpView } from "@/components/features/live-chat/live-chat-help-view"
-import {
-  LiveChatMessagesView,
-  createInitialBotMessages,
-  type BotUiMessage,
-  type MessageMode,
-} from "@/components/features/live-chat/live-chat-messages-view"
+import { LiveChatMessagesView } from "@/components/features/live-chat/live-chat-messages-view"
 import {
   LiveChatWidgetNav,
   type LiveChatWidgetTab,
@@ -29,8 +24,14 @@ import {
   getStoredLiveChatVisitorEmail,
   setStoredLiveChatVisitorEmail,
 } from "@/lib/live-chat/visitor-storage"
-import type { LiveChatHelpArticleRef } from "@/lib/live-chat/widget-config"
+import {
+  LIVE_CHAT_ADMIN_ONLY_LABEL,
+  LIVE_CHAT_TEAM_NAME,
+  LIVE_CHAT_WIDGET_ADMIN_ONLY,
+  type LiveChatHelpArticleRef,
+} from "@/lib/live-chat/widget-config"
 import { liveChatShellClass } from "@/lib/live-chat/widget-ui"
+import { LiveChatAdminOnlyBadge } from "@/components/features/live-chat/live-chat-admin-only-badge"
 
 interface LiveChatWidgetProps {
   className?: string
@@ -45,8 +46,6 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   // Panel mounts lazily on first open, then stays mounted so open/close can animate.
   const [hasOpened, setHasOpened] = useState(false)
   const [tab, setTab] = useState<LiveChatWidgetTab>("home")
-  const [messageMode, setMessageMode] = useState<MessageMode>("bot")
-  const [botMessages, setBotMessages] = useState<BotUiMessage[]>(() => createInitialBotMessages())
   const [emailDraft, setEmailDraft] = useState("")
   const [emailLocked, setEmailLocked] = useState(
     () => Boolean(getStoredLiveChatVisitorEmail()),
@@ -63,20 +62,11 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   const [lastReadAt, setLastReadAt] = useState(Date.now())
   const openRef = useRef(open)
   const isSupportOnlineRef = useRef(false)
-  const messageModeRef = useRef<MessageMode>("bot")
-  const offlineAssistRef = useRef<(content: string) => void>(() => {})
   openRef.current = open
-  messageModeRef.current = messageMode
 
   const activeHelpArticle = helpArticleStack[helpArticleStack.length - 1] ?? null
 
-  const session = useLiveChatSession({
-    onVisitorMessageConfirmed: (message) => {
-      if (messageModeRef.current === "human" && !isSupportOnlineRef.current) {
-        offlineAssistRef.current(message.content)
-      }
-    },
-  })
+  const session = useLiveChatSession()
   const {
     lead: supportLead,
     members: supportTeam,
@@ -84,13 +74,9 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     isSupportOnline,
   } = useLiveChatSupportTeam(open || session.sessionReady)
   isSupportOnlineRef.current = isSupportOnline
-  offlineAssistRef.current = (content: string) => {
-    void session.requestOfflineAiAssist(content, false)
-  }
 
   const handleRemoteMessage = useCallback(
     (message: Parameters<typeof session.appendMessage>[0]) => {
-      // Own visitor sends are already optimistic — skip the echo copy.
       if (message.sender_type === "visitor") return
       session.appendMessage(message)
       if (
@@ -98,9 +84,6 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
         !openRef.current
       ) {
         setAgentPreview(message)
-      }
-      if (message.sender_type === "agent") {
-        setMessageMode("human")
       }
     },
     [session],
@@ -124,7 +107,6 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     enabled:
       open &&
       tab === "messages" &&
-      messageMode === "human" &&
       session.sessionReady &&
       !activeHelpArticle,
     watchParticipantType: "agent",
@@ -157,8 +139,6 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
       if (event !== "SIGNED_OUT") return
       // Auth cookies clear on sign-out; live-chat resume keys do not — start fresh as guest.
       resetLocalSession()
-      setMessageMode("bot")
-      setBotMessages(createInitialBotMessages())
       setEmailDraft("")
       setEmailLocked(false)
       setAgentPreview(null)
@@ -168,51 +148,25 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     return () => subscription.unsubscribe()
   }, [resetLocalSession])
 
-  const applyThreadModeHint = useCallback((hint: "ai" | "human" | "none") => {
-    if (hint === "ai") setMessageMode("ai")
-    else if (hint === "human") setMessageMode("human")
-  }, [])
-
   const sessionReady = session.sessionReady
   const sessionBootstrapping = session.bootstrapping
   const bootstrapSession = session.bootstrapSession
-  const threadModeHint = session.threadModeHint
 
-  const ensureHumanQueue = useCallback(
-    async (options?: { preserveMode?: boolean }) => {
-      if (sessionReady && threadModeHint !== "ai") {
-        if (!options?.preserveMode) applyThreadModeHint(threadModeHint)
-        return
-      }
-      if (sessionBootstrapping || handoffBootstrapRef.current) return
-      handoffBootstrapRef.current = true
-      try {
-        const result = await bootstrapSession({ prefer: "human" })
-        if (result.ok && !options?.preserveMode) {
-          applyThreadModeHint(result.threadModeHint)
-        }
-      } finally {
-        handoffBootstrapRef.current = false
-      }
-    },
-    [
-      applyThreadModeHint,
-      bootstrapSession,
-      sessionBootstrapping,
-      sessionReady,
-      threadModeHint,
-    ],
-  )
+  const ensureChatSession = useCallback(async () => {
+    if (sessionReady || sessionBootstrapping || handoffBootstrapRef.current) return
+    handoffBootstrapRef.current = true
+    try {
+      await bootstrapSession({ prefer: "human" })
+    } finally {
+      handoffBootstrapRef.current = false
+    }
+  }, [bootstrapSession, sessionBootstrapping, sessionReady])
 
   useEffect(() => {
-    if (messageMode !== "human" || sessionReady || handoffBootstrapRef.current) {
-      return
-    }
-    handoffBootstrapRef.current = true
-    void bootstrapSession({ prefer: "human" }).finally(() => {
-      handoffBootstrapRef.current = false
-    })
-  }, [bootstrapSession, messageMode, sessionReady])
+    if (sessionReady || handoffBootstrapRef.current) return
+    if (!open && tab !== "messages") return
+    void ensureChatSession()
+  }, [ensureChatSession, open, sessionReady, tab])
 
   function clearHelpArticleStack() {
     setHelpArticleStack([])
@@ -254,15 +208,10 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     setAgentPreview(null)
     setTab("messages")
     markMessagesRead()
-    // Stay on the bot landing unless this page load already has a live thread.
-    if (session.sessionReady && (session.threadModeHint === "human" || session.threadModeHint === "ai")) {
-      applyThreadModeHint(session.threadModeHint)
-    } else {
-      setMessageMode("bot")
-    }
     clearHelpArticleStack()
     setHasOpened(true)
     setOpen(true)
+    void ensureChatSession()
   }
 
   function closeWidget() {
@@ -280,9 +229,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   function openMessagesFromHome() {
     clearHelpArticleStack()
     setTab("messages")
-    // Explicit "Message the team" — resume the human/case thread, not an AI chat.
-    setMessageMode("human")
-    void ensureHumanQueue({ preserveMode: true })
+    void ensureChatSession()
   }
 
   function changeTab(next: LiveChatWidgetTab) {
@@ -290,11 +237,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     setTab(next)
     if (next === "messages") {
       markMessagesRead()
-      if (session.sessionReady && (session.threadModeHint === "human" || session.threadModeHint === "ai")) {
-        applyThreadModeHint(session.threadModeHint)
-      } else {
-        setMessageMode("bot")
-      }
+      void ensureChatSession()
     }
   }
 
@@ -321,21 +264,15 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     authStatus === "loading" || (session.bootstrapping && !session.sessionReady)
 
   async function handleStartNewConversation() {
-    setMessageMode("bot")
-    setBotMessages(createInitialBotMessages())
     setEmailDraft("")
     setEmailLocked(false)
     setAgentPreview(null)
     messagesInitRef.current = false
     handoffBootstrapRef.current = false
-    const result = await session.startNewConversation()
-    if (result.ok) {
-      messagesInitRef.current = true
-      setMessageMode("bot")
-    }
+    await session.startNewConversation()
   }
 
-  async function handleSendHumanMessage(content: string, email: string | null): Promise<boolean> {
+  async function handleSendMessage(content: string, email: string | null): Promise<boolean> {
     const sent = await session.sendMessage(content, email)
     if (sent && email && !isSignedIn) {
       setStoredLiveChatVisitorEmail(email)
@@ -344,24 +281,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     return sent !== null
   }
 
-  async function handleActivateAi(): Promise<boolean> {
-    const result = await session.activateAi()
-    return result.ok
-  }
-
-  async function handleSendAiMessage(content: string): Promise<boolean> {
-    const result = await session.sendAiMessage(content)
-    if (result.handoff) setMessageMode("human")
-    return result.ok
-  }
-
-  async function handleRequestHandoff(): Promise<boolean> {
-    const result = await session.requestAiHandoff()
-    return result.ok
-  }
-
-  // Wait for auth to resolve so signed-in users never flash the guest email row.
-  const showEmailField = messageMode === "human" && authStatus === "signed_out"
+  const showEmailField = authStatus === "signed_out"
 
   const lastConversationMessage =
     [...session.messages].reverse().find((m) => m.sender_type !== "system") ?? null
@@ -374,11 +294,10 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
           lastConversationMessage.sender_type === "bot",
         fromBot: lastConversationMessage.sender_type === "bot",
         senderName:
-          lastConversationMessage.sender_type === "bot"
-            ? "Reswell AI"
-            : lastConversationMessage.sender_type === "agent"
-              ? (lastConversationMessage.agent_display_name ?? "Reswell Support")
-              : "You",
+          lastConversationMessage.sender_type === "bot" ||
+          lastConversationMessage.sender_type === "agent"
+            ? (lastConversationMessage.agent_display_name ?? LIVE_CHAT_TEAM_NAME)
+            : "You",
       }
     : null
 
@@ -398,7 +317,9 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
           className={liveChatShellClass}
           role="dialog"
           aria-modal="true"
-          aria-label="Reswell support"
+          aria-label={
+            LIVE_CHAT_WIDGET_ADMIN_ONLY ? "Reswell support (admin only)" : "Reswell support"
+          }
         >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {activeHelpArticle ? (
@@ -424,24 +345,16 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
 
             {!activeHelpArticle && tab === "messages" ? (
               <LiveChatMessagesView
-                mode={messageMode}
-                onModeChange={setMessageMode}
                 onBack={() => changeTab("home")}
-                onOpenArticle={(article) => openHelpArticle(article, "messages")}
-                botMessages={botMessages}
-                onBotMessagesChange={setBotMessages}
                 serverMessages={session.messages}
                 typingName={typingName}
                 sending={session.sending}
-                aiThinking={session.aiThinking}
+                teamThinking={session.aiThinking}
                 error={session.error}
                 sessionClosed={session.sessionClosed}
                 onStartNewConversation={() => void handleStartNewConversation()}
                 composerLocked={composerLocked}
-                onSendHumanMessage={handleSendHumanMessage}
-                onSendAiMessage={handleSendAiMessage}
-                onActivateAi={handleActivateAi}
-                onRequestHandoff={handleRequestHandoff}
+                onSendMessage={handleSendMessage}
                 onPublishTyping={(isTyping) => void publishTyping(isTyping)}
                 visitorEmail={signedInEmail}
                 isSignedIn={isSignedIn}
@@ -454,13 +367,15 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
                 supportTeam={supportTeam}
                 onlineMemberIds={onlineMemberIds}
                 assignedAgentId={session.assignedAgentId}
-                supportCaseId={session.supportCaseId}
               />
             ) : null}
 
             {!activeHelpArticle && tab === "help" ? (
               <div className="flex items-center justify-between border-b border-border/50 bg-background px-4 py-3">
-                <p className="text-sm font-semibold">Help guides</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">Help guides</p>
+                  <LiveChatAdminOnlyBadge />
+                </div>
                 <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={closeWidget} aria-label="Close">
                   <X className="h-4 w-4" />
                 </Button>
@@ -495,9 +410,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
             className="w-full rounded-2xl border border-border/50 bg-background p-3 text-left shadow-[0_12px_32px_rgba(15,23,42,0.16)] transition-colors hover:bg-muted/40"
           >
             <p className="text-xs font-semibold text-foreground">
-              {agentPreview.sender_type === "bot"
-                ? "Reswell AI"
-                : (agentPreview.agent_display_name ?? "Reswell Support")}
+              {agentPreview.agent_display_name ?? LIVE_CHAT_TEAM_NAME}
             </p>
             <p className="mt-0.5 line-clamp-2 text-sm leading-snug text-muted-foreground">
               {agentPreview.content}
@@ -514,20 +427,32 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
         </div>
       ) : null}
 
+      {LIVE_CHAT_WIDGET_ADMIN_ONLY && !open ? (
+        <span className="pointer-events-none rounded-full bg-violet-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+          {LIVE_CHAT_ADMIN_ONLY_LABEL}
+        </span>
+      ) : null}
+
       <button
         type="button"
         className="pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-full bg-listingHeart text-white shadow-lg transition-transform duration-200 ease-out hover:scale-105 hover:bg-listingHeart/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-95"
         onClick={toggleWidget}
         aria-label={
           open
-            ? "Close Reswell support"
+            ? LIVE_CHAT_WIDGET_ADMIN_ONLY
+              ? "Close Reswell support (admin only)"
+              : "Close Reswell support"
             : session.messages.some(
                   (m) =>
                     (m.sender_type === "agent" || m.sender_type === "bot") &&
                     new Date(m.created_at).getTime() > lastReadAt,
                 )
-              ? "Open Reswell support, unread reply"
-              : "Open Reswell support"
+              ? LIVE_CHAT_WIDGET_ADMIN_ONLY
+                ? "Open Reswell support, unread reply (admin only)"
+                : "Open Reswell support, unread reply"
+              : LIVE_CHAT_WIDGET_ADMIN_ONLY
+                ? "Open Reswell support (admin only)"
+                : "Open Reswell support"
         }
         aria-expanded={open}
       >

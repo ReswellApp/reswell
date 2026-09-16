@@ -5,6 +5,7 @@ import { getLiveChatStaffProfileService } from "@/lib/services/liveChatAdmin"
 import { broadcastLiveChatTyping } from "@/lib/services/liveChatRealtime"
 import { liveChatTypingSchema } from "@/lib/validations/liveChat"
 import { createClient } from "@/lib/supabase/server"
+import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
 import {
   consumeLiveChatRateLimit,
   liveChatClientIp,
@@ -31,6 +32,10 @@ export async function POST(req: NextRequest, context: RouteContext) {
     if (!limit.ok) return liveChatRateLimitResponse(limit.retryAfterSec)
 
     if (parsed.data.participant_type === "visitor") {
+      const access = await assertLiveChatVisitorAccess()
+      if (!access.ok) {
+        return NextResponse.json({ error: access.error }, { status: access.status })
+      }
       if (!parsed.data.visitor_token) {
         return NextResponse.json({ error: "Missing visitor token" }, { status: 401 })
       }

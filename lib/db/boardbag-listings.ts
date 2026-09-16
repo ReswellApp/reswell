@@ -11,6 +11,7 @@ import { BOARDBAGS_SECTION } from "@/lib/boardbag-listing-config"
 import type { BoardbagsBrowseFacetSelections } from "@/lib/boardbags-browse-facets"
 import { normalizedBoardbagsBrowseSort } from "@/lib/boardbags-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const BOARDBAGS_BROWSE_PAGE_SIZE = 40
 
@@ -57,7 +58,9 @@ const BOARDBAG_BROWSE_LISTING_SELECT = `
   brand,
   brand_id,
   model,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 export type BoardbagsBrowseQueryInput = {
@@ -130,7 +133,7 @@ export async function fetchBoardbagsBrowsePage(
   }
 
   return {
-    boardbags: (data ?? []) as unknown as BoardbagBrowseListingRow[],
+    boardbags: hydrateCardListingImages((data ?? []) as unknown as BoardbagBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

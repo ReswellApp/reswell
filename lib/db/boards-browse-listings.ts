@@ -67,6 +67,7 @@ export type BoardBrowseListingRow = {
   shipping_available?: boolean | null
   primary_image_url?: string | null
   primary_thumbnail_url?: string | null
+  tile_gallery_images?: unknown
   listing_images?: ListingImageForCard[] | null
   categories?: { name?: string | null } | null | { name?: string | null }[] | null
   board_type?: string | null
@@ -75,8 +76,9 @@ export type BoardBrowseListingRow = {
 }
 
 /**
- * Card cover comes from denormalized primary_* columns (no listing_images join).
- * `*` still used for browse filters; nest removed to cut PostgREST lateral cost.
+ * Card cover + carousel come from denormalized primary_* / tile_gallery_images
+ * (no listing_images join). `*` still used for browse filters; nest removed to
+ * cut PostgREST lateral cost.
  */
 export const SURFBOARD_BROWSE_LISTING_SELECT = `
   *,

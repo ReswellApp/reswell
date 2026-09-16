@@ -19,9 +19,15 @@ import { generateLiveChatPublicId } from "@/lib/utils/live-chat-public-id"
 import {
   LIVE_CHAT_SESSION_CLOSED_CODE,
   LIVE_CHAT_SESSION_CLOSED_MESSAGE,
+  LIVE_CHAT_SESSION_MISSING_CODE,
+  LIVE_CHAT_SESSION_MISSING_MESSAGE,
 } from "@/lib/live-chat/errors"
 import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
-import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
+import { autoSendLiveChatCsAgentReply } from "@/lib/services/liveChatCsAgentAutoReply"
+import { isLegacyLiveChatWidgetCopy, liveChatAgentDisplayName } from "@/lib/live-chat/team-display"
+import { LIVE_CHAT_TEAM_GREETING } from "@/lib/live-chat/widget-config"
+import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
+import { openLiveChatSupportCase } from "@/lib/services/liveChatSupportCase"
 
 function isPlaceholderVisitorName(name: string | null | undefined): boolean {
   const trimmed = name?.trim() ?? ""
@@ -73,6 +79,45 @@ function toVisitorSession(session: LiveChatSessionRow) {
   }
 }
 
+async function linkSupportCase(
+  svc: SupabaseClient,
+  session: LiveChatSessionRow,
+): Promise<LiveChatSessionRow> {
+  const opened = await openLiveChatSupportCase(svc, session)
+  if (!opened) return session
+  return {
+    ...session,
+    support_case_id: opened.supportCaseId,
+    contact_message_id: opened.contactMessageId || session.contact_message_id,
+  }
+}
+
+async function startFreshVisitorSession(
+  svc: SupabaseClient,
+  args: {
+    visitorToken: string
+    visitorName: string
+    user: { id: string; email?: string | null } | null
+  },
+): Promise<LiveChatSessionRow | null> {
+  const session = await insertLiveChatSession(svc, {
+    public_id: generateLiveChatPublicId(),
+    visitor_token: args.visitorToken,
+    user_id: args.user?.id ?? null,
+    visitor_name: args.visitorName,
+    visitor_email: args.user?.email?.trim() || null,
+  })
+  if (!session) return null
+
+  await insertLiveChatMessage(svc, {
+    session_id: session.id,
+    sender_type: "agent",
+    content: LIVE_CHAT_TEAM_GREETING,
+  })
+
+  return session
+}
+
 export type LiveChatVisitorMessage = LiveChatMessageRow & {
   agent_display_name: string | null
 }
@@ -86,15 +131,16 @@ async function enrichMessagesWithAgentNames(
     .filter((m) => m.sender_type === "agent" && m.sender_agent_id)
     .map((m) => m.sender_agent_id as string)
   const names = await getAgentDisplayNamesByIds(svc, agentIds)
-  return messages.map((m) => ({
-    ...m,
-    agent_display_name:
-      m.sender_type === "bot"
-        ? "Reswell AI"
-        : m.sender_type === "agent" && m.sender_agent_id
-          ? (names.get(m.sender_agent_id) ?? "Support")
-          : null,
-  }))
+  return messages
+    .filter((m) => !isLegacyLiveChatWidgetCopy(m.content))
+    .map((m) => ({
+      ...m,
+      agent_display_name: liveChatAgentDisplayName({
+        senderType: m.sender_type,
+        senderAgentId: m.sender_agent_id,
+        lookedUpName: m.sender_agent_id ? names.get(m.sender_agent_id) : null,
+      }),
+    }))
 }
 
 /** AI-only threads have no case/ticket and have not asked for a human. */
@@ -146,8 +192,11 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
       session: ReturnType<typeof toVisitorSession>
       messages: LiveChatVisitorMessage[]
     }
-  | { error: string }
+  | { error: string; status?: number }
 > {
+  const access = await assertLiveChatVisitorAccess()
+  if (!access.ok) return { error: access.error, status: access.status }
+
   const parsed = createLiveChatSessionSchema.safeParse(raw)
   if (!parsed.success) {
     return { error: "Invalid session request" }
@@ -219,37 +268,17 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
     }
   }
 
-  const session = await insertLiveChatSession(svc, {
-    public_id: generateLiveChatPublicId(),
-    visitor_token: parsed.data.visitor_token,
-    user_id: user?.id ?? null,
-    visitor_name: visitorName,
-    visitor_email: user?.email?.trim() || null,
-    metadata: prefer === "ai" ? { ai_mode: "active" } : undefined,
+  const session = await startFreshVisitorSession(svc, {
+    visitorToken: parsed.data.visitor_token,
+    visitorName,
+    user,
   })
 
   if (!session) {
     return { error: "Could not start chat. Try again in a moment." }
   }
 
-  const welcome =
-    prefer === "ai"
-      ? null
-      : await insertLiveChatMessage(svc, {
-          session_id: session.id,
-          sender_type: "system",
-          content: "Thanks for reaching out! A Reswell team member will be with you shortly.",
-        })
-
-  const messages: LiveChatVisitorMessage[] = welcome
-    ? [{ ...welcome, agent_display_name: null }]
-    : []
-
-  return {
-    success: true,
-    session: toVisitorSession(session),
-    messages,
-  }
+  return visitorResumePayload(svc, session)
 }
 
 export async function sendLiveChatVisitorMessageService(
@@ -260,10 +289,15 @@ export async function sendLiveChatVisitorMessageService(
       success: true
       message: LiveChatMessageRow
       session_id: string
+      public_id: string
+      started_fresh: boolean
       support_case_id: string | null
     }
-  | { error: string; code?: string }
+  | { error: string; code?: string; status?: number }
 > {
+  const access = await assertLiveChatVisitorAccess()
+  if (!access.ok) return { error: access.error, status: access.status }
+
   const parsed = sendLiveChatVisitorMessageSchema.safeParse(raw)
   if (!parsed.success) {
     const msg = parsed.error.flatten().fieldErrors.content?.[0] ?? "Invalid message"
@@ -271,18 +305,37 @@ export async function sendLiveChatVisitorMessageService(
   }
 
   const svc = createServiceRoleClient()
-  let session = await getLiveChatSessionForVisitor(svc, publicId, parsed.data.visitor_token)
-  if (!session) {
-    return { error: "Chat session not found." }
-  }
-  if (session.status === "closed" || session.status === "resolved") {
-    return { error: LIVE_CHAT_SESSION_CLOSED_MESSAGE, code: LIVE_CHAT_SESSION_CLOSED_CODE }
-  }
-
   const authSupabase = await createClient()
   const {
     data: { user },
   } = await authSupabase.auth.getUser()
+
+  let startedFresh = false
+  let session = await getLiveChatSessionForVisitor(svc, publicId, parsed.data.visitor_token)
+  if (!session) {
+    const signedInName = user?.id ? await resolveSignedInVisitorName(svc, user.id) : null
+    const clientName = parsed.data.visitor_name?.trim() || ""
+    const visitorName =
+      signedInName ||
+      (!isPlaceholderVisitorName(clientName) ? clientName : "") ||
+      "Guest"
+    session = await startFreshVisitorSession(svc, {
+      visitorToken: parsed.data.visitor_token,
+      visitorName,
+      user,
+    })
+    if (!session) {
+      return {
+        error: LIVE_CHAT_SESSION_MISSING_MESSAGE,
+        code: LIVE_CHAT_SESSION_MISSING_CODE,
+        status: 404,
+      }
+    }
+    startedFresh = true
+  }
+  if (session.status === "closed" || session.status === "resolved") {
+    return { error: LIVE_CHAT_SESSION_CLOSED_MESSAGE, code: LIVE_CHAT_SESSION_CLOSED_CODE }
+  }
 
   session = await attachSignedInVisitorIdentity(svc, session, user)
 
@@ -313,21 +366,8 @@ export async function sendLiveChatVisitorMessageService(
     return { error: "Could not send message. Try again." }
   }
 
-  const visitorEmail = parsed.data.visitor_email?.trim() || session.visitor_email
-  const shouldEscalate =
-    !session.support_case_id && Boolean(visitorEmail || session.user_id || user?.id)
-
-  let supportCaseId = session.support_case_id
-  if (shouldEscalate) {
-    const escalated = await escalateLiveChatSessionToTicket(
-      svc,
-      { ...session, visitor_email: visitorEmail, user_id: session.user_id ?? user?.id ?? null },
-      "manual",
-    )
-    if ("success" in escalated && escalated.success) {
-      supportCaseId = escalated.supportCaseId
-    }
-  }
+  session = await linkSupportCase(svc, session)
+  const supportCaseId = session.support_case_id
 
   after(async () => {
     await broadcastLiveChatMessage({
@@ -341,12 +381,19 @@ export async function sendLiveChatVisitorMessageService(
         created_at: message.created_at,
       },
     })
+    await autoSendLiveChatCsAgentReply(
+      svc,
+      { ...session, support_case_id: supportCaseId },
+      message,
+    )
   })
 
   return {
     success: true,
     message,
     session_id: session.id,
+    public_id: session.public_id,
+    started_fresh: startedFresh,
     support_case_id: supportCaseId,
   }
 }
@@ -360,12 +407,19 @@ export async function getLiveChatVisitorThreadService(
       session: ReturnType<typeof toVisitorSession>
       messages: LiveChatVisitorMessage[]
     }
-  | { error: string }
+  | { error: string; code?: string; status?: number }
 > {
+  const access = await assertLiveChatVisitorAccess()
+  if (!access.ok) return { error: access.error, status: access.status }
+
   const svc = createServiceRoleClient()
   const session = await getLiveChatSessionForVisitor(svc, publicId, visitorToken)
   if (!session) {
-    return { error: "Chat session not found." }
+    return {
+      error: LIVE_CHAT_SESSION_MISSING_MESSAGE,
+      code: LIVE_CHAT_SESSION_MISSING_CODE,
+      status: 404,
+    }
   }
 
   const messages = await enrichMessagesWithAgentNames(

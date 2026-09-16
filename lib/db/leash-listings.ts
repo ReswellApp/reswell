@@ -11,6 +11,7 @@ import { LEASHES_SECTION } from "@/lib/leash-listing-config"
 import type { LeashesBrowseFacetSelections } from "@/lib/leashes-browse-facets"
 import { normalizedLeashesBrowseSort } from "@/lib/leashes-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const LEASHES_BROWSE_PAGE_SIZE = 40
 
@@ -57,7 +58,9 @@ const LEASH_BROWSE_LISTING_SELECT = `
   brand,
   brand_id,
   model,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 export type LeashesBrowseQueryInput = {
@@ -130,7 +133,7 @@ export async function fetchLeashesBrowsePage(
   }
 
   return {
-    leashes: (data ?? []) as unknown as LeashBrowseListingRow[],
+    leashes: hydrateCardListingImages((data ?? []) as unknown as LeashBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

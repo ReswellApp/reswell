@@ -10,7 +10,6 @@ const PRICE_BANDS: readonly { minFactor: number; maxFactor: number }[] = [
 /** Shared PDP surfboard strip shape (tiles, favorites cart, category pill). */
 export const PDP_PEER_SURFBOARD_STRIP_SELECT = `
   *,
-  listing_images (url, thumbnail_url, sort_order, is_primary),
   categories (name)
 `
 

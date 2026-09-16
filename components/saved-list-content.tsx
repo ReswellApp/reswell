@@ -32,7 +32,7 @@ export interface SavedFavorite {
     dimensions?: string | null
     shipping_available?: boolean | null
     local_pickup?: boolean | null
-    listing_images: { url: string; is_primary: boolean }[]
+    listing_images: ListingImageForCard[]
     profiles?: { display_name?: string | null; shop_verified?: boolean } | null
     categories?: { name?: string | null } | null
   }

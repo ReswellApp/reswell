@@ -221,6 +221,7 @@ export async function listContactMessagesForUser(
     .from("contact_messages")
     .select(CONTACT_MESSAGE_USER_SELECT)
     .eq("user_id", userId)
+    .neq("source", "live_chat")
     .order("updated_at", { ascending: false })
     .limit(100)
 
@@ -251,6 +252,7 @@ export async function getContactMessageForUser(
     .select(CONTACT_MESSAGE_USER_SELECT)
     .eq("id", ticketId)
     .eq("user_id", userId)
+    .neq("source", "live_chat")
     .maybeSingle()
 
   if (error || !data) {
@@ -267,6 +269,7 @@ export async function countOpenContactMessagesForUser(
     .from("contact_messages")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
+    .neq("source", "live_chat")
     .neq("support_status", "resolved")
 
   if (error) {

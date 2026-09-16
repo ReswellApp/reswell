@@ -346,6 +346,7 @@ export async function listSupportCasesForRequester(
     .from("support_cases")
     .select(CASE_SELECT)
     .eq("requester_user_id", userId)
+    .neq("source_channel", "live_chat")
     .order("updated_at", { ascending: false })
     .limit(200)
 
@@ -368,6 +369,7 @@ export async function countOpenSupportCasesForRequester(
     .from("support_cases")
     .select("id", { count: "exact", head: true })
     .eq("requester_user_id", userId)
+    .neq("source_channel", "live_chat")
     .neq("status", "resolved")
   if (error) return 0
   return count ?? 0

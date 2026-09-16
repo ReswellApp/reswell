@@ -2,6 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns"
 import { Bot, ChevronRight, MessageCircle, ShieldCheck, X } from "lucide-react"
+import { LiveChatAdminOnlyBadge } from "@/components/features/live-chat/live-chat-admin-only-badge"
 import { LiveChatSupportLeadAvatar } from "@/components/features/live-chat/live-chat-support-lead-avatar"
 import { LiveChatWordmark } from "@/components/features/live-chat/live-chat-wordmark"
 import type { LiveChatSupportTeamMember } from "@/lib/services/liveChatSupportTeamDisplay"
@@ -75,9 +76,12 @@ export function LiveChatHomeView({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/80">
-            {LIVE_CHAT_HOME_TAGLINE}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <LiveChatAdminOnlyBadge onPrimary />
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/80">
+              {LIVE_CHAT_HOME_TAGLINE}
+            </p>
+          </div>
           <h2 className="mt-2 text-[1.65rem] font-bold leading-tight tracking-tight text-white">
             {LIVE_CHAT_HOME_GREETING}
           </h2>

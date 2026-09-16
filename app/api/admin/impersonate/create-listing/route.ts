@@ -18,6 +18,7 @@ import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerc
 import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
+import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -110,8 +111,20 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const listingWithDropoffParcel = await overlayListingRowWithDropoffParcel(
+    service,
+    {
+      dropoffLocationId:
+        typeof listingData.dropoff_location_id === "string"
+          ? listingData.dropoff_location_id
+          : null,
+      boardLength: catalog_snapshot?.boardLength,
+      boardWidthInches: catalog_snapshot?.boardWidthInches,
+    },
+    omitClientAutoPriceDropSchedule(listingData),
+  )
   const insertPayload = {
-    ...omitClientAutoPriceDropSchedule(listingData),
+    ...listingWithDropoffParcel,
     user_id: targetUserId,
     slug,
     status: "active" as const,

@@ -32,6 +32,7 @@ import {
 } from "@/lib/db/brand-listings"
 import { fetchCuratedRecentListings } from "@/lib/db/curatedRecentListings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
+import { coalesceListingImagesForCard } from "@/lib/listing-image-display"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
 import {
   displayMarketplaceSearchQueryForAnalytics,
@@ -692,7 +693,9 @@ async function buildSearchFromSupabaseTypoFallback(
       shipping_available,
       board_type,
       dimensions,
-      listing_images (url, is_primary),
+      primary_image_url,
+      primary_thumbnail_url,
+      tile_gallery_images,
       profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name, slug)
     `,
@@ -734,7 +737,7 @@ function rowToRecentListing(row: any): RecentListing {
     shipping_available: row.shipping_available,
     board_type: row.board_type,
     board_length: boardLength,
-    listing_images: row.listing_images,
+    listing_images: coalesceListingImagesForCard(row),
     profiles: row.profiles,
     categories: row.categories,
   }
@@ -765,7 +768,9 @@ async function buildSearchQuery(
       shipping_available,
       board_type,
       dimensions,
-      listing_images (url, is_primary),
+      primary_image_url,
+      primary_thumbnail_url,
+      tile_gallery_images,
       profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
       categories (name, slug)
     `,

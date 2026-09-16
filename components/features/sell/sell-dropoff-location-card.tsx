@@ -19,6 +19,8 @@ export type SellDropoffLocationCardProps = {
   boardWidthInches: string
   onSelect: (locationId: string) => void
   onClear: () => void
+  status?: "loading" | "ready" | "error"
+  onRetry?: () => void
 }
 
 export function matchPublicDropoffLocation(
@@ -90,15 +92,15 @@ export function SellDropoffLocationCard({
   boardWidthInches,
   onSelect,
   onClear,
+  status = "ready",
+  onRetry,
 }: SellDropoffLocationCardProps) {
   const listId = useId()
-  const [citiesOpen, setCitiesOpen] = useState(Boolean(selectedLocationId))
+  const [citiesOpen, setCitiesOpen] = useState(true)
   const selected = locations.find((row) => row.id === selectedLocationId) ?? null
   const selectedMatch = selected
     ? matchPublicDropoffLocation(selected, boardLength, boardWidthInches)
     : null
-
-  if (locations.length === 0) return null
 
   return (
     <div className="space-y-2 sm:space-y-3">
@@ -168,16 +170,41 @@ export function SellDropoffLocationCard({
                 Cities we serve
               </p>
               <div className="space-y-2 pl-[1.625rem]">
-                {locations.map((location) => (
-                  <DropoffCityOption
-                    key={location.id}
-                    location={location}
-                    selected={selectedLocationId === location.id}
-                    boardLength={boardLength}
-                    boardWidthInches={boardWidthInches}
-                    onSelect={onSelect}
-                  />
-                ))}
+                {status === "loading" ? (
+                  <p className="text-xs text-muted-foreground sm:text-sm">
+                    Loading drop-off cities…
+                  </p>
+                ) : status === "error" ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground sm:text-sm">
+                      Could not load drop-off cities. Try again.
+                    </p>
+                    {onRetry ? (
+                      <button
+                        type="button"
+                        onClick={onRetry}
+                        className="text-xs font-medium text-foreground underline underline-offset-2 sm:text-sm"
+                      >
+                        Retry
+                      </button>
+                    ) : null}
+                  </div>
+                ) : locations.length === 0 ? (
+                  <p className="text-xs text-muted-foreground sm:text-sm">
+                    No drop-off cities are available right now. Pack and ship it yourself.
+                  </p>
+                ) : (
+                  locations.map((location) => (
+                    <DropoffCityOption
+                      key={location.id}
+                      location={location}
+                      selected={selectedLocationId === location.id}
+                      boardLength={boardLength}
+                      boardWidthInches={boardWidthInches}
+                      onSelect={onSelect}
+                    />
+                  ))
+                )}
               </div>
             </div>
           </SmoothCollapse>

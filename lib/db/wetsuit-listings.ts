@@ -11,6 +11,7 @@ import { WETSUITS_SECTION } from "@/lib/wetsuit-listing-config"
 import type { WetsuitsBrowseFacetSelections } from "@/lib/wetsuits-browse-facets"
 import { normalizedWetsuitsBrowseSort } from "@/lib/wetsuits-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const WETSUITS_BROWSE_PAGE_SIZE = 40
 
@@ -57,7 +58,9 @@ const WETSUIT_BROWSE_LISTING_SELECT = `
   brand,
   brand_id,
   model,
-  listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images
 `
 
 export type WetsuitsBrowseQueryInput = {
@@ -130,7 +133,7 @@ export async function fetchWetsuitsBrowsePage(
   }
 
   return {
-    wetsuits: (data ?? []) as unknown as WetsuitBrowseListingRow[],
+    wetsuits: hydrateCardListingImages((data ?? []) as unknown as WetsuitBrowseListingRow[]),
     totalPages: Math.ceil((count ?? 0) / limit),
   }
 }

@@ -3,6 +3,7 @@
  *   (only when it is distinct from the full URL), then on-demand `?variant=tile` resize.
  *   Does not guess `*-thumb.` siblings — those 404s serialized every card on first paint.
  * - `listingCardImageSrc` — primary photo for marketplace tiles (`ListingTile` and similar).
+ * - `listingImagesFromPrimaryFields` — card gallery from denorm cover + `tile_gallery_images`.
  * - `listingTileCarouselImageUrls` — ordered CDN URLs for multi-photo tiles (primary first).
  * - `listingTitleThumbnailSrc` — compact “thumb + title” rows (cart, checkout, orders).
  * - `listingHeroSlideSrc` — large hero imagery: full `url` only.
@@ -99,14 +100,54 @@ export function listingCardImageSrc(
   return listingTileImageSrcFromRow(primary)
 }
 
+/** Matches `listings.tile_gallery_images` trigger cap — keep in sync with the SQL function. */
+export const LISTING_TILE_GALLERY_MAX_IMAGES = 12
+
+/** PostgREST listing columns for card carousels — no `listing_images` join. */
+export const LISTING_CARD_IMAGE_COLUMNS = `
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images`
+
+export type ListingTileGalleryImage = {
+  url: string
+  thumbnail_url?: string | null
+}
+
+function asTileGalleryImages(value: unknown): ListingImageForCard[] {
+  if (!Array.isArray(value)) return []
+  const out: ListingImageForCard[] = []
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue
+    const rawUrl = (item as { url?: unknown }).url
+    const url = typeof rawUrl === "string" ? rawUrl.trim() : ""
+    if (!url) continue
+    const rawThumb = (item as { thumbnail_url?: unknown }).thumbnail_url
+    const thumbnail_url =
+      typeof rawThumb === "string" && rawThumb.trim() ? rawThumb.trim() : null
+    out.push({
+      url,
+      thumbnail_url,
+      is_primary: out.length === 0,
+    })
+    if (out.length >= LISTING_TILE_GALLERY_MAX_IMAGES) break
+  }
+  return out
+}
+
 /**
- * Build a one-element `listing_images` array from denormalized cover columns on
- * `listings`. Used by card/browse selects that skip the listing_images join.
+ * Build a card `listing_images` array from denormalized cover columns on
+ * `listings`. Prefers `tile_gallery_images` (capped carousel) so tiles can
+ * page photos without a listing_images join. Falls back to the single cover.
  */
 export function listingImagesFromPrimaryFields(
   primaryImageUrl: string | null | undefined,
   primaryThumbnailUrl: string | null | undefined,
+  tileGalleryImages?: unknown,
 ): ListingImageForCard[] | null {
+  const fromGallery = asTileGalleryImages(tileGalleryImages)
+  if (fromGallery.length > 0) return fromGallery
+
   const url = typeof primaryImageUrl === "string" ? primaryImageUrl.trim() : ""
   if (!url) return null
   const thumb =
@@ -116,16 +157,21 @@ export function listingImagesFromPrimaryFields(
   return [{ url, thumbnail_url: thumb, is_primary: true }]
 }
 
-/** Prefer nested images when present; otherwise use denormalized primary columns. */
+/** Prefer nested images when present; otherwise use denormalized card columns. */
 export function coalesceListingImagesForCard(row: {
   listing_images?: ListingImageForCard[] | null
   primary_image_url?: string | null
   primary_thumbnail_url?: string | null
+  tile_gallery_images?: unknown
 }): ListingImageForCard[] | null {
   if (Array.isArray(row.listing_images) && row.listing_images.length > 0) {
     return row.listing_images
   }
-  return listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url)
+  return listingImagesFromPrimaryFields(
+    row.primary_image_url,
+    row.primary_thumbnail_url,
+    row.tile_gallery_images,
+  )
 }
 
 /** Attach `listing_images` for card UIs after a denorm-only select. */
@@ -134,6 +180,7 @@ export function hydrateCardListingImages<
     listing_images?: ListingImageForCard[] | null
     primary_image_url?: string | null
     primary_thumbnail_url?: string | null
+    tile_gallery_images?: unknown
   },
 >(rows: T[]): Array<T & { listing_images: ListingImageForCard[] | null }> {
   return rows.map((row) => ({

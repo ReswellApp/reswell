@@ -6,7 +6,10 @@ import {
   isListingPubliclyVisible,
   isListingVisibleInPublicSoldFeed,
 } from "@/lib/listing-public-visibility"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  coalesceListingImagesForCard,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import type { BlogEmbedListing } from "@/lib/types/blog-listing-embed"
 
 const BLOG_EMBED_LISTING_SELECT = `
@@ -23,7 +26,9 @@ const BLOG_EMBED_LISTING_SELECT = `
   archived_at,
   shipping_available,
   local_pickup,
-  listing_images (url, thumbnail_url, is_primary, sort_order),
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images,
   categories (name)
 `
 
@@ -41,6 +46,9 @@ type EmbedListingRow = {
   archived_at?: string | null
   shipping_available?: boolean | null
   local_pickup?: boolean | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
+  tile_gallery_images?: unknown
   listing_images?: ListingImageForCard[] | null
   categories?: { name?: string | null } | { name?: string | null }[] | null
 }
@@ -62,7 +70,7 @@ export function mapBlogEmbedListingRow(row: EmbedListingRow): BlogEmbedListing {
     section: row.section ?? "surfboards",
     local_pickup: row.local_pickup,
     shipping_available: row.shipping_available,
-    listing_images: row.listing_images ?? null,
+    listing_images: coalesceListingImagesForCard(row),
     categories: row.categories ?? null,
     board_type: row.board_type ?? null,
     condition: row.condition?.trim() ? row.condition : null,
