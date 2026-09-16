@@ -7,6 +7,8 @@ import { buildOAuthCallbackUrl } from '@/lib/auth/oauth-callback-url'
 import { buildGoogleOAuthHandoffUrl } from '@/lib/auth/google-oauth-handoff-url'
 import { isInAppBrowserClient } from '@/lib/utils/is-in-app-browser'
 import { openInSystemBrowser } from '@/lib/utils/escape-in-app-browser'
+import { isAccountBannedError } from '@/lib/auth/is-account-banned-error'
+import { ACCOUNT_BANNED_USER_MESSAGE } from '@/lib/messages/account-ban-errors'
 import { cn } from '@/lib/utils'
 
 /** Standard multicolor Google “G” mark (brand colors). */
@@ -94,7 +96,13 @@ export function GoogleOAuthButton({
       })
       if (oauthError) throw oauthError
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Could not start Google sign-in')
+      setError(
+        isAccountBannedError(err)
+          ? ACCOUNT_BANNED_USER_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : 'Could not start Google sign-in',
+      )
       setIsLoading(false)
     }
   }, [marketingOptIn, nextPath])

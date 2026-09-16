@@ -14,7 +14,9 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { isAccountBannedError } from "@/lib/auth/is-account-banned-error"
 import { isEmailNotConfirmedError } from "@/lib/auth/is-email-not-confirmed-error"
+import { ACCOUNT_BANNED_USER_MESSAGE } from "@/lib/messages/account-ban-errors"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
@@ -38,6 +40,7 @@ export function LoginFormPanel({
   onSignUp,
   googleAutoStart = false,
   signedOut = false,
+  initialError = null,
 }: {
   redirectTo: string
   onLoggedIn?: () => void
@@ -48,12 +51,13 @@ export function LoginFormPanel({
   googleAutoStart?: boolean
   /** When true, do not auto-redirect an existing session — user chose to sign out. */
   signedOut?: boolean
+  initialError?: string | null
 }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [staySignedIn, setStaySignedIn] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError)
   const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false)
   const [resendSent, setResendSent] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
@@ -131,6 +135,10 @@ export function LoginFormPanel({
         setError(
           "Confirm your email before signing in. Check your inbox for the link from Reswell, or resend it below.",
         )
+        return
+      }
+      if (isAccountBannedError(err)) {
+        setError(ACCOUNT_BANNED_USER_MESSAGE)
         return
       }
       setError(err instanceof Error ? err.message : "An error occurred")

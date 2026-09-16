@@ -6,6 +6,9 @@ export const MESSAGE_BLOCKED_RATE_LIMITED_ERROR = "messages_rate_limited" as con
 export const PURCHASE_BLOCKED_ACCOUNT_RESTRICTED_ERROR =
   "purchase_account_restricted" as const
 
+export const REVIEW_BLOCKED_ACCOUNT_RESTRICTED_ERROR =
+  "review_account_restricted" as const
+
 export type MessageSendRestrictionCode =
   | typeof MESSAGE_BLOCKED_ACCOUNT_RESTRICTED_ERROR
   | typeof MESSAGE_BLOCKED_RATE_LIMITED_ERROR

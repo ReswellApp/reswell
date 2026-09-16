@@ -95,6 +95,19 @@ describe("case customer panel helpers", () => {
       flags.map((flag) => flag.id),
       ["email_match", "staff", "verified", "seller_banned", "open_tickets"],
     )
+    assert.deepEqual(
+      buildCustomerPanelFlags({
+        hasProfile: true,
+        matchedByEmail: false,
+        isShop: false,
+        verified: false,
+        sellerBanned: true,
+        accountBanned: true,
+        isStaff: false,
+        openTicketCount: 0,
+      }).map((flag) => flag.id),
+      ["account_banned"],
+    )
     assert.equal(flags.find((flag) => flag.id === "open_tickets")?.label, "3 open tickets")
   })
 

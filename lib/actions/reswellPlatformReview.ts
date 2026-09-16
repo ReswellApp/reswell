@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { evaluateUserReview } from "@/lib/services/accountRestrictions"
 import {
   submitReswellPlatformReviewService,
   submitSoldFlowReswellReviewService,
@@ -25,6 +26,11 @@ export async function submitReswellPlatformReviewAction(raw: unknown) {
 
   if (!user) {
     return { error: "Sign in to rate Reswell." as const }
+  }
+
+  const reviewGuard = await evaluateUserReview(supabase, user.id)
+  if (!reviewGuard.ok) {
+    return { error: reviewGuard.userMessage }
   }
 
   const result = await submitReswellPlatformReviewService(supabase, user.id, parsed.data)
@@ -52,6 +58,11 @@ export async function submitSoldFlowReswellReviewAction(raw: unknown) {
 
   if (!user) {
     return { error: "Sign in to rate Reswell." as const }
+  }
+
+  const soldReviewGuard = await evaluateUserReview(supabase, user.id)
+  if (!soldReviewGuard.ok) {
+    return { error: soldReviewGuard.userMessage }
   }
 
   const result = await submitSoldFlowReswellReviewService(supabase, user.id, parsed.data)

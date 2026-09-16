@@ -143,6 +143,7 @@ export function buildCustomerPanelFlags(input: {
   isShop: boolean
   verified: boolean
   sellerBanned: boolean
+  accountBanned?: boolean
   isStaff: boolean
   openTicketCount: number
 }): CustomerPanelFlag[] {
@@ -161,7 +162,10 @@ export function buildCustomerPanelFlags(input: {
   } else if (input.isShop) {
     flags.push({ id: "shop", label: "Shop", tone: "secondary" })
   }
-  if (input.sellerBanned) {
+  if (input.accountBanned) {
+    flags.push({ id: "account_banned", label: "Permanently banned", tone: "destructive" })
+  }
+  if (input.sellerBanned && !input.accountBanned) {
     flags.push({ id: "seller_banned", label: "Seller banned", tone: "destructive" })
   }
   if (input.openTicketCount > 0) {

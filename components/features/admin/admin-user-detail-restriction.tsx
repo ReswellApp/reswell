@@ -28,6 +28,7 @@ interface RestrictionProps {
   loading: boolean
   saving: boolean
   isAdminUser: boolean
+  lockedByPermanentBan?: boolean
   restriction: AdminAccountRestrictionState | null
   reason: string
   selectedMinutes: number
@@ -40,6 +41,7 @@ export function AdminUserDetailRestriction({
   loading,
   saving,
   isAdminUser,
+  lockedByPermanentBan = false,
   restriction,
   reason,
   selectedMinutes,
@@ -47,7 +49,7 @@ export function AdminUserDetailRestriction({
   onSelectMinutes,
   onApply,
 }: RestrictionProps) {
-  const locked = isFutureRestriction(restriction?.restrictedUntil)
+  const locked = isFutureRestriction(restriction?.restrictedUntil) || lockedByPermanentBan
 
   return (
     <section className="admin-surface p-5">
@@ -65,23 +67,29 @@ export function AdminUserDetailRestriction({
         <div className="mt-4 space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             {locked ? <AdminStatusPill label="Locked" tone="red" /> : <AdminStatusPill label="Active" tone="green" />}
-            {locked && restriction?.restrictedUntil ? (
+            {locked && restriction?.restrictedUntil && !lockedByPermanentBan ? (
               <span className="text-sm text-muted-foreground">
                 Until {formatBusinessDateTime(restriction.restrictedUntil)}
               </span>
-            ) : restriction?.restrictedUntil ? (
+            ) : restriction?.restrictedUntil && !lockedByPermanentBan ? (
               <span className="text-sm text-muted-foreground">Lock expired</span>
             ) : null}
           </div>
           <p className="text-sm text-muted-foreground">
-            Locked users can still sign in, but they cannot send messages or complete purchases.
+            {lockedByPermanentBan
+              ? "This account is permanently banned. Sign-in, buying, selling, and messaging are all blocked."
+              : "Locked users can still sign in, but they cannot send messages or complete purchases."}
           </p>
           {isFutureRestriction(restriction?.messageRateLimitedUntil) && restriction?.messageRateLimitedUntil ? (
             <p className="text-xs text-muted-foreground">
               Messaging cooldown until {formatBusinessDateTime(restriction.messageRateLimitedUntil)}
             </p>
           ) : null}
-          {!locked ? (
+          {lockedByPermanentBan ? (
+            <p className="text-xs text-muted-foreground">
+              Remove the permanent ban to change this lock.
+            </p>
+          ) : !locked ? (
             <>
               <div className="space-y-2">
                 <Label>Lock duration</Label>

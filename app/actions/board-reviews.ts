@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { evaluateUserReview } from "@/lib/services/accountRestrictions"
 import {
   submitBoardModelReviewService,
   type SubmitBoardModelReviewInput,
@@ -15,6 +16,11 @@ export async function submitBoardModelReview(input: SubmitBoardModelReviewInput)
 
   if (!user) {
     return { error: "Sign in to leave a review" as const }
+  }
+
+  const reviewGuard = await evaluateUserReview(supabase, user.id)
+  if (!reviewGuard.ok) {
+    return { error: reviewGuard.userMessage }
   }
 
   const result = await submitBoardModelReviewService(supabase, user.id, input)

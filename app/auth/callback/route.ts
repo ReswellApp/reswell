@@ -23,6 +23,10 @@ import {
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created";
 import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent";
 import { captureServerEvent } from "@/lib/posthog-server";
+import {
+  bannedAuthRedirect,
+  shouldRejectBannedAuthUser,
+} from "@/lib/auth/reject-banned-auth-user";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse, after } from "next/server";
@@ -150,6 +154,9 @@ export async function GET(request: NextRequest) {
     const { data, error } = await exchangeAuthCodeWithRetry(supabase, code);
     const sessionUser = data.session?.user;
     if (!error && sessionUser) {
+      if (await shouldRejectBannedAuthUser(sessionUser)) {
+        return bannedAuthRedirect(request, origin);
+      }
       const destination = accessTokenIndicatesPasswordRecovery(
         data.session?.access_token,
       )
@@ -173,6 +180,9 @@ export async function GET(request: NextRequest) {
       baseDelayMs: 100,
     });
     if (existingUser) {
+      if (await shouldRejectBannedAuthUser(existingUser)) {
+        return bannedAuthRedirect(request, origin);
+      }
       const {
         data: { session },
       } = await supabase.auth.getSession()

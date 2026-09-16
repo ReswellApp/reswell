@@ -7,6 +7,7 @@ import {
 } from "@/lib/db/order-reviews"
 import { trackKlaviyoSellerReviewedBuyer } from "@/lib/klaviyo/track-seller-reviewed-buyer"
 import { resolveMarketplaceReviewAttachmentMetadata } from "@/lib/services/marketplaceReviewAttachments"
+import { evaluateUserReview } from "@/lib/services/accountRestrictions"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
@@ -25,6 +26,18 @@ export async function POST(
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const reviewGuard = await evaluateUserReview(supabase, user.id)
+  if (!reviewGuard.ok) {
+    return NextResponse.json(
+      {
+        error: reviewGuard.userMessage,
+        code: reviewGuard.error,
+        restrictedUntil: reviewGuard.restrictedUntil,
+      },
+      { status: 403 },
+    )
   }
 
   let json: unknown

@@ -5,6 +5,7 @@ import {
   isNonFatalGetUserError,
   isTransientAuthNetworkError,
 } from '@/lib/auth/clear-supabase-auth-cookies'
+import { ACCOUNT_BANNED_ERROR } from '@/lib/messages/account-ban-errors'
 import { isUserAuthBanned } from '@/lib/services/banUserAccount'
 import {
   PASSWORD_RESET_QUERY_KEY,
@@ -239,7 +240,7 @@ async function refreshSupabaseSession(
     clearSupabaseAuthCookies(request, supabaseResponse)
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    url.searchParams.set('error', 'account_banned')
+    url.searchParams.set('error', ACCOUNT_BANNED_ERROR)
     return NextResponse.redirect(url)
   }
 

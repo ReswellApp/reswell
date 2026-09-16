@@ -39,6 +39,10 @@ import {
   type AdminSellerBanState,
 } from '@/components/features/admin/admin-user-detail-seller-ban'
 import {
+  AdminUserDetailAccountBan,
+  type AdminAccountBanState,
+} from '@/components/features/admin/admin-user-detail-account-ban'
+import {
   AdminUserDetailListings,
   type AdminUserListingFilter,
 } from '@/components/features/admin/admin-user-detail-listings'
@@ -81,6 +85,10 @@ export default function AdminUserDetailPage() {
   const [sellerBanLoading, setSellerBanLoading] = useState(true)
   const [sellerBanSaving, setSellerBanSaving] = useState(false)
   const [sellerBanReason, setSellerBanReason] = useState('')
+  const [accountBan, setAccountBan] = useState<AdminAccountBanState | null>(null)
+  const [accountBanLoading, setAccountBanLoading] = useState(true)
+  const [accountBanSaving, setAccountBanSaving] = useState(false)
+  const [accountBanReason, setAccountBanReason] = useState('')
   const [messageDialogOpen, setMessageDialogOpen] = useState(false)
 
   const listingCounts = useMemo(() => {
@@ -205,6 +213,39 @@ export default function AdminUserDetailPage() {
 
   useEffect(() => {
     let cancelled = false
+    async function loadAccountBan() {
+      setAccountBanLoading(true)
+      try {
+        const res = await fetch(`/api/admin/users/${id}/account-ban`, { credentials: 'include' })
+        const body = (await res.json()) as { data?: AdminAccountBanState; error?: string }
+        if (!res.ok) {
+          if (!cancelled) {
+            setAccountBan(null)
+            toast.error(body.error || 'Could not load account ban status')
+          }
+          return
+        }
+        if (!cancelled && body.data) {
+          setAccountBan(body.data)
+          setAccountBanReason(body.data.reason ?? '')
+        }
+      } catch {
+        if (!cancelled) {
+          setAccountBan(null)
+          toast.error('Could not load account ban status')
+        }
+      } finally {
+        if (!cancelled) setAccountBanLoading(false)
+      }
+    }
+    void loadAccountBan()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  useEffect(() => {
+    let cancelled = false
     async function loadWallet() {
       setWalletLoading(true)
       setWalletError(null)
@@ -316,6 +357,68 @@ export default function AdminUserDetailPage() {
       toast.error('Could not update seller ban')
     } finally {
       setSellerBanSaving(false)
+    }
+  }
+
+  async function applyAccountBan(banned: boolean) {
+    if (banned) {
+      const confirmed = window.confirm(
+        'Permanently ban this account?\n\nThey will not be able to sign in, buy, sell, or message. Live listings will move to delinquent.',
+      )
+      if (!confirmed) return
+    }
+    setAccountBanSaving(true)
+    try {
+      const res = await fetch(`/api/admin/users/${id}/account-ban`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(banned ? { banned: true, reason: accountBanReason.trim() || null } : { banned: false }),
+      })
+      const body = (await res.json()) as {
+        data?: AdminAccountBanState & {
+          affectedListingCount?: number
+          restrictedUntil?: string | null
+          sellerBannedAt?: string | null
+          sellerBannedReason?: string | null
+        }
+        error?: string
+      }
+      if (!res.ok) {
+        toast.error(body.error || 'Could not update account ban')
+        return
+      }
+      if (body.data) {
+        setAccountBan({
+          banned: body.data.banned,
+          bannedUntil: body.data.bannedUntil,
+          reason: body.data.reason,
+        })
+        if (!body.data.banned) setAccountBanReason('')
+        setRestriction((prev) => ({
+          restrictedUntil: body.data?.restrictedUntil ?? null,
+          reason: body.data?.banned ? (body.data.reason ?? null) : null,
+          messageRateLimitedUntil: prev?.messageRateLimitedUntil ?? null,
+        }))
+        setRestrictionReason(body.data.banned ? (body.data.reason ?? '') : '')
+        setSellerBan({
+          banned: Boolean(body.data.sellerBannedAt),
+          sellerBannedAt: body.data.sellerBannedAt ?? null,
+          sellerBannedReason: body.data.sellerBannedReason ?? null,
+        })
+        setSellerBanReason(body.data.sellerBannedReason ?? '')
+      }
+      const affected = body.data?.affectedListingCount
+      toast.success(
+        banned
+          ? `Account permanently banned${typeof affected === 'number' ? ` — ${affected} listing(s) set to delinquent` : ''}`
+          : `Account ban removed${typeof affected === 'number' ? ` — ${affected} listing(s) restored` : ''}`,
+      )
+      router.refresh()
+    } catch {
+      toast.error('Could not update account ban')
+    } finally {
+      setAccountBanSaving(false)
     }
   }
 
@@ -625,6 +728,7 @@ export default function AdminUserDetailPage() {
           loading={restrictionLoading}
           saving={restrictionSaving}
           isAdminUser={profile.is_admin}
+          lockedByPermanentBan={Boolean(accountBan?.banned)}
           restriction={restriction}
           reason={restrictionReason}
           selectedMinutes={selectedPresetMinutes}
@@ -636,12 +740,23 @@ export default function AdminUserDetailPage() {
           loading={sellerBanLoading}
           saving={sellerBanSaving}
           isAdminUser={profile.is_admin}
+          lockedByPermanentBan={Boolean(accountBan?.banned)}
           ban={sellerBan}
           reason={sellerBanReason}
           onReasonChange={setSellerBanReason}
           onApply={(banned) => void applySellerBan(banned)}
         />
       </div>
+
+      <AdminUserDetailAccountBan
+        loading={accountBanLoading}
+        saving={accountBanSaving}
+        isAdminUser={profile.is_admin}
+        ban={accountBan}
+        reason={accountBanReason}
+        onReasonChange={setAccountBanReason}
+        onApply={(banned) => void applyAccountBan(banned)}
+      />
 
       <AdminUserDetailListings
         listings={listings}

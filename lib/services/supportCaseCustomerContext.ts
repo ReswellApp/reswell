@@ -16,7 +16,9 @@ import {
   resolveSupportCaseByAnyId,
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
+import { fetchUserRestrictionState } from "@/lib/db/accountRestrictions"
 import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
+import { isPermanentRestrictionUntil } from "@/lib/messages/account-ban-errors"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
@@ -209,6 +211,7 @@ export async function getSupportCaseCustomerContextService(
             isShop: false,
             verified: false,
             sellerBanned: false,
+            accountBanned: false,
             isStaff: false,
             openTicketCount: ticketsOpen,
           }),
@@ -223,7 +226,7 @@ export async function getSupportCaseCustomerContextService(
   }
 
   const profile = resolved.profile
-  const [orders, ordersTotal, listingCounts, commerce, customerTickets, ticketsTotal, ticketsOpen, ban, thisOrder] =
+  const [orders, ordersTotal, listingCounts, commerce, customerTickets, ticketsTotal, ticketsOpen, ban, restriction, thisOrder] =
     await Promise.all([
       dbListAdminUserDetailOrdersPage(staff.service, profile.id, {
         limit: CUSTOMER_PANEL_PAGE_SIZE,
@@ -245,6 +248,7 @@ export async function getSupportCaseCustomerContextService(
         openOnly: true,
       }),
       fetchSellerBanState(staff.service, profile.id),
+      fetchUserRestrictionState(staff.service, profile.id),
       loadThisOrderSnapshot(staff.service, supportCase.order_id),
     ])
 
@@ -271,6 +275,7 @@ export async function getSupportCaseCustomerContextService(
         isShop: profile.is_shop,
         verified: profile.shop_verified,
         sellerBanned: isSellerBanActive(ban),
+        accountBanned: isPermanentRestrictionUntil(restriction?.accountRestrictedUntil),
         isStaff: profile.is_admin || profile.is_employee,
         openTicketCount: ticketsOpen,
       }),

@@ -1,5 +1,9 @@
 import { buildAuthCompletingHtml } from "@/lib/auth/auth-completing-html"
 import { copySupabaseAuthCookies } from "@/lib/auth/copy-supabase-auth-cookies"
+import {
+  bannedAuthRedirect,
+  shouldRejectBannedAuthUser,
+} from "@/lib/auth/reject-banned-auth-user"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { waitForUserAfterOAuthExchange } from "@/lib/auth/wait-for-user-after-oauth-exchange"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
@@ -38,6 +42,9 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (user) {
+    if (await shouldRejectBannedAuthUser(user)) {
+      return bannedAuthRedirect(request, origin)
+    }
     return redirectWithAuthCookies(origin, destination, cookieProbe)
   }
 
@@ -46,6 +53,9 @@ export async function GET(request: NextRequest) {
     baseDelayMs: 75,
   })
   if (recoveredUser) {
+    if (await shouldRejectBannedAuthUser(recoveredUser)) {
+      return bannedAuthRedirect(request, origin)
+    }
     return redirectWithAuthCookies(origin, destination, cookieProbe)
   }
 

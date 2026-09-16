@@ -3,79 +3,66 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AdminStatusPill } from '@/components/features/admin/admin-status-pill'
-import { formatBusinessDateTime } from '@/lib/utils/business-timezone'
 
-export interface AdminSellerBanState {
+export interface AdminAccountBanState {
   banned: boolean
-  sellerBannedAt: string | null
-  sellerBannedReason: string | null
+  bannedUntil: string | null
+  reason: string | null
 }
 
-interface BanProps {
+interface AccountBanProps {
   loading: boolean
   saving: boolean
   isAdminUser: boolean
-  lockedByPermanentBan?: boolean
-  ban: AdminSellerBanState | null
+  ban: AdminAccountBanState | null
   reason: string
   onReasonChange: (value: string) => void
   onApply: (banned: boolean) => void
 }
 
-export function AdminUserDetailSellerBan({
+export function AdminUserDetailAccountBan({
   loading,
   saving,
   isAdminUser,
-  lockedByPermanentBan = false,
   ban,
   reason,
   onReasonChange,
   onApply,
-}: BanProps) {
+}: AccountBanProps) {
   return (
     <section className="admin-surface p-5">
       <div className="flex items-center gap-2">
         <Ban className="h-4 w-4 text-muted-foreground" aria-hidden />
-        <h2 className="font-headline text-sm font-semibold text-foreground">Seller ban</h2>
+        <h2 className="font-headline text-sm font-semibold text-foreground">Permanent ban</h2>
       </div>
 
       {loading ? (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading seller ban status…
+          Loading ban status…
         </div>
       ) : (
         <div className="mt-4 space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             {ban?.banned ? (
-              <AdminStatusPill label="Seller banned" tone="red" />
+              <AdminStatusPill label="Permanently banned" tone="red" />
             ) : (
-              <AdminStatusPill label="Can sell" tone="green" />
+              <AdminStatusPill label="Can use Reswell" tone="green" />
             )}
-            {ban?.banned && ban.sellerBannedAt ? (
-              <span className="text-sm text-muted-foreground">
-                Since {formatBusinessDateTime(ban.sellerBannedAt)}
-              </span>
-            ) : null}
           </div>
           <p className="text-sm text-muted-foreground">
-            {lockedByPermanentBan
-              ? "This account is permanently banned. Selling is blocked and live listings are delinquent."
-              : "Banned sellers can still buy and message, but live listings move to delinquent and they cannot make listings live."}
+            Permanently banned users cannot sign in with email or Google. They cannot buy, sell,
+            message, leave reviews, or use Reswell in any way. Live listings move to delinquent.
           </p>
-          {lockedByPermanentBan ? (
-            <p className="text-xs text-muted-foreground">
-              Remove the permanent ban to change seller status.
-            </p>
-          ) : !ban?.banned ? (
+          {!ban?.banned ? (
             <>
               <div className="space-y-2">
-                <Label htmlFor="seller-ban-reason">Internal note (optional)</Label>
+                <Label htmlFor="account-ban-reason">Internal note (optional)</Label>
                 <Input
-                  id="seller-ban-reason"
+                  id="account-ban-reason"
                   value={reason}
                   onChange={(event) => onReasonChange(event.target.value)}
-                  placeholder="Reason for seller ban"
+                  placeholder="Reason for permanent ban"
                   maxLength={500}
                 />
               </div>
@@ -88,23 +75,21 @@ export function AdminUserDetailSellerBan({
                 onClick={() => onApply(true)}
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
-                Ban seller
+                Ban account
               </Button>
               {isAdminUser ? (
                 <p className="text-xs text-muted-foreground">
-                  Admin accounts cannot be seller-banned from this screen.
+                  Admin accounts cannot be banned from this screen.
                 </p>
               ) : null}
             </>
           ) : (
             <Button type="button" variant="outline" size="sm" className="gap-2" disabled={saving} onClick={() => onApply(false)}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
-              Remove seller ban
+              Remove ban
             </Button>
           )}
-          {ban?.sellerBannedReason ? (
-            <p className="text-xs text-muted-foreground">Note: {ban.sellerBannedReason}</p>
-          ) : null}
+          {ban?.reason ? <p className="text-xs text-muted-foreground">Note: {ban.reason}</p> : null}
         </div>
       )}
     </section>

@@ -8,13 +8,32 @@ import {
   setMessageRateLimitedUntil,
 } from "@/lib/db/accountRestrictions"
 import {
+  ACCOUNT_BANNED_USER_MESSAGE,
+  isPermanentRestrictionUntil,
+} from "@/lib/messages/account-ban-errors"
+import {
   MESSAGE_BLOCKED_ACCOUNT_RESTRICTED_ERROR,
   MESSAGE_BLOCKED_RATE_LIMITED_ERROR,
   PURCHASE_BLOCKED_ACCOUNT_RESTRICTED_ERROR,
+  REVIEW_BLOCKED_ACCOUNT_RESTRICTED_ERROR,
   type MessageSendRestrictionActionResult,
   type MessageSendRestrictionCode,
   type MessageSendRestrictionCodeResult,
 } from "@/lib/messages/send-restriction-errors"
+
+function restrictionUserMessage(untilIso: string): string {
+  if (isPermanentRestrictionUntil(untilIso)) {
+    return ACCOUNT_BANNED_USER_MESSAGE
+  }
+  return "Your account is temporarily limited. You can't send messages or make purchases right now."
+}
+
+function restrictionReviewUserMessage(untilIso: string): string {
+  if (isPermanentRestrictionUntil(untilIso)) {
+    return ACCOUNT_BANNED_USER_MESSAGE
+  }
+  return "Your account is temporarily limited. You can't leave reviews right now."
+}
 
 export const MAX_UNIQUE_MESSAGE_RECIPIENTS = 3
 export const MESSAGE_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000
@@ -73,8 +92,7 @@ export async function evaluateUserMessageSend(
     return {
       ok: false,
       result,
-      userMessage:
-        "Your account is temporarily limited. You can't send messages or make purchases right now.",
+      userMessage: restrictionUserMessage(state.accountRestrictedUntil),
     }
   }
 
@@ -151,8 +169,41 @@ export async function evaluateUserPurchase(
       ok: false,
       error: PURCHASE_BLOCKED_ACCOUNT_RESTRICTED_ERROR,
       restrictedUntil: state.accountRestrictedUntil,
-      userMessage:
-        "Your account is temporarily limited. You can't send messages or make purchases right now.",
+      userMessage: restrictionUserMessage(state.accountRestrictedUntil),
+    }
+  }
+
+  return { ok: true }
+}
+
+export type UserReviewGuardResult =
+  | { ok: true }
+  | {
+      ok: false
+      error: typeof REVIEW_BLOCKED_ACCOUNT_RESTRICTED_ERROR
+      restrictedUntil: string
+      userMessage: string
+    }
+
+export async function evaluateUserReview(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<UserReviewGuardResult> {
+  const state = await fetchUserRestrictionState(supabase, userId)
+  if (!state) {
+    return { ok: true }
+  }
+
+  if (staffBypassesRestrictions(state)) {
+    return { ok: true }
+  }
+
+  if (isFutureIso(state.accountRestrictedUntil)) {
+    return {
+      ok: false,
+      error: REVIEW_BLOCKED_ACCOUNT_RESTRICTED_ERROR,
+      restrictedUntil: state.accountRestrictedUntil,
+      userMessage: restrictionReviewUserMessage(state.accountRestrictedUntil),
     }
   }
 
