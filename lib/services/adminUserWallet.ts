@@ -1,10 +1,13 @@
 import { summarizeStoredWalletBalanceRow } from "@/lib/getSellerBalance"
 import { getOrCreateWalletForUser } from "@/lib/db/wallets"
+import { insertSupportCaseEvent, resolveSupportCaseByAnyId } from "@/lib/db/supportCases"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   ADMIN_WALLET_CREDIT_HARD_MAX_USD,
   adminWalletCreditSchema,
 } from "@/lib/validations/admin-user-wallet"
+
+export const ADMIN_WALLET_CREDIT_EVENT_TYPE = "admin_wallet_credit"
 
 const ADMIN_WALLET_CREDIT_REFERENCE_TYPE = "wallet_refund"
 
@@ -215,6 +218,27 @@ export async function creditAdminUserWalletService(
   if (updErr) {
     console.error("[admin wallet credit] wallet update", updErr)
     return { ok: false, message: "Could not update wallet balance", status: 500 }
+  }
+
+  if (parsed.data.support_case_id) {
+    const supportCase = await resolveSupportCaseByAnyId(supabase, parsed.data.support_case_id)
+    if (supportCase) {
+      await insertSupportCaseEvent(supabase, {
+        case_id: supportCase.id,
+        actor_admin_id: audit.adminId,
+        event_type: ADMIN_WALLET_CREDIT_EVENT_TYPE,
+        payload: {
+          amount_usd: amountUsd,
+          note: note ?? null,
+          balance_after: newBalance,
+          user_id: userId,
+        },
+      })
+    } else {
+      console.warn(
+        `[admin wallet credit] support case not found case=${parsed.data.support_case_id} user=${userId}`,
+      )
+    }
   }
 
   console.info(

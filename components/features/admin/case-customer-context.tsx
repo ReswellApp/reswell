@@ -18,7 +18,9 @@ interface CaseCustomerContextProps {
   linkedOrderRef: string | null
   thisOrder: CaseInboxThisOrderSnapshot | null
   initialContext?: SupportCaseCustomerContext | null
+  canCreditWallet?: boolean
   onOrderLinked: (order: SupportCaseCustomerOrder) => void
+  onWalletCredited?: () => void
 }
 
 export function CaseCustomerContext({
@@ -27,7 +29,9 @@ export function CaseCustomerContext({
   linkedOrderRef,
   thisOrder,
   initialContext = null,
+  canCreditWallet = false,
   onOrderLinked,
+  onWalletCredited,
 }: CaseCustomerContextProps) {
   const panel = useCaseCustomerPanel({
     caseId,
@@ -55,7 +59,12 @@ export function CaseCustomerContext({
 
   return (
     <section className="space-y-4">
-      <CaseCustomerIdentity context={panel.context} />
+      <CaseCustomerIdentity
+        context={panel.context}
+        caseId={caseId}
+        canCreditWallet={canCreditWallet}
+        onWalletCredited={onWalletCredited}
+      />
       <CaseInboxThisOrderCard
         linkedOrderId={linkedOrderId}
         linkedOrderRef={linkedOrderRef}

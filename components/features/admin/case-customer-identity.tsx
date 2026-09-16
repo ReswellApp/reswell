@@ -3,14 +3,23 @@ import { format } from "date-fns"
 import { Mail, MapPin, Phone, UserRound } from "lucide-react"
 import type { SupportCaseCustomerContext } from "@/lib/services/supportCaseCustomerContext"
 import { formatCustomerUsd } from "@/lib/admin/case-customer-panel"
+import { CaseInboxWalletCredit } from "@/components/features/admin/case-inbox-wallet-credit"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 interface CaseCustomerIdentityProps {
   context: SupportCaseCustomerContext
+  caseId: string
+  canCreditWallet?: boolean
+  onWalletCredited?: () => void
 }
 
-export function CaseCustomerIdentity({ context }: CaseCustomerIdentityProps) {
+export function CaseCustomerIdentity({
+  context,
+  caseId,
+  canCreditWallet = false,
+  onWalletCredited,
+}: CaseCustomerIdentityProps) {
   const profile = context.profile
 
   return (
@@ -92,6 +101,17 @@ export function CaseCustomerIdentity({ context }: CaseCustomerIdentityProps) {
             <p className="text-sm font-semibold">{context.commerce.activeListings}</p>
             <p className="text-[10px] text-muted-foreground">Active listings</p>
           </div>
+        </div>
+      ) : null}
+      {profile && canCreditWallet ? (
+        <div className="mt-3 border-t border-border/50 pt-3">
+          <CaseInboxWalletCredit
+            userId={profile.id}
+            displayName={profile.displayName}
+            email={profile.email}
+            supportCaseId={caseId}
+            onCredited={onWalletCredited}
+          />
         </div>
       ) : null}
     </div>

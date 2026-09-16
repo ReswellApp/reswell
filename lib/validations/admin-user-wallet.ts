@@ -12,6 +12,8 @@ export const adminWalletCreditSchema = z
     amount_usd: z.number().positive().max(ADMIN_WALLET_CREDIT_HARD_MAX_USD),
     note: z.string().trim().max(500).optional(),
     confirm_over_limit: z.boolean().optional(),
+    /** When set, the credit is also recorded on this support ticket’s history. */
+    support_case_id: z.string().uuid().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.amount_usd > ADMIN_WALLET_CREDIT_CONFIRM_ABOVE_USD && data.confirm_over_limit !== true) {

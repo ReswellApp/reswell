@@ -886,6 +886,10 @@ export function CaseInboxAdminClient({
                   staff={staff}
                   staffNames={staffNames}
                   currentStaffId={currentStaffId}
+                  canCreditWallet={isAdmin}
+                  onWalletCredited={() => {
+                    setThreadReloadToken((n) => n + 1)
+                  }}
                   orderContext={orderContext}
                   composerRef={composerRef}
                   mode={composerMode}
@@ -1021,6 +1025,9 @@ export function CaseInboxAdminClient({
                       sort,
                       selectedKey: selectedKeyRef.current,
                     })
+                    setThreadReloadToken((n) => n + 1)
+                  }}
+                  onWalletCredited={() => {
                     setThreadReloadToken((n) => n + 1)
                   }}
                 />

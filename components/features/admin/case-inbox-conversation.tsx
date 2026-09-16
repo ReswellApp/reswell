@@ -13,6 +13,7 @@ import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import { CaseInboxCommandBar } from "@/components/features/admin/case-inbox-command-bar"
+import { CaseInboxWalletCredit } from "@/components/features/admin/case-inbox-wallet-credit"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
 import {
   CaseInboxComposer,
@@ -42,6 +43,7 @@ interface CaseInboxConversationProps {
   staff: StaffAssigneeRow[]
   staffNames: Record<string, string>
   currentStaffId: string | null
+  canCreditWallet?: boolean
   composerRef: Ref<CaseInboxComposerHandle>
   mode: ComposerMode
   draft: string
@@ -59,6 +61,7 @@ interface CaseInboxConversationProps {
   onRewritePromptChange?: (value: string) => void
   onInsertMacro: (text: string) => void
   onSend: (disposition: ComposerDisposition) => void
+  onWalletCredited?: () => void
   orderContext?: AdminOrderDetail | null
   aiLoading?: boolean
   aiActive?: boolean
@@ -80,6 +83,7 @@ export function CaseInboxConversation({
   staff,
   staffNames,
   currentStaffId,
+  canCreditWallet = false,
   composerRef,
   mode,
   draft,
@@ -97,6 +101,7 @@ export function CaseInboxConversation({
   onRewritePromptChange,
   onInsertMacro,
   onSend,
+  onWalletCredited,
   orderContext = null,
   aiLoading,
   aiActive,
@@ -145,6 +150,16 @@ export function CaseInboxConversation({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            {canCreditWallet && item.userId ? (
+              <CaseInboxWalletCredit
+                userId={item.userId}
+                displayName={item.fromName}
+                email={item.fromEmail}
+                supportCaseId={item.id}
+                variant="icon"
+                onCredited={onWalletCredited}
+              />
+            ) : null}
             {item.userId ? (
               <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
                 <Link href={`/admin/users/${item.userId}`} aria-label={`Open ${inboxCounterpartLabel(item.requesterRole).toLowerCase()} profile`}>

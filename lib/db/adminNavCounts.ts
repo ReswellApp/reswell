@@ -45,7 +45,10 @@ export async function fetchAdminNavBadgeCounts(
         .eq('support_status', 'new')
         .neq('source', 'live_chat')
         .not('subject', 'like', 'Live chat%'),
-      supabase.from('fraud_messages').select('*', { count: 'exact', head: true }),
+      supabase
+        .from('fraud_messages')
+        .select('*', { count: 'exact', head: true })
+        .neq('llm_review_status', 'dismissed'),
       supabase
         .from('ops_groups')
         .select('*', { count: 'exact', head: true })

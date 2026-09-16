@@ -13,6 +13,7 @@ export type AppLlmFeatureId =
   | "search_daily_report"
   | "support_reply_draft"
   | "listing_brand_model_research"
+  | "message_fraud_review"
 
 export interface AppLlmFeatureDefinition {
   id: AppLlmFeatureId
@@ -168,6 +169,27 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/listingBrandModelResearch.ts",
       "lib/services/listingBrandModelBackfill.ts",
       "lib/utils/listing-brand-model-research-decision.ts",
+    ],
+  },
+  {
+    id: "message_fraud_review",
+    name: "Marketplace message fraud review",
+    purpose:
+      "Second-pass Gemini review for marketplace DMs that regex already flagged (phone, Venmo/Zelle/cash, email, phishing) or that look like evasion. Confirms fraud or allows innocent wording. Send-path timeout is sub-second; a cron re-reviews pending rows.",
+    gatewayFeatureTag: "feature:message-fraud-review",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-flash-lite",
+    modelEnvVar: "MESSAGE_FRAUD_REVIEW_MODEL",
+    enabledEnvVar: "MESSAGE_FRAUD_REVIEW_ENABLED",
+    surfaces: [
+      "marketplace DMs",
+      "/admin/fraud-messages",
+      "GET /api/cron/review-fraud-messages",
+    ],
+    sourceFiles: [
+      "lib/services/messageFraudReview.ts",
+      "lib/services/reviewFraudMessagesBatch.ts",
+      "lib/messages/message-policy-enforcement.ts",
     ],
   },
 ] as const

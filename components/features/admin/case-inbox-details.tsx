@@ -80,6 +80,7 @@ interface CaseInboxDetailsProps {
   onOrderLinked: (order: SupportCaseCustomerOrder) => void
   onSellerOutreachSent: () => void
   onRefundComplete: () => void
+  onWalletCredited?: () => void
   initialCustomerContext?: SupportCaseCustomerContext | null
 }
 
@@ -105,6 +106,7 @@ export function CaseInboxDetails({
   onOrderLinked,
   onSellerOutreachSent,
   onRefundComplete,
+  onWalletCredited,
   initialCustomerContext = null,
 }: CaseInboxDetailsProps) {
   return (
@@ -141,7 +143,9 @@ export function CaseInboxDetails({
                 : null
             }
             initialContext={initialCustomerContext}
+            canCreditWallet={isAdmin}
             onOrderLinked={onOrderLinked}
+            onWalletCredited={onWalletCredited}
           />
 
           <section className="space-y-3 border-t border-border/50 pt-4">

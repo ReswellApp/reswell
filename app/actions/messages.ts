@@ -7,10 +7,7 @@ import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactM
 import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
-import {
-  getMessagePolicyViolationForSender,
-  getMessagePolicyViolationForSenderInConversation,
-} from "@/lib/messages/message-policy-enforcement"
+import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enforcement"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
@@ -18,6 +15,7 @@ import {
   messagePolicyBlocksDelivery,
   type MessagePolicyReasonCode,
 } from "@/lib/messages/fraud-reason-codes"
+import type { MessageFraudLlmReviewStatus } from "@/lib/validations/message-fraud-review"
 import type { MessageSendRestrictionActionResult } from "@/lib/messages/send-restriction-errors"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
@@ -186,6 +184,9 @@ async function capturePolicyBlockedDmContent(row: {
   listingId: string | null
   content: string
   reasonCode: MessagePolicyReasonCode
+  llmReviewStatus?: MessageFraudLlmReviewStatus
+  llmReviewReasonCode?: MessagePolicyReasonCode | null
+  llmReviewRationale?: string | null
 }) {
   try {
     const service = createServiceRoleClient()
@@ -196,6 +197,10 @@ async function capturePolicyBlockedDmContent(row: {
       listingId: row.listingId,
       content: row.content,
       reasonCode: row.reasonCode,
+      llmReviewStatus: row.llmReviewStatus,
+      llmReviewReasonCode: row.llmReviewReasonCode,
+      llmReviewRationale: row.llmReviewRationale,
+      llmReviewSource: "send",
     })
   } catch (e) {
     console.error("[messages] Could not persist fraud_messages row:", e)
@@ -214,6 +219,9 @@ async function captureAndMaybeBlockPolicyViolation(row: {
   listingId: string | null
   content: string
   reasonCode: MessagePolicyReasonCode
+  llmReviewStatus?: MessageFraudLlmReviewStatus
+  llmReviewReasonCode?: MessagePolicyReasonCode | null
+  llmReviewRationale?: string | null
 }) {
   await capturePolicyBlockedDmContent(row)
   if (!messagePolicyBlocksDelivery(row.reasonCode)) {
@@ -367,20 +375,23 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     return sendRestrictionBlockedResult(sendGuard)
   }
 
-  const policyViolation = await getMessagePolicyViolationForSenderInConversation(
+  const policyDecision = await evaluateMessagePolicyForSend(
     supabase,
     user.id,
     conversation.id,
     body,
   )
-  if (policyViolation) {
+  if (policyDecision) {
     const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conversation.id,
       senderId: user.id,
       recipientId: receiverId,
       listingId: listing_id,
       content: body,
-      reasonCode: policyViolation,
+      reasonCode: policyDecision.reasonCode,
+      llmReviewStatus: policyDecision.llmReviewStatus,
+      llmReviewReasonCode: policyDecision.llmReviewReasonCode,
+      llmReviewRationale: policyDecision.llmReviewRationale,
     })
     if (blocked) return blocked
   }
@@ -488,20 +499,23 @@ export async function sendListingMessage(input: {
     return sendRestrictionBlockedResult(sendGuard)
   }
 
-  const policyViolation = await getMessagePolicyViolationForSenderInConversation(
+  const policyDecision = await evaluateMessagePolicyForSend(
     supabase,
     user.id,
     conversation.id,
     body,
   )
-  if (policyViolation) {
+  if (policyDecision) {
     const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conversation.id,
       senderId: user.id,
       recipientId: seller_id,
       listingId: listing_id ?? null,
       content: body,
-      reasonCode: policyViolation,
+      reasonCode: policyDecision.reasonCode,
+      llmReviewStatus: policyDecision.llmReviewStatus,
+      llmReviewReasonCode: policyDecision.llmReviewReasonCode,
+      llmReviewRationale: policyDecision.llmReviewRationale,
     })
     if (blocked) return blocked
   }
@@ -590,20 +604,23 @@ export async function sendConversationReply(input: {
     return sendRestrictionBlockedResult(sendGuard)
   }
 
-  const policyViolation = await getMessagePolicyViolationForSenderInConversation(
+  const policyDecision = await evaluateMessagePolicyForSend(
     supabase,
     user.id,
     conv.id,
     body,
   )
-  if (policyViolation) {
+  if (policyDecision) {
     const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conv.id,
       senderId: user.id,
       recipientId: receiverId,
       listingId: conv.listing_id,
       content: body,
-      reasonCode: policyViolation,
+      reasonCode: policyDecision.reasonCode,
+      llmReviewStatus: policyDecision.llmReviewStatus,
+      llmReviewReasonCode: policyDecision.llmReviewReasonCode,
+      llmReviewRationale: policyDecision.llmReviewRationale,
     })
     if (blocked) return blocked
   }
@@ -777,19 +794,23 @@ export async function sendConversationLocationReply(input: unknown) {
     return sendRestrictionBlockedResult(sendGuard)
   }
 
-  const policyViolation = await getMessagePolicyViolationForSender(
+  const policyDecision = await evaluateMessagePolicyForSend(
     supabase,
     user.id,
+    conv.id,
     formattedAddress,
   )
-  if (policyViolation) {
+  if (policyDecision) {
     const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conv.id,
       senderId: user.id,
       recipientId: receiverId,
       listingId: conv.listing_id,
       content: formattedAddress,
-      reasonCode: policyViolation,
+      reasonCode: policyDecision.reasonCode,
+      llmReviewStatus: policyDecision.llmReviewStatus,
+      llmReviewReasonCode: policyDecision.llmReviewReasonCode,
+      llmReviewRationale: policyDecision.llmReviewRationale,
     })
     if (blocked) return blocked
   }

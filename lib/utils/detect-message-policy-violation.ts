@@ -12,9 +12,8 @@ export function detectMessagePolicyViolation(text: string): MessagePolicyReasonC
   if (messageAppearsToBePhishing(t)) return "phishing_like"
   if (messageAppearsToShareEmailAddress(t)) return "email_like"
   if (messageContainsOffPlatformPaymentTerms(t)) return "off_platform_payment"
-  // Phone is captured for review but does not block delivery. Check last so a
-  // message that also contains a blocking violation (email, Venmo, etc.) still
-  // returns the blocking reason.
+  // Phone is checked last so a message that also contains email / Venmo / phishing
+  // still returns that more specific reason. Delivery is blocked for every code.
   if (messageAppearsToSharePhoneNumber(t)) return "phone_like"
 
   return null

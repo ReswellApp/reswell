@@ -42,6 +42,8 @@ interface AdminWalletCreditDialogProps {
   displayName?: string | null
   email?: string | null
   defaultNote?: string
+  notePlaceholder?: string
+  supportCaseId?: string | null
   onCredited?: (result: AdminWalletCreditResult) => void
 }
 
@@ -58,6 +60,8 @@ export function AdminWalletCreditDialog({
   displayName,
   email,
   defaultNote = '',
+  notePlaceholder = 'Reason for this credit',
+  supportCaseId = null,
   onCredited,
 }: AdminWalletCreditDialogProps) {
   const amountId = useId()
@@ -95,6 +99,7 @@ export function AdminWalletCreditDialog({
           amount_usd: amountUsd,
           note: note.trim() || undefined,
           confirm_over_limit: confirmedOverLimit || undefined,
+          support_case_id: supportCaseId || undefined,
         }),
       })
       const body = (await res.json().catch(() => null)) as {
@@ -214,7 +219,7 @@ export function AdminWalletCreditDialog({
                 <Input
                   id={noteId}
                   maxLength={500}
-                  placeholder="Purchase Protection repair credit"
+                  placeholder={notePlaceholder}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />

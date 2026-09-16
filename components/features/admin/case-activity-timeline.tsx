@@ -59,6 +59,10 @@ function eventDescription(event: SupportCaseEventRow): string {
       return typeof amount === "number"
         ? `Granted a $${amount.toFixed(2)} repair credit`
         : "Granted a repair credit"
+    case "admin_wallet_credit":
+      return typeof amount === "number"
+        ? `Credited $${amount.toFixed(2)} to wallet`
+        : "Credited wallet balance"
     case "protection_repair_credit_revoked":
       return typeof amount === "number"
         ? `Revoked a $${amount.toFixed(2)} repair credit`

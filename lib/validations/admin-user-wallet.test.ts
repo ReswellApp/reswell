@@ -28,4 +28,12 @@ describe("adminWalletCreditSchema", () => {
     })
     assert.equal(parsed.success, false)
   })
+
+  it("accepts an optional support case id for ticket history", () => {
+    const parsed = adminWalletCreditSchema.parse({
+      amount_usd: 40,
+      support_case_id: "11111111-1111-1111-1111-111111111111",
+    })
+    assert.equal(parsed.support_case_id, "11111111-1111-1111-1111-111111111111")
+  })
 })

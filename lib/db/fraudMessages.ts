@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import type {
+  MessageFraudLlmReviewStatus,
+  MessageFraudReviewSource,
+} from "@/lib/validations/message-fraud-review"
 
 export interface FraudMessageRow {
   id: string
@@ -10,6 +14,11 @@ export interface FraudMessageRow {
   content: string
   reason_code: string
   created_at: string
+  llm_review_status: string
+  llm_review_reason_code: string | null
+  llm_review_rationale: string | null
+  llm_reviewed_at: string | null
+  llm_review_source: string | null
   sender_profile: { display_name: string | null } | null
   recipient_profile: { display_name: string | null } | null
 }
@@ -24,6 +33,11 @@ export const FRAUD_MESSAGES_ADMIN_LIST_SELECT = `
   content,
   reason_code,
   created_at,
+  llm_review_status,
+  llm_review_reason_code,
+  llm_review_rationale,
+  llm_reviewed_at,
+  llm_review_source,
   sender_profile:profiles!fraud_messages_sender_id_fkey (display_name),
   recipient_profile:profiles!fraud_messages_recipient_id_fkey (display_name)
 `
@@ -37,8 +51,13 @@ export async function insertFraudMessageCapturedContent(
     listingId: string | null
     content: string
     reasonCode?: MessagePolicyReasonCode
+    llmReviewStatus?: MessageFraudLlmReviewStatus
+    llmReviewReasonCode?: MessagePolicyReasonCode | null
+    llmReviewRationale?: string | null
+    llmReviewSource?: MessageFraudReviewSource
   },
 ): Promise<{ ok: boolean; errorMessage?: string }> {
+  const reviewed = row.llmReviewStatus && row.llmReviewStatus !== "pending"
   const { error } = await supabase.from("fraud_messages").insert({
     conversation_id: row.conversationId,
     sender_id: row.senderId,
@@ -46,11 +65,72 @@ export async function insertFraudMessageCapturedContent(
     listing_id: row.listingId,
     content: row.content,
     reason_code: row.reasonCode ?? "phone_like",
+    llm_review_status: row.llmReviewStatus ?? "pending",
+    llm_review_reason_code: row.llmReviewReasonCode ?? null,
+    llm_review_rationale: row.llmReviewRationale ?? null,
+    llm_reviewed_at: reviewed ? new Date().toISOString() : null,
+    llm_review_source: row.llmReviewSource ?? "send",
   })
 
   if (error) {
     console.error("[fraud_messages] insert:", error.message)
     return { ok: false, errorMessage: error.message }
+  }
+
+  return { ok: true }
+}
+
+export interface PendingFraudMessageReviewRow {
+  id: string
+  content: string
+  reason_code: string
+  conversation_id: string
+  sender_id: string
+}
+
+export async function listPendingFraudMessagesForReview(
+  supabase: SupabaseClient,
+  limit: number,
+): Promise<PendingFraudMessageReviewRow[]> {
+  const { data, error } = await supabase
+    .from("fraud_messages")
+    .select("id, content, reason_code, conversation_id, sender_id")
+    .eq("llm_review_status", "pending")
+    .order("created_at", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("[fraud_messages] list pending review:", error.message)
+    return []
+  }
+
+  return (data ?? []) as PendingFraudMessageReviewRow[]
+}
+
+export async function updateFraudMessageLlmReview(
+  supabase: SupabaseClient,
+  id: string,
+  review: {
+    status: Exclude<MessageFraudLlmReviewStatus, "pending">
+    reasonCode: MessagePolicyReasonCode | null
+    rationale: string | null
+    source: MessageFraudReviewSource
+  },
+): Promise<{ ok: boolean }> {
+  const { error } = await supabase
+    .from("fraud_messages")
+    .update({
+      llm_review_status: review.status,
+      llm_review_reason_code: review.reasonCode,
+      llm_review_rationale: review.rationale,
+      llm_reviewed_at: new Date().toISOString(),
+      llm_review_source: review.source,
+    })
+    .eq("id", id)
+
+  if (error) {
+    console.error("[fraud_messages] update llm review:", error.message)
+    return { ok: false }
   }
 
   return { ok: true }

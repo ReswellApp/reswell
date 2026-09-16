@@ -24,6 +24,20 @@ import {
 import { ExternalLink, Loader2, ShieldAlert } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+
+function llmReviewBadge(status: string): { label: string; className: string } {
+  switch (status) {
+    case "confirmed":
+      return { label: "Confirmed", className: "bg-red-50 text-red-800" }
+    case "dismissed":
+      return { label: "Not fraud", className: "bg-emerald-50 text-emerald-800" }
+    case "unavailable":
+      return { label: "Unreviewed", className: "bg-muted text-muted-foreground" }
+    default:
+      return { label: "Pending", className: "bg-amber-50 text-amber-900" }
+  }
+}
 
 export function FraudMessagesAdminClient() {
   const [rows, setRows] = useState<FraudMessageRow[]>([])
@@ -63,9 +77,9 @@ export function FraudMessagesAdminClient() {
               Intercepted marketplace chats
             </CardTitle>
             <CardDescription>
-              Flagged marketplace DMs. Email, off-platform payment (Venmo, PayPal, cash), and
-              phishing or impersonation scams are blocked before delivery. Phone numbers are
-              captured here but still sent. Users were not suspended.
+              Flagged marketplace DMs. Phone numbers, email, Venmo/Zelle/Cash App, cash
+              requests, and phishing are blocked before delivery. Gemini confirms fraud or
+              marks innocent wording as not fraud. Users were not suspended.
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" disabled={loading} onClick={() => void load()}>
@@ -93,6 +107,7 @@ export function FraudMessagesAdminClient() {
                 <TableRow>
                   <TableHead className="w-[140px]">When</TableHead>
                   <TableHead className="w-[120px]">Reason</TableHead>
+                  <TableHead className="w-[120px]">Review</TableHead>
                   <TableHead>Sender</TableHead>
                   <TableHead>Recipient</TableHead>
                   <TableHead>Content</TableHead>
@@ -100,8 +115,10 @@ export function FraudMessagesAdminClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => (
-                  <TableRow key={r.id}>
+                {rows.map((r) => {
+                  const badge = llmReviewBadge(r.llm_review_status)
+                  return (
+                    <TableRow key={r.id}>
                     <TableCell className="whitespace-nowrap align-top text-muted-foreground text-xs">
                       {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
                     </TableCell>
@@ -109,6 +126,23 @@ export function FraudMessagesAdminClient() {
                       {isMessagePolicyReasonCode(r.reason_code)
                         ? messagePolicyReasonLabel(r.reason_code)
                         : r.reason_code}
+                    </TableCell>
+                    <TableCell className="align-top">
+                      <div className="space-y-1">
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium",
+                            badge.className,
+                          )}
+                        >
+                          {badge.label}
+                        </span>
+                        {r.llm_review_rationale ? (
+                          <p className="text-[11px] leading-snug text-muted-foreground">
+                            {r.llm_review_rationale}
+                          </p>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell className="align-top text-sm">
                       {r.sender_profile?.display_name ?? "—"}
@@ -132,7 +166,8 @@ export function FraudMessagesAdminClient() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                  )
+                })}
               </TableBody>
             </Table>
           )}

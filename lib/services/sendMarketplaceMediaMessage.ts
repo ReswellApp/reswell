@@ -4,7 +4,7 @@ import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
-import { getMessagePolicyViolationForSenderInConversation } from "@/lib/messages/message-policy-enforcement"
+import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enforcement"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
@@ -111,13 +111,13 @@ export async function sendMarketplaceMediaMessage(input: {
   const content = (trimmedCaption || defaultBody).slice(0, 8000)
 
   if (trimmedCaption) {
-    const policyViolation = await getMessagePolicyViolationForSenderInConversation(
+    const policyDecision = await evaluateMessagePolicyForSend(
       service,
       senderId,
       conversationId,
       trimmedCaption,
     )
-    if (policyViolation) {
+    if (policyDecision) {
       try {
         await insertFraudMessageCapturedContent(service, {
           conversationId,
@@ -125,17 +125,21 @@ export async function sendMarketplaceMediaMessage(input: {
           recipientId: receiverId,
           listingId: conv.listing_id,
           content: trimmedCaption,
-          reasonCode: policyViolation,
+          reasonCode: policyDecision.reasonCode,
+          llmReviewStatus: policyDecision.llmReviewStatus,
+          llmReviewReasonCode: policyDecision.llmReviewReasonCode,
+          llmReviewRationale: policyDecision.llmReviewRationale,
+          llmReviewSource: "send",
         })
       } catch (e) {
         console.error("[sendMarketplaceMediaMessage] fraud_messages insert:", e)
       }
-      if (messagePolicyBlocksDelivery(policyViolation)) {
+      if (messagePolicyBlocksDelivery(policyDecision.reasonCode)) {
         await removeOrphanAttachment(service, attachment.path)
         return {
           ok: false,
           error: MESSAGE_BLOCKED_POLICY_ERROR,
-          policyReason: policyViolation,
+          policyReason: policyDecision.reasonCode,
           status: 400,
         }
       }
