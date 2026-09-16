@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  CS_AGENT_GENERATE_TIMEOUT_MS,
+  CS_AGENT_MAX_STEPS,
   CS_AGENT_PROMPT_VERSION,
   DEFAULT_SUPPORT_REPLY_ROOT_PROMPT,
   csAgentSystemPrompt,
@@ -14,6 +16,11 @@ describe("cs agent harness", () => {
     assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v3")
   })
 
+  it("caps tool rounds and model time so inbox drafts stay under five seconds", () => {
+    assert.equal(CS_AGENT_MAX_STEPS, 2)
+    assert.ok(CS_AGENT_GENERATE_TIMEOUT_MS <= 5000)
+  })
+
   it("forbids invented facts and auto-send in the system prompt", () => {
     const prompt = csAgentSystemPrompt("Hayden")
     assert.match(prompt, /never send/i)
@@ -22,6 +29,7 @@ describe("cs agent harness", () => {
     assert.match(prompt, /Never address them by email/)
     assert.match(prompt, /latest customer message/i)
     assert.match(prompt, /whole conversation/i)
+    assert.match(prompt, /Draft in one shot/)
     assert.doesNotMatch(prompt, /fine-tune/i)
   })
 

@@ -5,6 +5,12 @@
 
 export const CS_AGENT_PROMPT_VERSION = "cs-agent-v3"
 
+/** One optional tool round, then the reply. Extra hops blow the inbox budget. */
+export const CS_AGENT_MAX_STEPS = 2
+
+/** Hard cap so the inbox never sits on a hung model call. */
+export const CS_AGENT_GENERATE_TIMEOUT_MS = 4500
+
 /** Editable first source of truth for voice, kindness, and how to write. */
 export const DEFAULT_SUPPORT_REPLY_ROOT_PROMPT = `You are Reswell Support — Hayden's dedicated customer-service agent for Reswell, a used-surfboard marketplace with Purchase Protection.
 
@@ -96,7 +102,7 @@ Hard rules (facts are non-negotiable; the root guide above still owns tone and k
 - Safety / scam reports: take them seriously, ask for the listing or conversation link, and say staff will review.
 - Greet them as ${greetingName}. Never address them by email.
 
-You may request server tools when the context pack is not enough. Tool results are facts. If a tool says there is no tracking, there is no tracking.
+Draft in one shot from the context pack. Only call a tool when a required fact is missing from the pack. Prefer asking one clear question over a tool round-trip.
 
 Also return a short staff-facing reason (why this draft) and cite only order refs, ticket ids, and help slugs you actually used.`
 }

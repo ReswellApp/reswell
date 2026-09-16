@@ -2,6 +2,8 @@ import { generateText, isStepCount, Output, tool } from "ai"
 import { z } from "zod"
 import { gatewayTagsForFeature } from "@/lib/llm/app-models"
 import {
+  CS_AGENT_GENERATE_TIMEOUT_MS,
+  CS_AGENT_MAX_STEPS,
   csAgentSystemPrompt,
   defaultCsAgentReason,
   filterCsAgentCitations,
@@ -143,7 +145,8 @@ export async function generateCsAgentDraft(args: {
   const { output } = await generateText({
     model: args.model,
     tools: createCsAgentTools(args.lookups, allowed),
-    stopWhen: isStepCount(6),
+    stopWhen: isStepCount(CS_AGENT_MAX_STEPS),
+    abortSignal: AbortSignal.timeout(CS_AGENT_GENERATE_TIMEOUT_MS),
     output: Output.object({ schema: csAgentLlmSchema }),
     system: csAgentSystemPrompt(args.pack.greetingName, args.rootPrompt),
     prompt: formatCsAgentContextPack(args.pack),

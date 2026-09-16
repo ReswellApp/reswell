@@ -6,6 +6,7 @@ import type {
   SupportReplyExampleRow,
 } from "@/lib/types/supportReplyDraft"
 import { supportReplyExampleSearchOrClause } from "@/lib/utils/support-reply-examples"
+import { selectOpenCaseIdsNeedingDraft } from "@/lib/utils/support-reply-retrieve"
 import type { SupportReplyDraftOrigin, SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 
 const DRAFT_SELECT =
@@ -413,18 +414,46 @@ export async function listOpenCaseIdsNeedingDraft(
   const ids = (data ?? []).map((row) => String((row as { id: string }).id))
   if (ids.length === 0) return []
 
-  const { data: drafts, error: draftError } = await supabase
-    .from("support_reply_drafts")
-    .select("case_id")
-    .in("case_id", ids)
+  const [{ data: drafts, error: draftError }, { data: customerMessages, error: messageError }] =
+    await Promise.all([
+      supabase.from("support_reply_drafts").select("case_id, updated_at").in("case_id", ids),
+      supabase
+        .from("support_case_messages")
+        .select("case_id, created_at")
+        .in("case_id", ids)
+        .eq("author_role", "customer")
+        .order("created_at", { ascending: false })
+        .limit(200),
+    ])
 
   if (draftError) {
     console.warn("[support_reply_drafts] queue lookup skipped:", draftError.message)
     return ids.slice(0, limit)
   }
+  if (messageError) {
+    console.warn("[support_case_messages] queue lookup skipped:", messageError.message)
+  }
 
-  const have = new Set((drafts ?? []).map((row) => String((row as { case_id: string }).case_id)))
-  return ids.filter((id) => !have.has(id)).slice(0, limit)
+  const draftUpdatedAtByCaseId = new Map<string, string>()
+  for (const row of drafts ?? []) {
+    const caseId = String((row as { case_id: string }).case_id)
+    const updatedAt = String((row as { updated_at?: string }).updated_at ?? "")
+    if (caseId && updatedAt) draftUpdatedAtByCaseId.set(caseId, updatedAt)
+  }
+
+  const lastCustomerAtByCaseId = new Map<string, string>()
+  for (const row of customerMessages ?? []) {
+    const caseId = String((row as { case_id: string }).case_id)
+    if (!caseId || lastCustomerAtByCaseId.has(caseId)) continue
+    lastCustomerAtByCaseId.set(caseId, String((row as { created_at: string }).created_at))
+  }
+
+  return selectOpenCaseIdsNeedingDraft({
+    caseIds: ids,
+    draftUpdatedAtByCaseId,
+    lastCustomerAtByCaseId,
+    limit,
+  })
 }
 
 export async function getSupportReplyRequesterNames(

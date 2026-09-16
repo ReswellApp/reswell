@@ -64,6 +64,7 @@ export const SUPPORT_REPLY_REWRITE_INSTRUCTION_MAX = 2000
 export const supportReplyDraftCaseIdSchema = z.object({
   case_id: z.string().uuid(),
   force: z.boolean().optional(),
+  peek: z.boolean().optional(),
   rewrite_instruction: z.string().trim().max(SUPPORT_REPLY_REWRITE_INSTRUCTION_MAX).optional(),
   current_draft: z.string().trim().max(12000).optional(),
 })

@@ -28,6 +28,16 @@ import type { CarrierClaimStatus } from "@/lib/types/protectionClaimDesk"
 
 const CASES_INBOX_HREF = "/admin/contact-messages"
 
+function lastCustomerDraftRevision(messages: SupportCaseThreadMessage[]): string | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    if (message?.author_role === "customer" && !message.is_internal) {
+      return `${message.id}:${message.created_at}`
+    }
+  }
+  return null
+}
+
 type ClaimDeskInitials = {
   orderSupportRequestId: string
   orderId: string
@@ -90,8 +100,10 @@ export function AdminSupportCaseDesk({
   const [seedText, setSeedText] = useState("")
   const [seedMode, setSeedMode] = useState<"fill-empty" | "replace">("fill-empty")
   const replaceNextSeed = useRef(false)
+  const draftRevision = lastCustomerDraftRevision(messages)
   const { draft: aiDraft, loading: aiLoading, regenerate: regenerateAi } = useSupportReplyDraft(
     closed ? null : caseId,
+    draftRevision,
   )
 
   useEffect(() => {

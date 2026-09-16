@@ -6,6 +6,10 @@ import {
 } from "@/lib/services/dropoffLocationShipFrom"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
+  profileRowToRateQuoteAddress,
+  rateQuoteFieldsToShippingInput,
+} from "@/lib/shipping/rate-address"
+import {
   listingUsesAdminCustomSurfboardCarton,
   resolveCombinedPackedParcelFromListings,
   resolveSurfboardShippingTierIdFromListing,
@@ -152,8 +156,23 @@ async function fetchAllConnectedCarrierIds(): Promise<{ ok: true; ids: string[] 
   return { ok: true, ids }
 }
 
+/** Saved seller street address → ShipEngine ship-from (label purchase and label-time re-quotes). */
+export function sellerProfileAddressToShipFrom(
+  addr: ProfileAddressRow,
+  sellerShipFromName: string,
+): ShippingAddressInput {
+  const fields = profileRowToRateQuoteAddress(addr)
+  const nameLine = sellerShipFromName.trim() || fields.name
+  return {
+    ...rateQuoteFieldsToShippingInput(fields),
+    name: nameLine,
+  }
+}
+
 /**
  * Builds a `ship_from` payload from listing locality (Nominatim forward-geocode) for ShipEngine `/rates`.
+ * Used for checkout quotes only — buyers see a zone price, not a street.
+ * Label purchase must pass {@link sellerProfileAddressToShipFrom} when the seller has a saved address.
  * Same shape the admin rate calculator builds from its address form so both paths land on identical bodies.
  */
 async function resolveListingShipFromAddress(
@@ -321,6 +340,11 @@ export async function getCheapestReswellRateForListing(input: {
    * Use {@link fetchSellerShipFromLabelName} from the seller’s profile when available.
    */
   sellerShipFromName: string
+  /**
+   * Saved seller street address. When set, rates (and therefore purchased labels)
+   * use this origin instead of listing / dropoff locality.
+   */
+  sellerShipFromAddress?: ProfileAddressRow | null
 }): Promise<ReswellListingRateResult> {
   return getCheapestReswellRateForListings({ ...input, listings: [input.listing] })
 }
@@ -404,6 +428,8 @@ export async function getCheapestReswellRateForListings(input: {
   selectedRateId?: string | null
   selectedServiceCode?: string | null
   sellerShipFromName: string
+  /** Saved seller street address — used for label purchase so the rate’s origin matches the label. */
+  sellerShipFromAddress?: ProfileAddressRow | null
 }): Promise<ReswellListingRateResult> {
   if (!isShipEngineConfigured()) {
     return { ok: false, error: "Shipping quotes are temporarily unavailable." }
@@ -473,7 +499,12 @@ export async function getCheapestReswellRateForListings(input: {
     }
   }
 
-  const shipFrom = await resolveListingShipFromAddress(firstListing, input.sellerShipFromName)
+  const shipFrom = input.sellerShipFromAddress
+    ? {
+        ok: true as const,
+        address: sellerProfileAddressToShipFrom(input.sellerShipFromAddress, input.sellerShipFromName),
+      }
+    : await resolveListingShipFromAddress(firstListing, input.sellerShipFromName)
   if (!shipFrom.ok) {
     return { ok: false, error: shipFrom.error }
   }

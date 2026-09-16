@@ -24,6 +24,7 @@ import {
   isReswellTransactionalSender,
   normalizeEmailForMatch,
 } from "@/lib/utils/support-inbound-email"
+import { scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 
 const BODY_MAX = 12000
 
@@ -268,5 +269,6 @@ export async function applyInboundSupportEmail(
     })
   }
 
+  scheduleSupportReplyDraft(row.id)
   return { ok: true, status: "appended", caseId: row.id }
 }

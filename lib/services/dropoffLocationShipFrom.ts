@@ -116,6 +116,11 @@ export async function resolveDropoffLocationForListing(
   return row ? embedFromDropoffLocation(row) : null
 }
 
+/**
+ * Label ship-from: saved seller street address always wins.
+ * Listing / dropoff locality (often a city pin with a placeholder street) is only
+ * used when the seller has no address on file.
+ */
 export async function resolveSellerOrDropoffShipFrom(
   supabase: SupabaseClient,
   sellerId: string,
@@ -125,12 +130,16 @@ export async function resolveSellerOrDropoffShipFrom(
   | { ok: true; address: ProfileAddressRow; source: "seller" | "admin" | "dropoff" }
   | { ok: false; error: string }
 > {
+  const seller = await resolveSellerShipFromAddress(supabase, sellerId, sellerAddressId)
+  if (seller.ok) return seller
+
+  // Explicit address id was requested but not found — do not silently use dropoff.
+  if (sellerAddressId?.trim()) return seller
+
   for (const listing of listings) {
     const loc = await resolveDropoffLocationForListing(supabase, listing)
     const address = loc ? dropoffLocationToProfileAddressRow(loc, sellerId) : null
     if (address) return { ok: true, address, source: "dropoff" }
   }
-  const seller = await resolveSellerShipFromAddress(supabase, sellerId, sellerAddressId)
-  if (!seller.ok) return seller
   return seller
 }

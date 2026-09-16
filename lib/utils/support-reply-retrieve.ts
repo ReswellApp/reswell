@@ -244,3 +244,20 @@ function hashFingerprint(value: string): string {
   }
   return (hash >>> 0).toString(16).padStart(8, "0")
 }
+
+/** Open tickets with no draft, or whose last customer message is newer than the stored draft. */
+export function selectOpenCaseIdsNeedingDraft(args: {
+  caseIds: string[]
+  draftUpdatedAtByCaseId: Map<string, string>
+  lastCustomerAtByCaseId: Map<string, string>
+  limit: number
+}): string[] {
+  const needed = args.caseIds.filter((id) => {
+    const draftAt = args.draftUpdatedAtByCaseId.get(id)
+    if (!draftAt) return true
+    const customerAt = args.lastCustomerAtByCaseId.get(id)
+    if (!customerAt) return false
+    return Date.parse(customerAt) > Date.parse(draftAt)
+  })
+  return needed.slice(0, Math.max(0, args.limit))
+}

@@ -1,3 +1,4 @@
+import { after } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import {
@@ -38,6 +39,7 @@ import {
 import type {
   SupportReplyCitedHelp,
   SupportReplyDraftCitations,
+  SupportReplyDraftRow,
   SupportReplyDraftView,
 } from "@/lib/types/supportReplyDraft"
 import {
@@ -57,7 +59,7 @@ import {
 const FEATURE = APP_LLM_FEATURES.find((f) => f.id === "support_reply_draft")
 
 export function supportReplyDraftModelId(): string {
-  if (!FEATURE) return "google/gemini-2.5-pro"
+  if (!FEATURE) return "google/gemini-2.5-flash"
   return resolveConfiguredModel(FEATURE)
 }
 
@@ -334,17 +336,55 @@ async function loadCaseContext(
 
 export async function getOrCreateSupportReplyDraftService(
   raw: unknown,
-): Promise<{ data: SupportReplyDraftView } | { error: string }> {
+): Promise<{ data: SupportReplyDraftView } | { pending: true } | { error: string }> {
   const parsed = supportReplyDraftCaseIdSchema.safeParse(raw)
   if (!parsed.success) return { error: "Invalid case." }
 
   const staff = await requireStaffService()
   if (!staff.ok) return { error: staff.error }
 
+  if (parsed.data.peek === true && parsed.data.force !== true) {
+    return peekReadyDraft(staff.service, parsed.data.case_id)
+  }
+
   return generateAndStoreDraft(staff.service, parsed.data.case_id, parsed.data.force === true, {
     rewriteInstruction: parsed.data.rewrite_instruction,
     currentDraft: parsed.data.current_draft,
   })
+}
+
+async function matchingStoredDraft(
+  service: SupabaseClient,
+  row: SupportCaseRow,
+  messages: SupportCaseMessageRow[],
+  rootPrompt: string,
+): Promise<SupportReplyDraftRow | null> {
+  const fingerprint = supportReplyDraftFingerprint({
+    promptVersion: SUPPORT_REPLY_PROMPT_VERSION,
+    rootPrompt,
+    caseId: row.id,
+    subject: row.subject,
+    status: row.status,
+    lastCustomerMessage: lastCustomerText(row, messages),
+    lastMessageAt: lastMessageAt(messages),
+  })
+  const existing = await getSupportReplyDraftByCaseId(service, row.id)
+  if (existing && existing.source_fingerprint === fingerprint && existing.body.trim()) {
+    return existing
+  }
+  return null
+}
+
+async function peekReadyDraft(
+  service: SupabaseClient,
+  caseId: string,
+): Promise<{ data: SupportReplyDraftView } | { pending: true } | { error: string }> {
+  const loaded = await loadCaseContext(service, caseId)
+  if ("error" in loaded) return loaded
+  const rootPrompt = await getSupportReplyRootPromptBody(service)
+  const existing = await matchingStoredDraft(service, loaded.row, loaded.messages, rootPrompt)
+  if (!existing) return { pending: true }
+  return { data: toView(existing, true, false) }
 }
 
 export async function generateAndStoreDraft(
@@ -370,8 +410,8 @@ export async function generateAndStoreDraft(
   })
 
   if (!force) {
-    const existing = await getSupportReplyDraftByCaseId(service, row.id)
-    if (existing && existing.source_fingerprint === fingerprint && existing.body.trim()) {
+    const existing = await matchingStoredDraft(service, row, messages, rootPrompt)
+    if (existing) {
       return { data: toView(existing, true, false) }
     }
   }
@@ -502,6 +542,35 @@ export async function recordSentSupportReplyExample(args: {
     })
   } catch (error) {
     console.warn("[supportReplyDraft] learn-from-send skipped:", error)
+  }
+}
+
+export function scheduleSupportReplyDraft(caseId: string): void {
+  const id = caseId.trim()
+  if (!id) return
+
+  const run = () => {
+    void (async () => {
+      try {
+        const service = staffClient()
+        if (!service) return
+        const result = await generateAndStoreDraft(service, id, false)
+        if ("error" in result) {
+          console.warn("[supportReplyDraft] inbound generate:", result.error)
+        }
+      } catch (error) {
+        console.error(
+          "[supportReplyDraft] inbound generate failed:",
+          error instanceof Error ? error.message : error,
+        )
+      }
+    })()
+  }
+
+  try {
+    after(run)
+  } catch {
+    run()
   }
 }
 

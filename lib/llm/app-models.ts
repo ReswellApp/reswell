@@ -129,10 +129,10 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "support_reply_draft",
     name: "Support reply drafts",
     purpose:
-      "Reswell-only CS agent harness: drafts a review-before-send reply from a context pack (thread, order, prior tickets, help, rated examples, macros) plus server-resolved tools (order, tracking, refund eligibility, help, prior tickets). Never auto-sends. No fine-tune.",
+      "Reswell-only CS agent harness: drafts a review-before-send reply from a context pack (thread, order, prior tickets, help, rated examples, macros) plus optional server tools. Starts the moment a customer writes in so the inbox can read a ready draft. Never auto-sends. No fine-tune.",
     gatewayFeatureTag: "feature:support-reply-draft",
     transport: "vercel_ai_gateway",
-    defaultModel: "google/gemini-2.5-pro",
+    defaultModel: "google/gemini-2.5-flash",
     modelEnvVar: "SUPPORT_REPLY_DRAFT_MODEL",
     enabledEnvVar: "SUPPORT_REPLY_DRAFT_ENABLED",
     surfaces: [

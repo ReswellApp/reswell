@@ -84,6 +84,16 @@ function readCaseDraft(caseId: string) {
   )
 }
 
+function lastCustomerDraftRevision(messages: SupportCaseThreadMessage[]): string | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    if (message?.author_role === "customer" && !message.is_internal) {
+      return `${message.id}:${message.created_at}`
+    }
+  }
+  return null
+}
+
 export function CaseInboxAdminClient({
   initialInbox = null,
   initialError = null,
@@ -370,6 +380,10 @@ export function CaseInboxAdminClient({
   }, [selected, draftCaseId])
 
   const selectedId = selected?.id ?? null
+  const draftRevision =
+    threadCaseId === selectedId
+      ? lastCustomerDraftRevision(threadMessages)
+      : null
   const {
     draft: aiDraft,
     loading: aiLoading,
@@ -378,7 +392,7 @@ export function CaseInboxAdminClient({
     ratingPending: aiRatingPending,
     regenerate: regenerateAi,
     rate: rateAi,
-  } = useSupportReplyDraft(selected?.isOpen ? selectedId : null)
+  } = useSupportReplyDraft(selected?.isOpen ? selectedId : null, draftRevision)
   const loadedThreadIdRef = useRef<string | null>(null)
 
   useEffect(() => {

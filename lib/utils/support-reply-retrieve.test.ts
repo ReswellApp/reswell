@@ -10,6 +10,7 @@ import {
   rankHelpArticlesForQuery,
   scoreSupportReplyOverlap,
   supportReplyDraftFingerprint,
+  selectOpenCaseIdsNeedingDraft,
   tokenizeSupportReplyQuery,
 } from "./support-reply-retrieve.ts"
 
@@ -172,5 +173,23 @@ describe("support reply retrieval", () => {
     })
     assert.match(query, /wallet balance/i)
     assert.match(query, /Yes please/)
+  })
+
+  it("queues cases with no draft or a customer message newer than the draft", () => {
+    const ids = selectOpenCaseIdsNeedingDraft({
+      caseIds: ["a", "b", "c", "d"],
+      draftUpdatedAtByCaseId: new Map([
+        ["b", "2026-09-16T10:00:00.000Z"],
+        ["c", "2026-09-16T12:00:00.000Z"],
+        ["d", "2026-09-16T12:00:00.000Z"],
+      ]),
+      lastCustomerAtByCaseId: new Map([
+        ["b", "2026-09-16T11:00:00.000Z"],
+        ["c", "2026-09-16T11:00:00.000Z"],
+        ["d", "2026-09-16T12:00:00.000Z"],
+      ]),
+      limit: 3,
+    })
+    assert.deepEqual(ids, ["a", "b"])
   })
 })

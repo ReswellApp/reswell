@@ -27,6 +27,8 @@ import {
   type PeerListingForShippingQuote,
 } from "@/lib/services/peerListingShippingQuote"
 import { getCheapestReswellRateForListings } from "@/lib/services/reswellListingShippingRate"
+import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
+import type { ProfileAddressRow } from "@/lib/profile-address"
 import { getStripe } from "@/lib/stripe-server"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
@@ -388,8 +390,13 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     }
     const shipTo = rateQuoteFieldsToShippingInput(shipToFields)
     const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, o.seller_id)
+    const sellerShipFromResolved = await resolveSellerShipFromAddress(supabase, o.seller_id)
+    const sellerShipFromAddress: ProfileAddressRow | null = sellerShipFromResolved.ok
+      ? sellerShipFromResolved.address
+      : null
 
     let togetherRateFromPi: string | null = null
+    let togetherServiceFromPi: string | null = null
     let packageRatesFromPi: CheckoutShippingPackageRate[] = []
     const paymentIntentId = o.stripe_checkout_session_id?.trim()
     if (paymentIntentId) {
@@ -397,12 +404,18 @@ export async function autoPurchaseReswellShippingLabelForOrder(
         const stripe = getStripe()
         const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
         togetherRateFromPi = pi.metadata.shipengine_rate_id?.trim() || null
+        togetherServiceFromPi = pi.metadata.shipengine_service_code?.trim() || null
         packageRatesFromPi = parsePackageRatesFromPiMeta(pi.metadata.shipengine_package_rates)
       } catch (e) {
         console.warn(`${tag} could not read payment intent for selected rate:`, e)
       }
     }
     const rateByListing = new Map(packageRatesFromPi.map((r) => [r.listingId, r.rateId]))
+    const serviceByListing = new Map(
+      packageRatesFromPi
+        .filter((r) => r.serviceCode?.trim())
+        .map((r) => [r.listingId, r.serviceCode!.trim()]),
+    )
 
     let anyFailure = false
 
@@ -420,11 +433,20 @@ export async function autoPurchaseReswellShippingLabelForOrder(
         continue
       }
 
-      let rateId =
-        shipment.shipengine_rate_id?.trim() ||
-        (shipment.packaging_kind === "together"
-          ? togetherRateFromPi
-          : rateByListing.get(shipment.listing_ids[0] ?? "") ?? null)
+      const checkoutServiceCode =
+        shipment.packaging_kind === "together"
+          ? togetherServiceFromPi
+          : serviceByListing.get(shipment.listing_ids[0] ?? "") ?? togetherServiceFromPi
+
+      // Checkout rate_ids are quoted from listing/dropoff locality (placeholder street).
+      // Buying that rate prints the generic location on the label. When the seller
+      // has a saved ship-from, always re-quote from that street and keep the service.
+      let rateId = sellerShipFromAddress
+        ? null
+        : shipment.shipengine_rate_id?.trim() ||
+          (shipment.packaging_kind === "together"
+            ? togetherRateFromPi
+            : rateByListing.get(shipment.listing_ids[0] ?? "") ?? null)
 
       if (!rateId) {
         const quoted = await getCheapestReswellRateForListings({
@@ -432,6 +454,8 @@ export async function autoPurchaseReswellShippingLabelForOrder(
           shipTo,
           diagnosticTag: `auto-reswell-label:${o.id}:${shipment.id}`,
           sellerShipFromName,
+          sellerShipFromAddress,
+          selectedServiceCode: checkoutServiceCode,
           section: listingsForQuote[0]?.section ?? listingSection ?? null,
         })
         if (!quoted.ok) {

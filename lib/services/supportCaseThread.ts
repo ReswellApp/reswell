@@ -22,7 +22,7 @@ import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-t
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 import { markSupportCaseReadForMember } from "@/lib/services/supportUnread"
-import { recordSentSupportReplyExample } from "@/lib/services/supportReplyDraft"
+import { recordSentSupportReplyExample, scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 
 export type SupportCaseThreadMessage = SupportCaseMessageRow
 
@@ -184,6 +184,7 @@ export async function sendSupportCaseMemberReplyService(
     preview: body,
     status: row.status === "waiting_on_you" ? "in_progress" : undefined,
   })
+  scheduleSupportReplyDraft(row.id)
 
   return { success: true, case_id: row.id }
 }

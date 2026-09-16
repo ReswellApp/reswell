@@ -93,6 +93,17 @@ describe("support reply example review schemas", () => {
     assert.equal(parsed.success, false)
   })
 
+  it("accepts a peek-only read that must not force a rewrite", () => {
+    const parsed = supportReplyDraftCaseIdSchema.safeParse({
+      case_id: "11111111-1111-4111-8111-111111111111",
+      peek: true,
+    })
+    assert.equal(parsed.success, true)
+    if (!parsed.success) return
+    assert.equal(parsed.data.peek, true)
+    assert.equal(parsed.data.force, undefined)
+  })
+
   it("accepts an optional rewrite instruction on regenerate", () => {
     const parsed = supportReplyDraftCaseIdSchema.safeParse({
       case_id: "11111111-1111-4111-8111-111111111111",

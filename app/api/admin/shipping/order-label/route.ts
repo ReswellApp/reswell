@@ -210,9 +210,9 @@ export async function GET(request: NextRequest) {
       checkoutLane: {
         buyerPaidShippingUsd,
         boardShippingMode: boardMode,
-        /** Same parcel + listing ship-from geocode + buyer address as surfboard checkout quotes (cheapest carrier). */
+        /** Same parcel + buyer address as checkout. Origin is the seller’s saved street address when on file. */
         quoteMethod:
-          "Uses the listing’s packed dimensions and seller locality (checkout lane), the buyer’s order address, and the cheapest ShipEngine rate — matching peer checkout when the listing uses Reswell-calculated shipping.",
+          "Uses the listing’s packed dimensions, the seller’s saved ship-from address when on file (otherwise listing locality), the buyer’s order address, and the cheapest ShipEngine rate.",
       },
       sellerWalletLane: {
         eligible: sellerWalletReasons.length === 0,
@@ -326,11 +326,13 @@ export async function POST(request: NextRequest) {
     const shipTo = rateQuoteFieldsToShippingInput(shipToFields)
 
     const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, o.seller_id)
+    const sellerShipFrom = await resolveSellerShipFromAddress(supabase, o.seller_id)
     const quoted = await getCheapestReswellRateForListing({
       listing: listingForQuote,
       shipTo,
       diagnosticTag: `admin-checkout-lane:${o.id}`,
       sellerShipFromName,
+      sellerShipFromAddress: sellerShipFrom.ok ? sellerShipFrom.address : null,
     })
     if (!quoted.ok) {
       return NextResponse.json({ error: quoted.error }, { status: 422 })

@@ -5,6 +5,7 @@ import {
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+import { scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 
 const WELCOME = "Thanks — we received this. Reply here anytime."
 
@@ -30,5 +31,6 @@ export async function createSupportCaseWithOpeningMessage(
     author_role: "system",
     body: `${WELCOME} Case ${formatSupportCaseReference(inserted.data.id)}.`,
   })
+  scheduleSupportReplyDraft(inserted.data.id)
   return inserted.data
 }
