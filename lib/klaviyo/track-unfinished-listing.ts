@@ -23,6 +23,11 @@ import {
   formatKlaviyoPriceDisplay,
   parseKlaviyoListingPrice,
 } from "@/lib/klaviyo/catalog-product"
+import { formatListingDimensionsLine } from "@/lib/listing-dimensions-display"
+import {
+  listingDimensionsColumnFromSurfboardSellForm,
+  surfboardSellFormDimensionsFromListingRow,
+} from "@/lib/listing-dimensions-storage"
 import {
   isPeerListingSection,
   PEER_LISTING_SECTION_LABELS,
@@ -60,21 +65,18 @@ function truncateDescription(raw: string | null): string {
   return `${trimmed.slice(0, DESCRIPTION_MAX)}…`
 }
 
-function formatDimensions(row: UnfinishedListingDraftRow): string {
-  const feet = row.length_feet
-  const inches = row.length_inches
-  const width = row.width
-  const thickness = row.thickness
-  const volume = row.volume
-  const parts: string[] = []
-  if (feet != null && feet > 0) {
-    const inPart = inches != null && inches > 0 ? ` ${inches}"` : ""
-    parts.push(`${feet}'${inPart}`.trim())
-  }
-  if (width != null && width > 0) parts.push(`${width}" W`)
-  if (thickness != null && thickness > 0) parts.push(`${thickness}" T`)
-  if (volume != null && volume > 0) parts.push(`${volume}L`)
-  return parts.join(" · ")
+export function formatUnfinishedListingDimensions(row: UnfinishedListingDraftRow): string {
+  const fromStored = formatListingDimensionsLine({ dimensions: row.dimensions })
+  if (fromStored) return fromStored
+
+  const parsed = surfboardSellFormDimensionsFromListingRow({
+    dimensions: row.dimensions,
+    length_total_inches: row.length_total_inches,
+    volume_liters: row.volume_liters,
+    title: row.title,
+  })
+  const composed = listingDimensionsColumnFromSurfboardSellForm(parsed)
+  return formatListingDimensionsLine({ dimensions: composed }) ?? ""
 }
 
 function locationLabel(row: UnfinishedListingDraftRow): string {
@@ -92,7 +94,7 @@ export function unfinishedListingCapturedFields(row: UnfinishedListingDraftRow):
   if (row.model) fields.push("model")
   if (row.condition) fields.push("condition")
   if (row.board_type) fields.push("board_type")
-  if (formatDimensions(row)) fields.push("dimensions")
+  if (formatUnfinishedListingDimensions(row)) fields.push("dimensions")
   if (locationLabel(row)) fields.push("location")
   if (row.local_pickup != null || row.shipping_available != null) fields.push("fulfillment")
   return fields
@@ -153,7 +155,7 @@ export async function trackKlaviyoUnfinishedListing(
       Model: listing.model ?? "",
       Condition: listing.condition ?? "",
       board_type: listing.board_type ?? "",
-      Dimensions: formatDimensions(listing),
+      Dimensions: formatUnfinishedListingDimensions(listing),
       Location: locationLabel(listing),
       description: truncateDescription(listing.description),
       photo_count: photosCount,
