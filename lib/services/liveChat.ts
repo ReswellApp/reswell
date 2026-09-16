@@ -312,9 +312,21 @@ export async function sendLiveChatVisitorMessageService(
     return { error: "Could not send message. Try again." }
   }
 
-  const supportCaseId = session.support_case_id
   const visitorEmail = parsed.data.visitor_email?.trim() || session.visitor_email
-  const shouldEscalate = !supportCaseId && Boolean(visitorEmail || session.user_id || user?.id)
+  const shouldEscalate =
+    !session.support_case_id && Boolean(visitorEmail || session.user_id || user?.id)
+
+  let supportCaseId = session.support_case_id
+  if (shouldEscalate) {
+    const escalated = await escalateLiveChatSessionToTicket(
+      svc,
+      { ...session, visitor_email: visitorEmail, user_id: session.user_id ?? user?.id ?? null },
+      "manual",
+    )
+    if ("success" in escalated && escalated.success) {
+      supportCaseId = escalated.supportCaseId
+    }
+  }
 
   after(async () => {
     await broadcastLiveChatMessage({
@@ -328,12 +340,6 @@ export async function sendLiveChatVisitorMessageService(
         created_at: message.created_at,
       },
     })
-    if (!shouldEscalate) return
-    await escalateLiveChatSessionToTicket(
-      svc,
-      { ...session, visitor_email: visitorEmail, user_id: session.user_id ?? user?.id ?? null },
-      "manual",
-    )
   })
 
   return {

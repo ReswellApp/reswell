@@ -262,23 +262,108 @@ export async function mergeLiveChatSessionMetadata(
   })
 }
 
+const OPEN_SESSION_PAGE_SIZE = 1000
+const OPEN_SESSION_MAX_ROWS = 5000
+
 export async function listOpenLiveChatSessions(
   supabase: SupabaseClient,
 ): Promise<LiveChatSessionRow[]> {
-  const { data, error } = await withSessionSelect((select) =>
-    supabase
-      .from("live_chat_sessions")
-      .select(select)
-      .in("status", ["open", "assigned"])
-      .order("last_message_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false }),
-  )
+  const rows: LiveChatSessionRow[] = []
+  for (let from = 0; from < OPEN_SESSION_MAX_ROWS; from += OPEN_SESSION_PAGE_SIZE) {
+    const to = from + OPEN_SESSION_PAGE_SIZE - 1
+    const { data, error } = await withSessionSelect((select) =>
+      supabase
+        .from("live_chat_sessions")
+        .select(select)
+        .in("status", ["open", "assigned"])
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .range(from, to),
+    )
 
-  if (error || !data) {
-    console.error("listOpenLiveChatSessions", error)
-    return []
+    if (error || !data) {
+      if (from === 0) {
+        console.error("listOpenLiveChatSessions", error)
+        return []
+      }
+      break
+    }
+    rows.push(...data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>)))
+    if (data.length < OPEN_SESSION_PAGE_SIZE) break
   }
-  return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
+  return rows
+}
+
+const ESCALATION_CLAIMED_AT_KEY = "escalation_claimed_at"
+
+export type LiveChatEscalationClaim =
+  | { status: "claimed"; session: LiveChatSessionRow }
+  | { status: "already_linked"; session: LiveChatSessionRow }
+  | { status: "in_progress"; session: LiveChatSessionRow }
+  | { status: "missing" }
+
+/** Compare-and-set so two visitor sends cannot both open a support case. */
+export async function claimLiveChatSessionEscalation(
+  supabase: SupabaseClient,
+  sessionId: string,
+): Promise<LiveChatEscalationClaim> {
+  const fresh = await getLiveChatSessionById(supabase, sessionId)
+  if (!fresh) return { status: "missing" }
+  if (fresh.support_case_id && fresh.contact_message_id) {
+    return { status: "already_linked", session: fresh }
+  }
+  if (typeof fresh.metadata[ESCALATION_CLAIMED_AT_KEY] === "string") {
+    return { status: "in_progress", session: fresh }
+  }
+
+  const claimedAt = new Date().toISOString()
+  const nextMeta = { ...fresh.metadata, [ESCALATION_CLAIMED_AT_KEY]: claimedAt }
+  const requireCaseColumn = liveChatSessionSelectColumns().includes("support_case_id")
+
+  const runClaim = (select: string, filterCaseId: boolean) => {
+    let query = supabase
+      .from("live_chat_sessions")
+      .update({ metadata: nextMeta })
+      .eq("id", sessionId)
+      .is("contact_message_id", null)
+      .filter(`metadata->>${ESCALATION_CLAIMED_AT_KEY}`, "is", "null")
+    if (filterCaseId) query = query.is("support_case_id", null)
+    return query.select(select).maybeSingle()
+  }
+
+  let { data, error } = await runClaim(liveChatSessionSelectColumns(), requireCaseColumn)
+  if (error && isMissingSupportCaseColumn(error)) {
+    noteMissingSupportCaseColumn()
+    ;({ data, error } = await runClaim(liveChatSessionSelectColumns(), false))
+  }
+
+  if (error) {
+    console.error("claimLiveChatSessionEscalation", error)
+    return { status: "missing" }
+  }
+  if (data) {
+    return {
+      status: "claimed",
+      session: normalizeLiveChatSessionRow(data as Record<string, unknown>),
+    }
+  }
+
+  const raced = await getLiveChatSessionById(supabase, sessionId)
+  if (!raced) return { status: "missing" }
+  if (raced.support_case_id && raced.contact_message_id) {
+    return { status: "already_linked", session: raced }
+  }
+  return { status: "in_progress", session: raced }
+}
+
+/** Drop a failed claim so a later send or cron can retry. */
+export async function releaseLiveChatSessionEscalationClaim(
+  supabase: SupabaseClient,
+  session: LiveChatSessionRow,
+): Promise<void> {
+  if (session.contact_message_id || session.support_case_id) return
+  const { escalation_claimed_at: _dropped, ...rest } = session.metadata
+  await updateLiveChatSessionRow(supabase, session.id, { metadata: rest })
 }
 
 /** Latest message body per session — one query instead of N transcript loads. */

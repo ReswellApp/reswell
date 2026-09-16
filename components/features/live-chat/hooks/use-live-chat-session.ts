@@ -412,8 +412,13 @@ export function useLiveChatSession(options?: {
         return optimistic
       }
 
-      const result = await postMessage(trimmed, visitorEmail, optimisticId)
-      return result ?? optimistic
+      setSending(true)
+      try {
+        const result = await postMessage(trimmed, visitorEmail, optimisticId)
+        return result ?? optimistic
+      } finally {
+        setSending(false)
+      }
     },
     [appendMessage, postMessage],
   )

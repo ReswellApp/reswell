@@ -245,7 +245,7 @@ export function LiveChatMessagesView({
 
   async function handleSend() {
     const content = draft.trim()
-    if (!content || activatingAi || composerLocked || sessionClosed) return
+    if (!content || sending || activatingAi || composerLocked || sessionClosed) return
 
     if (mode === "ai") {
       setDraft("")
@@ -692,7 +692,7 @@ export function LiveChatMessagesView({
             draft={draft}
             onDraftChange={handleDraftChange}
             onSend={() => void handleSend()}
-            sending={composerLocked}
+            sending={sending || activatingAi || composerLocked}
             showEmailField={showEmailField}
             emailDraft={emailDraft}
             emailLocked={emailLocked}
