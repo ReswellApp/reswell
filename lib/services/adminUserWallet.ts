@@ -1,5 +1,9 @@
-import { getSellerBalance } from "@/lib/getSellerBalance"
+import { summarizeStoredWalletBalanceRow } from "@/lib/getSellerBalance"
+import { getOrCreateWalletForUser } from "@/lib/db/wallets"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { adminWalletCreditSchema } from "@/lib/validations/admin-user-wallet"
+
+const ADMIN_WALLET_CREDIT_REFERENCE_TYPE = "wallet_refund"
 
 const ZERO = "0.00"
 
@@ -18,8 +22,12 @@ export async function getAdminUserWalletSummary(userId: string) {
   }
 
   try {
-    const summary = await getSellerBalance(supabase, userId)
-    return { ok: true as const, data: summary }
+    const { data: wallet } = await supabase
+      .from("wallets")
+      .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+      .eq("user_id", userId)
+      .maybeSingle()
+    return { ok: true as const, data: summarizeStoredWalletBalanceRow(wallet ?? null) }
   } catch (e) {
     console.error("[admin wallet] get summary", e)
     return { ok: false as const, message: "Could not load wallet", status: 500 }
@@ -114,4 +122,94 @@ export async function resetUserWalletEarningsToZeroService(userId: string, audit
   console.info(`[admin wallet reset] target_user=${userId} admin=${audit.adminId}`)
 
   return { ok: true as const }
+}
+
+function roundMoney(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
+export async function creditAdminUserWalletService(
+  userId: string,
+  raw: unknown,
+  audit: { adminId: string },
+): Promise<
+  | { ok: true; amountUsd: number; balanceAfter: number }
+  | { ok: false; message: string; status: number }
+> {
+  const parsed = adminWalletCreditSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { ok: false, message: "Enter a valid amount up to $5,000", status: 400 }
+  }
+
+  const supabase = getServiceOrThrow()
+  if (!supabase) {
+    return { ok: false, message: "Server misconfigured", status: 500 }
+  }
+
+  const { data: profile, error: profileErr } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (profileErr) {
+    console.error("[admin wallet credit] profile lookup", profileErr)
+    return { ok: false, message: "Could not verify user", status: 500 }
+  }
+  if (!profile) {
+    return { ok: false, message: "User not found", status: 404 }
+  }
+
+  const wallet = await getOrCreateWalletForUser(supabase, userId)
+  if (!wallet) {
+    return { ok: false, message: "Could not open wallet", status: 500 }
+  }
+
+  const amountUsd = roundMoney(parsed.data.amount_usd)
+  const nowIso = new Date().toISOString()
+  const newBalance = roundMoney(parseFloat(String(wallet.balance ?? 0)) + amountUsd)
+  const newLifetimeEarned = roundMoney(
+    parseFloat(String(wallet.lifetime_earned ?? 0)) + amountUsd,
+  )
+  const note = parsed.data.note?.trim()
+  const desc = note
+    ? `Admin wallet credit — $${amountUsd.toFixed(2)}. ${note}`
+    : `Admin wallet credit — $${amountUsd.toFixed(2)}`
+
+  const { error: txErr } = await supabase.from("wallet_transactions").insert({
+    wallet_id: wallet.id,
+    user_id: userId,
+    type: "refund",
+    amount: amountUsd,
+    balance_after: newBalance.toFixed(2),
+    description: desc.slice(0, 500),
+    status: "completed",
+    reference_id: crypto.randomUUID(),
+    reference_type: ADMIN_WALLET_CREDIT_REFERENCE_TYPE,
+  })
+
+  if (txErr) {
+    console.error("[admin wallet credit] transaction", txErr)
+    return { ok: false, message: "Could not record wallet credit", status: 500 }
+  }
+
+  const { error: updErr } = await supabase
+    .from("wallets")
+    .update({
+      balance: newBalance.toFixed(2),
+      lifetime_earned: newLifetimeEarned.toFixed(2),
+      updated_at: nowIso,
+    })
+    .eq("id", wallet.id)
+
+  if (updErr) {
+    console.error("[admin wallet credit] wallet update", updErr)
+    return { ok: false, message: "Could not update wallet balance", status: 500 }
+  }
+
+  console.info(
+    `[admin wallet credit] target_user=${userId} admin=${audit.adminId} amount=${amountUsd.toFixed(2)}`,
+  )
+
+  return { ok: true, amountUsd, balanceAfter: newBalance }
 }

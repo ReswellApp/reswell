@@ -5,7 +5,7 @@ import { listAdminWalletBalancesForAllUsers } from "@/lib/services/adminWalletBa
 /**
  * GET /api/admin/wallet-balances
  *
- * Full admin only — merged profile list with reconciled wallet aggregates (service role).
+ * Full admin only — merged profile list with stored wallet balances (service role).
  */
 export async function GET() {
   const gate = await requireAdmin()

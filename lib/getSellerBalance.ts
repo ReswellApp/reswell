@@ -16,6 +16,34 @@ export type WalletBalanceDbRow = {
   lifetime_cashed_out: string | number | null
 }
 
+function parseMoney(v: string | number | null | undefined): number {
+  const n = typeof v === "number" ? v : parseFloat(String(v ?? ""))
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0
+}
+
+/** Admin ops: the numbers stored on the wallet row — do not reconcile away credits. */
+export function summarizeStoredWalletBalanceRow(wallet: WalletBalanceDbRow | null) {
+  if (!wallet) {
+    return summarizeWalletBalanceRow(null)
+  }
+
+  const balance = parseMoney(wallet.balance)
+  const pending = Math.max(0, parseMoney(wallet.pending_balance))
+  const owed = balance < 0 ? -balance : 0
+
+  return {
+    balance: Math.max(0, balance),
+    pendingBalance: pending,
+    totalBalance: Math.round((balance + pending) * 100) / 100,
+    lifetime_earned: parseMoney(wallet.lifetime_earned),
+    lifetime_spent: parseMoney(wallet.lifetime_spent),
+    lifetime_cashed_out: Math.max(0, parseMoney(wallet.lifetime_cashed_out)),
+    spendableBucks: Math.max(0, balance),
+    inWalletOwed: owed,
+    walletId: wallet.id,
+  }
+}
+
 export function summarizeWalletBalanceRow(wallet: WalletBalanceDbRow | null) {
   if (!wallet) {
     return {

@@ -1,4 +1,4 @@
-import { summarizeWalletBalanceRow } from "@/lib/getSellerBalance"
+import { summarizeStoredWalletBalanceRow } from "@/lib/getSellerBalance"
 import { dbListProfilesAndWalletsForAdmin } from "@/lib/db/adminWalletBalances"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -8,7 +8,7 @@ export type AdminWalletBalanceListRow = {
   displayName: string | null
   avatarUrl: string | null
   createdAt: string
-} & ReturnType<typeof summarizeWalletBalanceRow>
+} & ReturnType<typeof summarizeStoredWalletBalanceRow>
 
 function getServiceOrThrow(): ReturnType<typeof createServiceRoleClient> | null {
   try {
@@ -38,7 +38,7 @@ export async function listAdminWalletBalancesForAllUsers(): Promise<
 
   const data: AdminWalletBalanceListRow[] = batch.profiles.map((p) => {
     const wallet = walletByUserId.get(p.id) ?? null
-    const summary = summarizeWalletBalanceRow(
+    const summary = summarizeStoredWalletBalanceRow(
       wallet
         ? {
             id: wallet.id,
