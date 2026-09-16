@@ -103,7 +103,8 @@ export function SupportReplyExamplesAdminClient({
     <div className="space-y-4">
       <SupportReplyRootPromptEditor initial={rootPrompt} />
       <p className="text-sm text-muted-foreground">
-        Rejected rows are ignored when drafts retrieve similar replies.{" "}
+        Bad replies are ignored. Okay and Very good both teach later drafts; Very good ranks first.
+        Editing a reply before send is Okay — the edited text is what it learns.{" "}
         <Link href="/admin/contact-messages" className="font-medium underline-offset-4 hover:underline">
           Support tickets
         </Link>

@@ -1,4 +1,7 @@
-import type { SupportReplyDraftOrigin } from "@/lib/validations/supportReplyDraft"
+import type {
+  SupportReplyDraftOrigin,
+  SupportReplyDraftRating,
+} from "@/lib/validations/supportReplyDraft"
 
 export type SupportReplyCitedHelp = {
   slug: string
@@ -60,7 +63,7 @@ export type SupportReplyExampleRow = {
   customer_excerpt: string
   staff_reply: string
   cited_help_slugs: string[]
-  rating: "accepted" | "edited" | "rejected"
+  rating: SupportReplyDraftRating
   draft_id: string | null
   rated_by: string | null
   created_at: string
@@ -80,7 +83,7 @@ export type SupportReplyExampleAdminView = {
   staffReply: string
   citedHelpSlugs: string[]
   citedHelp: SupportReplyExampleCitedHelp[]
-  rating: "accepted" | "edited" | "rejected"
+  rating: SupportReplyDraftRating
   draftId: string | null
   ratedBy: string | null
   createdAt: string
@@ -88,9 +91,9 @@ export type SupportReplyExampleAdminView = {
 
 export type SupportReplyExampleRatingCounts = {
   all: number
-  accepted: number
-  edited: number
-  rejected: number
+  very_good: number
+  okay: number
+  bad: number
 }
 
 export type SupportReplyExampleListResult = {

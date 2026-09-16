@@ -1,7 +1,12 @@
 "use client"
 
 import { forwardRef, useImperativeHandle, useRef } from "react"
-import { Loader2, RefreshCw, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react"
+import { Loader2, RefreshCw, Sparkles } from "lucide-react"
+import {
+  supportReplyExampleRatingClass,
+  supportReplyExampleRatingLabel,
+} from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
+import { SUPPORT_REPLY_DRAFT_RATINGS, type SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 import { SupportMacrosPicker } from "@/components/features/admin/support-macros-picker"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -45,8 +50,8 @@ interface CaseInboxComposerProps {
   aiOrders?: SupportReplyCitedOrder[]
   aiTickets?: SupportReplyCitedTicket[]
   onRegenerateAi?: () => void
-  onRateAi?: (rating: "accepted" | "rejected") => void
-  aiRating?: "accepted" | "rejected" | null
+  onRateAi?: (rating: SupportReplyDraftRating) => void
+  aiRating?: SupportReplyDraftRating | null
   aiRatingPending?: boolean
 }
 
@@ -148,36 +153,24 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
                 Rewrite
               </button>
             ) : null}
-            {aiActive && onRateAi ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onRateAi("accepted")}
-                  disabled={aiRatingPending}
-                  aria-pressed={aiRating === "accepted"}
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground disabled:opacity-50",
-                    aiRating === "accepted" && "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
-                  )}
-                  aria-label="This draft is good"
-                >
-                  <ThumbsUp className={cn("h-3 w-3", aiRating === "accepted" && "fill-current")} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onRateAi("rejected")}
-                  disabled={aiRatingPending}
-                  aria-pressed={aiRating === "rejected"}
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-muted hover:text-foreground disabled:opacity-50",
-                    aiRating === "rejected" && "bg-destructive/10 text-destructive",
-                  )}
-                  aria-label="This draft is not useful"
-                >
-                  <ThumbsDown className={cn("h-3 w-3", aiRating === "rejected" && "fill-current")} />
-                </button>
-              </>
-            ) : null}
+            {aiActive && onRateAi
+              ? SUPPORT_REPLY_DRAFT_RATINGS.map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => onRateAi(rating)}
+                    disabled={aiRatingPending}
+                    aria-pressed={aiRating === rating}
+                    className={cn(
+                      "inline-flex items-center rounded-md px-1.5 py-0.5 font-medium disabled:opacity-50",
+                      supportReplyExampleRatingClass(rating, aiRating === rating),
+                    )}
+                    aria-label={`Rate this draft ${supportReplyExampleRatingLabel(rating).toLowerCase()}`}
+                  >
+                    {supportReplyExampleRatingLabel(rating)}
+                  </button>
+                ))
+              : null}
             {aiActive && aiReason ? (
               <span className="w-full pl-4 text-[10px] text-muted-foreground">{aiReason}</span>
             ) : null}

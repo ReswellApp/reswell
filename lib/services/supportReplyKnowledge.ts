@@ -89,7 +89,7 @@ export async function gatherSupportReplyKnowledge(
         kind: row.kind,
         customerExcerpt: row.preview || row.subject,
         staffReply: staffReply.trim(),
-        rating: "accepted" as const,
+        rating: "okay" as const,
         score: scoreSupportReplyOverlap(tokens, `${row.subject} ${row.preview}`),
       },
     ]

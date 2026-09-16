@@ -197,7 +197,7 @@ ${tickets}
 Help center articles (current, treat as policy):
 ${help}
 
-Similar sent replies Hayden approved or edited:
+Similar sent replies Hayden rated okay or very good:
 ${examples}
 
 Saved macros (tone/structure only — adapt, do not paste blindly if facts differ):

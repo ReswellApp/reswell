@@ -97,13 +97,18 @@ async function ratingCounts(
   supabase: SupabaseClient,
   filters: { kind?: string; q?: string },
 ): Promise<SupportReplyExampleRatingCounts> {
-  const [all, accepted, edited, rejected] = await Promise.all([
+  const [all, ...perRating] = await Promise.all([
     countSupportReplyExamples(supabase, filters),
     ...SUPPORT_REPLY_DRAFT_RATINGS.map((rating) =>
       countSupportReplyExamples(supabase, { ...filters, rating }),
     ),
   ])
-  return { all, accepted, edited, rejected }
+  return {
+    all,
+    very_good: perRating[0] ?? 0,
+    okay: perRating[1] ?? 0,
+    bad: perRating[2] ?? 0,
+  }
 }
 
 export async function listAdminSupportReplyExamplesService(

@@ -8,6 +8,8 @@ import {
   regenerateSupportReplyDraftAction,
 } from "@/lib/actions/supportReplyDraft"
 import type { SupportReplyDraftView } from "@/lib/types/supportReplyDraft"
+import type { SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
+import { supportReplyExampleRatingToast } from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
 
 const PEEK_RETRY_MS = 350
 const PEEK_RETRIES = 3
@@ -22,7 +24,7 @@ export function useSupportReplyDraft(caseId: string | null, revision: string | n
   const [draft, setDraft] = useState<SupportReplyDraftView | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [rating, setRating] = useState<"accepted" | "rejected" | null>(null)
+  const [rating, setRating] = useState<SupportReplyDraftRating | null>(null)
   const [ratingPending, setRatingPending] = useState(false)
   const requestId = useRef(0)
   const seenRevision = useRef<string | null>(null)
@@ -126,7 +128,7 @@ export function useSupportReplyDraft(caseId: string | null, revision: string | n
   )
 
   const rate = useCallback(
-    async (next: "accepted" | "rejected") => {
+    async (next: SupportReplyDraftRating) => {
       if (!caseId || !scopedDraft || ratingPending) return
       setRatingPending(true)
       const result = await rateSupportReplyDraftAction({
@@ -141,7 +143,7 @@ export function useSupportReplyDraft(caseId: string | null, revision: string | n
         return
       }
       setRating(next)
-      toast.success(next === "accepted" ? "Marked as a good draft" : "Marked as not useful")
+      toast.success(supportReplyExampleRatingToast(next))
     },
     [caseId, scopedDraft, ratingPending],
   )

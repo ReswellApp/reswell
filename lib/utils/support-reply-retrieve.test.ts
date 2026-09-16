@@ -71,7 +71,7 @@ describe("support reply retrieval", () => {
     assert.equal(hits[0]?.title, "How do I buy on Reswell?")
   })
 
-  it("drops rejected examples and prefers the matching kind", () => {
+  it("drops bad examples and prefers the matching kind", () => {
     const hits = rankExamplesForQuery(
       [
         {
@@ -79,28 +79,28 @@ describe("support reply retrieval", () => {
           kind: "protection_claim",
           customer_excerpt: "The board arrived cracked and I need a refund",
           staff_reply: "Please send photos of the damage for Purchase Protection.",
-          rating: "accepted" as const,
+          rating: "very_good" as const,
         },
         {
           id: "2",
           kind: "account",
           customer_excerpt: "I cannot reset my password",
           staff_reply: "Use the password reset link.",
-          rating: "accepted" as const,
+          rating: "very_good" as const,
         },
         {
           id: "3",
           kind: "protection_claim",
           customer_excerpt: "Board cracked on arrival",
           staff_reply: "Rejected tone.",
-          rating: "rejected" as const,
+          rating: "bad" as const,
         },
       ],
       "my board arrived cracked I want a refund",
       "protection_claim",
     )
     assert.equal(hits[0]?.id, "1")
-    assert.ok(hits.every((hit) => hit.rating !== "rejected"))
+    assert.ok(hits.every((hit) => hit.rating !== "bad"))
   })
 
   it("changes fingerprint when the customer message changes", () => {

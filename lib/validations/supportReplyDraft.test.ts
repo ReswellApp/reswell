@@ -3,11 +3,13 @@ import { describe, it } from "node:test"
 import {
   SUPPORT_REPLY_EXAMPLE_PAGE_SIZE,
   SUPPORT_REPLY_EXAMPLE_SEARCH_MAX,
+  normalizeSupportReplyDraftRating,
   parseSupportReplyExampleListParams,
   supportReplyDraftCaseIdSchema,
   supportReplyExampleDeleteSchema,
   supportReplyExampleListSchema,
   supportReplyExampleUpdateSchema,
+  supportReplyRatingForSentBody,
   supportReplyRootPromptSchema,
 } from "./supportReplyDraft.ts"
 
@@ -45,7 +47,7 @@ describe("support reply example review schemas", () => {
       q: "tracking",
       page: "nope",
     })
-    assert.equal(parsed.rating, "accepted")
+    assert.equal(parsed.rating, "very_good")
     assert.equal(parsed.kind, undefined)
     assert.equal(parsed.q, "tracking")
     assert.equal(parsed.page, undefined)
@@ -58,7 +60,7 @@ describe("support reply example review schemas", () => {
       kind: "order_question",
       q,
     })
-    assert.equal(parsed.rating, "edited")
+    assert.equal(parsed.rating, "okay")
     assert.equal(parsed.kind, "order_question")
     assert.equal(parsed.q?.length, SUPPORT_REPLY_EXAMPLE_SEARCH_MAX)
     assert.ok(parsed.q?.startsWith("refund"))
@@ -78,7 +80,21 @@ describe("support reply example review schemas", () => {
     assert.equal(parsed.data.customer_excerpt, "Where is my board?")
     assert.equal(parsed.data.staff_reply, "It shipped yesterday.")
     assert.equal(parsed.data.kind, null)
+    assert.equal(parsed.data.rating, "okay")
     assert.deepEqual(parsed.data.cited_help_slugs, ["shipping-times", "protection-claims"])
+  })
+
+  it("maps the old accepted/edited/rejected labels onto quality ratings", () => {
+    assert.equal(normalizeSupportReplyDraftRating("accepted"), "very_good")
+    assert.equal(normalizeSupportReplyDraftRating("edited"), "okay")
+    assert.equal(normalizeSupportReplyDraftRating("rejected"), "bad")
+    assert.equal(normalizeSupportReplyDraftRating("very_good"), "very_good")
+  })
+
+  it("rates an edited send as okay so later drafts learn the sent text", () => {
+    assert.equal(supportReplyRatingForSentBody("Hi there.", "Hi there."), "very_good")
+    assert.equal(supportReplyRatingForSentBody("Hi there.", "Hi there — tracking is live."), "okay")
+    assert.equal(supportReplyRatingForSentBody(null, "Wrote this from scratch."), "very_good")
   })
 
   it("rejects an empty staff reply", () => {

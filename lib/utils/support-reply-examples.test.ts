@@ -16,8 +16,8 @@ describe("support reply examples href", () => {
 
   it("omits page 1 and keeps later pages", () => {
     assert.equal(
-      supportReplyExamplesHref({ rating: "rejected", page: 2 }),
-      `${SUPPORT_REPLY_EXAMPLES_PATH}?rating=rejected&page=2`,
+      supportReplyExamplesHref({ rating: "bad", page: 2 }),
+      `${SUPPORT_REPLY_EXAMPLES_PATH}?rating=bad&page=2`,
     )
   })
 

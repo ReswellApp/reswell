@@ -89,6 +89,7 @@ describe("cs agent harness", () => {
     assert.match(pack, /Order 1042/)
     assert.match(pack, /tracking 1Z999/)
     assert.match(pack, /Past tickets/)
+    assert.match(pack, /okay or very good/)
     assert.match(pack, /Label question/)
     assert.match(pack, /package-delayed-or-lost/)
     assert.match(pack, /Latest customer message/)

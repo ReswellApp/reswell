@@ -26,6 +26,7 @@ import type {
   SupportReplyCitedOrder,
   SupportReplyCitedTicket,
 } from "@/lib/types/supportReplyDraft"
+import type { SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 import { Button } from "@/components/ui/button"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
@@ -71,8 +72,8 @@ interface CaseInboxConversationProps {
   aiOrders?: SupportReplyCitedOrder[]
   aiTickets?: SupportReplyCitedTicket[]
   onRegenerateAi?: () => void
-  onRateAi?: (rating: "accepted" | "rejected") => void
-  aiRating?: "accepted" | "rejected" | null
+  onRateAi?: (rating: SupportReplyDraftRating) => void
+  aiRating?: SupportReplyDraftRating | null
   aiRatingPending?: boolean
 }
 

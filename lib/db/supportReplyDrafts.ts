@@ -7,7 +7,11 @@ import type {
 } from "@/lib/types/supportReplyDraft"
 import { supportReplyExampleSearchOrClause } from "@/lib/utils/support-reply-examples"
 import { selectOpenCaseIdsNeedingDraft } from "@/lib/utils/support-reply-retrieve"
-import type { SupportReplyDraftOrigin, SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
+import {
+  normalizeSupportReplyDraftRating,
+  type SupportReplyDraftOrigin,
+  type SupportReplyDraftRating,
+} from "@/lib/validations/supportReplyDraft"
 
 const DRAFT_SELECT =
   "id, case_id, body, model, prompt_version, source_fingerprint, cited_help_slugs, retrieved_example_ids, origin, reason, citations, created_at, updated_at"
@@ -17,6 +21,23 @@ const DRAFT_SELECT_LEGACY =
 
 const EXAMPLE_SELECT =
   "id, case_id, kind, customer_excerpt, staff_reply, cited_help_slugs, rating, draft_id, rated_by, created_at"
+
+function toExampleRow(data: Record<string, unknown>): SupportReplyExampleRow {
+  return {
+    id: String(data.id),
+    case_id: typeof data.case_id === "string" ? data.case_id : null,
+    kind: typeof data.kind === "string" ? data.kind : null,
+    customer_excerpt: String(data.customer_excerpt ?? ""),
+    staff_reply: String(data.staff_reply ?? ""),
+    cited_help_slugs: Array.isArray(data.cited_help_slugs)
+      ? data.cited_help_slugs.filter((slug): slug is string => typeof slug === "string")
+      : [],
+    rating: normalizeSupportReplyDraftRating(data.rating) ?? "okay",
+    draft_id: typeof data.draft_id === "string" ? data.draft_id : null,
+    rated_by: typeof data.rated_by === "string" ? data.rated_by : null,
+    created_at: String(data.created_at ?? ""),
+  }
+}
 
 export type SupportReplyOrderSnapshot = {
   id: string
@@ -215,7 +236,7 @@ export async function listSupportReplyExamples(
     console.warn("[support_reply_examples] list skipped:", error.message)
     return []
   }
-  return (data ?? []) as SupportReplyExampleRow[]
+  return (data ?? []).map((row) => toExampleRow(row as Record<string, unknown>))
 }
 
 export type SupportReplyExampleListFilters = {
@@ -244,7 +265,10 @@ export async function listSupportReplyExamplesPage(
     console.error("[support_reply_examples] list failed:", error.message)
     return { error: "Could not load reply examples." }
   }
-  return { rows: (data ?? []) as SupportReplyExampleRow[], total: count ?? 0 }
+  return {
+    rows: (data ?? []).map((row) => toExampleRow(row as Record<string, unknown>)),
+    total: count ?? 0,
+  }
 }
 
 export async function countSupportReplyExamples(
@@ -278,7 +302,7 @@ export async function getSupportReplyExampleById(
     console.warn("[support_reply_examples] get skipped:", error.message)
     return null
   }
-  return (data as SupportReplyExampleRow | null) ?? null
+  return data ? toExampleRow(data as Record<string, unknown>) : null
 }
 
 export async function updateSupportReplyExample(
@@ -309,7 +333,7 @@ export async function updateSupportReplyExample(
     console.error("[support_reply_examples] update failed:", error?.message)
     return { error: "Could not save that example." }
   }
-  return data as SupportReplyExampleRow
+  return toExampleRow(data as Record<string, unknown>)
 }
 
 export async function deleteSupportReplyExample(

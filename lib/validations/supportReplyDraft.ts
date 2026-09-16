@@ -1,6 +1,39 @@
 import { z } from "zod"
 
-export const SUPPORT_REPLY_DRAFT_RATINGS = ["accepted", "edited", "rejected"] as const
+export const SUPPORT_REPLY_DRAFT_RATINGS = ["very_good", "okay", "bad"] as const
+
+const SUPPORT_REPLY_DRAFT_RATING_BY_ALIAS: Record<string, (typeof SUPPORT_REPLY_DRAFT_RATINGS)[number]> =
+  {
+    very_good: "very_good",
+    okay: "okay",
+    bad: "bad",
+    accepted: "very_good",
+    edited: "okay",
+    rejected: "bad",
+  }
+
+export function normalizeSupportReplyDraftRating(
+  value: unknown,
+): (typeof SUPPORT_REPLY_DRAFT_RATINGS)[number] | null {
+  if (typeof value !== "string") return null
+  return SUPPORT_REPLY_DRAFT_RATING_BY_ALIAS[value] ?? null
+}
+
+/** Edited sends are okay and still teach later drafts. Unchanged or freehand sends are very good. */
+export function supportReplyRatingForSentBody(
+  draftBody: string | null | undefined,
+  sentBody: string,
+): (typeof SUPPORT_REPLY_DRAFT_RATINGS)[number] {
+  const draft = draftBody?.trim() ?? ""
+  const sent = sentBody.trim()
+  if (draft && draft !== sent) return "okay"
+  return "very_good"
+}
+
+const supportReplyDraftRatingSchema = z.preprocess(
+  (value) => normalizeSupportReplyDraftRating(value) ?? value,
+  z.enum(SUPPORT_REPLY_DRAFT_RATINGS),
+)
 export const SUPPORT_REPLY_DRAFT_ORIGINS = ["llm", "example", "macro"] as const
 export const SUPPORT_REPLY_EXAMPLE_KINDS = [
   "general",
@@ -34,10 +67,11 @@ const optionalKindSchema = z.preprocess(
   z.enum(SUPPORT_REPLY_EXAMPLE_KINDS).optional().catch(undefined),
 )
 
-const optionalRatingSchema = z.preprocess(
-  emptyToUndefined,
-  z.enum(SUPPORT_REPLY_DRAFT_RATINGS).optional().catch(undefined),
-)
+const optionalRatingSchema = z.preprocess((value) => {
+  const raw = emptyToUndefined(value)
+  if (raw == null) return undefined
+  return normalizeSupportReplyDraftRating(raw) ?? raw
+}, z.enum(SUPPORT_REPLY_DRAFT_RATINGS).optional().catch(undefined))
 
 const optionalQuerySchema = z
   .preprocess(emptyToUndefined, z.string().optional().catch(undefined))
@@ -80,7 +114,7 @@ export const supportReplyRootPromptSchema = z.object({
 export const supportReplyDraftFeedbackSchema = z.object({
   case_id: z.string().uuid(),
   draft_id: z.string().uuid().optional(),
-  rating: z.enum(SUPPORT_REPLY_DRAFT_RATINGS),
+  rating: supportReplyDraftRatingSchema,
   sent_body: z.string().trim().max(12000).optional(),
 })
 
@@ -108,7 +142,7 @@ export const supportReplyExampleUpdateSchema = z.object({
   id: z.string().uuid(),
   customer_excerpt: z.string().trim().min(1, "Customer excerpt is required.").max(4000),
   staff_reply: z.string().trim().min(1, "Staff reply is required.").max(12000),
-  rating: z.enum(SUPPORT_REPLY_DRAFT_RATINGS),
+  rating: supportReplyDraftRatingSchema,
   kind: z
     .union([z.enum(SUPPORT_REPLY_EXAMPLE_KINDS), z.literal(""), z.null()])
     .transform((value) => (value === "" || value == null ? null : value)),

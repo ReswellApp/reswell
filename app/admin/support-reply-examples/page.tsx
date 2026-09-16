@@ -29,7 +29,7 @@ const EMPTY: SupportReplyExampleListResult = {
   total: 0,
   page: 1,
   limit: SUPPORT_REPLY_EXAMPLE_PAGE_SIZE,
-  counts: { all: 0, accepted: 0, edited: 0, rejected: 0 },
+  counts: { all: 0, very_good: 0, okay: 0, bad: 0 },
 }
 
 interface AdminSupportReplyExamplesPageProps {

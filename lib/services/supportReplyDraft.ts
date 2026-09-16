@@ -45,6 +45,7 @@ import type {
 import {
   supportReplyDraftCaseIdSchema,
   supportReplyDraftFeedbackSchema,
+  supportReplyRatingForSentBody,
   type SupportReplyDraftOrigin,
 } from "@/lib/validations/supportReplyDraft"
 import {
@@ -523,12 +524,7 @@ export async function recordSentSupportReplyExample(args: {
     const sent = args.sentBody.trim()
     if (!sent) return
 
-    const rating =
-      draft?.body.trim() && draft.body.trim() === sent
-        ? "accepted"
-        : draft?.body.trim()
-          ? "edited"
-          : "accepted"
+    const rating = supportReplyRatingForSentBody(draft?.body, sent)
 
     await insertSupportReplyExample(service, {
       caseId: loaded.row.id,
