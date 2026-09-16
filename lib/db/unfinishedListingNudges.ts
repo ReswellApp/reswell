@@ -17,11 +17,9 @@ export type UnfinishedListingDraftRow = {
   brand: string | null
   model: string | null
   board_type: string | null
-  length_feet: number | null
-  length_inches: number | null
-  width: number | null
-  thickness: number | null
-  volume: number | null
+  dimensions: string | null
+  length_total_inches: number | null
+  volume_liters: number | null
   city: string | null
   state: string | null
   local_pickup: boolean | null
@@ -31,7 +29,8 @@ export type UnfinishedListingDraftRow = {
   listing_images: KlaviyoListingImage[] | null
 }
 
-const ELIGIBLE_SELECT = [
+/** Columns still on `listings` after 20260816 dropped split numeric dims. */
+export const UNFINISHED_LISTING_ELIGIBLE_SELECT = [
   "id",
   "user_id",
   "title",
@@ -42,11 +41,9 @@ const ELIGIBLE_SELECT = [
   "brand",
   "model",
   "board_type",
-  "length_feet",
-  "length_inches",
-  "width",
-  "thickness",
-  "volume",
+  "dimensions",
+  "length_total_inches",
+  "volume_liters",
   "city",
   "state",
   "local_pickup",
@@ -94,11 +91,9 @@ function mapEligibleRow(row: Record<string, unknown>): UnfinishedListingDraftRow
     brand: asOptionalString(row.brand),
     model: asOptionalString(row.model),
     board_type: asOptionalString(row.board_type),
-    length_feet: asOptionalNumber(row.length_feet),
-    length_inches: asOptionalNumber(row.length_inches),
-    width: asOptionalNumber(row.width),
-    thickness: asOptionalNumber(row.thickness),
-    volume: asOptionalNumber(row.volume),
+    dimensions: asOptionalString(row.dimensions),
+    length_total_inches: asOptionalNumber(row.length_total_inches),
+    volume_liters: asOptionalNumber(row.volume_liters),
     city: asOptionalString(row.city),
     state: asOptionalString(row.state),
     local_pickup: typeof row.local_pickup === "boolean" ? row.local_pickup : null,
@@ -136,7 +131,7 @@ export async function fetchEligibleUnfinishedListingDrafts(
   const runQuery = (includeArchivedFilter: boolean) => {
     let query = supabase
       .from("listings")
-      .select(ELIGIBLE_SELECT)
+      .select(UNFINISHED_LISTING_ELIGIBLE_SELECT)
       .eq("status", "draft")
       .not("user_id", "is", null)
       .lte("updated_at", staleBefore.toISOString())

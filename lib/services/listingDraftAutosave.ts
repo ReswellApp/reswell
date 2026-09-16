@@ -1,9 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import {
-  boardDimensionDisplayFields,
-  boardDimensionsToDbFields,
-  formatBoardLengthInputFromParts,
-} from "@/lib/board-measurements"
+import { formatBoardLengthInputFromParts } from "@/lib/board-measurements"
 import type { BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
 import { flagsFromBoardFulfillment } from "@/lib/listing-fulfillment"
 import type { BoardShippingCostMode } from "@/lib/sell-form-validation"
@@ -22,6 +18,7 @@ import {
 } from "@/lib/listing-dimensions-display"
 import { boardCategoryMap, resolveListingBoardTypeFromCategory } from "@/lib/utils/board-type-from-category-id"
 import { boardBrowseFacetFieldsForDb } from "@/lib/listing-facet-write"
+import { listingDimensionsColumnFromSurfboardSellForm } from "@/lib/listing-dimensions-storage"
 
 function shippingPriceToDb(
   fulfillment: BoardFulfillmentChoice,
@@ -63,13 +60,7 @@ export function buildSurfboardDraftListingRow(
   })
   const priceRaw = (fd.price ?? "").trim()
   const price = priceRaw ? parseFloat(priceRaw.replace(/,/g, "")) : 0
-  const dimDb = boardDimensionsToDbFields({
-    boardLength: boardLengthCombined,
-    boardWidthInches: fd.boardWidthInches ?? "",
-    boardThicknessInches: fd.boardThicknessInches ?? "",
-    boardVolumeL: fd.boardVolumeL ?? "",
-  })
-  const dimDisplay = boardDimensionDisplayFields({
+  const dimensions = listingDimensionsColumnFromSurfboardSellForm({
     boardLength: boardLengthCombined,
     boardWidthInches: fd.boardWidthInches ?? "",
     boardThicknessInches: fd.boardThicknessInches ?? "",
@@ -96,12 +87,7 @@ export function buildSurfboardDraftListingRow(
     category_id: categoryId,
     section: "surfboards",
     board_type: resolveListingBoardTypeFromCategory(categoryId, fd.boardType),
-    length_feet: dimDb.length_feet,
-    length_inches: dimDb.length_inches,
-    width: dimDb.width,
-    thickness: dimDb.thickness,
-    volume: dimDb.volume,
-    ...dimDisplay,
+    dimensions,
     fins_setup: fd.boardFins?.trim() ? fd.boardFins.trim() : null,
     tail_shape: fd.boardTail?.trim() ? fd.boardTail.trim() : null,
     ...boardBrowseFacetFieldsForDb({
