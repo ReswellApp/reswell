@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { Input } from "@/components/ui/input"
 import { QuickEssentialCard } from "@/components/features/sell/quick/quick-essential-card"
 import { QuickPublishBar } from "@/components/features/sell/quick/quick-publish-bar"
+import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
 import { SellFacetChipGroup } from "@/components/features/sell/sell-board-facet-fields"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
@@ -117,6 +118,7 @@ export function BoardSellQuickListForm({
             onChange={(e) => onPriceChange(e.target.value)}
           />
         </div>
+        <SellEarningsBreakdown listingPrice={price} className="pt-3" />
       </QuickEssentialCard>
 
       <QuickEssentialCard title="Condition" complete={conditionComplete}>

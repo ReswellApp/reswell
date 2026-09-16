@@ -51,5 +51,11 @@ export const grantProtectionRepairCreditSchema = z.object({
   notify_customer: z.boolean().optional().default(true),
 })
 
+export const revokeProtectionRepairCreditSchema = z.object({
+  order_support_request_id: z.string().uuid(),
+  notify_customer: z.boolean().optional().default(true),
+})
+
 export type UpdateProtectionCarrierClaimInput = z.infer<typeof updateProtectionCarrierClaimSchema>
 export type GrantProtectionRepairCreditInput = z.infer<typeof grantProtectionRepairCreditSchema>
+export type RevokeProtectionRepairCreditInput = z.infer<typeof revokeProtectionRepairCreditSchema>

@@ -45,9 +45,12 @@ import {
   type SupportReplyDraftOrigin,
 } from "@/lib/validations/supportReplyDraft"
 import {
-  collectCustomerSupportTexts,
   lastCustomerSupportText,
+  scoreSupportReplyOverlap,
   supportReplyDraftFingerprint,
+  supportReplyRetrievalQuery,
+  tokenizeSupportReplyQuery,
+  visibleSupportConversation,
 } from "@/lib/utils/support-reply-retrieve"
 
 const FEATURE = APP_LLM_FEATURES.find((f) => f.id === "support_reply_draft")
@@ -163,6 +166,7 @@ function toView(
 function fallbackDraft(
   knowledge: SupportReplyKnowledge,
   vars: SupportMacroVars,
+  lastCustomerMessage = "",
 ): {
   body: string
   origin: SupportReplyDraftOrigin
@@ -172,7 +176,15 @@ function fallbackDraft(
   citations: SupportReplyDraftCitations
 } {
   const example = knowledge.examples[0]
-  if (example && example.score >= 0.7) {
+  const lastTokens = tokenizeSupportReplyQuery(lastCustomerMessage)
+  const exampleMatchesLast =
+    !example ||
+    lastTokens.length === 0 ||
+    scoreSupportReplyOverlap(
+      lastTokens,
+      `${example.customerExcerpt} ${example.staffReply}`,
+    ) >= 0.5
+  if (example && example.score >= 0.7 && exampleMatchesLast) {
     return {
       body: example.staffReply,
       origin: "example",
@@ -238,12 +250,8 @@ async function generateDraftBody(args: {
   reason: string
   citations: SupportReplyDraftCitations
 }> {
-  const customerBits = collectCustomerSupportTexts(args.messages, args.row.subject)
-
-  const priorStaff = args.messages
-    .filter((message) => message.author_role === "agent" && !message.is_internal)
-    .map((message) => message.body.trim())
-    .filter(Boolean)
+  const lastCustomerMessage = lastCustomerText(args.row, args.messages)
+  const thread = visibleSupportConversation(args.messages)
 
   const exampleIds = args.knowledge.examples
     .map((example) => example.id)
@@ -253,6 +261,7 @@ async function generateDraftBody(args: {
     const fallback = fallbackDraft(
       args.knowledge,
       draftMacroVars(args.greetingName, args.row.order_ref, args.order),
+      lastCustomerMessage,
     )
     return { ...fallback, model: null, needsHumanReview: true }
   }
@@ -278,8 +287,8 @@ async function generateDraftBody(args: {
       caseKind: args.row.kind,
       caseStatus: args.row.status,
       requesterRole: args.row.requester_role,
-      customerMessages: customerBits,
-      staffMessages: priorStaff,
+      lastCustomerMessage,
+      thread,
       order: args.order,
       priorTickets,
       help: args.knowledge.helpArticles,
@@ -354,7 +363,13 @@ export async function generateAndStoreDraft(
     }
   }
 
-  const query = [row.subject, row.kind, lastCustomer].filter(Boolean).join(" ")
+  const query = supportReplyRetrievalQuery({
+    lastCustomerMessage: lastCustomer,
+    conversation: visibleSupportConversation(messages)
+      .map((turn) => turn.body)
+      .join("\n"),
+    subject: row.subject,
+  })
   const [knowledge, order, names] = await Promise.all([
     gatherSupportReplyKnowledge(service, {
       query,
@@ -382,7 +397,11 @@ export async function generateAndStoreDraft(
     })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)
-    const fallback = fallbackDraft(knowledge, draftMacroVars(greetingName, row.order_ref, order))
+    const fallback = fallbackDraft(
+      knowledge,
+      draftMacroVars(greetingName, row.order_ref, order),
+      lastCustomer,
+    )
     generated = { ...fallback, model: null, needsHumanReview: true }
   }
 

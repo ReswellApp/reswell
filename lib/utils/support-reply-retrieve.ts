@@ -142,8 +142,21 @@ export function rankExamplesForQuery<
     .slice(0, limit)
 }
 
+export type SupportConversationMessage = {
+  author_role: string
+  is_internal?: boolean
+  body: string
+}
+
+export type SupportConversationTurn = {
+  role: "customer" | "staff" | "system"
+  body: string
+}
+
+const SUBSTANTIAL_LAST_MESSAGE_TOKENS = 3
+
 export function collectCustomerSupportTexts(
-  messages: Array<{ author_role: string; is_internal?: boolean; body: string }>,
+  messages: Array<SupportConversationMessage>,
   fallbackSubject: string,
 ): string[] {
   const bits = messages
@@ -156,11 +169,50 @@ export function collectCustomerSupportTexts(
 }
 
 export function lastCustomerSupportText(
-  messages: Array<{ author_role: string; is_internal?: boolean; body: string }>,
+  messages: Array<SupportConversationMessage>,
   fallbackSubject: string,
 ): string {
   const bits = collectCustomerSupportTexts(messages, fallbackSubject)
   return bits[bits.length - 1] ?? ""
+}
+
+export function visibleSupportConversation(
+  messages: Array<SupportConversationMessage>,
+): SupportConversationTurn[] {
+  return messages
+    .filter((message) => !message.is_internal)
+    .map((message) => {
+      const body = message.body.trim()
+      const role =
+        message.author_role === "agent"
+          ? ("staff" as const)
+          : message.author_role === "system"
+            ? ("system" as const)
+            : ("customer" as const)
+      return { role, body }
+    })
+    .filter((turn) => turn.body.length > 0)
+}
+
+export function formatSupportConversation(messages: Array<SupportConversationMessage>): string {
+  return visibleSupportConversation(messages)
+    .map((turn) => `[${turn.role}] ${turn.body}`)
+    .join("\n\n")
+}
+
+/** Last customer message first; fall back to the thread when that ask is too short to retrieve on. */
+export function supportReplyRetrievalQuery(args: {
+  lastCustomerMessage: string
+  conversation: string
+  subject?: string
+}): string {
+  const last = args.lastCustomerMessage.trim()
+  const conversation = args.conversation.trim()
+  const subject = args.subject?.trim() ?? ""
+  if (last && tokenizeSupportReplyQuery(last).length >= SUBSTANTIAL_LAST_MESSAGE_TOKENS) {
+    return last
+  }
+  return [last, conversation, subject].filter(Boolean).join("\n")
 }
 
 export function supportReplyDraftFingerprint(input: {

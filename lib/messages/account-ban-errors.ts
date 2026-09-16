@@ -1,7 +1,7 @@
 export const ACCOUNT_BANNED_ERROR = "account_banned" as const
 
 export const ACCOUNT_BANNED_USER_MESSAGE =
-  "This account has been permanently banned and cannot use Reswell."
+  "We're sorry, but this account did not meet the standards we require to keep Reswell a safe place to buy and sell boards."
 
 /** ~100 years — Supabase auth permanent ban via `ban_duration`. */
 export const PERMANENT_AUTH_BAN_DURATION = "876000h" as const

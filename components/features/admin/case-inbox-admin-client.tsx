@@ -44,6 +44,7 @@ import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
+import { AdminCreateSupportCaseDialog } from "@/components/features/admin/admin-create-support-case-dialog"
 import { CaseInboxViews } from "@/components/features/admin/case-inbox-views"
 import { CaseInboxListPane } from "@/components/features/admin/case-inbox-list-pane"
 import { CaseInboxConversation } from "@/components/features/admin/case-inbox-conversation"
@@ -68,6 +69,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { inboxCaseKey } from "@/lib/utils/support-case-paths"
 import { cn } from "@/lib/utils"
 
 /** Deep link for order-type filter (legacy tab redirects land here). */
@@ -732,7 +734,22 @@ export function CaseInboxAdminClient({
             {counts.open} open conversations
           </p>
         </div>
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-1.5">
+          <AdminCreateSupportCaseDialog
+            onCreated={(caseId) => {
+              const key = inboxCaseKey(caseId)
+              setSelectedKey(key)
+              void load({
+                mode: "refresh",
+                offset: 0,
+                search: debouncedSearch,
+                view,
+                type: typeOverlay,
+                sort,
+                selectedKey: key,
+              })
+            }}
+          />
           {selected ? (
             <Button
               type="button"

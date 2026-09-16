@@ -2,8 +2,10 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   collectCustomerSupportTexts,
+  formatSupportConversation,
   lastCustomerSupportText,
   rankBySupportReplyScore,
+  supportReplyRetrievalQuery,
   rankExamplesForQuery,
   rankHelpArticlesForQuery,
   scoreSupportReplyOverlap,
@@ -132,5 +134,39 @@ describe("support reply retrieval", () => {
       ),
       "Order help",
     )
+  })
+
+  it("formats the visible thread in chronological order", () => {
+    const formatted = formatSupportConversation([
+      { author_role: "customer", is_internal: false, body: "Where is my wallet credit?" },
+      { author_role: "agent", is_internal: true, body: "Staff-only note" },
+      { author_role: "agent", is_internal: false, body: "Checking payouts now." },
+      { author_role: "customer", is_internal: false, body: "Actually I need the return label." },
+    ])
+    assert.match(formatted, /\[customer\] Where is my wallet credit/)
+    assert.match(formatted, /\[staff\] Checking payouts now/)
+    assert.match(formatted, /\[customer\] Actually I need the return label/)
+    assert.doesNotMatch(formatted, /Staff-only note/)
+    assert.ok(formatted.indexOf("wallet credit") < formatted.indexOf("return label"))
+  })
+
+  it("retrieves on the last customer message when it is substantial", () => {
+    const query = supportReplyRetrievalQuery({
+      lastCustomerMessage: "The board arrived cracked and I need a refund",
+      conversation: "Can I use wallet balance at checkout?\nThe board arrived cracked and I need a refund",
+      subject: "Wallet balance",
+    })
+    assert.equal(query, "The board arrived cracked and I need a refund")
+    assert.doesNotMatch(query, /wallet|Wallet/)
+  })
+
+  it("uses the full conversation when the last message is too short to retrieve on", () => {
+    const query = supportReplyRetrievalQuery({
+      lastCustomerMessage: "Yes please",
+      conversation: "[customer] Can I use wallet balance at checkout?\n[staff] Yes on eligible orders.\n[customer] Yes please",
+      subject: "Wallet balance",
+    })
+    assert.match(query, /wallet balance/i)
+    assert.match(query, /Yes please/)
   })
 })

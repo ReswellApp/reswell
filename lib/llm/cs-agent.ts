@@ -3,7 +3,7 @@
  * One model, one job: draft a review-before-send reply. Never sends.
  */
 
-export const CS_AGENT_PROMPT_VERSION = "cs-agent-v1"
+export const CS_AGENT_PROMPT_VERSION = "cs-agent-v2"
 
 export type CsAgentPriorTicket = {
   id: string
@@ -27,14 +27,19 @@ export type CsAgentOrderFact = {
   paymentMethod?: string | null
 }
 
+export type CsAgentThreadTurn = {
+  role: "customer" | "staff" | "system"
+  body: string
+}
+
 export type CsAgentContextPack = {
   greetingName: string
   caseSubject: string
   caseKind: string
   caseStatus: string
   requesterRole: string
-  customerMessages: string[]
-  staffMessages: string[]
+  lastCustomerMessage: string
+  thread: CsAgentThreadTurn[]
   order: CsAgentOrderFact | null
   priorTickets: CsAgentPriorTicket[]
   help: Array<{ slug: string; title: string; href: string; description: string; body: string; score?: number }>
@@ -69,6 +74,9 @@ Hard rules:
 - Keep it under 180 words unless a short numbered list is needed.
 - Sign off as Reswell Support (no invented personal name).
 - Greet them as ${greetingName}. Never address them by email.
+- Answer the latest customer message. The rest of the thread is background — do not restart the original ask if they already moved on.
+- Use the whole conversation so you do not repeat a point staff already covered or ignore a follow-up.
+- Do not paste an approved example unless it actually answers this latest message.
 - If the last staff message already answered them, write a short follow-up, not a repeat.
 
 You may request server tools when the context pack is not enough. Tool results are facts. If a tool says there is no tracking, there is no tracking.
@@ -119,6 +127,12 @@ export function formatCsAgentContextPack(pack: CsAgentContextPack): string {
   const macros =
     pack.macros.map((macro) => `- ${macro.title}: ${macro.body}`).join("\n") || "(none)"
 
+  const lastCustomer = pack.lastCustomerMessage.trim() || "(no customer message yet)"
+  const thread =
+    pack.thread
+      .map((turn) => `[${turn.role}] ${turn.body}`)
+      .join("\n\n") || "(original request only)"
+
   return `Draft the next customer-visible reply. A human will edit and send. Never send it yourself.
 
 Case: ${pack.caseSubject}
@@ -127,11 +141,11 @@ Status: ${pack.caseStatus}
 Requester: ${pack.greetingName} (${pack.requesterRole})
 ${orderLine}
 
-Customer messages:
-${pack.customerMessages.slice(-6).join("\n---\n") || "(original request only)"}
+Latest customer message (reply to this):
+${lastCustomer}
 
-Already sent by staff:
-${pack.staffMessages.slice(-4).join("\n---\n") || "(none yet)"}
+Full conversation (oldest first — context only; do not re-answer every earlier question unless the latest message still needs it):
+${thread}
 
 Past tickets for this customer (same email or account):
 ${tickets}

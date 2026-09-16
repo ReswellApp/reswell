@@ -11,6 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
+import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { ListingPriceMarkdownToggle } from "@/components/features/listings/listing-price-markdown-toggle"
 import { cn } from "@/lib/utils"
@@ -115,6 +116,8 @@ export function SellPriceFields({
           />
         ) : null}
       </div>
+
+      <SellEarningsBreakdown listingPrice={listingPrice} />
 
       {showPurchasePrice ? (
         <div className="rounded-lg border border-slate-300 bg-slate-50/80">

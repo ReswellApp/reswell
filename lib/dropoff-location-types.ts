@@ -7,7 +7,6 @@ export type PublicDropoffLocation = {
   name: string
   city: string
   state: string
-  addressLine1: string
   hoursNote: string | null
   boxRules: DropoffBoxRule[]
 }

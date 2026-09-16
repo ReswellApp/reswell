@@ -1,4 +1,4 @@
-import { Loader2, RefreshCw, Wallet } from 'lucide-react'
+import { Loader2, Plus, RefreshCw, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatAdminUsd } from '@/lib/admin/admin-user-detail-display'
 
@@ -18,6 +18,16 @@ interface AdminUserDetailWalletProps {
   summary: AdminUserWalletSummary | null
   resetting: boolean
   onReset: () => void
+  onAddCredit: () => void
+}
+
+function AddCreditButton({ onAddCredit }: { onAddCredit: () => void }) {
+  return (
+    <Button type="button" size="sm" className="gap-2" onClick={onAddCredit}>
+      <Plus className="h-4 w-4" />
+      Add credit
+    </Button>
+  )
 }
 
 export function AdminUserDetailWallet({
@@ -26,6 +36,7 @@ export function AdminUserDetailWallet({
   summary,
   resetting,
   onReset,
+  onAddCredit,
 }: AdminUserDetailWalletProps) {
   return (
     <section className="admin-surface p-5">
@@ -40,7 +51,10 @@ export function AdminUserDetailWallet({
           Loading wallet…
         </div>
       ) : error ? (
-        <p className="mt-4 text-sm text-destructive">{error}</p>
+        <div className="mt-4 space-y-4">
+          <p className="text-sm text-destructive">{error}</p>
+          <AddCreditButton onAddCredit={onAddCredit} />
+        </div>
       ) : summary ? (
         <div className="mt-4 space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
@@ -61,20 +75,26 @@ export function AdminUserDetailWallet({
             Lifetime earned {formatAdminUsd(summary.lifetime_earned)} · spent{' '}
             {formatAdminUsd(summary.lifetime_spent)} · cashed out {formatAdminUsd(summary.lifetime_cashed_out)}
           </p>
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            className="gap-2"
-            disabled={resetting}
-            onClick={onReset}
-          >
-            {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Reset earnings to $0.00
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <AddCreditButton onAddCredit={onAddCredit} />
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              disabled={resetting}
+              onClick={onReset}
+            >
+              {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Reset earnings to $0.00
+            </Button>
+          </div>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-muted-foreground">No wallet data.</p>
+        <div className="mt-4 space-y-4">
+          <p className="text-sm text-muted-foreground">No wallet data.</p>
+          <AddCreditButton onAddCredit={onAddCredit} />
+        </div>
       )}
     </section>
   )

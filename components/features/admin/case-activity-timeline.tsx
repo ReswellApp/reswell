@@ -37,6 +37,12 @@ function eventDescription(event: SupportCaseEventRow): string {
       return "Resolved the conversation"
     case "order_refunded":
       return "Issued a refund"
+    case "staff_opened": {
+      const orderRef = payloadText(event.payload, "order_ref")
+      return orderRef
+        ? `Opened this ticket for the member · ${orderRef}`
+        : "Opened this ticket for the member"
+    }
     case "order_linked": {
       const orderRef = payloadText(event.payload, "order_ref")
       return `Connected order${orderRef ? ` ${orderRef}` : ""}`
@@ -53,6 +59,10 @@ function eventDescription(event: SupportCaseEventRow): string {
       return typeof amount === "number"
         ? `Granted a $${amount.toFixed(2)} repair credit`
         : "Granted a repair credit"
+    case "protection_repair_credit_revoked":
+      return typeof amount === "number"
+        ? `Revoked a $${amount.toFixed(2)} repair credit`
+        : "Revoked a repair credit"
     case "carrier_claim_updated":
       return `Updated the carrier claim${carrierStatus ? ` to ${carrierStatus}` : ""}`
     case "evidence_attached":

@@ -4910,7 +4910,7 @@ function SellPageContentInner({
                 <SellFormSection
                   sectionId="sell-section-shipping"
                   title="Shipping"
-                  description="Buyers see your city for pickup. Pack and ship it yourself, or drop it off in Santa Barbara and we pack and ship it for you."
+                  description="Buyers see your city for pickup. Pack and ship it yourself, or drop it off in a city we serve and we pack and ship it for you."
                   complete={sellSectionCompletion["sell-section-shipping"] === true}
                 >
                   <div className="space-y-10">

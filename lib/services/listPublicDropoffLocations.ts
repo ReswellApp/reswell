@@ -11,7 +11,6 @@ export async function listPublicDropoffLocations(): Promise<PublicDropoffLocatio
     name: row.name,
     city: row.city,
     state: row.state,
-    addressLine1: row.address_line1,
     hoursNote: row.hours_note,
     boxRules: row.box_rules,
   }))

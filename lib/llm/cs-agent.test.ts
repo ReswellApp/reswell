@@ -10,7 +10,7 @@ import {
 
 describe("cs agent harness", () => {
   it("pins a dedicated prompt version for draft fingerprints", () => {
-    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v1")
+    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v2")
   })
 
   it("forbids invented facts and auto-send in the system prompt", () => {
@@ -19,6 +19,8 @@ describe("cs agent harness", () => {
     assert.match(prompt, /never invent/i)
     assert.match(prompt, /Greet them as Hayden/)
     assert.match(prompt, /Never address them by email/)
+    assert.match(prompt, /latest customer message/i)
+    assert.match(prompt, /whole conversation/i)
     assert.doesNotMatch(prompt, /fine-tune/i)
   })
 
@@ -29,8 +31,12 @@ describe("cs agent harness", () => {
       caseKind: "order_question",
       caseStatus: "submitted",
       requesterRole: "buyer",
-      customerMessages: ["Tracking has not moved."],
-      staffMessages: [],
+      lastCustomerMessage: "Tracking has not moved. Can you check the refund too?",
+      thread: [
+        { role: "customer", body: "Where is my board?" },
+        { role: "staff", body: "Looking into tracking now." },
+        { role: "customer", body: "Tracking has not moved. Can you check the refund too?" },
+      ],
       order: {
         id: "11111111-1111-1111-1111-111111111111",
         orderNum: "1042",
@@ -69,7 +75,10 @@ describe("cs agent harness", () => {
     assert.match(pack, /Past tickets/)
     assert.match(pack, /Label question/)
     assert.match(pack, /package-delayed-or-lost/)
-    assert.match(pack, /Tracking has not moved/)
+    assert.match(pack, /Latest customer message/)
+    assert.match(pack, /Tracking has not moved. Can you check the refund too/)
+    assert.match(pack, /\[customer\] Where is my board/)
+    assert.match(pack, /\[staff\] Looking into tracking now/)
     assert.doesNotMatch(pack, /auto-send|already sent this reply/i)
   })
 

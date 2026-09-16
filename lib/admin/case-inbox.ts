@@ -305,6 +305,7 @@ function channelLabel(source: string): string {
   if (source === "help_hub" || source === "messages_support") return "Help Hub"
   if (source === "contact_form") return "Website"
   if (source === "order_buyer" || source === "order_seller") return "Order"
+  if (source === "staff") return "Staff"
   return "Support"
 }
 

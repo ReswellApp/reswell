@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import {
   getProtectionClaimDeskAction,
   grantProtectionRepairCreditAction,
+  revokeProtectionRepairCreditAction,
   updateProtectionCarrierClaimAction,
 } from "@/lib/actions/protectionClaimDesk"
 import { SUPPORT_CASE_EVIDENCE_UPDATED_EVENT } from "@/components/features/admin/admin-marketplace-message-body"
@@ -97,6 +98,8 @@ export function ProtectionClaimDesk({
   const [creditAmount, setCreditAmount] = useState("")
   const [creditNote, setCreditNote] = useState("")
   const [repairTotal, setRepairTotal] = useState(initialRepairCreditTotal)
+  const [walletBalance, setWalletBalance] = useState<number | null>(null)
+  const [revocableUsd, setRevocableUsd] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -110,6 +113,9 @@ export function ProtectionClaimDesk({
       }
       setContext(res.context)
       setEvidence(res.evidence)
+      setRepairTotal(res.repairCreditTotal)
+      setWalletBalance(res.walletBalance)
+      setRevocableUsd(res.revocableUsd)
       if (res.caseRow) {
         setClaimStatus(res.caseRow.carrier_claim_status ?? "not_started")
         setClaimId(res.caseRow.carrier_claim_id ?? "")
@@ -119,7 +125,6 @@ export function ProtectionClaimDesk({
           res.context.insuranceClaimUrl?.trim() ||
           ""
         setClaimUrl(savedUrl)
-        setRepairTotal(res.caseRow.repair_credit_total ?? 0)
       } else if (res.context.insuranceClaimUrl) {
         setClaimUrl(res.context.insuranceClaimUrl)
       }
@@ -186,10 +191,44 @@ export function ProtectionClaimDesk({
         toast.error(res.error)
         return
       }
-      setRepairTotal((t) => Math.round((t + res.amount_usd) * 100) / 100)
+      setRepairTotal(res.repair_credit_total)
+      setWalletBalance(res.balance_after)
+      setRevocableUsd(Math.min(res.repair_credit_total, res.balance_after))
       setCreditAmount("")
       setCreditNote("")
       toast.success(`Credited $${res.amount_usd.toFixed(2)} to buyer wallet`)
+    })
+  }
+
+  function revokeCredit() {
+    if (revocableUsd < 0.01) {
+      toast.error("None of this credit is still in the buyer’s wallet")
+      return
+    }
+    const spent = Math.max(0, Math.round((repairTotal - revocableUsd) * 100) / 100)
+    const confirmed = window.confirm(
+      spent > 0.009
+        ? `Revoke $${revocableUsd.toFixed(2)} still sitting in the wallet?\n\n$${spent.toFixed(2)} has already been spent and cannot be taken back.`
+        : `Revoke $${revocableUsd.toFixed(2)} of repair credit from the buyer’s wallet?`,
+    )
+    if (!confirmed) return
+    startTransition(async () => {
+      const res = await revokeProtectionRepairCreditAction({
+        order_support_request_id: orderSupportRequestId,
+        notify_customer: true,
+      })
+      if ("error" in res) {
+        toast.error(res.error)
+        return
+      }
+      setRepairTotal(res.remaining_granted_usd)
+      setWalletBalance(res.balance_after)
+      setRevocableUsd(Math.min(res.remaining_granted_usd, res.balance_after))
+      toast.success(
+        res.spent_usd > 0.009
+          ? `Revoked $${res.revoked_usd.toFixed(2)}. $${res.spent_usd.toFixed(2)} had already been spent.`
+          : `Revoked $${res.revoked_usd.toFixed(2)} from the buyer wallet`,
+      )
     })
   }
 
@@ -399,6 +438,13 @@ export function ProtectionClaimDesk({
             ? ` · order total $${context.orderAmount.toFixed(2)}`
             : ""}
         </p>
+        {repairTotal > 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Still in wallet:{" "}
+            <strong className="text-foreground">${revocableUsd.toFixed(2)}</strong>
+            {walletBalance != null ? ` · wallet $${walletBalance.toFixed(2)}` : ""}
+          </p>
+        ) : null}
         <Input
           type="number"
           min={0.01}
@@ -424,6 +470,17 @@ export function ProtectionClaimDesk({
         >
           {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
           Credit wallet + set outcome partial
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="w-full"
+          disabled={pending || revocableUsd < 0.01}
+          onClick={revokeCredit}
+        >
+          {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+          Revoke credit still in wallet
         </Button>
         <Button type="button" size="sm" variant="outline" className="w-full" asChild>
           <Link href={`/admin/orders/${orderId}`}>Full refund / return tools</Link>

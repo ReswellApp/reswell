@@ -29,6 +29,7 @@ import { AdminUserDetailIdentity } from '@/components/features/admin/admin-user-
 import { AdminUserDetailAccount } from '@/components/features/admin/admin-user-detail-account'
 import { AdminUserDetailWallet } from '@/components/features/admin/admin-user-detail-wallet'
 import type { AdminUserWalletSummary } from '@/components/features/admin/admin-user-detail-wallet'
+import { AdminWalletCreditDialog } from '@/components/features/admin/admin-wallet-credit-dialog'
 import { AdminUserDetailAccess } from '@/components/features/admin/admin-user-detail-access'
 import {
   AdminUserDetailRestriction,
@@ -76,6 +77,7 @@ export default function AdminUserDetailPage() {
   const [walletLoading, setWalletLoading] = useState(true)
   const [walletError, setWalletError] = useState<string | null>(null)
   const [walletResetting, setWalletResetting] = useState(false)
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false)
   const [restriction, setRestriction] = useState<AdminAccountRestrictionState | null>(null)
   const [restrictionLoading, setRestrictionLoading] = useState(true)
   const [restrictionSaving, setRestrictionSaving] = useState(false)
@@ -713,6 +715,7 @@ export default function AdminUserDetailPage() {
           summary={walletSummary}
           resetting={walletResetting}
           onReset={resetWalletEarnings}
+          onAddCredit={() => setCreditDialogOpen(true)}
         />
         <AdminUserDetailAccess
           profile={profile}
@@ -780,6 +783,17 @@ export default function AdminUserDetailPage() {
           avatar_url: profile.avatar_url,
         }}
         trigger={null}
+      />
+
+      <AdminWalletCreditDialog
+        open={creditDialogOpen}
+        onOpenChange={setCreditDialogOpen}
+        userId={profile.id}
+        displayName={profile.display_name}
+        email={profile.email}
+        onCredited={(result) => {
+          if (result.summary) setWalletSummary(result.summary)
+        }}
       />
     </div>
   )

@@ -144,3 +144,22 @@ export function orderRequestTypeSubject(requestType: string, orderRef: string): 
       return `Order help · ${orderRef}`
   }
 }
+
+/** Default subject when staff opens a case, optionally tied to an order. */
+export function suggestedStaffSupportSubject(
+  kind: SupportCaseKind,
+  orderRef: string | null | undefined,
+): string {
+  const ref = orderRef?.trim()
+  if (!ref) return SUPPORT_CASE_KIND_LABEL[kind]
+  switch (kind) {
+    case "cancel_request":
+      return `Cancel request · ${ref}`
+    case "protection_claim":
+      return `Protection claim · ${ref}`
+    case "order_question":
+      return `Order help · ${ref}`
+    default:
+      return `${SUPPORT_CASE_KIND_LABEL[kind]} · ${ref}`
+  }
+}

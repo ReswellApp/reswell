@@ -26,6 +26,7 @@ import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { LocationPicker } from "@/components/location-picker"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
+import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
@@ -720,6 +721,7 @@ export default function SellMagazinesFlow({
               required
             />
           </div>
+          <SellEarningsBreakdown listingPrice={form.price} />
         </div>
 
         <div className="space-y-6">

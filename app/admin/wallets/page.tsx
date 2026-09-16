@@ -61,6 +61,7 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
+import { AdminWalletCreditDialog } from '@/components/features/admin/admin-wallet-credit-dialog'
 import type { AdminWalletBalanceListRow } from '@/lib/services/adminWalletBalancesList'
 
 type WalletRow = AdminWalletBalanceListRow
@@ -166,9 +167,6 @@ export default function AdminWalletsPage() {
   const [resetTarget, setResetTarget] = useState<WalletRow | null>(null)
   const [resetting, setResetting] = useState(false)
   const [creditTarget, setCreditTarget] = useState<WalletRow | null>(null)
-  const [creditAmount, setCreditAmount] = useState("")
-  const [creditNote, setCreditNote] = useState("")
-  const [crediting, setCrediting] = useState(false)
 
   useEffect(() => {
     void fetchBalances()
@@ -250,47 +248,6 @@ export default function AdminWalletsPage() {
       toast.error('Failed to reset wallet')
     } finally {
       setResetting(false)
-    }
-  }
-
-  async function confirmCredit() {
-    if (!creditTarget) return
-    const amountUsd = Number.parseFloat(creditAmount)
-    if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
-      toast.error("Enter an amount greater than $0")
-      return
-    }
-    setCrediting(true)
-    try {
-      const res = await fetch(`/api/admin/users/${creditTarget.userId}/wallet/credit`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount_usd: Math.round(amountUsd * 100) / 100,
-          note: creditNote.trim() || undefined,
-        }),
-      })
-      const body = (await res.json().catch(() => null)) as
-        | { success?: boolean; data?: WalletRow; error?: string; amount_usd?: number }
-        | null
-      if (!res.ok || !body?.data) {
-        toast.error(body?.error ?? "Could not credit wallet")
-        return
-      }
-      setRows((prev) =>
-        prev.map((r) => (r.userId === creditTarget.userId ? { ...r, ...body.data } : r)),
-      )
-      toast.success(
-        `Added $${(body.amount_usd ?? amountUsd).toFixed(2)} to ${creditTarget.displayName || "wallet"}`,
-      )
-      setCreditTarget(null)
-      setCreditAmount("")
-      setCreditNote("")
-    } catch {
-      toast.error("Could not credit wallet")
-    } finally {
-      setCrediting(false)
     }
   }
 
@@ -728,13 +685,7 @@ export default function AdminWalletsPage() {
                             <Wallet className="mr-2 h-4 w-4" /> Manage wallet
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setCreditAmount("")
-                            setCreditNote("Purchase Protection repair credit")
-                            setCreditTarget(r)
-                          }}
-                        >
+                        <DropdownMenuItem onClick={() => setCreditTarget(r)}>
                           <Plus className="mr-2 h-4 w-4" /> Add credit
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => void actAsUser(r)}>
@@ -837,82 +788,22 @@ export default function AdminWalletsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <AdminWalletCreditDialog
         open={creditTarget !== null}
         onOpenChange={(open) => {
-          if (!open) {
-            setCreditTarget(null)
-            setCreditAmount("")
-            setCreditNote("")
-          }
+          if (!open) setCreditTarget(null)
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add wallet credit</DialogTitle>
-            <DialogDescription>
-              Adds spendable balance for{" "}
-              <span className="font-medium text-foreground">
-                {creditTarget?.displayName || creditTarget?.email}
-              </span>
-              . This shows on Earnings and can be used at checkout.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label htmlFor="admin-wallet-credit-amount" className="text-sm font-medium">
-                Amount (USD)
-              </label>
-              <Input
-                id="admin-wallet-credit-amount"
-                type="number"
-                inputMode="decimal"
-                min="0.01"
-                step="0.01"
-                placeholder="80.00"
-                value={creditAmount}
-                onChange={(e) => setCreditAmount(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="admin-wallet-credit-note" className="text-sm font-medium">
-                Note <span className="font-normal text-muted-foreground">(optional)</span>
-              </label>
-              <Input
-                id="admin-wallet-credit-note"
-                maxLength={500}
-                placeholder="Purchase Protection repair credit"
-                value={creditNote}
-                onChange={(e) => setCreditNote(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setCreditTarget(null)
-                setCreditAmount("")
-                setCreditNote("")
-              }}
-              disabled={crediting}
-            >
-              Cancel
-            </Button>
-            <Button type="button" onClick={() => void confirmCredit()} disabled={crediting}>
-              {crediting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Crediting…
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" /> Add credit
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        userId={creditTarget?.userId ?? null}
+        displayName={creditTarget?.displayName}
+        email={creditTarget?.email}
+        defaultNote="Purchase Protection repair credit"
+        onCredited={(result) => {
+          if (!creditTarget || !result.summary) return
+          setRows((prev) =>
+            prev.map((r) => (r.userId === creditTarget.userId ? { ...r, ...result.summary } : r)),
+          )
+        }}
+      />
     </div>
   )
 }

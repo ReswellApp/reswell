@@ -56,6 +56,7 @@ import {
   Store,
   UserCog,
   Users,
+  Wallet,
   X,
   XCircle,
 } from 'lucide-react'
@@ -71,6 +72,7 @@ import type { AdminUserDirectoryRow } from '@/lib/services/adminUsersDirectory'
 import {
   AdminSendUserMessageDialog,
 } from '@/components/features/admin/admin-start-user-conversation-dialog'
+import { AdminWalletCreditDialog } from '@/components/features/admin/admin-wallet-credit-dialog'
 import type { AdminMarketplaceProfilePickerRow } from '@/lib/services/adminStartMarketplaceConversation'
 
 type User = AdminUserDirectoryRow
@@ -236,6 +238,7 @@ export default function AdminUsersPage() {
   const [bulkRunning, setBulkRunning] = useState(false)
   const [messageDialogOpen, setMessageDialogOpen] = useState(false)
   const [messageTarget, setMessageTarget] = useState<AdminMarketplaceProfilePickerRow | null>(null)
+  const [creditTarget, setCreditTarget] = useState<User | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -1082,6 +1085,9 @@ export default function AdminUsersPage() {
                         >
                           <MessageSquarePlus className="mr-2 h-4 w-4" /> Send message
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setCreditTarget(user)}>
+                          <Wallet className="mr-2 h-4 w-4" /> Add wallet credit
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => toggleAdmin(user.id, user.is_admin)}>
                           {user.is_admin ? (
@@ -1259,6 +1265,16 @@ export default function AdminUsersPage() {
         }}
         defaultTargetUser={messageTarget}
         trigger={null}
+      />
+
+      <AdminWalletCreditDialog
+        open={creditTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setCreditTarget(null)
+        }}
+        userId={creditTarget?.id ?? null}
+        displayName={creditTarget?.display_name}
+        email={creditTarget?.email}
       />
     </div>
   )
