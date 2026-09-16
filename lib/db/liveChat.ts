@@ -166,6 +166,16 @@ export async function getLatestOpenLiveChatSessionForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<LiveChatSessionRow | null> {
+  const rows = await listRecentOpenLiveChatSessionsForUser(supabase, userId, 1)
+  return rows[0] ?? null
+}
+
+/** Recent open/assigned sessions for a member, newest first. */
+export async function listRecentOpenLiveChatSessionsForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 20,
+): Promise<LiveChatSessionRow[]> {
   const { data, error } = await withSessionSelect((select) =>
     supabase
       .from("live_chat_sessions")
@@ -174,12 +184,11 @@ export async function getLatestOpenLiveChatSessionForUser(
       .in("status", ["open", "assigned"])
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(limit),
   )
 
-  if (error || !data) return null
-  return normalizeLiveChatSessionRow(data as Record<string, unknown>)
+  if (error || !data) return []
+  return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
 }
 
 export async function insertLiveChatSession(
@@ -295,6 +304,19 @@ export async function listOpenLiveChatSessions(
 }
 
 const ESCALATION_CLAIMED_AT_KEY = "escalation_claimed_at"
+const ESCALATION_CLAIM_TTL_MS = 30_000
+
+function escalationClaimAgeMs(raw: unknown): number | null {
+  if (typeof raw !== "string") return null
+  const parsed = Date.parse(raw)
+  if (!Number.isFinite(parsed)) return null
+  return Date.now() - parsed
+}
+
+export function isLiveChatEscalationClaimExpired(session: LiveChatSessionRow): boolean {
+  const age = escalationClaimAgeMs(session.metadata[ESCALATION_CLAIMED_AT_KEY])
+  return age !== null && age >= ESCALATION_CLAIM_TTL_MS
+}
 
 export type LiveChatEscalationClaim =
   | { status: "claimed"; session: LiveChatSessionRow }
@@ -312,8 +334,12 @@ export async function claimLiveChatSessionEscalation(
   if (fresh.support_case_id && fresh.contact_message_id) {
     return { status: "already_linked", session: fresh }
   }
-  if (typeof fresh.metadata[ESCALATION_CLAIMED_AT_KEY] === "string") {
+  const claimAgeMs = escalationClaimAgeMs(fresh.metadata[ESCALATION_CLAIMED_AT_KEY])
+  if (claimAgeMs !== null && claimAgeMs < ESCALATION_CLAIM_TTL_MS) {
     return { status: "in_progress", session: fresh }
+  }
+  if (claimAgeMs !== null) {
+    await releaseLiveChatSessionEscalationClaim(supabase, fresh)
   }
 
   const claimedAt = new Date().toISOString()
@@ -366,7 +392,9 @@ export async function releaseLiveChatSessionEscalationClaim(
   await updateLiveChatSessionRow(supabase, session.id, { metadata: rest })
 }
 
-/** Latest message body per session — one query instead of N transcript loads. */
+const PREVIEW_SESSION_BATCH = 80
+
+/** Latest message body per session — batched so PostgREST never silently truncates. */
 export async function listLatestLiveChatMessagePreviews(
   supabase: SupabaseClient,
   sessionIds: string[],
@@ -374,23 +402,26 @@ export async function listLatestLiveChatMessagePreviews(
   const previews = new Map<string, string>()
   if (sessionIds.length === 0) return previews
 
-  const { data, error } = await supabase
-    .from("live_chat_messages")
-    .select("session_id, content, created_at")
-    .in("session_id", sessionIds)
-    .order("created_at", { ascending: false })
-    .limit(Math.max(sessionIds.length * 8, 40))
+  for (let i = 0; i < sessionIds.length; i += PREVIEW_SESSION_BATCH) {
+    const batch = sessionIds.slice(i, i + PREVIEW_SESSION_BATCH)
+    const { data, error } = await supabase
+      .from("live_chat_messages")
+      .select("session_id, content, created_at")
+      .in("session_id", batch)
+      .order("created_at", { ascending: false })
+      .limit(Math.max(batch.length * 8, 40))
 
-  if (error || !data) {
-    if (error) console.error("listLatestLiveChatMessagePreviews", error)
-    return previews
-  }
+    if (error || !data) {
+      if (error) console.error("listLatestLiveChatMessagePreviews", error)
+      continue
+    }
 
-  for (const row of data) {
-    const sessionId = String((row as { session_id?: unknown }).session_id ?? "")
-    const content = String((row as { content?: unknown }).content ?? "").trim()
-    if (!sessionId || previews.has(sessionId) || !content) continue
-    previews.set(sessionId, content)
+    for (const row of data) {
+      const sessionId = String((row as { session_id?: unknown }).session_id ?? "")
+      const content = String((row as { content?: unknown }).content ?? "").trim()
+      if (!sessionId || previews.has(sessionId) || !content) continue
+      previews.set(sessionId, content)
+    }
   }
   return previews
 }

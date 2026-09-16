@@ -180,15 +180,19 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
 
   const ensureHumanQueue = useCallback(
     async (options?: { preserveMode?: boolean }) => {
-      if (sessionReady) {
+      if (sessionReady && threadModeHint !== "ai") {
         if (!options?.preserveMode) applyThreadModeHint(threadModeHint)
         return
       }
       if (sessionBootstrapping || handoffBootstrapRef.current) return
       handoffBootstrapRef.current = true
-      const result = await bootstrapSession({ prefer: "human" })
-      if (result.ok && !options?.preserveMode) {
-        applyThreadModeHint(result.threadModeHint)
+      try {
+        const result = await bootstrapSession({ prefer: "human" })
+        if (result.ok && !options?.preserveMode) {
+          applyThreadModeHint(result.threadModeHint)
+        }
+      } finally {
+        handoffBootstrapRef.current = false
       }
     },
     [
@@ -205,7 +209,9 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
       return
     }
     handoffBootstrapRef.current = true
-    void bootstrapSession({ prefer: "human" })
+    void bootstrapSession({ prefer: "human" }).finally(() => {
+      handoffBootstrapRef.current = false
+    })
   }, [bootstrapSession, messageMode, sessionReady])
 
   function clearHelpArticleStack() {

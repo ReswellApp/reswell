@@ -4,6 +4,7 @@ import {
   claimLiveChatSessionEscalation,
   getLiveChatSessionById,
   insertLiveChatMessage,
+  isLiveChatEscalationClaimExpired,
   releaseLiveChatSessionEscalationClaim,
   listEscalationCandidateSessions,
   listInactiveLiveChatSessions,
@@ -182,7 +183,7 @@ export async function escalateLiveChatSessionToTicket(
     return { error: "Chat has no messages to escalate." }
   }
 
-  const claim = await claimLiveChatSessionEscalation(svc, session.id)
+  let claim = await claimLiveChatSessionEscalation(svc, session.id)
   if (claim.status === "missing") {
     return { error: "Chat session not found." }
   }
@@ -204,7 +205,25 @@ export async function escalateLiveChatSessionToTicket(
         alreadyLinked: true,
       }
     }
-    return { error: "Support case is already being opened." }
+    if (linked && !linked.support_case_id && isLiveChatEscalationClaimExpired(linked)) {
+      await releaseLiveChatSessionEscalationClaim(svc, linked)
+      const retried = await claimLiveChatSessionEscalation(svc, session.id)
+      if (retried.status === "already_linked") {
+        return {
+          success: true,
+          contactMessageId: retried.session.contact_message_id ?? "",
+          supportCaseId: retried.session.support_case_id,
+          alreadyLinked: true,
+        }
+      }
+      if (retried.status === "claimed") {
+        claim = retried
+      } else {
+        return { error: "Support case is already being opened." }
+      }
+    } else {
+      return { error: "Support case is already being opened." }
+    }
   }
 
   session = {

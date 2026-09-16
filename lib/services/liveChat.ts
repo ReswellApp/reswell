@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   closeOpenLiveChatSessionsForVisitor,
   getAgentDisplayNamesByIds,
-  getLatestOpenLiveChatSessionForUser,
+  listRecentOpenLiveChatSessionsForUser,
   getLiveChatSessionForVisitor,
   getVisitorDisplayNamesByIds,
   insertLiveChatMessage,
@@ -203,8 +203,9 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
   // token-validated endpoints keep working from this browser.
   // "Talk to AI" (prefer=ai) must not snap into an open human/case thread.
   if (!forceNew && user?.id) {
-    const existingForUser = await getLatestOpenLiveChatSessionForUser(svc, user.id)
-    if (existingForUser && sessionMatchesPrefer(existingForUser, prefer)) {
+    const recentForUser = await listRecentOpenLiveChatSessionsForUser(svc, user.id, 20)
+    const existingForUser = recentForUser.find((row) => sessionMatchesPrefer(row, prefer)) ?? null
+    if (existingForUser) {
       if (existingForUser.visitor_token !== parsed.data.visitor_token) {
         await updateLiveChatSessionRow(svc, existingForUser.id, {
           visitor_token: parsed.data.visitor_token,
