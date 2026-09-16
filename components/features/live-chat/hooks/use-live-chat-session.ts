@@ -620,7 +620,6 @@ export function useLiveChatSession(options?: {
     async (content: string, agentsOnline: boolean) => {
       if (agentsOnline) return { ok: false as const }
       if (!sessionReadyRef.current) return { ok: false as const }
-      if (supportCaseIdRef.current) return { ok: false as const }
       // Show typing immediately — before the visitor send path clears `sending`.
       setAiThinking(true)
       return callAi({ intent: "offline_assist", content, agentsOnline: false })

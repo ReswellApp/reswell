@@ -564,12 +564,7 @@ export async function liveChatAiService(publicId: string, raw: unknown): Promise
     if (agentsOnline) {
       return { error: "Agents are online; offline assist skipped.", status: 409 }
     }
-    if (
-      readAiMode(session) === "off" ||
-      isHandoffRequested(session) ||
-      session.support_case_id ||
-      session.contact_message_id
-    ) {
+    if (readAiMode(session) === "off" || isHandoffRequested(session)) {
       return { error: "AI assist is off for this chat.", status: 409 }
     }
     if (!content) {
