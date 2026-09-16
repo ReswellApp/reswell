@@ -20,6 +20,8 @@ import {
  * Includes active peer listings (`section` surfboards | fins | wetsuits | magazines).
  * Shop listings get `custom_label_0` for Meta product-set ads:
  * HaydenGarfield (Hayden Garfield), OutSurfing, and Brownstone.
+ * City listings get `custom_label_1`: SantaBarbara | Ventura
+ * (same locality as `/reswell/santa-barbara` and `/reswell/ventura`).
  */
 export async function GET(request: Request) {
   if (!isMetaCatalogFeedAuthorized(request)) {

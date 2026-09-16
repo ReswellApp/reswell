@@ -6,6 +6,11 @@ import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { deleteOfferRecord } from "@/lib/services/offerCleanup"
+import {
+  captureOfferAuthorization,
+  releaseOfferAuthorization,
+} from "@/lib/services/listingOfferAuthorization"
+import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import type { RespondToOfferInput } from "@/lib/validations/respond-to-offer"
 import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
@@ -33,7 +38,7 @@ async function appendNegotiationLine(
 }
 
 export type RespondToOfferServiceResult =
-  | { ok: true; conversationId: string | null }
+  | { ok: true; conversationId: string | null; orderId?: string | null }
   | { ok: false; error: string }
 
 export async function respondToOfferService(
@@ -46,7 +51,7 @@ export async function respondToOfferService(
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
     .select(
-      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount",
+      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount, payment_intent_id",
     )
     .eq("id", offerId)
     .maybeSingle()
@@ -59,7 +64,14 @@ export async function respondToOfferService(
     return { ok: false, error: "Only the seller can respond to this offer." }
   }
 
-  if (offer.status !== "PENDING") {
+  const paymentIntentId =
+    typeof (offer as { payment_intent_id?: string | null }).payment_intent_id === "string"
+      ? (offer as { payment_intent_id?: string | null }).payment_intent_id?.trim() || null
+      : null
+  const canRetryBindingAccept =
+    action === "accept" && offer.status === "ACCEPTED" && Boolean(paymentIntentId)
+
+  if (offer.status !== "PENDING" && !canRetryBindingAccept) {
     return {
       ok: false,
       error:
@@ -72,7 +84,7 @@ export async function respondToOfferService(
   const { data: listing, error: listErr } = await supabase
     .from("listings")
     .select(
-      "id, price, title, user_id, slug, section, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
+      "id, price, title, user_id, slug, section, status, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
     )
     .eq("id", offer.listing_id)
     .maybeSingle()
@@ -163,51 +175,99 @@ export async function respondToOfferService(
       }
     }
 
-    const { error: upErr } = await supabase
-      .from("offers")
-      .update({
-        status: "ACCEPTED",
-        fulfillment: reconciled.fulfillment,
-        shipping_amount: reconciled.shippingAmount,
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", offerId)
-      .eq("seller_id", sellerUserId)
-      .eq("status", "PENDING")
+    const existingShipping = (offer as { shipping_amount?: string | number | null }).shipping_amount
+    const existingShippingNum =
+      existingShipping != null ? roundMoney(parseFloat(String(existingShipping))) : null
+    const shippingAmount =
+      existingShippingNum != null && Number.isFinite(existingShippingNum)
+        ? existingShippingNum
+        : reconciled.shippingAmount
 
-    if (upErr) {
-      console.error("[respondToOffer] accept:", upErr)
-      return { ok: false, error: "Could not accept the offer. Try again." }
+    if (paymentIntentId && listing.status !== "active") {
+      return { ok: false, error: "This listing is no longer available." }
     }
 
-    const appended = await appendOfferTimelineEntry(offerId, {
-      senderId: sellerUserId,
-      senderRole: "SELLER",
-      action: "ACCEPT",
-      amount: current,
-      note: null,
-    })
+    if (offer.status === "PENDING") {
+      const { error: upErr } = await supabase
+        .from("offers")
+        .update({
+          status: "ACCEPTED",
+          fulfillment: reconciled.fulfillment,
+          shipping_amount: shippingAmount,
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", offerId)
+        .eq("seller_id", sellerUserId)
+        .eq("status", "PENDING")
 
-    if (!appended) {
-      console.error("[respondToOffer] accept offer_timeline append failed")
+      if (upErr) {
+        console.error("[respondToOffer] accept:", upErr)
+        return { ok: false, error: "Could not accept the offer. Try again." }
+      }
+
+      const appended = await appendOfferTimelineEntry(offerId, {
+        senderId: sellerUserId,
+        senderRole: "SELLER",
+        action: "ACCEPT",
+        amount: current,
+        note: null,
+      })
+
+      if (!appended) {
+        console.error("[respondToOffer] accept offer_timeline append failed")
+      }
+
+      await appendNegotiationLine(
+        supabase,
+        offer,
+        sellerUserId,
+        paymentIntentId
+          ? `Offer accepted — $${current.toFixed(2)}. Order completed.`
+          : `Offer accepted — $${current.toFixed(2)}.`,
+      )
+
+      if (service) {
+        await service.from("notifications").insert({
+          user_id: offer.buyer_id,
+          type: "offer_accepted",
+          listing_id: offer.listing_id,
+          actor_id: sellerUserId,
+          message: paymentIntentId
+            ? `${title}: your offer of $${current.toFixed(2)} was accepted and the order is complete.`
+            : `${title}: your offer of $${current.toFixed(2)} was accepted.`,
+        })
+      }
     }
 
-    await appendNegotiationLine(
-      supabase,
-      offer,
-      sellerUserId,
-      `Offer accepted — $${current.toFixed(2)}.`,
-    )
+    let orderId: string | null = null
+    if (paymentIntentId) {
+      const captured = await captureOfferAuthorization(paymentIntentId)
+      if (!captured.ok) {
+        if (offer.status === "PENDING") {
+          await supabase
+            .from("offers")
+            .update({
+              status: "PENDING",
+              completed_at: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", offerId)
+            .eq("status", "ACCEPTED")
+        }
+        return { ok: false, error: captured.error }
+      }
 
-    if (service) {
-      await service.from("notifications").insert({
-        user_id: offer.buyer_id,
-        type: "offer_accepted",
-        listing_id: offer.listing_id,
-        actor_id: sellerUserId,
-        message: `${title}: your offer of $${current.toFixed(2)} was accepted.`,
-      })
+      const finalized = await completeMarketplaceOrderFromPaymentIntent(captured.paymentIntent)
+      if (!finalized.ok) {
+        console.error("[respondToOffer] binding finalize:", finalized.error)
+        return {
+          ok: false,
+          error:
+            "Payment went through but the order could not be finished. We’ll retry automatically — refresh in a moment.",
+        }
+      }
+      orderId = finalized.orderId
     }
 
     void trackKlaviyoOfferAccepted({
@@ -223,11 +283,12 @@ export async function respondToOfferService(
       acceptedBy: "seller",
       fulfillment: reconciled.fulfillment,
       conversationId: conv?.id ?? null,
+      orderId,
     }).catch((e) => {
       console.error("[respondToOffer] klaviyo Offer Accepted:", e)
     })
 
-    return { ok: true, conversationId: conv?.id ?? null }
+    return { ok: true, conversationId: conv?.id ?? null, orderId }
   }
 
   // counter
@@ -270,12 +331,17 @@ export async function respondToOfferService(
 
   const nextCount = (offer.counter_count ?? 0) + 1
 
+  if (paymentIntentId) {
+    await releaseOfferAuthorization(paymentIntentId)
+  }
+
   const { error: upErr } = await supabase
     .from("offers")
     .update({
       status: "COUNTERED",
       current_amount: amt,
       counter_count: nextCount,
+      payment_intent_id: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", offerId)

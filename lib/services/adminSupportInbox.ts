@@ -12,6 +12,7 @@ import {
 import {
   DEFAULT_INBOX_SORT,
   EMPTY_INBOX_VIEW_COUNTS,
+  inboxReplyDraftStatus,
   inboxViewFromSearchParams,
   sortInboxItems,
   supportCaseToInboxItem,
@@ -33,6 +34,7 @@ import {
   ensureCaseForContactMessage,
   ensureCaseForOrderSupport,
 } from "@/lib/services/supportCaseBackfill"
+import { listSupportReplyDraftMetaByCaseIds } from "@/lib/db/supportReplyDrafts"
 import { inboxCaseKey, parseInboxCaseParam } from "@/lib/utils/support-case-paths"
 import type { ListAdminSupportInboxQuery } from "@/lib/validations/adminSupportInbox"
 
@@ -86,21 +88,37 @@ async function hydrateInboxItems(
     .map((row) => row.order_support_request_id)
     .filter((id): id is string => Boolean(id))
 
-  const [contacts, orders] = await Promise.all([
+  const [contacts, orders, drafts] = await Promise.all([
     listContactMessagesByIds(service, contactIds),
     listOrderSupportRequestsByIds(service, orderIds),
+    listSupportReplyDraftMetaByCaseIds(
+      service,
+      cases.map((row) => row.id),
+    ),
   ])
   const contactById = new Map(contacts.map((row) => [row.id, row]))
   const orderById = new Map(orders.map((row) => [row.id, row]))
+  const draftByCaseId = new Map(drafts.map((row) => [row.caseId, row]))
 
-  return cases.map((row) =>
-    supportCaseToInboxItem(row, {
+  return cases.map((row) => {
+    const item = supportCaseToInboxItem(row, {
       contact: row.contact_message_id ? contactById.get(row.contact_message_id) ?? null : null,
       order: row.order_support_request_id
         ? orderById.get(row.order_support_request_id) ?? null
         : null,
-    }),
-  )
+    })
+    const draft = draftByCaseId.get(row.id)
+    return {
+      ...item,
+      replyDraftStatus: inboxReplyDraftStatus({
+        isOpen: item.isOpen,
+        status: item.status,
+        caseUpdatedAt: item.updatedAt,
+        draftUpdatedAt: draft?.updatedAt ?? null,
+        draftHasBody: draft?.hasBody === true,
+      }),
+    }
+  })
 }
 
 function viewListFilter(

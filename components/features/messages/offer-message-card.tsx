@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils"
 import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import { BuyerCounterRespondButtons } from "@/components/features/messages/buyer-counter-respond-buttons"
+import { OfferWithdrawButton } from "@/components/features/offers/offer-withdraw-button"
+import { offerIsBinding } from "@/lib/listing-offer-authorization"
 import { resolveOfferThreadNote } from "@/lib/utils/parse-offer-negotiation-message"
 import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import { buildOfferMessageDisplay } from "@/lib/utils/offer-message-display"
@@ -209,7 +211,7 @@ export function OfferMessageCard({
             </p>
           ) : null}
 
-          {!isSeller && offer.status === "ACCEPTED" && (
+          {!isSeller && offer.status === "ACCEPTED" && !offerIsBinding(offer) && (
             <div className={cn("mt-3 space-y-2", shownNote && "mt-2")}>
               <Button
                 type="button"
@@ -232,9 +234,20 @@ export function OfferMessageCard({
           )}
 
           {!isSeller && pending && (
-            <p className={cn("text-[12px] text-muted-foreground", shownNote && "mt-2")}>
-              Waiting for the seller to respond.
-            </p>
+            <div className={cn("space-y-2", shownNote && "mt-2")}>
+              <p className="text-[12px] text-muted-foreground">
+                {offerIsBinding(offer)
+                  ? "We’ve reserved your payment. If they accept, this becomes your order."
+                  : "Waiting for the seller to respond."}
+              </p>
+              {offerIsBinding(offer) ? (
+                <OfferWithdrawButton
+                  offerId={offer.id}
+                  onCompleted={onThreadRefresh}
+                  className="h-10 w-full rounded-xl text-[14px] font-semibold"
+                />
+              ) : null}
+            </div>
           )}
 
           {showBuyerCounterActions ? (

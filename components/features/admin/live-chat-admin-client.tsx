@@ -143,7 +143,7 @@ function QueueList({
         const lastVisitorAt = session.last_visitor_message_at
         const lastAgentAt = session.last_agent_message_at
         const waiting =
-          Boolean(lastVisitorAt) &&
+          lastVisitorAt != null &&
           (!lastAgentAt || new Date(lastVisitorAt).getTime() > new Date(lastAgentAt).getTime())
         return (
           <li key={session.id}>

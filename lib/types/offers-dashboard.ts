@@ -41,4 +41,5 @@ export type DashboardOfferRow = {
   buyer_note?: string | null
   fulfillment?: "pickup" | "shipping" | null
   shipping_amount?: string | number | null
+  payment_intent_id?: string | null
 }

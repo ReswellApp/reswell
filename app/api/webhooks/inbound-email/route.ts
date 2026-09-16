@@ -20,6 +20,7 @@ import {
 } from "@/lib/validations/inbound-email-webhook"
 
 export const runtime = "nodejs"
+export const maxDuration = 60
 
 /**
  * Inbound customer replies to Support Tickets Response emails.

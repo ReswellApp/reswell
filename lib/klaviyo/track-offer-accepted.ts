@@ -24,6 +24,7 @@ import {
   listingToKlaviyoEventCommerceItem,
   type KlaviyoListingImage,
 } from "@/lib/klaviyo/catalog-product"
+import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
 import { acceptedOfferCheckoutHref, listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
@@ -96,6 +97,8 @@ export type KlaviyoOfferAcceptedPayload = {
   fulfillment: "pickup" | "shipping" | null
   conversationId?: string | null
   listingImages?: KlaviyoListingImage[] | null
+  /** Set when a binding offer was captured and the order already exists. */
+  orderId?: string | null
 }
 
 export async function trackKlaviyoOfferAccepted(
@@ -121,7 +124,10 @@ export async function trackKlaviyoOfferAccepted(
     section: payload.listingSection,
   })
   const listingUrl = `${origin}${path}`
-  const checkoutUrl = `${origin}${acceptedOfferCheckoutHref(payload.offerId)}`
+  const orderId = payload.orderId?.trim() || null
+  const checkoutUrl = orderId
+    ? `${origin}${buildOrderSuccessPath(orderId)}`
+    : `${origin}${acceptedOfferCheckoutHref(payload.offerId)}`
   const offersUrl = `${origin}/dashboard/offers?tab=buyer`
   const conversationId =
     typeof payload.conversationId === "string" ? payload.conversationId.trim() : ""
@@ -170,6 +176,13 @@ export async function trackKlaviyoOfferAccepted(
       Title: payload.listingTitle,
       listing_url: listingUrl,
       checkout_url: checkoutUrl,
+      ...(orderId
+        ? {
+            order_id: orderId,
+            order_url: checkoutUrl,
+            binding_offer: true,
+          }
+        : { binding_offer: false }),
       photo_url: photoUrl,
       offers_url: offersUrl,
       messages_url: messagesUrl,

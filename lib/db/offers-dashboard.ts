@@ -40,6 +40,7 @@ const OFFER_SELECT = `
   offer_timeline,
   fulfillment,
   shipping_amount,
+  payment_intent_id,
   listings (
     id,
     title,

@@ -261,3 +261,36 @@ export function selectOpenCaseIdsNeedingDraft(args: {
   })
   return needed.slice(0, Math.max(0, args.limit))
 }
+
+export type InboxReplyDraftStatus = "ready" | "writing" | "none"
+
+/** Slack so a draft finished a beat before case.updated_at still counts as ready. */
+const REPLY_DRAFT_FRESHNESS_SLACK_MS = 2000
+
+export function inboxReplyDraftStatus(args: {
+  isOpen: boolean
+  status: string
+  caseUpdatedAt: string
+  draftUpdatedAt: string | null
+  draftHasBody: boolean
+}): InboxReplyDraftStatus {
+  if (!args.isOpen || args.status === "waiting_on_you") return "none"
+  if (args.draftHasBody && args.draftUpdatedAt) {
+    const draftAt = Date.parse(args.draftUpdatedAt)
+    const caseAt = Date.parse(args.caseUpdatedAt)
+    if (Number.isFinite(draftAt) && Number.isFinite(caseAt) && draftAt >= caseAt - REPLY_DRAFT_FRESHNESS_SLACK_MS) {
+      return "ready"
+    }
+  }
+  return "writing"
+}
+
+/** Same-deployment origin only — never fall back to production from local/preview. */
+export function supportReplyDraftWorkerOrigin(env: {
+  VERCEL_URL?: string
+} = process.env): string | null {
+  const vercel = env.VERCEL_URL?.trim()
+  if (!vercel) return null
+  const host = vercel.replace(/^https?:\/\//, "")
+  return host ? `https://${host}` : null
+}

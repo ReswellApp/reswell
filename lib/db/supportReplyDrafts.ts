@@ -125,6 +125,43 @@ function isMissingHarnessColumn(message: string): boolean {
   )
 }
 
+export type SupportReplyDraftMeta = {
+  caseId: string
+  updatedAt: string
+  hasBody: boolean
+}
+
+export async function listSupportReplyDraftMetaByCaseIds(
+  supabase: SupabaseClient,
+  caseIds: string[],
+): Promise<SupportReplyDraftMeta[]> {
+  const ids = [...new Set(caseIds.map((id) => id.trim()).filter(Boolean))]
+  if (ids.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("support_reply_drafts")
+    .select("case_id, updated_at, body")
+    .in("case_id", ids)
+
+  if (error) {
+    console.warn("[support_reply_drafts] inbox meta skipped:", error.message)
+    return []
+  }
+
+  return (data ?? []).flatMap((row) => {
+    const caseId = String((row as { case_id?: unknown }).case_id ?? "")
+    const updatedAt = String((row as { updated_at?: unknown }).updated_at ?? "")
+    if (!caseId || !updatedAt) return []
+    return [
+      {
+        caseId,
+        updatedAt,
+        hasBody: String((row as { body?: unknown }).body ?? "").trim().length > 0,
+      },
+    ]
+  })
+}
+
 export async function getSupportReplyDraftByCaseId(
   supabase: SupabaseClient,
   caseId: string,

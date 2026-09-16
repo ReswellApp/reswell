@@ -52,6 +52,7 @@ import {
   lastCustomerSupportText,
   scoreSupportReplyOverlap,
   supportReplyDraftFingerprint,
+  supportReplyDraftWorkerOrigin,
   supportReplyRetrievalQuery,
   tokenizeSupportReplyQuery,
   visibleSupportConversation,
@@ -542,32 +543,60 @@ export async function recordSentSupportReplyExample(args: {
   }
 }
 
+async function enqueueDetachedSupportReplyDraft(caseId: string): Promise<boolean> {
+  const secret = process.env.CRON_SECRET?.trim()
+  const origin = supportReplyDraftWorkerOrigin()
+  if (!secret || !origin) return false
+
+  try {
+    const url = new URL("/api/cron/support-reply-drafts", origin)
+    url.searchParams.set("case_id", caseId)
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${secret}` },
+      cache: "no-store",
+    })
+    return response.ok || response.status === 202
+  } catch (error) {
+    console.warn(
+      "[supportReplyDraft] detached enqueue failed:",
+      error instanceof Error ? error.message : error,
+    )
+    return false
+  }
+}
+
+async function generateInboundSupportReplyDraft(caseId: string): Promise<void> {
+  const enqueued = await enqueueDetachedSupportReplyDraft(caseId)
+  if (enqueued) return
+
+  const service = staffClient()
+  if (!service) return
+  const result = await generateAndStoreDraft(service, caseId, false)
+  if ("error" in result) {
+    console.warn("[supportReplyDraft] inbound generate:", result.error)
+  }
+}
+
 export function scheduleSupportReplyDraft(caseId: string): void {
   const id = caseId.trim()
   if (!id) return
 
-  const run = () => {
-    void (async () => {
-      try {
-        const service = staffClient()
-        if (!service) return
-        const result = await generateAndStoreDraft(service, id, false)
-        if ("error" in result) {
-          console.warn("[supportReplyDraft] inbound generate:", result.error)
-        }
-      } catch (error) {
-        console.error(
-          "[supportReplyDraft] inbound generate failed:",
-          error instanceof Error ? error.message : error,
-        )
-      }
-    })()
+  const run = async () => {
+    try {
+      await generateInboundSupportReplyDraft(id)
+    } catch (error) {
+      console.error(
+        "[supportReplyDraft] inbound generate failed:",
+        error instanceof Error ? error.message : error,
+      )
+    }
   }
 
   try {
     after(run)
   } catch {
-    run()
+    void run()
   }
 }
 

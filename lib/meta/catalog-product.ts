@@ -5,6 +5,7 @@
 import { withMetaCatalogTracking } from "@/lib/ads/tracking-urls"
 import { listingDetailHref } from "@/lib/listing-href"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
+import { metaCityCustomLabelForListing } from "@/lib/meta/city-catalog-feed"
 import {
   absoluteProxiedListingMediaUrl,
   listingDirectPublicImageUrl,
@@ -59,7 +60,7 @@ export type MetaCatalogFeedItem = {
   identifier_exists: "no"
   /** Product-set filter for Meta Ads — e.g. HaydenGarfield / OutSurfing / Brownstone shop only. */
   custom_label_0?: string
-  /** City product-set filter — e.g. SantaBarbara / Ventura on the city catalog feed. */
+  /** City product-set filter — e.g. SantaBarbara / Ventura. */
   custom_label_1?: string
   /** Direct downloadable video file URL (Meta Advantage+ catalog ads). */
   "video[0].url"?: string
@@ -70,7 +71,7 @@ export type MetaCatalogFeedContext = {
   haydenShopUserId: string | null
   outSurfingShopUserId: string | null
   brownstoneShopUserId: string | null
-  /** Set when building a city catalog page so Meta can filter SantaBarbara | Ventura. */
+  /** Override city label when building a dedicated city catalog page. */
   cityCustomLabel?: string
 }
 
@@ -212,14 +213,17 @@ export function getMetaCatalogCustomLabel0ForListing(
 }
 
 /**
- * `custom_label_1` for a city catalog row — set from feed context when the listing
- * was fetched for a known city landing (Santa Barbara / Ventura).
+ * `custom_label_1` for Meta product sets — SantaBarbara | Ventura.
+ * Prefer an explicit city-feed override; otherwise match listing city/state
+ * the same way `/reswell/santa-barbara` and `/reswell/ventura` do.
  */
 export function getMetaCatalogCustomLabel1ForListing(
+  listing: Pick<MetaListingProductSource, "city" | "state">,
   context: MetaCatalogFeedContext | undefined,
 ): string | undefined {
-  const label = context?.cityCustomLabel?.trim()
-  return label || undefined
+  const explicit = context?.cityCustomLabel?.trim()
+  if (explicit) return explicit
+  return metaCityCustomLabelForListing(listing.city, listing.state)
 }
 
 export function parseMetaListingPrice(
@@ -369,7 +373,7 @@ export function listingToMetaCatalogFeedItem(
 
   const brand = typeof listing.brand === "string" ? listing.brand.trim() : ""
   const customLabel0 = getMetaCatalogCustomLabel0ForListing(listing, context)
-  const customLabel1 = getMetaCatalogCustomLabel1ForListing(context)
+  const customLabel1 = getMetaCatalogCustomLabel1ForListing(listing, context)
   const videoLink = primaryVideoLink(listing)
 
   return {

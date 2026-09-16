@@ -65,6 +65,7 @@ const OFFER_SELECT = `
   offer_timeline,
   fulfillment,
   shipping_amount,
+  payment_intent_id,
   listings (
     id,
     title,
@@ -256,6 +257,7 @@ export function MessagesOffersTab({
         seller_id: dialogOffer.seller_id,
         fulfillment: dialogOffer.fulfillment ?? null,
         shipping_amount: dialogOffer.shipping_amount ?? null,
+        payment_intent_id: dialogOffer.payment_intent_id ?? null,
       }
     : null
 
@@ -369,6 +371,7 @@ export function MessagesOffersTab({
               listingTitle={dashboardListingForOffer(o)?.title ?? ""}
               onRespondOpen={openRespond}
               onViewCounterOpen={role === "buyer" ? openBuyerCounter : undefined}
+              onWithdrawn={() => void loadOffers()}
               conversationId={conversationId}
               compact
             />

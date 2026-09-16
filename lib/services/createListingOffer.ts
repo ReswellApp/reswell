@@ -7,6 +7,10 @@ import {
 } from "@/lib/db/offers"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { offerShippingAmountFromListing } from "@/lib/offer-listing-shipping"
+import {
+  attachOfferIdToPaymentIntent,
+  verifyAuthorizedOfferPaymentIntent,
+} from "@/lib/services/listingOfferAuthorization"
 import type { CreateListingOfferBody } from "@/lib/validations/create-listing-offer"
 import { trackKlaviyoOfferMade } from "@/lib/klaviyo/track-offer-made"
 import { appendConversationMessage } from "@/lib/services/conversationThread"
@@ -28,7 +32,7 @@ function composeOfferNote(input: CreateListingOfferBody): string | null {
 }
 
 export type CreateListingOfferResult =
-  | { ok: true; offerId: string }
+  | { ok: true; offerId: string; conversationId: string | null }
   | {
       ok: false
       status: number
@@ -140,7 +144,22 @@ export async function createListingOffer(
     }
   }
 
-  const shippingAmount = offerShippingAmountFromListing(listing, body.fulfillment)
+  const authorized = await verifyAuthorizedOfferPaymentIntent(supabase, buyerId, listingId, {
+    paymentIntentId: body.payment_intent_id,
+    amount,
+    fulfillment: body.fulfillment,
+    addressId: body.address_id,
+    quoteToken: body.quote_token,
+  })
+  if (!authorized.ok) {
+    return { ok: false, status: authorized.status, error: authorized.error }
+  }
+
+  const snapshotShipping = offerShippingAmountFromListing(listing, body.fulfillment)
+  const shippingAmount =
+    body.fulfillment === "shipping"
+      ? snapshotShipping ?? authorized.shippingUsd
+      : snapshotShipping
 
   const note = composeOfferNote(body)
 
@@ -166,6 +185,8 @@ export async function createListingOffer(
       offer_timeline: [timelineEntry],
       fulfillment: body.fulfillment,
       shipping_amount: shippingAmount,
+      payment_intent_id: authorized.paymentIntent.id,
+      address_id: body.fulfillment === "shipping" ? (body.address_id ?? null) : null,
     })
     .select("id")
     .single()
@@ -193,12 +214,14 @@ export async function createListingOffer(
 
   const title = (listing.title ?? "your listing").trim() || "your listing"
 
+  await attachOfferIdToPaymentIntent(authorized.paymentIntent.id, offerId)
+
   let service
   try {
     service = createServiceRoleClient()
   } catch (e) {
     console.error("[createListingOffer] service client:", e)
-    return { ok: true, offerId }
+    return { ok: true, offerId, conversationId: threadResult.ok ? threadResult.conversationId : null }
   }
 
   const { error: notifErr } = await service.from("notifications").insert({
@@ -235,5 +258,9 @@ export async function createListingOffer(
     console.error("[createListingOffer] klaviyo Offer Made:", e)
   }
 
-  return { ok: true, offerId }
+  return {
+    ok: true,
+    offerId,
+    conversationId: threadResult.ok ? threadResult.conversationId : null,
+  }
 }

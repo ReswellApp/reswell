@@ -11,8 +11,8 @@ import type { SupportReplyDraftView } from "@/lib/types/supportReplyDraft"
 import type { SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 import { supportReplyExampleRatingToast } from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
 
-const PEEK_RETRY_MS = 350
-const PEEK_RETRIES = 3
+const PEEK_RETRY_MS = 400
+const PEEK_WINDOW_MS = 12000
 
 function wait(ms: number) {
   return new Promise<void>((resolve) => {
@@ -39,7 +39,9 @@ export function useSupportReplyDraft(caseId: string | null, revision: string | n
     setError(null)
 
     if (!force) {
-      for (let attempt = 0; attempt <= PEEK_RETRIES; attempt += 1) {
+      const started = Date.now()
+      let attempt = 0
+      while (true) {
         if (attempt > 0) {
           await wait(PEEK_RETRY_MS)
           if (ticket !== requestId.current) return
@@ -58,6 +60,8 @@ export function useSupportReplyDraft(caseId: string | null, revision: string | n
           setLoading(false)
           return
         }
+        attempt += 1
+        if (Date.now() - started >= PEEK_WINDOW_MS) break
       }
     }
 
