@@ -32,6 +32,18 @@ export function firstBlogArticleImageUrl(
   return null
 }
 
+/** First marketplace listing embedded in the article (`listing` or `listing-image`). */
+export function firstBlogListingEmbedRef(
+  blocks: Array<{ kind: string; ref?: string | null }>,
+): string | null {
+  for (const block of blocks) {
+    if (block.kind !== "listing" && block.kind !== "listing-image") continue
+    const ref = block.ref?.trim()
+    if (ref) return ref
+  }
+  return null
+}
+
 export function isRelatedBlogVisibleOnPdp(blog: { published: boolean }): boolean {
   return blog.published === true
 }

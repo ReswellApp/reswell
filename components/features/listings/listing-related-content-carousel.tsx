@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
@@ -8,6 +8,7 @@ import { HomeListingScrollRow } from "@/components/features/home/home-listing-sc
 import { blogImageShouldBypassOptimization } from "@/lib/blog/blog-media-proxy-url"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import type { ListingRelatedContentCard } from "@/lib/listing-related-content"
+import { cn } from "@/lib/utils"
 
 const TILE_WRAP_CLASS =
   "flex min-h-0 w-[min(18.5rem,78svw)] shrink-0 snap-start flex-col self-stretch sm:w-[20rem] lg:w-[21.5rem]"
@@ -56,32 +57,53 @@ export function ListingRelatedContentCarousel({
   )
 }
 
-function isGeneratedBlogTitleCard(src: string): boolean {
-  return src.includes("/opengraph-image") || src.includes("/twitter-image")
+function RelatedContentTileImage({ src }: { src: string }) {
+  const [isPortrait, setIsPortrait] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    setIsPortrait(null)
+  }, [src])
+
+  return (
+    <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted">
+      <div
+        className={cn(
+          "absolute",
+          isPortrait
+            ? "left-1/2 top-1/2 h-[160%] w-[62.5%] -translate-x-1/2 -translate-y-1/2 rotate-90"
+            : "inset-0",
+        )}
+      >
+        <Image
+          src={src}
+          alt=""
+          fill
+          unoptimized={
+            listingImageShouldBypassOptimization(src) || blogImageShouldBypassOptimization(src)
+          }
+          sizes="(max-width: 640px) 78svw, 344px"
+          onLoad={(event) => {
+            const { naturalWidth, naturalHeight } = event.currentTarget
+            if (naturalWidth <= 0 || naturalHeight <= 0) return
+            setIsPortrait(naturalHeight > naturalWidth)
+          }}
+          className={cn(
+            "object-cover transition-opacity duration-300 group-hover:opacity-90",
+            isPortrait === null && "opacity-0",
+          )}
+        />
+      </div>
+    </div>
+  )
 }
 
 function RelatedContentCard({ item }: { item: ListingRelatedContentCard }) {
-  const imageUrl =
-    item.imageUrl && !isGeneratedBlogTitleCard(item.imageUrl) ? item.imageUrl : null
+  const imageUrl = item.imageUrl?.trim() || null
 
   return (
     <article className="flex h-full min-w-0 flex-col">
       <Link href={item.href} className="group flex h-full min-w-0 flex-col no-underline">
-        {imageUrl ? (
-          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted">
-            <Image
-              src={imageUrl}
-              alt=""
-              fill
-              unoptimized={
-                listingImageShouldBypassOptimization(imageUrl) ||
-                blogImageShouldBypassOptimization(imageUrl)
-              }
-              sizes="(max-width: 640px) 78svw, 344px"
-              className="object-cover transition-opacity duration-300 group-hover:opacity-90"
-            />
-          </div>
-        ) : null}
+        {imageUrl ? <RelatedContentTileImage src={imageUrl} /> : null}
         <p
           className={
             imageUrl

@@ -7,9 +7,11 @@ import {
   listingImagesFromPrimaryFields,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
+import { parseBlogListingRef } from "@/lib/blog/parse-listing-ref"
 import {
   RELATED_CONTENT_KINDS,
   firstBlogArticleImageUrl,
+  firstBlogListingEmbedRef,
   isRelatedBlogVisibleOnPdp,
   isRelatedListingVisibleOnPdp,
   relatedContentKindLabel,
@@ -57,6 +59,7 @@ export type RelatedContentBlogSummary = {
   og_image_url: string | null
   updated_at: string | null
   tile_image_url: string | null
+  embed_listing_ref: string | null
 }
 
 export type RelatedContentHostSummary = RelatedContentListingSummary & {
@@ -143,6 +146,7 @@ function mapBlogSummary(row: {
     og_image_url: typeof row.og_image_url === "string" ? row.og_image_url : null,
     updated_at: typeof row.updated_at === "string" ? row.updated_at : null,
     tile_image_url: blogTileImageFromRow(row),
+    embed_listing_ref: firstBlogListingEmbedRef(parseStoredBlocks(row.blocks)),
   }
 }
 
@@ -206,7 +210,7 @@ export function mapRelatedContentPublicCard(
       kind: "blog",
       href: `/blog/${blog.slug}`,
       title: blog.title,
-      imageUrl: blog.tile_image_url,
+      imageUrl: blog.tile_image_url ?? `/blog/${blog.slug}/opengraph-image`,
       label: relatedContentKindLabel("blog"),
     }
   }
@@ -280,20 +284,59 @@ async function fetchListingsByIds(
   supabase: SupabaseClient,
   ids: string[],
 ): Promise<Map<string, RelatedContentListingSummary>> {
-  const unique = [...new Set(ids.filter(Boolean))]
+  return fetchListingsByRefs(supabase, ids, "id")
+}
+
+async function fetchListingsByRefs(
+  supabase: SupabaseClient,
+  refs: string[],
+  match: "id" | "auto" = "auto",
+): Promise<Map<string, RelatedContentListingSummary>> {
+  const unique = [...new Set(refs.map((ref) => ref.trim()).filter(Boolean))]
   const out = new Map<string, RelatedContentListingSummary>()
   if (unique.length === 0) return out
 
-  const { data, error } = await supabase.from("listings").select(LISTING_CARD_SELECT).in("id", unique)
-  if (error) {
-    console.error("fetchListingsByIds:", error.message)
-    return out
+  const uuidRefs = match === "id" ? unique : unique.filter((ref) => parseBlogListingRef(ref) && looksLikeUuid(ref))
+  const slugRefs =
+    match === "id" ? [] : unique.filter((ref) => parseBlogListingRef(ref) && !looksLikeUuid(ref))
+
+  const queries: Array<PromiseLike<{ data: unknown; error: { message: string } | null }>> = []
+  if (uuidRefs.length > 0) {
+    queries.push(supabase.from("listings").select(LISTING_CARD_SELECT).in("id", uuidRefs))
   }
-  for (const row of data ?? []) {
-    const mapped = mapListingSummary(row as Parameters<typeof mapListingSummary>[0])
-    out.set(mapped.id, mapped)
+  if (slugRefs.length > 0) {
+    queries.push(supabase.from("listings").select(LISTING_CARD_SELECT).in("slug", slugRefs))
+  }
+
+  const results = await Promise.all(queries)
+  for (const result of results) {
+    if (result.error) {
+      console.error("fetchListingsByRefs:", result.error.message)
+      continue
+    }
+    for (const row of (result.data as unknown[]) ?? []) {
+      const mapped = mapListingSummary(row as Parameters<typeof mapListingSummary>[0])
+      out.set(mapped.id, mapped)
+      if (mapped.slug) out.set(mapped.slug, mapped)
+    }
   }
   return out
+}
+
+function looksLikeUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function withEmbedListingTile(
+  blog: RelatedContentBlogSummary,
+  listings: Map<string, RelatedContentListingSummary>,
+): RelatedContentBlogSummary {
+  if (blog.tile_image_url || !blog.embed_listing_ref) return blog
+  const ref = parseBlogListingRef(blog.embed_listing_ref)
+  if (!ref) return blog
+  const listing = listings.get(ref)
+  if (!listing?.primary_image_url) return blog
+  return { ...blog, tile_image_url: listing.primary_image_url }
 }
 
 async function fetchBlogsByIds(
@@ -344,22 +387,27 @@ export async function hydrateRelatedContentPublicCards(
   supabase: SupabaseClient,
   rows: ListingRelatedContentRow[],
 ): Promise<ListingRelatedContentCard[]> {
-  const [blogs, listings] = await Promise.all([
-    fetchBlogsByIds(
-      supabase,
-      rows.flatMap((row) => (row.blog_post_id ? [row.blog_post_id] : [])),
-    ),
+  const blogs = await fetchBlogsByIds(
+    supabase,
+    rows.flatMap((row) => (row.blog_post_id ? [row.blog_post_id] : [])),
+  )
+  const embedRefs = [...blogs.values()].flatMap((blog) =>
+    !blog.tile_image_url && blog.embed_listing_ref ? [blog.embed_listing_ref] : [],
+  )
+  const [listings, embedListings] = await Promise.all([
     fetchListingsByIds(
       supabase,
       rows.flatMap((row) => (row.related_listing_id ? [row.related_listing_id] : [])),
     ),
+    fetchListingsByRefs(supabase, embedRefs),
   ])
 
   const cards: ListingRelatedContentCard[] = []
   for (const row of rows) {
+    const blog = row.blog_post_id ? (blogs.get(row.blog_post_id) ?? null) : null
     const card = mapRelatedContentPublicCard(
       row,
-      row.blog_post_id ? (blogs.get(row.blog_post_id) ?? null) : null,
+      blog ? withEmbedListingTile(blog, embedListings) : null,
       row.related_listing_id ? (listings.get(row.related_listing_id) ?? null) : null,
     )
     if (card) cards.push(card)

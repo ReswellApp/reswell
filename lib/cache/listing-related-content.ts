@@ -22,7 +22,7 @@ export const getCachedListingRelatedContent = cache(async (listingId: string) =>
   if (!id) return []
   return unstable_cache(
     () => loadListingRelatedContent(id),
-    ["listing-related-content-v5", id],
+    ["listing-related-content-v6", id],
     {
       revalidate: LISTING_RELATED_CONTENT_REVALIDATE_SECONDS,
       tags: [LISTING_RELATED_CONTENT_CACHE_TAG, listingRelatedContentCacheTag(id)],

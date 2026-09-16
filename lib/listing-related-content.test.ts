@@ -3,6 +3,7 @@ import { describe, it } from "node:test"
 
 import {
   firstBlogArticleImageUrl,
+  firstBlogListingEmbedRef,
   isRelatedBlogVisibleOnPdp,
   isRelatedListingVisibleOnPdp,
   listingRelatedContentCacheTag,
@@ -38,6 +39,18 @@ describe("related content visibility", () => {
         { kind: "image", url: "https://images.example.com/board.jpg" },
       ]),
       "https://images.example.com/board.jpg",
+    )
+  })
+
+  it("uses the first listing embed when the article has no cover photo", () => {
+    assert.equal(firstBlogListingEmbedRef([{ kind: "image", url: "https://images.example.com/board.jpg" }]), null)
+    assert.equal(
+      firstBlogListingEmbedRef([
+        { kind: "p" },
+        { kind: "listing-image", ref: "lovemachine-zambal-surfboard-5-9-ryan-lovelace" },
+        { kind: "listing", ref: "other-board" },
+      ]),
+      "lovemachine-zambal-surfboard-5-9-ryan-lovelace",
     )
   })
 })
