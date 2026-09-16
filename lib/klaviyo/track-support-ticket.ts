@@ -23,6 +23,7 @@ export type KlaviyoSupportTicketSource =
   | "contact_form"
   | "order_buyer_support"
   | "order_seller_support"
+  | "live_chat"
 
 export type KlaviyoSupportTicketPayload = {
   supportTicketId: string

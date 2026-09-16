@@ -564,7 +564,7 @@ function applyAdminCaseFilters(
   filter: Omit<AdminSupportCaseListFilter, "limit" | "offset" | "order">,
 ): LooseCaseQuery {
   let next = query as LooseCaseQuery
-  if (filter.excludeLiveChat !== false) {
+  if (filter.excludeLiveChat === true) {
     next = next.neq("source_channel", "live_chat")
   }
   if (filter.ids && filter.ids.length > 0) {

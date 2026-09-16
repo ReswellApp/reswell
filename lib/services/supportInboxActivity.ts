@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
 import { listSupportCasesForRequester } from "@/lib/db/supportCases"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
 import { supportCaseToInboxNotification } from "@/lib/utils/support-inbox-activity"
@@ -11,7 +10,7 @@ export async function loadSupportInboxActivityNotifications(
   userId: string,
 ): Promise<MessagesInboxNotification[]> {
   const cases = await listSupportCasesForRequester(supabase, userId, "all")
-  const visible = cases.filter((row) => !isUnpublishedLiveChatTicket(row)).slice(0, 30)
+  const visible = cases.slice(0, 30)
   if (visible.length === 0) return []
 
   const { data: agentMessages, error } = await supabase

@@ -27,6 +27,7 @@ export type SupportCaseSourceChannel =
   | "order_buyer"
   | "order_seller"
   | "staff"
+  | "live_chat"
 
 export type SupportCaseBackend = "contact_message" | "order_support"
 

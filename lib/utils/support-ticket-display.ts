@@ -42,9 +42,13 @@ export function formatSupportTicketReference(ticketId: string): string {
   return `RW-${compact}`
 }
 
-export function supportTicketDisplaySubject(subject: string | null, source: "contact_form" | "messages_support"): string {
+import type { ContactMessageSource } from "@/lib/db/contactMessages"
+
+export function supportTicketDisplaySubject(subject: string | null, source: ContactMessageSource): string {
   if (subject?.trim()) {
     return subject.trim()
   }
-  return source === "contact_form" ? "Website contact" : "Support request"
+  if (source === "contact_form") return "Website contact"
+  if (source === "live_chat") return "Live chat"
+  return "Support request"
 }

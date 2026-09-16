@@ -163,6 +163,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
         children: [
           { href: '/admin/support-macros', label: 'Reply macros', icon: 'zap' },
           { href: '/admin/support-reply-examples', label: 'Reply examples', icon: 'sparkles' },
+          { href: '/admin/live-chat', label: 'Live chat', icon: 'messageSquare' },
         ],
       },
       { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },

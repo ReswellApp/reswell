@@ -63,6 +63,7 @@ export type CsAgentContextPack = {
   caseSubject: string
   caseKind: string
   caseStatus: string
+  sourceChannel?: string
   requesterRole: string
   lastCustomerMessage: string
   thread: CsAgentThreadTurn[]
@@ -181,6 +182,7 @@ ${pack.currentDraft.trim()}`
 
 Case: ${pack.caseSubject}
 Kind: ${pack.caseKind}
+Channel: ${pack.sourceChannel?.trim() || "support"}
 Status: ${pack.caseStatus}
 Requester: ${pack.greetingName} (${pack.requesterRole})
 ${orderLine}

@@ -2,6 +2,7 @@
 
 import posthog from "posthog-js"
 import { clearImpersonation } from "@/lib/impersonation"
+import { clearLiveChatBrowserState } from "@/lib/live-chat/visitor-storage"
 
 /**
  * End the Supabase session server-side (clears SSR auth cookies), then redirect.
@@ -13,5 +14,7 @@ export function signOutAndRedirect(next = "/"): void {
     posthog.reset()
   }
   clearImpersonation()
+  // Live chat resume keys live in localStorage and are not auth cookies.
+  clearLiveChatBrowserState()
   window.location.assign(`/auth/sign-out?next=${encodeURIComponent(next)}`)
 }

@@ -96,7 +96,28 @@ describe("cs agent harness", () => {
     assert.match(pack, /Tracking has not moved. Can you check the refund too/)
     assert.match(pack, /\[customer\] Where is my board/)
     assert.match(pack, /\[staff\] Looking into tracking now/)
+    assert.match(pack, /Channel: support/)
     assert.doesNotMatch(pack, /auto-send|already sent this reply/i)
+  })
+
+  it("labels live chat as the support channel when present", () => {
+    const pack = formatCsAgentContextPack({
+      greetingName: "Sam",
+      caseSubject: "Live chat — support case",
+      caseKind: "general",
+      caseStatus: "submitted",
+      sourceChannel: "live_chat",
+      requesterRole: "member",
+      lastCustomerMessage: "Member: Can someone help with my order?",
+      thread: [{ role: "customer", body: "Member: Can someone help with my order?" }],
+      order: null,
+      priorTickets: [],
+      help: [],
+      examples: [],
+      macros: [],
+    })
+    assert.match(pack, /Channel: live_chat/)
+    assert.match(pack, /Live chat — support case/)
   })
 
   it("includes a staff rewrite instruction and the draft they are revising", () => {

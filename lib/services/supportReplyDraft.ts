@@ -294,6 +294,7 @@ async function generateDraftBody(args: {
       caseSubject: args.row.subject,
       caseKind: args.row.kind,
       caseStatus: args.row.status,
+      sourceChannel: args.row.source_channel,
       requesterRole: args.row.requester_role,
       lastCustomerMessage,
       thread,
