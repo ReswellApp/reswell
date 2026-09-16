@@ -28,7 +28,6 @@ import {
   INBOX_SEARCH_MATCH_CAP,
   inboxQueryUsesHistory,
 } from "@/lib/admin/case-inbox-query"
-import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
 import { getContactMessageRowById } from "@/lib/db/contactMessages"
 import { getOrderSupportRequestById } from "@/lib/db/order-support"
 import {
@@ -82,11 +81,10 @@ async function hydrateInboxItems(
   service: ReturnType<typeof createServiceRoleClient> | Awaited<ReturnType<typeof createClient>>,
   cases: SupportCaseRow[],
 ): Promise<CaseInboxItem[]> {
-  const visible = cases.filter((row) => !isUnpublishedLiveChatTicket(row))
-  const contactIds = visible
+  const contactIds = cases
     .map((row) => row.contact_message_id)
     .filter((id): id is string => Boolean(id))
-  const orderIds = visible
+  const orderIds = cases
     .map((row) => row.order_support_request_id)
     .filter((id): id is string => Boolean(id))
 
@@ -95,14 +93,14 @@ async function hydrateInboxItems(
     listOrderSupportRequestsByIds(service, orderIds),
     listSupportReplyDraftMetaByCaseIds(
       service,
-      visible.map((row) => row.id),
+      cases.map((row) => row.id),
     ),
   ])
   const contactById = new Map(contacts.map((row) => [row.id, row]))
   const orderById = new Map(orders.map((row) => [row.id, row]))
   const draftByCaseId = new Map(drafts.map((row) => [row.caseId, row]))
 
-  return visible.map((row) => {
+  return cases.map((row) => {
     const item = supportCaseToInboxItem(row, {
       contact: row.contact_message_id ? contactById.get(row.contact_message_id) ?? null : null,
       order: row.order_support_request_id
@@ -139,7 +137,6 @@ function viewListFilter(
       type: caseType,
       kind,
       currentStaffId: staffId,
-      excludeLiveChat: true,
       limit: INBOX_SEARCH_MATCH_CAP,
     }
   }
@@ -152,7 +149,6 @@ function viewListFilter(
         currentStaffId: staffId,
         type: caseType,
         kind,
-        excludeLiveChat: true,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "unassigned":
@@ -161,7 +157,6 @@ function viewListFilter(
         assignee: "unassigned",
         type: caseType,
         kind,
-        excludeLiveChat: true,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "new":
@@ -169,7 +164,6 @@ function viewListFilter(
         status: "submitted",
         type: caseType,
         kind,
-        excludeLiveChat: true,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "waiting":
@@ -177,14 +171,12 @@ function viewListFilter(
         status: "waiting_on_you",
         type: caseType,
         kind,
-        excludeLiveChat: true,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "claims":
       return {
         status: "open",
         kind: "protection_claim",
-        excludeLiveChat: true,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "overdue":
@@ -193,7 +185,6 @@ function viewListFilter(
         overdueOnly: true,
         type: caseType,
         kind,
-        excludeLiveChat: true,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "resolved":
@@ -201,7 +192,6 @@ function viewListFilter(
         status: "resolved",
         type: caseType,
         kind,
-        excludeLiveChat: true,
         limit: INBOX_PAGE_SIZE,
       }
     case "all":
@@ -209,7 +199,6 @@ function viewListFilter(
         status: "all",
         type: caseType,
         kind,
-        excludeLiveChat: true,
         limit: INBOX_PAGE_SIZE,
       }
     case "open":
@@ -218,7 +207,6 @@ function viewListFilter(
         status: "open",
         type: caseType,
         kind,
-        excludeLiveChat: true,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
   }
@@ -228,7 +216,7 @@ async function countInboxViews(
   service: ReturnType<typeof createServiceRoleClient> | Awaited<ReturnType<typeof createClient>>,
   staffId: string,
 ): Promise<InboxViewCounts> {
-  const base = { excludeLiveChat: true as const }
+  const base = {}
   const [
     open,
     mine,
@@ -270,7 +258,7 @@ async function loadSelectedCase(
   const rawId = parseInboxCaseParam(selectedKey)
   if (!rawId) return null
   const row = await resolveSupportCaseByAnyId(service, rawId)
-  if (!row || isUnpublishedLiveChatTicket(row)) return null
+  if (!row) return null
   const [item] = await hydrateInboxItems(service, [row])
   return item ?? null
 }

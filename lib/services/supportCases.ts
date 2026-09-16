@@ -6,7 +6,6 @@ import { backfillUserLegacyCases } from "@/lib/services/supportCaseBackfill"
 import type { UserSupportCaseListItem } from "@/lib/types/supportCase"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
-import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
 import { countUnreadSupportMessages } from "@/lib/utils/unread-support-count-events"
 
 export async function listUserSupportCasesService(
@@ -20,7 +19,7 @@ export async function listUserSupportCasesService(
   await backfillUserLegacyCases(supabase, userId, user?.email ?? null)
 
   const rows = await listSupportCasesForRequester(supabase, userId, filter)
-  const visible = rows.filter((row) => !isUnpublishedLiveChatTicket(row))
+  const visible = rows
   const unreadByCase = new Map<string, number>()
 
   if (visible.length > 0) {
@@ -72,7 +71,7 @@ export async function countOpenUserSupportCasesService(userId: string): Promise<
   } = await supabase.auth.getUser()
   await backfillUserLegacyCases(supabase, userId, user?.email ?? null)
   const open = await listSupportCasesForRequester(supabase, userId, "open")
-  return open.filter((row) => !isUnpublishedLiveChatTicket(row)).length
+  return open.length
 }
 
 export async function getUserOrderSupportCaseService(userId: string, requestId: string) {

@@ -25,3 +25,19 @@ export function helpArticleId(topicId: HelpCenterTabId, slug: string): string {
 export function isHelpTopicId(value: string): value is HelpCenterTabId {
   return (HELP_TOPIC_IDS as readonly string[]).includes(value)
 }
+
+/** Parses `/help/{topic}/{slug}` (optionally absolute) into topic + slug. */
+export function parseHelpArticlePath(
+  href: string,
+): { topicId: HelpCenterTabId; slug: string } | null {
+  try {
+    const path = href.startsWith("http") ? new URL(href).pathname : href.split(/[?#]/)[0] ?? href
+    const match = path.match(/^\/help\/([^/]+)\/([^/]+)\/?$/)
+    if (!match) return null
+    const topicId = match[1]
+    if (!topicId || !isHelpTopicId(topicId)) return null
+    return { topicId, slug: match[2]! }
+  } catch {
+    return null
+  }
+}

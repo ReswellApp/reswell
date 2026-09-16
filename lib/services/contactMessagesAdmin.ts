@@ -12,6 +12,10 @@ import {
   type UpdateContactMessageAdminInput,
 } from "@/lib/validations/contactMessagesAdmin"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
+import {
+  resolveLiveChatSessionsForCases,
+  resolveLiveChatSessionsForTickets,
+} from "@/lib/services/liveChatEscalation"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import {
   insertSupportStaffThreadMessage,
@@ -91,10 +95,17 @@ export async function updateContactMessageAdminService(
   const statusChanged =
     payload.support_status !== undefined && payload.support_status !== existing.support_status
 
+  if (statusChanged && payload.support_status === "resolved") {
+    await resolveLiveChatSessionsForTickets([existing.id])
+  }
+
   try {
     const service = createServiceRoleClient()
     const shadow = await getSupportCaseByContactMessageId(service, existing.id)
     if (shadow) {
+      if (statusChanged && payload.support_status === "resolved") {
+        await resolveLiveChatSessionsForCases([shadow.id])
+      }
       await updateSupportCaseAdmin(service, {
         id: shadow.id,
         status: payload.support_status
@@ -167,6 +178,10 @@ export async function bulkUpdateContactMessagesAdminService(
   if (error) {
     console.error("bulkUpdateContactMessagesAdminService", error)
     return { error: "Failed to update tickets" }
+  }
+
+  if (parsed.data.support_status === "resolved") {
+    await resolveLiveChatSessionsForTickets(parsed.data.ids)
   }
 
   return { success: true }

@@ -12,7 +12,6 @@ import { listOrderSupportRequestsForUser, normalizeOrderSupportRow } from "@/lib
 import { orderRequestTypeSubject, orderRequestTypeToKind } from "@/lib/utils/support-case-display"
 import { supportTicketDisplaySubject } from "@/lib/utils/support-ticket-display"
 import type { SupportCaseKind } from "@/lib/types/supportCase"
-import { isUnpublishedLiveChatTicket } from "@/lib/help/unpublished-live-chat"
 
 /**
  * Create a support_cases row for a legacy ticket if one does not exist yet.
@@ -76,11 +75,14 @@ export async function ensureCaseForContactMessage(
 ): Promise<SupportCaseRow | null> {
   const existing = await getSupportCaseByContactMessageId(supabase, row.id)
   if (existing) return existing
-  if (isUnpublishedLiveChatTicket(row)) return null
 
   const subject = supportTicketDisplaySubject(
     row.subject,
-    row.source === "messages_support" ? "messages_support" : "contact_form",
+    row.source === "messages_support"
+      ? "messages_support"
+      : row.source === "live_chat"
+        ? "live_chat"
+        : "contact_form",
   )
   const kind: SupportCaseKind =
     subject.toLowerCase().includes("safety")
@@ -99,7 +101,12 @@ export async function ensureCaseForContactMessage(
     requester_email: row.email,
     requester_role: row.user_id ? "member" : "guest",
     contact_message_id: row.id,
-    source_channel: row.source === "messages_support" ? "help_hub" : "contact_form",
+    source_channel:
+      row.source === "messages_support"
+        ? "help_hub"
+        : row.source === "live_chat"
+          ? "live_chat"
+          : "contact_form",
     priority: kind === "safety" ? "urgent" : "normal",
   })
   if (!inserted.data) return null
@@ -150,7 +157,7 @@ export async function backfillUserLegacyCases(
         ),
       ),
     ...tickets
-      .filter((row) => !haveContact.has(row.id) && !isUnpublishedLiveChatTicket(row))
+      .filter((row) => !haveContact.has(row.id))
       .map((row) =>
         ensureCaseForContactMessage(supabase, {
           id: row.id,
@@ -219,8 +226,7 @@ export async function backfillRecentLegacySupportCases(
 
   const missingContact = (cmRes.data ?? []).filter((raw) => {
     const row = raw as { id: string; source?: string | null; subject?: string | null }
-    if (haveContact.has(String(row.id))) return false
-    return !isUnpublishedLiveChatTicket(row)
+    return !haveContact.has(String(row.id))
   })
   const missingOrder = (osRes.data ?? []).filter(
     (raw) => !haveOrder.has(String((raw as { id: string }).id)),

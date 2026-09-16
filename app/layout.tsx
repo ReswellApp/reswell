@@ -7,6 +7,7 @@ import { LocaleProvider } from '@/components/locale-provider'
 import { SiteChromeShell } from '@/components/site-chrome-shell'
 import { AbortErrorSuppressor } from '@/components/abort-error-suppressor'
 import { OpsErrorReporter } from '@/components/ops-error-reporter'
+import { LiveChatWidgetGate } from '@/components/features/live-chat/live-chat-widget-gate'
 import { DEFAULT_LOCALE } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
 import { GoogleAdsGtag } from '@/components/google-ads-gtag'
@@ -105,6 +106,9 @@ export default function RootLayout({
             <GoogleSignUpWelcomeRedirect />
           </Suspense>
           <SiteChromeShell>{children}</SiteChromeShell>
+          <Suspense fallback={null}>
+            <LiveChatWidgetGate />
+          </Suspense>
           <Toaster />
           <Analytics />
         </LocaleProvider>

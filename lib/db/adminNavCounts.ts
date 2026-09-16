@@ -24,6 +24,7 @@ export async function fetchAdminNavBadgeCounts(
   const [
     supportNewRes,
     orderSupportNewRes,
+    liveChatOpenRes,
     fraudRes,
     opsOpenRes,
     brandPendingRes,
@@ -36,15 +37,15 @@ export async function fetchAdminNavBadgeCounts(
       supabase
         .from('support_cases')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'submitted')
-        .neq('source_channel', 'live_chat')
-        .not('subject', 'like', 'Live chat%'),
+        .eq('status', 'submitted'),
       supabase
         .from('contact_messages')
         .select('*', { count: 'exact', head: true })
-        .eq('support_status', 'new')
-        .neq('source', 'live_chat')
-        .not('subject', 'like', 'Live chat%'),
+        .eq('support_status', 'new'),
+      supabase
+        .from('live_chat_sessions')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['open', 'assigned']),
       supabase
         .from('fraud_messages')
         .select('*', { count: 'exact', head: true })
@@ -82,6 +83,7 @@ export async function fetchAdminNavBadgeCounts(
     '/admin/contact-messages': supportNewRes.error
       ? take(orderSupportNewRes)
       : take(supportNewRes),
+    '/admin/live-chat': take(liveChatOpenRes),
     '/admin/fraud-messages': take(fraudRes),
     '/admin/ops': take(opsOpenRes),
     '/admin/listings/hidden': hiddenActiveRes,

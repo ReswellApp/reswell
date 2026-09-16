@@ -256,7 +256,12 @@ export function contactToInboxItem(row: ContactMessageRow): CaseInboxItem {
     kindLabel: SUPPORT_CASE_KIND_LABEL[kind],
     status,
     statusLabel: SUPPORT_CASE_STATUS_LABEL[status],
-    channelLabel: row.source === "messages_support" ? "Help Hub" : "Website",
+    channelLabel:
+      row.source === "live_chat"
+        ? "Live chat"
+        : row.source === "messages_support"
+          ? "Help Hub"
+          : "Website",
     orderId: null,
     orderRef: null,
     createdAt: row.created_at,
@@ -315,6 +320,7 @@ function channelLabel(source: string): string {
   if (source === "contact_form") return "Website"
   if (source === "order_buyer" || source === "order_seller") return "Order"
   if (source === "staff") return "Staff"
+  if (source === "live_chat") return "Live chat"
   return "Support"
 }
 

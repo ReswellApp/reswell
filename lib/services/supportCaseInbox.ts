@@ -9,6 +9,7 @@ import {
   resolveSupportCaseByAnyId,
   updateSupportCaseAdmin,
 } from "@/lib/db/supportCases"
+import { resolveLiveChatSessionsForCases } from "@/lib/services/liveChatEscalation"
 import { postSupportCaseSystemMessage } from "@/lib/services/supportCaseThread"
 import { updateSupportCaseInboxSchema } from "@/lib/validations/supportCaseInbox"
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
@@ -116,6 +117,9 @@ export async function updateSupportCaseInboxService(
         ? "Conversation marked resolved."
         : `Status updated to ${nextStatus.replaceAll("_", " ")}.`,
     )
+    if (nextStatus === "resolved") {
+      await resolveLiveChatSessionsForCases([row.id])
+    }
   }
 
   if (parsed.data.priority && parsed.data.priority !== row.priority) {
