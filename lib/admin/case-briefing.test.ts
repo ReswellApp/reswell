@@ -34,8 +34,10 @@ function item(overrides: Partial<CaseInboxItem> = {}): CaseInboxItem {
     isNew: true,
     assigneeAdminId: null,
     slaState: "on_track",
+    slaDueAt: "2026-09-08T01:00:00.000Z",
     slaLabel: "Due 1 hour",
     priority: "high",
+    replyDraftStatus: "none",
     contact: null,
     order: {
       id: "os-1",

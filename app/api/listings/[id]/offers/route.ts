@@ -65,5 +65,8 @@ export async function POST(
     fulfillment: parsed.data.fulfillment,
   })
 
-  return NextResponse.json({ data: { offerId: result.offerId } }, { status: 201 })
+  return NextResponse.json(
+    { data: { offerId: result.offerId, conversationId: result.conversationId } },
+    { status: 201 },
+  )
 }

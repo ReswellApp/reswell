@@ -34,6 +34,7 @@ export type OfferRowLite = {
   fulfillment?: "pickup" | "shipping" | null
   shipping_amount?: number | string | null
   line_items?: unknown
+  payment_intent_id?: string | null
 }
 
 function parseMoney(v: unknown): number {
@@ -98,6 +99,9 @@ export function SellerOfferResponseDialog({
         toast.error(result.error)
         return
       }
+      if (action === "accept" && offer.payment_intent_id) {
+        toast.success("Offer accepted — the order is complete.")
+      }
       resetForm()
       onOpenChange(false)
       await onCompleted()
@@ -157,6 +161,12 @@ export function SellerOfferResponseDialog({
                 ${current.toFixed(2)} item + ${shippingAmount.toFixed(2)} shipping
               </p>
             ) : null}
+            {offer.payment_intent_id ? (
+              <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+                The buyer’s payment is already reserved. Accepting charges them and creates the
+                order.
+              </p>
+            ) : null}
           </div>
 
           {resolvedBuyerNote ? (
@@ -181,7 +191,7 @@ export function SellerOfferResponseDialog({
               {busy === "accept" ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                "Accept"
+                offer.payment_intent_id ? "Accept offer — complete sale" : "Accept"
               )}
             </Button>
             <Button

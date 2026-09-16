@@ -18,6 +18,10 @@ import {
   slaHoursForCaseKind,
   type CaseSlaState,
 } from "@/lib/help/support-sla"
+import {
+  inboxReplyDraftStatus,
+  type InboxReplyDraftStatus,
+} from "@/lib/utils/support-reply-retrieve"
 
 export type CaseInboxTypeFilter = "all" | "general" | "order" | "claims"
 export type CaseInboxStatusFilter = "open" | "new" | "waiting" | "resolved" | "all"
@@ -34,6 +38,8 @@ export type CaseInboxView =
   | "all"
 export type CaseInboxPriority = "low" | "normal" | "high" | "urgent"
 export type CaseInboxSort = "smart" | "recent" | "oldest"
+export type { InboxReplyDraftStatus }
+export { inboxReplyDraftStatus }
 export const DEFAULT_INBOX_SORT: CaseInboxSort = "recent"
 
 export type InboxViewCounts = {
@@ -89,6 +95,7 @@ export type CaseInboxItem = {
   slaState: CaseSlaState
   slaLabel: string
   priority: CaseInboxPriority
+  replyDraftStatus: InboxReplyDraftStatus
   contact: ContactMessageRow | null
   order: OrderSupportRequestRow | null
 }
@@ -259,6 +266,7 @@ export function contactToInboxItem(row: ContactMessageRow): CaseInboxItem {
     assigneeAdminId: row.assignee_admin_id,
     ...slaFields(row.created_at, kind, isOpen),
     priority: "normal",
+    replyDraftStatus: "none",
     contact: row,
     order: null,
   }
@@ -296,6 +304,7 @@ export function orderToInboxItem(row: OrderSupportRequestRow): CaseInboxItem {
     assigneeAdminId: row.assignee_admin_id,
     ...slaFields(row.created_at, kind, isOpen),
     priority: "normal",
+    replyDraftStatus: "none",
     contact: null,
     order: row,
   }
@@ -340,6 +349,7 @@ export function supportCaseToInboxItem(
     assigneeAdminId: row.assignee_admin_id,
     ...slaFields(row.created_at, row.kind, isOpen, row.sla_due_at),
     priority: row.priority ?? "normal",
+    replyDraftStatus: "none",
     contact: sidecar.contact,
     order: sidecar.order,
   }
@@ -354,6 +364,7 @@ export function withInboxStatus(item: CaseInboxItem, status: SupportCaseStatus):
     isOpen,
     isNew: status === "submitted",
     ...slaFields(item.createdAt, item.kind, isOpen, item.slaDueAt),
+    replyDraftStatus: !isOpen || status === "waiting_on_you" ? "none" : item.replyDraftStatus,
     contact: item.contact
       ? {
           ...item.contact,

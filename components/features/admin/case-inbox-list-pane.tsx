@@ -230,6 +230,17 @@ export function CaseInboxListPane({
                             {item.priority}
                           </span>
                         ) : null}
+                        {item.replyDraftStatus === "ready" ? (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/10 px-1 py-0.5 font-medium text-emerald-800 dark:text-emerald-200">
+                            <Sparkles className="h-2.5 w-2.5" aria-hidden />
+                            Draft ready
+                          </span>
+                        ) : item.replyDraftStatus === "writing" ? (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-sky-500/10 px-1 py-0.5 font-medium text-sky-800 dark:text-sky-200">
+                            <Sparkles className="h-2.5 w-2.5" aria-hidden />
+                            Drafting…
+                          </span>
+                        ) : null}
                         {item.openedBy === "staff" && item.status === "waiting_on_you" ? (
                           <span className="rounded bg-amber-500/10 px-1 py-0.5 font-medium text-amber-800 dark:text-amber-200">
                             No reply

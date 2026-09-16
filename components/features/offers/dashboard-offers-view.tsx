@@ -214,6 +214,7 @@ export function DashboardOffersView({
         seller_id: dialogOffer.seller_id,
         fulfillment: dialogOffer.fulfillment ?? null,
         shipping_amount: dialogOffer.shipping_amount ?? null,
+        payment_intent_id: dialogOffer.payment_intent_id ?? null,
       }
     : null
 
@@ -404,6 +405,7 @@ export function DashboardOffersView({
                 listingTitle={dashboardListingForOffer(o)?.title ?? ""}
                 onRespondOpen={openRespond}
                 onViewCounterOpen={role === "buyer" ? openBuyerCounter : undefined}
+                onWithdrawn={() => router.refresh()}
                 conversationId={
                   conversationIdByOfferKey[
                     offerConversationKey(o.listing_id, o.buyer_id, o.seller_id)

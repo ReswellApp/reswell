@@ -35,26 +35,11 @@ const META_CATALOG_CSV_HEADERS = [
   "additional_image_link",
   "identifier_exists",
   "custom_label_0",
-  "video[0].url",
-] as const
-
-const META_CITY_CATALOG_CSV_HEADERS = [
-  "id",
-  "title",
-  "description",
-  "availability",
-  "condition",
-  "price",
-  "link",
-  "image_link",
-  "brand",
-  "google_product_category",
-  "additional_image_link",
-  "identifier_exists",
-  "custom_label_0",
   "custom_label_1",
   "video[0].url",
 ] as const
+
+const META_CITY_CATALOG_CSV_HEADERS = META_CATALOG_CSV_HEADERS
 
 async function resolveShopUserIdByEnvOrEmail(
   supabase: SupabaseClient,

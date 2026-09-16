@@ -25,6 +25,8 @@ import { offerFulfillmentLabel } from "@/lib/utils/offer-message-display"
 import { dashboardListingForOffer, offerIsSoldPresentation } from "@/lib/utils/offers-dashboard-display"
 import { listingOfferTileCompactClass } from "@/lib/utils/dashboard-display-styles"
 import { offerMessagesHref } from "@/lib/utils/offer-messages-href"
+import { OfferWithdrawButton } from "@/components/features/offers/offer-withdraw-button"
+import { offerIsBinding } from "@/lib/listing-offer-authorization"
 
 function money(n: unknown): string {
   const v = typeof n === "number" ? n : parseFloat(String(n ?? "0"))
@@ -144,6 +146,7 @@ export function OfferRow({
   onViewCounterOpen,
   compact = false,
   conversationId = null,
+  onWithdrawn,
 }: {
   offer: DashboardOfferRow
   role: "buyer" | "seller"
@@ -155,6 +158,7 @@ export function OfferRow({
   compact?: boolean
   /** When set, Messages links directly to the listing thread (skips inbox redirect). */
   conversationId?: string | null
+  onWithdrawn?: () => void | Promise<void>
 }) {
   const listing = dashboardListingForOffer(offer)
   const isSold = offerIsSoldPresentation(offer)
@@ -285,6 +289,11 @@ export function OfferRow({
           {role === "seller" && fulfillmentLabel ? (
             <p className="mt-1 text-[12px] font-medium text-foreground/85">{fulfillmentLabel}</p>
           ) : null}
+          {role === "buyer" && offer.status === "PENDING" && offerIsBinding(offer) ? (
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              Payment reserved — if they accept, this becomes your order.
+            </p>
+          ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1">
@@ -342,9 +351,16 @@ export function OfferRow({
                 type="button"
                 onClick={() => onRespondOpen(offer)}
               >
-                Respond to offer
+                {offerIsBinding(offer) ? "Accept & complete" : "Respond to offer"}
               </Button>
             )}
+            {role === "buyer" && offer.status === "PENDING" && offerIsBinding(offer) && onWithdrawn ? (
+              <OfferWithdrawButton
+                offerId={offer.id}
+                onCompleted={onWithdrawn}
+                className="h-7 rounded-md px-2.5 text-[11px] font-medium"
+              />
+            ) : null}
           </div>
         </div>
       </div>

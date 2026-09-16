@@ -9,7 +9,9 @@ import {
   rankExamplesForQuery,
   rankHelpArticlesForQuery,
   scoreSupportReplyOverlap,
+  inboxReplyDraftStatus,
   supportReplyDraftFingerprint,
+  supportReplyDraftWorkerOrigin,
   selectOpenCaseIdsNeedingDraft,
   tokenizeSupportReplyQuery,
 } from "./support-reply-retrieve.ts"
@@ -191,5 +193,52 @@ describe("support reply retrieval", () => {
       limit: 3,
     })
     assert.deepEqual(ids, ["a", "b"])
+  })
+
+  it("only detaches draft writes onto the current Vercel deployment", () => {
+    assert.equal(supportReplyDraftWorkerOrigin({}), null)
+    assert.equal(
+      supportReplyDraftWorkerOrigin({ VERCEL_URL: "reswell-abc.vercel.app" }),
+      "https://reswell-abc.vercel.app",
+    )
+  })
+
+  it("marks a current stored reply as ready before the ticket is opened", () => {
+    assert.equal(
+      inboxReplyDraftStatus({
+        isOpen: true,
+        status: "submitted",
+        caseUpdatedAt: "2026-09-16T18:00:00.000Z",
+        draftUpdatedAt: "2026-09-16T18:00:03.000Z",
+        draftHasBody: true,
+      }),
+      "ready",
+    )
+  })
+
+  it("shows drafting when the customer wrote after the last stored reply", () => {
+    assert.equal(
+      inboxReplyDraftStatus({
+        isOpen: true,
+        status: "in_progress",
+        caseUpdatedAt: "2026-09-16T18:10:00.000Z",
+        draftUpdatedAt: "2026-09-16T18:00:00.000Z",
+        draftHasBody: true,
+      }),
+      "writing",
+    )
+  })
+
+  it("hides draft status after staff is waiting on the customer", () => {
+    assert.equal(
+      inboxReplyDraftStatus({
+        isOpen: true,
+        status: "waiting_on_you",
+        caseUpdatedAt: "2026-09-16T18:00:00.000Z",
+        draftUpdatedAt: "2026-09-16T18:00:03.000Z",
+        draftHasBody: true,
+      }),
+      "none",
+    )
   })
 })

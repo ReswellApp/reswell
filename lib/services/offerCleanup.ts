@@ -1,4 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import {
+  fetchOfferAuthorizationRows,
+  fetchOfferAuthorizationRowsForListings,
+} from "@/lib/db/listingOfferAuthorization"
+import {
+  cancelOrphanOfferBindingPaymentIntents,
+  releaseOfferAuthorizations,
+} from "@/lib/services/listingOfferAuthorization"
 
 export type OfferCleanupSummary = {
   expiredDeleted: number
@@ -21,9 +29,15 @@ export async function purgeStaleOffers(
     soldListingOrphansDeleted: 0,
   }
 
+  try {
+    await cancelOrphanOfferBindingPaymentIntents(referenceTime)
+  } catch (e) {
+    console.error("[purgeStaleOffers] orphan payment intents:", e)
+  }
+
   const { data: expiredRows, error: expiredErr } = await serviceSupabase
     .from("offers")
-    .select("id")
+    .select("id, payment_intent_id")
     .in("status", ["PENDING", "COUNTERED", "ACCEPTED"])
     .lt("expires_at", nowIso)
     .limit(500)
@@ -32,6 +46,7 @@ export async function purgeStaleOffers(
     console.error("[purgeStaleOffers] expired select:", expiredErr)
   } else if (expiredRows?.length) {
     const ids = expiredRows.map((r) => r.id as string)
+    await releaseOfferAuthorizations(expiredRows.map((r) => r.payment_intent_id as string | null))
     const { error: delErr, count } = await serviceSupabase
       .from("offers")
       .delete({ count: "exact" })
@@ -45,7 +60,7 @@ export async function purgeStaleOffers(
 
   const { data: terminalRows, error: terminalErr } = await serviceSupabase
     .from("offers")
-    .select("id")
+    .select("id, payment_intent_id")
     .in("status", ["DECLINED", "EXPIRED", "WITHDRAWN"])
     .limit(500)
 
@@ -53,6 +68,7 @@ export async function purgeStaleOffers(
     console.error("[purgeStaleOffers] terminal select:", terminalErr)
   } else if (terminalRows?.length) {
     const ids = terminalRows.map((r) => r.id as string)
+    await releaseOfferAuthorizations(terminalRows.map((r) => r.payment_intent_id as string | null))
     const { error: delErr, count } = await serviceSupabase
       .from("offers")
       .delete({ count: "exact" })
@@ -80,7 +96,7 @@ export async function purgeStaleOffers(
 
   const { data: orphanOffers, error: orphanErr } = await serviceSupabase
     .from("offers")
-    .select("id, status, listing_id")
+    .select("id, status, listing_id, payment_intent_id")
     .in("listing_id", soldIds)
     .neq("status", "COMPLETED")
     .limit(500)
@@ -90,11 +106,12 @@ export async function purgeStaleOffers(
     return summary
   }
 
-  const orphanIds = (orphanOffers ?? [])
-    .filter((o) => o.status !== "ACCEPTED")
-    .map((o) => o.id as string)
+  const orphanRows = (orphanOffers ?? []).filter((o) => o.status !== "ACCEPTED")
+  const orphanIds = orphanRows.map((o) => o.id as string)
 
   if (orphanIds.length === 0) return summary
+
+  await releaseOfferAuthorizations(orphanRows.map((o) => o.payment_intent_id as string | null))
 
   const { error: orphanDelErr, count } = await serviceSupabase
     .from("offers")
@@ -118,6 +135,13 @@ export async function deleteNonWinningOffersOnListings(
 ): Promise<void> {
   if (listingIds.length === 0) return
 
+  const rows = await fetchOfferAuthorizationRowsForListings(
+    serviceSupabase,
+    listingIds,
+    keepOfferId,
+  )
+  await releaseOfferAuthorizations(rows.map((row) => row.payment_intent_id))
+
   let query = serviceSupabase.from("offers").delete().in("listing_id", listingIds)
   if (keepOfferId?.trim()) {
     query = query.neq("id", keepOfferId.trim())
@@ -136,6 +160,9 @@ export async function deleteOfferRecord(
 ): Promise<void> {
   const id = offerId.trim()
   if (!id) return
+
+  const rows = await fetchOfferAuthorizationRows(serviceSupabase, [id])
+  await releaseOfferAuthorizations(rows.map((row) => row.payment_intent_id))
 
   const { error } = await serviceSupabase.from("offers").delete().eq("id", id)
   if (error) {

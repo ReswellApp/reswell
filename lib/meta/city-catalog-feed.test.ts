@@ -3,6 +3,7 @@ import { describe, it } from "node:test"
 import {
   findMetaCityCatalogMarket,
   metaCityCatalogLandingHref,
+  metaCityCustomLabelForListing,
   resolveMetaCityCatalogMarkets,
 } from "./city-catalog-feed.ts"
 
@@ -36,6 +37,21 @@ describe("resolveMetaCityCatalogMarkets", () => {
 
   it("returns null for an unknown city", () => {
     assert.equal(resolveMetaCityCatalogMarkets("oxnard"), null)
+  })
+})
+
+describe("metaCityCustomLabelForListing", () => {
+  it("labels Santa Barbara and Ventura listings", () => {
+    assert.equal(metaCityCustomLabelForListing("Santa Barbara", "CA"), "SantaBarbara")
+    assert.equal(metaCityCustomLabelForListing("Santa Barbara", "California"), "SantaBarbara")
+    assert.equal(metaCityCustomLabelForListing("Ventura", "CA"), "Ventura")
+  })
+
+  it("ignores other cities and missing state", () => {
+    assert.equal(metaCityCustomLabelForListing("Goleta", "CA"), undefined)
+    assert.equal(metaCityCustomLabelForListing("Santa Barbara", "NY"), undefined)
+    assert.equal(metaCityCustomLabelForListing("Santa Barbara", null), undefined)
+    assert.equal(metaCityCustomLabelForListing(null, "CA"), undefined)
   })
 })
 

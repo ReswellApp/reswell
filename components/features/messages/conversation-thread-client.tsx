@@ -497,7 +497,7 @@ export function ConversationThreadClient({
       void Promise.resolve(
         supabase
           .from('offers')
-          .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items')
+          .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items, payment_intent_id')
           .eq('id', offerId)
           .maybeSingle(),
       )

@@ -34,5 +34,5 @@ export async function respondToOfferAction(raw: unknown) {
     })
   }
 
-  return { success: true as const }
+  return { success: true as const, orderId: result.orderId ?? null }
 }
