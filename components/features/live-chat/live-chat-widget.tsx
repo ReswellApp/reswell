@@ -85,7 +85,6 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   } = useLiveChatSupportTeam(open || session.sessionReady)
   isSupportOnlineRef.current = isSupportOnline
   offlineAssistRef.current = (content: string) => {
-    if (session.supportCaseId) return
     void session.requestOfflineAiAssist(content, false)
   }
 
@@ -112,6 +111,11 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     session.sessionId,
     session.sessionReady,
     handleRemoteMessage,
+    (status) => {
+      if (status === "resolved" || status === "closed") {
+        session.markSessionClosed()
+      }
+    },
   )
 
   const { typingName, publishTyping } = useLiveChatTyping({

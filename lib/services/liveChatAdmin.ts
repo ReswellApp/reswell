@@ -1,6 +1,6 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
-import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
+import { broadcastLiveChatMessage, broadcastLiveChatSessionStatus } from "@/lib/services/liveChatRealtime"
 import { formatPersonName } from "@/lib/utils/person-name"
 import {
   countOpenLiveChatSessions,
@@ -299,10 +299,27 @@ export async function updateLiveChatSessionAdminService(raw: unknown): Promise<
   }
 
   if (patch.status === "resolved" || patch.status === "closed") {
-    await insertLiveChatMessage(supabase, {
+    const note = await insertLiveChatMessage(supabase, {
       session_id: session.id,
       sender_type: "system",
       content: "This conversation has been marked resolved. Start a new chat anytime you need help.",
+    })
+    if (note) {
+      void broadcastLiveChatMessage({
+        sessionId: session.id,
+        message: {
+          id: note.id,
+          session_id: session.id,
+          sender_type: "system",
+          sender_agent_id: null,
+          content: note.content,
+          created_at: note.created_at,
+        },
+      })
+    }
+    void broadcastLiveChatSessionStatus({
+      sessionId: session.id,
+      status: patch.status,
     })
   }
 

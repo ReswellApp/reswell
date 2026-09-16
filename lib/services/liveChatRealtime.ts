@@ -57,3 +57,13 @@ export async function broadcastLiveChatTyping(args: {
     is_typing: args.isTyping,
   })
 }
+
+export async function broadcastLiveChatSessionStatus(args: {
+  sessionId: string
+  status: "resolved" | "closed"
+}): Promise<void> {
+  await publishLiveChatEvent(args.sessionId, {
+    type: "session",
+    status: args.status,
+  })
+}

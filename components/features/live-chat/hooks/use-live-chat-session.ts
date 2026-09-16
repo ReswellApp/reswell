@@ -414,8 +414,7 @@ export function useLiveChatSession(options?: {
 
       setSending(true)
       try {
-        const result = await postMessage(trimmed, visitorEmail, optimisticId)
-        return result ?? optimistic
+        return await postMessage(trimmed, visitorEmail, optimisticId)
       } finally {
         setSending(false)
       }
@@ -682,6 +681,7 @@ export function useLiveChatSession(options?: {
     requestOfflineAiAssist,
     resetLocalSession,
     startNewConversation,
+    markSessionClosed: () => setSessionClosed(true),
     visitorToken: visitorTokenRef.current,
     visitorDisplayName: VISITOR_DISPLAY_NAME,
   }

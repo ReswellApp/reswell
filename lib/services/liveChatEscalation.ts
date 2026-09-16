@@ -16,7 +16,7 @@ import {
 import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { ensureCaseForContactMessage } from "@/lib/services/supportCaseBackfill"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
-import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
+import { broadcastLiveChatMessage, broadcastLiveChatSessionStatus } from "@/lib/services/liveChatRealtime"
 
 /** How long a signed-in chat can sit without an agent reply before it becomes a ticket. */
 const AUTO_ESCALATE_AFTER_HOURS = 24
@@ -295,11 +295,8 @@ async function resolveSessionWithNote(
     resolved_at: new Date().toISOString(),
   })
   if (!ok) return false
-  await insertLiveChatMessage(svc, {
-    session_id: sessionId,
-    sender_type: "system",
-    content: note,
-  })
+  await insertAndBroadcastSystemMessage(svc, sessionId, note)
+  void broadcastLiveChatSessionStatus({ sessionId, status: "resolved" })
   return true
 }
 

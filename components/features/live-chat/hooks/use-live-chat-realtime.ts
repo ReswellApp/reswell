@@ -30,10 +30,13 @@ export function useLiveChatSessionRealtime(
   sessionId: string | null,
   enabled: boolean,
   onRemoteMessage?: (message: LiveChatUiMessage) => void,
+  onSessionStatus?: (status: "resolved" | "closed") => void,
 ) {
   const supabase = useMemo(() => createClient(), [])
   const onRemoteMessageRef = useRef(onRemoteMessage)
+  const onSessionStatusRef = useRef(onSessionStatus)
   onRemoteMessageRef.current = onRemoteMessage
+  onSessionStatusRef.current = onSessionStatus
 
   useEffect(() => {
     if (!sessionId || !enabled) return
@@ -42,7 +45,12 @@ export function useLiveChatSessionRealtime(
       .channel(liveChatSessionChannel(sessionId))
       .on("broadcast", { event: "live_chat" }, (payload) => {
         const event = payload.payload as LiveChatBroadcastEvent | undefined
-        if (!event || event.type !== "message") return
+        if (!event) return
+        if (event.type === "session") {
+          onSessionStatusRef.current?.(event.status)
+          return
+        }
+        if (event.type !== "message") return
         const msg = event.message
         const ui: LiveChatUiMessage = {
           id: msg.id,

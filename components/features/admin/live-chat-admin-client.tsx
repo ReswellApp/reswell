@@ -140,7 +140,11 @@ function QueueList({
     <ul className="divide-y divide-border/60">
       {sessions.map((session) => {
         const active = session.id === activeSessionId
-        const waiting = session.last_visitor_message_at && session.status === "open"
+        const lastVisitorAt = session.last_visitor_message_at
+        const lastAgentAt = session.last_agent_message_at
+        const waiting =
+          Boolean(lastVisitorAt) &&
+          (!lastAgentAt || new Date(lastVisitorAt).getTime() > new Date(lastAgentAt).getTime())
         return (
           <li key={session.id}>
             <button

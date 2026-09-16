@@ -24,4 +24,12 @@ export type LiveChatBroadcastTyping = {
   is_typing: boolean
 }
 
-export type LiveChatBroadcastEvent = LiveChatBroadcastMessage | LiveChatBroadcastTyping
+export type LiveChatBroadcastSession = {
+  type: "session"
+  status: "resolved" | "closed"
+}
+
+export type LiveChatBroadcastEvent =
+  | LiveChatBroadcastMessage
+  | LiveChatBroadcastTyping
+  | LiveChatBroadcastSession
