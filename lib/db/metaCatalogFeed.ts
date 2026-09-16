@@ -7,7 +7,7 @@ import {
 
 export const META_CATALOG_FEED_PAGE_SIZE = 500
 
-const CATALOG_LISTING_SELECT = `
+export const META_CATALOG_LISTING_SELECT = `
   id,
   user_id,
   slug,
@@ -43,7 +43,7 @@ export async function fetchMetaCatalogFeedPage(
 
   const { data, error } = await supabase
     .from("listings")
-    .select(CATALOG_LISTING_SELECT)
+    .select(META_CATALOG_LISTING_SELECT)
     .eq("status", "active")
     .eq("hidden_from_site", false)
     .is("archived_at", null)
@@ -77,7 +77,7 @@ export async function fetchMetaCatalogFeedPageForLocation(
 
   let query = supabase
     .from("listings")
-    .select(CATALOG_LISTING_SELECT)
+    .select(META_CATALOG_LISTING_SELECT)
     .eq("status", "active")
     .eq("hidden_from_site", false)
     .is("archived_at", null)

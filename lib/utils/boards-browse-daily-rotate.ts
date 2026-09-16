@@ -98,6 +98,52 @@ export function orderListingIdsForDailyRotate(
  * `skipIds` (e.g. suppressed) keep their existing position instead of being promoted.
  * Unknown pin ids (inactive / not in this view) are dropped.
  */
+export function previousDailyRotateSeed(seed: string): string {
+  const n = Number(seed)
+  if (!Number.isFinite(n) || n <= 0) return "0"
+  return String(Math.floor(n) - 1)
+}
+
+export function pickRotatedListingIds(
+  ids: readonly string[],
+  seed: string,
+  count: number,
+): string[] {
+  if (count <= 0) return []
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))]
+  if (unique.length === 0) return []
+  const ordered = unique.sort((a, b) => compareIdsByDailyRotateSeed(a, b, seed))
+  return ordered.slice(0, Math.min(count, ordered.length))
+}
+
+/**
+ * Take `count` ids for `seed`, preferring listings that were not selected
+ * for the previous 24h window. Fills from yesterday's set when the fresh
+ * pool is smaller than `count`.
+ */
+export function pickRotatedListingIdsPreferringFresh(
+  ids: readonly string[],
+  seed: string,
+  count: number,
+): string[] {
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))]
+  if (unique.length <= count) return pickRotatedListingIds(unique, seed, count)
+
+  const yesterday = new Set(
+    pickRotatedListingIds(unique, previousDailyRotateSeed(seed), count),
+  )
+  const fresh = unique.filter((id) => !yesterday.has(id))
+  const picked = pickRotatedListingIds(fresh, seed, count)
+  if (picked.length >= count) return picked
+
+  const fill = pickRotatedListingIds(
+    unique.filter((id) => !picked.includes(id)),
+    seed,
+    count - picked.length,
+  )
+  return [...picked, ...fill]
+}
+
 export function prependPinnedListingIds(
   orderedIds: string[],
   pinnedIds: string[],

@@ -72,6 +72,8 @@ export type MetaCatalogFeedContext = {
   brownstoneShopUserId: string | null
   /** Set when building a city catalog page so Meta can filter SantaBarbara | Ventura. */
   cityCustomLabel?: string
+  /** Set when building the daily rotation feed (Fins | Traction | Wetsuits | Apparel | Magazines | HaydenShop). */
+  rotationBucketLabel?: string
 }
 
 const MAX_DESCRIPTION_LENGTH = 5000
@@ -100,6 +102,12 @@ export const META_CATALOG_DEFAULT_MAGAZINES_GOOGLE_PRODUCT_CATEGORY = "784"
 
 /** Google taxonomy: Sporting Goods > … > Boating & Water Sport Apparel (499813). */
 export const META_CATALOG_DEFAULT_WETSUITS_GOOGLE_PRODUCT_CATEGORY = "499813"
+
+/** Google taxonomy: Sporting Goods > … > Boating & Water Sport Apparel (499813). */
+export const META_CATALOG_DEFAULT_APPAREL_GOOGLE_PRODUCT_CATEGORY = "499813"
+
+/** Google taxonomy: Sporting Goods > … > Surfing (499811) — traction pads. */
+export const META_CATALOG_DEFAULT_TRACTION_GOOGLE_PRODUCT_CATEGORY = "499811"
 
 function stripHtml(text: string): string {
   return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
@@ -130,10 +138,26 @@ export function getMetaCatalogWetsuitsGoogleProductCategory(): string {
   )
 }
 
+export function getMetaCatalogApparelGoogleProductCategory(): string {
+  return (
+    process.env.META_CATALOG_APPAREL_GOOGLE_PRODUCT_CATEGORY?.trim() ||
+    META_CATALOG_DEFAULT_APPAREL_GOOGLE_PRODUCT_CATEGORY
+  )
+}
+
+export function getMetaCatalogTractionGoogleProductCategory(): string {
+  return (
+    process.env.META_CATALOG_TRACTION_GOOGLE_PRODUCT_CATEGORY?.trim() ||
+    META_CATALOG_DEFAULT_TRACTION_GOOGLE_PRODUCT_CATEGORY
+  )
+}
+
 export function getMetaCatalogGoogleProductCategoryForSection(section: string): string {
   if (section === "fins") return getMetaCatalogFinsGoogleProductCategory()
   if (section === "magazines") return getMetaCatalogMagazinesGoogleProductCategory()
   if (section === "wetsuits") return getMetaCatalogWetsuitsGoogleProductCategory()
+  if (section === "apparel") return getMetaCatalogApparelGoogleProductCategory()
+  if (section === "traction") return getMetaCatalogTractionGoogleProductCategory()
   return getMetaCatalogGoogleProductCategory()
 }
 
@@ -212,12 +236,14 @@ export function getMetaCatalogCustomLabel0ForListing(
 }
 
 /**
- * `custom_label_1` for a city catalog row — set from feed context when the listing
- * was fetched for a known city landing (Santa Barbara / Ventura).
+ * `custom_label_1` for a catalog row — rotation bucket (daily feed) or city landing
+ * (Santa Barbara / Ventura). Rotation wins when both are set.
  */
 export function getMetaCatalogCustomLabel1ForListing(
   context: MetaCatalogFeedContext | undefined,
 ): string | undefined {
+  const rotation = context?.rotationBucketLabel?.trim()
+  if (rotation) return rotation
   const label = context?.cityCustomLabel?.trim()
   return label || undefined
 }
@@ -344,8 +370,11 @@ function formatMetaPrice(amount: number): string {
   return `${amount.toFixed(2)} USD`
 }
 
-export function isMetaCatalogEligibleListing(listing: MetaListingProductSource): boolean {
-  if (!listing.section || !isMetaCatalogPeerSection(listing.section)) return false
+export function isMetaCatalogEligibleListing(
+  listing: MetaListingProductSource,
+  allowedSections: readonly string[] = META_CATALOG_PEER_SECTIONS,
+): boolean {
+  if (!listing.section || !allowedSections.includes(listing.section)) return false
   if (listing.status !== "active") return false
   if (listing.hidden_from_site === true) return false
   if (!listing.id?.trim()) return false
@@ -358,8 +387,9 @@ export function isMetaCatalogEligibleListing(listing: MetaListingProductSource):
 export function listingToMetaCatalogFeedItem(
   listing: MetaListingProductSource,
   context?: MetaCatalogFeedContext,
+  allowedSections: readonly string[] = META_CATALOG_PEER_SECTIONS,
 ): MetaCatalogFeedItem | null {
-  if (!isMetaCatalogEligibleListing(listing)) return null
+  if (!isMetaCatalogEligibleListing(listing, allowedSections)) return null
 
   const priceAmount = parseMetaListingPrice(listing.price)
   if (priceAmount == null) return null
