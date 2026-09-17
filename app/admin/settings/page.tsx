@@ -106,7 +106,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     label: 'Analytics',
     items: [
       { href: '/admin/used-board-market-dashboard?tab=catalog', label: 'Brand catalog', description: 'Explore brand catalog', icon: FolderTree },
-      { href: '/admin/search-analytics', label: 'Search analytics', description: 'Query & result insights', icon: LineChart },
+      { href: '/admin/search-analytics', label: 'Search analytics', description: 'What buyers search for — source boards we may not have', icon: LineChart },
       { href: '/admin/search-daily-report', label: 'Search reports', description: 'Daily, monthly, and all-time search demand briefings', icon: FileText },
       { href: '/admin/ad-sales', label: 'Ad sales', description: 'Listings sold from Google & Meta ads', icon: Megaphone },
       { href: '/admin/pickup-only-boards', label: 'Pickup-only boards', description: 'Map local-pickup surfboards for geo ads', icon: MapPin },
