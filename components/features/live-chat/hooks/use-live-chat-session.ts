@@ -428,7 +428,12 @@ export function useLiveChatSession(options?: {
             sessionReadyRef.current = false
             setSessionId(null)
             setPublicId(null)
-            const boot = await bootstrapSession({ forceNew: true })
+            // Resume an existing open thread first — forceNew would close it and mint
+            // another support case on the next message.
+            let boot = await bootstrapSession()
+            if (!boot.ok || !publicIdRef.current) {
+              boot = await bootstrapSession({ forceNew: true })
+            }
             if (boot.ok && publicIdRef.current) {
               return postMessage(trimmed, visitorEmail, optimisticId, false)
             }

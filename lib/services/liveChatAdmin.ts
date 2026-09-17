@@ -1,6 +1,7 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { liveChatAgentDisplayName } from "@/lib/live-chat/team-display"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
+import { syncLiveChatAgentMessageToCase } from "@/lib/services/liveChatSupportCase"
 import { broadcastLiveChatMessage, broadcastLiveChatSessionStatus } from "@/lib/services/liveChatRealtime"
 import { formatPersonName } from "@/lib/utils/person-name"
 import {
@@ -212,6 +213,11 @@ export async function sendLiveChatAgentMessageService(raw: unknown): Promise<
   if (!message) {
     return { error: "Failed to send message" }
   }
+
+  const svc = createServiceRoleClient()
+  await syncLiveChatAgentMessageToCase(svc, session, message.content, {
+    authorUserId: staff.userId,
+  })
 
   const patch: Parameters<typeof updateLiveChatSessionRow>[2] = {}
   if (session.status === "open") {

@@ -1,7 +1,7 @@
 "use client"
 
 import { format } from "date-fns"
-import { RotateCcw } from "lucide-react"
+import { MessageCircle, RotateCcw } from "lucide-react"
 import type { OrderSupportOutcome } from "@/lib/db/order-support"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import type { SupportCaseEventRow } from "@/lib/db/supportCases"
@@ -34,8 +34,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+import { adminLiveChatHrefForCase } from "@/lib/utils/support-case-paths"
 import { staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
   "in_progress",
@@ -191,6 +193,14 @@ export function CaseInboxDetails({
                 <p className="text-muted-foreground">Opened</p><p className="text-right tabular-nums">{format(new Date(item.createdAt), "MMM d, yyyy")}</p>
                 <p className="text-muted-foreground">ID</p><p className="text-right font-mono text-[11px]">{formatSupportCaseReference(item.id)}</p>
               </div>
+              {item.sourceChannel === "live_chat" ? (
+                <Button asChild variant="outline" size="sm" className="mt-3 w-full gap-1.5">
+                  <Link href={adminLiveChatHrefForCase(item.id)}>
+                    <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+                    Open live chat
+                  </Link>
+                </Button>
+              ) : null}
             </div>
           </section>
 

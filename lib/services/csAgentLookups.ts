@@ -13,7 +13,13 @@ import {
   listSupportCasesForRequester,
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
+import type { LiveChatSessionRow } from "@/lib/db/liveChat"
 import { retrieveHelpArticlesForQuery } from "@/lib/services/supportReplyKnowledge"
+import {
+  getLiveChatShippingLabelStatus,
+  proposeLiveChatShippingAction,
+} from "@/lib/services/liveChatShippingActions"
+import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
 import { assessCsAgentRefundEligibility } from "@/lib/utils/cs-agent-refund"
 import { csAgentEmailsMatch, csAgentOrderIsInScope } from "@/lib/utils/cs-agent-scope"
 import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
@@ -34,6 +40,12 @@ export type CsAgentLookupScope = {
   requesterUserId: string | null
   requesterEmail: string | null
   linkedOrderId: string | null
+}
+
+export type CsAgentLookupOptions = {
+  /** When set, the agent may propose confirm-gated shipping mutations on this session. */
+  liveChatSession?: LiveChatSessionRow
+  liveChatActor?: LiveChatActionActor
 }
 
 function normalizeOrderQuery(raw: string): string {
@@ -138,15 +150,14 @@ async function resolveScopedOrder(
 export function createCsAgentLookups(
   service: SupabaseClient,
   scope: CsAgentLookupScope,
+  options?: CsAgentLookupOptions,
 ): CsAgentLookupSession {
   const resolved: SupportReplyOrderSnapshot[] = []
   const remember = (order: SupportReplyOrderSnapshot) => {
     if (!resolved.some((row) => row.id === order.id)) resolved.push(order)
   }
 
-  return {
-    resolvedOrders: () => [...resolved],
-    lookups: {
+  const lookups: CsAgentToolLookups = {
       lookupOrder: async (query) => {
         const order = await resolveScopedOrder(service, scope, query)
         if (!order) {
@@ -229,6 +240,71 @@ export function createCsAgentLookups(
           : tickets
         return { tickets: filtered }
       },
-    },
+      shippingLabelStatus: async (query) => {
+        const result = await getLiveChatShippingLabelStatus(
+          service,
+          {
+            requesterUserId: scope.requesterUserId,
+            linkedOrderId: scope.linkedOrderId,
+          },
+          query,
+        )
+        if (result.found === true && typeof result.id === "string") {
+          const order = await findSupportReplyOrderSnapshot(service, { id: result.id })
+          if (order) remember(order)
+        }
+        return result
+      },
+  }
+
+  if (options?.liveChatSession && options.liveChatActor) {
+    const sessionRef = { current: options.liveChatSession }
+    const actor = options.liveChatActor
+    lookups.proposeShippingAction = async (input) => {
+      const parcel =
+        input.lengthIn != null &&
+        input.widthIn != null &&
+        input.heightIn != null &&
+        input.weightLb != null
+          ? {
+              lengthIn: input.lengthIn,
+              widthIn: input.widthIn,
+              heightIn: input.heightIn,
+              weightLb: input.weightLb,
+            }
+          : undefined
+      const proposed = await proposeLiveChatShippingAction({
+        svc: service,
+        session: sessionRef.current,
+        actor,
+        type: input.type,
+        orderQuery: input.orderQuery,
+        parcel,
+        note: input.note,
+      })
+      if (!proposed.ok) {
+        return {
+          proposed: false,
+          error: proposed.error,
+          code: proposed.code ?? null,
+          authRequired: proposed.code === "auth_required",
+        }
+      }
+      sessionRef.current = proposed.session
+      return {
+        proposed: true,
+        actionId: proposed.action.id,
+        type: proposed.action.type,
+        orderId: proposed.action.orderId,
+        orderNum: proposed.action.orderNum,
+        summary: proposed.action.summary,
+        note: "Tell the customer a confirm card is ready. Do not claim the label already changed.",
+      }
+    }
+  }
+
+  return {
+    resolvedOrders: () => [...resolved],
+    lookups,
   }
 }

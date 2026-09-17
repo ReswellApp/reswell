@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { formatDistanceToNow } from "date-fns"
 import { Circle, Loader2, MessageCircle, RefreshCw, User } from "lucide-react"
@@ -432,6 +432,7 @@ function ThreadPane({
 
 export function LiveChatAdminClient({ initialStaff }: LiveChatAdminClientProps) {
   const supabase = useMemo(() => createClient(), [])
+  const searchParams = useSearchParams()
   const [sessions, setSessions] = useState<LiveChatAdminSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [activeThread, setActiveThread] = useState<{
@@ -440,6 +441,7 @@ export function LiveChatAdminClient({ initialStaff }: LiveChatAdminClientProps) 
   } | null>(null)
   const [loadingQueue, setLoadingQueue] = useState(true)
   const [loadingThread, setLoadingThread] = useState(false)
+  const deepLinkAppliedRef = useRef(false)
 
   const { agentsOnline } = useLiveChatAgentPresence(
     initialStaff.userId,
@@ -466,6 +468,24 @@ export function LiveChatAdminClient({ initialStaff }: LiveChatAdminClientProps) 
     queueLoadedRef.current = true
     setLoadingQueue(false)
   }, [activeSessionId])
+
+  useEffect(() => {
+    if (deepLinkAppliedRef.current || sessions.length === 0) return
+    const sessionParam = searchParams.get("session")?.trim()
+    const caseParam = searchParams.get("case")?.trim()
+    if (sessionParam && sessions.some((s) => s.id === sessionParam)) {
+      deepLinkAppliedRef.current = true
+      setActiveSessionId(sessionParam)
+      return
+    }
+    if (caseParam) {
+      const match = sessions.find((s) => s.support_case_id === caseParam)
+      if (match) {
+        deepLinkAppliedRef.current = true
+        setActiveSessionId(match.id)
+      }
+    }
+  }, [searchParams, sessions])
 
   const loadThread = useCallback(async (sessionId: string, options?: { silent?: boolean }) => {
     if (!options?.silent) setLoadingThread(true)
@@ -523,21 +543,20 @@ export function LiveChatAdminClient({ initialStaff }: LiveChatAdminClientProps) 
             row.content &&
             row.created_at
           ) {
+            const incoming: LiveChatAdminMessage = {
+              id: row.id,
+              session_id: row.session_id,
+              sender_type: row.sender_type,
+              sender_agent_id: row.sender_agent_id ?? null,
+              content: row.content,
+              created_at: row.created_at,
+              agent_display_name: row.sender_type === "bot" ? "Reswell AI" : null,
+            }
             setActiveThread((prev) => {
               if (!prev || prev.session.id !== row.session_id) return prev
               return {
                 ...prev,
-                messages: mergeAdminMessages(prev.messages, [
-                  {
-                    id: row.id,
-                    session_id: row.session_id,
-                    sender_type: row.sender_type,
-                    sender_agent_id: row.sender_agent_id ?? null,
-                    content: row.content,
-                    created_at: row.created_at,
-                    agent_display_name: row.sender_type === "bot" ? "Reswell AI" : null,
-                  },
-                ]),
+                messages: mergeAdminMessages(prev.messages, [incoming]),
               }
             })
             void loadThread(row.session_id, { silent: true })

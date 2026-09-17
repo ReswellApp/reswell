@@ -36,6 +36,7 @@ const META_CATALOG_CSV_HEADERS = [
   "identifier_exists",
   "custom_label_0",
   "custom_label_1",
+  "custom_label_2",
   "video[0].url",
 ] as const
 

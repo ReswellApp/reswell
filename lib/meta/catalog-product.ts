@@ -40,6 +40,7 @@ export type MetaListingProductSource = {
   hidden_from_site?: boolean | null
   city?: string | null
   state?: string | null
+  shipping_available?: boolean | null
   listing_images?: MetaListingImage[] | null
   listing_videos?: MetaListingVideo[] | null
 }
@@ -62,11 +63,13 @@ export type MetaCatalogFeedItem = {
   custom_label_0?: string
   /** City product-set filter — e.g. SantaBarbara / Ventura. */
   custom_label_1?: string
+  /** Shipping product-set filter — Shipping when the surfboard offers shipping. */
+  custom_label_2?: string
   /** Direct downloadable video file URL (Meta Advantage+ catalog ads). */
   "video[0].url"?: string
 }
 
-/** Optional feed-build context (seller → custom_label_0, city → custom_label_1). */
+/** Optional feed-build context (seller → custom_label_0, city → custom_label_1, shipping → custom_label_2). */
 export type MetaCatalogFeedContext = {
   haydenShopUserId: string | null
   outSurfingShopUserId: string | null
@@ -156,6 +159,9 @@ export const META_CATALOG_DEFAULT_BROWNSTONE_SHOP_CUSTOM_LABEL = "Brownstone"
 /** Profile email for Brownstone’s seller shop (fallback when USER_ID env unset). */
 export const META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL = "eric@questavolta.com"
 
+/** Default `custom_label_2` for surfboards that offer shipping (Meta product-set / ads filter). */
+export const META_CATALOG_DEFAULT_SHIPPING_CUSTOM_LABEL = "Shipping"
+
 /**
  * Meta Commerce `custom_label_0` for Hayden Garfield shop listings.
  * Override with `META_CATALOG_HAYDEN_SHOP_CUSTOM_LABEL`.
@@ -186,6 +192,17 @@ export function getMetaCatalogBrownstoneShopCustomLabel(): string {
   return (
     process.env.META_CATALOG_BROWNSTONE_SHOP_CUSTOM_LABEL?.trim() ||
     META_CATALOG_DEFAULT_BROWNSTONE_SHOP_CUSTOM_LABEL
+  )
+}
+
+/**
+ * Meta Commerce `custom_label_2` for surfboards that offer shipping.
+ * Override with `META_CATALOG_SHIPPING_CUSTOM_LABEL`.
+ */
+export function getMetaCatalogShippingCustomLabel(): string {
+  return (
+    process.env.META_CATALOG_SHIPPING_CUSTOM_LABEL?.trim() ||
+    META_CATALOG_DEFAULT_SHIPPING_CUSTOM_LABEL
   )
 }
 
@@ -224,6 +241,19 @@ export function getMetaCatalogCustomLabel1ForListing(
   const explicit = context?.cityCustomLabel?.trim()
   if (explicit) return explicit
   return metaCityCustomLabelForListing(listing.city, listing.state)
+}
+
+/**
+ * `custom_label_2` for Meta product sets — Shipping.
+ * Surfboards only (`section` = surfboards) when `shipping_available` is true.
+ * Use in Meta Ads: Catalog → Product sets → filter Custom Label 2 = Shipping.
+ */
+export function getMetaCatalogCustomLabel2ForListing(
+  listing: Pick<MetaListingProductSource, "section" | "shipping_available">,
+): string | undefined {
+  if (listing.section !== "surfboards") return undefined
+  if (listing.shipping_available !== true) return undefined
+  return getMetaCatalogShippingCustomLabel()
 }
 
 export function parseMetaListingPrice(
@@ -374,6 +404,7 @@ export function listingToMetaCatalogFeedItem(
   const brand = typeof listing.brand === "string" ? listing.brand.trim() : ""
   const customLabel0 = getMetaCatalogCustomLabel0ForListing(listing, context)
   const customLabel1 = getMetaCatalogCustomLabel1ForListing(listing, context)
+  const customLabel2 = getMetaCatalogCustomLabel2ForListing(listing)
   const videoLink = primaryVideoLink(listing)
 
   return {
@@ -393,6 +424,7 @@ export function listingToMetaCatalogFeedItem(
     identifier_exists: "no",
     ...(customLabel0 ? { custom_label_0: customLabel0 } : {}),
     ...(customLabel1 ? { custom_label_1: customLabel1 } : {}),
+    ...(customLabel2 ? { custom_label_2: customLabel2 } : {}),
     ...(videoLink ? { "video[0].url": videoLink } : {}),
   }
 }

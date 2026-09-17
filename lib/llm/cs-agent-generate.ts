@@ -19,6 +19,16 @@ export type CsAgentToolLookups = {
   refundEligibility: (query: string) => Promise<unknown>
   helpArticle: (query: string) => Promise<unknown>
   priorTickets: (query?: string) => Promise<unknown>
+  shippingLabelStatus: (query: string) => Promise<unknown>
+  proposeShippingAction?: (input: {
+    type: "void_shipping_label" | "replace_shipping_label"
+    orderQuery: string
+    lengthIn?: number
+    widthIn?: number
+    heightIn?: number
+    weightLb?: number
+    note?: string
+  }) => Promise<unknown>
 }
 
 const querySchema = z.object({
@@ -123,6 +133,46 @@ function createCsAgentTools(lookups: CsAgentToolLookups, allowed: {
         return result
       },
     }),
+    shipping_label_status: tool({
+      description:
+        "Read-only shipping label / tracking status for this customer's order. Never invent tracking.",
+      inputSchema: querySchema,
+      execute: async ({ query }) => {
+        const result = await lookups.shippingLabelStatus(query)
+        rememberOrder(result)
+        return result
+      },
+    }),
+    ...(lookups.proposeShippingAction
+      ? {
+          propose_shipping_action: tool({
+            description:
+              "Propose voiding or replacing a shipping label. Does NOT execute — creates a confirm card. Never claim the label already changed. For replace, include parcel inches and weightLb.",
+            inputSchema: z.object({
+              type: z.enum(["void_shipping_label", "replace_shipping_label"]),
+              order_query: z.string().trim().min(1).max(160),
+              length_in: z.number().positive().max(120).optional(),
+              width_in: z.number().positive().max(120).optional(),
+              height_in: z.number().positive().max(120).optional(),
+              weight_lb: z.number().positive().max(150).optional(),
+              note: z.string().trim().max(500).optional(),
+            }),
+            execute: async (input) => {
+              const result = await lookups.proposeShippingAction!({
+                type: input.type,
+                orderQuery: input.order_query,
+                lengthIn: input.length_in,
+                widthIn: input.width_in,
+                heightIn: input.height_in,
+                weightLb: input.weight_lb,
+                note: input.note,
+              })
+              rememberOrder(result)
+              return result
+            },
+          }),
+        }
+      : {}),
   }
 }
 

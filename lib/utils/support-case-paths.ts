@@ -56,3 +56,15 @@ export function supportCaseResponseAbsoluteUrl(origin: string, caseId: string): 
 export function adminSupportCaseHref(caseId: string): string {
   return `${ADMIN_SUPPORT_INBOX_PATH}?case=${encodeURIComponent(inboxSelectionKey(caseId))}`
 }
+
+export const ADMIN_LIVE_CHAT_PATH = "/admin/live-chat"
+
+/** Staff deep link into the live-chat desk for a session UUID. */
+export function adminLiveChatSessionHref(sessionId: string): string {
+  return `${ADMIN_LIVE_CHAT_PATH}?session=${encodeURIComponent(sessionId.trim())}`
+}
+
+/** Open the live-chat desk filtered to the case’s linked session. */
+export function adminLiveChatHrefForCase(caseId: string): string {
+  return `${ADMIN_LIVE_CHAT_PATH}?case=${encodeURIComponent(caseId.trim())}`
+}

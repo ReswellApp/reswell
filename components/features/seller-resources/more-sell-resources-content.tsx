@@ -10,6 +10,7 @@ import {
   SALES_MAP_HREF,
   sellerResourcesComingSoon,
 } from "@/lib/seller-resources"
+import { SANTA_BARBARA_DROPOFF_HREF } from "@/lib/dropoff-santa-barbara"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 
 const PRIMARY = [
@@ -75,6 +76,21 @@ export function MoreSellResourcesContent() {
             )
           })}
         </ul>
+      </HowToSellSection>
+
+      <HowToSellSection
+        eyebrow="Santa Barbara"
+        title="Drop off — we pack and ship"
+        lead="If a board has not sold locally, offering shipping from Santa Barbara reaches buyers nationwide. We send the location after it sells."
+      >
+        <div className="flex justify-center">
+          <Link
+            href={SANTA_BARBARA_DROPOFF_HREF}
+            className="inline-flex rounded-full bg-[#001A4A] px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#001A4A]/90"
+          >
+            How Santa Barbara drop-off works
+          </Link>
+        </div>
       </HowToSellSection>
 
       <HowToSellSection

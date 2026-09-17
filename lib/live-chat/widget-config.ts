@@ -10,7 +10,7 @@ export const LIVE_CHAT_TEAM_GREETING =
 
 /** Sent with CS-agent generation so the live-chat reply is customer-ready, not a staff draft. */
 export const LIVE_CHAT_CS_AGENT_SEND_NOTE =
-  "This reply will send immediately in live chat as Reswell Team. Write only the customer-facing message. Do not mention drafts, review, or that you are an AI. Do not ask them to wait for a human unless you cannot answer."
+  "This reply will send immediately in live chat as Reswell Team. Write only the customer-facing message. Do not mention drafts, review, or that you are an AI. Do not ask them to wait for a human unless you cannot answer. If they asked to update a shipping label / ship-from address, keep the reply short: the widget shows order tiles so they can pick a sale waiting for drop-off, say why, and choose a ship-from address. They can only change ship-from — never ship-to, refunds, or void without that flow."
 
 /**
  * Soft-launch: only marketplace admins (`profiles.is_admin`) see the public

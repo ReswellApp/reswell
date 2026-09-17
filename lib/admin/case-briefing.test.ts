@@ -26,6 +26,7 @@ function item(overrides: Partial<CaseInboxItem> = {}): CaseInboxItem {
     status: "submitted",
     statusLabel: "Submitted",
     channelLabel: "Order",
+    sourceChannel: "order_seller",
     orderId: "order-1",
     orderRef: "NQUKM8",
     createdAt: "2026-09-08T00:00:00.000Z",

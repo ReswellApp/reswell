@@ -6,6 +6,7 @@ import {
 import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
 import {
   consumeLiveChatRateLimit,
+  LIVE_CHAT_RATE_LIMITS,
   liveChatClientIp,
   liveChatRateLimitResponse,
 } from "@/lib/live-chat/rate-limit"
@@ -48,8 +49,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
     const { publicId } = await context.params
     const limit = consumeLiveChatRateLimit(
       `msg:${liveChatClientIp(req)}:${publicId}`,
-      40,
-      60_000,
+      LIVE_CHAT_RATE_LIMITS.message.limit,
+      LIVE_CHAT_RATE_LIMITS.message.windowMs,
     )
     if (!limit.ok) return liveChatRateLimitResponse(limit.retryAfterSec)
 

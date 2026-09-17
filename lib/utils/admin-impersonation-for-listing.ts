@@ -3,6 +3,9 @@ import {
   setImpersonation,
   type ImpersonationData,
 } from "@/lib/impersonation"
+import { resolveListingUpdateActor } from "@/lib/utils/listing-update-actor"
+
+export { resolveListingUpdateActor } from "@/lib/utils/listing-update-actor"
 
 /** True when a signed-in admin is editing a listing they do not own. */
 export function adminIsEditingAnotherUsersListing(args: {
@@ -10,10 +13,7 @@ export function adminIsEditingAnotherUsersListing(args: {
   actorUserId: string
   listingOwnerId: string | null | undefined
 }): boolean {
-  if (!args.actorIsAdmin) return false
-  const ownerId = args.listingOwnerId?.trim()
-  if (!ownerId) return false
-  return args.actorUserId !== ownerId
+  return resolveListingUpdateActor(args) === "admin"
 }
 
 /**

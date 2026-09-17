@@ -78,10 +78,7 @@ import {
   clearImpersonationStorageIfCookieMissing,
   getImpersonation,
 } from "@/lib/impersonation"
-import {
-  ensureImpersonationForListingOwner,
-  syncClientImpersonationForListingOwner,
-} from "@/lib/utils/admin-impersonation-for-listing"
+import { syncClientImpersonationForListingOwner } from "@/lib/utils/admin-impersonation-for-listing"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import {
   normalizeBoardLengthInput,
@@ -781,34 +778,16 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       if (editId) {
         const ownerEditsOwnListing = user.id === editListingOwnerId
         if (adminImpersonatesListingOwner) {
-          if (editListingOwnerId) {
-            await ensureImpersonationForListingOwner(editListingOwnerId)
-          }
-          const imageOps = payload.images.map((img, index) => ({
-            id: img.id,
-            url: img.url,
-            thumbnail_url: img.thumbnailUrl,
-            is_primary: index === 0,
-            sort_order: index,
-          }))
-          const res = await fetch("/api/admin/impersonate/update-listing", {
-            method: "PUT",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              listingId: editId,
-              listing: buildApparelListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
-              removedImageIds,
-              images: imageOps,
-              removedVideoIds,
-              videos: payload.videos,
-            }),
+          const updated = await updateOwnedListingViaApi({
+            listingId: editId,
+            listing: buildApparelListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            removedImageIds,
+            images: peerImagesToOwnedUpdateOps(payload.images),
+            removedVideoIds,
+            videos: payload.videos,
           })
-          const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
-          if (!res.ok) {
-            const message = sellActionErrorMessage(
-              typeof data.error === "string" ? data.error : "Failed to update listing",
-            )
+          if (!updated.ok) {
+            const message = sellActionErrorMessage(updated.error)
             logSellFunnelEvent({
               listingType: "apparel",
               event: "publish_failed",
@@ -826,7 +805,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
             durationMs: Date.now() - publishStartedAt,
           })
           toast.success("Listing updated")
-          navigateAfterListingSave(`/l/${data.slug ?? editId}`)
+          navigateAfterListingSave(`/l/${updated.slug ?? editId}`)
           return
         }
 

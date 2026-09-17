@@ -193,6 +193,12 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
       changeFrequency: "monthly",
       priority: 0.5,
     },
+    {
+      url: `${BASE}/dropoff/santa-barbara`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.55,
+    },
     { url: `${BASE}/shipping`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     {
       url: `${BASE}/shipping-estimator`,

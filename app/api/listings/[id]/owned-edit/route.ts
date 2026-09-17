@@ -2,8 +2,6 @@ import { after, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser, resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
-import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
-import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import {
   IMPERSONATION_COOKIE,
   impersonationCookieOptions,
@@ -11,46 +9,17 @@ import {
   serializeImpersonationCookie,
 } from "@/lib/impersonation"
 import {
-  isListingDimensionDisplaySchemaCacheError,
-  withoutListingDimensionDisplayDbFields,
-} from "@/lib/listing-dimensions-display"
-import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
-import {
-  applyPublishedListingSideEffects,
-  validateListingDraftPublishable,
-} from "@/lib/services/publishListingDraft"
-import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
-import { syncListingImages } from "@/lib/services/sync-listing-images"
-import {
-  listingVideosToUpdateOps,
-  syncListingVideos,
-} from "@/lib/services/sync-listing-videos"
+  persistPeerListingUpdate,
+  schedulePublishedListingSideEffects,
+  type PersistPeerListingExistingRow,
+  type PersistPeerListingImageOp,
+  type PersistPeerListingVideoOp,
+} from "@/lib/services/persistPeerListingUpdate"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
-import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
+import { resolveListingUpdateActor } from "@/lib/utils/listing-update-actor"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
-
-/** Owner updates must not change identity / visibility columns from the client. */
-const OWNER_LISTING_UPDATE_FORBIDDEN = new Set([
-  "id",
-  "user_id",
-  "created_at",
-  "slug",
-  "status",
-  "hidden_from_site",
-  "site_visibility_reason",
-  "auto_price_drop_scheduled_for",
-])
-
-function listingFieldsForOwnerUpdate(raw: Record<string, unknown>): Record<string, unknown> {
-  const next: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(raw)) {
-    if (OWNER_LISTING_UPDATE_FORBIDDEN.has(key)) continue
-    next[key] = value
-  }
-  return next
-}
 
 /** Owner listing saves include photos + shipping columns; give the write time to finish. */
 export const maxDuration = 60
@@ -232,7 +201,7 @@ export async function PUT(
   const videos = body.videos ?? []
   const publishFromDraft = body.publishFromDraft === true
 
-  const { data: existingListing, error: existingErr } = await supabase
+  const { data: ownedListing, error: ownedErr } = await supabase
     .from("listings")
     .select(
       "user_id, status, title, description, price, city, state, latitude, longitude, slug, local_pickup, shipping_available, section",
@@ -241,199 +210,84 @@ export async function PUT(
     .eq("user_id", user.id)
     .maybeSingle()
 
-  if (existingErr || !existingListing) {
-    return NextResponse.json({ error: "Listing not found" }, { status: 404 })
-  }
-  if (existingListing.status === "sold") {
-    return NextResponse.json({ error: "Sold listings cannot be edited" }, { status: 400 })
-  }
+  let existingListing = ownedListing as PersistPeerListingExistingRow | null
+  let writeDb = supabase
+  let ownerUserId = user.id
+  let constrainToOwner = true
 
-  const listingFields = await overlayListingRowWithDropoffParcel(
-    supabase,
-    {
-      dropoffLocationId:
-        typeof listingData.dropoff_location_id === "string"
-          ? listingData.dropoff_location_id
-          : null,
-      boardLength: body.catalog_snapshot?.boardLength,
-      boardWidthInches: body.catalog_snapshot?.boardWidthInches,
-    },
-    omitClientAutoPriceDropSchedule(listingFieldsForOwnerUpdate(listingData)),
-  )
-  const publishingFromDraft = existingListing.status === "draft" && publishFromDraft
-
-  if (publishingFromDraft) {
-    const validationError = validateListingDraftPublishable({
-      status: "draft",
-      price:
-        typeof listingFields.price === "number" ? listingFields.price : existingListing.price,
-      description:
-        typeof listingFields.description === "string"
-          ? listingFields.description
-          : existingListing.description,
-      city: typeof listingFields.city === "string" ? listingFields.city : existingListing.city,
-      state: typeof listingFields.state === "string" ? listingFields.state : existingListing.state,
-      latitude:
-        typeof listingFields.latitude === "number"
-          ? listingFields.latitude
-          : existingListing.latitude,
-      longitude:
-        typeof listingFields.longitude === "number"
-          ? listingFields.longitude
-          : existingListing.longitude,
-      imageCount: images.length,
-    })
-    if (validationError) {
-      return NextResponse.json({ error: validationError }, { status: 400 })
+  if (ownedErr || !existingListing) {
+    const { data: actorProfile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .maybeSingle()
+    const actorIsAdmin = actorProfile?.is_admin === true
+    if (!actorIsAdmin) {
+      return NextResponse.json({ error: "Listing not found" }, { status: 404 })
     }
-  }
 
-  const publishSlug = publishingFromDraft
-    ? await generateUniqueListingSlug(
-        supabase,
-        typeof listingFields.title === "string" && listingFields.title.trim()
-          ? listingFields.title.trim()
-          : String(existingListing.title ?? "listing"),
-      )
-    : null
-
-  const updatePayload = {
-    ...listingFields,
-    updated_at: new Date().toISOString(),
-    ...(publishingFromDraft
-      ? {
-          status: "active" as const,
-          hidden_from_site: false,
-          site_visibility_reason: null,
-          slug: publishSlug ?? undefined,
-        }
-      : {}),
-  }
-
-  let { data: updatedRow, error: updateError } = await supabase
-    .from("listings")
-    .update(updatePayload)
-    .eq("id", listingId)
-    .eq("user_id", user.id)
-    .select("slug")
-    .single()
-
-  if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
-    const retry = await supabase
-      .from("listings")
-      .update({
-        ...withoutListingDimensionDisplayDbFields(listingFields),
-        updated_at: new Date().toISOString(),
-        ...(publishingFromDraft
-          ? {
-              status: "active" as const,
-              hidden_from_site: false,
-              site_visibility_reason: null,
-              slug: publishSlug ?? undefined,
-            }
-          : {}),
-      })
-      .eq("id", listingId)
-      .eq("user_id", user.id)
-      .select("slug")
-      .single()
-    updatedRow = retry.data
-    updateError = retry.error
-  }
-
-  if (updateError) {
-    console.error("[owned-edit] listing update error:", updateError)
-    const message =
-      typeof updateError.message === "string" && updateError.message.trim()
-        ? updateError.message.trim()
-        : "Failed to update listing"
-    return NextResponse.json({ error: message }, { status: 500 })
-  }
-
-  if (publishingFromDraft) {
-    await recordListingVisibilityEvent(supabase, {
-      listingId,
-      hiddenFromSite: false,
-      source: "publish_draft",
-      actorUserId: user.id,
-      note: "Published draft from sell edit",
-    })
-  }
-
-  const slugTrim =
-    updatedRow && typeof (updatedRow as { slug?: string }).slug === "string"
-      ? String((updatedRow as { slug: string }).slug).trim()
-      : publishingFromDraft
-        ? (publishSlug ?? "")
-        : String(existingListing.slug ?? "").trim()
-
-  try {
-    await syncListingImages(
-      supabase,
-      listingId,
-      removedImageIds,
-      images.map((img) => ({
-        id: img.id,
-        url: typeof img.url === "string" ? img.url : "",
-        thumbnailUrl: img.thumbnail_url ?? null,
-        isPrimary: img.is_primary,
-        sortOrder: img.sort_order,
-      })),
-    )
-  } catch (error) {
-    console.error("[owned-edit] listing image sync error:", error)
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error && error.message.trim()
-            ? error.message.trim()
-            : "Failed to save listing photos",
-      },
-      { status: 500 },
-    )
-  }
-
-  if (removedVideoIds.length > 0 || videos.length > 0) {
+    let service
     try {
-      await syncListingVideos(
-        supabase,
-        listingId,
-        removedVideoIds,
-        listingVideosToUpdateOps(videos),
-      )
-    } catch (error) {
-      console.error("[owned-edit] listing video sync error:", error)
-      return NextResponse.json(
-        {
-          error:
-            error instanceof Error && error.message.trim()
-              ? error.message.trim()
-              : "Failed to save listing video",
-        },
-        { status: 500 },
-      )
+      service = createServiceRoleClient()
+    } catch {
+      return NextResponse.json({ error: "Server misconfigured" }, { status: 500 })
     }
-  }
 
-  const listingSection = String(listingData.section ?? existingListing.section ?? "")
-  if (
-    listingSection === "surfboards" &&
-    body.catalog_snapshot &&
-    typeof body.catalog_snapshot === "object"
-  ) {
-    const r = await upsertUserListingBoardModelDataFromSellForm(supabase, {
-      listingId,
-      sellerUserId: user.id,
-      form: body.catalog_snapshot,
+    const { data: adminListing, error: adminErr } = await service
+      .from("listings")
+      .select(
+        "user_id, status, title, description, price, city, state, latitude, longitude, slug, local_pickup, shipping_available, section",
+      )
+      .eq("id", listingId)
+      .maybeSingle()
+
+    if (adminErr || !adminListing?.user_id) {
+      return NextResponse.json({ error: "Listing not found" }, { status: 404 })
+    }
+
+    const actor = resolveListingUpdateActor({
+      actorIsAdmin: true,
+      actorUserId: user.id,
+      listingOwnerId: String(adminListing.user_id),
     })
-    if (!r.ok) {
-      console.warn("[owned-edit] user_listing_board_model_data:", r.error)
+    if (actor === "forbidden") {
+      return NextResponse.json({ error: "Listing not found" }, { status: 404 })
+    }
+
+    existingListing = adminListing as PersistPeerListingExistingRow
+    ownerUserId = String(adminListing.user_id)
+    if (actor === "owner") {
+      writeDb = supabase
+      constrainToOwner = true
+    } else {
+      writeDb = service
+      constrainToOwner = false
     }
   }
 
-  if (publishingFromDraft) {
+  const result = await persistPeerListingUpdate({
+    db: writeDb,
+    listingId,
+    ownerUserId,
+    actorUserId: user.id,
+    constrainToOwner,
+    existingListing,
+    listingData,
+    removedImageIds,
+    images: images as PersistPeerListingImageOp[],
+    removedVideoIds,
+    videos: videos as PersistPeerListingVideoOp[],
+    catalogSnapshot: body.catalog_snapshot,
+    publishFromDraft,
+  })
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status })
+  }
+
+  if (result.published) {
     after(() => {
-      void applyPublishedListingSideEffects(supabase, listingId, user.id).catch((error) => {
+      void schedulePublishedListingSideEffects(writeDb, listingId, ownerUserId).catch((error) => {
         console.error("[owned-edit] publish side effects:", error)
       })
     })
@@ -441,7 +295,7 @@ export async function PUT(
 
   return NextResponse.json({
     success: true,
-    slug: slugTrim,
-    published: publishingFromDraft,
+    slug: result.slug,
+    published: result.published,
   })
 }

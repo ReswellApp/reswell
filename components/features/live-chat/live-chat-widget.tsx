@@ -153,6 +153,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   const bootstrapSession = session.bootstrapSession
 
   const ensureChatSession = useCallback(async () => {
+    if (authStatus === "loading") return
     if (sessionReady || sessionBootstrapping || handoffBootstrapRef.current) return
     handoffBootstrapRef.current = true
     try {
@@ -160,13 +161,14 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     } finally {
       handoffBootstrapRef.current = false
     }
-  }, [bootstrapSession, sessionBootstrapping, sessionReady])
+  }, [authStatus, bootstrapSession, sessionBootstrapping, sessionReady])
 
   useEffect(() => {
+    if (authStatus === "loading") return
     if (sessionReady || handoffBootstrapRef.current) return
     if (!open && tab !== "messages") return
     void ensureChatSession()
-  }, [ensureChatSession, open, sessionReady, tab])
+  }, [authStatus, ensureChatSession, open, sessionReady, tab])
 
   function clearHelpArticleStack() {
     setHelpArticleStack([])
@@ -356,8 +358,13 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
                 composerLocked={composerLocked}
                 onSendMessage={handleSendMessage}
                 onPublishTyping={(isTyping) => void publishTyping(isTyping)}
+                publicId={session.publicId}
+                visitorToken={session.visitorToken}
                 visitorEmail={signedInEmail}
                 isSignedIn={isSignedIn}
+                onAuthRequired={() => {
+                  window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`
+                }}
                 showEmailField={showEmailField}
                 emailDraft={emailDraft}
                 emailLocked={emailLocked}

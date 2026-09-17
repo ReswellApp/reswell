@@ -6,6 +6,7 @@ import { SellerResourcesHero } from "@/components/features/seller-resources/sell
 import { SellerResourcesHowCard } from "@/components/features/seller-resources/seller-resources-how-card"
 import { SellerResourcesValueStrip } from "@/components/features/seller-resources/seller-resources-value-strip"
 import { HOW_TO_SELL_HREF } from "@/lib/seller-resources"
+import { SANTA_BARBARA_DROPOFF_HREF } from "@/lib/dropoff-santa-barbara"
 import {
   HOW_TO_SELL_BEST_RATE_BOX,
   HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN,
@@ -118,6 +119,27 @@ export function HowToShipContent() {
           />
         </div>
       </HowToSellSection>
+
+      <HowToSellSection
+        id="dropoff"
+        wash
+        eyebrow="Santa Barbara"
+        title="Drop it off if you would rather not pack"
+        lead={
+          <>
+            Sellers in Santa Barbara can choose drop-off on a listing. After it sells, we send
+            the location, pack the board, and ship it — a good option if it has not sold locally
+            and you want buyers nationwide.{" "}
+            <Link
+              href={SANTA_BARBARA_DROPOFF_HREF}
+              className="font-medium text-[#001A4A] underline underline-offset-2"
+            >
+              How Santa Barbara drop-off works
+            </Link>
+            .
+          </>
+        }
+      />
 
       <HowToSellSection
         id="pickup"

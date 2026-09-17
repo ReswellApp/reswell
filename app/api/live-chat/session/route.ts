@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { createOrResumeLiveChatSessionService } from "@/lib/services/liveChat"
 import {
   consumeLiveChatRateLimit,
+  LIVE_CHAT_RATE_LIMITS,
   liveChatClientIp,
   liveChatRateLimitResponse,
 } from "@/lib/live-chat/rate-limit"
 
 export async function POST(req: NextRequest) {
   try {
-    const limit = consumeLiveChatRateLimit(`session:${liveChatClientIp(req)}`, 30, 10 * 60_000)
+    const limit = consumeLiveChatRateLimit(
+      `session:${liveChatClientIp(req)}`,
+      LIVE_CHAT_RATE_LIMITS.sessionCreate.limit,
+      LIVE_CHAT_RATE_LIMITS.sessionCreate.windowMs,
+    )
     if (!limit.ok) return liveChatRateLimitResponse(limit.retryAfterSec)
 
     const body: unknown = await req.json()

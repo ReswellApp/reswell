@@ -84,6 +84,7 @@ export type CaseInboxItem = {
   status: SupportCaseStatus
   statusLabel: string
   channelLabel: string
+  sourceChannel: string | null
   orderId: string | null
   orderRef: string | null
   createdAt: string
@@ -262,6 +263,7 @@ export function contactToInboxItem(row: ContactMessageRow): CaseInboxItem {
         : row.source === "messages_support"
           ? "Help Hub"
           : "Website",
+    sourceChannel: row.source,
     orderId: null,
     orderRef: null,
     createdAt: row.created_at,
@@ -300,6 +302,7 @@ export function orderToInboxItem(row: OrderSupportRequestRow): CaseInboxItem {
     status,
     statusLabel: SUPPORT_CASE_STATUS_LABEL[status],
     channelLabel: "Order",
+    sourceChannel: row.requester_role === "seller" ? "order_seller" : "order_buyer",
     orderId: row.order_id,
     orderRef: row.order_ref,
     createdAt: row.created_at,
@@ -346,6 +349,7 @@ export function supportCaseToInboxItem(
     status: row.status,
     statusLabel: SUPPORT_CASE_STATUS_LABEL[row.status],
     channelLabel: channelLabel(row.source_channel),
+    sourceChannel: row.source_channel,
     orderId: row.order_id,
     orderRef: row.order_ref,
     createdAt: row.created_at,

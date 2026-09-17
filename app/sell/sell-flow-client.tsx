@@ -88,10 +88,8 @@ import {
   type ImpersonationData,
 } from "@/lib/impersonation"
 import { ImpersonationActingAsStrip } from "@/components/impersonation-banner"
-import { updateImpersonatedListingViaApi } from "@/lib/utils/admin-impersonated-listing-create"
 import {
   adminIsEditingAnotherUsersListing,
-  ensureImpersonationForListingOwner,
   syncClientImpersonationForListingOwner,
 } from "@/lib/utils/admin-impersonation-for-listing"
 import { isAdminListingEditEntry } from "@/lib/utils/admin-listing-edit-entry"
@@ -3383,6 +3381,7 @@ function SellPageContentInner({
       if (
         fulfillmentFlags.shipping_available &&
         !listingImpersonation &&
+        !adminImpersonationEditListing &&
         !fd.dropoffLocationId.trim()
       ) {
         const shipFromReady = await shipFrom.ensureShipFrom()
@@ -3535,9 +3534,9 @@ function SellPageContentInner({
           }),
         }
 
-        if (ownerEditsOwnListing) {
+        if (ownerEditsOwnListing || adminEditsOtherListing) {
           const publishingFromDraftRow = listingIsDraft || isLocalOnlyServerDraftSubmit
-          const ownerImageOps: {
+          const imageOps: {
             id?: string
             url?: string
             thumbnail_url?: string | null
@@ -3549,7 +3548,7 @@ function SellPageContentInner({
             if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {
               throw new Error(`Photo ${i + 1} is still uploading. Wait or retry before saving.`)
             }
-            ownerImageOps.push({
+            imageOps.push({
               id: img.id,
               url: img.url,
               thumbnail_url: img.thumbnailUrl,
@@ -3563,7 +3562,7 @@ function SellPageContentInner({
             listingId: effectiveEditId,
             listing: editListingFields,
             removedImageIds,
-            images: ownerImageOps,
+            images: imageOps,
             removedVideoIds,
             videos: readyVideo ? [readyVideo] : [],
             catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
@@ -3577,70 +3576,12 @@ function SellPageContentInner({
           if (updated.published === true) {
             setEditListingStatus("active")
           }
-          if (publishingFromDraftRow) {
+          if (ownerEditsOwnListing && publishingFromDraftRow) {
             requestKlaviyoListingCreated(effectiveEditId)
             publishedDraftNeedsSideEffects = true
           }
-          clearSellServerDraftListingId("surfboards")
-          goSubmitStep(2)
-        } else if (adminEditsOtherListing) {
-          if (!editId || !editListingOwnerId) {
-            throw new Error("Listing is still loading. Try again in a moment.")
-          }
-          await ensureImpersonationForListingOwner(editListingOwnerId)
-          setImpersonation(getActiveImpersonationClient())
-          listingPersistedViaApi = true
-          goSubmitStep(0)
-          const imageOps: {
-            id?: string
-            url?: string
-            thumbnail_url?: string | null
-            is_primary: boolean
-            sort_order: number
-          }[] = []
-          for (let i = 0; i < images.length; i++) {
-            const img = images[i]
-            if (img.id) {
-              if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {
-                throw new Error(`Photo ${i + 1} is still uploading. Wait or retry before saving.`)
-              }
-              imageOps.push({
-                id: img.id,
-                url: img.url,
-                thumbnail_url: img.thumbnailUrl,
-                is_primary: i === 0,
-                sort_order: i,
-              })
-              continue
-            }
-            if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {
-              throw new Error(`Photo ${i + 1} is still uploading. Wait or retry before saving.`)
-            }
-            imageOps.push({
-              url: img.url,
-              thumbnail_url: img.thumbnailUrl,
-              is_primary: i === 0,
-              sort_order: i,
-            })
-          }
-
-          goSubmitStep(1)
-          const updated = await updateImpersonatedListingViaApi({
-            listingId: editId,
-            listing: editListingFields,
-            removedImageIds,
-            images: imageOps,
-            removedVideoIds,
-            videos: readyVideo ? [readyVideo] : [],
-            catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
-            publishFromDraft: listingIsDraft,
-          })
-          if (!updated.ok) {
-            throw new Error(sellActionErrorMessage(updated.error || "Failed to update listing"))
-          }
-          listingSlug = updated.slug
-          if (updated.published === true) {
-            setEditListingStatus("active")
+          if (ownerEditsOwnListing) {
+            clearSellServerDraftListingId("surfboards")
           }
           goSubmitStep(2)
         } else {

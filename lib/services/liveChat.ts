@@ -5,6 +5,7 @@ import {
   closeOpenLiveChatSessionsForVisitor,
   getAgentDisplayNamesByIds,
   listRecentOpenLiveChatSessionsForUser,
+  listRecentOpenLiveChatSessionsForVisitorToken,
   getLiveChatSessionForVisitor,
   getVisitorDisplayNamesByIds,
   insertLiveChatMessage,
@@ -27,7 +28,7 @@ import { autoSendLiveChatCsAgentReply } from "@/lib/services/liveChatCsAgentAuto
 import { isLegacyLiveChatWidgetCopy, liveChatAgentDisplayName } from "@/lib/live-chat/team-display"
 import { LIVE_CHAT_TEAM_GREETING } from "@/lib/live-chat/widget-config"
 import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
-import { openLiveChatSupportCase } from "@/lib/services/liveChatSupportCase"
+import { openLiveChatSupportCase, syncLiveChatVisitorMessageToCase } from "@/lib/services/liveChatSupportCase"
 
 function isPlaceholderVisitorName(name: string | null | undefined): boolean {
   const trimmed = name?.trim() ?? ""
@@ -82,14 +83,43 @@ function toVisitorSession(session: LiveChatSessionRow) {
 async function linkSupportCase(
   svc: SupabaseClient,
   session: LiveChatSessionRow,
+  initialVisitorMessage?: string,
 ): Promise<LiveChatSessionRow> {
-  const opened = await openLiveChatSupportCase(svc, session)
+  const opened = await openLiveChatSupportCase(svc, session, {
+    initialVisitorMessage,
+  })
   if (!opened) return session
   return {
     ...session,
     support_case_id: opened.supportCaseId,
     contact_message_id: opened.contactMessageId || session.contact_message_id,
   }
+}
+
+async function findOpenSessionForVisitor(
+  svc: SupabaseClient,
+  args: {
+    userId?: string | null
+    visitorToken: string
+    prefer: "ai" | "human" | "any"
+  },
+): Promise<LiveChatSessionRow | null> {
+  if (args.userId) {
+    const recentForUser = await listRecentOpenLiveChatSessionsForUser(svc, args.userId, 20)
+    const match = recentForUser.find((row) => sessionMatchesPrefer(row, args.prefer)) ?? null
+    if (match) return match
+  }
+  const recentForToken = await listRecentOpenLiveChatSessionsForVisitorToken(
+    svc,
+    args.visitorToken,
+    20,
+  )
+  return (
+    recentForToken.find((row) => {
+      if (args.userId && row.user_id && row.user_id !== args.userId) return false
+      return sessionMatchesPrefer(row, args.prefer)
+    }) ?? null
+  )
 }
 
 async function startFreshVisitorSession(
@@ -247,23 +277,30 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
     }
   }
 
-  // Signed-in members resume their latest open chat across devices, even
-  // without a stored public id. Adopt the current visitor token so
-  // token-validated endpoints keep working from this browser.
+  // Resume the latest open chat for this member (cross-device) or visitor
+  // token (same browser). Opening/closing the widget must not mint a new
+  // session — only force_new / "Start new conversation" does.
   // "Talk to AI" (prefer=ai) must not snap into an open human/case thread.
-  if (!forceNew && user?.id) {
-    const recentForUser = await listRecentOpenLiveChatSessionsForUser(svc, user.id, 20)
-    const existingForUser = recentForUser.find((row) => sessionMatchesPrefer(row, prefer)) ?? null
-    if (existingForUser) {
-      if (existingForUser.visitor_token !== parsed.data.visitor_token) {
-        await updateLiveChatSessionRow(svc, existingForUser.id, {
+  if (!forceNew) {
+    const existingOpen = await findOpenSessionForVisitor(svc, {
+      userId: user?.id ?? null,
+      visitorToken: parsed.data.visitor_token,
+      prefer,
+    })
+    if (existingOpen) {
+      if (existingOpen.visitor_token !== parsed.data.visitor_token) {
+        await updateLiveChatSessionRow(svc, existingOpen.id, {
           visitor_token: parsed.data.visitor_token,
         })
       }
-      const attached = await attachSignedInVisitorIdentity(svc, {
-        ...existingForUser,
-        visitor_token: parsed.data.visitor_token,
-      }, user)
+      const attached = await attachSignedInVisitorIdentity(
+        svc,
+        {
+          ...existingOpen,
+          visitor_token: parsed.data.visitor_token,
+        },
+        user,
+      )
       return visitorResumePayload(svc, attached)
     }
   }
@@ -278,6 +315,7 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
     return { error: "Could not start chat. Try again in a moment." }
   }
 
+  // Soft-open happens on first visitor message — never on widget open/greeting.
   return visitorResumePayload(svc, session)
 }
 
@@ -313,25 +351,44 @@ export async function sendLiveChatVisitorMessageService(
   let startedFresh = false
   let session = await getLiveChatSessionForVisitor(svc, publicId, parsed.data.visitor_token)
   if (!session) {
-    const signedInName = user?.id ? await resolveSignedInVisitorName(svc, user.id) : null
-    const clientName = parsed.data.visitor_name?.trim() || ""
-    const visitorName =
-      signedInName ||
-      (!isPlaceholderVisitorName(clientName) ? clientName : "") ||
-      "Guest"
-    session = await startFreshVisitorSession(svc, {
+    // Prefer adopting an existing open thread over minting a parallel session/case.
+    const existingOpen = await findOpenSessionForVisitor(svc, {
+      userId: user?.id ?? null,
       visitorToken: parsed.data.visitor_token,
-      visitorName,
-      user,
+      prefer: "any",
     })
-    if (!session) {
-      return {
-        error: LIVE_CHAT_SESSION_MISSING_MESSAGE,
-        code: LIVE_CHAT_SESSION_MISSING_CODE,
-        status: 404,
+    if (existingOpen) {
+      if (existingOpen.visitor_token !== parsed.data.visitor_token) {
+        await updateLiveChatSessionRow(svc, existingOpen.id, {
+          visitor_token: parsed.data.visitor_token,
+        })
       }
+      session = {
+        ...existingOpen,
+        visitor_token: parsed.data.visitor_token,
+      }
+      startedFresh = existingOpen.public_id !== publicId
+    } else {
+      const signedInName = user?.id ? await resolveSignedInVisitorName(svc, user.id) : null
+      const clientName = parsed.data.visitor_name?.trim() || ""
+      const visitorName =
+        signedInName ||
+        (!isPlaceholderVisitorName(clientName) ? clientName : "") ||
+        "Guest"
+      session = await startFreshVisitorSession(svc, {
+        visitorToken: parsed.data.visitor_token,
+        visitorName,
+        user,
+      })
+      if (!session) {
+        return {
+          error: LIVE_CHAT_SESSION_MISSING_MESSAGE,
+          code: LIVE_CHAT_SESSION_MISSING_CODE,
+          status: 404,
+        }
+      }
+      startedFresh = true
     }
-    startedFresh = true
   }
   if (session.status === "closed" || session.status === "resolved") {
     return { error: LIVE_CHAT_SESSION_CLOSED_MESSAGE, code: LIVE_CHAT_SESSION_CLOSED_CODE }
@@ -366,8 +423,11 @@ export async function sendLiveChatVisitorMessageService(
     return { error: "Could not send message. Try again." }
   }
 
-  session = await linkSupportCase(svc, session)
+  session = await linkSupportCase(svc, session, message.content)
   const supportCaseId = session.support_case_id
+
+  // Mirror the visitor turn into the case transcript (deduped if already inserted on soft-open).
+  session = await syncLiveChatVisitorMessageToCase(svc, session, message.content)
 
   after(async () => {
     await broadcastLiveChatMessage({
@@ -383,7 +443,7 @@ export async function sendLiveChatVisitorMessageService(
     })
     await autoSendLiveChatCsAgentReply(
       svc,
-      { ...session, support_case_id: supportCaseId },
+      { ...session, support_case_id: supportCaseId ?? session.support_case_id },
       message,
     )
   })
@@ -394,7 +454,7 @@ export async function sendLiveChatVisitorMessageService(
     session_id: session.id,
     public_id: session.public_id,
     started_fresh: startedFresh,
-    support_case_id: supportCaseId,
+    support_case_id: session.support_case_id ?? supportCaseId,
   }
 }
 

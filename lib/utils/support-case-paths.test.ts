@@ -2,6 +2,8 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
 import {
+  adminLiveChatHrefForCase,
+  adminLiveChatSessionHref,
   adminSupportCaseHref,
   inboxCaseKey,
   inboxContactKey,
@@ -10,6 +12,15 @@ import {
   parseInboxCaseParam,
   supportCaseResponseHref,
 } from "./support-case-paths.ts"
+
+describe("adminLiveChat deep links", () => {
+  it("opens the live-chat desk by session or case", () => {
+    const sessionId = "11111111-1111-4111-8111-111111111111"
+    const caseId = "22222222-2222-4222-8222-222222222222"
+    assert.equal(adminLiveChatSessionHref(sessionId), `/admin/live-chat?session=${sessionId}`)
+    assert.equal(adminLiveChatHrefForCase(caseId), `/admin/live-chat?case=${caseId}`)
+  })
+})
 
 describe("adminSupportCaseHref", () => {
   it("opens the inbox with the case selected", () => {

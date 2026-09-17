@@ -191,6 +191,27 @@ export async function listRecentOpenLiveChatSessionsForUser(
   return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
 }
 
+/** Recent open/assigned sessions for this browser visitor token (guest resume). */
+export async function listRecentOpenLiveChatSessionsForVisitorToken(
+  supabase: SupabaseClient,
+  visitorToken: string,
+  limit = 20,
+): Promise<LiveChatSessionRow[]> {
+  const { data, error } = await withSessionSelect((select) =>
+    supabase
+      .from("live_chat_sessions")
+      .select(select)
+      .eq("visitor_token", visitorToken)
+      .in("status", ["open", "assigned"])
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(limit),
+  )
+
+  if (error || !data) return []
+  return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
+}
+
 export async function insertLiveChatSession(
   supabase: SupabaseClient,
   row: {
@@ -482,6 +503,15 @@ export async function listOpenLiveChatSessionsForSupportCases(
     return []
   }
   return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
+}
+
+/** Latest open/assigned live chat linked to a support case (desk deep-link). */
+export async function getOpenLiveChatSessionBySupportCaseId(
+  supabase: SupabaseClient,
+  caseId: string,
+): Promise<LiveChatSessionRow | null> {
+  const rows = await listOpenLiveChatSessionsForSupportCases(supabase, [caseId])
+  return rows[0] ?? null
 }
 
 /** Open/assigned sessions linked to the given support tickets. */

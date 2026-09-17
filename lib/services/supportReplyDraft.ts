@@ -29,6 +29,8 @@ import { defaultCsAgentReason } from "@/lib/llm/cs-agent"
 import { generateCsAgentDraft } from "@/lib/llm/cs-agent-generate"
 import { getSupportReplyRootPromptBody } from "@/lib/db/supportReplyRootPrompt"
 import { createCsAgentLookups, listPriorTicketsForCsAgent } from "@/lib/services/csAgentLookups"
+import type { LiveChatSessionRow } from "@/lib/db/liveChat"
+import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
 import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
 import {
   citedHelpFromSlugs,
@@ -248,6 +250,8 @@ async function generateDraftBody(args: {
   rootPrompt: string
   rewriteInstruction?: string
   currentDraft?: string
+  liveChatSession?: LiveChatSessionRow
+  liveChatActor?: LiveChatActionActor
 }): Promise<{
   body: string
   origin: SupportReplyDraftOrigin
@@ -281,12 +285,18 @@ async function generateDraftBody(args: {
     linkedOrderId: args.row.order_id,
   })
 
-  const lookupSession = createCsAgentLookups(args.service, {
-    caseId: args.row.id,
-    requesterUserId: args.row.requester_user_id,
-    requesterEmail: args.row.requester_email,
-    linkedOrderId: args.row.order_id,
-  })
+  const lookupSession = createCsAgentLookups(
+    args.service,
+    {
+      caseId: args.row.id,
+      requesterUserId: args.row.requester_user_id,
+      requesterEmail: args.row.requester_email,
+      linkedOrderId: args.row.order_id,
+    },
+    args.liveChatSession && args.liveChatActor
+      ? { liveChatSession: args.liveChatSession, liveChatActor: args.liveChatActor }
+      : undefined,
+  )
   const generated = await generateCsAgentDraft({
     model: supportReplyDraftModelId(),
     rootPrompt: args.rootPrompt,
@@ -394,7 +404,12 @@ export async function generateAndStoreDraft(
   service: SupabaseClient,
   caseId: string,
   force = false,
-  rewrite?: { rewriteInstruction?: string; currentDraft?: string },
+  rewrite?: {
+    rewriteInstruction?: string
+    currentDraft?: string
+    liveChatSession?: LiveChatSessionRow
+    liveChatActor?: LiveChatActionActor
+  },
 ): Promise<{ data: SupportReplyDraftView } | { error: string }> {
   const loaded = await loadCaseContext(service, caseId)
   if ("error" in loaded) return loaded
@@ -453,6 +468,8 @@ export async function generateAndStoreDraft(
       rootPrompt,
       rewriteInstruction: force ? rewrite?.rewriteInstruction : undefined,
       currentDraft: force ? rewrite?.currentDraft : undefined,
+      liveChatSession: rewrite?.liveChatSession,
+      liveChatActor: rewrite?.liveChatActor,
     })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)

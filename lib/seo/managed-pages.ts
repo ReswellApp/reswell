@@ -479,6 +479,46 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/seller-resources/how-to-ship",
     keywords: ["ship a surfboard", "surfboard shipping", "Reswell shipping label"],
   }),
+  page("dropoff-santa-barbara", "marketing", "Santa Barbara drop-off", {
+    title: "Santa Barbara Drop-Off | We Pack and Ship Your Surfboard",
+    description:
+      "Drop off a used surfboard in Santa Barbara after it sells. Reswell packs and ships it so you can reach buyers nationwide without boxing it yourself.",
+    path: "/dropoff/santa-barbara",
+    keywords: [
+      "Santa Barbara surfboard drop off",
+      "ship used surfboard Santa Barbara",
+      "Reswell pack and ship",
+    ],
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      name: "Drop off a used surfboard in Santa Barbara",
+      description:
+        "List a board, choose Santa Barbara drop-off, and Reswell packs and ships it after it sells. The street address is shared after the sale, not on the public site.",
+      step: [
+        {
+          "@type": "HowToStep",
+          name: "List and choose Santa Barbara",
+          text: "Create a surfboard listing and choose drop off in Santa Barbara instead of packing it yourself.",
+        },
+        {
+          "@type": "HowToStep",
+          name: "Go live with shipping",
+          text: "The listing offers shipping so buyers nationwide can check out.",
+        },
+        {
+          "@type": "HowToStep",
+          name: "Get drop-off details after the sale",
+          text: "After a buyer pays, Reswell sends the drop-off location privately.",
+        },
+        {
+          "@type": "HowToStep",
+          name: "Drop it off",
+          text: "Bring the board in. Reswell packs it and ships it to the buyer.",
+        },
+      ],
+    },
+  }),
   page("shipping-estimator", "marketing", "Shipping estimator", {
     title: "Shipping label cost estimator — Reswell",
     description:

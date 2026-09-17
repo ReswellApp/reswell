@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { liveChatAiService } from "@/lib/services/liveChatAi"
 import {
   consumeLiveChatRateLimit,
+  LIVE_CHAT_RATE_LIMITS,
   liveChatClientIp,
   liveChatRateLimitResponse,
 } from "@/lib/live-chat/rate-limit"
@@ -12,9 +13,17 @@ export async function POST(req: NextRequest, context: RouteContext) {
   try {
     const { publicId } = await context.params
     const ip = liveChatClientIp(req)
-    const perToken = consumeLiveChatRateLimit(`ai:${ip}:${publicId}`, 12, 60_000)
+    const perToken = consumeLiveChatRateLimit(
+      `ai:${ip}:${publicId}`,
+      LIVE_CHAT_RATE_LIMITS.ai.limit,
+      LIVE_CHAT_RATE_LIMITS.ai.windowMs,
+    )
     if (!perToken.ok) return liveChatRateLimitResponse(perToken.retryAfterSec)
-    const perIp = consumeLiveChatRateLimit(`ai-ip:${ip}`, 20, 10 * 60_000)
+    const perIp = consumeLiveChatRateLimit(
+      `ai-ip:${ip}`,
+      LIVE_CHAT_RATE_LIMITS.aiIp.limit,
+      LIVE_CHAT_RATE_LIMITS.aiIp.windowMs,
+    )
     if (!perIp.ok) return liveChatRateLimitResponse(perIp.retryAfterSec)
 
     const body: unknown = await req.json()

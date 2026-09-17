@@ -72,10 +72,7 @@ import {
   clearImpersonationStorageIfCookieMissing,
   getImpersonation,
 } from "@/lib/impersonation"
-import {
-  ensureImpersonationForListingOwner,
-  syncClientImpersonationForListingOwner,
-} from "@/lib/utils/admin-impersonation-for-listing"
+import { syncClientImpersonationForListingOwner } from "@/lib/utils/admin-impersonation-for-listing"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeTapeStyleInchesInput } from "@/lib/board-measurements"
 import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form-value"
@@ -972,39 +969,22 @@ export default function SellFinsFlow({
           isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
 
         if (adminImpersonatesListingOwner) {
-          if (editListingOwnerId) {
-            await ensureImpersonationForListingOwner(editListingOwnerId)
+          if (!editId) {
+            toast.error("Listing is still loading. Try again in a moment.")
+            setSubmitting(false)
+            return
           }
-          const imageOps = payload.images.map((img, index) => ({
-            id: img.id,
-            url: img.url,
-            thumbnail_url: img.thumbnailUrl,
-            is_primary: index === 0,
-            sort_order: index,
-          }))
-          const res = await fetch("/api/admin/impersonate/update-listing", {
-            method: "PUT",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              listingId: editId,
-              listing: buildFinListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
-              removedImageIds,
-              images: imageOps,
-              removedVideoIds,
-              videos: payload.videos,
-              publishFromDraft: listingIsDraft,
-            }),
+          const updated = await updateOwnedListingViaApi({
+            listingId: editId,
+            listing: buildFinListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            removedImageIds,
+            images: peerImagesToOwnedUpdateOps(payload.images),
+            removedVideoIds,
+            videos: payload.videos,
+            publishFromDraft: listingIsDraft,
           })
-          const data = (await res.json().catch(() => ({}))) as {
-            error?: string
-            slug?: string
-            published?: boolean
-          }
-          if (!res.ok) {
-            const message = sellActionErrorMessage(
-              typeof data.error === "string" ? data.error : "Failed to update listing",
-            )
+          if (!updated.ok) {
+            const message = sellActionErrorMessage(updated.error)
             logSellFunnelEvent({
               listingType: "fins",
               event: "publish_failed",
@@ -1025,11 +1005,11 @@ export default function SellFinsFlow({
           clearPendingPublish("fins")
           if (user.id) await clearSellListingDraft(user.id, "fins")
           toast.success(
-            data.published === true || listingIsDraft || isLocalOnlyServerDraftSubmit
+            updated.published === true || listingIsDraft || isLocalOnlyServerDraftSubmit
               ? "Your fin is live!"
               : "Listing updated",
           )
-          navigateAfterListingSave(`/l/${data.slug ?? editId}`)
+          navigateAfterListingSave(`/l/${updated.slug ?? editId}`)
           return
         }
 

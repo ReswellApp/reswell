@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { LiveChatAdminClient } from "@/components/features/admin/live-chat-admin-client"
 import { getLiveChatStaffProfileService } from "@/lib/services/liveChatAdmin"
@@ -16,11 +17,13 @@ export default async function AdminLiveChatPage() {
   }
 
   return (
-    <LiveChatAdminClient
-      initialStaff={{
-        userId: staff.userId,
-        displayName: staff.displayName,
-      }}
-    />
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading live chat…</div>}>
+      <LiveChatAdminClient
+        initialStaff={{
+          userId: staff.userId,
+          displayName: staff.displayName,
+        }}
+      />
+    </Suspense>
   )
 }

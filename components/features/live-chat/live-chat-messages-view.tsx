@@ -1,15 +1,18 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft } from "lucide-react"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { LiveChatAdminOnlyBadge } from "@/components/features/live-chat/live-chat-admin-only-badge"
 import { LiveChatComposer } from "@/components/features/live-chat/live-chat-composer"
+import { LiveChatLabelUpdatePanel } from "@/components/features/live-chat/live-chat-label-update-panel"
+import { LiveChatPendingActions } from "@/components/features/live-chat/live-chat-pending-actions"
 import { LiveChatWaitingBanner } from "@/components/features/live-chat/live-chat-waiting-banner"
 import { LiveChatWordmark } from "@/components/features/live-chat/live-chat-wordmark"
 import { cn } from "@/lib/utils"
 import { LIVE_CHAT_TEAM_NAME } from "@/lib/live-chat/widget-config"
+import { isLiveChatShipFromLabelUpdateIntent, threadHasLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
 import { liveChatThreadSurfaceClass } from "@/lib/live-chat/widget-ui"
 import type { LiveChatUiMessage } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
@@ -28,8 +31,11 @@ interface LiveChatMessagesViewProps {
   composerLocked?: boolean
   onSendMessage: (content: string, email: string | null) => Promise<boolean>
   onPublishTyping: (isTyping: boolean) => void
+  publicId?: string | null
+  visitorToken?: string | null
   visitorEmail: string | null
   isSignedIn: boolean
+  onAuthRequired?: () => void
   showEmailField: boolean
   emailDraft: string
   onEmailDraftChange: (value: string) => void
@@ -53,8 +59,11 @@ export function LiveChatMessagesView({
   composerLocked = false,
   onSendMessage,
   onPublishTyping,
+  publicId = null,
+  visitorToken = null,
   visitorEmail,
   isSignedIn,
+  onAuthRequired,
   showEmailField,
   emailDraft,
   onEmailDraftChange,
@@ -67,15 +76,43 @@ export function LiveChatMessagesView({
 }: LiveChatMessagesViewProps) {
   const [draft, setDraft] = useState("")
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [labelUpdateDismissed, setLabelUpdateDismissed] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const emailInputRef = useRef<HTMLInputElement>(null)
+
+  const latestVisitorText = useMemo(() => {
+    for (let i = serverMessages.length - 1; i >= 0; i -= 1) {
+      const message = serverMessages[i]
+      if (message?.sender_type === "visitor" && message.content.trim()) {
+        return message.content
+      }
+    }
+    return ""
+  }, [serverMessages])
+
+  const threadWantsLabelUpdate = useMemo(
+    () => threadHasLiveChatShipFromLabelUpdateIntent(serverMessages),
+    [serverMessages],
+  )
+
+  const showLabelUpdatePanel =
+    !sessionClosed &&
+    !labelUpdateDismissed &&
+    Boolean(publicId) &&
+    threadWantsLabelUpdate
+
+  useEffect(() => {
+    if (isLiveChatShipFromLabelUpdateIntent(latestVisitorText)) {
+      setLabelUpdateDismissed(false)
+    }
+  }, [latestVisitorText])
 
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     el.scrollTop = el.scrollHeight
-  }, [serverMessages, typingName, sending, teamThinking])
+  }, [serverMessages, typingName, sending, teamThinking, showLabelUpdatePanel])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -230,6 +267,25 @@ export function LiveChatMessagesView({
         </div>
       ) : null}
       {error && !sessionClosed ? <p className="px-4 pt-2 text-xs text-destructive">{error}</p> : null}
+      {!sessionClosed && showLabelUpdatePanel ? (
+        <LiveChatLabelUpdatePanel
+          publicId={publicId}
+          visitorToken={visitorToken}
+          enabled
+          isSignedIn={isSignedIn}
+          onAuthRequired={onAuthRequired}
+          onDismiss={() => setLabelUpdateDismissed(true)}
+        />
+      ) : null}
+      {!sessionClosed ? (
+        <LiveChatPendingActions
+          publicId={publicId}
+          visitorToken={visitorToken}
+          enabled={Boolean(publicId) && !showLabelUpdatePanel}
+          isSignedIn={isSignedIn}
+          onAuthRequired={onAuthRequired}
+        />
+      ) : null}
       {!sessionClosed ? (
         <LiveChatComposer
           draft={draft}

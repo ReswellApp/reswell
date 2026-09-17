@@ -5,6 +5,7 @@ import type { StaticImageData } from "next/image"
 import { useSearchParams } from "next/navigation"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { CityLandingListings } from "@/components/features/cities/city-landing-listings"
+import { SantaBarbaraDropoffPromo } from "@/components/features/dropoff/santa-barbara-dropoff-promo"
 import { CitySurfShopsRow } from "@/components/features/cities/city-surf-shops-row"
 import { CityTopSellerListingsRow } from "@/components/features/cities/city-top-seller-listings-row"
 import { CityTopSellersRow } from "@/components/features/cities/city-top-sellers-row"
@@ -105,8 +106,13 @@ export function CityLandingView({ data }: { data: CityLandingPageData }) {
   const topSellerListings = useMemo(() => pickCityTopSellerListings(listings), [listings])
   const surfShops = surfShopsForCity(city)
   const atmosphere = cityAtmosphere(city)
+  const isSantaBarbaraDropoffCity =
+    city.slug === "santa-barbara" || city.slug === "santa-barbara-ca"
   const hasAfterHeader =
-    topSellerListings.length > 0 || surfShops.length > 0 || topSellers.length > 0
+    isSantaBarbaraDropoffCity ||
+    topSellerListings.length > 0 ||
+    surfShops.length > 0 ||
+    topSellers.length > 0
 
   return (
     <section className="bg-offwhite">
@@ -124,6 +130,7 @@ export function CityLandingView({ data }: { data: CityLandingPageData }) {
           afterHeader={
             hasAfterHeader ? (
               <>
+                {isSantaBarbaraDropoffCity ? <SantaBarbaraDropoffPromo /> : null}
                 {topSellerListings.length > 0 ? (
                   <CityTopSellerListingsRow cityName={city.city} listings={topSellerListings} />
                 ) : null}

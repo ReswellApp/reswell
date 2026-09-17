@@ -24,6 +24,7 @@ export function peerImagesToOwnedUpdateOps(
   }))
 }
 
+/** Seller-owned edits and admin edits of someone else both POST here. */
 export async function updateOwnedListingViaApi(params: {
   listingId: string
   listing: Record<string, unknown>

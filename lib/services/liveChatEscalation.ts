@@ -17,6 +17,7 @@ import {
 import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { ensureCaseForContactMessage } from "@/lib/services/supportCaseBackfill"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
+import { shouldNotifyKlaviyoOnLiveChatEscalation } from "@/lib/live-chat/klaviyo-policy"
 import { broadcastLiveChatMessage, broadcastLiveChatSessionStatus } from "@/lib/services/liveChatRealtime"
 
 /** How long a signed-in chat can sit without an agent reply before it becomes a ticket. */
@@ -285,7 +286,7 @@ export async function escalateLiveChatSessionToTicket(
       : `We've opened a support case for this conversation. We'll follow up at ${email}.`,
   )
 
-  if (opened?.id) {
+  if (opened?.id && shouldNotifyKlaviyoOnLiveChatEscalation({ alreadyLinked: false, reason })) {
     void trackKlaviyoSupportTicketCreated({
       supportTicketId: opened.id,
       email,
