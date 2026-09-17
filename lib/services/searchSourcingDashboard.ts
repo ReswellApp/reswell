@@ -3,16 +3,19 @@ import {
   aggregateMarketplaceSourcingDashboard,
   countMarketplaceSearchesInRange,
   getMarketplaceOccurredAtBounds,
+  topQueriesInRange,
 } from "@/lib/elasticsearch/search-analytics-index"
 import {
   addBusinessDays,
   BUSINESS_TIMEZONE,
+  businessDayKey,
   businessDayKeyFromMs,
   businessDayStartMs,
 } from "@/lib/utils/business-timezone"
 import {
   buildCumulativeVolume,
   classifySearchInventory,
+  fillDailyVolume,
   type SearchCumulativePoint,
   type SearchSourcingInventory,
 } from "@/lib/utils/search-sourcing-dashboard"
@@ -86,6 +89,17 @@ export async function getSearchSourcingDashboardService(): Promise<SearchSourcin
     }),
   ])
 
+  let topQueryRows = sourcing?.topQueries ?? []
+  if (allTimeCount > 0 && topQueryRows.length === 0) {
+    const fallback = await topQueriesInRange(allTimeFrom, nowIso, 50)
+    topQueryRows = [...fallback.entries()].map(([query, count]) => ({
+      query,
+      display: query,
+      count,
+      avgResultCount: null,
+    }))
+  }
+
   return {
     configured: true,
     todayCount,
@@ -97,8 +111,10 @@ export async function getSearchSourcingDashboardService(): Promise<SearchSourcin
     weekFrom,
     from: allTimeFrom,
     to: nowIso,
-    volumeByDay: buildCumulativeVolume(sourcing?.volumeByDay ?? []),
-    topQueries: (sourcing?.topQueries ?? []).map((row) => ({
+    volumeByDay: buildCumulativeVolume(
+      fillDailyVolume(sourcing?.volumeByDay ?? [], businessDayKey(allTimeFrom), todayKey),
+    ),
+    topQueries: topQueryRows.map((row) => ({
       query: row.query,
       display: row.display,
       count: row.count,
