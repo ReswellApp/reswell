@@ -73,7 +73,7 @@ async function generateDraftBodyWithBudget(
   svc: SupabaseClient,
   caseId: string,
   session: LiveChatSessionRow,
-): Promise<{ body: string; closeTicket: boolean } | null> {
+): Promise<{ body: string; closeTicket: boolean; needsHumanReview: boolean } | null> {
   try {
     const rewriteInstruction = await loadLiveChatReplyPromptBody(svc)
     const liveChatActor = await resolveLiveChatActionActor(svc, {
@@ -93,6 +93,7 @@ async function generateDraftBodyWithBudget(
       return {
         body: draft.data.body.trim(),
         closeTicket: draft.closeTicket === true,
+        needsHumanReview: draft.data.needsHumanReview === true,
       }
     }
   } catch (error) {
@@ -151,6 +152,7 @@ export async function autoSendLiveChatCsAgentReply(
       if (generated) {
         body = generated.body
         closeTicket = generated.closeTicket
+        needsHumanReview = generated.needsHumanReview
       } else {
         needsHumanReview = true
       }

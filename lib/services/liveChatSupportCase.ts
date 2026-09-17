@@ -19,6 +19,7 @@ import {
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
 import { liveChatCaseAlreadyHasVisitorTurn } from "@/lib/live-chat/team-display"
+import { isOpenLiveChatSupportStatus } from "@/lib/utils/live-chat-support-ticket"
 
 const LIVE_CHAT_CASE_SUBJECT = "Live chat"
 
@@ -29,6 +30,16 @@ export type OpenedLiveChatSupportCase = {
 
 async function waitBriefly(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function clearStaleCaseLink(
+  svc: SupabaseClient,
+  sessionId: string,
+): Promise<void> {
+  await updateLiveChatSessionRow(svc, sessionId, {
+    support_case_id: null,
+    contact_message_id: null,
+  })
 }
 
 async function resolveLinkedCase(
@@ -44,7 +55,10 @@ async function resolveLinkedCase(
   if (!session.contact_message_id) return null
 
   const existing = await getSupportCaseByContactMessageId(svc, session.contact_message_id)
-  if (!existing) return null
+  if (!existing || !isOpenLiveChatSupportStatus(existing.status)) {
+    await clearStaleCaseLink(svc, session.id)
+    return null
+  }
 
   await updateLiveChatSessionRow(svc, session.id, {
     support_case_id: existing.id,
@@ -72,15 +86,30 @@ async function linkSessionToCase(
   }
 }
 
-/** Attach this session to the visitor's existing open live-chat ticket, if any. */
+async function trustedAccountEmail(
+  svc: SupabaseClient,
+  userId: string,
+): Promise<string | null> {
+  const { data, error } = await svc.auth.admin.getUserById(userId)
+  if (error) return null
+  return data?.user?.email?.trim() || null
+}
+
+/**
+ * Attach this session to the visitor's existing open live-chat ticket, if any.
+ * Identity is the signed-in account (and that account's auth email). Client-sent
+ * `visitor_email` is contact info only — it cannot claim another visitor's ticket.
+ */
 export async function attachLiveChatSessionToOpenVisitorCase(
   svc: SupabaseClient,
   session: LiveChatSessionRow,
 ): Promise<OpenedLiveChatSupportCase | null> {
-  const email = session.visitor_email?.trim() || null
+  const userId = session.user_id?.trim() || null
+  if (!userId) return null
+
   const existing = await findOpenLiveChatSupportCaseForVisitor(svc, {
-    userId: session.user_id,
-    email,
+    userId,
+    email: await trustedAccountEmail(svc, userId),
   })
   if (!existing) return null
   return linkSessionToCase(svc, session.id, existing)

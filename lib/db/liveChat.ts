@@ -485,7 +485,7 @@ export async function listEscalationCandidateSessions(
   return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
 }
 
-/** Clear support_case_id on every session except `keepSessionId` so the unique link can move. */
+/** Clear case + ticket pointers on every session except `keepSessionId` so the unique link can move. */
 export async function detachOtherLiveChatSessionsFromSupportCase(
   supabase: SupabaseClient,
   caseId: string,
@@ -494,7 +494,7 @@ export async function detachOtherLiveChatSessionsFromSupportCase(
   if (!caseId || !keepSessionId) return
   const { error } = await supabase
     .from("live_chat_sessions")
-    .update({ support_case_id: null })
+    .update({ support_case_id: null, contact_message_id: null })
     .eq("support_case_id", caseId)
     .neq("id", keepSessionId)
   if (error) {

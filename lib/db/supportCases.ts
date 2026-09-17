@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+import { liveChatVisitorMatchesOpenCase } from "@/lib/utils/live-chat-support-ticket"
 
 export type SupportCaseRow = {
   id: string
@@ -204,6 +205,15 @@ export function isUniqueConstraintError(error: { code?: string; message?: string
   return message.includes("duplicate key") || message.includes("unique constraint")
 }
 
+function openLiveChatCasesQuery(supabase: SupabaseClient) {
+  return supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    .eq("source_channel", "live_chat")
+    .neq("status", "resolved")
+    .order("updated_at", { ascending: false })
+}
+
 /** The visitor's single open live-chat ticket, if one exists. */
 export async function findOpenLiveChatSupportCaseForVisitor(
   supabase: SupabaseClient,
@@ -213,30 +223,35 @@ export async function findOpenLiveChatSupportCaseForVisitor(
   const email = identity.email?.trim() || null
   if (!userId && !email) return null
 
-  let query = supabase
-    .from("support_cases")
-    .select(CASE_SELECT)
-    .eq("source_channel", "live_chat")
-    .neq("status", "resolved")
-    .order("updated_at", { ascending: false })
-    .limit(1)
-
-  if (userId && email) {
-    query = query.or(
-      `requester_user_id.eq.${userId},requester_email.ilike."${escapeIlikePattern(email)}"`,
-    )
-  } else if (userId) {
-    query = query.eq("requester_user_id", userId)
-  } else if (email) {
-    query = query.ilike("requester_email", escapeIlikePattern(email))
+  if (userId) {
+    const { data, error } = await openLiveChatCasesQuery(supabase)
+      .eq("requester_user_id", userId)
+      .limit(1)
+      .maybeSingle()
+    if (error) {
+      console.warn("[support_cases] open live-chat lookup skipped:", error.message)
+      return null
+    }
+    const row = (data as SupportCaseRow | null) ?? null
+    if (row && liveChatVisitorMatchesOpenCase({ userId, email: null }, row)) {
+      return row
+    }
   }
 
-  const { data, error } = await query.maybeSingle()
+  if (!email) return null
+
+  // ILIKE is only a candidate fetch (case folding). Reduce to an exact
+  // case-insensitive email — escaped wildcards are not enough.
+  const { data, error } = await openLiveChatCasesQuery(supabase)
+    .ilike("requester_email", escapeIlikePattern(email))
+    .limit(20)
   if (error) {
-    console.warn("[support_cases] open live-chat lookup skipped:", error.message)
+    console.warn("[support_cases] open live-chat email lookup skipped:", error.message)
     return null
   }
-  return (data as SupportCaseRow | null) ?? null
+
+  const rows = (data ?? []) as SupportCaseRow[]
+  return rows.find((row) => liveChatVisitorMatchesOpenCase({ userId: null, email }, row)) ?? null
 }
 
 export async function listSupportCasesByRequesterEmail(

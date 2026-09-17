@@ -46,6 +46,33 @@ describe("liveChatVisitorMatchesOpenCase", () => {
       false,
     )
   })
+
+  it("does not treat ILIKE-style neighbors as the same email", () => {
+    assert.equal(
+      liveChatVisitorMatchesOpenCase({ email: "hayden@example.com" }, {
+        ...open,
+        requester_user_id: null,
+        requester_email: "hayden+tag@example.com",
+      }),
+      false,
+    )
+    assert.equal(
+      liveChatVisitorMatchesOpenCase({ email: "hayden_x@example.com" }, {
+        ...open,
+        requester_user_id: null,
+        requester_email: "hayden1x@example.com",
+      }),
+      false,
+    )
+    assert.equal(
+      liveChatVisitorMatchesOpenCase({ email: "hayden@example.com" }, {
+        ...open,
+        requester_user_id: null,
+        requester_email: "Hayden@example.com",
+      }),
+      true,
+    )
+  })
 })
 
 describe("shouldHonorLiveChatTicketClose", () => {
