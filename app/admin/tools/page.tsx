@@ -363,7 +363,7 @@ export default function AdminToolsPage() {
           icon={Database}
           accent="sky"
           title="Search analytics"
-          description="Inspect query volume, zero-result searches, and trends to validate indexing health."
+          description="Daily, weekly, and all-time searches — plus the terms buyers look for most."
         >
           <Button variant="outline" asChild>
             <Link href="/admin/search-analytics">

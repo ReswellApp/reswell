@@ -1105,3 +1105,151 @@ export async function aggregateMarketplaceQueriesForDailyReport(
     return null
   }
 }
+
+export type MarketplaceSourcingQueryRow = {
+  query: string
+  display: string
+  count: number
+  avgResultCount: number | null
+}
+
+export type MarketplaceSourcingAggregate = {
+  uniqueQueriesApprox: number
+  volumeByDay: { date: string; count: number }[]
+  topQueries: MarketplaceSourcingQueryRow[]
+  zeroResultQueries: { query: string; count: number }[]
+}
+
+const EMPTY_SOURCING_AGG: MarketplaceSourcingAggregate = {
+  uniqueQueriesApprox: 0,
+  volumeByDay: [],
+  topQueries: [],
+  zeroResultQueries: [],
+}
+
+function displayFromTopHits(
+  sample: { hits?: { hits?: Array<{ _source?: { query_display?: unknown } }> } } | undefined,
+  fallback: string,
+): string {
+  const raw = sample?.hits?.hits?.[0]?._source?.query_display
+  if (typeof raw === "string" && raw.trim()) return raw.trim().slice(0, 500)
+  return fallback
+}
+
+/**
+ * Lean marketplace aggregates for the sourcing dashboard: daily volume,
+ * top queries with average listing counts, and zero-result terms.
+ */
+export async function aggregateMarketplaceSourcingDashboard(
+  fromIso: string,
+  toIso: string,
+  opts?: { timeZone?: string; topSize?: number; zeroSize?: number },
+): Promise<MarketplaceSourcingAggregate | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  const timeZone = opts?.timeZone ?? "America/Los_Angeles"
+  const topSize = Math.min(Math.max(opts?.topSize ?? 50, 1), 100)
+  const zeroSize = Math.min(Math.max(opts?.zeroSize ?? 25, 1), 50)
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      track_total_hits: false,
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lte: toIso } } },
+            MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+          ],
+        },
+      },
+      aggs: {
+        unique_queries: {
+          cardinality: { field: "query_normalized", precision_threshold: 4000 },
+        },
+        by_day: {
+          date_histogram: {
+            field: "occurred_at",
+            calendar_interval: "day",
+            time_zone: timeZone,
+            format: "yyyy-MM-dd",
+            min_doc_count: 0,
+            extended_bounds: { min: fromIso, max: toIso },
+          },
+        },
+        top_queries: {
+          terms: { field: "query_normalized", size: topSize, order: { _count: "desc" } },
+          aggs: {
+            avg_results: { avg: { field: "result_count" } },
+            sample: {
+              top_hits: {
+                size: 1,
+                sort: [{ occurred_at: { order: "desc" } }],
+                _source: { includes: ["query_display"] },
+              },
+            },
+          },
+        },
+        zero_hits: {
+          filter: { term: { result_count: 0 } },
+          aggs: {
+            zq: {
+              terms: { field: "query_normalized", size: zeroSize, order: { _count: "desc" } },
+            },
+          },
+        },
+      },
+    })
+
+    const aggs = res.aggregations as
+      | {
+          unique_queries?: { value?: number }
+          by_day?: { buckets?: Array<{ key_as_string?: string; doc_count: number }> }
+          top_queries?: {
+            buckets?: Array<{
+              key: string | number
+              doc_count: number
+              avg_results?: { value?: number | null }
+              sample?: {
+                hits?: { hits?: Array<{ _source?: { query_display?: unknown } }> }
+              }
+            }>
+          }
+          zero_hits?: {
+            zq?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+          }
+        }
+      | undefined
+
+    const topQueries: MarketplaceSourcingQueryRow[] = (aggs?.top_queries?.buckets ?? []).map(
+      (bucket) => {
+        const query = String(bucket.key)
+        const avg = bucket.avg_results?.value
+        return {
+          query,
+          display: displayFromTopHits(bucket.sample, query),
+          count: bucket.doc_count,
+          avgResultCount: avg != null && Number.isFinite(avg) ? avg : null,
+        }
+      },
+    )
+
+    return {
+      uniqueQueriesApprox: aggs?.unique_queries?.value ?? 0,
+      volumeByDay: (aggs?.by_day?.buckets ?? []).map((bucket) => ({
+        date: (bucket.key_as_string ?? "").slice(0, 10),
+        count: bucket.doc_count,
+      })),
+      topQueries,
+      zeroResultQueries: bucketTerms(aggs?.zero_hits?.zq?.buckets),
+    }
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return EMPTY_SOURCING_AGG
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] aggregateMarketplaceSourcingDashboard failed:", msg)
+    return null
+  }
+}

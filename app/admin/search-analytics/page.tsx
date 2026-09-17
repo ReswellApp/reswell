@@ -4,7 +4,7 @@ import { SearchAnalyticsAdminClient } from "@/components/features/admin/search-a
 export const metadata = privatePageMetadata({
   title: "Search analytics — Reswell admin",
   description:
-    "Marketplace search volume, typeahead dropdown picks, trending queries, zero-result terms, and Elasticsearch vs database mix.",
+    "Daily, weekly, and all-time marketplace searches — plus the terms buyers look for most, so we can source boards we may not have.",
   path: "/admin/search-analytics",
 })
 
