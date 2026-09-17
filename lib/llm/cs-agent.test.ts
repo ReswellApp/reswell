@@ -5,6 +5,7 @@ import {
   CS_AGENT_MAX_STEPS,
   CS_AGENT_PROMPT_VERSION,
   DEFAULT_SUPPORT_REPLY_ROOT_PROMPT,
+  csAgentLiveChatSystemPrompt,
   csAgentSystemPrompt,
   defaultCsAgentReason,
   filterCsAgentCitations,
@@ -13,7 +14,7 @@ import {
 
 describe("cs agent harness", () => {
   it("pins a dedicated prompt version for draft fingerprints", () => {
-    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v3")
+    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v4")
   })
 
   it("caps tool rounds and model time so inbox drafts stay under five seconds", () => {
@@ -89,7 +90,7 @@ describe("cs agent harness", () => {
     assert.match(pack, /Order 1042/)
     assert.match(pack, /tracking 1Z999/)
     assert.match(pack, /Past tickets/)
-    assert.match(pack, /okay or very good/)
+    assert.match(pack, /very_good \/ okay/)
     assert.match(pack, /Label question/)
     assert.match(pack, /package-delayed-or-lost/)
     assert.match(pack, /Latest customer message/)
@@ -118,6 +119,16 @@ describe("cs agent harness", () => {
     })
     assert.match(pack, /Channel: live_chat/)
     assert.match(pack, /Live chat — support case/)
+    assert.match(pack, /only open live-chat ticket/)
+    assert.match(pack, /close_ticket true only when the issue is fully solved/)
+  })
+
+  it("tells the live-chat agent when it may resolve the ticket", () => {
+    const prompt = csAgentLiveChatSystemPrompt("Hayden")
+    assert.match(prompt, /close_ticket to true only when the issue is fully solved/)
+    assert.match(prompt, /only one open live-chat ticket/)
+    assert.match(prompt, /Set close_ticket to false if you asked a question/)
+    assert.doesNotMatch(prompt, /never send/i)
   })
 
   it("includes a staff rewrite instruction and the draft they are revising", () => {

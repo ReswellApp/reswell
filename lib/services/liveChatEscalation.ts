@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/liveChat"
 import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { ensureCaseForContactMessage } from "@/lib/services/supportCaseBackfill"
+import { attachLiveChatSessionToOpenVisitorCase } from "@/lib/services/liveChatSupportCase"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { shouldNotifyKlaviyoOnLiveChatEscalation } from "@/lib/live-chat/klaviyo-policy"
 import { broadcastLiveChatMessage, broadcastLiveChatSessionStatus } from "@/lib/services/liveChatRealtime"
@@ -160,6 +161,19 @@ export async function escalateLiveChatSessionToTicket(
     return { error: "No email on file for this chat — cannot create a ticket." }
   }
 
+  const reused = await attachLiveChatSessionToOpenVisitorCase(svc, {
+    ...session,
+    visitor_email: email,
+  })
+  if (reused) {
+    return {
+      success: true,
+      contactMessageId: reused.contactMessageId,
+      supportCaseId: reused.supportCaseId,
+      alreadyLinked: true,
+    }
+  }
+
   if (session.contact_message_id && !session.support_case_id) {
     const backfilled = await ensureCaseForContactMessage(svc, {
       id: session.contact_message_id,
@@ -257,6 +271,15 @@ export async function escalateLiveChatSessionToTicket(
   if (error || !ticket?.id) {
     console.error("escalateLiveChatSessionToTicket", { sessionId: session.id, reason, error })
     await releaseLiveChatSessionEscalationClaim(svc, session)
+    const raced = await attachLiveChatSessionToOpenVisitorCase(svc, session)
+    if (raced) {
+      return {
+        success: true,
+        contactMessageId: raced.contactMessageId,
+        supportCaseId: raced.supportCaseId,
+        alreadyLinked: true,
+      }
+    }
     return { error: "Failed to create support ticket." }
   }
 
@@ -273,10 +296,24 @@ export async function escalateLiveChatSessionToTicket(
     body: transcript,
     authorUserId: session.user_id,
   })
+  if (!opened) {
+    await svc.from("contact_messages").delete().eq("id", contactMessageId)
+    const raced = await attachLiveChatSessionToOpenVisitorCase(svc, session)
+    if (raced) {
+      return {
+        success: true,
+        contactMessageId: raced.contactMessageId,
+        supportCaseId: raced.supportCaseId,
+        alreadyLinked: true,
+      }
+    }
+    await releaseLiveChatSessionEscalationClaim(svc, session)
+    return { error: "Failed to create support ticket." }
+  }
 
   await updateLiveChatSessionRow(svc, session.id, {
     contact_message_id: contactMessageId,
-    support_case_id: opened?.id ?? null,
+    support_case_id: opened.id,
   })
 
   await insertAndBroadcastSystemMessage(

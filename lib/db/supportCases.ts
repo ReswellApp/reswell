@@ -107,7 +107,9 @@ export async function insertSupportCase(
   if (error) {
     // Table may not exist until migration is applied — soft-fail dual-write.
     console.warn("[support_cases] insert skipped:", error.message)
-    return { data: null, error: new Error(error.message) }
+    const wrapped = new Error(error.message) as Error & { code?: string }
+    wrapped.code = error.code
+    return { data: null, error: wrapped }
   }
 
   return { data: data as SupportCaseRow, error: null }
@@ -193,6 +195,48 @@ export async function getSupportCaseByCaseNumber(
     .maybeSingle()
   if (error || !data) return null
   return data as SupportCaseRow
+}
+
+export function isUniqueConstraintError(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false
+  if (error.code === "23505") return true
+  const message = error.message?.toLowerCase() ?? ""
+  return message.includes("duplicate key") || message.includes("unique constraint")
+}
+
+/** The visitor's single open live-chat ticket, if one exists. */
+export async function findOpenLiveChatSupportCaseForVisitor(
+  supabase: SupabaseClient,
+  identity: { userId?: string | null; email?: string | null },
+): Promise<SupportCaseRow | null> {
+  const userId = identity.userId?.trim() || null
+  const email = identity.email?.trim() || null
+  if (!userId && !email) return null
+
+  let query = supabase
+    .from("support_cases")
+    .select(CASE_SELECT)
+    .eq("source_channel", "live_chat")
+    .neq("status", "resolved")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+
+  if (userId && email) {
+    query = query.or(
+      `requester_user_id.eq.${userId},requester_email.ilike."${escapeIlikePattern(email)}"`,
+    )
+  } else if (userId) {
+    query = query.eq("requester_user_id", userId)
+  } else if (email) {
+    query = query.ilike("requester_email", escapeIlikePattern(email))
+  }
+
+  const { data, error } = await query.maybeSingle()
+  if (error) {
+    console.warn("[support_cases] open live-chat lookup skipped:", error.message)
+    return null
+  }
+  return (data as SupportCaseRow | null) ?? null
 }
 
 export async function listSupportCasesByRequesterEmail(
@@ -533,7 +577,7 @@ export type AdminSupportCaseListFilter = {
   kind?: SupportCaseKind
   type?: "all" | "general" | "order"
   ids?: string[]
-  /** Defaults to true — live chat has its own desk. */
+  /** Defaults to true for non-inbox callers. The Cases inbox sets this false. */
   excludeLiveChat?: boolean
   limit: number
   offset?: number
@@ -675,7 +719,6 @@ export async function searchSupportCaseIdsAdmin(
     supabase
       .from("support_cases")
       .select("id")
-      .neq("source_channel", "live_chat")
       .or(caseOr)
       .order("updated_at", { ascending: false })
       .limit(limit),
@@ -687,7 +730,6 @@ export async function searchSupportCaseIdsAdmin(
       supabase
         .from("support_cases")
         .select("id")
-        .neq("source_channel", "live_chat")
         .or(`id.eq.${q},contact_message_id.eq.${q},order_support_request_id.eq.${q},order_id.eq.${q}`)
         .limit(8),
     )

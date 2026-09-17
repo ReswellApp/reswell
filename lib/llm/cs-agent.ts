@@ -3,7 +3,7 @@
  * One model, one job: draft a review-before-send reply. Never sends.
  */
 
-export const CS_AGENT_PROMPT_VERSION = "cs-agent-v3"
+export const CS_AGENT_PROMPT_VERSION = "cs-agent-v4"
 
 /** One optional tool round, then the reply. Extra hops blow the inbox budget. */
 export const CS_AGENT_MAX_STEPS = 2
@@ -88,6 +88,7 @@ export type CsAgentDraftOutput = {
   citedOrderRefs: string[]
   citedTicketIds: string[]
   needsHumanReview: boolean
+  closeTicket: boolean
 }
 
 export function resolveSupportReplyRootPrompt(rootPrompt?: string | null): string {
@@ -113,6 +114,8 @@ Hard rules (facts are non-negotiable; the root guide above still owns tone and k
 
 Draft in one shot from the context pack. Only call a tool when a required fact is missing from the pack. Prefer asking one clear question over a tool round-trip.
 
+Set close_ticket to false. Inbox drafts never resolve a ticket.
+
 Also return a short staff-facing reason (why this draft) and cite only order refs, ticket ids, and help slugs you actually used.`
 }
 
@@ -127,6 +130,8 @@ Hard rules:
 - Never reveal another customer's personal data, orders, or tracking. Never invent Reswell-internal personal or secret details.
 - Use read-only tools: confirm_auth, list_customer_orders, lookup_order, lookup_tracking, help_article (Purchase Protection, /help, seller resources), shipping_label_status.
 - Resolve what they asked; when solved, close the loop briefly. Prefer one clear next step over long threads.
+- This visitor may have only one open live-chat ticket. Set close_ticket to true only when the issue is fully solved — you completed the ask, they confirmed, or your reply is a complete answer that needs no follow-up. That resolves the ticket so a later chat can open a new one.
+- Set close_ticket to false if you asked a question, need more information, are waiting on them, promised to look into it, or the issue is only partly handled.
 - Ground policy in help-center results. Do not invent refunds, claim approvals, or payouts.
 - Greet them as ${greetingName}. Never address them by email.
 - Examples are style hints only — never copy another customer's specifics.
@@ -216,8 +221,8 @@ ${pack.currentDraft.trim()}`
 
   const opener =
     pack.sourceChannel === "live_chat"
-      ? "Write the next customer-visible live chat reply. It sends immediately as Reswell Team."
-      : "Draft the next customer-visible reply. A human will edit and send. Never send it yourself."
+      ? "Write the next customer-visible live chat reply. It sends immediately as Reswell Team. This is their only open live-chat ticket until it is resolved. Set close_ticket true only when the issue is fully solved; otherwise false."
+      : "Draft the next customer-visible reply. A human will edit and send. Never send it yourself. Set close_ticket false."
 
   return `${opener}${rewrite}${previousDraft}
 

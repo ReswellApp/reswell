@@ -128,6 +128,13 @@ export const csAgentLlmSchema = supportReplyDraftLlmSchema.extend({
   reason: z.string().trim().max(280),
   cited_order_refs: z.array(z.string().trim().min(1).max(80)).max(8),
   cited_ticket_ids: z.array(z.string().uuid()).max(8),
+  close_ticket: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "True only for live chat when the visitor's issue is fully solved and this ticket should resolve. False if you asked a question, need more info, or the issue is still open.",
+    ),
 })
 
 export const supportReplyExampleListSchema = z.object({
