@@ -170,8 +170,8 @@ export function SearchAnalyticsAdminClient() {
               label="All time"
               value={formatCount(data.allTimeCount)}
               footnote={
-                data.uniqueQueriesApprox > 0
-                  ? `${formatCount(data.uniqueQueriesApprox)} distinct queries`
+                data.firstOccurredAt
+                  ? `Since ${format(parseISO(data.firstOccurredAt), "MMM d, yyyy")}`
                   : "Tracked searches"
               }
             />
@@ -184,6 +184,9 @@ export function SearchAnalyticsAdminClient() {
                 Running total of marketplace searches
                 {data.firstOccurredAt
                   ? ` since ${format(parseISO(data.firstOccurredAt), "MMM d, yyyy")}`
+                  : ""}
+                {data.uniqueQueriesApprox > 0
+                  ? ` · ${formatCount(data.uniqueQueriesApprox)} distinct queries`
                   : ""}
                 .
               </p>
