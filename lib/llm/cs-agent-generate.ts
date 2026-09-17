@@ -4,6 +4,7 @@ import { gatewayTagsForFeature } from "@/lib/llm/app-models"
 import {
   CS_AGENT_GENERATE_TIMEOUT_MS,
   CS_AGENT_MAX_STEPS,
+  csAgentLiveChatSystemPrompt,
   csAgentSystemPrompt,
   defaultCsAgentReason,
   filterCsAgentCitations,
@@ -14,6 +15,8 @@ import {
 import { csAgentLlmSchema } from "@/lib/validations/supportReplyDraft"
 
 export type CsAgentToolLookups = {
+  confirmAuth: () => Promise<unknown>
+  listCustomerOrders: (query?: string) => Promise<unknown>
   lookupOrder: (query: string) => Promise<unknown>
   lookupTracking: (query: string) => Promise<unknown>
   refundEligibility: (query: string) => Promise<unknown>
@@ -83,6 +86,34 @@ function createCsAgentTools(lookups: CsAgentToolLookups, allowed: {
   }
 
   return {
+    confirm_auth: tool({
+      description:
+        "Confirm whether this visitor is signed in and may access their own orders. Call before sharing order facts.",
+      inputSchema: z.object({}),
+      execute: async () => lookups.confirmAuth(),
+    }),
+    list_customer_orders: tool({
+      description:
+        "List this signed-in customer's recent purchases (buyer) and sales (seller). Read-only. Never for other users.",
+      inputSchema: z.object({
+        query: z
+          .string()
+          .trim()
+          .max(40)
+          .optional()
+          .describe("Optional filter: purchases, sales, or all"),
+      }),
+      execute: async ({ query }) => {
+        const result = await lookups.listCustomerOrders(query)
+        if (result && typeof result === "object" && "orders" in result) {
+          const orders = (result as { orders: unknown }).orders
+          if (Array.isArray(orders)) {
+            for (const order of orders) rememberOrder(order)
+          }
+        }
+        return result
+      },
+    }),
     lookup_order: tool({
       description:
         "Look up one Reswell order for this customer by order number or id. Returns only that customer's orders.",
@@ -114,7 +145,8 @@ function createCsAgentTools(lookups: CsAgentToolLookups, allowed: {
       },
     }),
     help_article: tool({
-      description: "Retrieve current Reswell help-center articles by slug or question.",
+      description:
+        "Retrieve current Reswell help-center articles (/help) by slug or question — Purchase Protection, buying, selling, shipping, accounts.",
       inputSchema: querySchema,
       execute: async ({ query }) => {
         const result = await lookups.helpArticle(query)
@@ -192,13 +224,21 @@ export async function generateCsAgentDraft(args: {
   rootPrompt?: string | null
 }): Promise<CsAgentDraftOutput> {
   const allowed = allowedFromPack(args.pack)
+  const isLiveChat = args.pack.sourceChannel === "live_chat"
+  const system = isLiveChat
+    ? csAgentLiveChatSystemPrompt(
+        args.pack.greetingName,
+        args.pack.rewriteInstruction ?? args.rootPrompt,
+      )
+    : csAgentSystemPrompt(args.pack.greetingName, args.rootPrompt)
+
   const { output } = await generateText({
     model: args.model,
     tools: createCsAgentTools(args.lookups, allowed),
     stopWhen: isStepCount(CS_AGENT_MAX_STEPS),
-    abortSignal: AbortSignal.timeout(CS_AGENT_GENERATE_TIMEOUT_MS),
+    abortSignal: AbortSignal.timeout(isLiveChat ? 9_000 : CS_AGENT_GENERATE_TIMEOUT_MS),
     output: Output.object({ schema: csAgentLlmSchema }),
-    system: csAgentSystemPrompt(args.pack.greetingName, args.rootPrompt),
+    system,
     prompt: formatCsAgentContextPack(args.pack),
     temperature: 0.3,
     providerOptions: {

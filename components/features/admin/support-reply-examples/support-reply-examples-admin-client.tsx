@@ -14,6 +14,7 @@ import type {
   SupportReplyRootPromptView,
 } from "@/lib/types/supportReplyDraft"
 import { SupportReplyRootPromptEditor } from "./support-reply-root-prompt-editor"
+import { SupportReplyLiveChatPromptEditor } from "./support-reply-live-chat-prompt-editor"
 import {
   clampSupportReplyExamplesPage,
   supportReplyExamplesHref,
@@ -36,6 +37,7 @@ const SELECT_CLASS = "h-10 rounded-md border border-input bg-background px-3 tex
 interface SupportReplyExamplesAdminClientProps {
   result: SupportReplyExampleListResult
   rootPrompt: SupportReplyRootPromptView
+  liveChatPrompt: SupportReplyRootPromptView
   filters: {
     rating?: SupportReplyDraftRating
     kind?: SupportReplyExampleKind
@@ -47,6 +49,7 @@ interface SupportReplyExamplesAdminClientProps {
 export function SupportReplyExamplesAdminClient({
   result,
   rootPrompt,
+  liveChatPrompt,
   filters,
   error,
 }: SupportReplyExamplesAdminClientProps) {
@@ -102,9 +105,15 @@ export function SupportReplyExamplesAdminClient({
   return (
     <div className="space-y-4">
       <SupportReplyRootPromptEditor initial={rootPrompt} />
+      <SupportReplyLiveChatPromptEditor initial={liveChatPrompt} />
       <p className="text-sm text-muted-foreground">
         Bad replies are ignored. Okay and Very good both teach later drafts; Very good ranks first.
-        Editing a reply before send is Okay — the edited text is what it learns.{" "}
+        Editing a reply before send is Okay — the edited text is what it learns. Rate live chat team
+        replies on{" "}
+        <Link href="/admin/live-chat" className="font-medium underline-offset-4 hover:underline">
+          Live chat
+        </Link>
+        .{" "}
         <Link href="/admin/contact-messages" className="font-medium underline-offset-4 hover:underline">
           Support tickets
         </Link>

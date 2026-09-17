@@ -15,7 +15,26 @@ export function isLiveChatShipFromLabelUpdateIntent(text: string): boolean {
   return false
 }
 
-/** True if any visitor turn in the thread asked for a ship-from label update. */
+/**
+ * Latest visitor message that asked for a ship-from label update.
+ * Returns null once a later non-label visitor message appears — so the panel
+ * does not stick for the rest of the conversation.
+ */
+export function latestLiveChatShipFromLabelUpdateMessage(
+  messages: Array<{ id: string; sender_type: string; content: string }>,
+): { id: string; content: string } | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (!message || message.sender_type !== "visitor") continue
+    if (isLiveChatShipFromLabelUpdateIntent(message.content)) {
+      return { id: message.id, content: message.content }
+    }
+    if (message.content.trim()) return null
+  }
+  return null
+}
+
+/** @deprecated Prefer latestLiveChatShipFromLabelUpdateMessage. */
 export function threadHasLiveChatShipFromLabelUpdateIntent(
   messages: Array<{ sender_type: string; content: string }>,
 ): boolean {

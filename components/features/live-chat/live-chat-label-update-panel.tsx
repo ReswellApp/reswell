@@ -97,6 +97,17 @@ export function LiveChatLabelUpdatePanel({
     void load()
   }, [load])
 
+  // Empty eligible list: don't leave the chat stuck in the label flow.
+  useEffect(() => {
+    if (!enabled || loading || error) return
+    if (step !== "orders") return
+    if (orders.length > 0) return
+    const timer = window.setTimeout(() => {
+      onDismiss?.()
+    }, 2_500)
+    return () => window.clearTimeout(timer)
+  }, [enabled, error, loading, onDismiss, orders.length, step])
+
   async function confirmUpdate() {
     if (!publicId || !selectedOrder || !reason || !selectedAddressId) return
     setSubmitting(true)
@@ -174,9 +185,23 @@ export function LiveChatLabelUpdatePanel({
             Which sale needs an updated ship-from address on the label?
           </p>
           {orders.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border/70 px-3 py-4 text-center text-xs text-muted-foreground">
-              No open sales with a label waiting for drop-off.
-            </p>
+            <div className="space-y-2">
+              <p className="rounded-xl border border-dashed border-border/70 px-3 py-4 text-center text-xs text-muted-foreground">
+                No open sales with a label waiting for drop-off — this update isn&apos;t available
+                right now.
+              </p>
+              {onDismiss ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 w-full rounded-full text-xs"
+                  onClick={onDismiss}
+                >
+                  Ask about something else
+                </Button>
+              ) : null}
+            </div>
           ) : (
             <ul className="grid grid-cols-2 gap-2">
               {orders.map((order) => (

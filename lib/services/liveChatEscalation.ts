@@ -19,6 +19,7 @@ import { ensureCaseForContactMessage } from "@/lib/services/supportCaseBackfill"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { shouldNotifyKlaviyoOnLiveChatEscalation } from "@/lib/live-chat/klaviyo-policy"
 import { broadcastLiveChatMessage, broadcastLiveChatSessionStatus } from "@/lib/services/liveChatRealtime"
+import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
 
 /** How long a signed-in chat can sit without an agent reply before it becomes a ticket. */
 const AUTO_ESCALATE_AFTER_HOURS = 24
@@ -374,7 +375,8 @@ export async function resolveInactiveLiveChatSessionsService(): Promise<{
 
   let resolved = 0
   for (const session of sessions) {
-    if (await resolveSessionWithNote(svc, session.id, INACTIVITY_SYSTEM_MESSAGE)) {
+    // Inactivity counts as solved: close the ticket, then the chat.
+    if (await resolveLiveChatConversation(svc, session, { note: INACTIVITY_SYSTEM_MESSAGE })) {
       resolved += 1
     }
   }

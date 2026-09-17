@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache"
 import {
   deleteAdminSupportReplyExampleService,
+  getAdminSupportReplyLiveChatPromptService,
   getAdminSupportReplyRootPromptService,
   listAdminSupportReplyExamplesService,
   updateAdminSupportReplyExampleService,
+  updateAdminSupportReplyLiveChatPromptService,
   updateAdminSupportReplyRootPromptService,
 } from "@/lib/services/supportReplyExamples"
 import { SUPPORT_REPLY_EXAMPLES_PATH } from "@/lib/utils/support-reply-examples"
@@ -36,6 +38,16 @@ export async function getSupportReplyRootPromptAction() {
 
 export async function updateSupportReplyRootPromptAction(raw: unknown) {
   const result = await updateAdminSupportReplyRootPromptService(raw)
+  if ("success" in result) revalidateExamples()
+  return result
+}
+
+export async function getSupportReplyLiveChatPromptAction() {
+  return getAdminSupportReplyLiveChatPromptService()
+}
+
+export async function updateSupportReplyLiveChatPromptAction(raw: unknown) {
+  const result = await updateAdminSupportReplyLiveChatPromptService(raw)
   if ("success" in result) revalidateExamples()
   return result
 }

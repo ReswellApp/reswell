@@ -158,6 +158,54 @@ export function createCsAgentLookups(
   }
 
   const lookups: CsAgentToolLookups = {
+      confirmAuth: async () => {
+        const signedIn = Boolean(scope.requesterUserId)
+        return {
+          signedIn,
+          userId: scope.requesterUserId,
+          emailOnFile: Boolean(scope.requesterEmail?.trim()),
+          canAccessOrders: signedIn,
+          note: signedIn
+            ? "Signed in. Only share orders where this user is buyer or seller."
+            : "Not signed in. Ask them to sign in before discussing orders, purchases, or sales. Do not invent account data.",
+        }
+      },
+      listCustomerOrders: async (query) => {
+        if (!scope.requesterUserId) {
+          return {
+            authRequired: true,
+            orders: [],
+            note: "Visitor is not signed in. Ask them to sign in first.",
+          }
+        }
+        const all = await listSupportReplyOrdersForCustomer(service, scope.requesterUserId, 20)
+        const filter = query?.trim().toLowerCase() ?? "all"
+        const mapped = all.map((order) => {
+          const role =
+            order.buyerId === scope.requesterUserId
+              ? order.sellerId === scope.requesterUserId
+                ? "both"
+                : "purchase"
+              : "sale"
+          remember(order)
+          return {
+            ...compactOrder(order),
+            role,
+          }
+        })
+        const orders =
+          filter === "purchases" || filter === "purchase" || filter === "buying"
+            ? mapped.filter((row) => row.role === "purchase" || row.role === "both")
+            : filter === "sales" || filter === "sale" || filter === "selling"
+              ? mapped.filter((row) => row.role === "sale" || row.role === "both")
+              : mapped
+        return {
+          authRequired: false,
+          count: orders.length,
+          orders,
+          note: "Read-only. Never expose another customer's orders.",
+        }
+      },
       lookupOrder: async (query) => {
         const order = await resolveScopedOrder(service, scope, query)
         if (!order) {

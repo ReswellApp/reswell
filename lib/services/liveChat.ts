@@ -2,7 +2,6 @@ import { after } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
-  closeOpenLiveChatSessionsForVisitor,
   getAgentDisplayNamesByIds,
   listRecentOpenLiveChatSessionsForUser,
   listRecentOpenLiveChatSessionsForVisitorToken,
@@ -29,6 +28,7 @@ import { isLegacyLiveChatWidgetCopy, liveChatAgentDisplayName } from "@/lib/live
 import { LIVE_CHAT_TEAM_GREETING } from "@/lib/live-chat/widget-config"
 import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
 import { openLiveChatSupportCase, syncLiveChatVisitorMessageToCase } from "@/lib/services/liveChatSupportCase"
+import { closeOpenLiveChatConversationsForVisitor } from "@/lib/services/liveChatClose"
 
 function isPlaceholderVisitorName(name: string | null | undefined): boolean {
   const trimmed = name?.trim() ?? ""
@@ -116,6 +116,9 @@ async function findOpenSessionForVisitor(
   )
   return (
     recentForToken.find((row) => {
+      // Never let a guest (or different member) inherit another member's open chat —
+      // that reused tickets and admin replies from the wrong person.
+      if (row.user_id && row.user_id !== (args.userId ?? null)) return false
       if (args.userId && row.user_id && row.user_id !== args.userId) return false
       return sessionMatchesPrefer(row, args.prefer)
     }) ?? null
@@ -250,7 +253,8 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
   const prefer = parsed.data.prefer ?? "any"
 
   if (forceNew) {
-    await closeOpenLiveChatSessionsForVisitor(svc, {
+    // Solved path: resolve linked tickets, then close chats — only then mint a fresh thread.
+    await closeOpenLiveChatConversationsForVisitor(svc, {
       userId: user?.id ?? null,
       visitorToken: parsed.data.visitor_token,
     })

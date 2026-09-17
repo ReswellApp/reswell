@@ -20,6 +20,9 @@ const DRAFT_SELECT_LEGACY =
   "id, case_id, body, model, prompt_version, source_fingerprint, cited_help_slugs, retrieved_example_ids, origin, created_at, updated_at"
 
 const EXAMPLE_SELECT =
+  "id, case_id, kind, customer_excerpt, staff_reply, cited_help_slugs, rating, draft_id, rated_by, source_channel, rating_note, created_at"
+
+const EXAMPLE_SELECT_LEGACY =
   "id, case_id, kind, customer_excerpt, staff_reply, cited_help_slugs, rating, draft_id, rated_by, created_at"
 
 function toExampleRow(data: Record<string, unknown>): SupportReplyExampleRow {
@@ -35,6 +38,8 @@ function toExampleRow(data: Record<string, unknown>): SupportReplyExampleRow {
     rating: normalizeSupportReplyDraftRating(data.rating) ?? "okay",
     draft_id: typeof data.draft_id === "string" ? data.draft_id : null,
     rated_by: typeof data.rated_by === "string" ? data.rated_by : null,
+    source_channel: typeof data.source_channel === "string" ? data.source_channel : null,
+    rating_note: typeof data.rating_note === "string" ? data.rating_note : null,
     created_at: String(data.created_at ?? ""),
   }
 }
@@ -270,6 +275,18 @@ export async function listSupportReplyExamples(
     .limit(limit)
 
   if (error) {
+    if (error.message.includes("source_channel")) {
+      const legacy = await supabase
+        .from("support_reply_examples")
+        .select(EXAMPLE_SELECT_LEGACY)
+        .order("created_at", { ascending: false })
+        .limit(limit)
+      if (legacy.error) {
+        console.warn("[support_reply_examples] list skipped:", legacy.error.message)
+        return []
+      }
+      return (legacy.data ?? []).map((row) => toExampleRow(row as Record<string, unknown>))
+    }
     console.warn("[support_reply_examples] list skipped:", error.message)
     return []
   }
@@ -286,18 +303,24 @@ export async function listSupportReplyExamplesPage(
   supabase: SupabaseClient,
   filters: SupportReplyExampleListFilters & { offset: number; limit: number },
 ): Promise<{ rows: SupportReplyExampleRow[]; total: number } | { error: string }> {
-  let query = supabase
-    .from("support_reply_examples")
-    .select(EXAMPLE_SELECT, { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(filters.offset, filters.offset + filters.limit - 1)
+  async function run(select: string) {
+    let query = supabase
+      .from("support_reply_examples")
+      .select(select, { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(filters.offset, filters.offset + filters.limit - 1)
 
-  if (filters.rating) query = query.eq("rating", filters.rating)
-  if (filters.kind) query = query.eq("kind", filters.kind)
-  const search = supportReplyExampleSearchOrClause(filters.q)
-  if (search) query = query.or(search)
+    if (filters.rating) query = query.eq("rating", filters.rating)
+    if (filters.kind) query = query.eq("kind", filters.kind)
+    const search = supportReplyExampleSearchOrClause(filters.q)
+    if (search) query = query.or(search)
+    return query
+  }
 
-  const { data, error, count } = await query
+  let { data, error, count } = await run(EXAMPLE_SELECT)
+  if (error?.message.includes("source_channel")) {
+    ;({ data, error, count } = await run(EXAMPLE_SELECT_LEGACY))
+  }
   if (error) {
     console.error("[support_reply_examples] list failed:", error.message)
     return { error: "Could not load reply examples." }
@@ -335,6 +358,18 @@ export async function getSupportReplyExampleById(
     .select(EXAMPLE_SELECT)
     .eq("id", id)
     .maybeSingle()
+  if (error?.message.includes("source_channel")) {
+    const legacy = await supabase
+      .from("support_reply_examples")
+      .select(EXAMPLE_SELECT_LEGACY)
+      .eq("id", id)
+      .maybeSingle()
+    if (legacy.error) {
+      console.warn("[support_reply_examples] get skipped:", legacy.error.message)
+      return null
+    }
+    return legacy.data ? toExampleRow(legacy.data as Record<string, unknown>) : null
+  }
   if (error) {
     console.warn("[support_reply_examples] get skipped:", error.message)
     return null
@@ -396,9 +431,11 @@ export async function insertSupportReplyExample(
     rating: SupportReplyDraftRating
     draftId?: string | null
     ratedBy?: string | null
+    sourceChannel?: string | null
+    ratingNote?: string | null
   },
 ): Promise<void> {
-  const { error } = await supabase.from("support_reply_examples").insert({
+  const base = {
     case_id: row.caseId,
     kind: row.kind,
     customer_excerpt: row.customerExcerpt.slice(0, 4000),
@@ -407,7 +444,26 @@ export async function insertSupportReplyExample(
     rating: row.rating,
     draft_id: row.draftId ?? null,
     rated_by: row.ratedBy ?? null,
-  })
+  }
+  const withChannel = {
+    ...base,
+    source_channel: row.sourceChannel ?? null,
+    rating_note: row.ratingNote?.trim() ? row.ratingNote.trim().slice(0, 1000) : null,
+  }
+
+  const { error } = await supabase.from("support_reply_examples").insert(withChannel)
+  if (error?.message.includes("rating_note") || error?.message.includes("source_channel")) {
+    const retry = await supabase.from("support_reply_examples").insert({
+      ...base,
+      ...(error.message.includes("source_channel")
+        ? {}
+        : { source_channel: row.sourceChannel ?? null }),
+    })
+    if (retry.error) {
+      console.warn("[support_reply_examples] insert skipped:", retry.error.message)
+    }
+    return
+  }
   if (error) {
     console.warn("[support_reply_examples] insert skipped:", error.message)
   }

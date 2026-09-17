@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft } from "lucide-react"
 import { z } from "zod"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { LiveChatAdminOnlyBadge } from "@/components/features/live-chat/live-chat-admin-only-badge"
 import { LiveChatComposer } from "@/components/features/live-chat/live-chat-composer"
@@ -10,11 +11,15 @@ import { LiveChatLabelUpdatePanel } from "@/components/features/live-chat/live-c
 import { LiveChatPendingActions } from "@/components/features/live-chat/live-chat-pending-actions"
 import { LiveChatWaitingBanner } from "@/components/features/live-chat/live-chat-waiting-banner"
 import { LiveChatWordmark } from "@/components/features/live-chat/live-chat-wordmark"
+import { LiveChatReplyRatingControls } from "@/components/features/live-chat/live-chat-reply-rating-controls"
+import { supportReplyExampleRatingToast } from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
 import { cn } from "@/lib/utils"
 import { LIVE_CHAT_TEAM_NAME } from "@/lib/live-chat/widget-config"
-import { isLiveChatShipFromLabelUpdateIntent, threadHasLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
+import { latestLiveChatShipFromLabelUpdateMessage } from "@/lib/live-chat/label-update-intent"
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
 import { liveChatThreadSurfaceClass } from "@/lib/live-chat/widget-ui"
+import { rateLiveChatReplyAction } from "@/lib/actions/liveChatAdmin"
+import type { SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 import type { LiveChatUiMessage } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
 import type { LiveChatSupportTeamMember } from "@/lib/services/liveChatSupportTeamDisplay"
 import { resolveWorkingSupportAgent } from "@/lib/live-chat/support-lead-display"
@@ -32,7 +37,10 @@ interface LiveChatMessagesViewProps {
   onSendMessage: (content: string, email: string | null) => Promise<boolean>
   onPublishTyping: (isTyping: boolean) => void
   publicId?: string | null
+  sessionId?: string | null
   visitorToken?: string | null
+  /** Soft-launch: show staff rating controls on auto team replies. */
+  enableReplyRatings?: boolean
   visitorEmail: string | null
   isSignedIn: boolean
   onAuthRequired?: () => void
@@ -60,7 +68,9 @@ export function LiveChatMessagesView({
   onSendMessage,
   onPublishTyping,
   publicId = null,
+  sessionId = null,
   visitorToken = null,
+  enableReplyRatings = false,
   visitorEmail,
   isSignedIn,
   onAuthRequired,
@@ -76,37 +86,29 @@ export function LiveChatMessagesView({
 }: LiveChatMessagesViewProps) {
   const [draft, setDraft] = useState("")
   const [emailError, setEmailError] = useState<string | null>(null)
-  const [labelUpdateDismissed, setLabelUpdateDismissed] = useState(false)
+  /** Hide the label panel until a newer visitor message arrives. */
+  const [labelPanelDismissedThroughCount, setLabelPanelDismissedThroughCount] = useState(0)
+  const [ratingMessageId, setRatingMessageId] = useState<string | null>(null)
+  const [ratedMessageIds, setRatedMessageIds] = useState<Set<string>>(() => new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const emailInputRef = useRef<HTMLInputElement>(null)
 
-  const latestVisitorText = useMemo(() => {
-    for (let i = serverMessages.length - 1; i >= 0; i -= 1) {
-      const message = serverMessages[i]
-      if (message?.sender_type === "visitor" && message.content.trim()) {
-        return message.content
-      }
-    }
-    return ""
-  }, [serverMessages])
+  const visitorMessageCount = useMemo(
+    () => serverMessages.filter((message) => message.sender_type === "visitor").length,
+    [serverMessages],
+  )
 
-  const threadWantsLabelUpdate = useMemo(
-    () => threadHasLiveChatShipFromLabelUpdateIntent(serverMessages),
+  const latestLabelAsk = useMemo(
+    () => latestLiveChatShipFromLabelUpdateMessage(serverMessages),
     [serverMessages],
   )
 
   const showLabelUpdatePanel =
     !sessionClosed &&
-    !labelUpdateDismissed &&
     Boolean(publicId) &&
-    threadWantsLabelUpdate
-
-  useEffect(() => {
-    if (isLiveChatShipFromLabelUpdateIntent(latestVisitorText)) {
-      setLabelUpdateDismissed(false)
-    }
-  }, [latestVisitorText])
+    latestLabelAsk !== null &&
+    visitorMessageCount > labelPanelDismissedThroughCount
 
   useEffect(() => {
     const el = scrollRef.current
@@ -127,11 +129,18 @@ export function LiveChatMessagesView({
 
   async function handleSend() {
     const content = draft.trim()
-    if (!content || sending || composerLocked || sessionClosed) return
+    // Never block on "connecting" or a stuck sending flag — queue and bootstrap.
+    if (!content || sessionClosed) return
 
     setEmailError(null)
-    const email: string | null = isSignedIn ? visitorEmail : emailDraft.trim() || null
-    if (!isSignedIn) {
+    // showEmailField is only true once auth resolves as signed_out. While auth is
+    // still loading, do not demand an email (that left the send button looking dead).
+    const email: string | null = isSignedIn
+      ? visitorEmail
+      : showEmailField
+        ? emailDraft.trim() || null
+        : null
+    if (!isSignedIn && showEmailField) {
       if (!email) {
         setEmailError("Add your email so we can reply.")
         emailInputRef.current?.focus()
@@ -150,6 +159,31 @@ export function LiveChatMessagesView({
     inputRef.current?.focus()
     const result = await onSendMessage(content, email)
     if (!result) setDraft(content)
+  }
+
+  async function rateTeamReply(
+    messageId: string,
+    rating: SupportReplyDraftRating,
+    note: string,
+  ) {
+    if (!sessionId) {
+      toast.error("Chat session not ready to rate yet.")
+      return
+    }
+    setRatingMessageId(messageId)
+    const result = await rateLiveChatReplyAction({
+      session_id: sessionId,
+      message_id: messageId,
+      rating,
+      rating_note: note || undefined,
+    })
+    setRatingMessageId(null)
+    if ("error" in result) {
+      toast.error(result.error)
+      return
+    }
+    setRatedMessageIds((prev) => new Set(prev).add(messageId))
+    toast.success(supportReplyExampleRatingToast(rating))
   }
 
   function handleDraftChange(value: string) {
@@ -200,6 +234,8 @@ export function LiveChatMessagesView({
       <div ref={scrollRef} className={liveChatThreadSurfaceClass}>
         {visibleThreadMessages.map((message) => {
           const isVisitor = message.sender_type === "visitor"
+          const isTeamAutoReply =
+            message.sender_type === "agent" && !message.sender_agent_id && !message.pending
           if (message.sender_type === "system") {
             return (
               <p key={message.id} className="text-center text-xs text-muted-foreground">
@@ -215,6 +251,7 @@ export function LiveChatMessagesView({
               {!isVisitor ? (
                 <span className="px-1 text-[11px] text-muted-foreground">
                   {message.agent_display_name ?? LIVE_CHAT_TEAM_NAME}
+                  {isTeamAutoReply ? " · auto" : ""}
                 </span>
               ) : null}
               <div
@@ -228,6 +265,18 @@ export function LiveChatMessagesView({
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
+              {enableReplyRatings && isTeamAutoReply && !ratedMessageIds.has(message.id) ? (
+                <LiveChatReplyRatingControls
+                  disabled={!sessionId}
+                  saving={ratingMessageId === message.id}
+                  onSubmit={(rating, note) => rateTeamReply(message.id, rating, note)}
+                />
+              ) : null}
+              {enableReplyRatings && isTeamAutoReply && ratedMessageIds.has(message.id) ? (
+                <span className="px-1 text-[10px] text-muted-foreground">
+                  Rated — teaches later live chat replies
+                </span>
+              ) : null}
             </div>
           )
         })}
@@ -255,7 +304,9 @@ export function LiveChatMessagesView({
       />
       {sessionClosed ? (
         <div className="flex flex-col items-center gap-2 px-4 pb-2">
-          <p className="text-center text-xs text-muted-foreground">This conversation is closed.</p>
+          <p className="text-center text-xs text-muted-foreground">
+            This chat was closed after it looked solved. Start a new conversation anytime.
+          </p>
           <Button
             type="button"
             size="sm"
@@ -274,7 +325,9 @@ export function LiveChatMessagesView({
           enabled
           isSignedIn={isSignedIn}
           onAuthRequired={onAuthRequired}
-          onDismiss={() => setLabelUpdateDismissed(true)}
+          onDismiss={() => {
+            setLabelPanelDismissedThroughCount(visitorMessageCount)
+          }}
         />
       ) : null}
       {!sessionClosed ? (
@@ -291,7 +344,7 @@ export function LiveChatMessagesView({
           draft={draft}
           onDraftChange={handleDraftChange}
           onSend={() => void handleSend()}
-          sending={sending || composerLocked}
+          sending={sending}
           showEmailField={showEmailField}
           emailDraft={emailDraft}
           emailLocked={emailLocked}
@@ -300,6 +353,7 @@ export function LiveChatMessagesView({
             onEmailDraftChange(value)
           }}
           emailError={emailError}
+          placeholder={composerLocked ? "Connecting…" : undefined}
           inputRef={inputRef}
           emailInputRef={emailInputRef}
         />

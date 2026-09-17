@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises"
+import path from "node:path"
 import sharp from "sharp"
 
 const FETCH_HEADERS = {
@@ -25,6 +27,41 @@ export async function fetchImageAsPngDataUri(url: string): Promise<string | null
       .resize(MAX_DIMENSION, MAX_DIMENSION, { fit: "inside", withoutEnlargement: true })
       .png()
       .toBuffer()
+    return `data:image/png;base64,${png.toString("base64")}`
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Load a file from `/public` as a PNG data URI. Prefer this over HTTP self-fetch
+ * during `opengraph-image` generation — the app origin is often unreachable at build time.
+ *
+ * `publicPath` is a site path such as `/images/careers/headline-barrel.jpg`.
+ */
+export async function publicImageAsPngDataUri(
+  publicPath: string,
+  opts?: {
+    width: number
+    height: number
+    fit?: "cover" | "inside"
+    position?: "center" | "left" | "right" | "top" | "bottom"
+  },
+): Promise<string | null> {
+  try {
+    const relative = publicPath.replace(/^\//, "")
+    if (!relative || relative.includes("..")) return null
+    const filePath = path.join(process.cwd(), "public", relative)
+    const buf = await readFile(filePath)
+    if (buf.length === 0) return null
+    let pipeline = sharp(buf).rotate()
+    if (opts) {
+      pipeline = pipeline.resize(opts.width, opts.height, {
+        fit: opts.fit ?? "cover",
+        position: opts.position ?? "center",
+      })
+    }
+    const png = await pipeline.png().toBuffer()
     return `data:image/png;base64,${png.toString("base64")}`
   } catch {
     return null

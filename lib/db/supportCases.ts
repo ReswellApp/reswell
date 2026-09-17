@@ -533,6 +533,7 @@ export type AdminSupportCaseListFilter = {
   kind?: SupportCaseKind
   type?: "all" | "general" | "order"
   ids?: string[]
+  /** Defaults to true — live chat has its own desk. */
   excludeLiveChat?: boolean
   limit: number
   offset?: number
@@ -566,7 +567,7 @@ function applyAdminCaseFilters(
   filter: Omit<AdminSupportCaseListFilter, "limit" | "offset" | "order">,
 ): LooseCaseQuery {
   let next = query as LooseCaseQuery
-  if (filter.excludeLiveChat === true) {
+  if (filter.excludeLiveChat !== false) {
     next = next.neq("source_channel", "live_chat")
   }
   if (filter.ids && filter.ids.length > 0) {
@@ -674,6 +675,7 @@ export async function searchSupportCaseIdsAdmin(
     supabase
       .from("support_cases")
       .select("id")
+      .neq("source_channel", "live_chat")
       .or(caseOr)
       .order("updated_at", { ascending: false })
       .limit(limit),
@@ -685,6 +687,7 @@ export async function searchSupportCaseIdsAdmin(
       supabase
         .from("support_cases")
         .select("id")
+        .neq("source_channel", "live_chat")
         .or(`id.eq.${q},contact_message_id.eq.${q},order_support_request_id.eq.${q},order_id.eq.${q}`)
         .limit(8),
     )

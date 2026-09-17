@@ -1,7 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { DEFAULT_SUPPORT_REPLY_ROOT_PROMPT } from "@/lib/llm/cs-agent"
+import { DEFAULT_LIVE_CHAT_REPLY_PROMPT } from "@/lib/live-chat/live-chat-cs-prompt"
 
 export const SUPPORT_REPLY_ROOT_PROMPT_ID = "global"
+export const SUPPORT_REPLY_LIVE_CHAT_PROMPT_ID = "live_chat"
+
+export type SupportReplyPromptId =
+  | typeof SUPPORT_REPLY_ROOT_PROMPT_ID
+  | typeof SUPPORT_REPLY_LIVE_CHAT_PROMPT_ID
 
 export type SupportReplyRootPromptRow = {
   id: string
@@ -24,13 +30,14 @@ function asRow(data: unknown): SupportReplyRootPromptRow | null {
   }
 }
 
-export async function getSupportReplyRootPrompt(
+export async function getSupportReplyPromptById(
   supabase: SupabaseClient,
+  id: SupportReplyPromptId,
 ): Promise<SupportReplyRootPromptRow | null> {
   const { data, error } = await supabase
     .from("support_reply_root_prompt")
     .select("id, body, updated_by, created_at, updated_at")
-    .eq("id", SUPPORT_REPLY_ROOT_PROMPT_ID)
+    .eq("id", id)
     .maybeSingle()
 
   if (error) {
@@ -40,14 +47,29 @@ export async function getSupportReplyRootPrompt(
   return asRow(data)
 }
 
+export async function getSupportReplyRootPrompt(
+  supabase: SupabaseClient,
+): Promise<SupportReplyRootPromptRow | null> {
+  return getSupportReplyPromptById(supabase, SUPPORT_REPLY_ROOT_PROMPT_ID)
+}
+
 export async function getSupportReplyRootPromptBody(supabase: SupabaseClient): Promise<string> {
   const row = await getSupportReplyRootPrompt(supabase)
   const body = row?.body.trim() ?? ""
   return body || DEFAULT_SUPPORT_REPLY_ROOT_PROMPT
 }
 
-export async function upsertSupportReplyRootPrompt(
+export async function getSupportReplyLiveChatPromptBody(
   supabase: SupabaseClient,
+): Promise<string> {
+  const row = await getSupportReplyPromptById(supabase, SUPPORT_REPLY_LIVE_CHAT_PROMPT_ID)
+  const body = row?.body.trim() ?? ""
+  return body || DEFAULT_LIVE_CHAT_REPLY_PROMPT
+}
+
+export async function upsertSupportReplyPrompt(
+  supabase: SupabaseClient,
+  id: SupportReplyPromptId,
   body: string,
   updatedBy: string | null,
 ): Promise<SupportReplyRootPromptRow | { error: string }> {
@@ -55,7 +77,7 @@ export async function upsertSupportReplyRootPrompt(
     .from("support_reply_root_prompt")
     .upsert(
       {
-        id: SUPPORT_REPLY_ROOT_PROMPT_ID,
+        id,
         body,
         updated_by: updatedBy,
       },
@@ -66,9 +88,25 @@ export async function upsertSupportReplyRootPrompt(
 
   if (error) {
     console.error("[support_reply_root_prompt] upsert failed:", error.message)
-    return { error: "Could not save the root prompt." }
+    return { error: "Could not save the prompt." }
   }
   const row = asRow(data)
-  if (!row) return { error: "Could not save the root prompt." }
+  if (!row) return { error: "Could not save the prompt." }
   return row
+}
+
+export async function upsertSupportReplyRootPrompt(
+  supabase: SupabaseClient,
+  body: string,
+  updatedBy: string | null,
+): Promise<SupportReplyRootPromptRow | { error: string }> {
+  return upsertSupportReplyPrompt(supabase, SUPPORT_REPLY_ROOT_PROMPT_ID, body, updatedBy)
+}
+
+export async function upsertSupportReplyLiveChatPrompt(
+  supabase: SupabaseClient,
+  body: string,
+  updatedBy: string | null,
+): Promise<SupportReplyRootPromptRow | { error: string }> {
+  return upsertSupportReplyPrompt(supabase, SUPPORT_REPLY_LIVE_CHAT_PROMPT_ID, body, updatedBy)
 }

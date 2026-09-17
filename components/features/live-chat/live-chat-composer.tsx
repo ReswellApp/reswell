@@ -39,7 +39,9 @@ export function LiveChatComposer({
   emailInputRef,
   placeholder = "Write your message…",
 }: LiveChatComposerProps) {
-  const canSend = draft.trim().length > 0 && !sending
+  // Enable whenever there is text — never leave the arrow grey because session
+  // bootstrap or a stuck `sending` flag is in flight.
+  const canSend = draft.trim().length > 0
 
   return (
     <div className="border-t border-border/50 bg-background px-3 pb-3 pt-2">
@@ -95,10 +97,12 @@ export function LiveChatComposer({
               canSend
                 ? "bg-listingHeart text-white hover:bg-listingHeart/90"
                 : "bg-muted text-muted-foreground",
+              sending && canSend && "opacity-80",
             )}
             disabled={!canSend}
             onClick={onSend}
             aria-label="Send message"
+            aria-busy={sending}
           >
             <ArrowUp className="h-4 w-4" aria-hidden />
           </Button>

@@ -10,6 +10,7 @@ import {
   escalateLiveChatSessionAdminAction,
   listLiveChatAdminQueueAction,
   loadLiveChatAdminThreadAction,
+  rateLiveChatReplyAction,
   sendLiveChatAgentMessageAction,
   updateLiveChatSessionAdminAction,
 } from "@/lib/actions/liveChatAdmin"
@@ -28,7 +29,13 @@ import {
   type LiveChatUiMessage,
 } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
 import { format } from "date-fns"
+import { toast } from "sonner"
 import { adminSupportCaseHref } from "@/lib/utils/support-case-paths"
+import {
+  supportReplyExampleRatingToast,
+} from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
+import { LiveChatReplyRatingControls } from "@/components/features/live-chat/live-chat-reply-rating-controls"
+import type { SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 
 interface LiveChatAdminClientProps {
   initialStaff: { userId: string; displayName: string }
@@ -202,6 +209,8 @@ function ThreadPane({
   )
   const [linkedCaseId, setLinkedCaseId] = useState<string | null>(session.support_case_id)
   const [escalateError, setEscalateError] = useState<string | null>(null)
+  const [ratingMessageId, setRatingMessageId] = useState<string | null>(null)
+  const [ratedMessageIds, setRatedMessageIds] = useState<Set<string>>(() => new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [localMessages, setLocalMessages] = useState<LiveChatAdminMessage[]>(messages)
@@ -309,6 +318,27 @@ function ThreadPane({
     })
   }
 
+  async function rateTeamReply(
+    messageId: string,
+    rating: SupportReplyDraftRating,
+    note: string,
+  ) {
+    setRatingMessageId(messageId)
+    const result = await rateLiveChatReplyAction({
+      session_id: session.id,
+      message_id: messageId,
+      rating,
+      rating_note: note || undefined,
+    })
+    setRatingMessageId(null)
+    if ("error" in result) {
+      toast.error(result.error)
+      return
+    }
+    setRatedMessageIds((prev) => new Set(prev).add(messageId))
+    toast.success(supportReplyExampleRatingToast(rating))
+  }
+
   return (
     <div className="flex min-h-[min(72vh,720px)] flex-1 flex-col overflow-hidden rounded-xl border border-border/70 bg-card">
       <div className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
@@ -358,6 +388,7 @@ function ThreadPane({
           const isAgent = message.sender_type === "agent"
           const isBot = message.sender_type === "bot"
           const isSystem = message.sender_type === "system"
+          const isTeamAutoReply = isAgent && !message.sender_agent_id
           if (isSystem) {
             return (
               <p key={message.id} className="text-center text-xs text-muted-foreground">
@@ -376,6 +407,7 @@ function ThreadPane({
               {isAgent ? (
                 <span className="px-1 text-[11px] text-muted-foreground">
                   {message.agent_display_name ?? staff.displayName}
+                  {isTeamAutoReply ? " · auto" : ""}
                 </span>
               ) : isBot ? (
                 <span className="px-1 text-[11px] font-medium text-muted-foreground">
@@ -396,6 +428,15 @@ function ThreadPane({
               >
                 {message.content}
               </div>
+              {isTeamAutoReply && !ratedMessageIds.has(message.id) ? (
+                <LiveChatReplyRatingControls
+                  saving={ratingMessageId === message.id}
+                  onSubmit={(rating, note) => rateTeamReply(message.id, rating, note)}
+                />
+              ) : null}
+              {isTeamAutoReply && ratedMessageIds.has(message.id) ? (
+                <span className="px-1 text-[10px] text-muted-foreground">Rated — saved to reply examples</span>
+              ) : null}
               <span className="px-1 text-[10px] text-muted-foreground">
                 {format(new Date(message.created_at), "h:mm a")}
               </span>

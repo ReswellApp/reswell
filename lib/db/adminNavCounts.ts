@@ -37,11 +37,13 @@ export async function fetchAdminNavBadgeCounts(
       supabase
         .from('support_cases')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'submitted'),
+        .eq('status', 'submitted')
+        .neq('source_channel', 'live_chat'),
       supabase
         .from('contact_messages')
         .select('*', { count: 'exact', head: true })
-        .eq('support_status', 'new'),
+        .eq('support_status', 'new')
+        .neq('source', 'live_chat'),
       supabase
         .from('live_chat_sessions')
         .select('*', { count: 'exact', head: true })

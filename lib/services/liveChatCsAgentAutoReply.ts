@@ -6,7 +6,6 @@ import {
 } from "@/lib/db/liveChat"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
 import {
-  LIVE_CHAT_CS_AGENT_SEND_NOTE,
   LIVE_CHAT_TEAM_NAME,
   LIVE_CHAT_WIDGET_ADMIN_ONLY,
 } from "@/lib/live-chat/widget-config"
@@ -15,17 +14,23 @@ import {
   appendLiveChatVisitorTurnToCase,
   openLiveChatSupportCase,
 } from "@/lib/services/liveChatSupportCase"
+import { bootstrapLiveChatLabelUpdate } from "@/lib/services/liveChatShipFromLabelUpdate"
 import { broadcastLiveChatMessage, broadcastLiveChatTyping } from "@/lib/services/liveChatRealtime"
 import { generateAndStoreDraft } from "@/lib/services/supportReplyDraft"
+import { loadLiveChatReplyPromptBody } from "@/lib/services/supportReplyExamples"
 
 const FALLBACK_REPLY =
   "Thanks for writing in — we're looking into this and will follow up here shortly."
 
-/** Deterministic reply so label asks are never silent (panel may also show). */
+/** Deterministic reply when eligible undropped-off sales exist (panel shows tiles). */
 export const LIVE_CHAT_LABEL_UPDATE_REPLY =
-  "You can update the ship-from address on a label for sales that are still waiting for carrier drop-off. Use the order tiles below — pick the sale, tell us why, then choose the ship-from address. Ship-to stays the same. If you don't see the right sale, reply with the order number and we'll help."
+  "You can update the ship-from address on a label for sales still waiting for carrier drop-off. Use the tiles below — pick the sale, say why, then choose the ship-from address. Ship-to stays the same."
 
-const DRAFT_GENERATE_BUDGET_MS = 6_000
+/** When nothing is eligible — don't pin them in the label flow. */
+export const LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY =
+  "I don't see any of your sales with a label still waiting for carrier drop-off, so we can't reprint a ship-from label from here right now. If a label already scanned or the sale shipped, ship-from can't change. Tell me the order number or what else you need help with."
+
+const DRAFT_GENERATE_BUDGET_MS = 10_000
 
 async function persistTeamReply(
   svc: SupabaseClient,
@@ -66,9 +71,11 @@ async function generateDraftBodyWithBudget(
   caseId: string,
 ): Promise<string | null> {
   try {
+    const rewriteInstruction = await loadLiveChatReplyPromptBody(svc)
     const draft = await Promise.race([
       generateAndStoreDraft(svc, caseId, true, {
-        rewriteInstruction: LIVE_CHAT_CS_AGENT_SEND_NOTE,
+        rewriteInstruction,
+        liveChatSession: session,
       }),
       new Promise<null>((resolve) => {
         setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
@@ -117,7 +124,12 @@ export async function autoSendLiveChatCsAgentReply(
 
   try {
     if (isLabelIntent) {
-      return await persistTeamReply(svc, session, caseId, LIVE_CHAT_LABEL_UPDATE_REPLY)
+      const bootstrap = await bootstrapLiveChatLabelUpdate({ svc, session })
+      const body =
+        !bootstrap.authRequired && bootstrap.orders.length === 0
+          ? LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY
+          : LIVE_CHAT_LABEL_UPDATE_REPLY
+      return await persistTeamReply(svc, session, caseId, body)
     }
 
     let body = FALLBACK_REPLY

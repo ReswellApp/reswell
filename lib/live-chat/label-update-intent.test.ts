@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   isLiveChatShipFromLabelUpdateIntent,
+  latestLiveChatShipFromLabelUpdateMessage,
   threadHasLiveChatShipFromLabelUpdateIntent,
 } from "./label-update-intent.ts"
 
@@ -27,12 +28,28 @@ describe("isLiveChatShipFromLabelUpdateIntent", () => {
     assert.equal(isLiveChatShipFromLabelUpdateIntent("any update"), false)
   })
 
-  it("keeps panel intent sticky across follow-ups in the thread", () => {
+  it("clears panel intent once the visitor moves on", () => {
+    assert.equal(
+      latestLiveChatShipFromLabelUpdateMessage([
+        { id: "1", sender_type: "visitor", content: "I need to update on of my shipping labels" },
+        { id: "2", sender_type: "visitor", content: "actually where is my refund?" },
+      ]),
+      null,
+    )
+  })
+
+  it("keeps panel intent while the latest ask is still about labels", () => {
+    assert.deepEqual(
+      latestLiveChatShipFromLabelUpdateMessage([
+        { id: "1", sender_type: "visitor", content: "hi" },
+        { id: "2", sender_type: "visitor", content: "I need to update my shipping label" },
+      ]),
+      { id: "2", content: "I need to update my shipping label" },
+    )
     assert.equal(
       threadHasLiveChatShipFromLabelUpdateIntent([
         { sender_type: "visitor", content: "I need to update on of my shipping labels" },
         { sender_type: "visitor", content: "?" },
-        { sender_type: "visitor", content: "any update" },
       ]),
       true,
     )

@@ -106,6 +106,7 @@ export function rankExamplesForQuery<
     customer_excerpt: string
     staff_reply: string
     rating: "very_good" | "okay" | "bad"
+    rating_note?: string | null
   },
 >(
   examples: T[],
@@ -118,23 +119,27 @@ export function rankExamplesForQuery<
   customerExcerpt: string
   staffReply: string
   rating: T["rating"]
+  ratingNote: string | null
   score: number
 }> {
   const tokens = tokenizeSupportReplyQuery(query)
   return examples
     .filter((example) => example.rating !== "bad")
     .map((example) => {
-      const hay = `${example.customer_excerpt} ${example.staff_reply}`
+      const note = example.rating_note?.trim() ?? ""
+      const hay = `${example.customer_excerpt} ${example.staff_reply} ${note}`
       const overlap = scoreSupportReplyOverlap(tokens, hay)
       const kindBoost = kind && example.kind === kind ? 0.25 : 0
       const ratingBoost = example.rating === "very_good" ? 0.2 : 0.1
+      const noteBoost = note ? 0.05 : 0
       return {
         id: example.id,
         kind: example.kind,
         customerExcerpt: example.customer_excerpt,
         staffReply: example.staff_reply,
         rating: example.rating,
-        score: overlap + kindBoost + ratingBoost,
+        ratingNote: note || null,
+        score: overlap + kindBoost + ratingBoost + noteBoost,
       }
     })
     .filter((example) => example.score > 0.35)

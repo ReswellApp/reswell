@@ -8,10 +8,15 @@ import {
   updateSupportReplyExample,
 } from "@/lib/db/supportReplyDrafts"
 import {
+  getSupportReplyLiveChatPromptBody,
+  getSupportReplyPromptById,
   getSupportReplyRootPrompt,
+  SUPPORT_REPLY_LIVE_CHAT_PROMPT_ID,
+  upsertSupportReplyLiveChatPrompt,
   upsertSupportReplyRootPrompt,
 } from "@/lib/db/supportReplyRootPrompt"
 import { DEFAULT_SUPPORT_REPLY_ROOT_PROMPT } from "@/lib/llm/cs-agent"
+import { DEFAULT_LIVE_CHAT_REPLY_PROMPT } from "@/lib/live-chat/live-chat-cs-prompt"
 import { citedHelpFromSlugs } from "@/lib/services/supportReplyKnowledge"
 import { clampSupportReplyExamplesPage } from "@/lib/utils/support-reply-examples"
 import type {
@@ -249,4 +254,55 @@ export async function updateAdminSupportReplyRootPromptService(
       updatedAt: saved.updated_at,
     },
   }
+}
+
+export async function getAdminSupportReplyLiveChatPromptService(): Promise<
+  { data: SupportReplyRootPromptView } | ServiceError
+> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+
+  const row = await getSupportReplyPromptById(staff.supabase, SUPPORT_REPLY_LIVE_CHAT_PROMPT_ID)
+  return {
+    data: {
+      body: row?.body.trim() || DEFAULT_LIVE_CHAT_REPLY_PROMPT,
+      updatedAt: row?.updated_at || null,
+    },
+  }
+}
+
+export async function updateAdminSupportReplyLiveChatPromptService(
+  raw: unknown,
+): Promise<{ success: true; data: SupportReplyRootPromptView } | ServiceError> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+
+  const parsed = supportReplyRootPromptSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+
+  const {
+    data: { user },
+  } = await staff.supabase.auth.getUser()
+
+  const saved = await upsertSupportReplyLiveChatPrompt(
+    staff.supabase,
+    parsed.data.body,
+    user?.id ?? null,
+  )
+  if ("error" in saved) return saved
+
+  return {
+    success: true,
+    data: {
+      body: saved.body,
+      updatedAt: saved.updated_at,
+    },
+  }
+}
+
+/** Service-role helper for live-chat auto-send generation. */
+export async function loadLiveChatReplyPromptBody(svc: Parameters<
+  typeof getSupportReplyLiveChatPromptBody
+>[0]): Promise<string> {
+  return getSupportReplyLiveChatPromptBody(svc)
 }

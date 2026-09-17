@@ -153,7 +153,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   const bootstrapSession = session.bootstrapSession
 
   const ensureChatSession = useCallback(async () => {
-    if (authStatus === "loading") return
+    // Session uses visitor_token — do not wait on auth or the composer stays dead.
     if (sessionReady || sessionBootstrapping || handoffBootstrapRef.current) return
     handoffBootstrapRef.current = true
     try {
@@ -161,14 +161,13 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     } finally {
       handoffBootstrapRef.current = false
     }
-  }, [authStatus, bootstrapSession, sessionBootstrapping, sessionReady])
+  }, [bootstrapSession, sessionBootstrapping, sessionReady])
 
   useEffect(() => {
-    if (authStatus === "loading") return
     if (sessionReady || handoffBootstrapRef.current) return
     if (!open && tab !== "messages") return
     void ensureChatSession()
-  }, [authStatus, ensureChatSession, open, sessionReady, tab])
+  }, [ensureChatSession, open, sessionReady, tab])
 
   function clearHelpArticleStack() {
     setHelpArticleStack([])
@@ -262,8 +261,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   }, [open])
 
   const isSignedIn = authStatus === "signed_in"
-  const composerLocked =
-    authStatus === "loading" || (session.bootstrapping && !session.sessionReady)
+  const composerLocked = session.bootstrapping && !session.sessionReady
 
   async function handleStartNewConversation() {
     setEmailDraft("")
@@ -359,7 +357,9 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
                 onSendMessage={handleSendMessage}
                 onPublishTyping={(isTyping) => void publishTyping(isTyping)}
                 publicId={session.publicId}
+                sessionId={session.sessionId}
                 visitorToken={session.visitorToken}
+                enableReplyRatings={LIVE_CHAT_WIDGET_ADMIN_ONLY}
                 visitorEmail={signedInEmail}
                 isSignedIn={isSignedIn}
                 onAuthRequired={() => {

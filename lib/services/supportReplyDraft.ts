@@ -446,6 +446,9 @@ export async function generateAndStoreDraft(
       query,
       kind: row.kind,
       excludeCaseId: row.id,
+      sourceChannel: row.source_channel,
+      requesterUserId: row.requester_user_id,
+      requesterEmail: row.requester_email,
     }),
     row.order_id ? getSupportReplyOrderSnapshot(service, row.order_id) : Promise.resolve(null),
     getSupportReplyRequesterNames(service, row),
@@ -532,6 +535,9 @@ export async function recordSentSupportReplyExample(args: {
   caseId: string
   sentBody: string
   staffUserId: string | null
+  sourceChannel?: string | null
+  rating?: "very_good" | "okay" | "bad"
+  ratingNote?: string | null
 }): Promise<void> {
   try {
     const service = staffClient()
@@ -543,7 +549,7 @@ export async function recordSentSupportReplyExample(args: {
     const sent = args.sentBody.trim()
     if (!sent) return
 
-    const rating = supportReplyRatingForSentBody(draft?.body, sent)
+    const rating = args.rating ?? supportReplyRatingForSentBody(draft?.body, sent)
 
     await insertSupportReplyExample(service, {
       caseId: loaded.row.id,
@@ -554,6 +560,8 @@ export async function recordSentSupportReplyExample(args: {
       rating,
       draftId: draft?.id ?? null,
       ratedBy: args.staffUserId,
+      sourceChannel: args.sourceChannel ?? loaded.row.source_channel ?? null,
+      ratingNote: args.ratingNote ?? null,
     })
   } catch (error) {
     console.warn("[supportReplyDraft] learn-from-send skipped:", error)

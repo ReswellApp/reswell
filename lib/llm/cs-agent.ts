@@ -70,7 +70,12 @@ export type CsAgentContextPack = {
   order: CsAgentOrderFact | null
   priorTickets: CsAgentPriorTicket[]
   help: Array<{ slug: string; title: string; href: string; description: string; body: string; score?: number }>
-  examples: Array<{ rating: string; customerExcerpt: string; staffReply: string }>
+  examples: Array<{
+    rating: string
+    customerExcerpt: string
+    staffReply: string
+    ratingNote?: string | null
+  }>
   macros: Array<{ title: string; body: string }>
   rewriteInstruction?: string
   currentDraft?: string
@@ -96,6 +101,7 @@ export function csAgentSafetyRules(greetingName: string): string {
 Hard rules (facts are non-negotiable; the root guide above still owns tone and kindness):
 - Never invent tracking numbers, refunds, claim approvals, payouts, or policy.
 - Ground every policy claim in the help-center excerpts or approved examples in the context pack or tool results.
+- Examples and prior tickets are style/policy hints only — never copy another customer's name, order number, tracking, address, or refund details into this reply.
 - If a fact is missing, ask one clear question or say you are looking into it. Do not guess.
 - Do not promise a timeline Reswell has not published.
 - Do not tell the customer a refund is issued or approved unless the order status is already refunded or refunding.
@@ -110,7 +116,28 @@ Draft in one shot from the context pack. Only call a tool when a required fact i
 Also return a short staff-facing reason (why this draft) and cite only order refs, ticket ids, and help slugs you actually used.`
 }
 
-export function csAgentSystemPrompt(greetingName: string, rootPrompt?: string | null): string {
+export function csAgentLiveChatSystemPrompt(greetingName: string, rootPrompt?: string | null): string {
+  const guide = resolveSupportReplyRootPrompt(rootPrompt)
+  return `${guide}
+
+You are live chat for Reswell. Your reply sends immediately as Reswell Team (not a draft).
+
+Hard rules:
+- Confirm auth before any order/purchase/sale/tracking/account fact. If not signed in, ask them to sign in.
+- Never reveal another customer's personal data, orders, or tracking. Never invent Reswell-internal personal or secret details.
+- Use read-only tools: confirm_auth, list_customer_orders, lookup_order, lookup_tracking, help_article (Purchase Protection, /help, seller resources), shipping_label_status.
+- Resolve what they asked; when solved, close the loop briefly. Prefer one clear next step over long threads.
+- Ground policy in help-center results. Do not invent refunds, claim approvals, or payouts.
+- Greet them as ${greetingName}. Never address them by email.
+- Examples are style hints only — never copy another customer's specifics.
+
+Also return a short staff-facing reason and cite only order refs, ticket ids, and help slugs you actually used.`
+}
+
+export function csAgentSystemPrompt(
+  greetingName: string,
+  rootPrompt?: string | null,
+): string {
   return `${resolveSupportReplyRootPrompt(rootPrompt)}
 
 ${csAgentSafetyRules(greetingName)}`
@@ -150,10 +177,13 @@ export function formatCsAgentContextPack(pack: CsAgentContextPack): string {
 
   const examples =
     pack.examples
-      .map(
-        (example) =>
-          `- [${example.rating}] customer: ${example.customerExcerpt.slice(0, 400)}\n  staff: ${example.staffReply.slice(0, 700)}`,
-      )
+      .map((example) => {
+        const coach = example.ratingNote?.trim()
+          ? `\n  coach (${example.rating}): ${example.ratingNote.trim().slice(0, 400)}`
+          : ""
+        const label = example.rating === "bad" ? "AVOID" : example.rating
+        return `- [${label}] customer: ${example.customerExcerpt.slice(0, 400)}\n  staff: ${example.staffReply.slice(0, 700)}${coach}`
+      })
       .join("\n") || "(none yet — learn from future sends)"
 
   const macros =
@@ -166,21 +196,30 @@ export function formatCsAgentContextPack(pack: CsAgentContextPack): string {
       .join("\n\n") || "(original request only)"
 
   const rewrite =
-    pack.rewriteInstruction?.trim()
-      ? `
+    pack.sourceChannel === "live_chat"
+      ? ""
+      : pack.rewriteInstruction?.trim()
+        ? `
 
 Staff rewrite instruction (follow this for the new draft; the root guide and hard rules still come first):
 ${pack.rewriteInstruction.trim()}`
-      : ""
+        : ""
   const previousDraft =
-    pack.rewriteInstruction?.trim() && pack.currentDraft?.trim()
+    pack.sourceChannel !== "live_chat" &&
+    pack.rewriteInstruction?.trim() &&
+    pack.currentDraft?.trim()
       ? `
 
 Current draft they are rewriting (revise this; do not ignore the latest customer message):
 ${pack.currentDraft.trim()}`
       : ""
 
-  return `Draft the next customer-visible reply. A human will edit and send. Never send it yourself.${rewrite}${previousDraft}
+  const opener =
+    pack.sourceChannel === "live_chat"
+      ? "Write the next customer-visible live chat reply. It sends immediately as Reswell Team."
+      : "Draft the next customer-visible reply. A human will edit and send. Never send it yourself."
+
+  return `${opener}${rewrite}${previousDraft}
 
 Case: ${pack.caseSubject}
 Kind: ${pack.caseKind}
@@ -201,7 +240,7 @@ ${tickets}
 Help center articles (current, treat as policy):
 ${help}
 
-Similar sent replies Hayden rated okay or very good:
+Similar sent replies Hayden rated (prefer very_good / okay; treat AVOID + coach notes as what not to do):
 ${examples}
 
 Saved macros (tone/structure only — adapt, do not paste blindly if facts differ):

@@ -1,8 +1,10 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { liveChatAgentDisplayName } from "@/lib/live-chat/team-display"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
+import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
 import { syncLiveChatAgentMessageToCase } from "@/lib/services/liveChatSupportCase"
-import { broadcastLiveChatMessage, broadcastLiveChatSessionStatus } from "@/lib/services/liveChatRealtime"
+import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
+import { recordSentSupportReplyExample } from "@/lib/services/supportReplyDraft"
 import { formatPersonName } from "@/lib/utils/person-name"
 import {
   countOpenLiveChatSessions,
@@ -20,6 +22,7 @@ import {
 } from "@/lib/db/liveChat"
 import {
   escalateLiveChatSessionSchema,
+  rateLiveChatReplySchema,
   sendLiveChatAgentMessageSchema,
   updateLiveChatSessionAdminSchema,
 } from "@/lib/validations/liveChat"
@@ -281,12 +284,26 @@ export async function updateLiveChatSessionAdminService(raw: unknown): Promise<
     return { error: "Session not found" }
   }
 
+  // Solved path: resolve the ticket first, then close the chat — visitor can start fresh after.
+  if (parsed.data.status === "resolved" || parsed.data.status === "closed") {
+    const svc = createServiceRoleClient()
+    const ok = await resolveLiveChatConversation(svc, session, {
+      note: "This conversation has been marked resolved. Start a new chat anytime you need help.",
+    })
+    if (!ok) return { error: "Failed to update session" }
+
+    // Still allow assignee updates on the same request after resolve.
+    if (parsed.data.assigned_agent_id !== undefined) {
+      await updateLiveChatSessionRow(supabase, session.id, {
+        assigned_agent_id: parsed.data.assigned_agent_id,
+      })
+    }
+    return { success: true }
+  }
+
   const patch: Parameters<typeof updateLiveChatSessionRow>[2] = {}
   if (parsed.data.status !== undefined) {
     patch.status = parsed.data.status
-    if (parsed.data.status === "resolved" || parsed.data.status === "closed") {
-      patch.resolved_at = new Date().toISOString()
-    }
   }
   if (parsed.data.assigned_agent_id !== undefined) {
     patch.assigned_agent_id = parsed.data.assigned_agent_id
@@ -302,31 +319,6 @@ export async function updateLiveChatSessionAdminService(raw: unknown): Promise<
   const ok = await updateLiveChatSessionRow(supabase, session.id, patch)
   if (!ok) {
     return { error: "Failed to update session" }
-  }
-
-  if (patch.status === "resolved" || patch.status === "closed") {
-    const note = await insertLiveChatMessage(supabase, {
-      session_id: session.id,
-      sender_type: "system",
-      content: "This conversation has been marked resolved. Start a new chat anytime you need help.",
-    })
-    if (note) {
-      void broadcastLiveChatMessage({
-        sessionId: session.id,
-        message: {
-          id: note.id,
-          session_id: session.id,
-          sender_type: "system",
-          sender_agent_id: null,
-          content: note.content,
-          created_at: note.created_at,
-        },
-      })
-    }
-    void broadcastLiveChatSessionStatus({
-      sessionId: session.id,
-      status: patch.status,
-    })
   }
 
   return { success: true }
@@ -360,6 +352,50 @@ export async function escalateLiveChatSessionAdminService(raw: unknown): Promise
     contactMessageId: result.contactMessageId,
     supportCaseId: result.supportCaseId,
   }
+}
+
+/**
+ * Staff rates a Reswell Team (auto-sent) live chat reply so it enters
+ * support_reply_examples with source_channel=live_chat.
+ */
+export async function rateLiveChatReplyAdminService(
+  raw: unknown,
+): Promise<{ success: true } | { error: string }> {
+  const parsed = rateLiveChatReplySchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid rating." }
+
+  const staff = await requireStaffUser()
+  if (!staff.ok) return { error: staff.error }
+
+  const supabase = await createClient()
+  const session = await getLiveChatSessionById(supabase, parsed.data.session_id)
+  if (!session) return { error: "Session not found" }
+
+  const messages = await listLiveChatMessagesForSession(supabase, session.id)
+  const message = messages.find((row) => row.id === parsed.data.message_id)
+  if (!message || message.sender_type !== "agent") {
+    return { error: "Reply not found." }
+  }
+
+  let caseId = session.support_case_id
+  if (!caseId) {
+    const svc = createServiceRoleClient()
+    const escalated = await escalateLiveChatSessionToTicket(svc, session, "manual")
+    if ("error" in escalated) return { error: escalated.error }
+    caseId = escalated.supportCaseId
+  }
+  if (!caseId) return { error: "Link a support case before rating." }
+
+  await recordSentSupportReplyExample({
+    caseId,
+    sentBody: message.content,
+    staffUserId: staff.userId,
+    sourceChannel: "live_chat",
+    rating: parsed.data.rating,
+    ratingNote: parsed.data.rating_note ?? null,
+  })
+
+  return { success: true }
 }
 
 export async function countOpenLiveChatSessionsForAdminNav(): Promise<number> {

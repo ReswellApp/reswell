@@ -66,6 +66,8 @@ export type SupportReplyExampleRow = {
   rating: SupportReplyDraftRating
   draft_id: string | null
   rated_by: string | null
+  source_channel: string | null
+  rating_note: string | null
   created_at: string
 }
 

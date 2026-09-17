@@ -149,11 +149,16 @@ export async function fetchAdminOverviewSnapshot(
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('listings').select('*', { count: 'exact', head: true }).gte('created_at', since),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', since),
-    supabase.from('contact_messages').select('*', { count: 'exact', head: true }).gte('created_at', since),
     supabase
       .from('contact_messages')
       .select('*', { count: 'exact', head: true })
-      .eq('support_status', 'new'),
+      .gte('created_at', since)
+      .neq('source', 'live_chat'),
+    supabase
+      .from('contact_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('support_status', 'new')
+      .neq('source', 'live_chat'),
     supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
@@ -189,6 +194,7 @@ export async function fetchAdminOverviewSnapshot(
     supabase
       .from('contact_messages')
       .select('id, name, email, subject, support_status, source, created_at')
+      .neq('source', 'live_chat')
       .order('created_at', { ascending: false })
       .limit(8),
     supabase

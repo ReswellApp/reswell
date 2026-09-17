@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import {
+  getAdminSupportReplyLiveChatPromptService,
   getAdminSupportReplyRootPromptService,
   listAdminSupportReplyExamplesService,
 } from "@/lib/services/supportReplyExamples"
 import { DEFAULT_SUPPORT_REPLY_ROOT_PROMPT } from "@/lib/llm/cs-agent"
+import { DEFAULT_LIVE_CHAT_REPLY_PROMPT } from "@/lib/live-chat/live-chat-cs-prompt"
 import { SupportReplyExamplesAdminClient } from "@/components/features/admin/support-reply-examples/support-reply-examples-admin-client"
 import {
   SUPPORT_REPLY_EXAMPLES_PATH,
@@ -46,9 +48,10 @@ export default async function AdminSupportReplyExamplesPage({
 }: AdminSupportReplyExamplesPageProps) {
   const raw = await searchParams
   const filters = parseSupportReplyExampleListParams(raw)
-  const [loaded, rootPrompt] = await Promise.all([
+  const [loaded, rootPrompt, liveChatPrompt] = await Promise.all([
     listAdminSupportReplyExamplesService(filters),
     getAdminSupportReplyRootPromptService(),
+    getAdminSupportReplyLiveChatPromptService(),
   ])
   if ("data" in loaded && loaded.data.page !== (filters.page ?? 1)) {
     redirect(
@@ -66,8 +69,8 @@ export default async function AdminSupportReplyExamplesPage({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Reply examples</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          The root prompt is how the agent should act and write. Sent and rated replies below are
-          few-shot memory after that guide.
+          Root prompt for inbox drafts, live chat prompt for widget auto-replies, then rated
+          examples as few-shot memory.
         </p>
       </div>
       <SupportReplyExamplesAdminClient
@@ -76,6 +79,11 @@ export default async function AdminSupportReplyExamplesPage({
           "data" in rootPrompt
             ? rootPrompt.data
             : { body: DEFAULT_SUPPORT_REPLY_ROOT_PROMPT, updatedAt: null }
+        }
+        liveChatPrompt={
+          "data" in liveChatPrompt
+            ? liveChatPrompt.data
+            : { body: DEFAULT_LIVE_CHAT_REPLY_PROMPT, updatedAt: null }
         }
         filters={{ rating: filters.rating, kind: filters.kind, q: filters.q }}
         error={"error" in loaded ? loaded.error : undefined}

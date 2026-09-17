@@ -110,7 +110,8 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
     ]),
     publicImage("careers/headline-barrel.jpg", "Careers — headline atmosphere", "marketing", [
       "/careers",
-    ]),
+      "/careers/surfboard-buyer-operations-associate",
+    ], { notes: "Page hero and Open Graph / Twitter share background." }),
     publicImage("careers/role-packed.jpg", "Careers — packed board", "marketing", [
       "/careers/surfboard-buyer-operations-associate",
     ]),

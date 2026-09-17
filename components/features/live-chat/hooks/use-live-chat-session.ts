@@ -487,13 +487,16 @@ export function useLiveChatSession(options?: {
     flushingPendingRef.current = true
     setSending(true)
     setError(null)
-    while (pendingSendRef.current.length > 0 && sessionReadyRef.current) {
-      const pending = pendingSendRef.current.shift()
-      if (!pending) break
-      await postMessage(pending.content, pending.email, pending.optimisticId)
+    try {
+      while (pendingSendRef.current.length > 0 && sessionReadyRef.current) {
+        const pending = pendingSendRef.current.shift()
+        if (!pending) break
+        await postMessage(pending.content, pending.email, pending.optimisticId)
+      }
+    } finally {
+      setSending(false)
+      flushingPendingRef.current = false
     }
-    setSending(false)
-    flushingPendingRef.current = false
   }, [postMessage])
 
   useEffect(() => {
@@ -523,17 +526,32 @@ export function useLiveChatSession(options?: {
           ...pendingSendRef.current,
           { content: trimmed, email: visitorEmail, optimisticId },
         ]
+        // Kick bootstrap so queued sends flush; never leave the composer stuck.
+        void bootstrapSession({ prefer: "human" }).then((boot) => {
+          if (boot.ok) void flushPendingSend()
+          else {
+            setError("Could not start chat. Try again.")
+            removeMessage(optimisticId)
+            pendingSendRef.current = pendingSendRef.current.filter(
+              (row) => row.optimisticId !== optimisticId,
+            )
+          }
+        })
         return optimistic
       }
 
       setSending(true)
+      const safety = window.setTimeout(() => {
+        setSending(false)
+      }, 20_000)
       try {
         return await postMessage(trimmed, visitorEmail, optimisticId)
       } finally {
+        window.clearTimeout(safety)
         setSending(false)
       }
     },
-    [appendMessage, postMessage],
+    [appendMessage, bootstrapSession, flushPendingSend, postMessage, removeMessage],
   )
 
   const callAi = useCallback(
@@ -560,6 +578,10 @@ export function useLiveChatSession(options?: {
       if (awaitsBotReply) setAiThinking(true)
       setSending(true)
       setError(null)
+      const safety = window.setTimeout(() => {
+        setSending(false)
+        setAiThinking(false)
+      }, 25_000)
       try {
         const res = await fetch(`/api/live-chat/session/${encodeURIComponent(activePublicId)}/ai`, {
           method: "POST",
@@ -658,6 +680,8 @@ export function useLiveChatSession(options?: {
         setSending(false)
         setAiThinking(false)
         return { ok: false, handoff: false, aiMode: null }
+      } finally {
+        window.clearTimeout(safety)
       }
     },
     [appendMessage, removeMessage, replaceMessage],

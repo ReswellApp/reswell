@@ -329,7 +329,11 @@ export async function listAdminSupportInboxService(
   }
 
   const selected = await loadSelectedCase(staff.service, raw.selected_key)
-  if (selected && !items.some((item) => item.key === selected.key || item.id === selected.id)) {
+  if (
+    selected &&
+    selected.sourceChannel !== "live_chat" &&
+    !items.some((item) => item.key === selected.key || item.id === selected.id)
+  ) {
     items = [selected, ...items]
   }
 
