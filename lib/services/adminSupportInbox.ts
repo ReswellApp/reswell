@@ -137,6 +137,7 @@ function viewListFilter(
       type: caseType,
       kind,
       currentStaffId: staffId,
+      excludeLiveChat: false,
       limit: INBOX_SEARCH_MATCH_CAP,
     }
   }
@@ -149,6 +150,7 @@ function viewListFilter(
         currentStaffId: staffId,
         type: caseType,
         kind,
+        excludeLiveChat: false,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "unassigned":
@@ -157,6 +159,7 @@ function viewListFilter(
         assignee: "unassigned",
         type: caseType,
         kind,
+        excludeLiveChat: false,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "new":
@@ -164,6 +167,7 @@ function viewListFilter(
         status: "submitted",
         type: caseType,
         kind,
+        excludeLiveChat: false,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "waiting":
@@ -171,12 +175,14 @@ function viewListFilter(
         status: "waiting_on_you",
         type: caseType,
         kind,
+        excludeLiveChat: false,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "claims":
       return {
         status: "open",
         kind: "protection_claim",
+        excludeLiveChat: false,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "overdue":
@@ -185,6 +191,7 @@ function viewListFilter(
         overdueOnly: true,
         type: caseType,
         kind,
+        excludeLiveChat: false,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
     case "resolved":
@@ -192,6 +199,7 @@ function viewListFilter(
         status: "resolved",
         type: caseType,
         kind,
+        excludeLiveChat: false,
         limit: INBOX_PAGE_SIZE,
       }
     case "all":
@@ -199,6 +207,7 @@ function viewListFilter(
         status: "all",
         type: caseType,
         kind,
+        excludeLiveChat: false,
         limit: INBOX_PAGE_SIZE,
       }
     case "open":
@@ -207,6 +216,7 @@ function viewListFilter(
         status: "open",
         type: caseType,
         kind,
+        excludeLiveChat: false,
         limit: INBOX_OPEN_QUEUE_CAP,
       }
   }
@@ -216,7 +226,7 @@ async function countInboxViews(
   service: ReturnType<typeof createServiceRoleClient> | Awaited<ReturnType<typeof createClient>>,
   staffId: string,
 ): Promise<InboxViewCounts> {
-  const base = {}
+  const base = { excludeLiveChat: false }
   const [
     open,
     mine,
@@ -331,7 +341,6 @@ export async function listAdminSupportInboxService(
   const selected = await loadSelectedCase(staff.service, raw.selected_key)
   if (
     selected &&
-    selected.sourceChannel !== "live_chat" &&
     !items.some((item) => item.key === selected.key || item.id === selected.id)
   ) {
     items = [selected, ...items]

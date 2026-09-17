@@ -275,5 +275,6 @@ export async function generateCsAgentDraft(args: {
     citedOrderRefs: cited.citedOrderRefs,
     citedTicketIds: cited.citedTicketIds,
     needsHumanReview: output.needs_human_review,
+    closeTicket: isLiveChat && output.close_ticket === true,
   }
 }

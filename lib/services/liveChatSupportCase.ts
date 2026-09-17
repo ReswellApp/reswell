@@ -2,17 +2,21 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { LiveChatSessionRow } from "@/lib/db/liveChat"
 import {
   claimLiveChatSessionEscalation,
+  detachOtherLiveChatSessionsFromSupportCase,
   getLiveChatSessionById,
   isLiveChatEscalationClaimExpired,
   releaseLiveChatSessionEscalationClaim,
   updateLiveChatSessionRow,
 } from "@/lib/db/liveChat"
 import {
+  findOpenLiveChatSupportCaseForVisitor,
   getSupportCaseByContactMessageId,
   insertSupportCase,
   insertSupportCaseMessage,
+  isUniqueConstraintError,
   listSupportCaseMessages,
   touchSupportCaseAfterMessage,
+  type SupportCaseRow,
 } from "@/lib/db/supportCases"
 import { liveChatCaseAlreadyHasVisitorTurn } from "@/lib/live-chat/team-display"
 
@@ -52,12 +56,42 @@ async function resolveLinkedCase(
   }
 }
 
+async function linkSessionToCase(
+  svc: SupabaseClient,
+  sessionId: string,
+  row: SupportCaseRow,
+): Promise<OpenedLiveChatSupportCase> {
+  await detachOtherLiveChatSessionsFromSupportCase(svc, row.id, sessionId)
+  await updateLiveChatSessionRow(svc, sessionId, {
+    support_case_id: row.id,
+    contact_message_id: row.contact_message_id,
+  })
+  return {
+    supportCaseId: row.id,
+    contactMessageId: row.contact_message_id ?? "",
+  }
+}
+
+/** Attach this session to the visitor's existing open live-chat ticket, if any. */
+export async function attachLiveChatSessionToOpenVisitorCase(
+  svc: SupabaseClient,
+  session: LiveChatSessionRow,
+): Promise<OpenedLiveChatSupportCase | null> {
+  const email = session.visitor_email?.trim() || null
+  const existing = await findOpenLiveChatSupportCaseForVisitor(svc, {
+    userId: session.user_id,
+    email,
+  })
+  if (!existing) return null
+  return linkSessionToCase(svc, session.id, existing)
+}
+
 /**
  * Soft-open a support case for live chat. Intentionally does NOT fire Klaviyo —
  * see `shouldNotifyKlaviyoOnLiveChatSoftOpen` in lib/live-chat/klaviyo-policy.ts.
  *
- * At most one case per live-chat session. Re-reads + claims so concurrent
- * visitor sends cannot open duplicate tickets.
+ * One open ticket per visitor until that ticket is resolved. Re-reads + claims
+ * so concurrent visitor sends cannot open duplicate tickets.
  */
 export async function openLiveChatSupportCase(
   svc: SupabaseClient,
@@ -96,6 +130,13 @@ export async function openLiveChatSupportCase(
   }
 
   const claimedSession = claim.session
+  const reused = await attachLiveChatSessionToOpenVisitorCase(svc, {
+    ...claimedSession,
+    visitor_email: claimedSession.visitor_email ?? email,
+    user_id: claimedSession.user_id ?? session.user_id,
+  })
+  if (reused) return reused
+
   const preview =
     opts?.initialVisitorMessage?.trim() ||
     "Live chat conversation"
@@ -118,7 +159,7 @@ export async function openLiveChatSupportCase(
     if (ticketError || !ticket?.id) {
       console.error("[liveChatSupportCase] contact_messages insert", ticketError)
       await releaseLiveChatSessionEscalationClaim(svc, claimedSession)
-      return null
+      return attachLiveChatSessionToOpenVisitorCase(svc, claimedSession)
     }
 
     const opened = await insertSupportCase(svc, {
@@ -132,6 +173,11 @@ export async function openLiveChatSupportCase(
       source_channel: "live_chat",
     })
     if (!opened.data) {
+      if (isUniqueConstraintError(opened.error)) {
+        await svc.from("contact_messages").delete().eq("id", ticket.id)
+        const raced = await attachLiveChatSessionToOpenVisitorCase(svc, claimedSession)
+        if (raced) return raced
+      }
       await releaseLiveChatSessionEscalationClaim(svc, claimedSession)
       return null
     }

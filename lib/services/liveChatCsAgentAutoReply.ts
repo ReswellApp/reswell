@@ -16,8 +16,11 @@ import {
 } from "@/lib/services/liveChatSupportCase"
 import { bootstrapLiveChatLabelUpdate } from "@/lib/services/liveChatShipFromLabelUpdate"
 import { broadcastLiveChatMessage, broadcastLiveChatTyping } from "@/lib/services/liveChatRealtime"
+import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
+import { resolveLiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
 import { generateAndStoreDraft } from "@/lib/services/supportReplyDraft"
 import { loadLiveChatReplyPromptBody } from "@/lib/services/supportReplyExamples"
+import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
 
 const FALLBACK_REPLY =
   "Thanks for writing in — we're looking into this and will follow up here shortly."
@@ -69,20 +72,28 @@ async function persistTeamReply(
 async function generateDraftBodyWithBudget(
   svc: SupabaseClient,
   caseId: string,
-): Promise<string | null> {
+  session: LiveChatSessionRow,
+): Promise<{ body: string; closeTicket: boolean } | null> {
   try {
     const rewriteInstruction = await loadLiveChatReplyPromptBody(svc)
+    const liveChatActor = await resolveLiveChatActionActor(svc, {
+      visitorUserId: session.user_id,
+    })
     const draft = await Promise.race([
       generateAndStoreDraft(svc, caseId, true, {
         rewriteInstruction,
         liveChatSession: session,
+        liveChatActor,
       }),
       new Promise<null>((resolve) => {
         setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
       }),
     ])
     if (draft && "data" in draft && draft.data.body.trim()) {
-      return draft.data.body.trim()
+      return {
+        body: draft.data.body.trim(),
+        closeTicket: draft.closeTicket === true,
+      }
     }
   } catch (error) {
     console.error("[liveChatCsAgentAutoReply] generate failed:", error)
@@ -133,12 +144,36 @@ export async function autoSendLiveChatCsAgentReply(
     }
 
     let body = FALLBACK_REPLY
+    let closeTicket = false
+    let needsHumanReview = false
     if (caseId) {
-      const generated = await generateDraftBodyWithBudget(svc, caseId)
-      if (generated) body = generated
+      const generated = await generateDraftBodyWithBudget(svc, caseId, session)
+      if (generated) {
+        body = generated.body
+        closeTicket = generated.closeTicket
+      } else {
+        needsHumanReview = true
+      }
     }
 
-    return await persistTeamReply(svc, session, caseId, body)
+    const sent = await persistTeamReply(svc, session, caseId, body)
+    if (
+      sent &&
+      caseId &&
+      shouldHonorLiveChatTicketClose({
+        closeTicket,
+        reply: body,
+        lastCustomerMessage: visitorMessage.content,
+        needsHumanReview,
+      })
+    ) {
+      await resolveLiveChatConversation(svc, {
+        ...session,
+        support_case_id: caseId,
+        contact_message_id: opened?.contactMessageId || session.contact_message_id,
+      })
+    }
+    return sent
   } catch (error) {
     console.error("[liveChatCsAgentAutoReply] reply failed:", error)
     return persistTeamReply(

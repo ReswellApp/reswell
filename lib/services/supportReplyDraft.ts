@@ -259,6 +259,7 @@ async function generateDraftBody(args: {
   exampleIds: string[]
   model: string | null
   needsHumanReview: boolean
+  closeTicket: boolean
   reason: string
   citations: SupportReplyDraftCitations
 }> {
@@ -275,7 +276,7 @@ async function generateDraftBody(args: {
       draftMacroVars(args.greetingName, args.row.order_ref, args.order),
       lastCustomerMessage,
     )
-    return { ...fallback, model: null, needsHumanReview: true }
+    return { ...fallback, model: null, needsHumanReview: true, closeTicket: false }
   }
 
   const priorTickets = await listPriorTicketsForCsAgent(args.service, {
@@ -327,6 +328,7 @@ async function generateDraftBody(args: {
     exampleIds,
     model: supportReplyDraftModelId(),
     needsHumanReview: generated.needsHumanReview,
+    closeTicket: generated.closeTicket,
     reason: generated.reason,
     citations: citationsFromAgent({
       orders: [args.order, ...lookupSession.resolvedOrders()],
@@ -410,7 +412,7 @@ export async function generateAndStoreDraft(
     liveChatSession?: LiveChatSessionRow
     liveChatActor?: LiveChatActionActor
   },
-): Promise<{ data: SupportReplyDraftView } | { error: string }> {
+): Promise<{ data: SupportReplyDraftView; closeTicket: boolean } | { error: string }> {
   const loaded = await loadCaseContext(service, caseId)
   if ("error" in loaded) return loaded
 
@@ -430,7 +432,7 @@ export async function generateAndStoreDraft(
   if (!force) {
     const existing = await matchingStoredDraft(service, row, messages, rootPrompt)
     if (existing) {
-      return { data: toView(existing, true, false) }
+      return { data: toView(existing, true, false), closeTicket: false }
     }
   }
 
@@ -481,7 +483,7 @@ export async function generateAndStoreDraft(
       draftMacroVars(greetingName, row.order_ref, order),
       lastCustomer,
     )
-    generated = { ...fallback, model: null, needsHumanReview: true }
+    generated = { ...fallback, model: null, needsHumanReview: true, closeTicket: false }
   }
 
   const saved = await upsertSupportReplyDraft(service, {
@@ -498,7 +500,10 @@ export async function generateAndStoreDraft(
   })
   if (!saved) return { error: "Could not save the draft." }
 
-  return { data: toView(saved, false, generated.needsHumanReview) }
+  return {
+    data: toView(saved, false, generated.needsHumanReview),
+    closeTicket: generated.closeTicket === true,
+  }
 }
 
 export async function recordSupportReplyFeedbackService(
