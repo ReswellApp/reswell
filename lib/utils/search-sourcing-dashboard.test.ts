@@ -3,6 +3,7 @@ import { describe, it } from "node:test"
 import {
   buildCumulativeVolume,
   classifySearchInventory,
+  fillDailyVolume,
 } from "./search-sourcing-dashboard.ts"
 
 describe("classifySearchInventory", () => {
@@ -23,6 +24,30 @@ describe("classifySearchInventory", () => {
 
   it("does not flag missing averages as a sourcing gap", () => {
     assert.equal(classifySearchInventory(null), "stocked")
+  })
+})
+
+describe("fillDailyVolume", () => {
+  it("returns empty when there are no dated points", () => {
+    assert.deepEqual(fillDailyVolume([], "2026-04-24", "2026-04-26"), [])
+  })
+
+  it("fills missing days between the first and last known points", () => {
+    assert.deepEqual(
+      fillDailyVolume(
+        [
+          { date: "2026-04-24", count: 2 },
+          { date: "2026-04-26", count: 5 },
+        ],
+        "2026-04-24",
+        "2026-04-26",
+      ),
+      [
+        { date: "2026-04-24", count: 2 },
+        { date: "2026-04-25", count: 0 },
+        { date: "2026-04-26", count: 5 },
+      ],
+    )
   })
 })
 
