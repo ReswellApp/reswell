@@ -30,6 +30,7 @@ import {
   type PeerCheckoutShippingRateOption,
   toPeerCheckoutShippingRateOptions,
 } from "@/lib/shipping/peer-checkout-usps-services"
+import { buyerResidentialIndicator } from "@/lib/shipping/buyer-address-validation"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { logPackBandQuoteTelemetry } from "@/lib/shipping/pack-band-telemetry"
 import { resolveSurfboardShippingPackBandId } from "@/lib/surfboard-shipping-pack-bands"
@@ -263,8 +264,7 @@ export function buyerProfileAddressToShipTo(
       state_province: normalizeUsStateProvinceForShipping("US", st),
       postal_code: zip,
       country_code: "US",
-      /** Buyer homes — residential so purchased labels and rates match delivery. */
-      residential: "yes",
+      residential: buyerResidentialIndicator(addr.residential),
     },
   }
 }
@@ -533,7 +533,7 @@ export async function getCheapestReswellRateForListings(input: {
 
   const payload: ReswellListingRateRequestPayload = {
     rate_options: { carrier_ids: carrierIds },
-    shipment: buildShipmentBody(shipFrom.address, { ...input.shipTo, residential: "yes" }, {
+    shipment: buildShipmentBody(shipFrom.address, input.shipTo, {
       weightValue: parcel.weightOz,
       weightUnit: "ounce",
       length: parcel.lengthIn,

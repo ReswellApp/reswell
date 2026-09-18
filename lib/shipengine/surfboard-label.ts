@@ -172,7 +172,7 @@ export async function fetchShipEngineRatesForSurfboard(params: {
       ? params.insuredValueUsd
       : null
 
-  const shipment = buildShipEngineRateShipment(params.shipFrom, { ...params.shipTo, residential: "yes" }, {
+  const shipment = buildShipEngineRateShipment(params.shipFrom, params.shipTo, {
     weightValue: params.parcel.weightLb,
     weightUnit: "pound",
     length: params.parcel.lengthIn,

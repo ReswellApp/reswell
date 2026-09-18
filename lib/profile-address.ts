@@ -3,6 +3,8 @@
  * Backed by `public.addresses` (profile_id → profiles.id).
  */
 
+export type AddressResidentialIndicator = "yes" | "no" | "unknown"
+
 export type ProfileAddressRow = {
   id: string
   profile_id: string
@@ -18,9 +20,17 @@ export type ProfileAddressRow = {
   is_default: boolean
   created_at: string
   updated_at: string
+  residential?: AddressResidentialIndicator | null
+  address_validated_at?: string | null
 }
 
-/** Shape stored on orders.shipping_address (JSONB) for display. */
+function parseStoredResidential(value: unknown): AddressResidentialIndicator | null {
+  const raw = typeof value === "string" ? value.trim().toLowerCase() : ""
+  if (raw === "yes" || raw === "no" || raw === "unknown") return raw
+  return null
+}
+
+/** Shape stored on orders.shipping_address (JSONB) for display and label purchase. */
 export function profileAddressToOrderShippingJson(addr: ProfileAddressRow, email: string | null) {
   return {
     name: addr.full_name,
@@ -33,6 +43,7 @@ export function profileAddressToOrderShippingJson(addr: ProfileAddressRow, email
       state: addr.state,
       postal_code: addr.postal_code,
       country: addr.country,
+      residential: parseStoredResidential(addr.residential) ?? "yes",
     },
   }
 }
@@ -47,6 +58,8 @@ export type ProfileAddressFieldsFromOrder = {
   state: string | null
   postal_code: string
   country: string
+  residential?: AddressResidentialIndicator | null
+  address_validated_at?: string | null
 }
 
 /**
@@ -88,7 +101,15 @@ export function parseOrderShippingAddressForProfile(
     state: state || null,
     postal_code,
     country: countryRaw || "US",
+    residential: parseStoredResidential(a.residential),
   }
+}
+
+function normalizePostalForMatch(value: string): string {
+  const compact = value.trim().toLowerCase().replace(/\s+/g, "")
+  const digits = compact.replace(/\D/g, "")
+  if (digits.length >= 5) return digits.slice(0, 5)
+  return compact
 }
 
 export function profileAddressesMatch(
@@ -99,6 +120,6 @@ export function profileAddressesMatch(
   return (
     norm(a.line1) === norm(b.line1) &&
     norm(a.city) === norm(b.city) &&
-    norm(a.postal_code) === norm(b.postal_code)
+    normalizePostalForMatch(a.postal_code) === normalizePostalForMatch(b.postal_code)
   )
 }

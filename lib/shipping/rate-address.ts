@@ -1,6 +1,7 @@
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { buyerResidentialIndicator } from "@/lib/shipping/buyer-address-validation"
 import {
   residentialDeliveryLabelMessages,
   SHIPENGINE_PLACEHOLDER_US_PHONE,
@@ -32,7 +33,7 @@ export function profileRowToRateQuoteAddress(row: ProfileAddressRow): RateQuoteA
     state_province: row.state?.trim() ?? "",
     postal_code: row.postal_code.trim(),
     country_code: normalizeCountryCodeForShipping(row.country),
-    residential: "yes",
+    residential: buyerResidentialIndicator(row.residential),
   }
 }
 
@@ -67,7 +68,10 @@ export function orderShippingJsonToRateQuoteAddress(ship: unknown): RateQuoteAdd
     state_province: st,
     postal_code: postal,
     country_code: normalizeCountryCodeForShipping(countryRaw || "US"),
-    residential: "yes",
+    residential: buyerResidentialIndicator(
+      typeof a.residential === "string" ? a.residential : undefined,
+      "yes",
+    ),
   }
 }
 

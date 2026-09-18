@@ -5,6 +5,7 @@ import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
   isNonContiguousUsShipTo,
+  peerCheckoutAllowsPoBoxDestination,
   peerCheckoutShippingServiceError,
   surfboardCheckoutBucket,
   toPeerCheckoutShippingRateOptions,
@@ -187,5 +188,15 @@ describe("peerCheckoutShippingServiceError", () => {
   it("names UPS and FedEx air when Hawaii has no rates", () => {
     assert.match(peerCheckoutShippingServiceError("surfboards", HI), /UPS and FedEx air/)
     assert.match(peerCheckoutShippingServiceError("surfboards", CA), /UPS Ground/)
+  })
+})
+
+describe("peerCheckoutAllowsPoBoxDestination", () => {
+  it("allows USPS-only sections and rejects surfboards or mixed carts", () => {
+    assert.equal(peerCheckoutAllowsPoBoxDestination(["fins"]), true)
+    assert.equal(peerCheckoutAllowsPoBoxDestination(["apparel", "magazines"]), true)
+    assert.equal(peerCheckoutAllowsPoBoxDestination(["surfboards"]), false)
+    assert.equal(peerCheckoutAllowsPoBoxDestination(["surfboards", "fins"]), false)
+    assert.equal(peerCheckoutAllowsPoBoxDestination([]), false)
   })
 })

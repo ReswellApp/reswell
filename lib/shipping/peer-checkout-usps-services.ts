@@ -320,6 +320,19 @@ export function peerCheckoutOffersShippingRateChoice(
   return peerCheckoutUsesUspsGroundPriorityChoice(section) || peerCheckoutUsesUpsSurfboardChoice(section)
 }
 
+/** USPS can deliver to PO Boxes. UPS/FedEx (surfboards and unknown mix) cannot. */
+export function peerCheckoutAllowsPoBoxDestination(
+  sections: Array<string | null | undefined>,
+): boolean {
+  if (sections.length === 0) return false
+  return sections.every(
+    (section) => peerCheckoutUsesUspsGroundPriorityChoice(section) || section === "magazines",
+  )
+}
+
+export const UPS_FEDEX_PO_BOX_ERROR =
+  "UPS and FedEx cannot deliver to a PO Box. Enter a street address, or choose pickup if it is available."
+
 export function peerCheckoutSharedSection(
   sections: Array<string | null | undefined>,
 ): string | null {

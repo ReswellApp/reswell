@@ -72,6 +72,35 @@ function brandInventoryOrClause(brand: { id: string; name: string }): string {
   return clauses.join(",")
 }
 
+const LISTING_ID_IN_BATCH = 150
+
+/** Keep `listingIds` that match a directory brand, preserving input order. */
+export async function filterListingIdsMatchingBrand(
+  supabase: SupabaseClient,
+  listingIds: readonly string[],
+  brand: { id: string; name: string },
+): Promise<string[]> {
+  const unique = [...new Set(listingIds.filter((id) => id.length > 0))]
+  if (unique.length === 0) return []
+
+  const matched = new Set<string>()
+  const clause = brandInventoryOrClause(brand)
+
+  for (let i = 0; i < unique.length; i += LISTING_ID_IN_BATCH) {
+    const batch = unique.slice(i, i + LISTING_ID_IN_BATCH)
+    const { data, error } = await supabase.from("listings").select("id").in("id", batch).or(clause)
+    if (error) {
+      console.error("[filterListingIdsMatchingBrand]", error.message)
+      return []
+    }
+    for (const row of data ?? []) {
+      if (typeof row.id === "string" && row.id) matched.add(row.id)
+    }
+  }
+
+  return listingIds.filter((id) => matched.has(id))
+}
+
 interface BrandMarketplaceListingRow {
   id: string
   slug: string | null

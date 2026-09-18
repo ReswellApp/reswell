@@ -5,6 +5,10 @@ import { resolveAddressShippingIdentity } from "@/lib/db/addressShippingIdentity
 import { profileAddressInputSchema, profileAddressPatchSchema } from "@/lib/address-input"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import {
+  buyerAddressInsertFromCarrierFields,
+  normalizeBuyerAddressForCarriers,
+} from "@/lib/services/checkoutBuyerAddress"
 
 export async function getProfileAddresses(): Promise<{
   addresses: ProfileAddressRow[]
@@ -70,6 +74,35 @@ export async function createProfileAddress(
     }
   }
 
+  const normalized = await normalizeBuyerAddressForCarriers({
+    full_name: identity.full_name,
+    phone: identity.phone,
+    line1: input.line1,
+    line2: input.line2 ?? null,
+    city: input.city,
+    state: input.state ?? null,
+    postal_code: input.postal_code,
+    country: input.country,
+  })
+  if (!normalized.ok && normalized.fatal) {
+    return { address: null, error: normalized.error }
+  }
+
+  const carrierFields = buyerAddressInsertFromCarrierFields(
+    identity,
+    {
+      full_name: identity.full_name,
+      phone: identity.phone,
+      line1: input.line1,
+      line2: input.line2 ?? null,
+      city: input.city,
+      state: input.state ?? null,
+      postal_code: input.postal_code,
+      country: input.country,
+    },
+    normalized.ok ? normalized.fields : null,
+  )
+
   if (isDefault) {
     await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
   }
@@ -78,16 +111,18 @@ export async function createProfileAddress(
     .from("addresses")
     .insert({
       profile_id: user.id,
-      full_name: identity.full_name,
-      phone: identity.phone,
-      line1: input.line1,
-      line2: input.line2?.trim() || null,
-      city: input.city,
-      state: input.state?.trim() || null,
-      postal_code: input.postal_code,
-      country: input.country,
+      full_name: carrierFields.full_name,
+      phone: carrierFields.phone,
+      line1: carrierFields.line1,
+      line2: carrierFields.line2,
+      city: carrierFields.city,
+      state: carrierFields.state,
+      postal_code: carrierFields.postal_code,
+      country: carrierFields.country,
       label: input.label?.trim() || null,
       is_default: isDefault,
+      residential: carrierFields.residential ?? "unknown",
+      address_validated_at: carrierFields.address_validated_at ?? null,
     })
     .select()
     .single()
@@ -119,7 +154,7 @@ export async function updateProfileAddress(
 
   const { data: existing, error: fetchError } = await supabase
     .from("addresses")
-    .select("id, profile_id")
+    .select("*")
     .eq("id", id)
     .eq("profile_id", user.id)
     .maybeSingle()
@@ -138,6 +173,14 @@ export async function updateProfileAddress(
   if (input.is_default === true) {
     await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id).neq("id", id)
   }
+
+  const streetChanged =
+    input.line1 !== undefined ||
+    input.line2 !== undefined ||
+    input.city !== undefined ||
+    input.state !== undefined ||
+    input.postal_code !== undefined ||
+    input.country !== undefined
 
   const update: Record<string, unknown> = {}
   if (input.line1 !== undefined) update.line1 = input.line1
@@ -176,6 +219,42 @@ export async function updateProfileAddress(
     })
     update.full_name = identity.full_name
     update.phone = identity.phone
+  }
+
+  if (streetChanged) {
+    const existingRow = existing as ProfileAddressRow
+    const merged = {
+      full_name: String(update.full_name ?? existingRow.full_name),
+      phone:
+        (typeof update.phone === "string" ? update.phone : existingRow.phone) ?? null,
+      line1: String(update.line1 ?? existingRow.line1),
+      line2:
+        (update.line2 === undefined ? existingRow.line2 : (update.line2 as string | null)) ??
+        null,
+      city: String(update.city ?? existingRow.city),
+      state:
+        (update.state === undefined ? existingRow.state : (update.state as string | null)) ??
+        null,
+      postal_code: String(update.postal_code ?? existingRow.postal_code),
+      country: String(update.country ?? existingRow.country),
+    }
+    const normalized = await normalizeBuyerAddressForCarriers(merged)
+    if (!normalized.ok && normalized.fatal) {
+      return { address: null, error: normalized.error }
+    }
+    if (normalized.ok) {
+      update.line1 = normalized.fields.line1
+      update.line2 = normalized.fields.line2
+      update.city = normalized.fields.city
+      update.state = normalized.fields.state
+      update.postal_code = normalized.fields.postal_code
+      update.country = normalized.fields.country
+      update.residential = normalized.fields.residential
+      update.address_validated_at = new Date().toISOString()
+    } else {
+      update.residential = "unknown"
+      update.address_validated_at = null
+    }
   }
 
   const { data, error } = await supabase

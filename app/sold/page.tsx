@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import {
   getCachedMarketplaceNewListingsFeedPage,
+  getCachedMarketplaceShippedFeedPage,
   getCachedMarketplaceSoldFeed,
 } from "@/lib/cache/marketplace-sold-feed"
 import {
@@ -92,8 +93,17 @@ async function FeedPageData({
   }
 
   if (activeTab === "shipped") {
-    const { soldListings, soldStats, brandFilterName, brandUnknown } =
-      await getCachedMarketplaceSoldFeed(brandSlug, true)
+    const { soldListings, totalCount, totalPages, brandFilterName, brandUnknown } =
+      await getCachedMarketplaceShippedFeedPage(brandSlug, page)
+
+    if (page > totalPages && totalCount > 0) {
+      redirect(
+        marketplaceFeedHref("shipped", {
+          brandSlug,
+          page: totalPages > 1 ? totalPages : undefined,
+        }),
+      )
+    }
 
     return (
       <MarketplaceFeedPageShell
@@ -102,10 +112,14 @@ async function FeedPageData({
         brandUnknown={brandUnknown}
         shippedPanel={
           <SoldFeedPanel
-            key={`shipped:${brandSlug ?? "all"}`}
+            key={`shipped:${brandSlug ?? "all"}:${page}`}
             soldListings={soldListings}
-            soldStats={soldStats}
+            soldStats={{ count: totalCount, gmvFormatted: "" }}
             variant="shipped"
+            brandSlug={brandSlug}
+            page={page}
+            totalPages={totalPages}
+            totalCount={totalCount}
           />
         }
       />

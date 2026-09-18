@@ -40,6 +40,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
 import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
+import { ensureCheckoutBuyerShippingAddress } from "@/lib/services/checkoutBuyerAddress"
 import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
@@ -369,6 +370,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: phoneCheck.error }, { status: 400 })
   }
   buyerAddress = phoneCheck.address
+
+  if (impliedFulfillment === "shipping" && buyerAddress) {
+    const preparedAddress = await ensureCheckoutBuyerShippingAddress({
+      supabase,
+      address: buyerAddress,
+      listingSections: listingsOrdered.map((row) => row.section),
+    })
+    if (!preparedAddress.ok) {
+      return NextResponse.json({ error: preparedAddress.error }, { status: 422 })
+    }
+    buyerAddress = preparedAddress.address
+  }
 
   let preverifiedShipping:
     | {

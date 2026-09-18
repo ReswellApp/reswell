@@ -32,6 +32,7 @@ import {
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import { ensureCheckoutBuyerShippingAddress } from "@/lib/services/checkoutBuyerAddress"
 
 function buildQuoteResponse(input: {
   itemPrice: number
@@ -222,7 +223,18 @@ export async function POST(request: Request) {
   }
 
   const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, sellerId)
-  const buyerAddress = addr as ProfileAddressRow
+  const preparedAddress = await ensureCheckoutBuyerShippingAddress({
+    supabase,
+    address: addr as ProfileAddressRow,
+    listingSections: listingRows.map((row) => row.section),
+  })
+  if (!preparedAddress.ok) {
+    return NextResponse.json(
+      { error: preparedAddress.error },
+      { status: 422, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+  const buyerAddress = preparedAddress.address
 
   const qtyById = new Map<string, number>()
   for (const id of listingIds) qtyById.set(id, 1)

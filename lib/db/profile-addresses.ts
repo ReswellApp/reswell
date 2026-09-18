@@ -72,6 +72,8 @@ export async function insertProfileAddress(
       country: fields.country,
       label: opts?.label?.trim() || null,
       is_default: isDefault,
+      residential: fields.residential ?? "unknown",
+      address_validated_at: fields.address_validated_at ?? null,
     })
     .select()
     .single()

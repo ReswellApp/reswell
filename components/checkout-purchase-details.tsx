@@ -416,8 +416,8 @@ export function CheckoutPurchaseDetails({
                   </Label>
                   <p className="text-[12px] leading-relaxed text-neutral-500">
                     {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
-                      ? "US addresses (Google). Choose a suggestion to fill city, state, and ZIP — or type manually."
-                      : "US addresses only. Suggestions as you type; choosing one fills city, state, and ZIP."}
+                      ? "US street addresses (Google). We verify the saved address with UPS, FedEx, and USPS."
+                      : "US street addresses only. We verify the saved address with UPS, FedEx, and USPS."}
                   </p>
                   <CheckoutAddressLine1Field
                     id="addr-line1"
@@ -503,10 +503,10 @@ export function CheckoutPurchaseDetails({
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving…
+                      Verifying…
                     </>
                   ) : (
-                    "Save address"
+                    "Save and verify address"
                   )}
                 </Button>
                 {addresses.length > 0 && showNewForm && (

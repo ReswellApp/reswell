@@ -9,6 +9,10 @@ type OrderItemRow = {
   orders: { created_at: string; status: string; fulfillment_method: string | null } | null
 }
 
+const SHIPPING_SALE_SCAN_PAGE = 500
+const SHIPPING_SALE_SCAN_MAX = 5000
+const STILL_SOLD_ID_BATCH = 150
+
 function serviceClientOrNull(): SupabaseClient | null {
   try {
     return createServiceRoleClient()
@@ -18,62 +22,97 @@ function serviceClientOrNull(): SupabaseClient | null {
   }
 }
 
+function pushSaleLine(
+  lines: SaleLine[],
+  listingId: unknown,
+  saleAt: unknown,
+): void {
+  if (typeof listingId === "string" && listingId && typeof saleAt === "string" && saleAt) {
+    lines.push({ listingId, saleAt })
+  }
+}
+
+async function scanConfirmedShippingSaleLines(
+  fetchPage: (from: number, to: number) => Promise<SaleLine[]>,
+): Promise<SaleLine[]> {
+  const lines: SaleLine[] = []
+  for (let offset = 0; offset < SHIPPING_SALE_SCAN_MAX; offset += SHIPPING_SALE_SCAN_PAGE) {
+    const page = await fetchPage(offset, offset + SHIPPING_SALE_SCAN_PAGE - 1)
+    lines.push(...page)
+    if (page.length < SHIPPING_SALE_SCAN_PAGE) break
+  }
+  return lines
+}
+
 async function fetchConfirmedShippingSaleLines(
   svc: SupabaseClient,
   listingIdFilter?: readonly string[],
 ): Promise<SaleLine[]> {
-  const lines: SaleLine[] = []
   const cappedFilter = listingIdFilter?.length ? [...new Set(listingIdFilter)] : undefined
 
-  let ordersQuery = svc
-    .from("orders")
-    .select("listing_id, created_at")
-    .eq("status", "confirmed")
-    .eq("fulfillment_method", "shipping")
-    .order("created_at", { ascending: false })
-
-  if (cappedFilter?.length) {
-    ordersQuery = ordersQuery.in("listing_id", cappedFilter)
-  }
-
-  const { data: orders, error: ordersError } = await ordersQuery.limit(cappedFilter ? 500 : 200)
-  if (ordersError) {
-    console.error("[soldSurfboardShippingFulfillment] orders:", ordersError.message)
-  } else {
-    for (const row of orders ?? []) {
-      const listingId = (row as { listing_id?: string | null }).listing_id
-      const saleAt = (row as { created_at?: string | null }).created_at
-      if (typeof listingId === "string" && listingId && typeof saleAt === "string" && saleAt) {
-        lines.push({ listingId, saleAt })
-      }
+  const fromOrders = await scanConfirmedShippingSaleLines(async (from, to) => {
+    const lines: SaleLine[] = []
+    let query = svc
+      .from("orders")
+      .select("listing_id, created_at")
+      .eq("status", "confirmed")
+      .eq("fulfillment_method", "shipping")
+      .order("created_at", { ascending: false })
+      .range(from, to)
+    if (cappedFilter?.length) {
+      query = query.in("listing_id", cappedFilter)
     }
-  }
-
-  let itemsQuery = svc
-    .from("order_items")
-    .select("listing_id, orders!inner(created_at, status, fulfillment_method)")
-    .eq("orders.status", "confirmed")
-    .eq("orders.fulfillment_method", "shipping")
-
-  if (cappedFilter?.length) {
-    itemsQuery = itemsQuery.in("listing_id", cappedFilter)
-  }
-
-  const { data: items, error: itemsError } = await itemsQuery.limit(cappedFilter ? 500 : 200)
-  if (itemsError) {
-    console.error("[soldSurfboardShippingFulfillment] order_items:", itemsError.message)
-  } else {
-    for (const row of (items ?? []) as OrderItemRow[]) {
-      const listingId = row.listing_id
-      const order = row.orders
-      const saleAt = order?.created_at
-      if (typeof listingId === "string" && listingId && typeof saleAt === "string" && saleAt) {
-        lines.push({ listingId, saleAt })
-      }
+    const { data, error } = await query
+    if (error) {
+      console.error("[soldSurfboardShippingFulfillment] orders:", error.message)
+      return lines
     }
-  }
+    for (const row of data ?? []) {
+      pushSaleLine(
+        lines,
+        (row as { listing_id?: string | null }).listing_id,
+        (row as { created_at?: string | null }).created_at,
+      )
+    }
+    return lines
+  })
 
-  return lines
+  const fromItems = await scanConfirmedShippingSaleLines(async (from, to) => {
+    const lines: SaleLine[] = []
+    let query = svc
+      .from("order_items")
+      .select("listing_id, orders!inner(created_at, status, fulfillment_method)")
+      .eq("orders.status", "confirmed")
+      .eq("orders.fulfillment_method", "shipping")
+      .order("listing_id", { ascending: true })
+      .range(from, to)
+    if (cappedFilter?.length) {
+      query = query.in("listing_id", cappedFilter)
+    }
+    const { data, error } = await query
+    if (error) {
+      console.error("[soldSurfboardShippingFulfillment] order_items:", error.message)
+      return lines
+    }
+    for (const row of (data ?? []) as OrderItemRow[]) {
+      pushSaleLine(lines, row.listing_id, row.orders?.created_at)
+    }
+    return lines
+  })
+
+  return [...fromOrders, ...fromItems]
+}
+
+async function filterStillSoldSurfboardIdsInOrder(
+  supabase: SupabaseClient,
+  orderedListingIds: readonly string[],
+): Promise<string[]> {
+  const stillSold: string[] = []
+  for (let i = 0; i < orderedListingIds.length; i += STILL_SOLD_ID_BATCH) {
+    const batch = orderedListingIds.slice(i, i + STILL_SOLD_ID_BATCH)
+    stillSold.push(...(await filterListingIdsStillSoldOnMarketplace(supabase, batch)))
+  }
+  return stillSold
 }
 
 function latestSaleAtByListingId(lines: readonly SaleLine[]): Map<string, string> {
@@ -88,12 +127,11 @@ function latestSaleAtByListingId(lines: readonly SaleLine[]): Map<string, string
 }
 
 /**
- * Confirmed surfboard sales where checkout fulfillment was shipping.
- * Reads orders via service role (RLS blocks anon/authenticated on `orders`).
+ * All confirmed surfboard sales where checkout fulfillment was shipping,
+ * newest first. Reads orders via service role (RLS blocks anon/authenticated).
  */
-export async function fetchRecentlyShippedSurfboardsConfirmedCheckoutOrdering(
+export async function fetchShippedSurfboardSaleOrdering(
   supabase: SupabaseClient,
-  limit: number,
 ): Promise<{ orderedListingIds: string[]; confirmedAtIsoByListingId: Map<string, string> }> {
   const svc = serviceClientOrNull()
   if (!svc) {
@@ -109,7 +147,7 @@ export async function fetchRecentlyShippedSurfboardsConfirmedCheckoutOrdering(
     .sort((a, b) => b[1].localeCompare(a[1]))
     .map(([listingId]) => listingId)
 
-  const orderedListingIds = await filterListingIdsStillSoldOnMarketplace(
+  const orderedListingIds = await filterStillSoldSurfboardIdsInOrder(
     supabase,
     rpcOrderedListingIds,
   )
@@ -120,9 +158,21 @@ export async function fetchRecentlyShippedSurfboardsConfirmedCheckoutOrdering(
     if (at) confirmedAtIsoByListingId.set(id, at)
   }
 
+  return { orderedListingIds, confirmedAtIsoByListingId }
+}
+
+/**
+ * Newest confirmed shipped surfboards, capped for compact surfaces
+ * (homepage-style strips). Prefer {@link fetchShippedSurfboardSaleOrdering} for /sold pagination.
+ */
+export async function fetchRecentlyShippedSurfboardsConfirmedCheckoutOrdering(
+  supabase: SupabaseClient,
+  limit: number,
+): Promise<{ orderedListingIds: string[]; confirmedAtIsoByListingId: Map<string, string> }> {
+  const full = await fetchShippedSurfboardSaleOrdering(supabase)
   return {
-    orderedListingIds: orderedListingIds.slice(0, limit),
-    confirmedAtIsoByListingId,
+    orderedListingIds: full.orderedListingIds.slice(0, limit),
+    confirmedAtIsoByListingId: full.confirmedAtIsoByListingId,
   }
 }
 

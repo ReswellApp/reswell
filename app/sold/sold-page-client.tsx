@@ -1,7 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useScrollToTopOnSearchParam } from "@/hooks/use-scroll-to-top-on-search-param"
+import { marketplaceFeedHref } from "@/lib/marketplace-feed-tab"
 import { formatDistanceToNowStrict } from "date-fns"
 import { RelativeTime } from "@/components/ui/relative-time"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
@@ -205,6 +208,10 @@ function SoldFeedGrid({
   )
 }
 
+function preventBlurBeforeClick(event: React.MouseEvent<HTMLButtonElement>) {
+  event.preventDefault()
+}
+
 export function SoldFeedPanel({
   soldListings,
   soldStats,
@@ -212,12 +219,22 @@ export function SoldFeedPanel({
   brandSlug = null,
   initialHasMore = false,
   initialCursor = null,
+  page = 1,
+  totalPages = 1,
+  totalCount = null,
 }: Pick<RecentlySoldPageClientProps, "soldListings" | "soldStats"> & {
   variant?: "sold" | "shipped"
   brandSlug?: string | null
   initialHasMore?: boolean
   initialCursor?: SoldFeedCursor | null
+  page?: number
+  totalPages?: number
+  totalCount?: number | null
 }) {
+  const router = useRouter()
+  const [isPagePending, startPageTransition] = useTransition()
+  useScrollToTopOnSearchParam("page")
+
   const [listings, setListings] = useState(soldListings)
   const [cursor, setCursor] = useState(initialCursor)
   const [hasMore, setHasMore] = useState(initialHasMore)
@@ -225,6 +242,18 @@ export function SoldFeedPanel({
   const [isLoading, setIsLoading] = useState(false)
   const isLoadingRef = useRef(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const shippedCount = totalCount ?? listings.length
+
+  const goToShippedPage = (pageNum: number) => {
+    startPageTransition(() => {
+      router.push(
+        marketplaceFeedHref("shipped", {
+          brandSlug,
+          page: pageNum <= 1 ? undefined : pageNum,
+        }),
+      )
+    })
+  }
 
   const loadMore = useCallback(async () => {
     if (variant !== "sold" || !hasMore || !cursor || isLoadingRef.current) return
@@ -279,12 +308,15 @@ export function SoldFeedPanel({
   }, [hasMore, loadMore, variant])
 
   return (
-    <>
+    <div
+      className={cn("transition-opacity duration-200", isPagePending && "opacity-70")}
+      aria-busy={isPagePending}
+    >
       {variant === "shipped" ? (
         <MarketplaceFeedStatsBanner>
           <span className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
             <Truck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="font-medium tabular-nums">{listings.length}</span>
+            <span className="font-medium tabular-nums">{shippedCount}</span>
             <span>shipped boards on Reswell</span>
           </span>
         </MarketplaceFeedStatsBanner>
@@ -292,6 +324,33 @@ export function SoldFeedPanel({
         <MarketplaceFeedSoldStatsBanner count={soldStats.count} gmvFormatted={soldStats.gmvFormatted} />
       )}
       <SoldFeedGrid listings={listings} variant={variant} />
+      {variant === "shipped" && totalPages > 1 ? (
+        <div className="mt-8 flex justify-center gap-2">
+          {page > 1 ? (
+            <Button
+              type="button"
+              variant="outline"
+              onMouseDown={preventBlurBeforeClick}
+              onClick={() => goToShippedPage(page - 1)}
+            >
+              Previous
+            </Button>
+          ) : null}
+          <span className="flex items-center px-4 text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Button
+              type="button"
+              variant="outline"
+              onMouseDown={preventBlurBeforeClick}
+              onClick={() => goToShippedPage(page + 1)}
+            >
+              Next
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       {variant === "sold" && hasMore ? (
         <div ref={sentinelRef} className="pt-6" aria-live="polite">
           {isLoading ? (
@@ -308,6 +367,6 @@ export function SoldFeedPanel({
           )}
         </div>
       ) : null}
-    </>
+    </div>
   )
 }

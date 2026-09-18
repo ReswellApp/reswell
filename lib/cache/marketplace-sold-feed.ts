@@ -5,7 +5,12 @@ import {
 } from "@/lib/db/curatedRecentListings"
 import { soldSurfboardListingUsedShippingFulfillment } from "@/lib/db/soldSurfboardShippingFulfillment"
 import { LISTING_PUBLIC_DETAIL_CACHE_TAG } from "@/lib/cache/listing-public-detail"
-import { loadMarketplaceSoldFeed, type MarketplaceSoldFeedPayload } from "@/lib/services/marketplaceSoldFeed"
+import {
+  loadMarketplaceShippedFeedPage,
+  loadMarketplaceSoldFeed,
+  type MarketplaceShippedFeedPayload,
+  type MarketplaceSoldFeedPayload,
+} from "@/lib/services/marketplaceSoldFeed"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 
 /** Hourly cache for anonymous `/sold` sold + shipped feeds. */
@@ -51,23 +56,63 @@ export async function getCachedMarketplaceSoldFeed(
 ): Promise<MarketplaceSoldFeedPayload> {
   const normalizedBrandSlug = brandSlug?.trim() || null
 
+  if (shippedOnly) {
+    const shipped = await getCachedMarketplaceShippedFeedPage(normalizedBrandSlug, 1)
+    return {
+      soldListings: shipped.soldListings,
+      soldStats: { count: shipped.totalCount, gmvFormatted: "" },
+      brandFilterName: shipped.brandFilterName,
+      brandUnknown: shipped.brandUnknown,
+      hasMore: shipped.totalPages > 1,
+      nextCursor: null,
+    }
+  }
+
   // Dev: skip `unstable_cache` so RPC/migration fixes show up without waiting out the 1h TTL
   // or restarting after an earlier failed fetch cached an empty listing grid.
   if (process.env.NODE_ENV === "development") {
     const supabase = createAnonSupabaseClient()
-    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly })
+    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
   }
 
-  const cached = await getCachedSoldFeedPayload(normalizedBrandSlug || BRAND_NONE, shippedOnly)
-  if (isPoisonedSoldFeedPayload(cached, { shippedOnly, brandSlug: normalizedBrandSlug })) {
+  const cached = await getCachedSoldFeedPayload(normalizedBrandSlug || BRAND_NONE, false)
+  if (isPoisonedSoldFeedPayload(cached, { shippedOnly: false, brandSlug: normalizedBrandSlug })) {
     console.warn(
       "[marketplace-sold-feed] cached sold feed is inconsistent — refetching without cache",
     )
     const supabase = createAnonSupabaseClient()
-    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly })
+    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
   }
 
   return cached
+}
+
+const getCachedShippedFeedPagePayload = unstable_cache(
+  async (brandKey: string, page: number): Promise<MarketplaceShippedFeedPayload> => {
+    const supabase = createAnonSupabaseClient()
+    const brandSlug = brandKey === BRAND_NONE ? null : brandKey
+    return loadMarketplaceShippedFeedPage(supabase, brandSlug, page)
+  },
+  ["marketplace-shipped-feed-v1"],
+  {
+    revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
+    tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
+  },
+)
+
+export async function getCachedMarketplaceShippedFeedPage(
+  brandSlug: string | null,
+  page: number,
+): Promise<MarketplaceShippedFeedPayload> {
+  const normalizedBrandSlug = brandSlug?.trim() || null
+  const safePage = Math.max(1, Math.floor(page) || 1)
+
+  if (process.env.NODE_ENV === "development") {
+    const supabase = createAnonSupabaseClient()
+    return loadMarketplaceShippedFeedPage(supabase, normalizedBrandSlug, safePage)
+  }
+
+  return getCachedShippedFeedPagePayload(normalizedBrandSlug || BRAND_NONE, safePage)
 }
 
 const getCachedNewListingsFeedPagePayload = unstable_cache(

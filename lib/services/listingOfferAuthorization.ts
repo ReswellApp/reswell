@@ -23,6 +23,7 @@ import {
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
+import { ensureCheckoutBuyerShippingAddress } from "@/lib/services/checkoutBuyerAddress"
 import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 import {
   verifyCheckoutShippingQuoteToken,
@@ -187,6 +188,18 @@ export async function computeOfferAuthorizationTotals(
     return { ok: false, status: 400, error: phoneCheck.error }
   }
   buyerAddress = phoneCheck.address
+
+  if (input.fulfillment === "shipping" && buyerAddress) {
+    const preparedAddress = await ensureCheckoutBuyerShippingAddress({
+      supabase,
+      address: buyerAddress,
+      listingSections: [listing.section],
+    })
+    if (!preparedAddress.ok) {
+      return { ok: false, status: 422, error: preparedAddress.error }
+    }
+    buyerAddress = preparedAddress.address
+  }
 
   let preverifiedShipping:
     | {
