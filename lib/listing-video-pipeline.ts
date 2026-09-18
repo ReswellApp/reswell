@@ -8,10 +8,12 @@ import {
   LISTING_VIDEO_MAX_BYTES,
   LISTING_VIDEO_MAX_COUNT,
   LISTING_VIDEO_MAX_DURATION_SECONDS,
+  LISTING_VIDEO_METADATA_TIMEOUT_MS,
   LISTING_VIDEO_MIN_DURATION_SECONDS,
   LISTING_VIDEO_MIME_TYPES,
+  LISTING_VIDEO_POSTER_TIMEOUT_MS,
   type ListingVideoMimeType,
-} from "@/lib/listing-video-constants"
+} from "./listing-video-constants.ts"
 
 export {
   LISTING_VIDEO_ACCEPT,
@@ -53,48 +55,121 @@ export function assertListingVideoOriginalSize(file: File): void {
   }
 }
 
+export type ListingVideoDurationRead = {
+  durationSeconds: number | null
+  timedOut: boolean
+}
+
+export type ListingVideoPrepareOptions = {
+  timeoutMs?: number
+  signal?: AbortSignal
+}
+
+function applyListingVideoElementHints(video: HTMLVideoElement): void {
+  video.muted = true
+  video.playsInline = true
+  video.setAttribute("playsinline", "")
+  video.setAttribute("webkit-playsinline", "")
+}
+
+function listingVideoPrepareAborted(signal?: AbortSignal): boolean {
+  return Boolean(signal?.aborted)
+}
+
+export function listingVideoDurationViolation(durationSeconds: number): string | null {
+  if (durationSeconds < LISTING_VIDEO_MIN_DURATION_SECONDS) {
+    return `Videos need to be at least ${LISTING_VIDEO_MIN_DURATION_SECONDS} seconds for ads (yours is ${Math.round(durationSeconds)}s).`
+  }
+  if (durationSeconds > LISTING_VIDEO_MAX_DURATION_SECONDS) {
+    const minutes = Math.floor(durationSeconds / 60)
+    const seconds = Math.round(durationSeconds % 60)
+    return `Videos can be up to 2 minutes long (yours is ${minutes}:${String(seconds).padStart(2, "0")}). Trim it and try again.`
+  }
+  return null
+}
+
 /**
- * Reads video duration via an off-screen <video> element. Returns null when the
- * browser cannot decode metadata (size still caps those uploads).
+ * Reads video duration via an off-screen <video> element. Times out on iOS/Safari
+ * HEVC hangs instead of leaving the sell tile spinning forever.
  */
-export function readListingVideoDurationSeconds(file: File): Promise<number | null> {
-  return new Promise((resolve) => {
+export function readListingVideoDurationSeconds(
+  file: File,
+  opts?: ListingVideoPrepareOptions,
+): Promise<ListingVideoDurationRead> {
+  const timeoutMs = opts?.timeoutMs ?? LISTING_VIDEO_METADATA_TIMEOUT_MS
+  return new Promise((resolve, reject) => {
+    if (listingVideoPrepareAborted(opts?.signal)) {
+      reject(new DOMException("Upload aborted", "AbortError"))
+      return
+    }
+
     const objectUrl = URL.createObjectURL(file)
     const video = document.createElement("video")
     video.preload = "metadata"
+    applyListingVideoElementHints(video)
 
-    const finish = (duration: number | null) => {
+    let settled = false
+    const finish = (result: ListingVideoDurationRead | null, err?: DOMException) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      opts?.signal?.removeEventListener("abort", onAbort)
       URL.revokeObjectURL(objectUrl)
       video.removeAttribute("src")
-      video.load()
-      resolve(duration)
+      try {
+        video.load()
+      } catch {
+        /* iOS can throw after revoke */
+      }
+      if (err) {
+        reject(err)
+        return
+      }
+      resolve(result ?? { durationSeconds: null, timedOut: false })
     }
 
-    video.onloadedmetadata = () => {
-      finish(Number.isFinite(video.duration) ? video.duration : null)
+    const onAbort = () => {
+      finish(null, new DOMException("Upload aborted", "AbortError"))
     }
-    video.onerror = () => finish(null)
+    opts?.signal?.addEventListener("abort", onAbort)
+
+    const timer = window.setTimeout(() => {
+      finish({ durationSeconds: null, timedOut: true })
+    }, timeoutMs)
+
+    video.onloadedmetadata = () => {
+      finish({
+        durationSeconds: Number.isFinite(video.duration) ? video.duration : null,
+        timedOut: false,
+      })
+    }
+    video.onerror = () => finish({ durationSeconds: null, timedOut: false })
     video.src = objectUrl
+    try {
+      video.load()
+    } catch {
+      finish({ durationSeconds: null, timedOut: false })
+    }
   })
 }
 
-export async function assertListingVideoDuration(file: File): Promise<number | null> {
-  const duration = await readListingVideoDurationSeconds(file)
-  if (duration == null) return null
-
-  if (duration < LISTING_VIDEO_MIN_DURATION_SECONDS) {
+export async function assertListingVideoDuration(
+  file: File,
+  opts?: ListingVideoPrepareOptions,
+): Promise<number | null> {
+  const { durationSeconds, timedOut } = await readListingVideoDurationSeconds(file, opts)
+  if (listingVideoPrepareAborted(opts?.signal)) {
+    throw new DOMException("Upload aborted", "AbortError")
+  }
+  if (timedOut) {
     throw new Error(
-      `Videos need to be at least ${LISTING_VIDEO_MIN_DURATION_SECONDS} seconds for ads (yours is ${Math.round(duration)}s).`,
+      "We couldn't read this video. Try exporting it as an MP4 (H.264), then upload again.",
     )
   }
-  if (duration > LISTING_VIDEO_MAX_DURATION_SECONDS) {
-    const minutes = Math.floor(duration / 60)
-    const seconds = Math.round(duration % 60)
-    throw new Error(
-      `Videos can be up to 2 minutes long (yours is ${minutes}:${String(seconds).padStart(2, "0")}). Trim it and try again.`,
-    )
-  }
-  return duration
+  if (durationSeconds == null) return null
+  const violation = listingVideoDurationViolation(durationSeconds)
+  if (violation) throw new Error(violation)
+  return durationSeconds
 }
 
 export function normalizeListingVideoMimeType(file: File): ListingVideoMimeType {
@@ -116,35 +191,73 @@ export function listingVideoExtensionForMime(
 
 /**
  * Capture a poster frame near 0.1s for PDP / sell thumbs. Returns null when
- * the browser cannot decode a frame.
+ * the browser cannot decode a frame — including iOS/Safari hangs after timeout.
  */
-export function captureListingVideoPosterBlob(file: File): Promise<{
+export function captureListingVideoPosterBlob(
+  file: File,
+  opts?: ListingVideoPrepareOptions,
+): Promise<{
   blob: Blob
   contentType: "image/webp" | "image/jpeg"
   ext: "webp" | "jpg"
 } | null> {
-  return new Promise((resolve) => {
+  const timeoutMs = opts?.timeoutMs ?? LISTING_VIDEO_POSTER_TIMEOUT_MS
+  return new Promise((resolve, reject) => {
+    if (listingVideoPrepareAborted(opts?.signal)) {
+      reject(new DOMException("Upload aborted", "AbortError"))
+      return
+    }
+
     const objectUrl = URL.createObjectURL(file)
     const video = document.createElement("video")
     video.preload = "auto"
-    video.muted = true
-    video.playsInline = true
+    applyListingVideoElementHints(video)
 
+    let settled = false
     const cleanup = () => {
+      window.clearTimeout(timer)
+      opts?.signal?.removeEventListener("abort", onAbort)
       URL.revokeObjectURL(objectUrl)
       video.removeAttribute("src")
-      video.load()
+      try {
+        video.load()
+      } catch {
+        /* iOS can throw after revoke */
+      }
     }
 
-    const fail = () => {
+    const succeed = (value: {
+      blob: Blob
+      contentType: "image/webp" | "image/jpeg"
+      ext: "webp" | "jpg"
+    } | null) => {
+      if (settled) return
+      settled = true
       cleanup()
-      resolve(null)
+      resolve(value)
     }
+
+    const fail = () => succeed(null)
+
+    const onAbort = () => {
+      if (settled) return
+      settled = true
+      cleanup()
+      reject(new DOMException("Upload aborted", "AbortError"))
+    }
+    opts?.signal?.addEventListener("abort", onAbort)
+
+    const timer = window.setTimeout(fail, timeoutMs)
 
     video.onerror = fail
-    video.onloadeddata = () => {
+
+    let captureStarted = false
+    const startCapture = () => {
+      if (captureStarted || settled) return
+      captureStarted = true
       const seekTo = Number.isFinite(video.duration) && video.duration > 0.2 ? 0.1 : 0
       const onSeeked = () => {
+        if (settled) return
         try {
           const w = video.videoWidth
           const h = video.videoHeight
@@ -168,18 +281,16 @@ export function captureListingVideoPosterBlob(file: File): Promise<{
           canvas.toBlob(
             (webpBlob) => {
               if (webpBlob) {
-                cleanup()
-                resolve({ blob: webpBlob, contentType: "image/webp", ext: "webp" })
+                succeed({ blob: webpBlob, contentType: "image/webp", ext: "webp" })
                 return
               }
               canvas.toBlob(
                 (jpegBlob) => {
-                  cleanup()
                   if (!jpegBlob) {
-                    resolve(null)
+                    fail()
                     return
                   }
-                  resolve({ blob: jpegBlob, contentType: "image/jpeg", ext: "jpg" })
+                  succeed({ blob: jpegBlob, contentType: "image/jpeg", ext: "jpg" })
                 },
                 "image/jpeg",
                 0.92,
@@ -199,6 +310,14 @@ export function captureListingVideoPosterBlob(file: File): Promise<{
         onSeeked()
       }
     }
+
+    video.onloadeddata = startCapture
+    video.onloadedmetadata = startCapture
     video.src = objectUrl
+    try {
+      video.load()
+    } catch {
+      fail()
+    }
   })
 }
