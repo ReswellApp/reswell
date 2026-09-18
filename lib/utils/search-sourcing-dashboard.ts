@@ -70,3 +70,21 @@ export function buildCumulativeVolume(
     return { date: row.date, count: row.count, cumulative: running }
   })
 }
+
+export function matchesSearchSourcingQuery(
+  row: { query: string; display: string },
+  needle: string,
+): boolean {
+  const q = needle.trim().toLowerCase()
+  if (!q) return true
+  return row.display.toLowerCase().includes(q) || row.query.toLowerCase().includes(q)
+}
+
+export function filterSearchSourcingQueries<T extends { query: string; display: string }>(
+  rows: T[],
+  needle: string,
+): T[] {
+  const q = needle.trim()
+  if (!q) return rows
+  return rows.filter((row) => matchesSearchSourcingQuery(row, q))
+}

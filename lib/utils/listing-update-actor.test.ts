@@ -71,6 +71,7 @@ describe("listingFieldsForPeerUpdate", () => {
       slug: "hijack",
       hidden_from_site: true,
       site_visibility_reason: "nope",
+      search_tags: ["fish"],
       local_pickup: true,
     })
     assert.equal(next.title, "Twin fin")
@@ -79,5 +80,6 @@ describe("listingFieldsForPeerUpdate", () => {
     assert.equal("status" in next, false)
     assert.equal("slug" in next, false)
     assert.equal("hidden_from_site" in next, false)
+    assert.equal("search_tags" in next, false)
   })
 })

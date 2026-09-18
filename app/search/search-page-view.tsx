@@ -1,4 +1,4 @@
-import { Suspense } from "react"
+import { Suspense, type ReactNode } from "react"
 import { after } from "next/server"
 import { unstable_cache } from "next/cache"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
@@ -25,6 +25,9 @@ import {
   isMarketplaceGenericSurfSearchOnly,
 } from "@/lib/utils/marketplace-style-query"
 import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
+import { listActiveSurfboardIdsWithSearchTags } from "@/lib/db/listings"
+import { listingSearchTagSlugsForStyles } from "@/lib/listing-search-tags"
+import { isUuidString } from "@/lib/utils/isUuid"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import {
   listActiveListingIdsByBrandModelIds,
@@ -49,8 +52,6 @@ import {
 } from "@/lib/services/marketplaceQueryParse"
 import { expansionsForMarketplaceQuery } from "@/lib/services/searchSynonyms"
 import { resolveSearchOverrideListingIds } from "@/lib/services/searchResultOverrides"
-import { NaturalLanguageSearchHint } from "@/components/features/search/natural-language-search-hint"
-
 const LIMIT = 48
 
 /** Categories change only when an admin adds/removes one — safe to cache for a full day. */
@@ -74,6 +75,77 @@ type MarketplaceSearchResolutionMeta = {
   backend: "elasticsearch" | "supabase"
 }
 
+function searchResultsHeading({
+  brandUnknown,
+  query,
+  brandName,
+  modelName,
+  lengthToken,
+  brandTypoCorrected,
+  browseFacetsHref,
+}: {
+  brandUnknown: boolean
+  query: string
+  brandName: string | null
+  modelName: string | null
+  lengthToken: string | null
+  brandTypoCorrected: boolean
+  browseFacetsHref: string | null
+}): { title: ReactNode; subtitle: ReactNode } {
+  if (brandUnknown) {
+    return {
+      title: "Brand not found",
+      subtitle: "Check the spelling or try another search.",
+    }
+  }
+
+  if (query) {
+    const title = <>Results for &ldquo;{query}&rdquo;</>
+    if (brandTypoCorrected && brandName) {
+      return {
+        title,
+        subtitle: (
+          <>
+            Showing closest match: <span className="font-medium text-foreground">{brandName}</span>
+          </>
+        ),
+      }
+    }
+    if (modelName) {
+      const detail = [modelName, brandName, lengthToken].filter(Boolean).join(" · ")
+      return {
+        title,
+        subtitle: (
+          <>
+            {detail}
+            {browseFacetsHref ? (
+              <>
+                {" · "}
+                <a
+                  href={browseFacetsHref}
+                  className="font-medium text-foreground underline underline-offset-2"
+                >
+                  More filters
+                </a>
+              </>
+            ) : null}
+          </>
+        ),
+      }
+    }
+    if (brandName) {
+      return { title, subtitle: brandName }
+    }
+    return { title, subtitle: null }
+  }
+
+  if (brandName) {
+    return { title: brandName, subtitle: null }
+  }
+
+  return { title: "Recently listed", subtitle: null }
+}
+
 function sortMarketplaceBrowseCategories<T extends { name: string; board?: boolean | null }>(
   rows: T[],
 ): T[] {
@@ -89,7 +161,6 @@ export async function SearchPageView({
   rawQuery,
   brandSlugFromUrl,
   categorySlugFromUrl,
-  showSeoBookmark,
   analyticsOriginHeaderNav = false,
   skipAuthLookup = false,
 }: {
@@ -98,8 +169,6 @@ export async function SearchPageView({
   brandSlugFromUrl: string
   /** Raw `?category=` segment; must match `categories.slug` to apply. */
   categorySlugFromUrl: string
-  /** Shown on the canonical recent-listings URL (`/search/recent`). */
-  showSeoBookmark: boolean
   /**
    * True when `/search` was opened from the header nav bar (`nq=1`), used for analytics attribution only.
    */
@@ -112,7 +181,6 @@ export async function SearchPageView({
   skipAuthLookup?: boolean
 }) {
   const brandSlugRequested = brandSlugFromUrl.trim()
-  const curatedView = !rawQuery.trim() && !brandSlugRequested
 
   const supabase = await createClient()
 
@@ -242,114 +310,48 @@ export async function SearchPageView({
     favoritedListingIds = (favs ?? []).map((f) => f.listing_id)
   }
 
+  const queryTrimmed = rawQuery.trim()
+  const heading = searchResultsHeading({
+    brandUnknown,
+    query: queryTrimmed,
+    brandName: brandRow?.name ?? null,
+    modelName: parsedQuery?.model?.name ?? null,
+    lengthToken: parsedQuery?.lengthToken ?? null,
+    brandTypoCorrected,
+    browseFacetsHref:
+      parsedQuery?.model && queryTrimmed
+        ? `/boards?q=${encodeURIComponent(queryTrimmed)}${
+            parsedQuery.model.id
+              ? `&brandModelId=${encodeURIComponent(parsedQuery.model.id)}`
+              : ""
+          }${
+            parsedQuery.lengthToken
+              ? `&dimLength=${encodeURIComponent(parsedQuery.lengthToken)}`
+              : ""
+          }`
+        : null,
+  })
+
   return (
     <main className="flex-1">
       <section className="border-b bg-background">
-        <div className="container mx-auto py-6 md:py-8">
-          <h1 className="text-xl font-bold text-foreground md:text-2xl">
-            {brandUnknown ? (
-              <>Brand not found</>
-            ) : matchedModel && rawQuery.trim() ? (
-              <>
-                Results for &ldquo;{rawQuery}&rdquo;
-                {parsedQuery?.model ? (
-                  <>
-                    {" "}
-                    — {parsedQuery.model.name}
-                    {brandRow ? ` · ${brandRow.name}` : null}
-                  </>
-                ) : brandRow ? (
-                  <> — {brandRow.name}</>
-                ) : null}
-              </>
-            ) : brandRow ? (
-              <>
-                {rawQuery.trim() ? (
-                  <>Results for &ldquo;{rawQuery}&rdquo; — {brandRow.name}</>
-                ) : (
-                  <>Listings — {brandRow.name}</>
-                )}
-              </>
-            ) : rawQuery ? (
-              <>Results for &ldquo;{rawQuery}&rdquo;</>
-            ) : (
-              <>Recently listed for you</>
-            )}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {brandUnknown ? (
-              <>Check the spelling or search from the header — that slug is not in our brand directory.</>
-            ) : parsedQuery?.model && rawQuery.trim() ? (
-              <>
-                Matching catalog model
-                {parsedQuery?.lengthToken ? <> · length {parsedQuery.lengthToken}</> : null}
-                . For filters (style, price, shipping),{" "}
-                <a
-                  href={`/boards?q=${encodeURIComponent(rawQuery.trim())}${
-                    parsedQuery?.model?.id
-                      ? `&brandModelId=${encodeURIComponent(parsedQuery.model.id)}`
-                      : ""
-                  }${
-                    parsedQuery?.lengthToken
-                      ? `&dimLength=${encodeURIComponent(parsedQuery.lengthToken)}`
-                      : ""
-                  }`}
-                  className="font-medium text-foreground underline underline-offset-2"
-                >
-                  browse with facets
-                </a>
-                .
-              </>
-            ) : brandRow ? (
-              <>
-                {brandTypoCorrected ? (
-                  <>
-                    No exact match for &ldquo;{rawQuery}&rdquo; — showing listings for{" "}
-                    <span className="font-medium text-foreground">{brandRow.name}</span>, the closest brand
-                    in our directory.
-                  </>
-                ) : (
-                  <>
-                    Active marketplace listings for this brand
-                    {rawQuery.trim() ? " (matched from your search)" : ""} — including listings linked by
-                    brand directory and legacy title text.
-                  </>
-                )}
-              </>
-            ) : rawQuery ? (
-              <>Use the search bar in the header to refine results.</>
-            ) : (
-              <>
-                A curated mix of new listings, favoring active sellers, then freshest posts. Use the
-                header search to look up listings.
-                {showSeoBookmark && (
-                  <span className="mt-1 block text-xs text-muted-foreground/80">
-                    Bookmark this page —{" "}
-                    <code className="rounded bg-muted px-1 py-0.5 text-[11px]">/search/recent</code>
-                  </span>
-                )}
-              </>
-            )}
-          </p>
-          {rawQuery.trim() ? (
-            <div className="mt-4 max-w-2xl">
-              <NaturalLanguageSearchHint query={rawQuery} />
-            </div>
-          ) : null}
+        <div className="container mx-auto flex flex-col gap-4 py-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6 md:py-6">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{heading.title}</h1>
+            {heading.subtitle ? (
+              <p className="mt-1 text-sm text-muted-foreground">{heading.subtitle}</p>
+            ) : null}
+          </div>
+          <Suspense fallback={null}>
+            <SearchCategoryFilters
+              query={rawQuery}
+              selectedSlug={selectedSlug}
+              categories={sortedCategories}
+              brandSlug={brandRow?.slug ?? (brandSlugRequested || null)}
+            />
+          </Suspense>
         </div>
       </section>
-
-      <Suspense fallback={null}>
-        <SearchCategoryFilters
-          query={rawQuery}
-          selectedSlug={selectedSlug}
-          categories={sortedCategories}
-          curated={curatedView}
-          brandSlug={brandRow?.slug ?? (brandSlugRequested || null)}
-          brandFilterName={brandRow?.name ?? null}
-          brandUnknown={brandUnknown}
-        />
-      </Suspense>
 
       <section className="container mx-auto py-8">
         {listings.length === 0 && rawQuery.trim() && !brandUnknown ? (
@@ -613,15 +615,25 @@ async function resolveSearchListings(
   }
 }
 
-function applyBoardTypeFilter<T extends { in: (column: string, values: string[]) => T }>(
-  query: T,
-  boardTypes: string[] | null,
-): T {
+function applyBoardTypeFilter<
+  T extends {
+    in: (column: string, values: string[]) => T
+    or: (filters: string) => T
+  },
+>(query: T, boardTypes: string[] | null, taggedListingIds: string[] = []): T {
   const dbTypes = Array.from(
     new Set((boardTypes ?? []).flatMap((s) => listingBoardTypeDbValuesForFilter(s))),
   )
-  if (dbTypes.length === 0) return query
-  return query.in("board_type", dbTypes)
+  const taggedIds = taggedListingIds.filter((id) => isUuidString(id))
+  if (dbTypes.length === 0 && taggedIds.length === 0) return query
+  if (dbTypes.length > 0 && taggedIds.length === 0) return query.in("board_type", dbTypes)
+
+  const parts: string[] = []
+  if (dbTypes.length === 1) parts.push(`board_type.eq.${dbTypes[0]}`)
+  else if (dbTypes.length > 1) parts.push(`board_type.in.(${dbTypes.join(",")})`)
+  if (taggedIds.length === 1) parts.push(`id.eq.${taggedIds[0]}`)
+  else if (taggedIds.length > 1) parts.push(`id.in.(${taggedIds.join(",")})`)
+  return query.or(parts.join(","))
 }
 
 async function buildSearchFromSupabase(
@@ -713,7 +725,11 @@ async function buildSearchFromSupabaseTypoFallback(
   } else {
     query = query.in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
   }
-  query = applyBoardTypeFilter(query, boardTypes)
+  const taggedIds = await listActiveSurfboardIdsWithSearchTags(
+    supabase,
+    listingSearchTagSlugsForStyles(boardTypes ?? []),
+  )
+  query = applyBoardTypeFilter(query, boardTypes, taggedIds)
 
   const { data, error } = await query
   if (error || !data?.length) return { listings: [] }
@@ -783,7 +799,11 @@ async function buildSearchQuery(
   } else {
     query = query.in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
   }
-  query = applyBoardTypeFilter(query, boardTypes)
+  const taggedIds = await listActiveSurfboardIdsWithSearchTags(
+    supabase,
+    listingSearchTagSlugsForStyles(boardTypes ?? []),
+  )
+  query = applyBoardTypeFilter(query, boardTypes, taggedIds)
 
   if (rawQuery) {
     const meaningful = meaningfulSearchTerms(rawQuery)

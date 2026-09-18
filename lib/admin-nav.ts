@@ -186,7 +186,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/fraud-messages', label: 'Fraud messages', icon: 'shield' },
       { href: '/admin/ops', label: 'Platform ops', icon: 'activityPulse' },
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },
-      { href: '/admin/pnl', label: 'P&L Tracker', icon: 'dollarSign' },
+      { href: '/admin/pnl', label: 'Balance sheet', icon: 'dollarSign' },
       { href: '/admin/reswelltickets', label: 'Reswell tickets', icon: 'ticket' },
       { href: '/admin/tools', label: 'Admin tools', icon: 'wrench' },
       { href: '/admin/site-assets', label: 'Site assets', icon: 'layers' },

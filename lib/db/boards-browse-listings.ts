@@ -28,6 +28,8 @@ import {
   type BoardDimensionBrowseFields,
 } from "@/lib/utils/board-dimension-browse-filter"
 import { isUuidString } from "@/lib/utils/isUuid"
+import { listActiveSurfboardIdsWithSearchTags } from "@/lib/db/listings"
+import { listingSearchTagSlugsForStyles } from "@/lib/listing-search-tags"
 import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import {
   lengthBucketBySlug,
@@ -358,10 +360,11 @@ function geoBoundingBoxFiltersMiles(lat: number, lng: number, radiusMiles: numbe
   return { minLat: lat - dLat, maxLat: lat + dLat, minLng: lng - dLng, maxLng: lng + dLng }
 }
 
-/** Match board style by `board_type` or surfboard `category_id` (kept in sync; OR covers legacy drift). */
+/** Match board style by `board_type`, surfboard `category_id`, or admin-tagged listing ids. */
 function applyBoardStyleBrowseFilter(
   dbQuery: SurfboardBrowseListingsQuery,
   styleSlugs: string[],
+  taggedListingIds: string[],
 ): SurfboardBrowseListingsQuery {
   const dbTypes = Array.from(
     new Set(
@@ -371,7 +374,8 @@ function applyBoardStyleBrowseFilter(
     ),
   )
   const categoryIds = categoryIdsForBrowseBoardTypes(styleSlugs)
-  if (dbTypes.length === 0 && categoryIds.length === 0) return dbQuery
+  const taggedIds = taggedListingIds.filter((id) => isUuidString(id))
+  if (dbTypes.length === 0 && categoryIds.length === 0 && taggedIds.length === 0) return dbQuery
 
   const parts: string[] = []
   if (dbTypes.length === 1) parts.push(`board_type.eq.${dbTypes[0]}`)
@@ -380,11 +384,14 @@ function applyBoardStyleBrowseFilter(
   if (categoryIds.length === 1) parts.push(`category_id.eq.${categoryIds[0]}`)
   else if (categoryIds.length > 1) parts.push(`category_id.in.(${categoryIds.join(",")})`)
 
+  if (taggedIds.length === 1) parts.push(`id.eq.${taggedIds[0]}`)
+  else if (taggedIds.length > 1) parts.push(`id.in.(${taggedIds.join(",")})`)
+
   if (parts.length === 0) return dbQuery
-  if (parts.length === 1 && dbTypes.length === 1 && categoryIds.length === 0) {
+  if (parts.length === 1 && dbTypes.length === 1 && categoryIds.length === 0 && taggedIds.length === 0) {
     return dbQuery.eq("board_type", dbTypes[0]!)
   }
-  if (parts.length === 1 && categoryIds.length === 1 && dbTypes.length === 0) {
+  if (parts.length === 1 && categoryIds.length === 1 && dbTypes.length === 0 && taggedIds.length === 0) {
     return dbQuery.eq("category_id", categoryIds[0]!)
   }
   return dbQuery.or(parts.join(","))
@@ -450,7 +457,11 @@ export async function buildSurfboardBrowseBaseQuery(
 
   if (styleSlugs.length > 0) {
     // Sidebar multi-select board style takes precedence over the single `type=` nav param.
-    dbQuery = applyBoardStyleBrowseFilter(dbQuery, styleSlugs)
+    const taggedIds = await listActiveSurfboardIdsWithSearchTags(
+      supabase,
+      listingSearchTagSlugsForStyles(styleSlugs),
+    )
+    dbQuery = applyBoardStyleBrowseFilter(dbQuery, styleSlugs, taggedIds)
   }
 
   if (facets?.conditions && facets.conditions.length > 0) {

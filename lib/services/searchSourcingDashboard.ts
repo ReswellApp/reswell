@@ -3,6 +3,7 @@ import {
   aggregateMarketplaceSourcingDashboard,
   countMarketplaceSearchesInRange,
   getMarketplaceOccurredAtBounds,
+  MARKETPLACE_SOURCING_QUERY_LIMIT,
   topQueriesInRange,
 } from "@/lib/elasticsearch/search-analytics-index"
 import {
@@ -41,6 +42,8 @@ export type SearchSourcingDashboard = {
   to: string
   volumeByDay: SearchCumulativePoint[]
   topQueries: SearchSourcingQueryRow[]
+  /** True when unique queries exceed the all-time list cap. */
+  allQueriesTruncated: boolean
   zeroResultQueries: { query: string; count: number }[]
   fetchedAt: string
 }
@@ -58,6 +61,7 @@ const EMPTY_DASHBOARD: SearchSourcingDashboard = {
   to: "",
   volumeByDay: [],
   topQueries: [],
+  allQueriesTruncated: false,
   zeroResultQueries: [],
   fetchedAt: "",
 }
@@ -84,14 +88,14 @@ export async function getSearchSourcingDashboardService(): Promise<SearchSourcin
     countMarketplaceSearchesInRange(allTimeFrom, nowIso),
     aggregateMarketplaceSourcingDashboard(allTimeFrom, nowIso, {
       timeZone: BUSINESS_TIMEZONE,
-      topSize: 50,
-      zeroSize: 25,
+      topSize: MARKETPLACE_SOURCING_QUERY_LIMIT,
+      zeroSize: 500,
     }),
   ])
 
   let topQueryRows = sourcing?.topQueries ?? []
   if (allTimeCount > 0 && topQueryRows.length === 0) {
-    const fallback = await topQueriesInRange(allTimeFrom, nowIso, 50)
+    const fallback = await topQueriesInRange(allTimeFrom, nowIso, MARKETPLACE_SOURCING_QUERY_LIMIT)
     topQueryRows = [...fallback.entries()].map(([query, count]) => ({
       query,
       display: query,
@@ -100,12 +104,17 @@ export async function getSearchSourcingDashboardService(): Promise<SearchSourcin
     }))
   }
 
+  const uniqueQueriesApprox = sourcing?.uniqueQueriesApprox ?? topQueryRows.length
+  const allQueriesTruncated =
+    topQueryRows.length >= MARKETPLACE_SOURCING_QUERY_LIMIT &&
+    uniqueQueriesApprox > topQueryRows.length
+
   return {
     configured: true,
     todayCount,
     weekCount,
     allTimeCount,
-    uniqueQueriesApprox: sourcing?.uniqueQueriesApprox ?? 0,
+    uniqueQueriesApprox,
     firstOccurredAt: bounds?.minIso ?? null,
     todayFrom,
     weekFrom,
@@ -121,6 +130,7 @@ export async function getSearchSourcingDashboardService(): Promise<SearchSourcin
       avgResultCount: row.avgResultCount,
       inventory: classifySearchInventory(row.avgResultCount),
     })),
+    allQueriesTruncated,
     zeroResultQueries: sourcing?.zeroResultQueries ?? [],
     fetchedAt,
   }

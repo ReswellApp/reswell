@@ -43,10 +43,10 @@ export function PnlPeriodFilter({ selectedYearMonth }: PnlPeriodFilterProps) {
   return (
     <div className="flex flex-col gap-1.5 sm:items-end">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Report month
+        Period
       </span>
       <Select value={value} onValueChange={onPeriodChange}>
-        <SelectTrigger className="w-full min-w-[220px] sm:w-[240px]" aria-label="P&L report month">
+        <SelectTrigger className="w-full min-w-[220px] sm:w-[240px]" aria-label="Balance sheet period">
           <CalendarRange className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <SelectValue placeholder="Select month" />
         </SelectTrigger>

@@ -59,7 +59,6 @@ import {
   newSearchQualityEventId,
   scheduleSearchQualityEventCapture,
 } from "@/lib/services/searchQuality"
-import { NaturalLanguageSearchHelper } from "@/components/features/search/natural-language-search-helper"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
@@ -243,27 +242,7 @@ async function BoardListings({
       Boolean(nl),
   )
 
-  const searchParamsString = new URLSearchParams(
-    Object.entries(searchParams).flatMap(([key, value]) => {
-      if (typeof value !== "string" || !value.trim()) return []
-      return [[key, value] as [string, string]]
-    }),
-  ).toString()
-
   const searchQualityEventId = hasKeywordQuery ? newSearchQualityEventId() : null
-
-  const nlHint =
-    hasKeywordQuery ? (
-      <div className="mb-4">
-        <NaturalLanguageSearchHelper
-          query={query}
-          searchParamsString={searchParamsString}
-          initialAppliedLabels={nl?.appliedLabels}
-          initialSummary={nl?.summary}
-          qualityEventId={searchQualityEventId}
-        />
-      </div>
-    ) : null
 
   // Elasticsearch: indexed filtering + geo_distance sort on reswell_listings (surfboards).
   // Nav category views stay on the (cheap, hourly-cached) Postgres path. Keyword search
@@ -655,14 +634,11 @@ async function BoardListings({
     const { user } = await getCachedRequestSession()
 
     return (
-      <>
-        {nlHint}
-        <BoardsNoResultsSaveSearch
-          criteria={saveCriteria}
-          isLoggedIn={Boolean(user)}
-          clearHref="/boards"
-        />
-      </>
+      <BoardsNoResultsSaveSearch
+        criteria={saveCriteria}
+        isLoggedIn={Boolean(user)}
+        clearHref="/boards"
+      />
     )
   }
 
@@ -670,7 +646,6 @@ async function BoardListings({
 
   return (
     <>
-      {nlHint}
       {locationFallbackNotice ? (
         <p
           className="mb-4 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground"

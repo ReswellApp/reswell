@@ -262,6 +262,10 @@ export async function POST(request: Request) {
           totals.reswellQuote.availableRates,
           selectedServiceCode,
           listingRow.section,
+          {
+            stateProvince: buyerAddress.state,
+            postalCode: buyerAddress.postal_code,
+          },
         )
       if (!selected) {
         return NextResponse.json(

@@ -1194,6 +1194,9 @@ async function aggregateSourcingVolumeByDay(
   }
 }
 
+/** Hard cap for the all-time unique-query list on /admin/search-analytics. */
+export const MARKETPLACE_SOURCING_QUERY_LIMIT = 10_000
+
 async function aggregateSourcingTopQueries(
   fromIso: string,
   toIso: string,
@@ -1207,6 +1210,8 @@ async function aggregateSourcingTopQueries(
   const es = getElasticsearchClient()
   if (!es) return null
 
+  const uniquePrecision = Math.min(Math.max(topSize, 4000), 40_000)
+
   try {
     const res = await es.search({
       index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
@@ -1215,7 +1220,7 @@ async function aggregateSourcingTopQueries(
       query: marketplaceRangeQuery(fromIso, toIso),
       aggs: {
         unique_queries: {
-          cardinality: { field: "query_normalized", precision_threshold: 4000 },
+          cardinality: { field: "query_normalized", precision_threshold: uniquePrecision },
         },
         top_queries: {
           terms: { field: "query_normalized", size: topSize, order: { _count: "desc" } },
@@ -1291,8 +1296,8 @@ export async function aggregateMarketplaceSourcingDashboard(
   if (!getElasticsearchClient()) return null
 
   const timeZone = opts?.timeZone ?? "America/Los_Angeles"
-  const topSize = Math.min(Math.max(opts?.topSize ?? 50, 1), 100)
-  const zeroSize = Math.min(Math.max(opts?.zeroSize ?? 25, 1), 50)
+  const topSize = Math.min(Math.max(opts?.topSize ?? 50, 1), MARKETPLACE_SOURCING_QUERY_LIMIT)
+  const zeroSize = Math.min(Math.max(opts?.zeroSize ?? 25, 1), 1_000)
 
   const [volume, queries] = await Promise.all([
     aggregateSourcingVolumeByDay(fromIso, toIso, timeZone),

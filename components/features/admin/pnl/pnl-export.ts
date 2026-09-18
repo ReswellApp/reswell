@@ -1,5 +1,5 @@
-import type { CapitalSummary, PnlComputedEntry, PnlSummary } from "@/lib/pnl-calc"
-import { realizedLosses, statusLabel } from "@/lib/pnl-calc"
+import type { BalanceSheetSummary, PnlComputedEntry } from "@/lib/pnl-calc"
+import { realizedLosses, sourceDisplay, sourceKindLabel, statusLabel } from "@/lib/pnl-calc"
 
 function csvCell(value: string | number | null | undefined): string {
   if (value == null) return ""
@@ -9,11 +9,13 @@ function csvCell(value: string | number | null | undefined): string {
 }
 
 const CSV_HEADERS = [
-  "Board Name",
-  "Category",
+  "Title",
+  "Source",
+  "Bought From",
   "Status",
   "Purchase Date",
   "Purchase Price",
+  "Asking Price",
   "Shipping",
   "Platform Fee",
   "Other Costs",
@@ -23,7 +25,6 @@ const CSV_HEADERS = [
   "Profit",
   "Margin %",
   "ROI %",
-  "Source",
   "Order #",
   "Notes",
 ] as const
@@ -41,44 +42,30 @@ export interface PnlCsvExportContext {
   scope: string
   /** Human-readable filter label in the CSV header. */
   scopeLabel: string
-  summary: PnlSummary
-  capital: CapitalSummary
+  sheet: BalanceSheetSummary
 }
 
 function buildSummaryRows(ctx: PnlCsvExportContext, rows: PnlComputedEntry[]): string[][] {
-  const { summary, capital } = ctx
+  const { sheet } = ctx
   const lossTotal = realizedLosses(rows)
   const exportedAt = new Date().toISOString().slice(0, 10)
 
   return [
-    ["Reswell P&L Export"],
+    ["Reswell inventory export"],
     ["Scope", ctx.scopeLabel],
     ["Exported", exportedAt],
     [],
-    ["--- P&L (filtered rows) ---"],
+    ["--- Balance sheet (filtered rows) ---"],
     ["Metric", "Value"],
-    ["Boards in export", String(summary.entryCount)],
-    ["Sold", String(summary.soldCount)],
-    ["Held (inventory + listed)", String(summary.inventoryCount + summary.listedCount)],
-    ["Net profit", money(summary.netProfit)],
+    ["Boards held", String(sheet.heldCount)],
+    ["Inventory at cost", money(sheet.inventoryCost)],
+    ["Asking value", money(sheet.askingValue)],
+    ["Unrealized markup", money(sheet.unrealizedMarkup)],
+    ["Bought on Reswell (held)", `${sheet.reswellHeldCount} / ${money(sheet.reswellInventoryCost)}`],
+    ["Bought outside (held)", `${sheet.outsideHeldCount} / ${money(sheet.outsideInventoryCost)}`],
+    ["Sold", String(sheet.soldCount)],
+    ["Realized profit", money(sheet.realizedProfit)],
     ["Realized losses (losing sales)", lossTotal > 0 ? money(lossTotal) : "0.00"],
-    ["Revenue", money(summary.totalRevenue)],
-    ["Total spent (cost basis)", money(summary.totalSpent)],
-    ["Inventory tied up (filtered)", money(summary.inventoryCostBasis)],
-    ["Fees (sold boards)", money(summary.totalFees)],
-    ["ROI %", percent(summary.roi)],
-    ["Margin %", percent(summary.margin)],
-    [],
-    ["--- Capital & liquidity (all boards & loans) ---"],
-    ["Metric", "Value"],
-    ["Cash available to deploy", money(capital.cashAvailable)],
-    ["Inventory tied up (all)", money(capital.inventoryCostBasis)],
-    ["Loan principal", money(capital.principal)],
-    ["Deployed", money(capital.deployed)],
-    ["Recovered from sales", money(capital.recovered)],
-    ["Repaid to lenders", money(capital.repaid)],
-    ["Outstanding owed", money(capital.outstanding)],
-    ["Net position", money(capital.netPosition)],
     [],
     ["--- Boards ---"],
   ]
@@ -87,10 +74,12 @@ function buildSummaryRows(ctx: PnlCsvExportContext, rows: PnlComputedEntry[]): s
 export function buildPnlCsv(rows: PnlComputedEntry[], ctx?: PnlCsvExportContext): string {
   const boardLines = rows.map((row) => [
     row.board_name,
-    row.category ?? "",
+    sourceKindLabel(row.source_kind),
+    sourceDisplay(row),
     statusLabel(row.status),
     row.purchase_date ?? "",
     money(row.purchase_price),
+    money(row.asking_price),
     money(row.shipping_cost),
     money(row.platform_fee),
     money(row.other_costs),
@@ -100,7 +89,6 @@ export function buildPnlCsv(rows: PnlComputedEntry[], ctx?: PnlCsvExportContext)
     money(row.profit),
     percent(row.margin),
     percent(row.roi),
-    row.order_id ? `Reswell ${row.order_role === "seller" ? "sale" : "purchase"}` : "Manual",
     row.order_num ?? "",
     row.notes ?? "",
   ])
@@ -124,7 +112,7 @@ export function downloadPnlCsv(rows: PnlComputedEntry[], ctx: PnlCsvExportContex
   const link = document.createElement("a")
   const stamp = new Date().toISOString().slice(0, 10)
   link.href = url
-  link.download = `reswell-pnl-${ctx.scope}-${stamp}.csv`
+  link.download = `reswell-inventory-${ctx.scope}-${stamp}.csv`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)

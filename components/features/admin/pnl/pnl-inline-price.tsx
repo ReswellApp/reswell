@@ -6,10 +6,12 @@ import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/pnl-calc"
 
 interface PnlInlinePriceProps {
-  value: number
+  value: number | null
   /** Persist the new price. Resolve true on success so the editor can close. */
   onSave: (price: number) => Promise<boolean>
   className?: string
+  title?: string
+  emptyLabel?: string
 }
 
 function parsePrice(raw: string): number | null {
@@ -19,7 +21,13 @@ function parsePrice(raw: string): number | null {
   return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null
 }
 
-export function PnlInlinePrice({ value, onSave, className }: PnlInlinePriceProps) {
+export function PnlInlinePrice({
+  value,
+  onSave,
+  className,
+  title = "Click to edit purchase price",
+  emptyLabel = "Add price",
+}: PnlInlinePriceProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState("")
   const [saving, setSaving] = useState(false)
@@ -44,7 +52,7 @@ export function PnlInlinePrice({ value, onSave, className }: PnlInlinePriceProps
       setEditing(false)
       return
     }
-    if (parsed === value) {
+    if (parsed === (value ?? 0) && value != null) {
       setEditing(false)
       return
     }
@@ -85,14 +93,14 @@ export function PnlInlinePrice({ value, onSave, className }: PnlInlinePriceProps
         value ? "" : "text-muted-foreground",
         className,
       )}
-      title="Click to edit purchase price"
+      title={title}
     >
       {value ? (
         formatCurrency(value)
       ) : (
         <>
           <Plus className="h-3 w-3" />
-          Add price
+          {emptyLabel}
         </>
       )}
     </button>

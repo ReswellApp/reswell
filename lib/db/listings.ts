@@ -151,6 +151,57 @@ export async function updateListingIsGoodDeal(
   return { ok: true }
 }
 
+/** Active surfboard ids tagged with any of the given search keywords. Empty if the column is missing. */
+export async function listActiveSurfboardIdsWithSearchTags(
+  client: SupabaseClient,
+  tags: string[],
+): Promise<string[]> {
+  if (tags.length === 0) return []
+  const { data, error } = await client
+    .from("listings")
+    .select("id")
+    .eq("status", "active")
+    .eq("section", "surfboards")
+    .eq("hidden_from_site", false)
+    .is("archived_at", null)
+    .overlaps("search_tags", tags)
+    .limit(200)
+
+  if (error) {
+    if (error.code !== "42703") {
+      console.error("listActiveSurfboardIdsWithSearchTags:", error.message)
+    }
+    return []
+  }
+  return (data ?? [])
+    .map((row) => (typeof (row as { id?: unknown }).id === "string" ? (row as { id: string }).id : ""))
+    .filter((id) => id.length > 0)
+}
+
+export async function updateListingSearchTags(
+  client: SupabaseClient,
+  listingId: string,
+  searchTags: string[],
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data, error } = await client
+    .from("listings")
+    .update({
+      search_tags: searchTags,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", listingId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    return { ok: false, message: error.message }
+  }
+  if (!data) {
+    return { ok: false, message: "Listing not found" }
+  }
+  return { ok: true }
+}
+
 export async function updateAdminListingSectionCategory(
   client: SupabaseClient,
   listingId: string,

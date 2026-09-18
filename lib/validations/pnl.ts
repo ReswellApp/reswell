@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 export const pnlStatusSchema = z.enum(["inventory", "listed", "sold"])
+export const pnlSourceKindSchema = z.enum(["reswell", "outside"])
 
 const optionalText = z
   .string()
@@ -28,11 +29,14 @@ const money = z
 const requiredMoney = money.transform((v) => v ?? 0)
 
 export const createPnlEntrySchema = z.object({
-  boardName: z.string().trim().min(1, "Board name is required").max(160),
+  boardName: z.string().trim().min(1, "Title is required").max(160),
   category: optionalText,
   status: pnlStatusSchema.optional().default("inventory"),
+  sourceKind: pnlSourceKindSchema.optional().default("outside"),
+  boughtFrom: optionalText,
   purchasePrice: requiredMoney,
   purchaseDate: optionalDate,
+  askingPrice: z.union([money, z.null()]).optional(),
   salePrice: z.union([money, z.null()]).optional(),
   saleDate: optionalDate,
   shippingCost: requiredMoney,
@@ -43,11 +47,14 @@ export const createPnlEntrySchema = z.object({
 
 export const updatePnlEntrySchema = z.object({
   id: z.string().uuid(),
-  boardName: z.string().trim().min(1, "Board name is required").max(160).optional(),
+  boardName: z.string().trim().min(1, "Title is required").max(160).optional(),
   category: z.union([z.string().trim().max(80), z.literal(""), z.null()]).optional(),
   status: pnlStatusSchema.optional(),
+  sourceKind: pnlSourceKindSchema.optional(),
+  boughtFrom: z.union([z.string().trim().max(160), z.literal(""), z.null()]).optional(),
   purchasePrice: money.optional(),
   purchaseDate: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal(""), z.null()]).optional(),
+  askingPrice: z.union([money, z.null()]).optional(),
   salePrice: z.union([money, z.null()]).optional(),
   saleDate: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal(""), z.null()]).optional(),
   shippingCost: money.optional(),

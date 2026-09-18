@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   listingAdminBarCanLinkCatalog,
+  listingAdminBarCanSearchTag,
   listingAdminBarShouldMount,
   listingAdminBarSnapshotFromRow,
 } from "./listing-detail-admin-bar.ts"
@@ -11,6 +12,14 @@ describe("listingAdminBarShouldMount", () => {
     assert.equal(listingAdminBarShouldMount({ anonymousPublicView: false, isAdmin: true }), true)
     assert.equal(listingAdminBarShouldMount({ anonymousPublicView: true, isAdmin: true }), false)
     assert.equal(listingAdminBarShouldMount({ anonymousPublicView: false, isAdmin: false }), false)
+  })
+})
+
+describe("listingAdminBarCanSearchTag", () => {
+  it("allows surfboards only", () => {
+    assert.equal(listingAdminBarCanSearchTag("surfboards"), true)
+    assert.equal(listingAdminBarCanSearchTag("fins"), false)
+    assert.equal(listingAdminBarCanSearchTag("wetsuits"), false)
   })
 })
 
@@ -40,6 +49,7 @@ describe("listingAdminBarSnapshotFromRow", () => {
       hidden_from_homepage: true,
       suppressed_on_boards_browse: true,
       is_good_deal: true,
+      search_tags: ["fish"],
       user_id: "seller-1",
       brand_id: "brand-1",
       brand_model_id: "model-1",
@@ -52,5 +62,6 @@ describe("listingAdminBarSnapshotFromRow", () => {
     assert.equal(snapshot.sellerDisplayName, "Mike Shop")
     assert.equal(snapshot.brandLabel, "Xanadu")
     assert.equal(snapshot.modelLabel, "Lotus")
+    assert.deepEqual(snapshot.searchTags, ["fish"])
   })
 })

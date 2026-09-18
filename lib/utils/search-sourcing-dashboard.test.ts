@@ -4,6 +4,7 @@ import {
   buildCumulativeVolume,
   classifySearchInventory,
   fillDailyVolume,
+  filterSearchSourcingQueries,
 } from "./search-sourcing-dashboard.ts"
 
 describe("classifySearchInventory", () => {
@@ -48,6 +49,29 @@ describe("fillDailyVolume", () => {
         { date: "2026-04-26", count: 5 },
       ],
     )
+  })
+})
+
+describe("filterSearchSourcingQueries", () => {
+  const rows = [
+    { query: "firewire seaside", display: "Firewire Seaside", count: 12 },
+    { query: "lost rnf", display: "Lost RNF", count: 8 },
+    { query: "al merrick", display: "Al Merrick", count: 3 },
+  ]
+
+  it("returns every row when the needle is blank", () => {
+    assert.deepEqual(filterSearchSourcingQueries(rows, "  "), rows)
+  })
+
+  it("matches display or normalized query text", () => {
+    assert.deepEqual(filterSearchSourcingQueries(rows, "FIREWIRE"), [
+      rows[0],
+    ])
+    assert.deepEqual(filterSearchSourcingQueries(rows, "rnf"), [rows[1]])
+  })
+
+  it("returns an empty list when nothing matches", () => {
+    assert.deepEqual(filterSearchSourcingQueries(rows, "ci mid"), [])
   })
 })
 

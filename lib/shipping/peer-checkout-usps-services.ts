@@ -1,5 +1,6 @@
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { ReswellListingRateRow } from "@/lib/services/reswellListingShippingRate"
+import { normalizeUsStateProvinceForShipping } from "../us-state-name-to-code.ts"
 
 const USPS_GROUND_PRIORITY_CODES = [
   "usps_ground_advantage",
@@ -39,26 +40,55 @@ export type PeerCheckoutShippingRateOption = {
   estimatedDeliveryDate: string | null
 }
 
-type UpsCheckoutBucket = "ground" | "3_day" | "2nd_day"
-
-const UPS_CHECKOUT_DISPLAY_NAMES: Record<UpsCheckoutBucket, string> = {
-  ground: "UPS Ground",
-  "3_day": "UPS 3 Day Select",
-  "2nd_day": "UPS Second Day Air",
+export type PeerCheckoutShipTo = {
+  stateProvince?: string | null
+  postalCode?: string | null
 }
+
+type SurfboardCheckoutBucket =
+  | "ups_ground"
+  | "ups_3_day"
+  | "ups_2nd_day"
+  | "ups_next_day"
+  | "fedex_2day"
+  | "fedex_overnight"
+
+const SURFBOARD_CHECKOUT_DISPLAY_NAMES: Record<SurfboardCheckoutBucket, string> = {
+  ups_ground: "UPS Ground",
+  ups_3_day: "UPS 3 Day Select",
+  ups_2nd_day: "UPS Second Day Air",
+  ups_next_day: "UPS Next Day Air",
+  fedex_2day: "FedEx 2Day",
+  fedex_overnight: "FedEx Overnight",
+}
+
+const CONTINENTAL_SURFBOARD_BUCKETS = new Set<SurfboardCheckoutBucket>([
+  "ups_ground",
+  "ups_3_day",
+  "ups_2nd_day",
+])
+
+const HAWAII_ALASKA_SURFBOARD_BUCKETS = new Set<SurfboardCheckoutBucket>([
+  "ups_2nd_day",
+  "ups_next_day",
+  "fedex_2day",
+  "fedex_overnight",
+])
 
 function normalizeServiceCode(code: string | null | undefined): string {
   return (code ?? "").trim().toLowerCase()
 }
 
-function isUspsCarrierRow(row: ReswellListingRateRow): boolean {
+type CarrierHintRow = Pick<ReswellListingRateRow, "carrierCode" | "carrierName">
+
+function isUspsCarrierRow(row: CarrierHintRow): boolean {
   const carrierCode = (row.carrierCode ?? "").trim().toLowerCase()
   if (carrierCode === "usps" || carrierCode === "stamps_com") return true
   const carrierName = row.carrierName.trim().toLowerCase()
   return carrierName.includes("usps") || carrierName.includes("postal")
 }
 
-function isUpsCarrierRow(row: ReswellListingRateRow): boolean {
+function isUpsCarrierRow(row: CarrierHintRow): boolean {
   const carrierCode = (row.carrierCode ?? "").trim().toLowerCase()
   const carrierName = row.carrierName.trim().toLowerCase()
   const blob = `${carrierCode} ${carrierName}`
@@ -68,27 +98,106 @@ function isUpsCarrierRow(row: ReswellListingRateRow): boolean {
   return true
 }
 
+function isFedexCarrierRow(row: CarrierHintRow): boolean {
+  const carrierCode = (row.carrierCode ?? "").trim().toLowerCase()
+  const carrierName = row.carrierName.trim().toLowerCase()
+  const blob = `${carrierCode} ${carrierName}`
+  if (!blob.includes("fedex") && !blob.includes("fed ex")) return false
+  if (blob.includes("freight")) return false
+  return true
+}
+
 function serviceBlob(serviceCode: string | null | undefined, serviceName: string | null | undefined): string {
   return `${serviceCode ?? ""} ${serviceName ?? ""}`.trim().toLowerCase()
 }
 
-/** Maps a UPS rate to Ground / 3 Day Select / Second Day Air. Excludes AM, Next Day, and Ground Saver. */
-export function upsSurfboardCheckoutBucket(
-  serviceCode: string | null | undefined,
-  serviceName: string | null | undefined,
-): UpsCheckoutBucket | null {
-  const text = serviceBlob(serviceCode, serviceName)
-  if (!text) return null
-  if (
-    text.includes("air_am") ||
-    text.includes("a.m.") ||
-    text.includes("early") ||
+/** Hawaii / Alaska — UPS Ground and 3 Day Select do not serve these destinations. */
+export function isNonContiguousUsShipTo(shipTo?: PeerCheckoutShipTo | null): boolean {
+  if (!shipTo) return false
+  const state = normalizeUsStateProvinceForShipping("US", shipTo.stateProvince ?? "")
+  if (state === "HI" || state === "AK") return true
+  const zip = (shipTo.postalCode ?? "").replace(/\D/g, "")
+  if (/^(967|968)/.test(zip)) return true
+  if (/^99[5-9]/.test(zip)) return true
+  return false
+}
+
+function isExcludedPremiumOrEconomyService(text: string): boolean {
+  return (
+    text.includes("ground_saver") ||
+    text.includes("ground saver") ||
+    text.includes("surepost") ||
+    text.includes("home_delivery") ||
+    text.includes("home delivery") ||
+    text.includes("ground_economy") ||
+    text.includes("ground economy")
+  )
+}
+
+function isUpsNextDayService(text: string): boolean {
+  return (
     text.includes("next_day") ||
     text.includes("next day") ||
-    text.includes("overnight") ||
-    text.includes("ground_saver") ||
-    text.includes("ground saver")
-  ) {
+    text.includes("overnight")
+  )
+}
+
+function isUpsSecondDayService(text: string): boolean {
+  return (
+    text.includes("2nd_day_air") ||
+    text.includes("2nd day air") ||
+    text.includes("second day air") ||
+    text.includes("second_day_air") ||
+    text.includes("2 day air") ||
+    text.includes("2-day air")
+  )
+}
+
+function isFedexOvernightService(text: string): boolean {
+  return text.includes("overnight") || text.includes("first_overnight") || text.includes("first overnight")
+}
+
+function isFedexTwoDayService(text: string): boolean {
+  return (
+    text.includes("2day") ||
+    text.includes("2_day") ||
+    text.includes("2-day") ||
+    text.includes("2 day") ||
+    text.includes("express_saver") ||
+    text.includes("express saver")
+  )
+}
+
+/**
+ * Maps a surfboard parcel rate to a checkout bucket.
+ * Continental US: UPS Ground / 3 Day / Second Day only.
+ * Hawaii & Alaska: UPS and FedEx air services that actually serve those lanes.
+ */
+export function surfboardCheckoutBucket(
+  serviceCode: string | null | undefined,
+  serviceName: string | null | undefined,
+  carrier: "ups" | "fedex",
+  shipTo?: PeerCheckoutShipTo | null,
+): SurfboardCheckoutBucket | null {
+  const text = serviceBlob(serviceCode, serviceName)
+  if (!text || isExcludedPremiumOrEconomyService(text)) return null
+
+  const hawaiiAlaska = isNonContiguousUsShipTo(shipTo)
+
+  if (carrier === "fedex") {
+    if (!hawaiiAlaska) return null
+    if (isFedexOvernightService(text)) return "fedex_overnight"
+    if (isFedexTwoDayService(text)) return "fedex_2day"
+    return null
+  }
+
+  if (hawaiiAlaska) {
+    if (isUpsNextDayService(text)) return "ups_next_day"
+    if (isUpsSecondDayService(text)) return "ups_2nd_day"
+    return null
+  }
+
+  if (isUpsNextDayService(text) || text.includes("air_am") || text.includes("a.m.") || text.includes("early")) {
     return null
   }
   if (
@@ -97,28 +206,55 @@ export function upsSurfboardCheckoutBucket(
     text.includes("3 day select") ||
     text.includes("3day select")
   ) {
-    return "3_day"
+    return "ups_3_day"
   }
-  if (
-    text.includes("2nd_day_air") ||
-    text.includes("2nd day air") ||
-    text.includes("second day air") ||
-    text.includes("second_day_air") ||
-    text.includes("2 day air") ||
-    text.includes("2-day air")
-  ) {
-    return "2nd_day"
-  }
+  if (isUpsSecondDayService(text)) return "ups_2nd_day"
   if (text.includes("ups_ground") || (text.includes("ground") && !text.includes("surepost"))) {
-    return "ground"
+    return "ups_ground"
   }
   return null
 }
 
-function upsServiceSortKey(bucket: UpsCheckoutBucket): number {
-  if (bucket === "ground") return 0
-  if (bucket === "3_day") return 1
-  return 2
+/** @deprecated Use {@link surfboardCheckoutBucket} — continental UPS Ground / 3 Day / 2nd Day only. */
+export function upsSurfboardCheckoutBucket(
+  serviceCode: string | null | undefined,
+  serviceName: string | null | undefined,
+): "ground" | "3_day" | "2nd_day" | null {
+  const bucket = surfboardCheckoutBucket(serviceCode, serviceName, "ups")
+  if (bucket === "ups_ground") return "ground"
+  if (bucket === "ups_3_day") return "3_day"
+  if (bucket === "ups_2nd_day") return "2nd_day"
+  return null
+}
+
+function surfboardServiceSortKey(bucket: SurfboardCheckoutBucket): number {
+  switch (bucket) {
+    case "ups_ground":
+      return 0
+    case "ups_3_day":
+      return 1
+    case "ups_2nd_day":
+      return 2
+    case "fedex_2day":
+      return 3
+    case "ups_next_day":
+      return 4
+    case "fedex_overnight":
+      return 5
+  }
+}
+
+function rowSurfboardCheckoutBucket(
+  row: Pick<ReswellListingRateRow, "carrierCode" | "carrierName" | "serviceCode" | "serviceName">,
+  shipTo?: PeerCheckoutShipTo | null,
+): SurfboardCheckoutBucket | null {
+  if (isUpsCarrierRow(row)) {
+    return surfboardCheckoutBucket(row.serviceCode, row.serviceName, "ups", shipTo)
+  }
+  if (isFedexCarrierRow(row)) {
+    return surfboardCheckoutBucket(row.serviceCode, row.serviceName, "fedex", shipTo)
+  }
+  return null
 }
 
 /**
@@ -195,7 +331,7 @@ export function peerCheckoutSharedSection(
 
 export function peerCheckoutRateChoiceIntro(section: string | null | undefined): string {
   if (peerCheckoutUsesUpsSurfboardChoice(section)) {
-    return "Choose UPS shipping. The amount you select is included in your total."
+    return "Choose UPS or FedEx shipping. The amount you select is included in your total."
   }
   return "Choose USPS shipping. The amount you select is included in your total."
 }
@@ -203,16 +339,20 @@ export function peerCheckoutRateChoiceIntro(section: string | null | undefined):
 export function filterReswellRatesForPeerSection(
   rates: ReswellListingRateRow[],
   section: string | null | undefined,
+  shipTo?: PeerCheckoutShipTo | null,
 ): ReswellListingRateRow[] {
   if (!peerCheckoutSectionRestrictsUspsServices(section)) {
     return rates
   }
 
   if (peerCheckoutUsesUpsSurfboardChoice(section)) {
+    const allowed = isNonContiguousUsShipTo(shipTo)
+      ? HAWAII_ALASKA_SURFBOARD_BUCKETS
+      : CONTINENTAL_SURFBOARD_BUCKETS
     return rates.filter((row) => {
       if (!row.rate_id) return false
-      if (!isUpsCarrierRow(row)) return false
-      return upsSurfboardCheckoutBucket(row.serviceCode, row.serviceName) != null
+      const bucket = rowSurfboardCheckoutBucket(row, shipTo)
+      return bucket != null && allowed.has(bucket)
     })
   }
 
@@ -228,21 +368,22 @@ export function filterReswellRatesForPeerSection(
 export function toPeerCheckoutShippingRateOptions(
   rates: ReswellListingRateRow[],
   section: string | null | undefined,
+  shipTo?: PeerCheckoutShipTo | null,
 ): PeerCheckoutShippingRateOption[] {
-  const filtered = filterReswellRatesForPeerSection(rates, section)
+  const filtered = filterReswellRatesForPeerSection(rates, section, shipTo)
   const options = filtered
     .filter((row): row is ReswellListingRateRow & { rate_id: string } => Boolean(row.rate_id))
     .map((row) => {
       const serviceCode = normalizeServiceCode(row.serviceCode)
-      const upsBucket = peerCheckoutUsesUpsSurfboardChoice(section)
-        ? upsSurfboardCheckoutBucket(serviceCode, row.serviceName)
+      const surfboardBucket = peerCheckoutUsesUpsSurfboardChoice(section)
+        ? rowSurfboardCheckoutBucket(row, shipTo)
         : null
       return {
         rateId: row.rate_id,
         serviceCode,
         serviceName: row.serviceName,
         displayName:
-          (upsBucket ? UPS_CHECKOUT_DISPLAY_NAMES[upsBucket] : null) ??
+          (surfboardBucket ? SURFBOARD_CHECKOUT_DISPLAY_NAMES[surfboardBucket] : null) ??
           PEER_CHECKOUT_USPS_DISPLAY_NAMES[serviceCode] ??
           (row.serviceName.trim() || "Shipping"),
         totalAmount: row.totalAmount,
@@ -252,9 +393,10 @@ export function toPeerCheckoutShippingRateOptions(
     })
 
   if (peerCheckoutUsesUpsSurfboardChoice(section)) {
-    const byBucket = new Map<UpsCheckoutBucket, PeerCheckoutShippingRateOption>()
+    const byBucket = new Map<SurfboardCheckoutBucket, PeerCheckoutShippingRateOption>()
     for (const option of options) {
-      const bucket = upsSurfboardCheckoutBucket(option.serviceCode, option.serviceName)
+      const source = filtered.find((row) => row.rate_id === option.rateId)
+      const bucket = source ? rowSurfboardCheckoutBucket(source, shipTo) : null
       if (!bucket) continue
       const existing = byBucket.get(bucket)
       if (!existing || option.totalAmount < existing.totalAmount) {
@@ -262,10 +404,12 @@ export function toPeerCheckoutShippingRateOptions(
       }
     }
     return [...byBucket.values()].sort((a, b) => {
-      const aBucket = upsSurfboardCheckoutBucket(a.serviceCode, a.serviceName)
-      const bBucket = upsSurfboardCheckoutBucket(b.serviceCode, b.serviceName)
+      const aSource = filtered.find((row) => row.rate_id === a.rateId)
+      const bSource = filtered.find((row) => row.rate_id === b.rateId)
+      const aBucket = aSource ? rowSurfboardCheckoutBucket(aSource, shipTo) : null
+      const bBucket = bSource ? rowSurfboardCheckoutBucket(bSource, shipTo) : null
       if (!aBucket || !bBucket) return a.totalAmount - b.totalAmount
-      return upsServiceSortKey(aBucket) - upsServiceSortKey(bBucket)
+      return surfboardServiceSortKey(aBucket) - surfboardServiceSortKey(bBucket)
     })
   }
 
@@ -317,13 +461,14 @@ export function findPeerCheckoutRateOption(
 
 /**
  * ShipEngine `rate_id` values expire between `/rates` calls. Buyers pick a stable
- * service bucket (USPS Ground vs Priority, or UPS Ground / 3 Day / Second Day);
- * resolve that bucket on fresh quotes.
+ * service bucket (USPS Ground vs Priority, continental UPS Ground / 3 Day / 2nd Day,
+ * or Hawaii/Alaska UPS and FedEx air); resolve that bucket on fresh quotes.
  */
 export function findPeerCheckoutRateOptionByServiceCode(
   options: PeerCheckoutShippingRateOption[],
   serviceCode: string | null | undefined,
   section?: string | null,
+  shipTo?: PeerCheckoutShipTo | null,
 ): PeerCheckoutShippingRateOption | null {
   const normalized = normalizeServiceCode(serviceCode)
   if (!normalized) return null
@@ -341,23 +486,34 @@ export function findPeerCheckoutRateOptionByServiceCode(
   }
 
   if (peerCheckoutUsesUpsSurfboardChoice(section)) {
-    const wanted = upsSurfboardCheckoutBucket(normalized, normalized)
+    const wanted =
+      surfboardCheckoutBucket(normalized, normalized, "ups", shipTo) ??
+      surfboardCheckoutBucket(normalized, normalized, "fedex", shipTo)
     if (!wanted) return null
     return (
-      options.find((option) => upsSurfboardCheckoutBucket(option.serviceCode, option.serviceName) === wanted) ??
-      null
+      options.find((option) => {
+        const bucket =
+          surfboardCheckoutBucket(option.serviceCode, option.serviceName, "ups", shipTo) ??
+          surfboardCheckoutBucket(option.serviceCode, option.serviceName, "fedex", shipTo)
+        return bucket === wanted
+      }) ?? null
     )
   }
 
   return null
 }
 
-export function peerCheckoutShippingServiceError(section: string | null | undefined): string {
+export function peerCheckoutShippingServiceError(
+  section: string | null | undefined,
+  shipTo?: PeerCheckoutShipTo | null,
+): string {
   if (peerCheckoutUsesUspsGroundPriorityChoice(section)) {
     return "USPS Ground and USPS Priority are not available for this shipment. Try a different address or contact support."
   }
   if (peerCheckoutUsesUpsSurfboardChoice(section)) {
-    return "UPS Ground, 3 Day Select, and UPS Second Day Air are not available for this shipment. Try a different address or contact support."
+    return isNonContiguousUsShipTo(shipTo)
+      ? "UPS and FedEx air rates are not available for this Hawaii or Alaska address. Try a different address or contact support."
+      : "UPS Ground, 3 Day Select, and UPS Second Day Air are not available for this shipment. Try a different address or contact support."
   }
   if (section === "magazines") {
     return "USPS Media Mail is not available for this shipment. Try a different address or contact support."

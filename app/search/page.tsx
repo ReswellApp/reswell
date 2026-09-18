@@ -65,7 +65,6 @@ export default async function SearchPage(props: {
         rawQuery={rawQuery}
         brandSlugFromUrl={brandSlugFromUrl}
         categorySlugFromUrl={categorySlugFromUrl}
-        showSeoBookmark={false}
         analyticsOriginHeaderNav={analyticsOriginHeaderNav}
       />
     </>

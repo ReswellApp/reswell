@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ListingDetailAdminCatalogDialogs } from "@/components/features/listings/listing-detail-admin-catalog-dialogs"
 import { ListingDetailAdminMoreMenu } from "@/components/features/listings/listing-detail-admin-more-menu"
 import { ListingDetailAdminRelatedBlogDialog } from "@/components/features/listings/listing-detail-admin-related-blog-dialog"
+import { ListingDetailAdminSearchTags } from "@/components/features/listings/listing-detail-admin-search-tags"
 import { useListingDetailAdminBar } from "@/components/features/listings/hooks/use-listing-detail-admin-bar"
 import type { ListingAdminBarSnapshot } from "@/lib/listing-detail-admin-bar"
 import { cn } from "@/lib/utils"
@@ -22,6 +23,8 @@ function listingAdminBarStatusLabel(listing: ListingAdminBarSnapshot): string {
         : listing.status.replaceAll("_", " ")
   const bits = [status]
   if (listing.hiddenFromSite) bits.push("hidden from shoppers")
+  if (listing.searchTags.includes("fish")) bits.push("tagged fish")
+  else if (listing.searchTags[0]) bits.push(`tagged ${listing.searchTags[0]}`)
   if (listing.sellerDisplayName) bits.push(listing.sellerDisplayName)
   return bits.join(" · ")
 }
@@ -84,6 +87,7 @@ export function ListingDetailAdminBar({ listing }: { listing: ListingAdminBarSna
             <BookOpen />
             Blog
           </Button>
+          <ListingDetailAdminSearchTags listing={listing} actionClass={actionClass} />
           <Button
             type="button"
             size="sm"

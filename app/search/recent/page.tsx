@@ -27,7 +27,6 @@ export default async function SearchRecentPage(props: {
       rawQuery=""
       brandSlugFromUrl=""
       categorySlugFromUrl={categorySlugFromUrl}
-      showSeoBookmark
       skipAuthLookup
     />
   )

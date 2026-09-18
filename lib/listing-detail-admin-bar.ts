@@ -1,3 +1,5 @@
+import { parseListingSearchTags } from "./listing-search-tags.ts"
+
 export type ListingAdminBarSnapshot = {
   id: string
   slug: string | null
@@ -8,12 +10,17 @@ export type ListingAdminBarSnapshot = {
   hiddenFromHomepage: boolean
   suppressedOnBoardsBrowse: boolean
   isGoodDeal: boolean
+  searchTags: string[]
   userId: string
   sellerDisplayName: string | null
   brandId: string | null
   brandModelId: string | null
   brandLabel: string | null
   modelLabel: string | null
+}
+
+export function listingAdminBarCanSearchTag(section: string): boolean {
+  return section === "surfboards"
 }
 
 function asTrimmedString(value: unknown): string | null {
@@ -57,6 +64,7 @@ export function listingAdminBarSnapshotFromRow(
     hiddenFromHomepage: listing.hidden_from_homepage === true,
     suppressedOnBoardsBrowse: listing.suppressed_on_boards_browse === true,
     isGoodDeal: listing.is_good_deal === true,
+    searchTags: parseListingSearchTags(listing.search_tags),
     userId,
     sellerDisplayName: sellerDisplayNameFromProfiles(listing.profiles),
     brandId: asTrimmedString(listing.brand_id),

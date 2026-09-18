@@ -32,6 +32,7 @@ import {
   browseTypeParamFromBoardType,
   BOARDS_BROWSE_TOP_PICKS_SORT,
 } from "@/lib/marketplace-slug-metadata"
+import { listingSearchTagSlugsForStyles } from "@/lib/listing-search-tags"
 import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import type { BoardsBrowseFacetCounts } from "@/lib/services/boardsBrowseFacetCounts"
 import { isUuidString } from "@/lib/utils/isUuid"
@@ -108,13 +109,15 @@ function boardsBrowseKeywordQuery(
   return withRankBoosts(withMustNot(body, mustNot), rankQuery)
 }
 
-/** ES filter for board style slugs — matches `board_type` or surfboard `category_id`. */
+/** ES filter for board style slugs — `board_type`, surfboard category, or admin search tag. */
 function boardStyleFilterClause(styleSlugs: string[]): object | null {
   const dbTypes = styleDbTypes(styleSlugs)
   const categoryIds = categoryIdsForBrowseBoardTypes(styleSlugs)
+  const searchTags = listingSearchTagSlugsForStyles(styleSlugs)
   const should: object[] = []
   if (dbTypes.length > 0) should.push({ terms: { board_type: dbTypes } })
   if (categoryIds.length > 0) should.push({ terms: { category_id: categoryIds } })
+  if (searchTags.length > 0) should.push({ terms: { search_tags: searchTags } })
   if (should.length === 0) return null
   if (should.length === 1) return should[0]!
   return { bool: { should, minimum_should_match: 1 } }

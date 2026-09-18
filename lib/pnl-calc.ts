@@ -2,7 +2,7 @@
  * Pure profit-and-loss math for the surfboard P&L tracker. No side effects so
  * it is shared by the server (summaries) and client (live table) alike.
  */
-import type { PnlEntryRow, PnlStatus } from "@/lib/db/pnl"
+import type { PnlEntryRow, PnlSourceKind, PnlStatus } from "@/lib/db/pnl"
 import type { PnlLoanWithRepayments } from "@/lib/db/pnlLoans"
 
 export interface PnlComputedEntry extends PnlEntryRow {
@@ -39,8 +39,13 @@ export interface PnlSummary {
   margin: number | null
 }
 
-function n(value: number | null | undefined): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0
+function n(value: number | string | null | undefined): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string") {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return 0
 }
 
 export function computeEntry(entry: PnlEntryRow): PnlComputedEntry {
@@ -105,6 +110,88 @@ export function summarize(entries: PnlComputedEntry[]): PnlSummary {
     roi: soldCostBasis > 0 ? netProfit / soldCostBasis : null,
     margin: totalRevenue > 0 ? netProfit / totalRevenue : null,
   }
+}
+
+export interface BalanceSheetSummary {
+  heldCount: number
+  reswellHeldCount: number
+  outsideHeldCount: number
+  /** Purchase price of unsold boards. */
+  inventoryCost: number
+  reswellInventoryCost: number
+  outsideInventoryCost: number
+  /** Sum of asking prices on unsold boards that have one. */
+  askingValue: number
+  askingPricedCount: number
+  /** Purchase price of the unsold boards that have an asking price. */
+  askingCostBasis: number
+  /** askingValue − askingCostBasis. */
+  unrealizedMarkup: number
+  soldCount: number
+  realizedProfit: number
+}
+
+export function summarizeBalanceSheet(entries: PnlComputedEntry[]): BalanceSheetSummary {
+  let heldCount = 0
+  let reswellHeldCount = 0
+  let outsideHeldCount = 0
+  let inventoryCost = 0
+  let reswellInventoryCost = 0
+  let outsideInventoryCost = 0
+  let askingValue = 0
+  let askingPricedCount = 0
+  let askingCostBasis = 0
+  let soldCount = 0
+  let realizedProfit = 0
+
+  for (const e of entries) {
+    if (e.profit != null) {
+      soldCount += 1
+      realizedProfit += e.profit
+      continue
+    }
+
+    const cost = n(e.purchase_price)
+    heldCount += 1
+    inventoryCost += cost
+    if (e.source_kind === "reswell") {
+      reswellHeldCount += 1
+      reswellInventoryCost += cost
+    } else {
+      outsideHeldCount += 1
+      outsideInventoryCost += cost
+    }
+    if (e.asking_price != null) {
+      askingValue += n(e.asking_price)
+      askingCostBasis += cost
+      askingPricedCount += 1
+    }
+  }
+
+  return {
+    heldCount,
+    reswellHeldCount,
+    outsideHeldCount,
+    inventoryCost,
+    reswellInventoryCost,
+    outsideInventoryCost,
+    askingValue,
+    askingPricedCount,
+    askingCostBasis,
+    unrealizedMarkup: askingValue - askingCostBasis,
+    soldCount,
+    realizedProfit,
+  }
+}
+
+export function sourceKindLabel(kind: PnlSourceKind): string {
+  return kind === "reswell" ? "Reswell" : "Outside"
+}
+
+export function sourceDisplay(entry: Pick<PnlEntryRow, "source_kind" | "bought_from">): string {
+  const named = entry.bought_from?.trim()
+  if (named) return named
+  return sourceKindLabel(entry.source_kind)
 }
 
 export interface LoanSummary {

@@ -5,9 +5,12 @@ export function SearchResultsPageSkeleton() {
   return (
     <main className="flex-1" role="status" aria-busy="true" aria-label="Loading search results">
       <section className="border-b border-border bg-background">
-        <div className="container mx-auto py-8">
-          <Skeleton className="h-8 w-48 max-w-[85%]" />
-          <Skeleton className="mt-2 h-4 w-96 max-w-full" />
+        <div className="container mx-auto flex flex-col gap-4 py-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6 md:py-6">
+          <div className="min-w-0">
+            <Skeleton className="h-8 w-64 max-w-[85%]" />
+            <Skeleton className="mt-2 h-4 w-36 max-w-full" />
+          </div>
+          <Skeleton className="h-9 w-44 shrink-0" />
         </div>
       </section>
       <section className="container mx-auto py-8">

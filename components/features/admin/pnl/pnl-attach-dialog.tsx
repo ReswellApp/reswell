@@ -160,8 +160,8 @@ export function PnlAttachDialog({ open, onOpenChange, onAttached }: PnlAttachDia
         <DialogHeader>
           <DialogTitle>Attach from Reswell</DialogTitle>
           <DialogDescription>
-            Pull in boards you&apos;ve sold, bought, or have actively listed on Reswell. Prices, fees,
-            and dates are filled in automatically — already-attached boards are hidden.
+            Pull in boards you bought or listed on Reswell. Title, date, and price fill in
+            automatically — already-attached boards are hidden.
           </DialogDescription>
         </DialogHeader>
 

@@ -8,6 +8,7 @@ export const LISTING_UPDATE_FORBIDDEN_FIELDS = new Set([
   "hidden_from_site",
   "site_visibility_reason",
   "auto_price_drop_scheduled_for",
+  "search_tags",
 ])
 
 export function listingFieldsForPeerUpdate(raw: Record<string, unknown>): Record<string, unknown> {

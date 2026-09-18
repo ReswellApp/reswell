@@ -15,9 +15,11 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
+import { Input } from "@/components/ui/input"
 import { SearchAnalyticsQueryLookup } from "@/components/features/admin/search-analytics-query-lookup"
 import type { SearchSourcingDashboard, SearchSourcingQueryRow } from "@/lib/services/searchSourcingDashboard"
 import { BUSINESS_TIMEZONE_LABEL, formatBusinessDayKeyShort } from "@/lib/utils/business-timezone"
+import { filterSearchSourcingQueries } from "@/lib/utils/search-sourcing-dashboard"
 import { cn } from "@/lib/utils"
 
 type QueryFilter = "all" | "none" | "thin"
@@ -56,6 +58,7 @@ export function SearchAnalyticsAdminClient() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<QueryFilter>("all")
+  const [listSearch, setListSearch] = useState("")
 
   const load = useCallback(async (mode: "initial" | "refresh" = "initial") => {
     setError(null)
@@ -99,10 +102,19 @@ export function SearchAnalyticsAdminClient() {
     return rows
   }, [data?.topQueries, data?.zeroResultQueries])
 
+  const rankByQuery = useMemo(() => {
+    const ranks = new Map<string, number>()
+    rankedQueries.forEach((row, index) => {
+      ranks.set(row.query, index + 1)
+    })
+    return ranks
+  }, [rankedQueries])
+
   const filteredQueries = useMemo(() => {
-    if (filter === "all") return rankedQueries
-    return rankedQueries.filter((row) => row.inventory === filter)
-  }, [rankedQueries, filter])
+    const searched = filterSearchSourcingQueries(rankedQueries, listSearch)
+    if (filter === "all") return searched
+    return searched.filter((row) => row.inventory === filter)
+  }, [rankedQueries, filter, listSearch])
 
   const sourceFirst = useMemo(
     () => rankedQueries.filter((row) => row.inventory === "none"),
@@ -327,54 +339,82 @@ export function SearchAnalyticsAdminClient() {
           <SearchAnalyticsQueryLookup />
 
           <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">What&apos;s being searched</h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Ranked by all-time volume. Open a query to see current marketplace results.
-                </p>
+            <div className="space-y-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">All-time searches</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Every unique query, ranked by all-time volume.
+                    {rankedQueries.length > 0
+                      ? ` ${formatCount(rankedQueries.length)} ${rankedQueries.length === 1 ? "query" : "queries"}.`
+                      : ""}
+                    {data.allQueriesTruncated
+                      ? " Showing the highest-volume terms we can load in one pass."
+                      : ""}{" "}
+                    Open a query to see current marketplace results.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <FilterChip label="All" active={filter === "all"} onClick={() => setFilter("all")} />
+                  <FilterChip
+                    label="Need to source"
+                    active={filter === "none"}
+                    onClick={() => setFilter("none")}
+                  />
+                  <FilterChip
+                    label="Thin stock"
+                    active={filter === "thin"}
+                    onClick={() => setFilter("thin")}
+                  />
+                </div>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                <FilterChip label="All" active={filter === "all"} onClick={() => setFilter("all")} />
-                <FilterChip
-                  label="Need to source"
-                  active={filter === "none"}
-                  onClick={() => setFilter("none")}
-                />
-                <FilterChip
-                  label="Thin stock"
-                  active={filter === "thin"}
-                  onClick={() => setFilter("thin")}
+              <div className="relative">
+                <label htmlFor="search-analytics-list-search" className="sr-only">
+                  Search all-time marketplace queries
+                </label>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id="search-analytics-list-search"
+                  value={listSearch}
+                  onChange={(e) => setListSearch(e.target.value)}
+                  placeholder="Search this list — brand, model, or any query"
+                  autoComplete="off"
+                  className="h-10 border-slate-200 bg-white pl-9"
                 />
               </div>
             </div>
             {filteredQueries.length === 0 ? (
               <p className="px-5 py-10 text-center text-sm text-slate-500 sm:px-6">
-                {filter === "all"
-                  ? "No marketplace searches have been tracked yet."
-                  : "Nothing in this filter right now."}
+                {listSearch.trim()
+                  ? `No queries match “${listSearch.trim()}”.`
+                  : filter === "all"
+                    ? "No marketplace searches have been tracked yet."
+                    : "Nothing in this filter right now."}
               </p>
             ) : (
-              <ol className="divide-y divide-slate-100">
-                {filteredQueries.map((row, index) => (
-                  <li key={row.query}>
-                    <Link
-                      href={`/search?q=${encodeURIComponent(row.display)}`}
-                      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50 sm:px-6"
-                    >
-                      <span className="w-7 shrink-0 text-xs font-semibold tabular-nums text-slate-400">
-                        {index + 1}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
-                        {row.display}
-                      </span>
-                      <InventoryBadge row={row} />
-                      <span className="shrink-0 text-sm tabular-nums text-slate-500">
-                        {formatCount(row.count)}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
+              <ol className="max-h-[40rem] divide-y divide-slate-100 overflow-y-auto">
+                {filteredQueries.map((row) => {
+                  const rank = rankByQuery.get(row.query) ?? 0
+                  return (
+                    <li key={row.query}>
+                      <Link
+                        href={`/search?q=${encodeURIComponent(row.display)}`}
+                        className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50 sm:px-6"
+                      >
+                        <span className="w-8 shrink-0 text-xs font-semibold tabular-nums text-slate-400">
+                          {rank}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
+                          {row.display}
+                        </span>
+                        <InventoryBadge row={row} />
+                        <span className="shrink-0 text-sm tabular-nums text-slate-500">
+                          {formatCount(row.count)}
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
               </ol>
             )}
           </section>

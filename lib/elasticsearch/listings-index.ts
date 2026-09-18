@@ -4,6 +4,10 @@ import { isListingExternallyIndexable } from "@/lib/listing-public-visibility"
 import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
 import { parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
 import {
+  listingSearchTagSlugsForStyles,
+  parseListingSearchTags,
+} from "@/lib/listing-search-tags"
+import {
   parseTailShapeFromStorage,
   TAIL_SHAPE_LABELS,
   type TailShapeTagSlug,
@@ -65,6 +69,8 @@ export type ListingSearchDoc = {
    * tail, dimensions, shipping). Slug fields stay keyword for exact filters.
    */
   attrs_text: string
+  /** Admin-curated search keywords (`listings.search_tags`). */
+  search_tags: string[]
   /** Geo point for `geo_distance` filter + nearest sort; omitted when lat/lng missing. */
   location?: { lat: number; lon: number }
   /** Magazine publication year (`listings.magazine_year`). */
@@ -148,6 +154,7 @@ const SECTION_INDEX_PROPERTIES = {
   wetsuit_zip_type: { type: "keyword" as const },
   apparel_kind: { type: "keyword" as const },
   apparel_size: { type: "keyword" as const },
+  search_tags: { type: "keyword" as const },
 }
 
 const ADDITIVE_INDEX_PROPERTIES = {
@@ -291,6 +298,7 @@ const SEARCH_FIELDS = [
   "brand^2",
   "model^2",
   "attrs_text^2",
+  "search_tags^4",
   "board_type",
   "condition",
   "construction",
@@ -315,6 +323,7 @@ export function buildListingAttrsText(input: {
   construction?: string | null
   fins_setup?: string[]
   tail_shape?: string[]
+  search_tags?: string[]
   dimensions?: string | null
   length_total_inches?: number | null
   width_inches?: number | null
@@ -334,6 +343,10 @@ export function buildListingAttrsText(input: {
 
   push(input.category_name)
   push(input.board_type?.replace(/-/g, " "))
+  for (const tag of input.search_tags ?? []) {
+    push(tag)
+    push(tag.replace(/-/g, " "))
+  }
   if (input.condition) {
     push(LISTING_CONDITION_LABELS[input.condition] ?? input.condition.replace(/_/g, " "))
     push(input.condition.replace(/_/g, " "))
@@ -518,7 +531,7 @@ export function listingBrandIdFilterClause(
   }
 }
 
-/** Filter listings by canonical board-style slugs (`board_type` or surfboard category). */
+/** Filter listings by canonical board-style slugs (`board_type`, category, or admin search tag). */
 export function listingBoardTypesFilterClause(styleSlugs?: string[] | null): object | null {
   const slugs = (styleSlugs ?? []).map((s) => s.trim()).filter(Boolean)
   if (slugs.length === 0) return null
@@ -526,9 +539,11 @@ export function listingBoardTypesFilterClause(styleSlugs?: string[] | null): obj
     new Set(slugs.flatMap((s) => listingBoardTypeDbValuesForFilter(s))),
   )
   const categoryIds = categoryIdsForBrowseBoardTypes(slugs)
+  const searchTags = listingSearchTagSlugsForStyles(slugs)
   const should: object[] = []
   if (dbTypes.length > 0) should.push({ terms: { board_type: dbTypes } })
   if (categoryIds.length > 0) should.push({ terms: { category_id: categoryIds } })
+  if (searchTags.length > 0) should.push({ terms: { search_tags: searchTags } })
   if (should.length === 0) return null
   if (should.length === 1) return should[0]!
   return { bool: { should, minimum_should_match: 1 } }
@@ -874,6 +889,7 @@ export const LISTING_SEARCH_DOC_SELECT = `
   wetsuit_size,
   apparel_kind,
   apparel_size,
+  search_tags,
   hidden_from_site,
   archived_at,
   categories (name)
@@ -912,6 +928,7 @@ export type ListingSearchDocRow = {
   wetsuit_size?: string | null
   apparel_kind?: string | null
   apparel_size?: string | null
+  search_tags?: string[] | string | null
   hidden_from_site?: boolean | null
   archived_at?: string | null
   categories: { name: string | null } | null | { name: string | null }[]
@@ -973,6 +990,7 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
   const construction = row.construction ?? null
   const apparel_kind = row.apparel_kind?.trim() || null
   const apparel_size = row.apparel_size?.trim() || null
+  const search_tags = parseListingSearchTags(row.search_tags)
 
   return {
     id: row.id,
@@ -1004,6 +1022,7 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
     shipping_available,
     suppressed_on_boards_browse: row.suppressed_on_boards_browse ?? null,
     dimensions,
+    search_tags,
     attrs_text: buildListingAttrsText({
       category_name,
       board_type: row.board_type,
@@ -1012,6 +1031,7 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
       construction,
       fins_setup,
       tail_shape,
+      search_tags,
       dimensions,
       length_total_inches,
       width_inches,

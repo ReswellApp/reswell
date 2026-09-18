@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { PnlEntryRow, PnlStatus } from "@/lib/db/pnl"
+import type { PnlEntryRow, PnlSourceKind, PnlStatus } from "@/lib/db/pnl"
 import { createPnlEntryAction, updatePnlEntryAction } from "@/lib/actions/pnlAdmin"
 
 interface PnlEntryDialogProps {
@@ -36,8 +36,11 @@ interface FormState {
   boardName: string
   category: string
   status: PnlStatus
+  sourceKind: PnlSourceKind
+  boughtFrom: string
   purchaseDate: string
   purchasePrice: string
+  askingPrice: string
   shippingCost: string
   platformFee: string
   otherCosts: string
@@ -51,8 +54,11 @@ function emptyForm(): FormState {
     boardName: "",
     category: "",
     status: "inventory",
+    sourceKind: "outside",
+    boughtFrom: "",
     purchaseDate: "",
     purchasePrice: "",
+    askingPrice: "",
     shippingCost: "",
     platformFee: "",
     otherCosts: "",
@@ -68,8 +74,11 @@ function fromEntry(entry: PnlEntryRow): FormState {
     boardName: entry.board_name,
     category: entry.category ?? "",
     status: entry.status,
+    sourceKind: entry.source_kind,
+    boughtFrom: entry.bought_from ?? "",
     purchaseDate: entry.purchase_date ?? "",
     purchasePrice: num(entry.purchase_price),
+    askingPrice: num(entry.asking_price),
     shippingCost: num(entry.shipping_cost),
     platformFee: num(entry.platform_fee),
     otherCosts: num(entry.other_costs),
@@ -91,9 +100,18 @@ export function PnlEntryDialog({ open, onOpenChange, entry, onSaved }: PnlEntryD
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
+  function handleSourceKind(next: PnlSourceKind) {
+    setForm((prev) => {
+      let boughtFrom = prev.boughtFrom
+      if (next === "reswell" && boughtFrom.trim() === "") boughtFrom = "Reswell"
+      if (next === "outside" && boughtFrom.trim() === "Reswell") boughtFrom = ""
+      return { ...prev, sourceKind: next, boughtFrom }
+    })
+  }
+
   async function handleSubmit() {
     if (!form.boardName.trim()) {
-      toast.error("Board name is required")
+      toast.error("Title is required")
       return
     }
     setSaving(true)
@@ -101,8 +119,11 @@ export function PnlEntryDialog({ open, onOpenChange, entry, onSaved }: PnlEntryD
       boardName: form.boardName,
       category: form.category,
       status: form.status,
+      sourceKind: form.sourceKind,
+      boughtFrom: form.boughtFrom,
       purchasePrice: form.purchasePrice,
       purchaseDate: form.purchaseDate,
+      askingPrice: form.askingPrice === "" ? null : form.askingPrice,
       salePrice: form.salePrice === "" ? null : form.salePrice,
       saleDate: form.saleDate,
       shippingCost: form.shippingCost,
@@ -111,7 +132,7 @@ export function PnlEntryDialog({ open, onOpenChange, entry, onSaved }: PnlEntryD
       notes: form.notes,
     }
     const result = isEdit
-      ? await updatePnlEntryAction({ id: entry!.id, ...payload })
+      ? await updatePnlEntryAction({ id: entry.id, ...payload })
       : await createPnlEntryAction(payload)
     setSaving(false)
 
@@ -130,13 +151,13 @@ export function PnlEntryDialog({ open, onOpenChange, entry, onSaved }: PnlEntryD
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit board" : "Add board"}</DialogTitle>
           <DialogDescription>
-            Track what you paid, what you sold it for, and your fees. Profit is calculated for you.
+            Log where you bought it, what you paid, and the price you want to sell it at.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="pnl-board-name">Board name</Label>
+            <Label htmlFor="pnl-board-name">Title</Label>
             <Input
               id="pnl-board-name"
               value={form.boardName}
@@ -147,12 +168,59 @@ export function PnlEntryDialog({ open, onOpenChange, entry, onSaved }: PnlEntryD
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="pnl-category">Category</Label>
+              <Label htmlFor="pnl-source-kind">Bought</Label>
+              <Select value={form.sourceKind} onValueChange={(v) => handleSourceKind(v as PnlSourceKind)}>
+                <SelectTrigger id="pnl-source-kind">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reswell">On Reswell</SelectItem>
+                  <SelectItem value="outside">Outside Reswell</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="pnl-bought-from">Where</Label>
               <Input
-                id="pnl-category"
-                value={form.category}
-                onChange={(e) => set("category", e.target.value)}
-                placeholder="Shortboard"
+                id="pnl-bought-from"
+                value={form.boughtFrom}
+                onChange={(e) => set("boughtFrom", e.target.value)}
+                placeholder={form.sourceKind === "reswell" ? "Reswell" : "Craigslist, shop, seller…"}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="pnl-purchase-price">Paid</Label>
+              <Input
+                id="pnl-purchase-price"
+                inputMode="decimal"
+                value={form.purchasePrice}
+                onChange={(e) => set("purchasePrice", e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="pnl-purchase-date">Date</Label>
+              <Input
+                id="pnl-purchase-date"
+                type="date"
+                value={form.purchaseDate}
+                onChange={(e) => set("purchaseDate", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="pnl-asking-price">Asking price</Label>
+              <Input
+                id="pnl-asking-price"
+                inputMode="decimal"
+                value={form.askingPrice}
+                onChange={(e) => set("askingPrice", e.target.value)}
+                placeholder="What you want to sell it for"
               />
             </div>
             <div className="grid gap-2">
@@ -170,26 +238,36 @@ export function PnlEntryDialog({ open, onOpenChange, entry, onSaved }: PnlEntryD
             </div>
           </div>
 
+          <div className="grid gap-2">
+            <Label htmlFor="pnl-category">Category</Label>
+            <Input
+              id="pnl-category"
+              value={form.category}
+              onChange={(e) => set("category", e.target.value)}
+              placeholder="Shortboard"
+            />
+          </div>
+
           <fieldset className="grid gap-3 rounded-lg border p-3">
-            <legend className="px-1 text-xs font-medium text-muted-foreground">Buying</legend>
+            <legend className="px-1 text-xs font-medium text-muted-foreground">Sold (optional)</legend>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="pnl-purchase-price">Purchase price</Label>
+                <Label htmlFor="pnl-sale-price">Sale price</Label>
                 <Input
-                  id="pnl-purchase-price"
+                  id="pnl-sale-price"
                   inputMode="decimal"
-                  value={form.purchasePrice}
-                  onChange={(e) => set("purchasePrice", e.target.value)}
-                  placeholder="0.00"
+                  value={form.salePrice}
+                  onChange={(e) => set("salePrice", e.target.value)}
+                  placeholder="Leave blank if unsold"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="pnl-purchase-date">Purchase date</Label>
+                <Label htmlFor="pnl-sale-date">Sale date</Label>
                 <Input
-                  id="pnl-purchase-date"
+                  id="pnl-sale-date"
                   type="date"
-                  value={form.purchaseDate}
-                  onChange={(e) => set("purchaseDate", e.target.value)}
+                  value={form.saleDate}
+                  onChange={(e) => set("saleDate", e.target.value)}
                 />
               </div>
             </div>
@@ -222,31 +300,6 @@ export function PnlEntryDialog({ open, onOpenChange, entry, onSaved }: PnlEntryD
                   value={form.otherCosts}
                   onChange={(e) => set("otherCosts", e.target.value)}
                   placeholder="0.00"
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset className="grid gap-3 rounded-lg border p-3">
-            <legend className="px-1 text-xs font-medium text-muted-foreground">Selling</legend>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="pnl-sale-price">Sale price</Label>
-                <Input
-                  id="pnl-sale-price"
-                  inputMode="decimal"
-                  value={form.salePrice}
-                  onChange={(e) => set("salePrice", e.target.value)}
-                  placeholder="Leave blank if unsold"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="pnl-sale-date">Sale date</Label>
-                <Input
-                  id="pnl-sale-date"
-                  type="date"
-                  value={form.saleDate}
-                  onChange={(e) => set("saleDate", e.target.value)}
                 />
               </div>
             </div>

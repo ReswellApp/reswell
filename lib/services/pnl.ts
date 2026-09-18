@@ -37,7 +37,7 @@ export async function listPnlEntriesService(): Promise<{ data: PnlEntryRow[] } |
     const data = await listPnlEntries(supabase)
     return { data }
   } catch {
-    return { error: "Could not load P&L entries." }
+    return { error: "Could not load inventory." }
   }
 }
 
@@ -57,8 +57,11 @@ export async function createPnlEntryService(
     board_name: input.boardName,
     category: nullable(input.category),
     status: input.status,
+    source_kind: input.sourceKind,
+    bought_from: nullable(input.boughtFrom),
     purchase_price: input.purchasePrice,
     purchase_date: nullable(input.purchaseDate),
+    asking_price: input.askingPrice ?? null,
     sale_price: input.salePrice ?? null,
     sale_date: nullable(input.saleDate),
     shipping_cost: input.shippingCost,
@@ -73,7 +76,7 @@ export async function createPnlEntryService(
     const data = await insertPnlEntry(supabase, values)
     return { data }
   } catch {
-    return { error: "Could not create P&L entry." }
+    return { error: "Could not add this board." }
   }
 }
 
@@ -93,8 +96,11 @@ export async function updatePnlEntryService(
   if (input.boardName !== undefined) values.board_name = input.boardName
   if (input.category !== undefined) values.category = input.category || null
   if (input.status !== undefined) values.status = input.status
+  if (input.sourceKind !== undefined) values.source_kind = input.sourceKind
+  if (input.boughtFrom !== undefined) values.bought_from = input.boughtFrom || null
   if (input.purchasePrice !== undefined) values.purchase_price = input.purchasePrice
   if (input.purchaseDate !== undefined) values.purchase_date = input.purchaseDate || null
+  if (input.askingPrice !== undefined) values.asking_price = input.askingPrice
   if (input.salePrice !== undefined) values.sale_price = input.salePrice
   if (input.saleDate !== undefined) values.sale_date = input.saleDate || null
   if (input.shippingCost !== undefined) values.shipping_cost = input.shippingCost
@@ -111,7 +117,7 @@ export async function updatePnlEntryService(
     const data = await updatePnlEntryRow(supabase, id, values)
     return { data }
   } catch {
-    return { error: "Could not update P&L entry." }
+    return { error: "Could not update this board." }
   }
 }
 
@@ -163,15 +169,18 @@ export async function attachReswellListingService(
 
     const attached = await listAttachedListingIds(supabase)
     if (attached.has(listing.listing_id)) {
-      return { error: "This board is already in your P&L." }
+      return { error: "This board is already on the balance sheet." }
     }
 
     const values: PnlEntryInsert = {
       board_name: listing.board_name,
       category: listing.category,
       status: "listed",
+      source_kind: "outside",
+      bought_from: null,
       purchase_price: 0,
       purchase_date: null,
+      asking_price: listing.price,
       sale_price: null,
       sale_date: null,
       shipping_cost: 0,
@@ -212,7 +221,7 @@ export async function attachReswellOrderService(
 
     const attached = await listAttachedOrderIds(supabase)
     if (attached.has(order.order_id)) {
-      return { error: "This order is already in your P&L." }
+      return { error: "This order is already on the balance sheet." }
     }
 
     const orderDate = order.order_date.slice(0, 10)
@@ -234,8 +243,11 @@ export async function attachReswellOrderService(
         ? {
             ...base,
             status: "sold",
+            source_kind: "outside",
+            bought_from: null,
             purchase_price: 0,
             purchase_date: null,
+            asking_price: order.item_price,
             sale_price: order.item_price,
             sale_date: orderDate,
             shipping_cost: 0,
@@ -244,8 +256,11 @@ export async function attachReswellOrderService(
         : {
             ...base,
             status: "inventory",
+            source_kind: "reswell",
+            bought_from: "Reswell",
             purchase_price: order.item_price,
             purchase_date: orderDate,
+            asking_price: null,
             sale_price: null,
             sale_date: null,
             shipping_cost: order.shipping_amount,
@@ -273,6 +288,6 @@ export async function deletePnlEntryService(raw: unknown): Promise<{ success: tr
     await deletePnlEntryRow(supabase, parsed.data.id)
     return { success: true }
   } catch {
-    return { error: "Could not delete P&L entry." }
+    return { error: "Could not delete this board." }
   }
 }

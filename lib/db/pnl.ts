@@ -2,14 +2,18 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type PnlStatus = "inventory" | "listed" | "sold"
 export type PnlOrderRole = "buyer" | "seller"
+export type PnlSourceKind = "reswell" | "outside"
 
 export interface PnlEntryRow {
   id: string
   board_name: string
   category: string | null
   status: PnlStatus
+  source_kind: PnlSourceKind
+  bought_from: string | null
   purchase_price: number
   purchase_date: string | null
+  asking_price: number | null
   sale_price: number | null
   sale_date: string | null
   shipping_cost: number
@@ -30,8 +34,11 @@ export interface PnlEntryInsert {
   board_name: string
   category: string | null
   status: PnlStatus
+  source_kind: PnlSourceKind
+  bought_from: string | null
   purchase_price: number
   purchase_date: string | null
+  asking_price: number | null
   sale_price: number | null
   sale_date: string | null
   shipping_cost: number
@@ -78,7 +85,31 @@ export interface ReswellListingOption {
 }
 
 const PNL_ENTRY_COLUMNS =
-  "id, board_name, category, status, purchase_price, purchase_date, sale_price, sale_date, shipping_cost, platform_fee, other_costs, notes, order_id, listing_id, order_role, order_num, listing_slug, created_by, created_at, updated_at"
+  "id, board_name, category, status, source_kind, bought_from, purchase_price, purchase_date, asking_price, sale_price, sale_date, shipping_cost, platform_fee, other_costs, notes, order_id, listing_id, order_role, order_num, listing_slug, created_by, created_at, updated_at"
+
+function toMoney(value: unknown): number {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function toMoneyOrNull(value: unknown): number | null {
+  if (value == null || value === "") return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function mapPnlEntry(row: PnlEntryRow): PnlEntryRow {
+  return {
+    ...row,
+    source_kind: row.source_kind === "reswell" ? "reswell" : "outside",
+    purchase_price: toMoney(row.purchase_price),
+    asking_price: toMoneyOrNull(row.asking_price),
+    sale_price: toMoneyOrNull(row.sale_price),
+    shipping_cost: toMoney(row.shipping_cost),
+    platform_fee: toMoney(row.platform_fee),
+    other_costs: toMoney(row.other_costs),
+  }
+}
 
 const MAX_ENTRIES = 2000
 const MAX_ORDER_OPTIONS = 300
@@ -92,7 +123,7 @@ export async function listPnlEntries(supabase: SupabaseClient): Promise<PnlEntry
     .limit(MAX_ENTRIES)
 
   if (error) throw error
-  return (data ?? []) as PnlEntryRow[]
+  return ((data ?? []) as PnlEntryRow[]).map(mapPnlEntry)
 }
 
 export async function insertPnlEntry(
@@ -106,7 +137,7 @@ export async function insertPnlEntry(
     .single()
 
   if (error) throw error
-  return data as PnlEntryRow
+  return mapPnlEntry(data as PnlEntryRow)
 }
 
 export async function updatePnlEntryRow(
@@ -122,7 +153,7 @@ export async function updatePnlEntryRow(
     .single()
 
   if (error) throw error
-  return data as PnlEntryRow
+  return mapPnlEntry(data as PnlEntryRow)
 }
 
 export async function deletePnlEntryRow(supabase: SupabaseClient, id: string): Promise<void> {

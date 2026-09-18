@@ -361,13 +361,14 @@ function resolveSelectedCheckoutRate(
   section: string | null | undefined,
   selectedRateId: string | null | undefined,
   selectedServiceCode?: string | null,
+  shipTo?: { stateProvince?: string | null; postalCode?: string | null } | null,
 ): { ok: true; selected: ReswellListingRateRow; checkoutRateOptions: PeerCheckoutShippingRateOption[] } | { ok: false; error: string } {
-  const filtered = filterReswellRatesForPeerSection(decorated, section)
-  const checkoutRateOptions = toPeerCheckoutShippingRateOptions(filtered, section)
+  const filtered = filterReswellRatesForPeerSection(decorated, section, shipTo)
+  const checkoutRateOptions = toPeerCheckoutShippingRateOptions(filtered, section, shipTo)
 
   if (peerCheckoutSectionRestrictsUspsServices(section)) {
     if (checkoutRateOptions.length === 0) {
-      return { ok: false, error: peerCheckoutShippingServiceError(section) }
+      return { ok: false, error: peerCheckoutShippingServiceError(section, shipTo) }
     }
   }
 
@@ -384,6 +385,7 @@ function resolveSelectedCheckoutRate(
         checkoutRateOptions,
         trimmedService,
         section,
+        shipTo,
       )
     }
 
@@ -411,7 +413,7 @@ function resolveSelectedCheckoutRate(
     return {
       ok: false,
       error: peerCheckoutSectionRestrictsUspsServices(section)
-        ? peerCheckoutShippingServiceError(section)
+        ? peerCheckoutShippingServiceError(section, shipTo)
         : "No carrier returned a label rate for this shipment. Try again or check ShipEngine.",
     }
   }
@@ -596,6 +598,10 @@ export async function getCheapestReswellRateForListings(input: {
     section,
     input.selectedRateId,
     input.selectedServiceCode,
+    {
+      stateProvince: input.shipTo.state_province,
+      postalCode: input.shipTo.postal_code,
+    },
   )
   if (!resolved.ok) {
     return resolved
