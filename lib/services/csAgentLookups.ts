@@ -123,15 +123,18 @@ export async function loadLiveChatAccountSnapshot(
   service: SupabaseClient,
   userId: string | null,
 ): Promise<CsAgentAccountSnapshot> {
-  if (!userId) return { signedIn: false, orders: [], listings: [] }
+  if (!userId) {
+    return { signedIn: false, orders: [], listings: [], authoritative: true }
+  }
 
   try {
     const [orders, listings] = await Promise.all([
-      listSupportReplyOrdersForCustomer(service, userId, 8),
-      listRecentLiveChatAiListingsForMember(service, userId, 6),
+      listSupportReplyOrdersForCustomer(service, userId, 8, { failOnError: true }),
+      listRecentLiveChatAiListingsForMember(service, userId, 6, { failOnError: true }),
     ])
     return {
       signedIn: true,
+      authoritative: true,
       orders: orders.map((order) => ({
         id: order.id,
         orderNum: order.orderNum,
@@ -155,7 +158,7 @@ export async function loadLiveChatAccountSnapshot(
       "[csAgentLookups] live chat snapshot skipped:",
       error instanceof Error ? error.message : error,
     )
-    return { signedIn: true, orders: [], listings: [] }
+    return { signedIn: true, orders: [], listings: [], authoritative: false }
   }
 }
 

@@ -16,6 +16,12 @@ import {
   LIVE_CHAT_SESSION_MISSING_CODE,
 } from "@/lib/live-chat/errors"
 
+/**
+ * Auto-reply runs in after() on POST: 20s model + 28s outer budget, then
+ * persistTeamReply and typing-clear. Default function time kills that mid-flight.
+ */
+export const maxDuration = 60
+
 type RouteContext = { params: Promise<{ publicId: string }> }
 
 export async function GET(req: NextRequest, context: RouteContext) {

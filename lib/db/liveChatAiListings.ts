@@ -48,6 +48,7 @@ export async function listRecentLiveChatAiListingsForMember(
   supabase: SupabaseClient,
   userId: string,
   limit = 6,
+  options?: { failOnError?: boolean },
 ): Promise<LiveChatAiListingSummary[]> {
   const take = Math.max(1, Math.min(limit, 10))
 
@@ -60,6 +61,9 @@ export async function listRecentLiveChatAiListingsForMember(
 
   if (error) {
     console.error("[liveChatAiListings] list recent", error.message)
+    if (options?.failOnError) {
+      throw new Error(error.message)
+    }
     return []
   }
 
