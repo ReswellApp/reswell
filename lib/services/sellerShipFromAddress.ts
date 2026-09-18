@@ -53,6 +53,15 @@ export async function ensureProfileAddressFromOrderShipping(
   return inserted.address
 }
 
+/** Saved seller ship-from, or null when none can be recovered. */
+export async function fetchSellerShipFromAddressOrNull(
+  supabase: SupabaseClient,
+  sellerId: string,
+): Promise<ProfileAddressRow | null> {
+  const resolved = await resolveSellerShipFromAddress(supabase, sellerId)
+  return resolved.ok ? resolved.address : null
+}
+
 /**
  * Prefer an explicit / saved seller address. If none exist, recover from the most
  * recent shipping address on orders where this user was the buyer, and save it.

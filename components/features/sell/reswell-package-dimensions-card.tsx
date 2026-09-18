@@ -17,6 +17,8 @@ import {
   parseReswellPackedWeightToTotalOz,
 } from "@/lib/reswell-parcel-fields"
 import {
+  RESWELL_UPS_DIMENSION_BUFFER_IN,
+  SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN,
   SURFBOARD_LABEL_MAX_WEIGHT_LB,
   UPS_MAX_LENGTH_PLUS_GIRTH_IN,
   surfboardShippingDimIn,
@@ -102,9 +104,9 @@ function CompactCell({
   )
 }
 
-/** Pirate Ship–style Length + Girth oversize copy. */
+/** Pirate Ship–style Length + Girth oversize copy (Reswell cap, 5″ under carrier max). */
 export function packageLengthPlusGirthTooBigMessage(dimTotal: number): string {
-  return `Your package is too big! The maximum Length plus Girth (Width x 2 + Height x 2) is ${UPS_MAX_LENGTH_PLUS_GIRTH_IN}", but your package is ${Math.round(dimTotal)}"`
+  return `Your package is too big! The maximum Length plus Girth (Width x 2 + Height x 2) is ${SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN}", but your package is ${Math.round(dimTotal)}"`
 }
 
 const MEASUREMENT_TIPS = [
@@ -118,7 +120,7 @@ const MEASUREMENT_TIPS = [
   },
   {
     title: "Length + girth limit",
-    body: `UPS Ground requires Length + (2 × Width) + (2 × Height) to be ${UPS_MAX_LENGTH_PLUS_GIRTH_IN}" or less. We’ll flag the fields if you go over.`,
+    body: `UPS and FedEx refuse parcels over ${UPS_MAX_LENGTH_PLUS_GIRTH_IN}" Length + (2 × Width) + (2 × Height). Reswell blocks listings at ${SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN}" (${RESWELL_UPS_DIMENSION_BUFFER_IN}" under that max) so we never get close.`,
   },
   {
     title: "Include packing weight",
@@ -205,7 +207,8 @@ export function ReswellPackageDimensionsCard({
   const H = parseReswellParcelWidthHeightRawToCarrierInches(heightIn)
   const dimTotal =
     L != null && W != null && H != null ? surfboardShippingDimIn(L, W, H) : null
-  const dimsTooBig = dimTotal != null && dimTotal > UPS_MAX_LENGTH_PLUS_GIRTH_IN
+  const dimsTooBig =
+    dimTotal != null && dimTotal > SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN
 
   const totalOz = parseReswellPackedWeightToTotalOz(weightLb, weightOz)
   const weightTooBig =

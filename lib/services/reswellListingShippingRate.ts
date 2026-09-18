@@ -1,4 +1,5 @@
 import { resolveListingShipFromForRating } from "@/lib/geocoding/resolve-listing-ship-from-for-rating"
+import { coalesceReswellRateShipFrom } from "@/lib/services/reswell-rate-ship-from"
 import {
   dropoffLocationToShipFromParts,
   firstDropoffLocationEmbed,
@@ -171,10 +172,8 @@ export function sellerProfileAddressToShipFrom(
 }
 
 /**
- * Builds a `ship_from` payload from listing locality (Nominatim forward-geocode) for ShipEngine `/rates`.
- * Used for checkout quotes only — buyers see a zone price, not a street.
- * Label purchase must pass {@link sellerProfileAddressToShipFrom} when the seller has a saved address.
- * Same shape the admin rate calculator builds from its address form so both paths land on identical bodies.
+ * Builds a `ship_from` payload from listing / dropoff locality when the seller
+ * has no saved ship-from address. Buyers still see a zone price, not a street.
  */
 async function resolveListingShipFromAddress(
   listing: ReswellRateableListing,
@@ -341,8 +340,8 @@ export async function getCheapestReswellRateForListing(input: {
    */
   sellerShipFromName: string
   /**
-   * Saved seller street address. When set, rates (and therefore purchased labels)
-   * use this origin instead of listing / dropoff locality.
+   * Saved seller street address — source of truth for checkout rates and labels.
+   * Listing / dropoff city-state is only used when this is missing.
    */
   sellerShipFromAddress?: ProfileAddressRow | null
 }): Promise<ReswellListingRateResult> {
@@ -430,7 +429,7 @@ export async function getCheapestReswellRateForListings(input: {
   selectedRateId?: string | null
   selectedServiceCode?: string | null
   sellerShipFromName: string
-  /** Saved seller street address — used for label purchase so the rate’s origin matches the label. */
+  /** Saved seller street address — source of truth for rates and labels. */
   sellerShipFromAddress?: ProfileAddressRow | null
 }): Promise<ReswellListingRateResult> {
   if (!isShipEngineConfigured()) {
@@ -501,12 +500,15 @@ export async function getCheapestReswellRateForListings(input: {
     }
   }
 
-  const shipFrom = input.sellerShipFromAddress
-    ? {
-        ok: true as const,
-        address: sellerProfileAddressToShipFrom(input.sellerShipFromAddress, input.sellerShipFromName),
-      }
+  const listingShipFrom = input.sellerShipFromAddress
+    ? null
     : await resolveListingShipFromAddress(firstListing, input.sellerShipFromName)
+  const shipFrom = coalesceReswellRateShipFrom({
+    sellerShipFromAddress: input.sellerShipFromAddress
+      ? sellerProfileAddressToShipFrom(input.sellerShipFromAddress, input.sellerShipFromName)
+      : null,
+    listingShipFrom,
+  })
   if (!shipFrom.ok) {
     return { ok: false, error: shipFrom.error }
   }

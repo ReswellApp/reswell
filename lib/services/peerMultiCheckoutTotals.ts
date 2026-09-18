@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { fetchSellerShipFromAddressOrNull } from "@/lib/services/sellerShipFromAddress"
 import { resolveCombinedPackedParcelFromListings } from "@/lib/reswell-packed-parcel-from-listing"
 import {
   computePeerBundleShippingUsd,
@@ -145,6 +146,10 @@ export async function computePeerMultiCheckoutUsd(params: {
     fulfillment === "shipping" && !preverifiedShipping
       ? await fetchSellerShipFromLabelName(supabase, sellerId)
       : "Seller"
+  const sellerShipFromAddress =
+    fulfillment === "shipping" && !preverifiedShipping
+      ? await fetchSellerShipFromAddressOrNull(supabase, sellerId)
+      : null
 
   const feeWaived = await fetchSellerFeeWaived(sellerId)
 
@@ -197,6 +202,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       buyerAddress,
       diagnosticTag: `${diagnosticTagPrefix}:${listing.id}:${i}`,
       sellerShipFromName,
+      sellerShipFromAddress,
       shippingOverride: lineOverride,
     })
     if (!totals.ok) {
@@ -298,6 +304,7 @@ export async function computePeerMultiCheckoutUsd(params: {
           buyerAddress,
           diagnosticTag: `${diagnosticTagPrefix}:bundle`,
           sellerShipFromName,
+          sellerShipFromAddress,
         })
     if (!bundleShipping.ok) {
       return { ok: false, error: bundleShipping.error }

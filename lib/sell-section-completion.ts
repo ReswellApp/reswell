@@ -14,9 +14,11 @@ import {
 } from "@/lib/sell-form-validation"
 import {
   isReswellPackedWeightComplete,
+  parseReswellPackedWeightToTotalOz,
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
+import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -102,6 +104,18 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
       if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
         return false
       }
+      const totalOz = parseReswellPackedWeightToTotalOz(
+        form.reswellPackageWeightLb,
+        form.reswellPackageWeightOz,
+      )
+      if (totalOz == null) return false
+      const limitCheck = validateSurfboardLabelParcelLimits({
+        lengthIn: L,
+        widthIn: W,
+        heightIn: H,
+        weightLb: totalOz / 16,
+      })
+      if (!limitCheck.ok) return false
     }
   }
 

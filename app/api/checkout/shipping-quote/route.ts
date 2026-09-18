@@ -5,6 +5,7 @@ import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { fetchSellerShipFromAddressOrNull } from "@/lib/services/sellerShipFromAddress"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import {
   computePeerBundleShippingUsd,
@@ -223,6 +224,7 @@ export async function POST(request: Request) {
   }
 
   const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, sellerId)
+<<<<<<< Updated upstream
   const preparedAddress = await ensureCheckoutBuyerShippingAddress({
     supabase,
     address: addr as ProfileAddressRow,
@@ -235,6 +237,10 @@ export async function POST(request: Request) {
     )
   }
   const buyerAddress = preparedAddress.address
+=======
+  const sellerShipFromAddress = await fetchSellerShipFromAddressOrNull(supabase, sellerId)
+  const buyerAddress = addr as ProfileAddressRow
+>>>>>>> Stashed changes
 
   const qtyById = new Map<string, number>()
   for (const id of listingIds) qtyById.set(id, 1)
@@ -257,6 +263,7 @@ export async function POST(request: Request) {
       buyerAddress,
       diagnosticTag: `checkout-quote:${listingRow.id}`,
       sellerShipFromName,
+      sellerShipFromAddress,
       selectedRateId,
       selectedServiceCode,
     })
@@ -360,6 +367,7 @@ export async function POST(request: Request) {
     buyerAddress,
     diagnosticTag: `checkout-quote-bundle:${listingIds.join(",")}`,
     sellerShipFromName,
+    sellerShipFromAddress,
     selectedRateId,
     selectedServiceCode,
   })

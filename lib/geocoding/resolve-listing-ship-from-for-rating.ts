@@ -28,19 +28,21 @@ export async function resolveListingShipFromForRating(params: {
   latitude?: number | string | null
   longitude?: number | string | null
 }): Promise<ShipFromParts | null> {
+  const cityTrim = params.city?.trim() ?? ""
+  const stateTrim = params.state?.trim() ?? ""
+
+  // Listings often store city/state from the seller ship-from without a map pin.
+  // Forward-geocode that locality first so missing lat/lng does not block checkout.
+  if (cityTrim && stateTrim) {
+    const fromLocality = await forwardGeocodeUsCityStateShipFromParts(cityTrim, stateTrim)
+    if (fromLocality?.postal_code?.length >= 5) return fromLocality
+  }
+
   const latRaw = params.latitude
   const lngRaw = params.longitude
   const lat = latRaw != null && latRaw !== "" ? Number(latRaw) : NaN
   const lng = lngRaw != null && lngRaw !== "" ? Number(lngRaw) : NaN
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-
-  const cityTrim = params.city?.trim() ?? ""
-  const stateTrim = params.state?.trim() ?? ""
-
-  if (cityTrim && stateTrim) {
-    const fromLocality = await forwardGeocodeUsCityStateShipFromParts(cityTrim, stateTrim)
-    if (fromLocality?.postal_code?.length >= 5) return fromLocality
-  }
 
   return reverseGeocodeShipFromParts(lat, lng)
 }

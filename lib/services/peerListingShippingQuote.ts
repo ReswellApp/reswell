@@ -103,6 +103,8 @@ export async function quoteReswellPeerShippingUsd(input: {
   buyerAddress: ProfileAddressRow
   diagnosticTag?: string
   sellerShipFromName: string
+  /** Saved seller street address — source of truth; listing pin is the fallback. */
+  sellerShipFromAddress?: ProfileAddressRow | null
   selectedRateId?: string | null
   selectedServiceCode?: string | null
 }): Promise<{ ok: true; quote: PeerReswellShippingQuote } | { ok: false; error: string }> {
@@ -116,6 +118,7 @@ export async function quoteReswellPeerShippingUsd(input: {
     shipTo: shipTo.address,
     diagnosticTag: input.diagnosticTag ?? "checkout",
     sellerShipFromName: input.sellerShipFromName,
+    sellerShipFromAddress: input.sellerShipFromAddress,
     section: input.listing.section ?? null,
     selectedRateId: input.selectedRateId,
     selectedServiceCode: input.selectedServiceCode,
@@ -150,6 +153,8 @@ export async function computePeerBundleShippingUsd(input: {
   buyerAddress: ProfileAddressRow | null
   diagnosticTag?: string
   sellerShipFromName: string
+  /** Saved seller street address — source of truth; listing pin is the fallback. */
+  sellerShipFromAddress?: ProfileAddressRow | null
   selectedRateId?: string | null
   selectedServiceCode?: string | null
 }): Promise<
@@ -190,6 +195,7 @@ export async function computePeerBundleShippingUsd(input: {
     shipTo: shipTo.address,
     diagnosticTag: input.diagnosticTag ?? "checkout-bundle",
     sellerShipFromName: input.sellerShipFromName,
+    sellerShipFromAddress: input.sellerShipFromAddress,
     section: peerCheckoutSharedSection(input.listings.map((l) => l.section)),
     selectedRateId: input.selectedRateId,
     selectedServiceCode: input.selectedServiceCode,
@@ -221,6 +227,8 @@ export async function computePeerCheckoutTotalsUsd(input: {
   diagnosticTag?: string
   /** Printed on carrier labels as ship-from contact; required when Reswell shipping quote is used. */
   sellerShipFromName?: string
+  /** Saved seller street address — source of truth; listing pin is the fallback. */
+  sellerShipFromAddress?: ProfileAddressRow | null
   /** When set (from a signed checkout quote token), skips a duplicate ShipEngine call. */
   shippingOverride?: {
     shippingUsd: number
@@ -301,6 +309,7 @@ export async function computePeerCheckoutTotalsUsd(input: {
     buyerAddress: input.buyerAddress,
     diagnosticTag: input.diagnosticTag,
     sellerShipFromName: sellerLine,
+    sellerShipFromAddress: input.sellerShipFromAddress,
     selectedRateId: input.selectedRateId,
     selectedServiceCode: input.selectedServiceCode,
   })

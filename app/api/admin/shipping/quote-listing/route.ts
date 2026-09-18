@@ -7,6 +7,7 @@ import {
   type PeerListingForShippingQuote,
 } from "@/lib/services/peerListingShippingQuote"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { fetchSellerShipFromAddressOrNull } from "@/lib/services/sellerShipFromAddress"
 import {
   getCheapestReswellRateForListing,
   type ReswellRateableListing,
@@ -133,12 +134,17 @@ export async function POST(request: Request) {
     }
 
   const sellerShipFromName = await fetchSellerShipFromLabelName(serviceSupabase, listingRow.user_id)
+  const sellerShipFromAddress = await fetchSellerShipFromAddressOrNull(
+    serviceSupabase,
+    listingRow.user_id,
+  )
 
   const result = await getCheapestReswellRateForListing({
     listing: listingRow,
     shipTo,
     diagnosticTag: `admin:${listingRow.id}`,
     sellerShipFromName,
+    sellerShipFromAddress,
   })
 
   if (!result.ok) {

@@ -451,9 +451,14 @@ export function ImageGallery({
           </>
         )}
 
-        {/* Image counter */}
+        {/* Image counter — sit above native video controls so fullscreen stays reachable */}
         {slideCount > 1 && (
-          <div className="pointer-events-none absolute bottom-3 right-3 z-10 rounded-full bg-background/75 px-2.5 py-1 text-xs font-medium tabular-nums text-foreground backdrop-blur-md">
+          <div
+            className={cn(
+              "pointer-events-none absolute right-3 z-10 rounded-full bg-background/75 px-2.5 py-1 text-xs font-medium tabular-nums text-foreground backdrop-blur-md",
+              isVideoSelected ? "bottom-20" : "bottom-3",
+            )}
+          >
             {selectedIndex + 1} / {slideCount}
           </div>
         )}
