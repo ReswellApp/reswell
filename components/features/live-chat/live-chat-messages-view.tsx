@@ -34,6 +34,8 @@ interface LiveChatMessagesViewProps {
   sessionClosed?: boolean
   onStartNewConversation?: () => void
   composerLocked?: boolean
+  inputLocked?: boolean
+  unlockFailed?: boolean
   onSendMessage: (content: string, email: string | null) => Promise<boolean>
   onPublishTyping: (isTyping: boolean) => void
   publicId?: string | null
@@ -65,6 +67,8 @@ export function LiveChatMessagesView({
   sessionClosed = false,
   onStartNewConversation,
   composerLocked = false,
+  inputLocked = false,
+  unlockFailed = false,
   onSendMessage,
   onPublishTyping,
   publicId = null,
@@ -130,7 +134,7 @@ export function LiveChatMessagesView({
   async function handleSend() {
     const content = draft.trim()
     // Never block on "connecting" or a stuck sending flag — queue and bootstrap.
-    if (!content || sessionClosed) return
+    if (!content || sessionClosed || inputLocked) return
 
     setEmailError(null)
     // showEmailField is only true once auth resolves as signed_out. While auth is
@@ -187,6 +191,7 @@ export function LiveChatMessagesView({
   }
 
   function handleDraftChange(value: string) {
+    if (inputLocked) return
     setDraft(value)
     onPublishTyping(value.trim().length > 0)
   }
@@ -345,6 +350,7 @@ export function LiveChatMessagesView({
           onDraftChange={handleDraftChange}
           onSend={() => void handleSend()}
           sending={sending}
+          inputLocked={inputLocked}
           showEmailField={showEmailField}
           emailDraft={emailDraft}
           emailLocked={emailLocked}
@@ -353,7 +359,15 @@ export function LiveChatMessagesView({
             onEmailDraftChange(value)
           }}
           emailError={emailError}
-          placeholder={composerLocked ? "Connecting…" : undefined}
+          placeholder={
+            inputLocked
+              ? unlockFailed
+                ? "Refresh to send messages"
+                : "One moment…"
+              : composerLocked
+                ? "Connecting…"
+                : undefined
+          }
           inputRef={inputRef}
           emailInputRef={emailInputRef}
         />

@@ -15,6 +15,8 @@ import {
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
 import { createLiveChatSessionSchema, sendLiveChatVisitorMessageSchema } from "@/lib/validations/liveChat"
+import { COMPOSER_UNLOCK_DENIED_ERROR } from "@/lib/messages/composer-unlock-errors"
+import { verifyLiveChatComposerUnlock } from "@/lib/services/composerUnlock"
 import { generateLiveChatPublicId } from "@/lib/utils/live-chat-public-id"
 import {
   LIVE_CHAT_SESSION_CLOSED_CODE,
@@ -344,6 +346,16 @@ export async function sendLiveChatVisitorMessageService(
   if (!parsed.success) {
     const msg = parsed.error.flatten().fieldErrors.content?.[0] ?? "Invalid message"
     return { error: msg }
+  }
+
+  if (
+    !verifyLiveChatComposerUnlock(
+      parsed.data.composer_unlock_token,
+      parsed.data.visitor_token,
+      publicId,
+    )
+  ) {
+    return { error: COMPOSER_UNLOCK_DENIED_ERROR, status: 403 }
   }
 
   const svc = createServiceRoleClient()

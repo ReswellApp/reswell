@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { liveChatAiService } from "@/lib/services/liveChatAi"
+import { assertHumanRequest } from "@/lib/services/botProtection"
 import {
   consumeLiveChatRateLimit,
   LIVE_CHAT_RATE_LIMITS,
@@ -11,6 +12,11 @@ type RouteContext = { params: Promise<{ publicId: string }> }
 
 export async function POST(req: NextRequest, context: RouteContext) {
   try {
+    const human = await assertHumanRequest()
+    if (!human.ok) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
     const { publicId } = await context.params
     const ip = liveChatClientIp(req)
     const perToken = consumeLiveChatRateLimit(

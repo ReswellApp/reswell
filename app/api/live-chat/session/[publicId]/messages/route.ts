@@ -4,6 +4,7 @@ import {
   sendLiveChatVisitorMessageService,
 } from "@/lib/services/liveChat"
 import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
+import { assertHumanRequest } from "@/lib/services/botProtection"
 import {
   consumeLiveChatRateLimit,
   LIVE_CHAT_RATE_LIMITS,
@@ -46,6 +47,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 export async function POST(req: NextRequest, context: RouteContext) {
   try {
+    const human = await assertHumanRequest()
+    if (!human.ok) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
     const { publicId } = await context.params
     const limit = consumeLiveChatRateLimit(
       `msg:${liveChatClientIp(req)}:${publicId}`,

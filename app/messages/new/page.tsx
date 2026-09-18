@@ -32,6 +32,8 @@ import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/loca
 import { cn } from '@/lib/utils'
 import { MessageThreadMobileComposerDock } from '@/components/features/messages/message-thread-mobile-composer-dock'
 import { isAbortError } from '@/lib/utils/is-abort-error'
+import { useComposerUnlock } from '@/hooks/use-composer-unlock'
+import { COMPOSER_UNLOCK_DENIED_ERROR } from '@/lib/messages/composer-unlock-errors'
 
 type ListingPreview = {
   id: string
@@ -65,6 +67,7 @@ function NewMessageComposeContent() {
   const [otherPartyProfile, setOtherPartyProfile] = useState<OtherPartyProfileSummary | null>(null)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const composerUnlock = useComposerUnlock({ scope: 'marketplace' })
   const [blockedPolicyNotice, setBlockedPolicyNotice] = useState<{
     content: string
     reasonCode: MessagePolicyReasonCode
@@ -183,12 +186,19 @@ function NewMessageComposeContent() {
     const trimmed = newMessage.trim()
     if (!trimmed || !otherUserId || !listingId || !currentUserId) return
 
+    const unlockToken = await composerUnlock.ensure()
+    if (!unlockToken) {
+      toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
+      return
+    }
+
     setSending(true)
     try {
       const result = await sendMarketplaceListingMessage({
         listing_id: listingId,
         other_user_id: otherUserId,
         content: trimmed,
+        composer_unlock_token: unlockToken,
       })
 
       if ('error' in result) {
@@ -332,6 +342,8 @@ function NewMessageComposeContent() {
             }}
             onSubmit={handleSend}
             sending={sending}
+            unlock={composerUnlock}
+            composerUnlockToken={composerUnlock.token}
             media={{
               conversationId,
               disabled: sending || !otherUserId || !listingId || !currentUserId,

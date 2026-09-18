@@ -8,6 +8,13 @@ export type UserRestrictionState = {
   messageRateLimitedUntil: string | null
 }
 
+export type SenderNewAccountFraudBanProfile = {
+  createdAt: string | null
+  isAdmin: boolean
+  isEmployee: boolean
+  accountRestrictedUntil: string | null
+}
+
 export async function fetchUserRestrictionState(
   supabase: SupabaseClient,
   userId: string,
@@ -34,6 +41,30 @@ export async function fetchUserRestrictionState(
       typeof data.account_restricted_reason === "string" ? data.account_restricted_reason : null,
     messageRateLimitedUntil:
       typeof data.message_rate_limited_until === "string" ? data.message_rate_limited_until : null,
+  }
+}
+
+export async function fetchSenderNewAccountFraudBanProfile(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<SenderNewAccountFraudBanProfile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("created_at, is_admin, is_employee, account_restricted_until")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error || !data) {
+    console.error("[fetchSenderNewAccountFraudBanProfile]", error?.message ?? "profile missing")
+    return null
+  }
+
+  return {
+    createdAt: typeof data.created_at === "string" ? data.created_at : null,
+    isAdmin: data.is_admin === true,
+    isEmployee: data.is_employee === true,
+    accountRestrictedUntil:
+      typeof data.account_restricted_until === "string" ? data.account_restricted_until : null,
   }
 }
 

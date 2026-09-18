@@ -18,6 +18,7 @@ interface LiveChatComposerProps {
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
   emailInputRef?: React.RefObject<HTMLInputElement | null>
   placeholder?: string
+  inputLocked?: boolean
 }
 
 function resizeComposer(el: HTMLTextAreaElement) {
@@ -38,10 +39,11 @@ export function LiveChatComposer({
   inputRef,
   emailInputRef,
   placeholder = "Write your message…",
+  inputLocked = false,
 }: LiveChatComposerProps) {
   // Enable whenever there is text — never leave the arrow grey because session
   // bootstrap or a stuck `sending` flag is in flight.
-  const canSend = draft.trim().length > 0
+  const canSend = !inputLocked && draft.trim().length > 0
 
   return (
     <div className="border-t border-border/50 bg-background px-3 pb-3 pt-2">
@@ -74,10 +76,13 @@ export function LiveChatComposer({
           ref={inputRef}
           value={draft}
           onChange={(e) => {
+            if (inputLocked) return
             onDraftChange(e.target.value)
             resizeComposer(e.currentTarget)
           }}
           placeholder={placeholder}
+          readOnly={inputLocked}
+          aria-readonly={inputLocked}
           rows={1}
           maxLength={10000}
           className="max-h-[120px] min-h-[44px] w-full resize-none border-0 bg-transparent px-4 py-3 pr-14 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-0"

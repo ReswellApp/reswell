@@ -6,6 +6,8 @@ import { broadcastLiveChatTyping } from "@/lib/services/liveChatRealtime"
 import { liveChatTypingSchema } from "@/lib/validations/liveChat"
 import { createClient } from "@/lib/supabase/server"
 import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
+import { assertHumanRequest } from "@/lib/services/botProtection"
+import { verifyLiveChatComposerUnlock } from "@/lib/services/composerUnlock"
 import {
   consumeLiveChatRateLimit,
   LIVE_CHAT_RATE_LIMITS,
@@ -18,6 +20,11 @@ type RouteContext = { params: Promise<{ publicId: string }> }
 /** Validates the publisher, then fans typing out from the server. Never returns session UUIDs. */
 export async function POST(req: NextRequest, context: RouteContext) {
   try {
+    const human = await assertHumanRequest()
+    if (!human.ok) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
     const { publicId } = await context.params
     const body: unknown = await req.json()
     const parsed = liveChatTypingSchema.safeParse(body)
@@ -39,6 +46,15 @@ export async function POST(req: NextRequest, context: RouteContext) {
       }
       if (!parsed.data.visitor_token) {
         return NextResponse.json({ error: "Missing visitor token" }, { status: 401 })
+      }
+      if (
+        !verifyLiveChatComposerUnlock(
+          parsed.data.composer_unlock_token,
+          parsed.data.visitor_token,
+          publicId,
+        )
+      ) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 })
       }
       const session = await validateLiveChatSessionAccess(publicId, parsed.data.visitor_token)
       if (!session) {

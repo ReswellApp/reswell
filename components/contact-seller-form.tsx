@@ -14,6 +14,8 @@ import { MessageSquare, Send } from "lucide-react"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
+import { useComposerUnlock } from "@/hooks/use-composer-unlock"
+import { COMPOSER_UNLOCK_DENIED_ERROR } from "@/lib/messages/composer-unlock-errors"
 
 interface ContactSellerFormProps {
   listingId: string
@@ -45,6 +47,7 @@ export function ContactSellerForm({
     reasonCode: MessagePolicyReasonCode
   } | null>(null)
   const [sending, setSending] = useState(false)
+  const composerUnlock = useComposerUnlock(isLoggedIn ? { scope: "marketplace" } : null)
   const router = useRouter()
   const openSignIn = useSignInGate()
   const listingReturnPath = listingDetailHref({ id: listingId, slug: listingSlug, section })
@@ -71,6 +74,12 @@ export function ContactSellerForm({
       return
     }
 
+    const unlockToken = await composerUnlock.ensure()
+    if (!unlockToken) {
+      toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
+      return
+    }
+
     setSending(true)
 
     try {
@@ -78,6 +87,7 @@ export function ContactSellerForm({
         listing_id: listingId,
         seller_id: sellerId,
         content: message,
+        composer_unlock_token: unlockToken,
       })
 
       if ("error" in result) {
@@ -138,6 +148,7 @@ export function ContactSellerForm({
             variant="outline"
             size="sm"
             className="rounded-full border-border/60 bg-background text-[14px] font-normal text-foreground shadow-none hover:bg-muted/60"
+            disabled={!composerUnlock.ready}
             onClick={() => setMessage(quick)}
           >
             {quick}
@@ -146,13 +157,20 @@ export function ContactSellerForm({
       </div>
 
       <Textarea
-        placeholder={`Ask about "${listingTitle}"…`}
+        placeholder={
+          !composerUnlock.ready
+            ? composerUnlock.failed
+              ? "Refresh to send messages"
+              : "One moment…"
+            : `Ask about "${listingTitle}"…`
+        }
         value={message}
         onChange={(e) => {
           setMessage(e.target.value)
           if (blockedPolicyNotice) setBlockedPolicyNotice(null)
         }}
         rows={3}
+        disabled={!composerUnlock.ready}
         className="rounded-2xl border-border/60 bg-background text-[16px] text-foreground shadow-none placeholder:text-foreground/75 transition-colors focus-visible:ring-[1.5px]"
       />
 
@@ -168,7 +186,7 @@ export function ContactSellerForm({
       <Button
         variant="outline"
         onClick={handleSend}
-        disabled={sending || !message.trim()}
+        disabled={sending || !composerUnlock.ready || !message.trim()}
         className="w-full rounded-full border-foreground/25 text-foreground shadow-sm hover:bg-muted/50"
       >
         {sending ? (

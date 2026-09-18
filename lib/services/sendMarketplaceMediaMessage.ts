@@ -1,7 +1,7 @@
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
-import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
+import { captureBlockedFraudMessage } from "@/lib/services/captureBlockedFraudMessage"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
 import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enforcement"
@@ -119,7 +119,7 @@ export async function sendMarketplaceMediaMessage(input: {
     )
     if (policyDecision) {
       try {
-        await insertFraudMessageCapturedContent(service, {
+        await captureBlockedFraudMessage(service, {
           conversationId,
           senderId,
           recipientId: receiverId,

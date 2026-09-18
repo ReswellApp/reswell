@@ -6,8 +6,8 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enforcement"
+import { captureBlockedFraudMessage } from "@/lib/services/captureBlockedFraudMessage"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
@@ -24,6 +24,9 @@ import {
   messageLocationMetadataSchema,
 } from "@/lib/validations/message-location-metadata"
 import { marketplaceMessageAttachmentInputSchema } from "@/lib/validations/marketplace-message-attachment"
+import { composerUnlockTokenSchema } from "@/lib/validations/composer-unlock"
+import { verifyMarketplaceComposerUnlock } from "@/lib/services/composerUnlock"
+import { marketplaceComposerUnlockDenied } from "@/lib/messages/composer-unlock-errors"
 import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
 import { discardUnsentMessageAttachment } from "@/lib/services/discardUnsentMessageAttachment"
 import { captureServerEvent } from "@/lib/posthog-server"
@@ -48,6 +51,7 @@ const sendConversationLocationReplySchema = z.object({
   latitude: z.number().gte(-90).lte(90),
   longitude: z.number().gte(-180).lte(180),
   placeId: z.string().min(1).max(256).optional(),
+  composer_unlock_token: composerUnlockTokenSchema,
 })
 
 const sendSellerReviewRequestSchema = z.object({
@@ -58,6 +62,7 @@ const sendConversationMediaReplySchema = z.object({
   conversation_id: z.string().uuid(),
   attachment: marketplaceMessageAttachmentInputSchema,
   caption: z.string().max(5000).optional(),
+  composer_unlock_token: composerUnlockTokenSchema,
 })
 
 const discardUnsentMessageAttachmentSchema = z.object({
@@ -69,6 +74,14 @@ const marketplaceListingThreadSchema = z.object({
   listing_id: z.string().uuid(),
   other_user_id: z.string().uuid(),
 })
+
+function denyUnlessMarketplaceComposerUnlock(
+  token: string | undefined,
+  userId: string,
+) {
+  if (verifyMarketplaceComposerUnlock(token, userId)) return null
+  return marketplaceComposerUnlockDenied()
+}
 
 type MarketplaceListingThreadContext =
   | {
@@ -190,7 +203,7 @@ async function capturePolicyBlockedDmContent(row: {
 }) {
   try {
     const service = createServiceRoleClient()
-    await insertFraudMessageCapturedContent(service, {
+    await captureBlockedFraudMessage(service, {
       conversationId: row.conversationId,
       senderId: row.senderId,
       recipientId: row.recipientId,
@@ -332,7 +345,10 @@ export async function ensureMarketplaceListingConversation(input: unknown) {
 /** Creates the listing thread on first send (buyer or seller). */
 export async function sendMarketplaceListingMessage(input: unknown) {
   const parsed = marketplaceListingThreadSchema
-    .extend({ content: z.string().min(1).max(5000) })
+    .extend({
+      content: z.string().min(1).max(5000),
+      composer_unlock_token: composerUnlockTokenSchema,
+    })
     .safeParse(input)
   if (!parsed.success) {
     return { error: "Invalid request." as const }
@@ -352,6 +368,12 @@ export async function sendMarketplaceListingMessage(input: unknown) {
   if (!user) {
     return { error: "Unauthorized" as const }
   }
+
+  const unlockDenied = denyUnlessMarketplaceComposerUnlock(
+    parsed.data.composer_unlock_token,
+    user.id,
+  )
+  if (unlockDenied) return unlockDenied
 
   const ctx = await resolveMarketplaceListingThreadContext(
     supabase,
@@ -454,6 +476,7 @@ export async function sendListingMessage(input: {
   listing_id?: string | null
   seller_id: string
   content: string
+  composer_unlock_token: string
 }) {
   const supabase = await createClient()
   const {
@@ -463,6 +486,12 @@ export async function sendListingMessage(input: {
   if (!user) {
     return { error: "Unauthorized" as const }
   }
+
+  const unlockDenied = denyUnlessMarketplaceComposerUnlock(
+    input.composer_unlock_token,
+    user.id,
+  )
+  if (unlockDenied) return unlockDenied
 
   const { listing_id, seller_id, content } = input
 
@@ -568,6 +597,7 @@ export async function sendListingMessage(input: {
 export async function sendConversationReply(input: {
   conversation_id: string
   content: string
+  composer_unlock_token: string
 }) {
   const supabase = await createClient()
   const {
@@ -577,6 +607,12 @@ export async function sendConversationReply(input: {
   if (!user) {
     return { error: "Unauthorized" as const }
   }
+
+  const unlockDenied = denyUnlessMarketplaceComposerUnlock(
+    input.composer_unlock_token,
+    user.id,
+  )
+  if (unlockDenied) return unlockDenied
 
   const body = input.content?.trim()
   if (!body) {
@@ -707,6 +743,12 @@ export async function sendConversationMediaReply(input: unknown) {
     return { error: "Unauthorized" as const }
   }
 
+  const unlockDenied = denyUnlessMarketplaceComposerUnlock(
+    parsed.data.composer_unlock_token,
+    user.id,
+  )
+  if (unlockDenied) return unlockDenied
+
   const result = await sendMarketplaceMediaMessage({
     conversationId: parsed.data.conversation_id,
     senderId: user.id,
@@ -767,6 +809,12 @@ export async function sendConversationLocationReply(input: unknown) {
   if (!user) {
     return { error: "Unauthorized" as const }
   }
+
+  const unlockDenied = denyUnlessMarketplaceComposerUnlock(
+    parsed.data.composer_unlock_token,
+    user.id,
+  )
+  if (unlockDenied) return unlockDenied
 
   const formattedAddress = parsed.data.formattedAddress.trim()
   if (!formattedAddress) {

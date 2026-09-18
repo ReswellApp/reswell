@@ -88,6 +88,8 @@ import { offerMessageAnchorId } from '@/lib/utils/offer-messages-href'
 import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
 import { PromiseDeadlineError, raceWithDeadline } from '@/lib/utils/race-with-deadline'
 import { isAbortError } from '@/lib/utils/is-abort-error'
+import { useComposerUnlock } from '@/hooks/use-composer-unlock'
+import { COMPOSER_UNLOCK_DENIED_ERROR } from '@/lib/messages/composer-unlock-errors'
 
 const SEND_SERVER_ACTION_MS = 45_000
 
@@ -209,6 +211,7 @@ export function ConversationThreadClient({
   )
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const composerUnlock = useComposerUnlock({ scope: 'marketplace' })
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     () => initialData.currentUserId ?? null,
   )
@@ -587,6 +590,12 @@ export function ConversationThreadClient({
       return
     }
 
+    const unlockToken = await composerUnlock.ensure()
+    if (!unlockToken) {
+      toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
+      return
+    }
+
     const content = trimmed
     setNewMessage('')
     setSending(true)
@@ -607,6 +616,7 @@ export function ConversationThreadClient({
         sendConversationReply({
           conversation_id: id,
           content,
+          composer_unlock_token: unlockToken,
         }),
         SEND_SERVER_ACTION_MS,
       )
@@ -1284,6 +1294,8 @@ export function ConversationThreadClient({
             onChange={(e) => setNewMessage(e.target.value)}
             onSubmit={handleSend}
             sending={sending}
+            unlock={composerUnlock}
+            composerUnlockToken={composerUnlock.token}
             leadingActions={
               canMakeSellerOffer && sellerOfferListingId ? (
                 <MessageSellerOfferButton

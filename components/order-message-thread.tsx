@@ -20,6 +20,8 @@ import {
 } from "@/lib/messages/local-phone-policy-block-message"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { runServerAction } from "@/lib/utils/run-server-action"
+import { useComposerUnlock } from "@/hooks/use-composer-unlock"
+import { COMPOSER_UNLOCK_DENIED_ERROR } from "@/lib/messages/composer-unlock-errors"
 
 export type OrderThreadMessage = {
   id: string
@@ -54,6 +56,7 @@ export function OrderMessageThread({
   const [messages, setMessages] = useState(initialMessages)
   const [body, setBody] = useState("")
   const [sending, setSending] = useState(false)
+  const composerUnlock = useComposerUnlock({ scope: "marketplace" })
   const [sentFlash, setSentFlash] = useState(false)
   /** First-send path (no thread row yet): show policy bubble without a conversation id. */
   const [blockedPolicyNotice, setBlockedPolicyNotice] = useState<{
@@ -71,6 +74,12 @@ export function OrderMessageThread({
     const text = body.trim()
     if (!text) return
 
+    const unlockToken = await composerUnlock.ensure()
+    if (!unlockToken) {
+      toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
+      return
+    }
+
     if (!conversationId) {
       if (!canStartFromOrder || !startConversation) return
       setSending(true)
@@ -87,6 +96,7 @@ export function OrderMessageThread({
             listing_id: startConversation.listingId,
             seller_id: startConversation.sellerId,
             content: text,
+            composer_unlock_token: unlockToken,
           }),
         )
         if ("error" in result) {
@@ -125,6 +135,7 @@ export function OrderMessageThread({
         sendConversationReply({
           conversation_id: conversationId,
           content: text,
+          composer_unlock_token: unlockToken,
         }),
       )
 
@@ -267,7 +278,15 @@ export function OrderMessageThread({
         {(conversationId || canStartFromOrder) && (
           <div className="space-y-2">
             <Textarea
-              placeholder={conversationId ? "Write a reply…" : "Message the seller…"}
+              placeholder={
+                !composerUnlock.ready
+                  ? composerUnlock.failed
+                    ? "Refresh to send messages"
+                    : "One moment…"
+                  : conversationId
+                    ? "Write a reply…"
+                    : "Message the seller…"
+              }
               value={body}
               onChange={(e) => {
                 setBody(e.target.value)
@@ -275,10 +294,14 @@ export function OrderMessageThread({
               }}
               rows={3}
               className="resize-none"
-              disabled={sending}
+              disabled={sending || !composerUnlock.ready}
             />
             <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={send} disabled={sending || sentFlash || !body.trim()}>
+              <Button
+                type="button"
+                onClick={send}
+                disabled={sending || sentFlash || !composerUnlock.ready || !body.trim()}
+              >
                 {sending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : sentFlash ? (

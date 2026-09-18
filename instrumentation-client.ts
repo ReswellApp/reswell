@@ -1,3 +1,5 @@
+import { initBotId } from 'botid/client/core'
+import { BOTID_PROTECTED_ROUTES } from '@/lib/botid/protected-routes'
 import { installAbortErrorSuppressor } from '@/lib/client/install-abort-error-suppressor'
 import { installChunkLoadRecovery } from '@/lib/client/install-chunk-load-recovery'
 import { installSafeTouchEventGuard } from '@/lib/client/install-safe-touch-event-guard'
@@ -6,6 +8,10 @@ import { isPostHogBenignClientFetchError } from '@/lib/utils/is-abort-error'
 import { isPostHogAndroidWebViewBridgeNoise } from '@/lib/utils/is-android-webview-bridge-noise'
 import { isPostHogStaleFileNotFoundError } from '@/lib/utils/is-stale-file-not-found-error'
 import posthog from 'posthog-js'
+
+initBotId({
+  protect: [...BOTID_PROTECTED_ROUTES],
+})
 
 // Runs before React hydration so dev overlay ignores benign navigation aborts
 // and Android WebView Java-bridge teardown noise ("Java object is gone").

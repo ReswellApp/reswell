@@ -19,6 +19,7 @@ export const sendLiveChatVisitorMessageSchema = z.object({
   content: z.string().trim().min(1).max(10000),
   visitor_name: z.string().trim().min(1).max(80).optional(),
   visitor_email: z.string().trim().email().optional(),
+  composer_unlock_token: z.string().trim().min(16).max(4000),
 })
 
 export const sendLiveChatAgentMessageSchema = z.object({
@@ -48,4 +49,5 @@ export const liveChatTypingSchema = z.object({
   participant_type: z.enum(["visitor", "agent"]),
   display_name: z.string().trim().min(1).max(80),
   is_typing: z.boolean(),
+  composer_unlock_token: z.string().trim().min(16).max(4000).optional(),
 })

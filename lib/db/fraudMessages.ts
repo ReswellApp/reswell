@@ -80,6 +80,27 @@ export async function insertFraudMessageCapturedContent(
   return { ok: true }
 }
 
+const BLOCKING_FRAUD_REVIEW_STATUSES = ["pending", "confirmed"] as const
+
+/** Blocked scam DMs that still count toward a new-account ban (not dismissed as innocent). */
+export async function countBlockingFraudMessagesForSender(
+  supabase: SupabaseClient,
+  senderId: string,
+): Promise<number | null> {
+  const { count, error } = await supabase
+    .from("fraud_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("sender_id", senderId)
+    .in("llm_review_status", [...BLOCKING_FRAUD_REVIEW_STATUSES])
+
+  if (error) {
+    console.error("[countBlockingFraudMessagesForSender]", error.message)
+    return null
+  }
+
+  return count ?? 0
+}
+
 export interface PendingFraudMessageReviewRow {
   id: string
   content: string

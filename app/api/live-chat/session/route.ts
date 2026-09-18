@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createOrResumeLiveChatSessionService } from "@/lib/services/liveChat"
+import { assertHumanRequest } from "@/lib/services/botProtection"
 import {
   consumeLiveChatRateLimit,
   LIVE_CHAT_RATE_LIMITS,
@@ -9,6 +10,11 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
+    const human = await assertHumanRequest()
+    if (!human.ok) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
     const limit = consumeLiveChatRateLimit(
       `session:${liveChatClientIp(req)}`,
       LIVE_CHAT_RATE_LIMITS.sessionCreate.limit,

@@ -30,6 +30,8 @@ import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listin
 import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
 import { cn } from '@/lib/utils'
 import { isAbortError } from '@/lib/utils/is-abort-error'
+import { useComposerUnlock } from '@/hooks/use-composer-unlock'
+import { COMPOSER_UNLOCK_DENIED_ERROR } from '@/lib/messages/composer-unlock-errors'
 import { parseMarketplaceMessageImageAttachment } from '@/lib/validations/marketplace-message-attachment'
 
 interface MessageSellerDialogProps {
@@ -74,6 +76,7 @@ export function MessageSellerDialog({
   triggerClassName,
 }: MessageSellerDialogProps) {
   const [open, setOpen] = useState(false)
+  const composerUnlock = useComposerUnlock(open ? { scope: 'marketplace' } : null)
   const [listing, setListing] = useState<ListingPreview | null>(null)
   const [listingLoadFailed, setListingLoadFailed] = useState(false)
   const [newMessage, setNewMessage] = useState('')
@@ -156,14 +159,25 @@ export function MessageSellerDialog({
     const trimmed = newMessage.trim()
     if (!trimmed || sending) return
 
+    const unlockToken = await composerUnlock.ensure()
+    if (!unlockToken) {
+      toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
+      return
+    }
+
     setSending(true)
     try {
       const result = conversationId
-        ? await sendConversationReply({ conversation_id: conversationId, content: trimmed })
+        ? await sendConversationReply({
+            conversation_id: conversationId,
+            content: trimmed,
+            composer_unlock_token: unlockToken,
+          })
         : await sendMarketplaceListingMessage({
             listing_id: listingId,
             other_user_id: sellerId,
             content: trimmed,
+            composer_unlock_token: unlockToken,
           })
 
       if ('error' in result) {
@@ -333,8 +347,14 @@ export function MessageSellerDialog({
                 setNewMessage(e.target.value)
                 if (blockedPolicyNotice) setBlockedPolicyNotice(null)
               }}
-              placeholder="Send message"
-              disabled={sending}
+              placeholder={
+                !composerUnlock.ready
+                  ? composerUnlock.failed
+                    ? 'Refresh to send messages'
+                    : 'One moment…'
+                  : 'Send message'
+              }
+              disabled={sending || !composerUnlock.ready}
               autoComplete="off"
               aria-label="Message text"
               className="text-[16px] placeholder:text-muted-foreground/80"
@@ -350,7 +370,8 @@ export function MessageSellerDialog({
                   setConversationId(result.conversation_id)
                   return result.conversation_id
                 }}
-                disabled={sending}
+                disabled={sending || !composerUnlock.ready}
+                composerUnlockToken={composerUnlock.token}
                 caption={newMessage}
                 onSent={(message) => {
                   setBlockedPolicyNotice(null)
@@ -375,7 +396,7 @@ export function MessageSellerDialog({
           </div>
           <Button
             type="submit"
-            disabled={sending || !newMessage.trim()}
+            disabled={sending || !composerUnlock.ready || !newMessage.trim()}
             className="min-h-touch w-full rounded-full text-[16px] font-semibold"
           >
             {sending ? (

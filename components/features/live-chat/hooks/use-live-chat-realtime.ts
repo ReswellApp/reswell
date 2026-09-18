@@ -92,6 +92,7 @@ export function useLiveChatTyping(options: {
   participantType: "visitor" | "agent"
   displayName: string
   visitorToken?: string | null
+  composerUnlockToken?: string | null
 }) {
   const {
     sessionId,
@@ -101,6 +102,7 @@ export function useLiveChatTyping(options: {
     participantType,
     displayName,
     visitorToken,
+    composerUnlockToken,
   } = options
   const supabase = useMemo(() => createClient(), [])
   const [typingName, setTypingName] = useState<string | null>(null)
@@ -118,13 +120,14 @@ export function useLiveChatTyping(options: {
             participant_type: participantType,
             display_name: displayName,
             is_typing: isTyping,
+            composer_unlock_token: composerUnlockToken || undefined,
           }),
         })
       } catch {
         /* typing is best-effort */
       }
     },
-    [displayName, enabled, participantType, publicId, visitorToken],
+    [composerUnlockToken, displayName, enabled, participantType, publicId, visitorToken],
   )
 
   useEffect(() => {

@@ -32,6 +32,7 @@ import {
 } from "@/lib/live-chat/widget-config"
 import { liveChatShellClass } from "@/lib/live-chat/widget-ui"
 import { LiveChatAdminOnlyBadge } from "@/components/features/live-chat/live-chat-admin-only-badge"
+import { useComposerUnlock } from "@/hooks/use-composer-unlock"
 
 interface LiveChatWidgetProps {
   className?: string
@@ -66,7 +67,20 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
 
   const activeHelpArticle = helpArticleStack[helpArticleStack.length - 1] ?? null
 
-  const session = useLiveChatSession()
+  const unlockTokenRef = useRef<string | null>(null)
+  const session = useLiveChatSession({
+    getComposerUnlockToken: () => unlockTokenRef.current,
+  })
+  const composerUnlock = useComposerUnlock(
+    hasOpened && session.visitorToken
+      ? {
+          scope: "live-chat",
+          visitorToken: session.visitorToken,
+          publicId: session.publicId,
+        }
+      : null,
+  )
+  unlockTokenRef.current = composerUnlock.token
   const {
     lead: supportLead,
     members: supportTeam,
@@ -108,7 +122,9 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
       open &&
       tab === "messages" &&
       session.sessionReady &&
-      !activeHelpArticle,
+      !activeHelpArticle &&
+      composerUnlock.ready,
+    composerUnlockToken: composerUnlock.token,
     watchParticipantType: "agent",
     participantType: "visitor",
     displayName: session.visitorDisplayName,
@@ -354,6 +370,8 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
                 sessionClosed={session.sessionClosed}
                 onStartNewConversation={() => void handleStartNewConversation()}
                 composerLocked={composerLocked}
+                inputLocked={!composerUnlock.ready}
+                unlockFailed={composerUnlock.failed}
                 onSendMessage={handleSendMessage}
                 onPublishTyping={(isTyping) => void publishTyping(isTyping)}
                 publicId={session.publicId}

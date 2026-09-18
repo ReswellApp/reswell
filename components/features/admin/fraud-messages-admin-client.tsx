@@ -79,7 +79,8 @@ export function FraudMessagesAdminClient() {
             <CardDescription>
               Flagged marketplace DMs. Phone numbers, email, Venmo/Zelle/Cash App, cash
               requests, and phishing are blocked before delivery. Gemini confirms fraud or
-              marks innocent wording as not fraud. Users were not suspended.
+              marks innocent wording as not fraud. Accounts newer than 24 hours are
+              permanently banned after 3 blocked scam messages.
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" disabled={loading} onClick={() => void load()}>

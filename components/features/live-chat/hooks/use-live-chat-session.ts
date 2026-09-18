@@ -128,6 +128,7 @@ function toUiMessage(
 export function useLiveChatSession(options?: {
   onVisitorMessageConfirmed?: (message: LiveChatUiMessage) => void
   onRemoteWorthyMessage?: (message: LiveChatUiMessage) => void
+  getComposerUnlockToken?: () => string | null
 }) {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [publicId, setPublicId] = useState<string | null>(null)
@@ -156,8 +157,10 @@ export function useLiveChatSession(options?: {
   const flushingPendingRef = useRef(false)
   const onConfirmedRef = useRef(options?.onVisitorMessageConfirmed)
   const onRemoteWorthyRef = useRef(options?.onRemoteWorthyMessage)
+  const getComposerUnlockTokenRef = useRef(options?.getComposerUnlockToken)
   onConfirmedRef.current = options?.onVisitorMessageConfirmed
   onRemoteWorthyRef.current = options?.onRemoteWorthyMessage
+  getComposerUnlockTokenRef.current = options?.getComposerUnlockToken
 
   if (!visitorTokenRef.current && typeof window !== "undefined") {
     visitorTokenRef.current = getOrCreateLiveChatVisitorToken()
@@ -401,6 +404,7 @@ export function useLiveChatSession(options?: {
             content: trimmed,
             visitor_name: VISITOR_DISPLAY_NAME,
             visitor_email: visitorEmail?.trim() || undefined,
+            composer_unlock_token: getComposerUnlockTokenRef.current?.() ?? "",
           }),
         })
         const json = (await res.json()) as {

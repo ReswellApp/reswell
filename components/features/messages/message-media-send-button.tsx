@@ -64,10 +64,12 @@ export function MessageMediaSendButton({
   className,
   ensureConversationId,
   onDraftUiChange,
+  composerUnlockToken,
 }: {
   conversationId: string | null
   disabled?: boolean
   caption?: string
+  composerUnlockToken?: string | null
   onSent: (message: SentMediaMessage) => void
   onBlockedPolicy?: (originalContent: string, reasonCode: MessagePolicyReasonCode) => void
   className?: string
@@ -77,6 +79,8 @@ export function MessageMediaSendButton({
   onDraftUiChange?: (node: ReactNode) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const composerUnlockTokenRef = useRef(composerUnlockToken)
+  composerUnlockTokenRef.current = composerUnlockToken
   const supabase = createClient()
   const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
@@ -183,6 +187,7 @@ export function MessageMediaSendButton({
             conversation_id: job.conversationId,
             attachment: uploaded.attachment,
             caption: job.caption,
+            composer_unlock_token: composerUnlockTokenRef.current ?? "",
           }),
           MEDIA_SEND_SERVER_ACTION_MS,
         )

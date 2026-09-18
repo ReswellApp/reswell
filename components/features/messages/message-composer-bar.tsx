@@ -34,6 +34,8 @@ export interface MessageComposerBarProps {
   showMedia?: boolean
   /** Extra controls after the media button (e.g. seller “make an offer”). */
   leadingActions?: ReactNode
+  unlock?: { ready: boolean; failed?: boolean }
+  composerUnlockToken?: string | null
   media?: {
     conversationId: string | null
     disabled?: boolean
@@ -53,9 +55,17 @@ export function MessageComposerBar({
   textareaDisabled = false,
   showMedia = true,
   leadingActions,
+  unlock,
+  composerUnlockToken,
   media,
 }: MessageComposerBarProps) {
-  const disabled = sending || textareaDisabled
+  const unlockLocked = unlock ? !unlock.ready : false
+  const disabled = sending || textareaDisabled || unlockLocked
+  const resolvedPlaceholder = unlockLocked
+    ? unlock?.failed
+      ? 'Refresh to send messages'
+      : 'One moment…'
+    : placeholder
   const [mediaDraftUi, setMediaDraftUi] = useState<ReactNode>(null)
   const handleDraftUiChange = useCallback((node: ReactNode) => {
     setMediaDraftUi(node)
@@ -76,6 +86,7 @@ export function MessageComposerBar({
             conversationId={media.conversationId}
             disabled={disabled || media.disabled}
             caption={value}
+            composerUnlockToken={composerUnlockToken}
             onSent={media.onSent}
             onBlockedPolicy={media.onBlockedPolicy}
             ensureConversationId={media.ensureConversationId}
@@ -87,7 +98,7 @@ export function MessageComposerBar({
           <MessageComposerTextarea
             value={value}
             onChange={onChange}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             disabled={disabled}
             autoComplete="off"
             aria-label="Message text"
