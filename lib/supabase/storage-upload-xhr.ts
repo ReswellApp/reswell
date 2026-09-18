@@ -3,6 +3,8 @@
  * Matches public bucket URLs from {@link import('@supabase/supabase-js').StorageClient}.
  */
 
+import { createUploadStallWatch, UploadStallError } from "@/lib/utils/upload-stall-watch"
+
 export type StorageUploadProgress = { loaded: number; total: number }
 
 function encodeObjectPath(path: string): string {
@@ -37,6 +39,12 @@ export async function uploadStorageObjectWithProgress(opts: {
   upsert?: boolean
   onProgress?: (p: StorageUploadProgress) => void
   signal?: AbortSignal
+  /** Abort if no `onprogress` for this many ms (silent hangs on iOS / cellular). */
+  stallTimeoutMs?: number
+  /** Total request timeout in ms. `0` (default) means no ceiling. */
+  timeoutMs?: number
+  /** Seconds for `Cache-Control: max-age=…` (Supabase storage). */
+  cacheControl?: string
 }): Promise<{ pathInBucket: string }> {
   const {
     supabaseUrl,
@@ -49,6 +57,9 @@ export async function uploadStorageObjectWithProgress(opts: {
     upsert = false,
     onProgress,
     signal,
+    stallTimeoutMs,
+    timeoutMs,
+    cacheControl,
   } = opts
 
   const base = supabaseUrl.replace(/\/$/, "")
@@ -66,6 +77,24 @@ export async function uploadStorageObjectWithProgress(opts: {
     xhr.setRequestHeader("apikey", anonKey)
     xhr.setRequestHeader("Content-Type", contentType)
     xhr.setRequestHeader("x-upsert", upsert ? "true" : "false")
+    if (cacheControl) {
+      xhr.setRequestHeader("cache-control", `max-age=${cacheControl}`)
+    }
+    if (typeof timeoutMs === "number" && timeoutMs > 0) {
+      xhr.timeout = timeoutMs
+    }
+
+    let stalled = false
+    const stallWatch =
+      typeof stallTimeoutMs === "number" && stallTimeoutMs > 0
+        ? createUploadStallWatch({
+            stallMs: stallTimeoutMs,
+            onStall: () => {
+              stalled = true
+              xhr.abort()
+            },
+          })
+        : null
 
     const onAbort = () => {
       xhr.abort()
@@ -73,10 +102,16 @@ export async function uploadStorageObjectWithProgress(opts: {
     signal?.addEventListener("abort", onAbort)
 
     const cleanup = () => {
+      stallWatch?.stop()
       signal?.removeEventListener("abort", onAbort)
     }
 
+    xhr.upload.onloadstart = () => {
+      stallWatch?.ping()
+    }
+
     xhr.upload.onprogress = (evt) => {
+      stallWatch?.ping()
       if (evt.lengthComputable && onProgress) {
         onProgress({ loaded: evt.loaded, total: evt.total })
       }
@@ -116,8 +151,17 @@ export async function uploadStorageObjectWithProgress(opts: {
       reject(new Error("Network error during upload"))
     }
 
+    xhr.ontimeout = () => {
+      cleanup()
+      reject(new Error("Upload timed out. Check your connection and try again."))
+    }
+
     xhr.onabort = () => {
       cleanup()
+      if (stalled) {
+        reject(new UploadStallError())
+        return
+      }
       reject(new DOMException("Upload aborted", "AbortError"))
     }
 

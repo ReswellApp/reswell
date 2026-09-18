@@ -26,6 +26,10 @@ import {
   type ListingVideoSlot,
 } from "@/lib/sell-flow/listing-video-slot"
 import { createClient } from "@/lib/supabase/client"
+import {
+  friendlyListingVideoError,
+  isListingVideoUploadCanceled,
+} from "@/lib/utils/friendly-listing-video-error"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type UseListingVideoUploadOptions = {
@@ -50,11 +54,6 @@ export type UseListingVideoUploadResult = {
   hydrateExistingVideo: (slot: ListingVideoSlot | null) => void
 }
 
-function friendlyVideoError(err: unknown): string {
-  if (err instanceof Error && err.message.trim()) return err.message
-  return "Couldn't upload that video. Try again with an MP4 or MOV under 200MB."
-}
-
 export function useListingVideoUpload({
   signInReturnPath,
   openSignIn,
@@ -66,11 +65,19 @@ export function useListingVideoUpload({
   const [removedVideoIds, setRemovedVideoIds] = useState<string[]>([])
   const videoRef = useRef<ListingVideoSlot | null>(null)
   videoRef.current = video
+  const uploadAbortRef = useRef<AbortController | null>(null)
+  const lastProgressRatioRef = useRef(0)
 
   const getSupabase = useCallback(
     () => supabaseProp ?? createClient(),
     [supabaseProp],
   )
+
+  const abortInFlightUpload = useCallback(() => {
+    const controller = uploadAbortRef.current
+    uploadAbortRef.current = null
+    controller?.abort()
+  }, [])
 
   const revokePreview = useCallback((slot: ListingVideoSlot | null) => {
     if (slot?.previewUrl?.startsWith("blob:")) {
@@ -80,17 +87,32 @@ export function useListingVideoUpload({
 
   const hydrateExistingVideo = useCallback(
     (slot: ListingVideoSlot | null) => {
+      abortInFlightUpload()
       revokePreview(videoRef.current)
       setVideo(slot)
       setRemovedVideoIds([])
     },
-    [revokePreview],
+    [abortInFlightUpload, revokePreview],
   )
+
+  const reportProgress = useCallback((clientId: string, ratio: number) => {
+    const clamped = Math.max(0, Math.min(1, ratio))
+    if (clamped - lastProgressRatioRef.current < 0.02 && clamped < 0.99) return
+    lastProgressRatioRef.current = clamped
+    setVideo((prev) =>
+      prev && prev.clientId === clientId ? { ...prev, uploadProgress: clamped } : prev,
+    )
+  }, [])
 
   const uploadSlot = useCallback(
     async (slot: ListingVideoSlot) => {
       const file = slot.file
       if (!file) return
+
+      abortInFlightUpload()
+      const controller = new AbortController()
+      uploadAbortRef.current = controller
+      lastProgressRatioRef.current = 0
 
       setVideo((prev) =>
         prev && prev.clientId === slot.clientId
@@ -101,13 +123,28 @@ export function useListingVideoUpload({
       try {
         assertAcceptedListingVideoFile(file)
         assertListingVideoOriginalSize(file)
-        const durationSeconds = await assertListingVideoDuration(file)
-        const poster = await captureListingVideoPosterBlob(file)
+        const durationSeconds = await assertListingVideoDuration(file, {
+          signal: controller.signal,
+        })
+        if (controller.signal.aborted) {
+          throw new DOMException("Upload aborted", "AbortError")
+        }
+
+        reportProgress(slot.clientId, 0.08)
+        const poster = await captureListingVideoPosterBlob(file, {
+          signal: controller.signal,
+        })
+        if (controller.signal.aborted) {
+          throw new DOMException("Upload aborted", "AbortError")
+        }
 
         const supabase = getSupabase()
         const session = await resolveClientSessionForMutation(supabase)
         if (!session?.user) {
           throw new Error("Sign in again to upload this video.")
+        }
+        if (controller.signal.aborted) {
+          throw new DOMException("Upload aborted", "AbortError")
         }
 
         const uploaded = await uploadListingVideoToSupabase({
@@ -116,6 +153,8 @@ export function useListingVideoUpload({
           file,
           durationSeconds,
           poster,
+          signal: controller.signal,
+          onProgress: (ratio) => reportProgress(slot.clientId, ratio),
         })
 
         setVideo((prev) => {
@@ -138,16 +177,23 @@ export function useListingVideoUpload({
           }
         })
       } catch (err) {
-        const message = friendlyVideoError(err)
+        if (isListingVideoUploadCanceled(err)) {
+          return
+        }
+        const message = friendlyListingVideoError(err)
         setVideo((prev) =>
           prev && prev.clientId === slot.clientId
             ? { ...prev, status: "error", errorMessage: message, uploadProgress: null }
             : prev,
         )
         toast.error(message)
+      } finally {
+        if (uploadAbortRef.current === controller) {
+          uploadAbortRef.current = null
+        }
       }
     },
-    [getSupabase],
+    [abortInFlightUpload, getSupabase, reportProgress],
   )
 
   const beginUploadForFile = useCallback(
@@ -169,6 +215,7 @@ export function useListingVideoUpload({
           openSignIn(signInReturnPath())
           return
         }
+        abortInFlightUpload()
         revokePreview(videoRef.current)
         const previewUrl = URL.createObjectURL(file)
         setVideo(
@@ -187,6 +234,7 @@ export function useListingVideoUpload({
           ids.includes(videoRef.current!.id!) ? ids : [...ids, videoRef.current!.id!],
         )
       }
+      abortInFlightUpload()
       revokePreview(videoRef.current)
 
       const clientId = crypto.randomUUID()
@@ -203,6 +251,7 @@ export function useListingVideoUpload({
       void uploadSlot(next)
     },
     [
+      abortInFlightUpload,
       getSupabase,
       openSignIn,
       persistBeforeSignIn,
@@ -225,13 +274,14 @@ export function useListingVideoUpload({
   )
 
   const handleVideoRemove = useCallback(() => {
+    abortInFlightUpload()
     const current = videoRef.current
     if (current?.id) {
       setRemovedVideoIds((ids) => (ids.includes(current.id!) ? ids : [...ids, current.id!]))
     }
     revokePreview(current)
     setVideo(null)
-  }, [revokePreview])
+  }, [abortInFlightUpload, revokePreview])
 
   const handleVideoRetry = useCallback(() => {
     const current = videoRef.current

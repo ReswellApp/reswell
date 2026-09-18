@@ -27,7 +27,11 @@ import { Label } from "@/components/ui/label"
 import { LISTING_VIDEO_ACCEPT } from "@/lib/listing-video-pipeline"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
-import type { ListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
+import {
+  isListingVideoImagePreviewUrl,
+  listingVideoUploadStatusLabel,
+  type ListingVideoSlot,
+} from "@/lib/sell-flow/listing-video-slot"
 import { SellListingVideoRecorderDialog } from "@/components/features/sell/sell-listing-video-recorder-dialog"
 import { SELL_COMPLETE_BADGE_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
@@ -312,11 +316,6 @@ function SellListingPhotoTile({
   )
 }
 
-function isImageLikeVideoPreview(url: string): boolean {
-  const lower = url.toLowerCase()
-  return !lower.endsWith(".mp4") && !lower.endsWith(".mov") && !lower.endsWith(".webm")
-}
-
 /** Compact dashed tile to pick one optional listing video (shared with accessory grids). */
 export function SellListingVideoAddTile({
   fileInputId,
@@ -397,7 +396,7 @@ export function SellListingVideoFilledTile({
           aria-hidden
         />
         <div className="relative flex-1 min-h-0 bg-black/90">
-          {preview && isImageLikeVideoPreview(preview) ? (
+          {preview && isListingVideoImagePreviewUrl(preview) ? (
             // eslint-disable-next-line @next/next/no-img-element -- local blob / storage poster
             <img src={preview} alt="" className="h-full w-full object-cover" />
           ) : video.previewUrl || video.url ? (
@@ -417,23 +416,22 @@ export function SellListingVideoFilledTile({
           {uploading ? (
             <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center gap-1 bg-black/50 text-white">
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-              <span className="text-[10px]">Uploading…</span>
+              <span className="text-[10px]">{listingVideoUploadStatusLabel(video)}</span>
             </div>
           ) : null}
 
           {!errored ? (
             <div className="absolute inset-x-1 top-1 z-[5] flex justify-end gap-1 pointer-events-none">
-              {!uploading ? (
-                <button
-                  type="button"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={onRemove}
-                  className="pointer-events-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/80 touch-manipulation hover:bg-background sm:h-9 sm:w-9"
-                  aria-label="Remove video"
-                >
-                  <X className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-                </button>
-              ) : null}
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={onRemove}
+                className="pointer-events-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/90 shadow-sm ring-1 ring-black/5 touch-manipulation hover:bg-background sm:h-9 sm:w-9"
+                aria-label={uploading ? "Cancel video upload" : "Remove video"}
+                title={uploading ? "Cancel upload" : "Remove video"}
+              >
+                <X className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+              </button>
             </div>
           ) : null}
 

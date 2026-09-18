@@ -1,10 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { ListingVideoMimeType } from "@/lib/listing-video-constants"
+import {
+  LISTING_VIDEO_UPLOAD_STALL_MS,
+  listingVideoUploadTimeoutMs,
+  type ListingVideoMimeType,
+} from "@/lib/listing-video-constants"
 import {
   listingVideoExtensionForMime,
   normalizeListingVideoMimeType,
 } from "@/lib/listing-video-pipeline"
-import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
+import { listingObjectPublicUrl, uploadStorageObjectWithProgress } from "@/lib/supabase/storage-upload-xhr"
+import { isRetryableListingVideoUploadError } from "@/lib/utils/listing-video-upload-retry"
+
+const POSTER_UPLOAD_STALL_MS = 15_000
+const UPLOAD_RETRY_ATTEMPTS = 2
+const UPLOAD_RETRY_BASE_DELAY_MS = 600
 
 async function assertListingUploadAuth(supabase: SupabaseClient): Promise<string> {
   const {
@@ -17,24 +26,69 @@ async function assertListingUploadAuth(supabase: SupabaseClient): Promise<string
   return user.id
 }
 
-async function uploadListingBlob(opts: {
-  supabase: SupabaseClient
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Upload aborted", "AbortError"))
+      return
+    }
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(new DOMException("Upload aborted", "AbortError"))
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener("abort", onAbort, { once: true })
+  })
+}
+
+async function uploadListingBlobWithProgress(opts: {
+  supabaseUrl: string
+  accessToken: string
+  anonKey: string
   pathInBucket: string
   body: Blob
   contentType: string
+  stallTimeoutMs: number
+  timeoutMs: number
+  onProgress?: (loaded: number, total: number) => void
+  signal?: AbortSignal
 }): Promise<void> {
-  const { error } = await opts.supabase.storage.from("listings").upload(
-    opts.pathInBucket,
-    opts.body,
-    {
-      contentType: opts.contentType,
-      upsert: false,
-      cacheControl: "31536000",
-    },
-  )
-  if (error) {
-    throw new Error(error.message || "Upload failed")
+  let lastError: unknown
+  for (let attempt = 1; attempt <= UPLOAD_RETRY_ATTEMPTS; attempt++) {
+    if (opts.signal?.aborted) {
+      throw new DOMException("Upload aborted", "AbortError")
+    }
+    try {
+      await uploadStorageObjectWithProgress({
+        supabaseUrl: opts.supabaseUrl,
+        accessToken: opts.accessToken,
+        anonKey: opts.anonKey,
+        bucket: "listings",
+        pathInBucket: opts.pathInBucket,
+        body: opts.body,
+        contentType: opts.contentType,
+        upsert: false,
+        cacheControl: "31536000",
+        stallTimeoutMs: opts.stallTimeoutMs,
+        timeoutMs: opts.timeoutMs,
+        signal: opts.signal,
+        onProgress: opts.onProgress
+          ? (p) => opts.onProgress?.(p.loaded, p.total)
+          : undefined,
+      })
+      return
+    } catch (err) {
+      lastError = err
+      if (!isRetryableListingVideoUploadError(err) || attempt >= UPLOAD_RETRY_ATTEMPTS) {
+        throw err
+      }
+      await sleep(UPLOAD_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1), opts.signal)
+    }
   }
+  throw lastError instanceof Error ? lastError : new Error("Upload failed")
 }
 
 export type UploadedListingVideo = {
@@ -51,11 +105,26 @@ export async function uploadListingVideoToSupabase(opts: {
   file: File
   durationSeconds: number | null
   poster?: { blob: Blob; contentType: "image/webp" | "image/jpeg"; ext: "webp" | "jpg" } | null
+  onProgress?: (ratio: number) => void
+  signal?: AbortSignal
 }): Promise<UploadedListingVideo> {
   const userId = await assertListingUploadAuth(opts.supabase)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-  if (!supabaseUrl) {
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+  if (!supabaseUrl || !anonKey) {
     throw new Error("Upload is not configured.")
+  }
+
+  const {
+    data: { session },
+  } = await opts.supabase.auth.getSession()
+  const accessToken = session?.access_token
+  if (!accessToken) {
+    throw new Error("Sign in again to upload this video.")
+  }
+
+  if (opts.signal?.aborted) {
+    throw new DOMException("Upload aborted", "AbortError")
   }
 
   const mime = normalizeListingVideoMimeType(opts.file)
@@ -69,20 +138,36 @@ export async function uploadListingVideoToSupabase(opts: {
   let thumbnailUrl: string | null = null
   if (opts.poster) {
     const posterPath = `${userId}/${ts}-${opts.clientId}-video-poster.${opts.poster.ext}`
-    await uploadListingBlob({
-      supabase: opts.supabase,
+    opts.onProgress?.(0.12)
+    await uploadListingBlobWithProgress({
+      supabaseUrl,
+      accessToken,
+      anonKey,
       pathInBucket: posterPath,
       body: opts.poster.blob,
       contentType: opts.poster.contentType,
+      stallTimeoutMs: POSTER_UPLOAD_STALL_MS,
+      timeoutMs: 60_000,
+      signal: opts.signal,
     })
     thumbnailUrl = listingObjectPublicUrl(supabaseUrl, posterPath)
   }
 
-  await uploadListingBlob({
-    supabase: opts.supabase,
+  opts.onProgress?.(0.15)
+  await uploadListingBlobWithProgress({
+    supabaseUrl,
+    accessToken,
+    anonKey,
     pathInBucket: videoPath,
     body: opts.file,
     contentType: storageContentType,
+    stallTimeoutMs: LISTING_VIDEO_UPLOAD_STALL_MS,
+    timeoutMs: listingVideoUploadTimeoutMs(opts.file.size),
+    signal: opts.signal,
+    onProgress: (loaded, total) => {
+      const ratio = total > 0 ? loaded / total : 0
+      opts.onProgress?.(0.15 + ratio * 0.85)
+    },
   })
 
   return {

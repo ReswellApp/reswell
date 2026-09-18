@@ -47,6 +47,21 @@ export function listingVideoIsUploading(slot: ListingVideoSlot | null): boolean 
   return slot?.status === "uploading"
 }
 
+/** Poster / storage image URLs vs local video blobs and `.mp4` / `.mov` / `.webm` objects. */
+export function isListingVideoImagePreviewUrl(url: string): boolean {
+  if (!url || url.startsWith("blob:")) return false
+  const path = url.split("?")[0]?.toLowerCase() ?? ""
+  return !path.endsWith(".mp4") && !path.endsWith(".mov") && !path.endsWith(".webm")
+}
+
+export function listingVideoUploadStatusLabel(slot: ListingVideoSlot): string {
+  if (slot.status !== "uploading") return "Uploading…"
+  const progress = slot.uploadProgress
+  if (progress == null || progress < 0.12) return "Preparing…"
+  const pct = Math.max(1, Math.min(99, Math.round(progress * 100)))
+  return `Uploading ${pct}%`
+}
+
 export function readyListingVideoPayload(slot: ListingVideoSlot | null): {
   id?: string
   url: string
