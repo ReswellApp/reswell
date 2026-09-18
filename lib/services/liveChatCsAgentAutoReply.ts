@@ -5,6 +5,7 @@ import {
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
+import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
 import {
   LIVE_CHAT_TEAM_NAME,
   LIVE_CHAT_WIDGET_ADMIN_ONLY,
@@ -22,8 +23,8 @@ import { generateAndStoreDraft } from "@/lib/services/supportReplyDraft"
 import { loadLiveChatReplyPromptBody } from "@/lib/services/supportReplyExamples"
 import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
 
-const FALLBACK_REPLY =
-  "Thanks for writing in — we're looking into this and will follow up here shortly."
+/** Outer budget covers order/listing preload plus the live-chat model timeout. */
+const DRAFT_GENERATE_BUDGET_MS = 28_000
 
 /** Deterministic reply when eligible undropped-off sales exist (panel shows tiles). */
 export const LIVE_CHAT_LABEL_UPDATE_REPLY =
@@ -32,8 +33,6 @@ export const LIVE_CHAT_LABEL_UPDATE_REPLY =
 /** When nothing is eligible — don't pin them in the label flow. */
 export const LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY =
   "I don't see any of your sales with a label still waiting for carrier drop-off, so we can't reprint a ship-from label from here right now. If a label already scanned or the sale shipped, ship-from can't change. Tell me the order number or what else you need help with."
-
-const DRAFT_GENERATE_BUDGET_MS = 10_000
 
 async function persistTeamReply(
   svc: SupabaseClient,
@@ -143,7 +142,7 @@ export async function autoSendLiveChatCsAgentReply(
       return await persistTeamReply(svc, session, caseId, body)
     }
 
-    let body = FALLBACK_REPLY
+    let body = LIVE_CHAT_UNGROUNDED_REPLY
     let closeTicket = false
     let needsHumanReview = false
     if (caseId) {
@@ -180,7 +179,7 @@ export async function autoSendLiveChatCsAgentReply(
       svc,
       session,
       caseId,
-      isLabelIntent ? LIVE_CHAT_LABEL_UPDATE_REPLY : FALLBACK_REPLY,
+      isLabelIntent ? LIVE_CHAT_LABEL_UPDATE_REPLY : LIVE_CHAT_UNGROUNDED_REPLY,
     )
   } finally {
     await broadcastLiveChatTyping({

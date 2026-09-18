@@ -1,15 +1,33 @@
 /**
  * Reswell customer-service agent harness.
- * One model, one job: draft a review-before-send reply. Never sends.
+ * Inbox: one model, one job — draft a review-before-send reply. Never sends.
+ * Live chat: the same guidelines, but the reply sends immediately, so it gets
+ * a stronger model, this visitor's account snapshot, and extra tool steps.
+ *
+ * This file stays free of `@/` imports so `node --test` can load it.
+ * Fee and shipping numbers below are locked to lib/seller-fees.ts and
+ * lib/shipping-deadline.ts by cs-agent.test.ts.
  */
 
-export const CS_AGENT_PROMPT_VERSION = "cs-agent-v4"
+export const CS_AGENT_PROMPT_VERSION = "cs-agent-v5"
 
 /** One optional tool round, then the reply. Extra hops blow the inbox budget. */
 export const CS_AGENT_MAX_STEPS = 2
 
 /** Hard cap so the inbox never sits on a hung model call. */
 export const CS_AGENT_GENERATE_TIMEOUT_MS = 4500
+
+/**
+ * Live chat sends the reply with no human edit. Allow auth + orders + tracking
+ * + help before the answer. Inbox stays on CS_AGENT_MAX_STEPS.
+ */
+export const CS_AGENT_LIVE_CHAT_MAX_STEPS = 5
+
+/** Pro + tools. The widget shows typing; a generic timeout reply is worse than waiting. */
+export const CS_AGENT_LIVE_CHAT_TIMEOUT_MS = 20_000
+
+/** Recent turns only — older context is summarized as omitted so the latest ask wins. */
+export const CS_AGENT_LIVE_CHAT_THREAD_TURNS = 24
 
 /** Editable first source of truth for voice, kindness, and how to write. */
 export const DEFAULT_SUPPORT_REPLY_ROOT_PROMPT = `You are Reswell Support — Hayden's dedicated customer-service agent for Reswell, a used-surfboard marketplace with Purchase Protection.
@@ -53,6 +71,32 @@ export type CsAgentOrderFact = {
   paymentMethod?: string | null
 }
 
+export type CsAgentAccountOrder = {
+  id: string
+  orderNum: string | null
+  role: "purchase" | "sale" | "both"
+  status: string
+  amount: number
+  fulfillmentMethod: string | null
+  deliveryStatus: string | null
+  trackingNumber: string | null
+  trackingCarrier: string | null
+}
+
+export type CsAgentAccountListing = {
+  title: string | null
+  status: string | null
+  price: number | null
+  href: string
+}
+
+/** Signed-in visitor facts preloaded for live chat so the model does not guess. */
+export type CsAgentAccountSnapshot = {
+  signedIn: boolean
+  orders: CsAgentAccountOrder[]
+  listings: CsAgentAccountListing[]
+}
+
 export type CsAgentThreadTurn = {
   role: "customer" | "staff" | "system"
   body: string
@@ -79,6 +123,8 @@ export type CsAgentContextPack = {
   macros: Array<{ title: string; body: string }>
   rewriteInstruction?: string
   currentDraft?: string
+  /** Live chat only. Absent on inbox drafts. */
+  accountSnapshot?: CsAgentAccountSnapshot
 }
 
 export type CsAgentDraftOutput = {
@@ -125,16 +171,28 @@ export function csAgentLiveChatSystemPrompt(greetingName: string, rootPrompt?: s
 
 You are live chat for Reswell. Your reply sends immediately as Reswell Team (not a draft).
 
+## Resolve it (do this before you write)
+1. Name the ask: order status, label, payout, protection, listing, account, or general help. Reply to the latest message. Do not restart an earlier ask they already moved past.
+2. If the ask needs an order, tracking, payout, address, or listing fact, use the account snapshot in the context pack. If they are not signed in, or the snapshot is missing or ambiguous, call confirm_auth, list_customer_orders, lookup_order, lookup_tracking, or help_article before you answer. Never guess a status, amount, tracking number, or payout.
+3. If more than one order could match, name the order numbers and statuses and ask which one. Leave close_ticket false.
+4. Ground every policy claim in the help excerpts or a help_article result. If the excerpt is too thin to be sure, call help_article.
+5. Write the reply: show you understood, give the specific answer, then one next step. Under ~150 words unless a short list of their orders is required.
+6. This visitor may have only one open live-chat ticket. Set close_ticket to true only when the issue is fully solved — you completed the ask, they confirmed, or your reply is a complete answer that needs no follow-up. That resolves the ticket so a later chat can open a new one.
+7. Set close_ticket to false if you asked a question, need more information, are waiting on them, promised to look into it, offered a confirm card, or the issue is only partly handled.
+8. Set needs_human_review true only when a person must decide money, a claim outcome, or an account action. Still give the best next step. Do not hide behind "we're looking into it" when the snapshot or help already answers them.
+
+Published facts (do not invent different numbers — keep these in sync with seller fees and the shipping deadline):
+- Marketplace fee is 7% of the item price. The seller keeps 93%. Shipping the buyer paid is not seller earnings and is not part of the fee. Order totals in the snapshot include shipping — do not compute a payout from that total.
+- Shipped orders are expected within 7 days. Do not promise an automatic refund.
+- Purchase Protection covers eligible checkout purchases when the item never arrives, arrives damaged, or is materially different. Do not promise a refund or claim approval. Point them to Get help on the purchase.
+- Pay only in Reswell checkout. Off-platform payment is not protected.
+
 Hard rules:
-- Confirm auth before any order/purchase/sale/tracking/account fact. If not signed in, ask them to sign in.
+- Confirm auth before any order/purchase/sale/tracking/account fact that is not already in the account snapshot. If not signed in, ask them to sign in.
 - Never reveal another customer's personal data, orders, or tracking. Never invent Reswell-internal personal or secret details.
 - Use read-only tools: confirm_auth, list_customer_orders, lookup_order, lookup_tracking, help_article (Purchase Protection, /help, seller resources), shipping_label_status.
-- Resolve what they asked; when solved, close the loop briefly. Prefer one clear next step over long threads.
-- This visitor may have only one open live-chat ticket. Set close_ticket to true only when the issue is fully solved — you completed the ask, they confirmed, or your reply is a complete answer that needs no follow-up. That resolves the ticket so a later chat can open a new one.
-- Set close_ticket to false if you asked a question, need more information, are waiting on them, promised to look into it, or the issue is only partly handled.
-- Ground policy in help-center results. Do not invent refunds, claim approvals, or payouts.
+- Rated examples are style and policy hints. Prefer very_good. Treat AVOID coach notes as mistakes you must not repeat. Never copy another customer's specifics.
 - Greet them as ${greetingName}. Never address them by email.
-- Examples are style hints only — never copy another customer's specifics.
 
 Also return a short staff-facing reason and cite only order refs, ticket ids, and help slugs you actually used.`
 }
@@ -172,22 +230,24 @@ export function formatCsAgentContextPack(pack: CsAgentContextPack): string {
       )
       .join("\n") || "(none)"
 
+  const helpExcerpt = pack.sourceChannel === "live_chat" ? 1600 : 700
   const help =
     pack.help
       .map(
         (article) =>
-          `- ${article.title} (${article.href}) slug=${article.slug}\n  ${article.description}\n  ${article.body.slice(0, 700)}`,
+          `- ${article.title} (${article.href}) slug=${article.slug}\n  ${article.description}\n  ${article.body.slice(0, helpExcerpt)}`,
       )
       .join("\n") || "(none matched)"
 
+  const exampleReplyLimit = pack.sourceChannel === "live_chat" ? 900 : 700
   const examples =
-    pack.examples
+    orderedExamples(pack)
       .map((example) => {
         const coach = example.ratingNote?.trim()
           ? `\n  coach (${example.rating}): ${example.ratingNote.trim().slice(0, 400)}`
           : ""
         const label = example.rating === "bad" ? "AVOID" : example.rating
-        return `- [${label}] customer: ${example.customerExcerpt.slice(0, 400)}\n  staff: ${example.staffReply.slice(0, 700)}${coach}`
+        return `- [${label}] customer: ${example.customerExcerpt.slice(0, 400)}\n  staff: ${example.staffReply.slice(0, exampleReplyLimit)}${coach}`
       })
       .join("\n") || "(none yet — learn from future sends)"
 
@@ -195,10 +255,7 @@ export function formatCsAgentContextPack(pack: CsAgentContextPack): string {
     pack.macros.map((macro) => `- ${macro.title}: ${macro.body}`).join("\n") || "(none)"
 
   const lastCustomer = pack.lastCustomerMessage.trim() || "(no customer message yet)"
-  const thread =
-    pack.thread
-      .map((turn) => `[${turn.role}] ${turn.body}`)
-      .join("\n\n") || "(original request only)"
+  const thread = formatThread(pack)
 
   const rewrite =
     pack.sourceChannel === "live_chat"
@@ -221,10 +278,20 @@ ${pack.currentDraft.trim()}`
 
   const opener =
     pack.sourceChannel === "live_chat"
-      ? "Write the next customer-visible live chat reply. It sends immediately as Reswell Team. This is their only open live-chat ticket until it is resolved. Set close_ticket true only when the issue is fully solved; otherwise false."
+      ? "Write the next customer-visible live chat reply. It sends immediately as Reswell Team. Use the account snapshot and tools for facts — do not guess. This is their only open live-chat ticket until it is resolved. Set close_ticket true only when the issue is fully solved; otherwise false."
       : "Draft the next customer-visible reply. A human will edit and send. Never send it yourself. Set close_ticket false."
 
-  return `${opener}${rewrite}${previousDraft}
+  const snapshot =
+    pack.sourceChannel === "live_chat" && pack.accountSnapshot
+      ? `\n\n${formatAccountSnapshot(pack.accountSnapshot)}`
+      : ""
+
+  const ratingGuide =
+    pack.sourceChannel === "live_chat"
+      ? "\nRated-reply rule: copy the voice of very_good, not the facts. AVOID coach notes are hard constraints."
+      : ""
+
+  return `${opener}${rewrite}${previousDraft}${snapshot}
 
 Case: ${pack.caseSubject}
 Kind: ${pack.caseKind}
@@ -245,11 +312,71 @@ ${tickets}
 Help center articles (current, treat as policy):
 ${help}
 
-Similar sent replies Hayden rated (prefer very_good / okay; treat AVOID + coach notes as what not to do):
+Similar sent replies Hayden rated (prefer very_good / okay; treat AVOID + coach notes as what not to do):${ratingGuide}
 ${examples}
 
 Saved macros (tone/structure only — adapt, do not paste blindly if facts differ):
 ${macros}`
+}
+
+function ratingRank(rating: string): number {
+  if (rating === "very_good") return 0
+  if (rating === "okay") return 1
+  return 2
+}
+
+function orderedExamples(pack: CsAgentContextPack): CsAgentContextPack["examples"] {
+  if (pack.sourceChannel !== "live_chat") return pack.examples
+  return [...pack.examples].sort((a, b) => ratingRank(a.rating) - ratingRank(b.rating))
+}
+
+function formatThread(pack: CsAgentContextPack): string {
+  const turns = pack.thread.filter((turn) => turn.body.trim().length > 0)
+  if (turns.length === 0) return "(original request only)"
+  const capped =
+    pack.sourceChannel === "live_chat" && turns.length > CS_AGENT_LIVE_CHAT_THREAD_TURNS
+  const visible = capped ? turns.slice(-CS_AGENT_LIVE_CHAT_THREAD_TURNS) : turns
+  const body = visible.map((turn) => `[${turn.role}] ${turn.body}`).join("\n\n")
+  if (!capped) return body
+  const omitted = turns.length - visible.length
+  return `(${omitted} earlier turns omitted — answer the latest message; do not re-litigate the old ones)\n\n${body}`
+}
+
+function formatAccountSnapshot(snapshot: CsAgentAccountSnapshot): string {
+  if (!snapshot.signedIn) {
+    return "Account snapshot: visitor is not signed in. Do not share order, tracking, payout, or listing facts. Ask them to sign in."
+  }
+
+  const orders =
+    snapshot.orders.length > 0
+      ? snapshot.orders
+          .map((order) => {
+            const ref = order.orderNum ?? order.id.slice(0, 8)
+            const tracking = order.trackingNumber
+              ? `tracking ${order.trackingNumber}${order.trackingCarrier ? ` (${order.trackingCarrier})` : ""}`
+              : "no tracking on file"
+            const delivery = order.deliveryStatus ? ` · delivery ${order.deliveryStatus}` : ""
+            const fulfillment = order.fulfillmentMethod ?? "fulfillment unknown"
+            return `- ${order.role} ${ref} · status ${order.status}${delivery} · $${order.amount.toFixed(2)} order total · ${fulfillment} · ${tracking}`
+          })
+          .join("\n")
+      : "(no recent orders on this account)"
+
+  const listings =
+    snapshot.listings.length > 0
+      ? snapshot.listings
+          .map((listing) => {
+            const price = listing.price != null ? `$${listing.price.toFixed(2)}` : "price unknown"
+            return `- ${listing.title ?? "Untitled"} · ${listing.status ?? "unknown"} · ${price} · ${listing.href}`
+          })
+          .join("\n")
+      : "(no listings on this account)"
+
+  return `Account snapshot (this signed-in visitor only — these facts are authoritative; call a tool only for an order or article that is not here):
+Orders:
+${orders}
+Listings:
+${listings}`
 }
 
 export function filterCsAgentCitations(
