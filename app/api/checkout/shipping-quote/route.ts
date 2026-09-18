@@ -224,7 +224,7 @@ export async function POST(request: Request) {
   }
 
   const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, sellerId)
-<<<<<<< Updated upstream
+  const sellerShipFromAddress = await fetchSellerShipFromAddressOrNull(supabase, sellerId)
   const preparedAddress = await ensureCheckoutBuyerShippingAddress({
     supabase,
     address: addr as ProfileAddressRow,
@@ -237,10 +237,6 @@ export async function POST(request: Request) {
     )
   }
   const buyerAddress = preparedAddress.address
-=======
-  const sellerShipFromAddress = await fetchSellerShipFromAddressOrNull(supabase, sellerId)
-  const buyerAddress = addr as ProfileAddressRow
->>>>>>> Stashed changes
 
   const qtyById = new Map<string, number>()
   for (const id of listingIds) qtyById.set(id, 1)
