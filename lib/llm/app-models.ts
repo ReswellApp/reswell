@@ -12,6 +12,7 @@ export type AppLlmFeatureId =
   | "business_intelligence"
   | "search_daily_report"
   | "support_reply_draft"
+  | "live_chat_cs"
   | "listing_brand_model_research"
   | "message_fraud_review"
 
@@ -149,6 +150,26 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/supportReplyKnowledge.ts",
       "lib/db/supportReplyDrafts.ts",
       "lib/db/supportReplyRootPrompt.ts",
+    ],
+  },
+  {
+    id: "live_chat_cs",
+    name: "Live chat customer-service agent",
+    purpose:
+      "Auto-sends the next Reswell Team reply in admin live chat. Same guidelines, tools, and rating memory as inbox drafts, with a stronger model, this visitor's order snapshot, and extra tool steps so the answer is specific and the ticket closes only when the issue is solved. Ratings stay on very_good / okay / bad.",
+    gatewayFeatureTag: "feature:live-chat-cs",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-pro",
+    modelEnvVar: "LIVE_CHAT_CS_MODEL",
+    enabledEnvVar: "LIVE_CHAT_CS_ENABLED",
+    surfaces: ["live chat widget (admin)", "/admin/live-chat", "/admin/support-reply-examples"],
+    sourceFiles: [
+      "lib/llm/cs-agent.ts",
+      "lib/llm/cs-agent-generate.ts",
+      "lib/services/liveChatCsAgentAutoReply.ts",
+      "lib/services/supportReplyDraft.ts",
+      "lib/services/csAgentLookups.ts",
+      "lib/live-chat/live-chat-cs-prompt.ts",
     ],
   },
   {

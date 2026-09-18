@@ -2,6 +2,8 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   CS_AGENT_GENERATE_TIMEOUT_MS,
+  CS_AGENT_LIVE_CHAT_MAX_STEPS,
+  CS_AGENT_LIVE_CHAT_TIMEOUT_MS,
   CS_AGENT_MAX_STEPS,
   CS_AGENT_PROMPT_VERSION,
   DEFAULT_SUPPORT_REPLY_ROOT_PROMPT,
@@ -11,15 +13,19 @@ import {
   filterCsAgentCitations,
   formatCsAgentContextPack,
 } from "./cs-agent.ts"
+import { MARKETPLACE_FEE_PERCENT, SELLER_SHARE_PERCENT } from "../seller-fees.ts"
+import { SHIPPING_DEADLINE_DAYS } from "../shipping-deadline.ts"
 
 describe("cs agent harness", () => {
   it("pins a dedicated prompt version for draft fingerprints", () => {
-    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v4")
+    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v5")
   })
 
-  it("caps tool rounds and model time so inbox drafts stay under five seconds", () => {
+  it("caps inbox tool rounds, and gives live chat more steps and time", () => {
     assert.equal(CS_AGENT_MAX_STEPS, 2)
     assert.ok(CS_AGENT_GENERATE_TIMEOUT_MS <= 5000)
+    assert.ok(CS_AGENT_LIVE_CHAT_MAX_STEPS > CS_AGENT_MAX_STEPS)
+    assert.ok(CS_AGENT_LIVE_CHAT_TIMEOUT_MS >= 20_000)
   })
 
   it("forbids invented facts and auto-send in the system prompt", () => {
@@ -121,6 +127,62 @@ describe("cs agent harness", () => {
     assert.match(pack, /Live chat — support case/)
     assert.match(pack, /only open live-chat ticket/)
     assert.match(pack, /close_ticket true only when the issue is fully solved/)
+    assert.match(pack, /do not guess/i)
+  })
+
+  it("grounds live chat in this visitor's orders and prefers very_good examples", () => {
+    const pack = formatCsAgentContextPack({
+      greetingName: "Sam",
+      caseSubject: "Where is my board?",
+      caseKind: "order_question",
+      caseStatus: "submitted",
+      sourceChannel: "live_chat",
+      requesterRole: "buyer",
+      lastCustomerMessage: "Where is order 1042?",
+      thread: [{ role: "customer", body: "Where is order 1042?" }],
+      order: null,
+      priorTickets: [],
+      help: [],
+      examples: [
+        {
+          rating: "okay",
+          customerExcerpt: "tracking?",
+          staffReply: "Okay reply",
+        },
+        {
+          rating: "very_good",
+          customerExcerpt: "where is it?",
+          staffReply: "Very good reply",
+          ratingNote: "Name the carrier.",
+        },
+      ],
+      macros: [],
+      accountSnapshot: {
+        signedIn: true,
+        orders: [
+          {
+            id: "11111111-1111-1111-1111-111111111111",
+            orderNum: "1042",
+            role: "purchase",
+            status: "confirmed",
+            amount: 350,
+            fulfillmentMethod: "shipping",
+            deliveryStatus: "shipped",
+            trackingNumber: "1Z999",
+            trackingCarrier: "ups",
+          },
+        ],
+        listings: [],
+      },
+    })
+    assert.match(pack, /Account snapshot/)
+    assert.match(pack, /purchase 1042/)
+    assert.match(pack, /tracking 1Z999/)
+    assert.match(pack, /\$350\.00 order total/)
+    const veryGoodAt = pack.indexOf("[very_good]")
+    const okayAt = pack.indexOf("[okay]")
+    assert.ok(veryGoodAt >= 0 && okayAt >= 0 && veryGoodAt < okayAt)
+    assert.match(pack, /copy the voice of very_good/)
   })
 
   it("tells the live-chat agent when it may resolve the ticket", () => {
@@ -128,6 +190,13 @@ describe("cs agent harness", () => {
     assert.match(prompt, /close_ticket to true only when the issue is fully solved/)
     assert.match(prompt, /only one open live-chat ticket/)
     assert.match(prompt, /Set close_ticket to false if you asked a question/)
+    assert.match(prompt, /account snapshot/i)
+    assert.match(prompt, /Never guess/)
+    assert.match(prompt, /very_good/)
+    assert.match(prompt, new RegExp(`Marketplace fee is ${MARKETPLACE_FEE_PERCENT}%`))
+    assert.match(prompt, new RegExp(`The seller keeps ${SELLER_SHARE_PERCENT}%`))
+    assert.match(prompt, new RegExp(`within ${SHIPPING_DEADLINE_DAYS} days`))
+    assert.match(prompt, /do not compute a payout from that total/i)
     assert.doesNotMatch(prompt, /never send/i)
   })
 

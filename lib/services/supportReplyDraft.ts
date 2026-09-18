@@ -28,9 +28,14 @@ import {
 import { defaultCsAgentReason } from "@/lib/llm/cs-agent"
 import { generateCsAgentDraft } from "@/lib/llm/cs-agent-generate"
 import { getSupportReplyRootPromptBody } from "@/lib/db/supportReplyRootPrompt"
-import { createCsAgentLookups, listPriorTicketsForCsAgent } from "@/lib/services/csAgentLookups"
+import {
+  createCsAgentLookups,
+  listPriorTicketsForCsAgent,
+  loadLiveChatAccountSnapshot,
+} from "@/lib/services/csAgentLookups"
 import type { LiveChatSessionRow } from "@/lib/db/liveChat"
 import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
+import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
 import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
 import {
   citedHelpFromSlugs,
@@ -65,6 +70,16 @@ const FEATURE = APP_LLM_FEATURES.find((f) => f.id === "support_reply_draft")
 export function supportReplyDraftModelId(): string {
   if (!FEATURE) return "google/gemini-2.5-flash"
   return resolveConfiguredModel(FEATURE)
+}
+
+const LIVE_CHAT_FEATURE = APP_LLM_FEATURES.find((f) => f.id === "live_chat_cs")
+
+/** Stronger model for auto-sent live chat. Falls back to the inbox model if disabled. */
+export function liveChatCsModelId(): string {
+  if (!LIVE_CHAT_FEATURE || !isAppLlmFeatureEnabled(LIVE_CHAT_FEATURE)) {
+    return supportReplyDraftModelId()
+  }
+  return resolveConfiguredModel(LIVE_CHAT_FEATURE)
 }
 
 export function isSupportReplyDraftLlmEnabled(): boolean {
@@ -269,8 +284,23 @@ async function generateDraftBody(args: {
   const exampleIds = args.knowledge.examples
     .map((example) => example.id)
     .filter((id) => !id.startsWith("case:"))
+  const isLiveChat = args.row.source_channel === "live_chat"
+  const modelId = isLiveChat ? liveChatCsModelId() : supportReplyDraftModelId()
 
   if (!isSupportReplyDraftLlmEnabled()) {
+    if (isLiveChat) {
+      return {
+        body: LIVE_CHAT_UNGROUNDED_REPLY,
+        origin: "macro",
+        slugs: [],
+        exampleIds: [],
+        model: null,
+        needsHumanReview: true,
+        closeTicket: false,
+        reason: "Live chat model is off.",
+        citations: { orders: [], tickets: [] },
+      }
+    }
     const fallback = fallbackDraft(
       args.knowledge,
       draftMacroVars(args.greetingName, args.row.order_ref, args.order),
@@ -279,12 +309,17 @@ async function generateDraftBody(args: {
     return { ...fallback, model: null, needsHumanReview: true, closeTicket: false }
   }
 
-  const priorTickets = await listPriorTicketsForCsAgent(args.service, {
-    caseId: args.row.id,
-    requesterUserId: args.row.requester_user_id,
-    requesterEmail: args.row.requester_email,
-    linkedOrderId: args.row.order_id,
-  })
+  const [priorTickets, accountSnapshot] = await Promise.all([
+    listPriorTicketsForCsAgent(args.service, {
+      caseId: args.row.id,
+      requesterUserId: args.row.requester_user_id,
+      requesterEmail: args.row.requester_email,
+      linkedOrderId: args.row.order_id,
+    }),
+    isLiveChat
+      ? loadLiveChatAccountSnapshot(args.service, args.row.requester_user_id)
+      : Promise.resolve(undefined),
+  ])
 
   const lookupSession = createCsAgentLookups(
     args.service,
@@ -299,7 +334,7 @@ async function generateDraftBody(args: {
       : undefined,
   )
   const generated = await generateCsAgentDraft({
-    model: supportReplyDraftModelId(),
+    model: modelId,
     rootPrompt: args.rootPrompt,
     pack: {
       greetingName: args.greetingName,
@@ -317,6 +352,7 @@ async function generateDraftBody(args: {
       macros: args.knowledge.macros,
       rewriteInstruction: args.rewriteInstruction,
       currentDraft: args.currentDraft,
+      accountSnapshot,
     },
     lookups: lookupSession.lookups,
   })
@@ -326,12 +362,12 @@ async function generateDraftBody(args: {
     origin: "llm",
     slugs: generated.citedHelpSlugs,
     exampleIds,
-    model: supportReplyDraftModelId(),
+    model: modelId,
     needsHumanReview: generated.needsHumanReview,
     closeTicket: generated.closeTicket,
     reason: generated.reason,
     citations: citationsFromAgent({
-      orders: [args.order, ...lookupSession.resolvedOrders()],
+      orders: [args.order, ...(accountSnapshot?.orders ?? []), ...lookupSession.resolvedOrders()],
       orderRefs: generated.citedOrderRefs,
       tickets: priorTickets,
       ticketIds: generated.citedTicketIds,
@@ -478,12 +514,26 @@ export async function generateAndStoreDraft(
     })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)
-    const fallback = fallbackDraft(
-      knowledge,
-      draftMacroVars(greetingName, row.order_ref, order),
-      lastCustomer,
-    )
-    generated = { ...fallback, model: null, needsHumanReview: true, closeTicket: false }
+    if (row.source_channel === "live_chat") {
+      generated = {
+        body: LIVE_CHAT_UNGROUNDED_REPLY,
+        origin: "macro",
+        slugs: knowledge.helpArticles.map((article) => article.slug).slice(0, 3),
+        exampleIds: [],
+        model: null,
+        needsHumanReview: true,
+        closeTicket: false,
+        reason: "Live chat model did not return a grounded reply.",
+        citations: { orders: [], tickets: [] },
+      }
+    } else {
+      const fallback = fallbackDraft(
+        knowledge,
+        draftMacroVars(greetingName, row.order_ref, order),
+        lastCustomer,
+      )
+      generated = { ...fallback, model: null, needsHumanReview: true, closeTicket: false }
+    }
   }
 
   const saved = await upsertSupportReplyDraft(service, {

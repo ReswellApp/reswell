@@ -3,6 +3,8 @@ import { z } from "zod"
 import { gatewayTagsForFeature } from "@/lib/llm/app-models"
 import {
   CS_AGENT_GENERATE_TIMEOUT_MS,
+  CS_AGENT_LIVE_CHAT_MAX_STEPS,
+  CS_AGENT_LIVE_CHAT_TIMEOUT_MS,
   CS_AGENT_MAX_STEPS,
   csAgentLiveChatSystemPrompt,
   csAgentSystemPrompt,
@@ -213,6 +215,10 @@ function allowedFromPack(pack: CsAgentContextPack) {
   const orderRefs = new Set<string>()
   if (pack.order?.orderNum) orderRefs.add(pack.order.orderNum.trim().toLowerCase())
   if (pack.order?.id) orderRefs.add(pack.order.id.toLowerCase())
+  for (const order of pack.accountSnapshot?.orders ?? []) {
+    if (order.orderNum) orderRefs.add(order.orderNum.trim().toLowerCase())
+    if (order.id) orderRefs.add(order.id.toLowerCase())
+  }
   const ticketIds = new Set(pack.priorTickets.map((ticket) => ticket.id))
   return { helpSlugs, orderRefs, ticketIds }
 }
@@ -235,15 +241,18 @@ export async function generateCsAgentDraft(args: {
   const { output } = await generateText({
     model: args.model,
     tools: createCsAgentTools(args.lookups, allowed),
-    stopWhen: isStepCount(CS_AGENT_MAX_STEPS),
-    abortSignal: AbortSignal.timeout(isLiveChat ? 9_000 : CS_AGENT_GENERATE_TIMEOUT_MS),
+    stopWhen: isStepCount(isLiveChat ? CS_AGENT_LIVE_CHAT_MAX_STEPS : CS_AGENT_MAX_STEPS),
+    abortSignal: AbortSignal.timeout(
+      isLiveChat ? CS_AGENT_LIVE_CHAT_TIMEOUT_MS : CS_AGENT_GENERATE_TIMEOUT_MS,
+    ),
     output: Output.object({ schema: csAgentLlmSchema }),
     system,
     prompt: formatCsAgentContextPack(args.pack),
-    temperature: 0.3,
+    temperature: isLiveChat ? 0.2 : 0.3,
+    maxOutputTokens: isLiveChat ? 1400 : undefined,
     providerOptions: {
       gateway: {
-        tags: gatewayTagsForFeature("support_reply_draft"),
+        tags: gatewayTagsForFeature(isLiveChat ? "live_chat_cs" : "support_reply_draft"),
       },
     },
   })

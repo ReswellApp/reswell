@@ -14,6 +14,7 @@ import {
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
 import type { LiveChatSessionRow } from "@/lib/db/liveChat"
+import { listRecentLiveChatAiListingsForMember } from "@/lib/db/liveChatAiListings"
 import { retrieveHelpArticlesForQuery } from "@/lib/services/supportReplyKnowledge"
 import {
   getLiveChatShippingLabelStatus,
@@ -24,7 +25,7 @@ import { assessCsAgentRefundEligibility } from "@/lib/utils/cs-agent-refund"
 import { csAgentEmailsMatch, csAgentOrderIsInScope } from "@/lib/utils/cs-agent-scope"
 import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
-import type { CsAgentPriorTicket } from "@/lib/llm/cs-agent"
+import type { CsAgentAccountSnapshot, CsAgentPriorTicket } from "@/lib/llm/cs-agent"
 import type { CsAgentToolLookups } from "@/lib/llm/cs-agent-generate"
 
 export type CsAgentLookupSession = {
@@ -104,6 +105,58 @@ export async function listPriorTicketsForCsAgent(
     if (merged.length >= limit) break
   }
   return merged
+}
+
+function accountOrderRole(
+  order: SupportReplyOrderSnapshot,
+  userId: string,
+): "purchase" | "sale" | "both" {
+  const buyer = order.buyerId === userId
+  const seller = order.sellerId === userId
+  if (buyer && seller) return "both"
+  if (seller) return "sale"
+  return "purchase"
+}
+
+/** Recent orders and listings for this signed-in visitor. Empty when they are a guest. */
+export async function loadLiveChatAccountSnapshot(
+  service: SupabaseClient,
+  userId: string | null,
+): Promise<CsAgentAccountSnapshot> {
+  if (!userId) return { signedIn: false, orders: [], listings: [] }
+
+  try {
+    const [orders, listings] = await Promise.all([
+      listSupportReplyOrdersForCustomer(service, userId, 8),
+      listRecentLiveChatAiListingsForMember(service, userId, 6),
+    ])
+    return {
+      signedIn: true,
+      orders: orders.map((order) => ({
+        id: order.id,
+        orderNum: order.orderNum,
+        role: accountOrderRole(order, userId),
+        status: order.status,
+        amount: order.amount,
+        fulfillmentMethod: order.fulfillmentMethod,
+        deliveryStatus: order.deliveryStatus,
+        trackingNumber: order.trackingNumber,
+        trackingCarrier: order.trackingCarrier,
+      })),
+      listings: listings.map((listing) => ({
+        title: listing.title,
+        status: listing.status,
+        price: listing.price,
+        href: listing.listing_href,
+      })),
+    }
+  } catch (error) {
+    console.warn(
+      "[csAgentLookups] live chat snapshot skipped:",
+      error instanceof Error ? error.message : error,
+    )
+    return { signedIn: true, orders: [], listings: [] }
+  }
 }
 
 async function resolveScopedOrder(
@@ -271,7 +324,7 @@ export function createCsAgentLookups(
             title: article.title,
             href: article.href,
             description: article.description,
-            excerpt: article.body.slice(0, 700),
+            excerpt: article.body.slice(0, 1200),
           })),
         }
       },

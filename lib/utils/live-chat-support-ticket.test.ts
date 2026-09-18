@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
-import { DEFAULT_LIVE_CHAT_REPLY_PROMPT } from "../live-chat/live-chat-cs-prompt.ts"
+import { DEFAULT_LIVE_CHAT_REPLY_PROMPT, LIVE_CHAT_UNGROUNDED_REPLY } from "../live-chat/live-chat-cs-prompt.ts"
 import {
   liveChatVisitorMatchesOpenCase,
   shouldHonorLiveChatTicketClose,
@@ -88,5 +88,20 @@ describe("live chat CS prompt", () => {
   it("documents close_ticket in the editable live-chat prompt", () => {
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /close_ticket true only when/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /only open live-chat ticket/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /account snapshot/i)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /very_good/)
+  })
+
+  it("asks one question instead of pretending the team is already investigating", () => {
+    assert.match(LIVE_CHAT_UNGROUNDED_REPLY, /\?/)
+    assert.equal(
+      shouldHonorLiveChatTicketClose({
+        closeTicket: true,
+        reply: LIVE_CHAT_UNGROUNDED_REPLY,
+        lastCustomerMessage: "Where is my board?",
+        needsHumanReview: false,
+      }),
+      false,
+    )
   })
 })
