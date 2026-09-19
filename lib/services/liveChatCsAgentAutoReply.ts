@@ -26,6 +26,7 @@ import {
   liveChatRewriteWithPersona,
   sleepUntilLiveChatJoin,
 } from "@/lib/services/liveChatHumanFeel"
+import { routeLiveChatWriterWithJev } from "@/lib/llm/jev-live-chat-router"
 import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
 
 /** Outer budget covers order/listing preload plus the live-chat model timeout. */
@@ -79,8 +80,14 @@ async function generateDraftBodyWithBudget(
   caseId: string,
   session: LiveChatSessionRow,
   firstName: string,
+  visitorMessage: string,
 ): Promise<{ body: string; closeTicket: boolean } | null> {
   try {
+    const route = await routeLiveChatWriterWithJev({
+      visitorMessage,
+      signedIn: Boolean(session.user_id),
+    })
+    console.info("[liveChatCsAgentAutoReply] writer", route.source, route.writer, route.model)
     const rewriteInstruction = liveChatRewriteWithPersona(
       await loadLiveChatReplyPromptBody(svc),
       firstName,
@@ -93,6 +100,7 @@ async function generateDraftBodyWithBudget(
         rewriteInstruction,
         liveChatSession: session,
         liveChatActor,
+        modelId: route.model,
       }),
       new Promise<null>((resolve) => {
         setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
@@ -151,7 +159,13 @@ export async function autoSendLiveChatCsAgentReply(
         needsHumanReview: false,
       }))
     : (caseId
-        ? generateDraftBodyWithBudget(svc, caseId, workingSession, persona.firstName)
+        ? generateDraftBodyWithBudget(
+            svc,
+            caseId,
+            workingSession,
+            persona.firstName,
+            visitorMessage.content,
+          )
         : Promise.resolve(null)
       ).then((generated) =>
         generated
