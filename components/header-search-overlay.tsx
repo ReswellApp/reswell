@@ -13,10 +13,8 @@ import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-searc
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
-import {
-  headerNavSearchPlaceholder,
-  headerNavSearchSubmitHref,
-} from "@/lib/header-nav-marketplace-search"
+import { headerNavSearchPlaceholder } from "@/lib/header-nav-marketplace-search"
+import { hrefForNavMarketplaceSearch } from "@/lib/nav-marketplace-model-search"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 
@@ -52,10 +50,10 @@ export function HeaderSearchOverlay({
         await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
         return
       }
-      const href = headerNavSearchSubmitHref(q, pathname, headerSearchParams)
+      const href = await hrefForNavMarketplaceSearch(q, pathname, headerSearchParams)
       onQueryChange(q)
       writeNavSearchQuery(q)
-      router.push(href)
+      if (href) router.push(href)
       onClose()
     },
     [searchQuery, pathname, headerSearchParams, router, onQueryChange, onClose],
@@ -86,7 +84,9 @@ export function HeaderSearchOverlay({
           if (!term) return
           onQueryChange(term)
           writeNavSearchQuery(term)
-          router.push(headerNavSearchSubmitHref(term, pathname, headerSearchParams))
+          void hrefForNavMarketplaceSearch(term, pathname, headerSearchParams).then((href) => {
+            if (href) router.push(href)
+          })
           onClose()
         }}
         onNavigate={() => {

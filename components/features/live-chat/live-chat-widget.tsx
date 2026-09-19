@@ -21,7 +21,12 @@ import {
 } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
 import { useLiveChatSupportTeam } from "@/components/features/live-chat/hooks/use-live-chat-support-lead"
 import {
+  LIVE_CHAT_RESUME_QUERY,
+  parseLiveChatResumePublicId,
+} from "@/lib/live-chat/resume-url"
+import {
   getStoredLiveChatVisitorEmail,
+  setStoredLiveChatSessionPublicId,
   setStoredLiveChatVisitorEmail,
 } from "@/lib/live-chat/visitor-storage"
 import {
@@ -47,6 +52,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   // Panel mounts lazily on first open, then stays mounted so open/close can animate.
   const [hasOpened, setHasOpened] = useState(false)
   const [tab, setTab] = useState<LiveChatWidgetTab>("home")
+  const [resumeHandled, setResumeHandled] = useState(false)
   const [emailDraft, setEmailDraft] = useState("")
   const [emailLocked, setEmailLocked] = useState(
     () => Boolean(getStoredLiveChatVisitorEmail()),
@@ -89,10 +95,11 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   } = useLiveChatSupportTeam(open || session.sessionReady)
   isSupportOnlineRef.current = isSupportOnline
 
+  const appendRemoteMessage = session.appendMessage
   const handleRemoteMessage = useCallback(
-    (message: Parameters<typeof session.appendMessage>[0]) => {
+    (message: Parameters<typeof appendRemoteMessage>[0]) => {
       if (message.sender_type === "visitor") return
-      session.appendMessage(message)
+      appendRemoteMessage(message)
       if (
         (message.sender_type === "agent" || message.sender_type === "bot") &&
         !openRef.current
@@ -100,7 +107,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
         setAgentPreview(message)
       }
     },
-    [session],
+    [appendRemoteMessage],
   )
 
   // Stays subscribed while the widget is closed so agent replies surface as a preview bubble.
@@ -180,10 +187,35 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   }, [bootstrapSession, sessionBootstrapping, sessionReady])
 
   useEffect(() => {
+    const url = new URL(window.location.href)
+    const resumePublicId = parseLiveChatResumePublicId(
+      url.searchParams.get(LIVE_CHAT_RESUME_QUERY),
+    )
+    if (resumePublicId) {
+      setStoredLiveChatSessionPublicId(resumePublicId)
+      url.searchParams.delete(LIVE_CHAT_RESUME_QUERY)
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      )
+      setAgentPreview(null)
+      setTab("messages")
+      setHasOpened(true)
+      setOpen(true)
+      const now = Date.now()
+      lastReadAtRef.current = now
+      setLastReadAt(now)
+    }
+    setResumeHandled(true)
+  }, [])
+
+  useEffect(() => {
+    if (!resumeHandled) return
     if (sessionReady || handoffBootstrapRef.current) return
     if (!open && tab !== "messages") return
     void ensureChatSession()
-  }, [ensureChatSession, open, sessionReady, tab])
+  }, [ensureChatSession, open, resumeHandled, sessionReady, tab])
 
   function clearHelpArticleStack() {
     setHelpArticleStack([])

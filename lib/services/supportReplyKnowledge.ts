@@ -19,6 +19,7 @@ import {
 } from "@/lib/utils/support-reply-retrieve"
 import { CS_AGENT_PROMPT_VERSION } from "@/lib/llm/cs-agent"
 import { liveChatPinnedHelpSlugs } from "@/lib/live-chat/howto-intent"
+import { isLiveChatCannedFailureReply } from "@/lib/live-chat/live-chat-cs-prompt"
 
 export type RetrievedHelpArticle = HelpArticlePlainText & { score: number }
 export type RetrievedReplyExample = ReturnType<typeof rankExamplesForQuery>[number]
@@ -77,6 +78,7 @@ export async function gatherSupportReplyKnowledge(
         if (example.source_channel && example.source_channel !== "live_chat") return false
         // Unrated auto-flood (no rated_by) stays out of live-chat retrieval.
         if (!example.rated_by && example.source_channel === "live_chat") return false
+        if (isLiveChatCannedFailureReply(example.staff_reply)) return false
         return true
       })
     : examples

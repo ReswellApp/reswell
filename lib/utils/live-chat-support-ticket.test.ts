@@ -3,8 +3,11 @@ import { describe, it } from "node:test"
 
 import {
   DEFAULT_LIVE_CHAT_REPLY_PROMPT,
+  LIVE_CHAT_GREETING_REPLY,
+  LIVE_CHAT_LEGACY_UNGROUNDED_REPLY,
   LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY,
   LIVE_CHAT_UNGROUNDED_REPLY,
+  isLiveChatCannedFailureReply,
   resolveLiveChatFallbackReply,
 } from "../live-chat/live-chat-cs-prompt.ts"
 import {
@@ -98,6 +101,7 @@ describe("live chat CS prompt", () => {
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /Hayden or David/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /How-tos vs lookups/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /how do I get my money/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /tap-to-pick order tiles/)
     assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /You are Reswell Team/)
     assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /what's the order number/)
   })
@@ -127,5 +131,13 @@ describe("live chat CS prompt", () => {
       resolveLiveChatFallbackReply("where is my board?"),
       LIVE_CHAT_UNGROUNDED_REPLY,
     )
+  })
+
+  it("greets instead of asking for an order number", () => {
+    assert.equal(resolveLiveChatFallbackReply("hi there"), LIVE_CHAT_GREETING_REPLY)
+    assert.equal(resolveLiveChatFallbackReply("Hey!"), LIVE_CHAT_GREETING_REPLY)
+    assert.doesNotMatch(LIVE_CHAT_GREETING_REPLY, /order number/i)
+    assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_LEGACY_UNGROUNDED_REPLY), true)
+    assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_UNGROUNDED_REPLY), true)
   })
 })

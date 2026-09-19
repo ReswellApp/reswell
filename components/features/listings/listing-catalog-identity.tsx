@@ -1,6 +1,9 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { isShippingFulfillmentLabel } from "@/lib/listing-fulfillment"
+import {
+  isShippingFulfillmentLabel,
+  LISTING_SHIPPING_EMPHASIS_CLASS,
+} from "@/lib/listing-fulfillment"
 import { cn } from "@/lib/utils"
 
 function IdentityLink({
@@ -16,7 +19,7 @@ function IdentityLink({
     return (
       <Link
         href={href}
-        className="font-semibold text-foreground underline-offset-4 hover:underline"
+        className="font-semibold text-foreground underline decoration-foreground/40 underline-offset-4 hover:decoration-foreground"
         aria-label={`View ${name} ${kind} page`}
       >
         {name}
@@ -46,7 +49,7 @@ export function ListingFulfillmentSubline({ labels }: { labels: string[] }) {
           <span
             className={
               isShippingFulfillmentLabel(label)
-                ? "font-medium text-[#4263eb]"
+                ? LISTING_SHIPPING_EMPHASIS_CLASS
                 : "text-muted-foreground"
             }
           >

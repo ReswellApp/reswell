@@ -6,6 +6,7 @@ import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { cn } from "@/lib/utils"
 import { isMessageThreadDetailRoute } from "@/lib/utils/message-thread-routes"
 import { isSupportCaseThreadRoute } from "@/lib/utils/support-case-paths"
+import { HeaderSellerResourcesNav } from "@/components/header-seller-resources-nav"
 import {
   boardBrowseNavItemIsActive,
   siteHeaderMobileCategoryNavLinks,
@@ -61,6 +62,13 @@ export function SiteTopCategoryBar() {
                 </li>
               )
             })}
+            <li className="flex shrink-0 items-center">
+              <HeaderSellerResourcesNav
+                pathname={pathname}
+                variant="chip"
+                compact={compact}
+              />
+            </li>
             {siteHeaderMobileSecondaryNavLinks.map((link) => {
               const active = siteHeaderSecondaryNavItemIsActive(pathname, link.href)
               return (

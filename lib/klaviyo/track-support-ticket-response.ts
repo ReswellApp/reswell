@@ -3,15 +3,17 @@
  *
  * **Metric name in Klaviyo:** `Support Tickets Response`
  * **Live flow:** Support Tickets Response (`RuDgCm`) — emails the member when staff reply from
- * the support inbox (or linked support DM / status update). Fired from
+ * the support inbox (or linked support DM / status update), and when Hayden / David
+ * or a staff member replies in live chat (`response_type: live_chat_reply`).
+ * Live-chat hook: `notifyLiveChatReplyViaKlaviyo`. Inbox hook:
  * `sendSupportTicketAdminReplyService` (`response_type: admin_inbox_reply`).
  * HTML paste template: `lib/klaviyo/support-ticket-response-email-liquid.ts`
  *
  * Template properties:
  * - `{{ event.support_ticket_id }}`
- * - `{{ event.response }}` — customer-visible reply body (admin inbox / support DM / status update)
- * - `{{ event.response_type }}` — `admin_inbox_reply` | `support_dm_reply` | `status_update`
- * - `{{ event.ticket_url }}` — Dashboard → Support deep link
+ * - `{{ event.response }}` — customer-visible reply body (admin inbox / support DM / status update / live chat)
+ * - `{{ event.response_type }}` — `admin_inbox_reply` | `support_dm_reply` | `status_update` | `live_chat_reply`
+ * - `{{ event.ticket_url }}` — Help thread, or `/?chat=` for live-chat replies
  * - `{{ event.case_ref }}` — short reference (RS-XXXXXXXX)
  * - `{{ event.reply_to }}` — plus-addressed inbound mailbox when `SUPPORT_INBOUND_REPLY_TO` is set.
  *   Set the Klaviyo flow Reply-To to this so Gmail replies hit `/api/webhooks/inbound-email`.
@@ -30,7 +32,11 @@ import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 
 const RESPONSE_PROP_MAX = 4000
 
-export type KlaviyoSupportTicketResponseType = "status_update" | "support_dm_reply" | "admin_inbox_reply"
+export type KlaviyoSupportTicketResponseType =
+  | "status_update"
+  | "support_dm_reply"
+  | "admin_inbox_reply"
+  | "live_chat_reply"
 
 export type KlaviyoSupportTicketResponsePayload = {
   supportTicketId: string

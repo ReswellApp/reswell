@@ -45,6 +45,7 @@ export function ModelPageView({
           brandName={page.brand.name}
           modelName={page.model.name}
           listings={page.listings}
+          soldListings={page.soldListings}
           topPick={page.topPick}
           criteria={criteria}
           favoritedListingIds={favoritedListingIds}

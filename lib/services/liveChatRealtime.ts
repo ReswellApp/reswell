@@ -1,6 +1,5 @@
-import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
-  liveChatSessionChannel,
+  liveChatBroadcastHttpRequest,
   type LiveChatBroadcastEvent,
   type LiveChatBroadcastMessage,
 } from "@/lib/live-chat/realtime-channels"
@@ -9,28 +8,39 @@ async function publishLiveChatEvent(
   sessionId: string,
   payload: LiveChatBroadcastEvent,
 ): Promise<void> {
-  const supabase = createServiceRoleClient()
-  const channel = supabase.channel(liveChatSessionChannel(sessionId), {
-    config: { broadcast: { ack: false } },
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl || !serviceKey) {
+    console.error("publishLiveChatEvent missing supabase env", { sessionId })
+    return
+  }
+
+  const request = liveChatBroadcastHttpRequest({
+    supabaseUrl,
+    sessionId,
+    payload,
   })
+
   try {
-    const status = await new Promise<string>((resolve) => {
-      void channel.subscribe((next) => {
-        if (next === "SUBSCRIBED" || next === "CHANNEL_ERROR" || next === "TIMED_OUT") {
-          resolve(next)
-        }
+    const res = await fetch(request.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify(request.body),
+    })
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "")
+      console.error("publishLiveChatEvent http", {
+        sessionId,
+        status: res.status,
+        detail: detail.slice(0, 300),
       })
-    })
-    if (status !== "SUBSCRIBED") return
-    await channel.send({
-      type: "broadcast",
-      event: "live_chat",
-      payload,
-    })
+    }
   } catch (error) {
     console.error("publishLiveChatEvent", { sessionId, error })
-  } finally {
-    void supabase.removeChannel(channel)
   }
 }
 

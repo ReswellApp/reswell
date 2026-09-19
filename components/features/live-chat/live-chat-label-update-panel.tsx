@@ -1,11 +1,10 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import Image from "next/image"
-import { Loader2, Package } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LiveChatOrderTileButton } from "@/components/features/live-chat/live-chat-order-tile-button"
 import { cn } from "@/lib/utils"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import type { LiveChatLabelEligibleOrder } from "@/lib/db/liveChatLabelEligibleOrders"
 import type { LiveChatShipFromAddressOption } from "@/lib/services/liveChatShipFromLabelUpdate"
 import type { LiveChatLabelUpdateReason } from "@/lib/validations/liveChatLabelUpdate"
@@ -149,8 +148,8 @@ export function LiveChatLabelUpdatePanel({
   if (!enabled) return null
 
   return (
-    <div className="space-y-3 border-t border-border/40 bg-muted/20 px-3 py-3">
-      <div className="flex items-start justify-between gap-2">
+    <div className="flex min-h-0 max-h-[min(20rem,48%)] flex-col overflow-hidden border-t border-border/40 bg-muted/20 px-3 py-2">
+      <div className="flex shrink-0 items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-foreground">Update ship-from address</p>
           <p className="text-[11px] text-muted-foreground">
@@ -170,18 +169,18 @@ export function LiveChatLabelUpdatePanel({
         ) : null}
       </div>
 
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="mt-2 shrink-0 text-xs text-destructive">{error}</p> : null}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-2 flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
           Loading your open sales…
         </div>
       ) : null}
 
       {!loading && step === "orders" ? (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-2 flex min-h-0 flex-1 flex-col space-y-2 overflow-hidden">
+          <p className="shrink-0 text-xs text-muted-foreground">
             Which sale needs an updated ship-from address on the label?
           </p>
           {orders.length === 0 ? (
@@ -203,46 +202,18 @@ export function LiveChatLabelUpdatePanel({
               ) : null}
             </div>
           ) : (
-            <ul className="grid grid-cols-2 gap-2">
+            <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
               {orders.map((order) => (
                 <li key={order.orderId}>
-                  <button
-                    type="button"
+                  <LiveChatOrderTileButton
+                    orderNum={order.orderNum}
+                    title={order.title}
+                    imageUrl={order.imageUrl}
                     onClick={() => {
                       setSelectedOrder(order)
                       setStep("why")
                     }}
-                    className={cn(
-                      "w-full overflow-hidden rounded-xl border border-border/60 bg-background text-left shadow-sm",
-                      "transition-colors hover:border-listingHeart/40 hover:bg-muted/40",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    )}
-                  >
-                    <div className="relative aspect-[4/3] bg-muted">
-                      {order.imageUrl ? (
-                        <Image
-                          src={order.imageUrl}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="160px"
-                          unoptimized={listingImageShouldBypassOptimization(order.imageUrl)}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Package className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-0.5 p-2">
-                      <p className="truncate text-[11px] font-semibold text-foreground">
-                        #{order.orderNum}
-                      </p>
-                      <p className="line-clamp-2 text-[10px] leading-snug text-muted-foreground">
-                        {order.title}
-                      </p>
-                    </div>
-                  </button>
+                  />
                 </li>
               ))}
             </ul>
@@ -251,7 +222,7 @@ export function LiveChatLabelUpdatePanel({
       ) : null}
 
       {!loading && step === "why" && selectedOrder ? (
-        <div className="space-y-2">
+        <div className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto">
           <button
             type="button"
             className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
@@ -283,7 +254,7 @@ export function LiveChatLabelUpdatePanel({
       ) : null}
 
       {!loading && step === "address" && selectedOrder ? (
-        <div className="space-y-2">
+        <div className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto">
           <button
             type="button"
             className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
@@ -339,7 +310,7 @@ export function LiveChatLabelUpdatePanel({
       ) : null}
 
       {!loading && step === "confirm" && selectedOrder && selectedAddressId && reason ? (
-        <div className="space-y-2">
+        <div className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto">
           <button
             type="button"
             className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"

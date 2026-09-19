@@ -206,6 +206,7 @@ describe("cs agent harness", () => {
     assert.match(prompt, /Marketplace how-tos/)
     assert.match(prompt, /how sellers get paid/)
     assert.match(prompt, /Do not ask for an order number/)
+    assert.match(prompt, /order tiles/)
     assert.doesNotMatch(prompt, /sends immediately as Reswell Team/)
   })
 

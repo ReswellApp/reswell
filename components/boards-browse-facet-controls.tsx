@@ -25,7 +25,7 @@ import {
 import { cn } from "@/lib/utils"
 import type { BoardsFilterState } from "@/components/boards-browse-filter-state"
 
-const PRICE_MAX_HINT = 5000
+const PRICE_MAX_HINT = 1250
 
 type FacetCountsMap = Record<string, Record<string, number>>
 
