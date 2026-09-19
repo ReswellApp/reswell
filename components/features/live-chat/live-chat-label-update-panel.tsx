@@ -1,11 +1,10 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import Image from "next/image"
-import { Loader2, Package } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LiveChatOrderTileButton } from "@/components/features/live-chat/live-chat-order-tile-button"
 import { cn } from "@/lib/utils"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import type { LiveChatLabelEligibleOrder } from "@/lib/db/liveChatLabelEligibleOrders"
 import type { LiveChatShipFromAddressOption } from "@/lib/services/liveChatShipFromLabelUpdate"
 import type { LiveChatLabelUpdateReason } from "@/lib/validations/liveChatLabelUpdate"
@@ -206,43 +205,15 @@ export function LiveChatLabelUpdatePanel({
             <ul className="grid grid-cols-2 gap-2">
               {orders.map((order) => (
                 <li key={order.orderId}>
-                  <button
-                    type="button"
+                  <LiveChatOrderTileButton
+                    orderNum={order.orderNum}
+                    title={order.title}
+                    imageUrl={order.imageUrl}
                     onClick={() => {
                       setSelectedOrder(order)
                       setStep("why")
                     }}
-                    className={cn(
-                      "w-full overflow-hidden rounded-xl border border-border/60 bg-background text-left shadow-sm",
-                      "transition-colors hover:border-listingHeart/40 hover:bg-muted/40",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    )}
-                  >
-                    <div className="relative aspect-[4/3] bg-muted">
-                      {order.imageUrl ? (
-                        <Image
-                          src={order.imageUrl}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="160px"
-                          unoptimized={listingImageShouldBypassOptimization(order.imageUrl)}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Package className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-0.5 p-2">
-                      <p className="truncate text-[11px] font-semibold text-foreground">
-                        #{order.orderNum}
-                      </p>
-                      <p className="line-clamp-2 text-[10px] leading-snug text-muted-foreground">
-                        {order.title}
-                      </p>
-                    </div>
-                  </button>
+                  />
                 </li>
               ))}
             </ul>
