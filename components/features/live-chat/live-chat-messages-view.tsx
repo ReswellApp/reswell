@@ -376,6 +376,7 @@ export function LiveChatMessagesView({
           enabled
           isSignedIn={isSignedIn}
           lookupText={latestOrderLookup?.content ?? ""}
+
           sending={sending}
           onSelect={(content) => {
             void onSendMessage(content, visitorEmail)

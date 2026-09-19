@@ -27,12 +27,14 @@ export function LiveChatOrderTileButton({
       onClick={onClick}
       className={cn(
         "flex w-full items-center gap-2 overflow-hidden rounded-lg border border-border/60 bg-background px-2 py-1.5 text-left shadow-sm",
+
         "transition-colors hover:border-listingHeart/40 hover:bg-muted/40",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         disabled && "pointer-events-none opacity-60",
       )}
     >
       <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -40,6 +42,7 @@ export function LiveChatOrderTileButton({
             fill
             className="object-cover"
             sizes="40px"
+
             unoptimized={listingImageShouldBypassOptimization(imageUrl)}
           />
         ) : (
@@ -52,6 +55,7 @@ export function LiveChatOrderTileButton({
         <p className="truncate text-[11px] font-semibold text-foreground">#{orderNum}</p>
         {title ? (
           <p className="truncate text-[10px] leading-snug text-muted-foreground">{title}</p>
+
         ) : null}
       </div>
     </button>

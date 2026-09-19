@@ -9,6 +9,7 @@ import {
   isLiveChatSpecificOrderLookupIntent,
   liveChatOrderTileReplyForOrders,
 } from "@/lib/live-chat/order-tile-intent"
+
 import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
 import { LIVE_CHAT_WIDGET_ADMIN_ONLY } from "@/lib/live-chat/widget-config"
 import { liveChatPersonaAlreadyJoined } from "@/lib/live-chat/human-feel"
@@ -222,6 +223,7 @@ export async function autoSendLiveChatCsAgentReply(
       if (!tiles.authRequired && tiles.orders.length > 0) {
         return {
           body: liveChatOrderTileReplyForOrders(tiles.orders, visitorMessage.content),
+
           closeTicket: false,
           needsHumanReview: false,
         }

@@ -11,6 +11,7 @@ import {
   resolveLiveChatOrderTileRole,
   type LiveChatOrderRole,
 } from "@/lib/live-chat/order-tile-intent"
+
 import type { LiveChatVisitorOrderTile } from "@/lib/services/liveChatVisitorOrders"
 
 interface LiveChatOrderTilesProps {
@@ -19,6 +20,7 @@ interface LiveChatOrderTilesProps {
   enabled: boolean
   isSignedIn: boolean
   lookupText?: string
+
   sending?: boolean
   onSelect: (content: string) => void
   onAuthRequired?: () => void
@@ -31,6 +33,7 @@ export function LiveChatOrderTiles({
   enabled,
   isSignedIn,
   lookupText = "",
+
   sending = false,
   onSelect,
   onAuthRequired,
@@ -40,6 +43,7 @@ export function LiveChatOrderTiles({
   const [error, setError] = useState<string | null>(null)
   const [orders, setOrders] = useState<LiveChatVisitorOrderTile[]>([])
   const [pickedRole, setPickedRole] = useState<LiveChatOrderRole | null>(null)
+
 
   const load = useCallback(async () => {
     if (!publicId || !enabled) return
@@ -86,6 +90,7 @@ export function LiveChatOrderTiles({
   }, [lookupText])
 
   useEffect(() => {
+
     if (!enabled || loading || error) return
     if (orders.length > 0) return
     const timer = window.setTimeout(() => {
@@ -103,6 +108,7 @@ export function LiveChatOrderTiles({
   const canChangeRole = orders.some((order) => order.role === "buyer") &&
     orders.some((order) => order.role === "seller")
   const visibleOrders = role ? orders.filter((order) => order.role === role) : []
+
 
   if (!enabled) return null
   if (!isSignedIn) return null
@@ -123,6 +129,7 @@ export function LiveChatOrderTiles({
         <div>
           <p className="text-sm font-semibold text-foreground">{heading}</p>
           <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+
         </div>
         {onDismiss ? (
           <Button
@@ -141,6 +148,7 @@ export function LiveChatOrderTiles({
 
       {loading ? (
         <div className="mt-2 flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
           Loading your orders…
         </div>
@@ -179,6 +187,7 @@ export function LiveChatOrderTiles({
             </ul>
           )}
         </div>
+
       ) : null}
     </div>
   )

@@ -9,6 +9,7 @@ import {
   liveChatOrderTileClickMessage,
   liveChatOrderTileReplyForOrders,
   resolveLiveChatOrderTileRole,
+
 } from "./order-tile-intent.ts"
 
 describe("live chat order tile intent", () => {
@@ -16,6 +17,7 @@ describe("live chat order tile intent", () => {
     assert.equal(isLiveChatSpecificOrderLookupIntent("Where is my order?"), true)
     assert.equal(isLiveChatSpecificOrderLookupIntent("Where is my purchase?"), true)
     assert.equal(isLiveChatSpecificOrderLookupIntent("Where is my sale?"), true)
+
     assert.equal(isLiveChatSpecificOrderLookupIntent("Can you check tracking on my package?"), true)
     assert.equal(isLiveChatSpecificOrderLookupIntent("I want a refund"), true)
     assert.equal(isLiveChatSpecificOrderLookupIntent("Where is my payout?"), true)
@@ -76,6 +78,7 @@ describe("live chat order tile intent", () => {
     assert.equal(liveChatOrderTileClickMessage("#1042"), "It's order #1042")
     assert.equal(liveChatOrderTileClickMessage("1042", "buyer"), "It's purchase #1042")
     assert.equal(liveChatOrderTileClickMessage("1042", "seller"), "It's sale #1042")
+
   })
 
   it("clears tiles once the visitor moves on or taps an order", () => {

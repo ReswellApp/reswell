@@ -91,6 +91,7 @@ describe("live chat CS prompt", () => {
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /account snapshot/i)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /very_good/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /Hayden or David/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /tap-to-pick order tiles/)
     assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /You are Reswell Team/)
   })
 

@@ -21,6 +21,7 @@ const NAMED_ORDER =
 const TRACKING_LOOKUP =
   /\b(where(?:'s| is) my (?:order|package|board|shipment|delivery|purchase|sale)|track(?:ing)?(?:\s+(?:my|this))?(?:\s+order)?|has (?:it|my order) shipped|when will (?:it|my (?:order|board|package)) (?:arrive|get here)|shipped yet|delivery status|status of my (?:order|sale|purchase)|check (?:on )?(?:my |this )?(?:order|sale|purchase))\b/i
 
+
 const REFUND_LOOKUP =
   /\b(i want (?:a )?refund|refund (?:this|my|the)|money back|return this|cancel (?:this|my) (?:order|purchase)|never arrived|arrived damaged|wrong (?:item|board)|not as (?:described|listed)|purchase protection claim)\b/i
 
@@ -31,6 +32,7 @@ const BUYER_ROLE =
 
 const SELLER_ROLE =
   /\b(sold|sell(?:ing)?|my sale|this sale|payout|earnings|get paid|the buyer)\b/i
+
 
 export function liveChatMessageNamesOrder(text: string): boolean {
   return NAMED_ORDER.test(text.trim())
@@ -60,6 +62,7 @@ export function resolveLiveChatOrderTileRole(input: {
   if (input.inferredRole === "seller" && hasSeller) return "seller"
   return null
 }
+
 
 export function isLiveChatMarketplaceHowtoIntent(text: string): boolean {
   const trimmed = text.trim()
@@ -124,3 +127,4 @@ export function liveChatOrderTileReplyForOrders(
   if (role === "buyer") return "Tap the purchase below and I'll look that one up."
   return "Tap the sale below and I'll look that one up."
 }
+
