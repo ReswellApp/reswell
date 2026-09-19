@@ -1,16 +1,26 @@
-import type { LiveChatSupportTeamMember } from "@/lib/services/liveChatSupportTeamDisplay"
+import {
+  LIVE_CHAT_PERSONAS,
+  isLiveChatJoinMessage,
+  liveChatPersonaTeamMember,
+} from "./human-feel.ts"
 
-/** Default support face shown before API data loads (Hayden Garfield). */
-export const LIVE_CHAT_SUPPORT_LEAD_FALLBACK: LiveChatSupportTeamMember = {
-  id: "hayden-garfield",
-  name: "Hayden Garfield",
-  imageUrl: "/images/about/hayden-garfield.png",
-  initials: "HG",
+type SupportFace = {
+  id: string
+  name: string
+  imageUrl: string
+  initials: string
 }
 
+/** Default support face shown before API data loads (Hayden Garfield). */
+export const LIVE_CHAT_SUPPORT_LEAD_FALLBACK: SupportFace =
+  liveChatPersonaTeamMember(LIVE_CHAT_PERSONAS.hayden)
+
+export const LIVE_CHAT_SUPPORT_DAVID_FALLBACK: SupportFace =
+  liveChatPersonaTeamMember(LIVE_CHAT_PERSONAS.david)
+
 export const LIVE_CHAT_SUPPORT_WAITING_COPY = {
-  waiting: "Reswell Team replies here",
-  online: "Reswell Team replies here",
+  waiting: "Hayden or David will jump in",
+  online: "Hayden or David will jump in",
 } as const
 
 export const LIVE_CHAT_SUPPORT_AVATAR_ALT = "Reswell customer support"
@@ -29,10 +39,13 @@ export function resolveWorkingSupportAgent(
     sender_agent_id?: string | null
     agent_display_name?: string | null
   }>,
-  team: LiveChatSupportTeamMember[],
+  team: SupportFace[],
   assignedAgentId?: string | null,
-): LiveChatSupportTeamMember | null {
+): SupportFace | null {
   const lastAgent = [...messages].reverse().find((message) => message.sender_type === "agent")
+  const joinLine = [...messages]
+    .reverse()
+    .find((message) => message.sender_type === "system" && isLiveChatJoinMessage(message.content))
   const agentId = lastAgent?.sender_agent_id ?? assignedAgentId ?? null
   if (agentId) {
     const match = team.find((member) => member.id === agentId)
@@ -41,7 +54,7 @@ export function resolveWorkingSupportAgent(
 
   const name = lastAgent?.agent_display_name?.trim()
   if (name) {
-    const match = team.find((member) => member.name.toLowerCase() === name.toLowerCase())
+    const match = matchSupportTeamMemberByName(team, name)
     if (match) return match
     return {
       id: agentId ?? name,
@@ -51,5 +64,24 @@ export function resolveWorkingSupportAgent(
     }
   }
 
+  if (joinLine) {
+    const firstName = joinLine.content.replace(/\s+joined the chat$/i, "").trim()
+    const match = matchSupportTeamMemberByName(team, firstName)
+    if (match) return match
+  }
+
   return null
+}
+
+export function matchSupportTeamMemberByName(
+  team: SupportFace[],
+  name: string,
+): SupportFace | undefined {
+  const needle = name.trim().toLowerCase()
+  if (!needle) return undefined
+  return team.find((member) => {
+    const full = member.name.toLowerCase()
+    const first = member.name.trim().split(/\s+/)[0]?.toLowerCase()
+    return full === needle || first === needle
+  })
 }

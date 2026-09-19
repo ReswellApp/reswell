@@ -4,11 +4,14 @@ export function liveChatAgentDisplayName(args: {
   senderType: "visitor" | "agent" | "system" | "bot"
   senderAgentId?: string | null
   lookedUpName?: string | null
+  /** Session persona first name (Hayden / David) for unassigned auto-replies. */
+  personaFirstName?: string | null
 }): string | null {
-  if (args.senderType === "bot") return LIVE_CHAT_TEAM_NAME
+  const persona = args.personaFirstName?.trim() || null
+  if (args.senderType === "bot") return persona ?? LIVE_CHAT_TEAM_NAME
   if (args.senderType !== "agent") return null
   if (args.senderAgentId) return args.lookedUpName?.trim() || "Support"
-  return LIVE_CHAT_TEAM_NAME
+  return persona ?? LIVE_CHAT_TEAM_NAME
 }
 
 /** Old bot-handoff / wait-for-human copy that must not stay in the widget. */

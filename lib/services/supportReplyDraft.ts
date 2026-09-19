@@ -267,6 +267,7 @@ async function generateDraftBody(args: {
   currentDraft?: string
   liveChatSession?: LiveChatSessionRow
   liveChatActor?: LiveChatActionActor
+  modelId?: string
 }): Promise<{
   body: string
   origin: SupportReplyDraftOrigin
@@ -285,7 +286,9 @@ async function generateDraftBody(args: {
     .map((example) => example.id)
     .filter((id) => !id.startsWith("case:"))
   const isLiveChat = args.row.source_channel === "live_chat"
-  const modelId = isLiveChat ? liveChatCsModelId() : supportReplyDraftModelId()
+  const modelId = isLiveChat
+    ? (args.modelId?.trim() || liveChatCsModelId())
+    : supportReplyDraftModelId()
 
   if (!isSupportReplyDraftLlmEnabled()) {
     if (isLiveChat) {
@@ -447,6 +450,8 @@ export async function generateAndStoreDraft(
     currentDraft?: string
     liveChatSession?: LiveChatSessionRow
     liveChatActor?: LiveChatActionActor
+    /** Jev-selected writer. Inbox drafts ignore this. */
+    modelId?: string
   },
 ): Promise<{ data: SupportReplyDraftView; closeTicket: boolean } | { error: string }> {
   const loaded = await loadCaseContext(service, caseId)
@@ -511,6 +516,7 @@ export async function generateAndStoreDraft(
       currentDraft: force ? rewrite?.currentDraft : undefined,
       liveChatSession: rewrite?.liveChatSession,
       liveChatActor: rewrite?.liveChatActor,
+      modelId: force ? rewrite?.modelId : undefined,
     })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)

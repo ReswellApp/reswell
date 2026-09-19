@@ -13,6 +13,7 @@ export type AppLlmFeatureId =
   | "search_daily_report"
   | "support_reply_draft"
   | "live_chat_cs"
+  | "live_chat_jev_router"
   | "listing_brand_model_research"
   | "message_fraud_review"
 
@@ -156,7 +157,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "live_chat_cs",
     name: "Live chat customer-service agent",
     purpose:
-      "Auto-sends the next Reswell Team reply in admin live chat. Same guidelines, tools, and rating memory as inbox drafts, with a stronger model, this visitor's order snapshot, and extra tool steps so the answer is specific and the ticket closes only when the issue is solved. Ratings stay on very_good / okay / bad.",
+      "Auto-sends the next Hayden or David reply in admin live chat after a join line and a human-feel delay. Jev (typesafe-ai/jev) routes which chat model writes the reply; Jev never generates customer-facing text. Writers are Gemini Flash Lite / Flash / Pro via Gateway. Same guidelines, tools, and rating memory as inbox drafts. Ratings stay on very_good / okay / bad.",
     gatewayFeatureTag: "feature:live-chat-cs",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-pro",
@@ -170,6 +171,25 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/supportReplyDraft.ts",
       "lib/services/csAgentLookups.ts",
       "lib/live-chat/live-chat-cs-prompt.ts",
+      "lib/live-chat/writer-route.ts",
+      "lib/llm/jev-live-chat-router.ts",
+    ],
+  },
+  {
+    id: "live_chat_jev_router",
+    name: "Live chat Jev writer router",
+    purpose:
+      "TypeSafe Jev evaluates the visitor message and picks flash_lite, flash, or pro. It does not write the reply. Requires AI SDK experimental_evaluate (ai >= 7.0.105) and Gateway auth. On failure, the writer falls back to Gemini Pro — no fake Jev scores.",
+    gatewayFeatureTag: "feature:live-chat-jev-router",
+    transport: "vercel_ai_gateway",
+    defaultModel: "typesafe-ai/jev",
+    modelEnvVar: "LIVE_CHAT_JEV_MODEL",
+    enabledEnvVar: "LIVE_CHAT_JEV_ROUTER_ENABLED",
+    surfaces: ["live chat widget (admin)", "/admin/live-chat"],
+    sourceFiles: [
+      "lib/llm/jev-live-chat-router.ts",
+      "lib/live-chat/writer-route.ts",
+      "lib/services/liveChatCsAgentAutoReply.ts",
     ],
   },
   {

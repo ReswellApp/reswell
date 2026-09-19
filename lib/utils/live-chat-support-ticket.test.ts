@@ -90,6 +90,8 @@ describe("live chat CS prompt", () => {
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /only open live-chat ticket/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /account snapshot/i)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /very_good/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /Hayden or David/)
+    assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /You are Reswell Team/)
   })
 
   it("asks one question instead of pretending the team is already investigating", () => {
