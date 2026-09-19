@@ -65,7 +65,8 @@ export function boardFulfillmentSectionTitle(
 }
 
 /**
- * One label per enabled option for listing detail metadata (e.g. condition · type · Local pickup · Shipping).
+ * One label per enabled option for listing detail metadata.
+ * Shipping is listed first when both options are offered.
  * When the seller set a flat shipping amount, include it so buyers see the add-on clearly.
  * For Reswell-calculated shipping, `shipping_price` is often 0 until checkout; use `boardShippingCostMode`
  * so the listing can say the price is determined at checkout vs free shipping.
@@ -77,7 +78,6 @@ export function boardFulfillmentDetailLabels(
   boardShippingCostMode?: "reswell" | "flat" | "free" | null,
 ): string[] {
   const labels: string[] = []
-  if (localPickup !== false) labels.push("Local pickup")
   if (shippingAvailable) {
     const n = Math.max(0, Number.parseFloat(String(shippingPrice ?? 0)) || 0)
     const mode = boardShippingCostMode ?? null
@@ -95,7 +95,12 @@ export function boardFulfillmentDetailLabels(
       labels.push("Shipping (rate at checkout)")
     }
   }
+  if (localPickup !== false) labels.push("Local pickup")
   return labels
+}
+
+export function isShippingFulfillmentLabel(label: string): boolean {
+  return label.startsWith("Shipping") || label.startsWith("Free shipping")
 }
 
 /** Buyer checkout choice when listing offers both. */

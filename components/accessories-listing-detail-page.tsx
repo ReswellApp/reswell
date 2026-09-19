@@ -82,6 +82,10 @@ import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { formatDistanceToNow } from "date-fns"
 import { ACCESSORIES_SECTION, accessorySizeLabel } from "@/lib/accessory-listing-config"
+import {
+  ListingCatalogIdentity,
+  ListingFulfillmentSubline,
+} from "@/components/features/listings/listing-catalog-identity"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -309,7 +313,6 @@ async function renderAccessoriesListingDetailPage({
     accessory.shipping_price,
     boardShippingCostMode,
   )
-  const specSubline = fulfillmentLabels.length > 0 ? fulfillmentLabels.join(" · ") : null
 
   const conditionWords = formatCondition(accessory.condition as string | null)
 
@@ -344,14 +347,6 @@ async function renderAccessoriesListingDetailPage({
 
   const specRows = [
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
-    specsBrandLabel
-      ? {
-          label: "Brand",
-          value: specsBrandLabel,
-          href: specsBrandHref,
-        }
-      : null,
-    modelForSpecs ? { label: "Model", value: modelForSpecs, href: modelPagePath } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
   const aboutSellerSection = (
@@ -447,6 +442,13 @@ async function renderAccessoriesListingDetailPage({
             <h1 className="mt-3 min-w-0 text-balance text-[1.375rem] font-bold leading-snug tracking-[-0.02em] text-foreground max-lg:line-clamp-2 lg:hidden">
               {listingTitle}
             </h1>
+            <ListingCatalogIdentity
+              brandName={specsBrandLabel}
+              brandHref={specsBrandHref}
+              modelName={modelForSpecs}
+              modelHref={modelPagePath}
+              className="mt-1.5 lg:hidden"
+            />
           </div>
 
           {/* Mobile price/actions block */}
@@ -508,16 +510,15 @@ async function renderAccessoriesListingDetailPage({
               <h1 className="text-balance text-[2rem] font-bold leading-snug tracking-[-0.025em] text-foreground xl:text-[2.125rem]">
                 {listingTitle}
               </h1>
-              <div className="mt-3 flex flex-col gap-2">
-                {conditionWords ? (
-                  <span className="inline-block w-fit border-b border-dashed border-muted-foreground/55 pb-0.5 text-[14px] text-muted-foreground">
-                    Used – {conditionWords}
-                  </span>
-                ) : null}
-                {specSubline ? (
-                  <p className="text-[14px] text-muted-foreground">{specSubline}</p>
-                ) : null}
-              </div>
+              <ListingCatalogIdentity
+                brandName={specsBrandLabel}
+                brandHref={specsBrandHref}
+                modelName={modelForSpecs}
+                modelHref={modelPagePath}
+                condition={conditionWords}
+                detail={<ListingFulfillmentSubline labels={fulfillmentLabels} />}
+                className="mt-2"
+              />
               {isSold ? (
                 <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-[#163060] tabular-nums xl:text-[2.5rem]">
                   Sold for ${publicListPriceUsd.toFixed(2)}

@@ -32,6 +32,10 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { orderedListingGalleryImages } from "@/lib/listing-image-display"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
+import {
+  ListingCatalogIdentity,
+  ListingFulfillmentSubline,
+} from "@/components/features/listings/listing-catalog-identity"
 import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
@@ -318,7 +322,6 @@ async function renderSurfpacksListingDetailPage({
     surfpack.shipping_price,
     boardShippingCostMode,
   )
-  const specSubline = fulfillmentLabels.length > 0 ? fulfillmentLabels.join(" · ") : null
 
   const conditionWords = formatCondition(surfpack.condition as string | null)
 
@@ -358,14 +361,6 @@ async function renderSurfpacksListingDetailPage({
 
   const specRows = [
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
-    specsBrandLabel
-      ? {
-          label: "Brand",
-          value: specsBrandLabel,
-          href: specsBrandHref,
-        }
-      : null,
-    modelForSpecs ? { label: "Model", value: modelForSpecs, href: modelPagePath } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
   const aboutSellerSection = (
@@ -461,6 +456,13 @@ async function renderSurfpacksListingDetailPage({
             <h1 className="mt-3 min-w-0 text-balance text-[1.375rem] font-bold leading-snug tracking-[-0.02em] text-foreground max-lg:line-clamp-2 lg:hidden">
               {listingTitle}
             </h1>
+            <ListingCatalogIdentity
+              brandName={specsBrandLabel}
+              brandHref={specsBrandHref}
+              modelName={modelForSpecs}
+              modelHref={modelPagePath}
+              className="mt-1.5 lg:hidden"
+            />
           </div>
 
           {/* Mobile price/actions block */}
@@ -525,16 +527,15 @@ async function renderSurfpacksListingDetailPage({
               <h1 className="text-balance text-[2rem] font-bold leading-snug tracking-[-0.025em] text-foreground xl:text-[2.125rem]">
                 {listingTitle}
               </h1>
-              <div className="mt-3 flex flex-col gap-2">
-                {conditionWords ? (
-                  <span className="inline-block w-fit border-b border-dashed border-muted-foreground/55 pb-0.5 text-[14px] text-muted-foreground">
-                    Used – {conditionWords}
-                  </span>
-                ) : null}
-                {specSubline ? (
-                  <p className="text-[14px] text-muted-foreground">{specSubline}</p>
-                ) : null}
-              </div>
+              <ListingCatalogIdentity
+                brandName={specsBrandLabel}
+                brandHref={specsBrandHref}
+                modelName={modelForSpecs}
+                modelHref={modelPagePath}
+                condition={conditionWords}
+                detail={<ListingFulfillmentSubline labels={fulfillmentLabels} />}
+                className="mt-2"
+              />
               {isSold ? (
                 <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-[#163060] tabular-nums xl:text-[2.5rem]">
                   Sold for ${publicListPriceUsd.toFixed(2)}

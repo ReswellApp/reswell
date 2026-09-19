@@ -54,6 +54,10 @@ import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-det
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { formatListingDimensionsLine } from "@/lib/listing-dimensions-display"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
+import {
+  ListingCatalogIdentity,
+  ListingFulfillmentSubline,
+} from "@/components/features/listings/listing-catalog-identity"
 import { listingBoardSpecRows } from "@/lib/utils/listing-board-spec-rows"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
@@ -296,10 +300,6 @@ async function renderSurfboardListingDetailPage({
       fins_setup: (board as { fins_setup?: string | null }).fins_setup,
       fins_included: (board as { fins_included?: boolean | null }).fins_included,
     }),
-    ...(boardSpecsBrandLabel
-      ? [{ label: "Brand", value: boardSpecsBrandLabel, href: boardSpecsBrandHref }]
-      : []),
-    ...(modelForSpecs ? [{ label: "Model", value: modelForSpecs, href: modelPagePath }] : []),
   ]
 
   /** Public sold/browse price — always original list price, never negotiated offer amounts. */
@@ -361,9 +361,6 @@ async function renderSurfboardListingDetailPage({
     board.shipping_price,
     boardShippingCostMode,
   )
-  const specSubline =
-    fulfillmentLabels.length > 0 ? fulfillmentLabels.join(" · ") : null
-
   const conditionWords = formatCondition(board.condition)
 
   let shippingPriceCaption: string | null = null
@@ -488,6 +485,13 @@ async function renderSurfboardListingDetailPage({
               <h1 className="mt-3 min-w-0 text-balance text-[1.375rem] font-bold leading-snug tracking-[-0.02em] text-foreground max-lg:line-clamp-2 lg:hidden">
                 {capitalizeWords(board.title)}
               </h1>
+              <ListingCatalogIdentity
+                brandName={boardSpecsBrandLabel}
+                brandHref={boardSpecsBrandHref}
+                modelName={modelForSpecs || null}
+                modelHref={modelPagePath}
+                className="mt-1.5 lg:hidden"
+              />
             </div>
 
             <div className="min-w-0 max-w-full max-lg:order-2 lg:hidden">
@@ -554,21 +558,24 @@ async function renderSurfboardListingDetailPage({
                 <h1 className="text-balance text-[2rem] font-bold leading-snug tracking-[-0.025em] text-foreground xl:text-[2.125rem]">
                   {capitalizeWords(board.title)}
                 </h1>
-                <div className="mt-3 flex flex-col gap-2">
-                  {conditionWords ? (
-                    <span className="inline-block w-fit border-b border-dashed border-muted-foreground/55 pb-0.5 text-[14px] text-muted-foreground">
-                      Used – {conditionWords}
-                    </span>
-                  ) : null}
-                  {isSold && soldUsedShipping ? (
-                    <p className="inline-flex items-center gap-1.5 text-[14px] text-muted-foreground">
-                      <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                      <span>This board was shipped</span>
-                    </p>
-                  ) : specSubline ? (
-                    <p className="text-[14px] text-muted-foreground">{specSubline}</p>
-                  ) : null}
-                </div>
+                <ListingCatalogIdentity
+                  brandName={boardSpecsBrandLabel}
+                  brandHref={boardSpecsBrandHref}
+                  modelName={modelForSpecs || null}
+                  modelHref={modelPagePath}
+                  condition={conditionWords}
+                  detail={
+                    isSold && soldUsedShipping ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        This board was shipped
+                      </span>
+                    ) : (
+                      <ListingFulfillmentSubline labels={fulfillmentLabels} />
+                    )
+                  }
+                  className="mt-2"
+                />
                 {isSold ? (
                   <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-[#163060] tabular-nums xl:text-[2.5rem]">
                     Sold for ${publicListPriceUsd.toFixed(2)}
