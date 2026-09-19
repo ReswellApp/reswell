@@ -89,10 +89,11 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   } = useLiveChatSupportTeam(open || session.sessionReady)
   isSupportOnlineRef.current = isSupportOnline
 
+  const appendRemoteMessage = session.appendMessage
   const handleRemoteMessage = useCallback(
-    (message: Parameters<typeof session.appendMessage>[0]) => {
+    (message: Parameters<typeof appendRemoteMessage>[0]) => {
       if (message.sender_type === "visitor") return
-      session.appendMessage(message)
+      appendRemoteMessage(message)
       if (
         (message.sender_type === "agent" || message.sender_type === "bot") &&
         !openRef.current
@@ -100,7 +101,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
         setAgentPreview(message)
       }
     },
-    [session],
+    [appendRemoteMessage],
   )
 
   // Stays subscribed while the widget is closed so agent replies surface as a preview bubble.

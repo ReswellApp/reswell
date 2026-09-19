@@ -32,10 +32,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
-import {
-  headerNavSearchPlaceholder,
-  headerNavSearchSubmitHref,
-} from "@/lib/header-nav-marketplace-search"
+import { headerNavSearchPlaceholder } from "@/lib/header-nav-marketplace-search"
+import { hrefForNavMarketplaceSearch } from "@/lib/nav-marketplace-model-search"
 import type {
   NavSearchPersonalizationBrand,
   NavSearchPersonalizationListing,
@@ -577,11 +575,12 @@ export function HeaderNavSearch({
       const term = q.trim()
       if (!term) return
       persistRecentSearch(term)
-      const href = headerNavSearchSubmitHref(term, pathname, searchParams)
       setQuery(term)
       writeNavSearchQuery(term)
       dismissSearchFocus()
-      router.push(href)
+      void hrefForNavMarketplaceSearch(term, pathname, searchParams).then((href) => {
+        if (href) router.push(href)
+      })
     },
     [router, pathname, searchParams, persistRecentSearch, dismissSearchFocus],
   )

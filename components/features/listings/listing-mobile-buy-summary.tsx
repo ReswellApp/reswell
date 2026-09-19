@@ -7,7 +7,9 @@ import {
 } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
+import { LISTING_SHIPPING_EMPHASIS_CLASS } from "@/lib/listing-fulfillment"
 import { formatHomePeerListingConditionLine } from "@/lib/listing-labels"
+import { cn } from "@/lib/utils"
 
 const RECENTLY_LISTED_MS = 14 * 24 * 60 * 60 * 1000
 const iconClassName = "mt-0.5 h-4 w-4 shrink-0 text-listingHeart"
@@ -106,7 +108,7 @@ export interface ListingMobileBuySummaryProps {
   showPurchaseProtection?: boolean
   agreedPriceUsd?: number | null
   compareAtPriceUsd?: number | null
-  /** Board spec table (or similar) between price and fulfillment/scarcity. */
+  /** Board spec table (or similar) after the purchase actions. */
   afterPrice?: ReactNode
   children?: ReactNode
 }
@@ -194,7 +196,18 @@ export function ListingMobileBuySummary({
           />
         </p>
       )}
-      {shippingNote ? <p className="mt-1 text-[14px] text-muted-foreground">{shippingNote}</p> : null}
+      {shippingNote ? (
+        <p
+          className={cn(
+            "mt-1 text-[14px]",
+            shippingNote === "Local pickup"
+              ? "text-muted-foreground"
+              : LISTING_SHIPPING_EMPHASIS_CLASS,
+          )}
+        >
+          {shippingNote}
+        </p>
+      ) : null}
       {!isSold ? (
         <ListingKlarnaAsLowAs listingId={listingId} isLoggedIn={isLoggedIn} className="mt-2" />
       ) : null}
@@ -203,10 +216,11 @@ export function ListingMobileBuySummary({
           Your accepted price: ${agreedPriceUsd.toFixed(2)} at checkout
         </p>
       ) : null}
-      {afterPrice ? <div className="mt-4">{afterPrice}</div> : null}
+      {children ? <div className="mt-5">{children}</div> : null}
+      {afterPrice ? <div className="mt-5">{afterPrice}</div> : null}
 
       {shippingRow || showScarcity || recentlyListed || showPurchaseProtection ? (
-        <ul className="mt-3 space-y-2.5">
+        <ul className="mt-5 space-y-2.5">
           {shippingRow ? (
             <li className="flex gap-2.5 text-[14px] leading-snug">
               <Truck className={iconClassName} aria-hidden />
@@ -253,8 +267,6 @@ export function ListingMobileBuySummary({
           ) : null}
         </ul>
       ) : null}
-
-      {children ? <div className="mt-5">{children}</div> : null}
     </div>
   )
 }

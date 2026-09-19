@@ -15,6 +15,8 @@ import {
 import { findSoldListingHeroImageForBrandModel } from "@/lib/db/brand-model-listing-images"
 import {
   listActiveListingsForBrandModel,
+  listModelMarketplaceListingsByIds,
+  listSoldListingsForBrandModel,
   type ModelMarketplaceListing,
 } from "@/lib/db/brand-listings"
 import { listingHeroSlideSrc } from "@/lib/listing-image-display"
@@ -26,6 +28,11 @@ import {
   modelPageHref,
   modelPageSlug,
 } from "@/lib/models/routes"
+import {
+  applyRecentSalePrices,
+  listingIdsFromPriceGuideRecentSold,
+  orderListingsByRecentSales,
+} from "@/lib/models/recent-sales-listings"
 import { pickTopModelListing } from "@/lib/models/top-pick"
 import { isPriceGuideCategorySlug } from "@/lib/price-guide/categories"
 import type { BrandRow } from "@/lib/brands/types"
@@ -38,6 +45,7 @@ export type ModelPageData = {
   modelSlug: string
   variants: BrandModelVariantRow[]
   listings: ModelMarketplaceListing[]
+  soldListings: ModelMarketplaceListing[]
   topPick: ModelMarketplaceListing | null
   listingImageUrl: string | null
   priceGuide: PriceGuideModelPage | null
@@ -67,20 +75,53 @@ export async function getModelPage(
     ? model.product_category_slug
     : "surfboards"
 
-  const [variants, listings, priceGuide, reviewStats, reviews] = await Promise.all([
+  const siblingModels = catalogModels
+    .filter((row) => row.id !== model.id)
+    .map((row) => ({ id: row.id, name: row.name }))
+  const listingQuery = {
+    brand: { id: brand.id, name: brand.name },
+    model: { id: model.id, name: model.name },
+    siblingModels,
+    limit: 48,
+  }
+
+  const [variants, listings, soldListings, priceGuide, reviewStats, reviews] = await Promise.all([
     listBrandModelVariantsForPublic(supabase, model.id),
-    listActiveListingsForBrandModel(supabase, {
-      brand: { id: brand.id, name: brand.name },
-      model: { id: model.id, name: model.name },
-      limit: 48,
-    }),
+    listActiveListingsForBrandModel(supabase, listingQuery),
+    listSoldListingsForBrandModel(supabase, listingQuery),
     getCachedPriceGuideModel(category, brand.slug, modelSlug),
     getBoardModelReviewStats(supabase, brand.slug, modelSlug),
     listBoardModelReviews(supabase, brand.slug, modelSlug),
   ])
 
-  const topPick = pickTopModelListing(listings)
-  const photoListing = pickModelPageListingWithImage(listings, topPick)
+  const recentSaleIds = listingIdsFromPriceGuideRecentSold(priceGuide?.recent_sold ?? [])
+  const missingSaleIds = recentSaleIds.filter((id) => !soldListings.some((listing) => listing.id === id))
+  const saleListings =
+    missingSaleIds.length > 0
+      ? await listModelMarketplaceListingsByIds(supabase, missingSaleIds)
+      : []
+  const soldForRecentSales =
+    recentSaleIds.length > 0
+      ? applyRecentSalePrices(
+          orderListingsByRecentSales([...soldListings, ...saleListings], priceGuide?.recent_sold ?? []),
+          priceGuide?.recent_sold ?? [],
+        )
+      : soldListings
+
+  const liveIdsFromGuide = (priceGuide?.live_listings ?? []).map((listing) => listing.id)
+  const missingLiveIds = liveIdsFromGuide.filter((id) => !listings.some((listing) => listing.id === id))
+  const extraLive =
+    missingLiveIds.length > 0
+      ? (await listModelMarketplaceListingsByIds(supabase, missingLiveIds)).filter(
+          (listing) => listing.status !== "sold",
+        )
+      : []
+  const liveListings = extraLive.length > 0 ? [...listings, ...extraLive] : listings
+
+  const topPick = pickTopModelListing(liveListings)
+  const photoListing =
+    pickModelPageListingWithImage(liveListings, topPick) ??
+    pickModelPageListingWithImage(soldForRecentSales)
   const listingImageUrl =
     listingHeroSlideSrc(photoListing?.listing_images) ??
     (await findSoldListingHeroImageForBrandModel(supabase, model.id))
@@ -90,7 +131,8 @@ export async function getModelPage(
     model,
     modelSlug,
     variants,
-    listings,
+    listings: liveListings,
+    soldListings: soldForRecentSales,
     topPick,
     listingImageUrl,
     priceGuide,

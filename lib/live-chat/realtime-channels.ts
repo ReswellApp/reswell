@@ -1,4 +1,5 @@
 export const LIVE_CHAT_AGENTS_PRESENCE_CHANNEL = "live-chat:agents"
+export const LIVE_CHAT_BROADCAST_EVENT = "live_chat"
 
 export function liveChatSessionChannel(sessionId: string): string {
   return `live-chat:session:${sessionId}`
@@ -33,3 +34,34 @@ export type LiveChatBroadcastEvent =
   | LiveChatBroadcastMessage
   | LiveChatBroadcastTyping
   | LiveChatBroadcastSession
+
+/** REST body for serverless broadcast — avoids opening a websocket from Vercel `after()`. */
+export function liveChatBroadcastHttpRequest(args: {
+  supabaseUrl: string
+  sessionId: string
+  payload: LiveChatBroadcastEvent
+}): {
+  url: string
+  body: {
+    messages: Array<{
+      topic: string
+      event: string
+      payload: LiveChatBroadcastEvent
+      private: false
+    }>
+  }
+} {
+  return {
+    url: `${args.supabaseUrl.replace(/\/$/, "")}/realtime/v1/api/broadcast`,
+    body: {
+      messages: [
+        {
+          topic: liveChatSessionChannel(args.sessionId),
+          event: LIVE_CHAT_BROADCAST_EVENT,
+          payload: args.payload,
+          private: false,
+        },
+      ],
+    },
+  }
+}

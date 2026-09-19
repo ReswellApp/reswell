@@ -1,8 +1,10 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import {
+  LIVE_CHAT_BROADCAST_EVENT,
   liveChatSessionChannel,
   type LiveChatBroadcastEvent,
 } from "@/lib/live-chat/realtime-channels"
@@ -25,6 +27,50 @@ function mergeMessages(prev: LiveChatUiMessage[], incoming: LiveChatUiMessage): 
   )
 }
 
+type LiveChatBroadcastListener = (event: LiveChatBroadcastEvent) => void
+
+type LiveChatSessionFanout = {
+  channel: RealtimeChannel
+  listeners: Set<LiveChatBroadcastListener>
+}
+
+const sessionFanouts = new Map<string, LiveChatSessionFanout>()
+
+/**
+ * One Realtime topic per session. Typing and message hooks used to each
+ * `removeChannel` the same name, which silently killed the LLM-reply listener.
+ */
+function subscribeLiveChatBroadcast(
+  supabase: SupabaseClient,
+  sessionId: string,
+  listener: LiveChatBroadcastListener,
+): () => void {
+  const topic = liveChatSessionChannel(sessionId)
+  let fanout = sessionFanouts.get(topic)
+  if (!fanout) {
+    const listeners = new Set<LiveChatBroadcastListener>()
+    const channel = supabase
+      .channel(topic)
+      .on("broadcast", { event: LIVE_CHAT_BROADCAST_EVENT }, (payload) => {
+        const event = payload.payload as LiveChatBroadcastEvent | undefined
+        if (!event) return
+        for (const next of listeners) next(event)
+      })
+      .subscribe()
+    fanout = { channel, listeners }
+    sessionFanouts.set(topic, fanout)
+  }
+  fanout.listeners.add(listener)
+  return () => {
+    const current = sessionFanouts.get(topic)
+    if (!current) return
+    current.listeners.delete(listener)
+    if (current.listeners.size > 0) return
+    sessionFanouts.delete(topic)
+    void supabase.removeChannel(current.channel)
+  }
+}
+
 /** Subscribe-only. Message fanout is published by the server after auth. */
 export function useLiveChatSessionRealtime(
   sessionId: string | null,
@@ -41,32 +87,22 @@ export function useLiveChatSessionRealtime(
   useEffect(() => {
     if (!sessionId || !enabled) return
 
-    const channel = supabase
-      .channel(liveChatSessionChannel(sessionId))
-      .on("broadcast", { event: "live_chat" }, (payload) => {
-        const event = payload.payload as LiveChatBroadcastEvent | undefined
-        if (!event) return
-        if (event.type === "session") {
-          onSessionStatusRef.current?.(event.status)
-          return
-        }
-        if (event.type !== "message") return
-        const msg = event.message
-        const ui: LiveChatUiMessage = {
-          id: msg.id,
-          sender_type: msg.sender_type,
-          content: msg.content,
-          created_at: msg.created_at,
-          agent_display_name: msg.agent_display_name ?? null,
-          sender_agent_id: msg.sender_agent_id ?? null,
-        }
-        onRemoteMessageRef.current?.(ui)
+    return subscribeLiveChatBroadcast(supabase, sessionId, (event) => {
+      if (event.type === "session") {
+        onSessionStatusRef.current?.(event.status)
+        return
+      }
+      if (event.type !== "message") return
+      const msg = event.message
+      onRemoteMessageRef.current?.({
+        id: msg.id,
+        sender_type: msg.sender_type,
+        content: msg.content,
+        created_at: msg.created_at,
+        agent_display_name: msg.agent_display_name ?? null,
+        sender_agent_id: msg.sender_agent_id ?? null,
       })
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
+    })
   }, [enabled, sessionId, supabase])
 }
 
@@ -133,25 +169,21 @@ export function useLiveChatTyping(options: {
   useEffect(() => {
     if (!sessionId || !enabled) return
 
-    const channel = supabase
-      .channel(liveChatSessionChannel(sessionId))
-      .on("broadcast", { event: "live_chat" }, (payload) => {
-        const event = payload.payload as LiveChatBroadcastEvent | undefined
-        if (!event || event.type !== "typing") return
-        if (event.participant_type !== watchParticipantType) return
-        if (!event.is_typing) {
-          setTypingName(null)
-          return
-        }
-        setTypingName(`${event.display_name} is typing…`)
-        if (clearTimerRef.current) clearTimeout(clearTimerRef.current)
-        clearTimerRef.current = setTimeout(() => setTypingName(null), 2800)
-      })
-      .subscribe()
+    const unsubscribe = subscribeLiveChatBroadcast(supabase, sessionId, (event) => {
+      if (event.type !== "typing") return
+      if (event.participant_type !== watchParticipantType) return
+      if (!event.is_typing) {
+        setTypingName(null)
+        return
+      }
+      setTypingName(`${event.display_name} is typing…`)
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current)
+      clearTimerRef.current = setTimeout(() => setTypingName(null), 2800)
+    })
 
     return () => {
       if (clearTimerRef.current) clearTimeout(clearTimerRef.current)
-      void supabase.removeChannel(channel)
+      unsubscribe()
     }
   }, [enabled, sessionId, supabase, watchParticipantType])
 

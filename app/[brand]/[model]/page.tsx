@@ -75,8 +75,9 @@ export default async function ModelPage({ params }: Props) {
     data: { user },
   } = await supabase.auth.getUser()
   let favoritedListingIds: string[] = []
-  if (user && page.listings.length > 0) {
-    const ids = page.listings.map((listing) => listing.id)
+  const favoriteCandidateIds = [...page.listings, ...page.soldListings].map((listing) => listing.id)
+  if (user && favoriteCandidateIds.length > 0) {
+    const ids = favoriteCandidateIds
     const { data: favs } = await supabase
       .from("favorites")
       .select("listing_id")

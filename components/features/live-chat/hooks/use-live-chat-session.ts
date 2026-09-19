@@ -15,8 +15,12 @@ import {
   isLiveChatSessionMissingPayload,
 } from "@/lib/live-chat/errors"
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
+import { hasTeamReplySince } from "@/lib/live-chat/thread-sync"
 
 const VISITOR_DISPLAY_NAME = "Guest"
+/** CS agent generate + human-feel hold can run past the old 20s thinking cutoff. */
+const TEAM_REPLY_WAIT_MS = 55_000
+const TEAM_REPLY_POLL_MS = 1_500
 
 type PendingSend = {
   content: string
@@ -142,6 +146,7 @@ export function useLiveChatSession(options?: {
   /** True while Hayden or David (CS agent) is generating a reply. */
   const [aiThinking, setAiThinking] = useState(false)
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const waitingSinceRef = useRef<string | null>(null)
 
   const [sessionClosed, setSessionClosed] = useState(false)
   const visitorTokenRef = useRef<string>("")
@@ -198,6 +203,11 @@ export function useLiveChatSession(options?: {
     setSending(false)
     setAiThinking(false)
     setSessionClosed(false)
+    waitingSinceRef.current = null
+    if (thinkingTimeoutRef.current) {
+      clearTimeout(thinkingTimeoutRef.current)
+      thinkingTimeoutRef.current = null
+    }
   }, [])
 
   const bootstrapSession = useCallback((options?: LiveChatBootstrapOptions) => {
@@ -285,19 +295,24 @@ export function useLiveChatSession(options?: {
     })
   }, [])
 
+  const stopTeamReplyWait = useCallback(() => {
+    waitingSinceRef.current = null
+    if (thinkingTimeoutRef.current) {
+      clearTimeout(thinkingTimeoutRef.current)
+      thinkingTimeoutRef.current = null
+    }
+    setAiThinking(false)
+  }, [])
+
   const appendMessage = useCallback((message: LiveChatUiMessage) => {
     if (message.sender_type === "agent" && message.sender_agent_id) {
       setAssignedAgentId(message.sender_agent_id)
     }
     if (message.sender_type === "agent" || message.sender_type === "bot") {
-      if (thinkingTimeoutRef.current) {
-        clearTimeout(thinkingTimeoutRef.current)
-        thinkingTimeoutRef.current = null
-      }
-      setAiThinking(false)
+      stopTeamReplyWait()
     }
     setMessages((prev) => mergeIncomingMessage(prev, message))
-  }, [])
+  }, [stopTeamReplyWait])
 
   const replaceMessage = useCallback((optimisticId: string, confirmed: LiveChatUiMessage) => {
     setMessages((prev) => {
@@ -346,7 +361,7 @@ export function useLiveChatSession(options?: {
   )
 
   const reloadThread = useCallback(
-    async (activePublicId: string) => {
+    async (activePublicId: string): Promise<LiveChatUiMessage[] | null> => {
       const res = await fetch(
         `/api/live-chat/session/${encodeURIComponent(activePublicId)}/messages`,
         { headers: { "x-live-chat-visitor-token": visitorTokenRef.current } },
@@ -370,7 +385,7 @@ export function useLiveChatSession(options?: {
           }>
         }
       }
-      if (!res.ok || !json.data) return false
+      if (!res.ok || !json.data) return null
       adoptSession(json.data.session)
       setPersonaFirstName(json.data.session.persona_first_name ?? null)
       const mapped = mapApiMessages(json.data.messages)
@@ -382,9 +397,13 @@ export function useLiveChatSession(options?: {
         }
         return sortMessages(merged)
       })
-      return true
+      const waitingSince = waitingSinceRef.current
+      if (waitingSince && hasTeamReplySince(mapped, waitingSince)) {
+        stopTeamReplyWait()
+      }
+      return mapped
     },
-    [adoptSession],
+    [adoptSession, stopTeamReplyWait],
   )
 
   const postMessage = useCallback(
@@ -472,12 +491,13 @@ export function useLiveChatSession(options?: {
         }
         replaceMessage(optimisticId, ui)
         onConfirmedRef.current?.(ui)
+        waitingSinceRef.current = ui.created_at
         setAiThinking(true)
         if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current)
         thinkingTimeoutRef.current = setTimeout(() => {
           setAiThinking(false)
           thinkingTimeoutRef.current = null
-        }, 20_000)
+        }, TEAM_REPLY_WAIT_MS)
         return ui
       } catch {
         setError("Could not send message")
@@ -509,6 +529,36 @@ export function useLiveChatSession(options?: {
     if (!sessionReady || pendingSendRef.current.length === 0) return
     void flushPendingSend()
   }, [sessionReady, flushPendingSend])
+
+  useEffect(() => {
+    if (!aiThinking || !publicId) return
+
+    let cancelled = false
+    let inFlight = false
+
+    const pull = async () => {
+      if (cancelled || inFlight || !publicIdRef.current) return
+      inFlight = true
+      try {
+        await reloadThread(publicIdRef.current)
+      } finally {
+        inFlight = false
+      }
+    }
+
+    const immediate = window.setTimeout(() => {
+      void pull()
+    }, 600)
+    const interval = window.setInterval(() => {
+      void pull()
+    }, TEAM_REPLY_POLL_MS)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(immediate)
+      window.clearInterval(interval)
+    }
+  }, [aiThinking, publicId, reloadThread])
 
   const sendMessage = useCallback(
     async (content: string, visitorEmail?: string | null): Promise<LiveChatUiMessage | null> => {
@@ -791,6 +841,11 @@ export function useLiveChatSession(options?: {
     setSending(false)
     setAiThinking(false)
     setSessionClosed(false)
+    waitingSinceRef.current = null
+    if (thinkingTimeoutRef.current) {
+      clearTimeout(thinkingTimeoutRef.current)
+      thinkingTimeoutRef.current = null
+    }
   }, [])
 
   const startNewConversation = useCallback(async () => {
