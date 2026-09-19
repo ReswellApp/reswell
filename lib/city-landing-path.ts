@@ -1,4 +1,4 @@
-import { slugify } from "@/lib/slugify"
+import { slugify } from "./slugify.ts"
 
 /** Public city landing pages live under `/reswell/{slug}` (e.g. `/reswell/santa-barbara`). */
 export const CITY_LANDING_BASE = "/reswell"
@@ -41,6 +41,20 @@ export function publicCityLandingSlug(
 
 export function boardsBrowseLocationHref(label: string): string {
   return `/boards?location=${encodeURIComponent(label)}`
+}
+
+const CITY_LANDING_STRIP_PARAMS = ["location", "lat", "lng", "radius", "page"] as const
+
+/** City landing URL, keeping boards facet params and dropping location/radius. */
+export function cityLandingHrefWithBrowseParams(
+  slug: string,
+  searchParams: URLSearchParams,
+): string {
+  const next = new URLSearchParams(searchParams.toString())
+  for (const key of CITY_LANDING_STRIP_PARAMS) next.delete(key)
+  const qs = next.toString()
+  const href = cityLandingHref(slug)
+  return qs ? `${href}?${qs}` : href
 }
 
 type CitySlugFields = {

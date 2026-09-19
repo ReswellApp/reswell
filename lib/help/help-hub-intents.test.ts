@@ -4,6 +4,7 @@ import { describe, it } from "node:test"
 import {
   filterSupportHubCategories,
   helpHubHref,
+  parseHelpHubDirect,
   SUPPORT_HUB_CATEGORIES,
   supportHubHref,
 } from "./help-hub-intents.ts"
@@ -40,5 +41,24 @@ describe("helpHubHref", () => {
 describe("supportHubHref", () => {
   it("points at the public /support hub", () => {
     assert.equal(supportHubHref(), "/support")
+  })
+
+  it("deep-links the skip-to-team path", () => {
+    assert.equal(supportHubHref({ direct: true }), "/support?direct=1")
+  })
+})
+
+describe("helpHubHref direct", () => {
+  it("opens the signed-in hub on the freeform message", () => {
+    assert.equal(helpHubHref({ direct: true }), "/dashboard/support?direct=1")
+  })
+})
+
+describe("parseHelpHubDirect", () => {
+  it("accepts 1 and true", () => {
+    assert.equal(parseHelpHubDirect("1"), true)
+    assert.equal(parseHelpHubDirect("true"), true)
+    assert.equal(parseHelpHubDirect("0"), false)
+    assert.equal(parseHelpHubDirect(undefined), false)
   })
 })

@@ -4,6 +4,7 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { listHelpHubOrdersService, listUserSupportCasesService } from "@/lib/services/supportCases"
 import { HelpHubClient } from "@/components/features/support/help-hub-client"
 import {
+  parseHelpHubDirect,
   parseHelpHubIntent,
   parseHelpHubRole,
   parseOrderHelpIssue,
@@ -25,6 +26,7 @@ export default async function DashboardSupportPage({
     issue?: string
     role?: string
     conversationId?: string
+    direct?: string
   }>
 }) {
   const { user } = await getCachedDashboardSession()
@@ -52,6 +54,7 @@ export default async function DashboardSupportPage({
       initialIssue={parseOrderHelpIssue(params.issue)}
       initialRole={parseHelpHubRole(params.role)}
       relatedConversationId={params.conversationId ?? null}
+      initialDirect={parseHelpHubDirect(params.direct)}
     />
   )
 }

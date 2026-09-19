@@ -3,8 +3,11 @@ import { describe, it } from "node:test"
 import {
   listingAdminBarCanLinkCatalog,
   listingAdminBarCanSearchTag,
+  listingAdminBarCartHoldersLabel,
   listingAdminBarShouldMount,
   listingAdminBarSnapshotFromRow,
+  listingAdminCartHolderDisplayName,
+  listingAdminCartHolderFromSource,
 } from "./listing-detail-admin-bar.ts"
 
 describe("listingAdminBarShouldMount", () => {
@@ -63,5 +66,69 @@ describe("listingAdminBarSnapshotFromRow", () => {
     assert.equal(snapshot.brandLabel, "Xanadu")
     assert.equal(snapshot.modelLabel, "Lotus")
     assert.deepEqual(snapshot.searchTags, ["fish"])
+  })
+})
+
+describe("listingAdminBarCartHoldersLabel", () => {
+  it("names the cart count for the admin bar button", () => {
+    assert.equal(listingAdminBarCartHoldersLabel(0), "Cart")
+    assert.equal(listingAdminBarCartHoldersLabel(1), "1 in cart")
+    assert.equal(listingAdminBarCartHoldersLabel(3), "3 in cart")
+  })
+})
+
+describe("listingAdminCartHolderDisplayName", () => {
+  it("prefers shop name, then display name, then email", () => {
+    assert.equal(
+      listingAdminCartHolderDisplayName({
+        isShop: true,
+        shopName: "Otter Surf",
+        displayName: "kai",
+        email: "kai@example.com",
+      }),
+      "Otter Surf",
+    )
+    assert.equal(
+      listingAdminCartHolderDisplayName({
+        isShop: false,
+        shopName: "Otter Surf",
+        displayName: "kai",
+        email: "kai@example.com",
+      }),
+      "kai",
+    )
+    assert.equal(
+      listingAdminCartHolderDisplayName({
+        displayName: "  ",
+        email: "kai@example.com",
+      }),
+      "kai@example.com",
+    )
+    assert.equal(listingAdminCartHolderDisplayName({}), "Member")
+  })
+})
+
+describe("listingAdminCartHolderFromSource", () => {
+  it("returns null without a profile id", () => {
+    assert.equal(listingAdminCartHolderFromSource({ profileId: "  " }), null)
+  })
+
+  it("maps cart row fields for the admin bar", () => {
+    const holder = listingAdminCartHolderFromSource({
+      profileId: "buyer-1",
+      quantity: "2",
+      addedAt: "2026-09-19T12:00:00.000Z",
+      isShop: false,
+      displayName: "Kai",
+      email: "kai@example.com",
+      avatarUrl: "https://cdn.example/kai.jpg",
+    })
+    assert.ok(holder)
+    assert.equal(holder.userId, "buyer-1")
+    assert.equal(holder.displayName, "Kai")
+    assert.equal(holder.email, "kai@example.com")
+    assert.equal(holder.quantity, 2)
+    assert.equal(holder.addedAt, "2026-09-19T12:00:00.000Z")
+    assert.equal(holder.avatarUrl, "https://cdn.example/kai.jpg")
   })
 })

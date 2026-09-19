@@ -9,6 +9,7 @@ import { submitMessagesSupportTicketAction } from "@/lib/actions/messagesSupport
 import {
   filterSupportHubCategories,
   HELP_HUB_INTENTS,
+  helpHubHref,
   type HelpHubIntent,
   type SupportHubCategory,
 } from "@/lib/help/help-hub-intents"
@@ -92,6 +93,8 @@ interface HelpHubClientProps {
   initialIssue?: OrderHelpIssueId | null
   initialRole?: "buyer" | "seller" | null
   relatedConversationId?: string | null
+  /** Skip topic intake and open the freeform message to the team. */
+  initialDirect?: boolean
 }
 
 export function HelpHubClient({
@@ -105,6 +108,7 @@ export function HelpHubClient({
   initialIssue = null,
   initialRole = null,
   relatedConversationId = null,
+  initialDirect = false,
 }: HelpHubClientProps) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -115,6 +119,7 @@ export function HelpHubClient({
   )
 
   const [phase, setPhase] = useState<Phase>(() => {
+    if (initialDirect) return "freeform"
     if (initialIntent === "order" || initialOrderId) {
       if (initialOrder && initialIssue) {
         const allowed = contextualOrderHelpIssues(initialOrder).some((i) => i.id === initialIssue)
@@ -126,6 +131,7 @@ export function HelpHubClient({
     if (initialIntent) return "topic_browse"
     return "intents"
   })
+  const [directChat, setDirectChat] = useState(initialDirect)
 
   const [intent, setIntent] = useState<HelpHubIntent | null>(() => {
     if (!initialIntent) return null
@@ -146,7 +152,7 @@ export function HelpHubClient({
   const [lockRoleTabs, setLockRoleTabs] = useState(Boolean(initialRole))
 
   const [topic, setTopic] = useState<MessagesSupportTopic>(
-    () => intent?.topic ?? "general",
+    () => (initialDirect ? "other" : intent?.topic ?? "general"),
   )
   const [stack, setStack] = useState<JourneyStackFrame[]>(() => {
     const t = intent?.topic
@@ -186,6 +192,7 @@ export function HelpHubClient({
     setDetails("")
     setContactedSeller("")
     setClaimEvidence([])
+    setDirectChat(false)
   }
 
   function pickIntent(next: HelpHubIntent) {
@@ -207,6 +214,17 @@ export function HelpHubClient({
       setStack([{ kind: "options", topic: next.topic, nodes: journeyOptionsForTopic(next.topic) }])
       setPhase("topic_browse")
     }
+  }
+
+  function startDirectChat() {
+    setIntent(null)
+    setTopic("other")
+    setStack([])
+    setPathTitles([])
+    setResolutionNode(null)
+    setDetails("")
+    setDirectChat(true)
+    setPhase("freeform")
   }
 
   function pickCategory(category: SupportHubCategory) {
@@ -263,6 +281,10 @@ export function HelpHubClient({
 
   function goBack() {
     if (phase === "freeform") {
+      if (directChat) {
+        resetToIntents()
+        return
+      }
       if (resolutionNode) {
         setPhase("resolution")
         return
@@ -414,12 +436,16 @@ export function HelpHubClient({
     }
     return "purchase" as const
   }, [orders])
-  const signInHref = `/auth/login?redirect=${encodeURIComponent("/dashboard/support")}`
+  const signInHref = `/auth/login?redirect=${encodeURIComponent(
+    helpHubHref({ direct: directChat || undefined }),
+  )}`
 
   const heading =
     phase === "intents"
       ? "Customer support"
-      : phase === "order_form" && formCopy
+      : phase === "freeform" && directChat
+        ? "Talk to the team"
+        : phase === "order_form" && formCopy
         ? formCopy.pageTitle
         : intent?.id === "order" && selectedOrder
           ? selectedOrder.role === "seller"
@@ -443,7 +469,7 @@ export function HelpHubClient({
         ? `${SUPPORT_DESK_NAME} replied — open your request to read it.`
         : hasOpenCase
           ? "Continue your open request, or start another below."
-          : "Choose a topic — we’ll ask a few questions, then you can add details."
+          : "Choose a topic — we’ll ask a few questions, then you can add details. Or skip that and talk to the team now."
       : phase === "order_pick"
         ? roleFilter === "seller"
           ? "Pick the sale this is about."
@@ -460,7 +486,9 @@ export function HelpHubClient({
               ? "Try this first, or message our team."
               : phase === "freeform"
                 ? signedIn
-                  ? "Tell us what happened. We’ll open a case under Support."
+                  ? directChat
+                    ? "Tell us what’s going on. We’ll open a support chat with the team."
+                    : "Tell us what happened. We’ll open a case under Support."
                   : "Sign in to send this to the Reswell team."
                 : phase === "sign_in"
                   ? "Orders and sales are on your account. Sign in to choose one."
@@ -517,6 +545,7 @@ export function HelpHubClient({
           query={query}
           onQueryChange={setQuery}
           onPick={pickCategory}
+          onTalkToTeam={startDirectChat}
           historyOpen={historyOpen}
           signedIn={signedIn}
         />
@@ -777,11 +806,11 @@ export function HelpHubClient({
                 disabled={pending || !detailsReady(details)}
               >
                 {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Open case
+                {directChat ? "Start chat" : "Open case"}
               </Button>
             ) : (
               <Button asChild className="bg-listingHeart text-white hover:bg-listingHeart/90">
-                <Link href={signInHref}>Sign in to open a case</Link>
+                <Link href={signInHref}>{directChat ? "Sign in to start a chat" : "Sign in to open a case"}</Link>
               </Button>
             )}
           </div>

@@ -183,7 +183,6 @@ function PriceSection({ state }: { state: BoardsFilterState }) {
 
 const PRIMARY_SECTION_IDS = [
   "price",
-  "location",
   "shipping",
   "style",
   "condition",
@@ -221,15 +220,14 @@ export function BoardsBrowseFacetControls({
 }) {
   const { selections } = state
   const advancedCount = advancedFilterCount(selections)
-  const openSections = showLocationFilter
-    ? PRIMARY_SECTION_IDS
-    : PRIMARY_SECTION_IDS.filter((id) => id !== "location")
+  const locationActive = Boolean(state.location.trim())
 
   return (
     <Accordion
       type="multiple"
       defaultValue={[
-        ...openSections,
+        ...PRIMARY_SECTION_IDS,
+        ...(showLocationFilter && locationActive ? (["location"] as const) : []),
         ...(advancedCount > 0 ? (["advanced"] as const) : []),
       ]}
       className="w-full"
@@ -237,12 +235,6 @@ export function BoardsBrowseFacetControls({
       <FacetAccordionItem id="price" title="Price">
         <PriceSection state={state} />
       </FacetAccordionItem>
-
-      {showLocationFilter ? (
-        <FacetAccordionItem id="location" title="Location">
-          <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
-        </FacetAccordionItem>
-      ) : null}
 
       <FacetAccordionItem id="shipping" title="Shipping">
         <label
@@ -278,6 +270,12 @@ export function BoardsBrowseFacetControls({
           state={state}
         />
       </FacetAccordionItem>
+
+      {showLocationFilter ? (
+        <FacetAccordionItem id="location" title="Location">
+          <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
+        </FacetAccordionItem>
+      ) : null}
 
       <FacetAccordionItem
         id="advanced"

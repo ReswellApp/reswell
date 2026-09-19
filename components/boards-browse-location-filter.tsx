@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { MapPin, LocateFixed } from "lucide-react"
+import { LocateFixed, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
-import { siteFilterSelectTriggerClassName } from "@/components/site-search-bar"
+import { useBoardsLocationCityRedirect } from "@/components/features/browse/hooks/use-boards-location-city-redirect"
 import type { BoardsFilterState } from "@/components/boards-browse-filter-state"
 import { boardRadiusOptions } from "@/lib/boards-browse-location"
 import { useToast } from "@/hooks/use-toast"
@@ -26,6 +26,7 @@ type Props = {
 /** City/ZIP + radius controls for the browse filter sidebar / mobile drawer. */
 export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
   const { toast } = useToast()
+  const { goToCityLanding, resolveCityLanding } = useBoardsLocationCityRedirect(state.searchParams)
   const [location, setLocation] = useState(state.location)
   const [locationLoading, setLocationLoading] = useState(false)
   const skipLocDebounce = useRef(true)
@@ -40,13 +41,45 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
       skipLocDebounce.current = false
       return
     }
+    const trimmed = location.trim()
+    if (trimmed === state.location.trim()) return
+
+    const ac = new AbortController()
     const t = setTimeout(() => {
-      const trimmed = location.trim()
-      if (trimmed === state.location.trim()) return
-      state.setLocationQuery(location)
+      void (async () => {
+        const match = await resolveCityLanding({ label: trimmed }, ac.signal)
+        if (ac.signal.aborted) return
+        if (match) {
+          goToCityLanding(match)
+          return
+        }
+        state.setLocationQuery(location)
+      })()
     }, DEBOUNCE_MS)
-    return () => clearTimeout(t)
-  }, [location, state.location, state.setLocationQuery])
+    return () => {
+      clearTimeout(t)
+      ac.abort()
+    }
+  }, [goToCityLanding, location, resolveCityLanding, state.location, state.setLocationQuery])
+
+  async function applyLocationOrCity(opts: {
+    label: string
+    lat: number
+    lng: number
+    city?: string
+    state?: string
+  }) {
+    const match = await resolveCityLanding({
+      label: opts.label,
+      city: opts.city,
+      state: opts.state,
+    })
+    if (match) {
+      goToCityLanding(match)
+      return
+    }
+    state.setLocationCoords(opts.label, opts.lat, opts.lng)
+  }
 
   async function handleUseMyLocation() {
     if (!navigator.geolocation) {
@@ -75,7 +108,7 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
         skipLocDebounce.current = true
         setLocation(displayName)
         setLocationLoading(false)
-        state.setLocationCoords(displayName, lat, lng)
+        await applyLocationOrCity({ label: displayName, lat, lng })
       },
       () => {
         toast({
@@ -90,35 +123,45 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="relative w-full">
-        <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="space-y-2 pt-1">
+      <div className="flex items-center gap-1.5">
         <LocationInputSuggest
           name="location"
           placeholder="City or ZIP"
+          aria-label="City or ZIP"
           value={location}
           onChange={setLocation}
           onPickSuggestion={(place) => {
             skipLocDebounce.current = true
             setLocation(place.label)
-            state.setLocationCoords(place.label, place.lat, place.lng)
+            void applyLocationOrCity({
+              label: place.label,
+              lat: place.lat,
+              lng: place.lng,
+              city: place.city,
+              state: place.state,
+            })
           }}
           listboxId={listboxId}
-          endSlot={
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 shrink-0 rounded-full text-foreground hover:bg-muted"
-              title="Use my location"
-              aria-label="Use my location"
-              disabled={locationLoading}
-              onClick={handleUseMyLocation}
-            >
-              <LocateFixed className="h-4 w-4" />
-            </Button>
-          }
+          className="min-w-0 flex-1"
+          inputClassName="h-9 rounded-md text-sm"
         />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 shrink-0 rounded-md text-muted-foreground hover:text-foreground"
+          title="Use my location"
+          aria-label="Use my location"
+          disabled={locationLoading}
+          onClick={handleUseMyLocation}
+        >
+          {locationLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <LocateFixed className="h-4 w-4" />
+          )}
+        </Button>
       </div>
 
       <Select
@@ -128,9 +171,9 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
       >
         <SelectTrigger
           aria-label="Search radius (miles from location)"
-          className={siteFilterSelectTriggerClassName()}
+          className="h-9 rounded-md text-sm"
         >
-          <SelectValue placeholder="Radius" />
+          <SelectValue placeholder="Any distance" />
         </SelectTrigger>
         <SelectContent>
           {boardRadiusOptions.map((opt) => (

@@ -10,6 +10,7 @@ import {
 import { SupportCasesList } from "@/components/features/dashboard/support/support-cases-list"
 import { SupportCurrentRequest } from "@/components/features/dashboard/support/support-current-request"
 import {
+  SupportHubActionButton,
   SupportHubActionDrawer,
   SupportHubActionGroup,
   SupportHubActionLink,
@@ -24,6 +25,7 @@ interface SupportHubHomeProps {
   query: string
   onQueryChange: (value: string) => void
   onPick: (category: SupportHubCategory) => void
+  onTalkToTeam: () => void
   historyOpen?: boolean
   signedIn: boolean
 }
@@ -35,6 +37,7 @@ export function SupportHubHome({
   query,
   onQueryChange,
   onPick,
+  onTalkToTeam,
   historyOpen = false,
   signedIn,
 }: SupportHubHomeProps) {
@@ -74,6 +77,11 @@ export function SupportHubHome({
           {newRequestSection}
         </SupportHubActionDrawer>
       ) : null}
+      {atLimit ? null : (
+        <SupportHubActionButton onClick={onTalkToTeam}>
+          Talk to the team now
+        </SupportHubActionButton>
+      )}
       <SupportHubActionLink href="/faq">Browse FAQs</SupportHubActionLink>
       {signedIn && hasHistory ? (
         <SupportCasesList cases={cases} historyOpen={historyOpen} showCurrent={false} />

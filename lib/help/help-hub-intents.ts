@@ -198,8 +198,12 @@ export function filterSupportHubCategories(
   })
 }
 
-export function supportHubHref(): string {
-  return "/support"
+export function parseHelpHubDirect(raw: string | undefined): boolean {
+  return raw === "1" || raw === "true"
+}
+
+export function supportHubHref(args?: { direct?: boolean }): string {
+  return args?.direct ? "/support?direct=1" : "/support"
 }
 
 export function parseHelpHubIntent(raw: string | undefined): HelpHubIntentId | null {
@@ -223,6 +227,8 @@ export function helpHubHref(args?: {
   issue?: OrderHelpIssueId
   role?: "buyer" | "seller"
   conversationId?: string
+  /** Skip topic intake and open the freeform message to the team. */
+  direct?: boolean
 }): string {
   const q = new URLSearchParams()
   if (args?.intent) q.set("intent", args.intent)
@@ -230,6 +236,7 @@ export function helpHubHref(args?: {
   if (args?.issue) q.set("issue", args.issue)
   if (args?.role) q.set("role", args.role)
   if (args?.conversationId) q.set("conversationId", args.conversationId)
+  if (args?.direct) q.set("direct", "1")
   const suffix = q.toString()
   return suffix ? `/dashboard/support?${suffix}` : "/dashboard/support"
 }

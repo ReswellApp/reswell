@@ -7,6 +7,16 @@ export type ListingCartHolder = {
   conversationId: string | null
 }
 
+/** Admin PDP bar — who currently has this listing in cart (includes email). */
+export type ListingAdminCartHolder = {
+  userId: string
+  displayName: string
+  email: string | null
+  avatarUrl: string | null
+  quantity: number
+  addedAt: string
+}
+
 export type ListingCartOfferProspect = {
   id: string
   title: string

@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getListingCartHoldersForSeller } from "@/lib/db/listing-cart-holders"
+import {
+  getListingCartHoldersForAdmin,
+  getListingCartHoldersForSeller,
+} from "@/lib/db/listing-cart-holders"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
-import type { ListingCartHolder } from "@/lib/types/listing-cart-holders"
+import { createServiceRoleClient } from "@/lib/supabase/server"
+import type { ListingAdminCartHolder, ListingCartHolder } from "@/lib/types/listing-cart-holders"
 
 export type ListListingCartHoldersResult =
   | { ok: true; holders: ListingCartHolder[] }
@@ -41,5 +45,21 @@ export async function listListingCartHoldersForSeller(
   } catch (e) {
     console.error("[listListingCartHoldersForSeller]", e)
     return { ok: false, status: 500, error: "Could not load cart buyers." }
+  }
+}
+
+/** Admin PDP bar — identities of buyers who currently have this listing in cart. */
+export async function listListingCartHoldersForAdmin(
+  listingId: string,
+): Promise<ListingAdminCartHolder[]> {
+  const id = listingId.trim()
+  if (!id) return []
+
+  try {
+    const service = createServiceRoleClient()
+    return await getListingCartHoldersForAdmin(service, id)
+  } catch (e) {
+    console.error("[listListingCartHoldersForAdmin]", e)
+    return []
   }
 }

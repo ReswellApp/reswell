@@ -1,7 +1,7 @@
 export const BOARD_RADIUS_VALUES = ["25", "50", "100", "200"] as const
 
 export const boardRadiusOptions: { value: string; label: string }[] = [
-  { value: "any", label: "Radius" },
+  { value: "any", label: "Any distance" },
   ...BOARD_RADIUS_VALUES.map((mi) => ({ value: mi, label: `${mi} mi` })),
 ]
 

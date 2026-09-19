@@ -1,4 +1,7 @@
+import type { ListingAdminCartHolder } from "./types/listing-cart-holders.ts"
 import { parseListingSearchTags } from "./listing-search-tags.ts"
+
+export type { ListingAdminCartHolder }
 
 export type ListingAdminBarSnapshot = {
   id: string
@@ -44,6 +47,69 @@ export function listingAdminBarShouldMount(input: {
 
 export function listingAdminBarCanLinkCatalog(section: string): boolean {
   return section === "surfboards" || section === "fins"
+}
+
+export function listingAdminBarCartHoldersLabel(count: number): string {
+  if (count <= 0) return "Cart"
+  return count === 1 ? "1 in cart" : `${count} in cart`
+}
+
+export function listingAdminCartHolderDisplayName(input: {
+  isShop?: boolean | null
+  shopName?: string | null
+  displayName?: string | null
+  email?: string | null
+}): string {
+  if (input.isShop === true) {
+    const shop = asTrimmedString(input.shopName)
+    if (shop) return shop
+  }
+  return (
+    asTrimmedString(input.displayName) ??
+    asTrimmedString(input.email) ??
+    "Member"
+  )
+}
+
+export type ListingAdminCartHolderSource = {
+  profileId: unknown
+  quantity?: unknown
+  addedAt?: unknown
+  isShop?: unknown
+  shopName?: unknown
+  displayName?: unknown
+  email?: unknown
+  avatarUrl?: unknown
+}
+
+export function listingAdminCartHolderFromSource(
+  row: ListingAdminCartHolderSource,
+): ListingAdminCartHolder | null {
+  const userId = asTrimmedString(row.profileId)
+  if (!userId) return null
+
+  const quantityRaw =
+    typeof row.quantity === "number"
+      ? row.quantity
+      : typeof row.quantity === "string"
+        ? Number(row.quantity)
+        : 1
+  const quantity =
+    Number.isFinite(quantityRaw) && quantityRaw >= 1 ? Math.trunc(quantityRaw) : 1
+
+  return {
+    userId,
+    displayName: listingAdminCartHolderDisplayName({
+      isShop: row.isShop === true,
+      shopName: asTrimmedString(row.shopName),
+      displayName: asTrimmedString(row.displayName),
+      email: asTrimmedString(row.email),
+    }),
+    email: asTrimmedString(row.email),
+    avatarUrl: asTrimmedString(row.avatarUrl),
+    quantity,
+    addedAt: asTrimmedString(row.addedAt) ?? "",
+  }
 }
 
 export function listingAdminBarSnapshotFromRow(

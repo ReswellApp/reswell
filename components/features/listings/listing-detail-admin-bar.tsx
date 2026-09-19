@@ -3,18 +3,25 @@
 import * as React from "react"
 import { BookOpen, Eye, EyeOff, Layers2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ListingDetailAdminCartHolders } from "@/components/features/listings/listing-detail-admin-cart-holders"
 import { ListingDetailAdminCatalogDialogs } from "@/components/features/listings/listing-detail-admin-catalog-dialogs"
 import { ListingDetailAdminMoreMenu } from "@/components/features/listings/listing-detail-admin-more-menu"
 import { ListingDetailAdminRelatedBlogDialog } from "@/components/features/listings/listing-detail-admin-related-blog-dialog"
 import { ListingDetailAdminSearchTags } from "@/components/features/listings/listing-detail-admin-search-tags"
 import { useListingDetailAdminBar } from "@/components/features/listings/hooks/use-listing-detail-admin-bar"
-import type { ListingAdminBarSnapshot } from "@/lib/listing-detail-admin-bar"
+import type {
+  ListingAdminBarSnapshot,
+  ListingAdminCartHolder,
+} from "@/lib/listing-detail-admin-bar"
 import { cn } from "@/lib/utils"
 
 const actionClass =
   "h-8 rounded-full border border-sky-200/80 bg-white px-3 text-xs font-medium text-sky-950 shadow-sm hover:bg-sky-100 hover:text-sky-950 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-100 dark:hover:bg-sky-900 dark:hover:text-sky-50"
 
-function listingAdminBarStatusLabel(listing: ListingAdminBarSnapshot): string {
+function listingAdminBarStatusLabel(
+  listing: ListingAdminBarSnapshot,
+  cartHolderCount: number,
+): string {
   const status =
     listing.status === "active"
       ? "Live"
@@ -26,10 +33,18 @@ function listingAdminBarStatusLabel(listing: ListingAdminBarSnapshot): string {
   if (listing.searchTags.includes("fish")) bits.push("tagged fish")
   else if (listing.searchTags[0]) bits.push(`tagged ${listing.searchTags[0]}`)
   if (listing.sellerDisplayName) bits.push(listing.sellerDisplayName)
+  if (cartHolderCount === 1) bits.push("1 in cart")
+  else if (cartHolderCount > 1) bits.push(`${cartHolderCount} in cart`)
   return bits.join(" · ")
 }
 
-export function ListingDetailAdminBar({ listing }: { listing: ListingAdminBarSnapshot }) {
+export function ListingDetailAdminBar({
+  listing,
+  cartHolders,
+}: {
+  listing: ListingAdminBarSnapshot
+  cartHolders: ListingAdminCartHolder[]
+}) {
   const actions = useListingDetailAdminBar(listing)
   const [brandOpen, setBrandOpen] = React.useState(false)
   const [modelOpen, setModelOpen] = React.useState(false)
@@ -50,9 +65,10 @@ export function ListingDetailAdminBar({ listing }: { listing: ListingAdminBarSna
           Admin tools
         </span>
         <span className="hidden truncate text-xs text-sky-800/80 dark:text-sky-200/80 sm:inline">
-          {listingAdminBarStatusLabel(listing)}
+          {listingAdminBarStatusLabel(listing, cartHolders.length)}
         </span>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          <ListingDetailAdminCartHolders holders={cartHolders} actionClass={actionClass} />
           <Button
             type="button"
             size="sm"

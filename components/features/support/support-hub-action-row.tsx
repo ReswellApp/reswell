@@ -29,6 +29,21 @@ export function SupportHubActionLink({
   )
 }
 
+export function SupportHubActionButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button type="button" onClick={onClick} className={rowClass}>
+      <span>{children}</span>
+      <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+    </button>
+  )
+}
+
 export function SupportHubActionDrawer({
   title,
   hint,

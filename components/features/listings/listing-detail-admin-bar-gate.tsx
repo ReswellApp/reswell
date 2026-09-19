@@ -4,6 +4,7 @@ import {
   listingAdminBarShouldMount,
   listingAdminBarSnapshotFromRow,
 } from "@/lib/listing-detail-admin-bar"
+import { listListingCartHoldersForAdmin } from "@/lib/services/listingCartHolders"
 
 export async function ListingDetailAdminBarGate({
   listing,
@@ -21,5 +22,6 @@ export async function ListingDetailAdminBarGate({
   const snapshot = listingAdminBarSnapshotFromRow(listing)
   if (!snapshot) return null
 
-  return <ListingDetailAdminBar listing={snapshot} />
+  const cartHolders = await listListingCartHoldersForAdmin(snapshot.id)
+  return <ListingDetailAdminBar listing={snapshot} cartHolders={cartHolders} />
 }
