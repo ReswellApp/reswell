@@ -18,7 +18,7 @@ import { SHIPPING_DEADLINE_DAYS } from "../shipping-deadline.ts"
 
 describe("cs agent harness", () => {
   it("pins a dedicated prompt version for draft fingerprints", () => {
-    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v6")
+    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v7")
   })
 
   it("caps inbox tool rounds, and gives live chat more steps and time", () => {
@@ -115,8 +115,9 @@ describe("cs agent harness", () => {
       caseStatus: "submitted",
       sourceChannel: "live_chat",
       requesterRole: "member",
-      lastCustomerMessage: "Member: Can someone help with my order?",
-      thread: [{ role: "customer", body: "Member: Can someone help with my order?" }],
+      lastCustomerMessage: "hi there. anything there?",
+      thread: [{ role: "customer", body: "hi there. anything there?" }],
+      liveChatTurns: [{ role: "customer", body: "hi there. anything there?" }],
       order: null,
       priorTickets: [],
       help: [],
@@ -128,8 +129,10 @@ describe("cs agent harness", () => {
     assert.match(pack, /only open live-chat ticket/)
     assert.match(pack, /close_ticket true only when the issue is fully solved/)
     assert.match(pack, /do not guess/i)
-    assert.match(pack, /how sellers get paid/)
     assert.match(pack, /do not need an order number/i)
+    assert.match(pack, /This chat/)
+    assert.match(pack, /hi there. anything there/)
+    assert.match(pack, /never list buying/i)
   })
 
   it("grounds live chat in this visitor's orders and prefers very_good examples", () => {
@@ -207,6 +210,10 @@ describe("cs agent harness", () => {
     assert.match(prompt, /how sellers get paid/)
     assert.match(prompt, /Do not ask for an order number/)
     assert.match(prompt, /order tiles/)
+    assert.match(prompt, /hi there/)
+    assert.match(prompt, /anything there/)
+    assert.match(prompt, /never list buying/i)
+    assert.match(prompt, /Do not ask for an order number/)
     assert.doesNotMatch(prompt, /sends immediately as Reswell Team/)
   })
 

@@ -5,10 +5,9 @@ import {
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
-import {
-  isLiveChatCannedFailureReply,
-  resolveLiveChatFallbackReply,
-} from "@/lib/live-chat/live-chat-cs-prompt"
+import { resolveLiveChatFallbackReply } from "@/lib/live-chat/fallback-reply"
+import { isLiveChatPresenceIntent } from "@/lib/live-chat/greeting-intent"
+import { isLiveChatCannedFailureReply } from "@/lib/live-chat/live-chat-cs-prompt"
 import {
   isLiveChatSpecificOrderLookupIntent,
   liveChatOrderTileReplyForOrders,
@@ -102,6 +101,7 @@ async function generateWithModel(
   rewriteInstruction: string,
   liveChatActor: Awaited<ReturnType<typeof resolveLiveChatActionActor>>,
   modelId: string,
+  visitorMessage: string,
 ): Promise<{ body: string; closeTicket: boolean } | null> {
   const draft = await Promise.race([
     generateAndStoreDraft(svc, caseId, true, {
@@ -109,6 +109,7 @@ async function generateWithModel(
       liveChatSession: session,
       liveChatActor,
       modelId,
+      latestVisitorMessage: visitorMessage,
     }),
     new Promise<null>((resolve) => {
       setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
@@ -161,6 +162,7 @@ async function generateDraftBodyWithBudget(
       rewriteInstruction,
       liveChatActor,
       model,
+      visitorMessage,
     )
     if (first) return first
 
@@ -174,6 +176,7 @@ async function generateDraftBodyWithBudget(
         rewriteInstruction,
         liveChatActor,
         pro,
+        visitorMessage,
       )
       if (retry) return retry
     }
@@ -222,6 +225,14 @@ export async function autoSendLiveChatCsAgentReply(
           !bootstrap.authRequired && bootstrap.orders.length === 0
             ? LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY
             : LIVE_CHAT_LABEL_UPDATE_REPLY,
+        closeTicket: false,
+        needsHumanReview: false,
+      }
+    }
+
+    if (isLiveChatPresenceIntent(visitorMessage.content)) {
+      return {
+        body: resolveLiveChatFallbackReply(visitorMessage.content),
         closeTicket: false,
         needsHumanReview: false,
       }

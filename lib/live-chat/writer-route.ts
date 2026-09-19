@@ -55,7 +55,7 @@ export function liveChatCsAgentWriterModel(
 
 export const LIVE_CHAT_JEV_WRITER_CRITERIA = {
   flash_lite:
-    "Greeting, thanks, okay/got it, or other social filler with no Reswell product, policy, or account question.",
+    "Greeting or presence ping (hi, hey, hello, hi there, anything there, you there), thanks, okay/got it, or other social filler with no Reswell product, policy, or account question. Routing only — the chat still says you are here; do not send a topic menu.",
   flash:
     "How-to or published policy that Help Center already answers: buying a board, selling, marketplace fees, how sellers get paid / cash out, Purchase Protection coverage, shipping rules, sign-in/account basics. Generic payout how-tos belong here. No specific order number, tracking, this-sale payout status, label, refund, or claim fact is required.",
   pro:

@@ -73,6 +73,13 @@ export function isLiveChatMarketplaceHowtoIntent(text: string): boolean {
   return /\bsold\b/i.test(trimmed) && /\b(money|paid|pay|payout|earnings|cash(?:\s*|-)?out)\b/i.test(trimmed)
 }
 
+/** Order tools (lookup / tracking / label) — not how-tos or small talk. */
+export function liveChatWriterNeedsTools(text: string): boolean {
+  if (isLiveChatShipFromLabelUpdateIntent(text)) return true
+  if (liveChatMessageNamesOrder(text)) return true
+  return isLiveChatSpecificOrderLookupIntent(text)
+}
+
 export function isLiveChatSpecificOrderLookupIntent(text: string): boolean {
   const trimmed = text.trim()
   if (!trimmed) return false
