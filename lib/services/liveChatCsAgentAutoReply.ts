@@ -5,6 +5,7 @@ import {
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
+import { isLiveChatSpecificOrderLookupIntent } from "@/lib/live-chat/order-tile-intent"
 import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
 import { LIVE_CHAT_WIDGET_ADMIN_ONLY } from "@/lib/live-chat/widget-config"
 import { liveChatPersonaAlreadyJoined } from "@/lib/live-chat/human-feel"
@@ -14,6 +15,7 @@ import {
   openLiveChatSupportCase,
 } from "@/lib/services/liveChatSupportCase"
 import { bootstrapLiveChatLabelUpdate } from "@/lib/services/liveChatShipFromLabelUpdate"
+import { listLiveChatVisitorOrderTiles } from "@/lib/services/liveChatVisitorOrders"
 import { broadcastLiveChatMessage, broadcastLiveChatTyping } from "@/lib/services/liveChatRealtime"
 import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
 import { resolveLiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
@@ -40,6 +42,10 @@ export const LIVE_CHAT_LABEL_UPDATE_REPLY =
 /** When nothing is eligible — don't pin them in the label flow. */
 export const LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY =
   "I don't see any of your sales with a label still waiting for carrier drop-off, so we can't reprint a ship-from label from here right now. If a label already scanned or the sale shipped, ship-from can't change. Tell me the order number or what else you need help with."
+
+/** Deterministic reply when this-order tiles are on screen. */
+export const LIVE_CHAT_ORDER_TILE_REPLY =
+  "Tap the order below and I'll look that one up."
 
 async function persistTeamReply(
   svc: SupabaseClient,
@@ -195,33 +201,46 @@ export async function autoSendLiveChatCsAgentReply(
   const persona = ensured.persona
   const isFirstJoin = !liveChatPersonaAlreadyJoined(workingSession.metadata)
 
-  const generatePromise = isLabelIntent
-    ? bootstrapLiveChatLabelUpdate({ svc, session: workingSession }).then((bootstrap) => ({
+  const generatePromise = (async () => {
+    if (isLabelIntent) {
+      const bootstrap = await bootstrapLiveChatLabelUpdate({ svc, session: workingSession })
+      return {
         body:
           !bootstrap.authRequired && bootstrap.orders.length === 0
             ? LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY
             : LIVE_CHAT_LABEL_UPDATE_REPLY,
         closeTicket: false,
         needsHumanReview: false,
-      }))
-    : (caseId
-        ? generateDraftBodyWithBudget(
-            svc,
-            caseId,
-            workingSession,
-            persona.firstName,
-            visitorMessage.content,
-          )
-        : Promise.resolve(null)
-      ).then((generated) =>
-        generated
-          ? { ...generated, needsHumanReview: false }
-          : {
-              body: LIVE_CHAT_UNGROUNDED_REPLY,
-              closeTicket: false,
-              needsHumanReview: Boolean(caseId),
-            },
-      )
+      }
+    }
+
+    if (isLiveChatSpecificOrderLookupIntent(visitorMessage.content)) {
+      const tiles = await listLiveChatVisitorOrderTiles({ svc, session: workingSession })
+      if (!tiles.authRequired && tiles.orders.length > 0) {
+        return {
+          body: LIVE_CHAT_ORDER_TILE_REPLY,
+          closeTicket: false,
+          needsHumanReview: false,
+        }
+      }
+    }
+
+    const generated = caseId
+      ? await generateDraftBodyWithBudget(
+          svc,
+          caseId,
+          workingSession,
+          persona.firstName,
+          visitorMessage.content,
+        )
+      : null
+    if (generated) return { ...generated, needsHumanReview: false }
+    return {
+      body: LIVE_CHAT_UNGROUNDED_REPLY,
+      closeTicket: false,
+      needsHumanReview: Boolean(caseId),
+    }
+  })()
 
   try {
     await sleepUntilLiveChatJoin({
