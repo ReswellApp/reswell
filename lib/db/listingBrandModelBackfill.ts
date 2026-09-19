@@ -27,17 +27,11 @@ const LISTING_PAGE_SIZE = 500
 const CATALOG_PAGE_SIZE = 1000
 const BRAND_ID_IN_CHUNK = 200
 
-/**
- * Collect active, on-site listings in `section` that are missing a directory brand
- * (`brand_id`) or catalog model (`brand_model_id`), oldest first, up to `maxListings`.
- *
- * Rows are read in full before any mutation so attaching links mid-run can't shift
- * the paginated window and skip candidates.
- */
-export async function collectActiveListingsNeedingBrandOrModel(
+async function collectListingsNeedingBrandOrModel(
   supabase: SupabaseClient,
   section: ListingBrandModelBackfillSection,
   maxListings: number,
+  options: { status: "active" | "sold"; logLabel: string },
 ): Promise<{ rows: BackfillListingRow[]; capped: boolean }> {
   const rows: BackfillListingRow[] = []
   let from = 0
@@ -50,18 +44,23 @@ export async function collectActiveListingsNeedingBrandOrModel(
       break
     }
 
-    const { data, error } = await supabase
+    let q = supabase
       .from("listings")
       .select(BACKFILL_LISTING_SELECT)
       .eq("section", section)
-      .eq("status", "active")
-      .eq("hidden_from_site", false)
+      .eq("status", options.status)
       .or("brand_id.is.null,brand_model_id.is.null")
       .order("created_at", { ascending: true })
       .range(from, from + limit - 1)
 
+    if (options.status === "active") {
+      q = q.eq("hidden_from_site", false)
+    }
+
+    const { data, error } = await q
+
     if (error) {
-      console.error("collectActiveListingsNeedingBrandOrModel:", section, error.message)
+      console.error(`${options.logLabel}:`, section, error.message)
       break
     }
 
@@ -73,6 +72,39 @@ export async function collectActiveListingsNeedingBrandOrModel(
   }
 
   return { rows, capped }
+}
+
+/**
+ * Collect active, on-site listings in `section` that are missing a directory brand
+ * (`brand_id`) or catalog model (`brand_model_id`), oldest first, up to `maxListings`.
+ *
+ * Rows are read in full before any mutation so attaching links mid-run can't shift
+ * the paginated window and skip candidates.
+ */
+export async function collectActiveListingsNeedingBrandOrModel(
+  supabase: SupabaseClient,
+  section: ListingBrandModelBackfillSection,
+  maxListings: number,
+): Promise<{ rows: BackfillListingRow[]; capped: boolean }> {
+  return collectListingsNeedingBrandOrModel(supabase, section, maxListings, {
+    status: "active",
+    logLabel: "collectActiveListingsNeedingBrandOrModel",
+  })
+}
+
+/**
+ * Sold marketplace listings missing a directory brand or catalog model — same
+ * attach path as live inventory so model pages can show accurate sold history.
+ */
+export async function collectSoldListingsNeedingBrandOrModel(
+  supabase: SupabaseClient,
+  section: ListingBrandModelBackfillSection,
+  maxListings: number,
+): Promise<{ rows: BackfillListingRow[]; capped: boolean }> {
+  return collectListingsNeedingBrandOrModel(supabase, section, maxListings, {
+    status: "sold",
+    logLabel: "collectSoldListingsNeedingBrandOrModel",
+  })
 }
 
 /** @deprecated Use {@link collectActiveListingsNeedingBrandOrModel} with section `surfboards`. */

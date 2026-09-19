@@ -4,6 +4,7 @@ import {
   applyListingBrandModelAttach,
   clearListingBrandModelUnmatched,
   collectActiveListingsNeedingBrandOrModel,
+  collectSoldListingsNeedingBrandOrModel,
   loadBrandModelsByBrandId,
   loadBrandModelsByBrandIdForProductCategory,
   loadDirectoryBrandsForMatching,
@@ -55,6 +56,7 @@ export type ListingBrandModelBackfillSummary = {
  * remaining listings are processed on subsequent daily runs (oldest first).
  */
 const DEFAULT_MAX_LISTINGS_PER_SECTION_PER_RUN = 250
+const DEFAULT_MAX_SOLD_LISTINGS_PER_SECTION_PER_RUN = 200
 const MAX_ERROR_SAMPLES = 10
 
 type SectionCatalog = {
@@ -210,9 +212,9 @@ async function processSectionListings(
 }
 
 /**
- * Backfill catalog brand/model links on active surfboard and fin listings.
+ * Backfill catalog brand/model links on active and sold surfboard and fin listings.
  *
- * For each active listing missing `brand_id` and/or `brand_model_id`, the title
+ * For each listing missing `brand_id` and/or `brand_model_id`, the title
  * (and seller brand/model fields) are matched (whole-word, high precision)
  * against the directory catalog. Confirmed-missing rows are researched and, when
  * an official site verifies the named model, created then attached. Low
@@ -221,11 +223,15 @@ async function processSectionListings(
  */
 export async function runListingBrandModelBackfill(
   supabase: SupabaseClient,
-  options?: { maxListingsPerSection?: number },
+  options?: { maxListingsPerSection?: number; maxSoldListingsPerSection?: number },
 ): Promise<ListingBrandModelBackfillSummary> {
   const maxPerSection = Math.max(
     1,
     options?.maxListingsPerSection ?? DEFAULT_MAX_LISTINGS_PER_SECTION_PER_RUN,
+  )
+  const maxSoldPerSection = Math.max(
+    1,
+    options?.maxSoldListingsPerSection ?? DEFAULT_MAX_SOLD_LISTINGS_PER_SECTION_PER_RUN,
   )
 
   const summary: ListingBrandModelBackfillSummary = {
@@ -251,31 +257,43 @@ export async function runListingBrandModelBackfill(
     },
   }
 
-  const [surfboardBatch, finBatch, surfboardCatalog, finCatalog] = await Promise.all([
+  const [
+    surfboardBatch,
+    soldSurfboardBatch,
+    finBatch,
+    soldFinBatch,
+    surfboardCatalog,
+    finCatalog,
+  ] = await Promise.all([
     collectActiveListingsNeedingBrandOrModel(supabase, "surfboards", maxPerSection),
+    collectSoldListingsNeedingBrandOrModel(supabase, "surfboards", maxSoldPerSection),
     collectActiveListingsNeedingBrandOrModel(supabase, "fins", maxPerSection),
+    collectSoldListingsNeedingBrandOrModel(supabase, "fins", maxSoldPerSection),
     loadSectionCatalog(supabase, "surfboards"),
     loadSectionCatalog(supabase, "fins"),
   ])
 
-  summary.by_section.surfboards.capped = surfboardBatch.capped
-  summary.by_section.fins.capped = finBatch.capped
-  summary.capped = surfboardBatch.capped || finBatch.capped
+  summary.by_section.surfboards.capped = surfboardBatch.capped || soldSurfboardBatch.capped
+  summary.by_section.fins.capped = finBatch.capped || soldFinBatch.capped
+  summary.capped =
+    surfboardBatch.capped || soldSurfboardBatch.capped || finBatch.capped || soldFinBatch.capped
 
-  if (surfboardBatch.rows.length > 0) {
+  const surfboardRows = [...surfboardBatch.rows, ...soldSurfboardBatch.rows]
+  if (surfboardRows.length > 0) {
     await processSectionListings(
       supabase,
-      surfboardBatch.rows,
+      surfboardRows,
       surfboardCatalog,
       summary,
       summary.by_section.surfboards,
     )
   }
 
-  if (finBatch.rows.length > 0) {
+  const finRows = [...finBatch.rows, ...soldFinBatch.rows]
+  if (finRows.length > 0) {
     await processSectionListings(
       supabase,
-      finBatch.rows,
+      finRows,
       finCatalog,
       summary,
       summary.by_section.fins,

@@ -103,6 +103,9 @@ export function isShippingFulfillmentLabel(label: string): boolean {
   return label.startsWith("Shipping") || label.startsWith("Free shipping")
 }
 
+/** Shared emphasis for shipping-at-checkout / free-shipping copy on listing PDPs. */
+export const LISTING_SHIPPING_EMPHASIS_CLASS = "font-medium text-[#4263eb]"
+
 /** Buyer checkout choice when listing offers both. */
 export type BuyerFulfillmentMethod = "pickup" | "shipping"
 

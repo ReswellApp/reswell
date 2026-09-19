@@ -130,6 +130,7 @@ describe("cs agent harness", () => {
     assert.match(pack, /do not guess/i)
     assert.match(pack, /how sellers get paid/)
     assert.match(pack, /do not need an order number/i)
+    assert.match(pack, /order tiles/)
   })
 
   it("grounds live chat in this visitor's orders and prefers very_good examples", () => {
@@ -206,6 +207,7 @@ describe("cs agent harness", () => {
     assert.match(prompt, /Marketplace how-tos/)
     assert.match(prompt, /how sellers get paid/)
     assert.match(prompt, /Do not ask for an order number/)
+    assert.match(prompt, /order tiles/)
     assert.doesNotMatch(prompt, /sends immediately as Reswell Team/)
   })
 

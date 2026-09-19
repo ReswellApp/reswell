@@ -57,9 +57,10 @@ export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSec
 }
 
 /**
- * Main nav submit lands on marketplace-wide `/search`, except bare section
- * keywords (`fins`, `wetsuits`, …) which open that section’s browse hub,
- * and bare board styles (`fish`, `shortboard`) which open `/boards?type=&q=`.
+ * Sync nav submit target. Bare section keywords (`fins`, `wetsuits`, …) open
+ * that section’s browse hub, and bare board styles (`fish`, `shortboard`) open
+ * `/boards?type=&q=`. Unique catalog-model lookups are resolved asynchronously
+ * onto `/[brand]/[model]` via `hrefForNavMarketplaceSearch`.
  */
 export function headerNavSearchSubmitHref(
   rawQuery: string,

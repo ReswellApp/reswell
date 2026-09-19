@@ -10,6 +10,10 @@ import {
   type BrandCatalogSuggestResponse,
 } from "@/lib/services/brandDirectorySearch"
 import { runMarketplaceSearchSuggest } from "@/lib/services/marketplaceSearchSuggest"
+import { parseMarketplaceQuery } from "@/lib/services/marketplaceQueryParse"
+import { marketplaceModelPageHrefFromParsed } from "@/lib/models/search-redirect"
+import { isMarketplaceSectionOnlyQuery } from "@/lib/utils/marketplace-brand-query"
+import { isMarketplaceBoardStyleOnlyQuery } from "@/lib/utils/marketplace-style-query"
 import { slugify } from "@/lib/slugify"
 import type { SearchSuggestResult } from "@/lib/types/marketplace-search-suggest"
 
@@ -159,6 +163,17 @@ export async function searchBrandsCatalogSuggest(
 /**
  * Resolve a nav brand-chip label (listing-derived text) to a directory profile path.
  */
+/** Unique catalog-model lookup → `/[brand]/[model]`. Otherwise null (stay on `/search`). */
+export async function resolveMarketplaceModelPageHref(rawQuery: string): Promise<string | null> {
+  const q = (rawQuery || "").trim()
+  if (q.length < 2) return null
+  if (isMarketplaceSectionOnlyQuery(q) || isMarketplaceBoardStyleOnlyQuery(q)) return null
+
+  const supabase = await createClient()
+  const parsed = await parseMarketplaceQuery(supabase, q)
+  return marketplaceModelPageHrefFromParsed(parsed)
+}
+
 export async function resolveBrandProfilePathFromNavLabel(rawLabel: string): Promise<string | null> {
   const name = (rawLabel || "").trim()
   if (!name) return null

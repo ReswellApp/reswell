@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   canUseModelTextFallback,
+  listingBelongsToCatalogModel,
   listingTitleMatchesModel,
   matchCatalogModelForListingPage,
 } from "./match.ts"
@@ -22,6 +23,53 @@ describe("matchCatalogModelForListingPage", () => {
     assert.equal(matchCatalogModelForListingPage(models, "lane-splitter")?.name, "Lane Splitter")
     assert.equal(matchCatalogModelForListingPage(models, "LANE SPLITTER")?.name, "Lane Splitter")
     assert.equal(matchCatalogModelForListingPage(models, "Lane Splitter Swallow"), null)
+  })
+})
+
+describe("listingBelongsToCatalogModel", () => {
+  const lane = { id: "lane", name: "Lane Splitter" }
+  const swallow = { id: "swallow", name: "Lane Splitter Swallow" }
+  const siblings = [lane, swallow]
+
+  it("uses the tagged catalog id when present", () => {
+    assert.equal(
+      listingBelongsToCatalogModel({ title: "Pyzel Ghost", brand_model_id: "lane" }, lane, siblings),
+      true,
+    )
+    assert.equal(
+      listingBelongsToCatalogModel(
+        { title: "Lane Splitter Swallow", brand_model_id: "swallow" },
+        lane,
+        siblings,
+      ),
+      false,
+    )
+  })
+
+  it("matches untagged titles and seller model text", () => {
+    assert.equal(
+      listingBelongsToCatalogModel(
+        { title: "5'8 Chis Christensen Lane Splitter", model: "Chris Christenson" },
+        lane,
+        siblings,
+      ),
+      true,
+    )
+    assert.equal(
+      listingBelongsToCatalogModel({ title: "6'6 Christenson Wolverine", model: "Wolverine" }, lane),
+      false,
+    )
+  })
+
+  it("keeps longer sibling titles off the parent model page", () => {
+    assert.equal(
+      listingBelongsToCatalogModel({ title: "Lane Splitter Swallow" }, lane, siblings),
+      false,
+    )
+    assert.equal(
+      listingBelongsToCatalogModel({ title: "Lane Splitter Swallow" }, swallow, siblings),
+      true,
+    )
   })
 })
 

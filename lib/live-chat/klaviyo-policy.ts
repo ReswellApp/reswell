@@ -1,25 +1,29 @@
 /**
  * Live-chat ↔ Klaviyo policy.
  *
- * Soft-launch CS (openLiveChatSupportCase + auto-reply) must never email the
- * member for every chat turn. Klaviyo is reserved for formal escalation /
- * email-worthy staff outcomes — not realtime chat.
+ * Soft-open stays silent — no “we received your chat” confirmation on every
+ * visitor turn. Customer-visible Hayden / David auto-replies and staff replies
+ * reuse the existing **Support Tickets Response** metric so a visitor who left
+ * an email still gets the answer after they close the tab.
  */
 
 export type LiveChatKlaviyoNotifyReason = "auto_unanswered" | "manual"
 
-/** Soft case open / CS auto-send — never notify. */
+/** Soft case open / CS auto-send bootstrap — never notify. */
 export function shouldNotifyKlaviyoOnLiveChatSoftOpen(): false {
   return false
 }
 
-/** Soft case auto-reply — never notify. */
-export function shouldNotifyKlaviyoOnLiveChatAutoReply(): false {
-  return false
+/** Hayden / David auto-reply or staff desk reply — email when we have an address. */
+export function shouldNotifyKlaviyoOnLiveChatReply(args: {
+  visitorEmail: string | null | undefined
+  content: string
+}): boolean {
+  return Boolean(args.visitorEmail?.trim() && args.content.trim())
 }
 
 /**
- * Formal escalate → Support Tickets email only when a new case was opened.
+ * Formal escalate → Support Tickets (created) email only when a new case was opened.
  * Already-linked soft cases stay silent (member already has chat history).
  */
 export function shouldNotifyKlaviyoOnLiveChatEscalation(args: {

@@ -1,7 +1,9 @@
 import { Suspense, type ReactNode } from "react"
 import { after } from "next/server"
 import { unstable_cache } from "next/cache"
+import { redirect } from "next/navigation"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { marketplaceModelPageHrefFromParsed } from "@/lib/models/search-redirect"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
@@ -204,6 +206,11 @@ export async function SearchPageView({
             : null,
         })
       : null
+
+  if (!categorySlugFromUrl.trim()) {
+    const modelPageHref = marketplaceModelPageHrefFromParsed(parsedQuery)
+    if (modelPageHref) redirect(modelPageHref)
+  }
 
   let brandRow: { id: string; name: string; slug: string } | null =
     brandFromUrl ??

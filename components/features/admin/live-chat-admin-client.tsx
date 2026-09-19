@@ -36,6 +36,7 @@ import {
 } from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
 import { LiveChatReplyRatingControls } from "@/components/features/live-chat/live-chat-reply-rating-controls"
 import type { SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
+import { latestConversationalIsVisitor } from "@/lib/live-chat/thread-sync"
 
 interface LiveChatAdminClientProps {
   initialStaff: { userId: string; displayName: string }
@@ -553,6 +554,24 @@ export function LiveChatAdminClient({ initialStaff }: LiveChatAdminClientProps) 
     if (!activeSessionId) return
     void loadThread(activeSessionId)
   }, [activeSessionId, loadThread])
+
+  const waitingForTeamReply = useMemo(() => {
+    if (!activeThread || activeThread.session.id !== activeSessionId) return false
+    return latestConversationalIsVisitor(activeThread.messages)
+  }, [activeSessionId, activeThread])
+
+  useEffect(() => {
+    if (!activeSessionId || !waitingForTeamReply) return
+    const pull = () => {
+      void loadThread(activeSessionId, { silent: true })
+    }
+    const immediate = window.setTimeout(pull, 600)
+    const interval = window.setInterval(pull, 1500)
+    return () => {
+      window.clearTimeout(immediate)
+      window.clearInterval(interval)
+    }
+  }, [activeSessionId, loadThread, waitingForTeamReply])
 
   useEffect(() => {
     const channel = supabase
