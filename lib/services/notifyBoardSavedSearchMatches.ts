@@ -11,6 +11,8 @@ import {
   listingMatchesSavedSearch,
   type ListingRowForBoardAlert,
 } from "@/lib/services/boardSavedSearchMatch"
+import { inferSavedSearchAlertKind } from "@/lib/utils/saved-search-alert-kind"
+import { boardSavedSearchCriteriaSchema } from "@/lib/validations/boardSavedSearch"
 
 export type { ListingRowForBoardAlert }
 export { listingMatchesBoardSavedCriteria } from "@/lib/services/boardSavedSearchMatch"
@@ -97,6 +99,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
     if (!claim.inserted) continue
 
     const priceNum = typeof row.price === "number" ? row.price : Number(row.price ?? NaN)
+    const parsedCriteria = boardSavedSearchCriteriaSchema.safeParse(sub.criteria)
 
     void trackKlaviyoBoardAlertMatch({
       subscriberUserId: sub.user_id,
@@ -112,6 +115,10 @@ export async function notifyBoardSavedSearchMatchesForListing(
       condition: row.condition,
       boardType: row.board_type,
       section: row.section,
+      alertKind: parsedCriteria.success
+        ? inferSavedSearchAlertKind(parsedCriteria.data)
+        : "search",
+      savedSearchLabel: sub.label,
     })
     sent += 1
   }

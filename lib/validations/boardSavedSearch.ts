@@ -20,11 +20,20 @@ export const boardSavedSearchCriteriaSchema = z.object({
    * When true (marketplace `/search` with no section scope), match any peer listing section.
    */
   anySection: z.boolean().optional(),
+  /**
+   * Why this snapshot was saved. Same matching pipeline as a filter search —
+   * Klaviyo `Board Alert Match` branches copy on `Alert_Kind`.
+   * `kind` is reserved for apparel category slugs.
+   */
+  alertKind: z.enum(["search", "model", "brand"]).optional(),
   q: z.string().trim().max(500).optional(),
   brand: z.string().trim().max(200).optional(),
   brandId: z.string().trim().uuid().optional(),
+  /** Catalog brand slug — used to deep-link saved brand/model alerts. */
+  brandSlug: z.string().trim().max(200).optional(),
   model: z.string().trim().max(200).optional(),
   brandModelId: z.string().trim().uuid().optional(),
+  modelSlug: z.string().trim().max(200).optional(),
   dimensions: z.string().trim().max(120).optional(),
   dimLength: z.string().trim().max(80).optional(),
   dimWidth: z.string().trim().max(80).optional(),

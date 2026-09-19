@@ -3,13 +3,17 @@ import type { BrandPageTab } from "@/lib/brands/routes"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { BrandPageBreadcrumbs } from "@/components/brands/brand-page-breadcrumbs"
 import { BrandPageMarketplace } from "@/components/brands/brand-page-marketplace"
+import { SaveEntitySearchButton } from "@/components/features/saved-search/save-entity-search-button"
 import type { RecentListing } from "@/components/recent-feed-client"
+import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 
 /**
  * Brand marketplace — Reverb-style header and listing grid, with a sold feed tab.
  */
 export function BrandProfileView({
   brand,
+  criteria,
+  initialSavedSearchId,
   initialTab,
   brandListings,
   brandSoldListings,
@@ -20,6 +24,8 @@ export function BrandProfileView({
   viewerUserId,
 }: {
   brand: BrandRow
+  criteria: BoardSavedSearchCriteria
+  initialSavedSearchId: string | null
   initialTab: BrandPageTab
   brandListings: RecentListing[]
   brandSoldListings: RecentListing[]
@@ -37,13 +43,27 @@ export function BrandProfileView({
           <BrandDetailAdminBar brand={brand} />
         </div>
 
-        <h1 className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:mt-8 sm:text-5xl">
-          {brand.name}
-        </h1>
+        <div className="mt-6 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            {brand.name}
+          </h1>
+          <SaveEntitySearchButton
+            criteria={criteria}
+            label="Save this brand"
+            savedLabel="Brand saved"
+            savedSearchLabel={brand.name}
+            successTitle="Brand saved"
+            successDescription={`We'll email you when new ${brand.name} gear is listed on Reswell.`}
+            isLoggedIn={isLoggedIn}
+            initialSavedSearchId={initialSavedSearchId}
+          />
+        </div>
 
         <BrandPageMarketplace
           brandSlug={brand.slug}
           brandName={brand.name}
+          criteria={criteria}
+          initialSavedSearchId={initialSavedSearchId}
           initialTab={initialTab}
           listings={brandListings}
           soldListings={brandSoldListings}

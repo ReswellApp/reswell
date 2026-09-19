@@ -1,7 +1,9 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { RecentFeedClient, type RecentListing } from "@/components/recent-feed-client"
+import { SaveEntitySearchCta } from "@/components/features/saved-search/save-entity-search-cta"
 import { Button } from "@/components/ui/button"
+import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 import {
   brandActiveListingsBrowseHref,
   brandPageHref,
@@ -19,6 +21,8 @@ const TAB_ITEMS: { id: BrandPageTab; label: string }[] = [
 export function BrandPageMarketplace({
   brandSlug,
   brandName,
+  criteria,
+  initialSavedSearchId,
   initialTab,
   listings,
   soldListings,
@@ -30,6 +34,8 @@ export function BrandPageMarketplace({
 }: {
   brandSlug: string
   brandName: string
+  criteria: BoardSavedSearchCriteria
+  initialSavedSearchId: string | null
   initialTab: BrandPageTab
   listings: RecentListing[]
   soldListings: RecentListing[]
@@ -101,9 +107,18 @@ export function BrandPageMarketplace({
             viewerUserId={viewerUserId}
           />
         ) : (
-          <BrandPageEmpty>
-            No {brandName} listings for sale right now.
-          </BrandPageEmpty>
+          <SaveEntitySearchCta
+            heading={`No ${brandName} listings for sale right now`}
+            description={`Save this brand and we'll email you when new ${brandName} gear is listed on Reswell.`}
+            criteria={criteria}
+            label="Save this brand"
+            savedLabel="Brand saved"
+            savedSearchLabel={brandName}
+            successTitle="Brand saved"
+            successDescription={`We'll email you when new ${brandName} gear is listed on Reswell.`}
+            isLoggedIn={isLoggedIn}
+            initialSavedSearchId={initialSavedSearchId}
+          />
         )}
       </div>
 

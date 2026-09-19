@@ -2,10 +2,12 @@
 
 import { resolveMarketplaceModelPageHref } from "@/app/actions/marketplace"
 import { headerNavSearchSubmitHref } from "@/lib/header-nav-marketplace-search"
+import { MARKETPLACE_SEARCH_OPENS_MODEL_PAGES } from "@/lib/models/routes"
 
 /**
  * Header nav submit: section / style keywords stay on browse hubs;
- * a unique catalog model goes to `/[brand]/[model]`; everything else is `/search`.
+ * unique catalog models stay on `/search` until model-page redirects launch;
+ * everything else is `/search`.
  */
 export async function hrefForNavMarketplaceSearch(
   term: string,
@@ -14,6 +16,7 @@ export async function hrefForNavMarketplaceSearch(
 ): Promise<string> {
   const fallback = headerNavSearchSubmitHref(term, pathname, searchParams)
   if (!fallback.startsWith("/search?")) return fallback
+  if (!MARKETPLACE_SEARCH_OPENS_MODEL_PAGES) return fallback
 
   try {
     const modelHref = await resolveMarketplaceModelPageHref(term)

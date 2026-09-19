@@ -1169,8 +1169,8 @@ export const buyingHelpArticles: HelpArticle[] = [
     quickAnswer: (
       <>
         Go to {helpLink("/board-finder", "Board Finder")}, set brand, model, size, condition, or
-        price filters, and save the search. We email you when a new listing matches. You can keep up
-        to 5 saved searches per account.
+        price filters, and save the search. You can also save a model or brand from its page. We
+        email you when a new listing matches. You can keep up to 5 saved searches per account.
       </>
     ),
     sections: [

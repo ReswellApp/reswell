@@ -59,8 +59,8 @@ export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSec
 /**
  * Sync nav submit target. Bare section keywords (`fins`, `wetsuits`, …) open
  * that section’s browse hub, and bare board styles (`fish`, `shortboard`) open
- * `/boards?type=&q=`. Unique catalog-model lookups are resolved asynchronously
- * onto `/[brand]/[model]` via `hrefForNavMarketplaceSearch`.
+ * `/boards?type=&q=`. Unique catalog-model lookups stay on `/search` until
+ * `MARKETPLACE_SEARCH_OPENS_MODEL_PAGES` is flipped on.
  */
 export function headerNavSearchSubmitHref(
   rawQuery: string,

@@ -13,12 +13,14 @@ import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearc
 export function ModelPageView({
   page,
   criteria,
+  initialSavedSearchId,
   favoritedListingIds,
   isLoggedIn,
   viewerUserId,
 }: {
   page: ModelPageData
   criteria: BoardSavedSearchCriteria
+  initialSavedSearchId: string | null
   favoritedListingIds: string[]
   isLoggedIn: boolean
   viewerUserId: string | null
@@ -33,7 +35,12 @@ export function ModelPageView({
           categorySlug={page.model.product_category_slug}
         />
         <div className="mt-6">
-          <ModelPageHeader page={page} />
+          <ModelPageHeader
+            page={page}
+            criteria={criteria}
+            isLoggedIn={isLoggedIn}
+            initialSavedSearchId={initialSavedSearchId}
+          />
         </div>
         <div className="mt-8">
           <ModelPageTabs reviewCount={page.reviewStats.reviewCount} />
@@ -48,6 +55,7 @@ export function ModelPageView({
           soldListings={page.soldListings}
           topPick={page.topPick}
           criteria={criteria}
+          initialSavedSearchId={initialSavedSearchId}
           favoritedListingIds={favoritedListingIds}
           isLoggedIn={isLoggedIn}
           viewerUserId={viewerUserId}

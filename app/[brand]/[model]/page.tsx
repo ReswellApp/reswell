@@ -6,6 +6,8 @@ import { fetchBrandModelSitemapEntries } from "@/lib/db/sitemap-models"
 import { isReservedModelPageBrandSegment } from "@/lib/models/routes"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { getModelPage } from "@/lib/services/modelPage"
+import { viewerSavedSearchIdForModel } from "@/lib/services/viewerSavedSearch"
+import { modelSavedSearchCriteria } from "@/lib/utils/saved-search-alert-kind"
 import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 
@@ -86,18 +88,28 @@ export default async function ModelPage({ params }: Props) {
     favoritedListingIds = (favs ?? []).map((row) => row.listing_id)
   }
 
+  const criteria = modelSavedSearchCriteria({
+    brandName: page.brand.name,
+    brandId: page.brand.id,
+    brandSlug: page.brand.slug,
+    modelName: page.model.name,
+    brandModelId: page.model.id,
+    modelSlug: page.modelSlug,
+    section: isPeerListingSection(page.model.product_category_slug)
+      ? page.model.product_category_slug
+      : "surfboards",
+  })
+  const initialSavedSearchId = await viewerSavedSearchIdForModel(
+    supabase,
+    user?.id,
+    page.model.id,
+  )
+
   return (
     <ModelPageView
       page={page}
-      criteria={{
-        section: isPeerListingSection(page.model.product_category_slug)
-          ? page.model.product_category_slug
-          : "surfboards",
-        brand: page.brand.name,
-        brandId: page.brand.id,
-        model: page.model.name,
-        brandModelId: page.model.id,
-      }}
+      criteria={criteria}
+      initialSavedSearchId={initialSavedSearchId}
       favoritedListingIds={favoritedListingIds}
       isLoggedIn={!!user}
       viewerUserId={user?.id ?? null}

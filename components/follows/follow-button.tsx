@@ -98,7 +98,7 @@ export function FollowButton({
   const isDirectory = appearance === "directory"
   const isProfileHero = appearance === "profileHero"
   const isProfilePage = appearance === "profilePage"
-  const profilePageSaveLabel = following ? (hovering ? "Unsave" : "Saved") : "Save Shop"
+  const profilePageSaveLabel = following ? (hovering ? "Unsave" : "Saved") : "Save this shop"
   /** Matches seller profile banner ({@link SELLER_PROFILE_BANNER_DEFAULT}). */
   const unfollowHoverClasses =
     "border-[#5574AD] bg-[#5574AD] text-white hover:border-[#466091] hover:bg-[#466091] hover:text-white"
@@ -180,7 +180,7 @@ export function FollowButton({
             {following
               ? "…"
               : isProfilePage
-                ? "Save Shop"
+                ? "Save this shop"
                 : isDirectory || isProfileHero
                   ? "Follow"
                   : "Following…"}
@@ -212,7 +212,7 @@ export function FollowButton({
             ) : isProfilePage ? (
               <Heart className="mr-1.5 h-3.5 w-3.5" aria-hidden />
             ) : null}
-            {isProfilePage ? "Save Shop" : isDirectory || isProfileHero ? "Follow" : baseLabel}
+            {isProfilePage ? "Save this shop" : isDirectory || isProfileHero ? "Follow" : baseLabel}
           </>
         )}
       </Button>

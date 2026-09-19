@@ -163,7 +163,7 @@ export async function searchBrandsCatalogSuggest(
 /**
  * Resolve a nav brand-chip label (listing-derived text) to a directory profile path.
  */
-/** Unique catalog-model lookup → `/[brand]/[model]`. Otherwise null (stay on `/search`). */
+/** Unique catalog-model lookup → `/[brand]/[model]` when search discovery is on. */
 export async function resolveMarketplaceModelPageHref(rawQuery: string): Promise<string | null> {
   const q = (rawQuery || "").trim()
   if (q.length < 2) return null

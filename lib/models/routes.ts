@@ -2,6 +2,9 @@ import { slugify } from "../slugify.ts"
 
 export const MODEL_PAGE_TABS = ["listings", "details", "price-guide", "reviews"] as const
 
+/** Unique catalog lookups stay on `/search` until model pages launch from search. */
+export const MARKETPLACE_SEARCH_OPENS_MODEL_PAGES = false
+
 export type ModelPageTab = (typeof MODEL_PAGE_TABS)[number]
 
 export const MODEL_PAGE_RESERVED_BRAND_SEGMENTS = new Set([

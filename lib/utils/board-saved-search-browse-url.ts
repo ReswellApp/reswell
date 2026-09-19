@@ -1,6 +1,13 @@
+import { brandPageHref } from "@/lib/brands/routes"
 import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
+import { modelPageHref } from "@/lib/models/routes"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 import { isUuidString } from "@/lib/utils/isUuid"
+import { inferSavedSearchAlertKind } from "@/lib/utils/saved-search-alert-kind"
+import {
+  peerSectionBrowsePath,
+  resolveSavedSearchSection,
+} from "@/lib/utils/peer-saved-search-criteria"
 import {
   appendBoardDimensionBrowseParams,
   boardDimensionBrowseFieldsFromSearchParams,
@@ -12,8 +19,18 @@ function setJoinedParam(params: URLSearchParams, key: string, values: string[] |
   params.set(key, values.join(","))
 }
 
-/** Build a `/boards` href from stored saved-search criteria (excludes geo). */
+/** Build a browse / entity href from stored saved-search criteria (excludes geo). */
 export function boardSavedSearchCriteriaToBrowseHref(criteria: BoardSavedSearchCriteria): string {
+  const alertKind = inferSavedSearchAlertKind(criteria)
+  const brandSlug = criteria.brandSlug?.trim()
+  const modelSlug = criteria.modelSlug?.trim()
+  if (alertKind === "model" && brandSlug && modelSlug) {
+    return modelPageHref(brandSlug, modelSlug)
+  }
+  if (alertKind === "brand" && brandSlug) {
+    return brandPageHref(brandSlug)
+  }
+
   const params = new URLSearchParams()
 
   const q = criteria.q?.trim()
@@ -69,7 +86,9 @@ export function boardSavedSearchCriteriaToBrowseHref(criteria: BoardSavedSearchC
   }
 
   const qs = params.toString()
-  return qs ? `/boards?${qs}` : "/boards"
+  const target = resolveSavedSearchSection(criteria)
+  const path = target === "any" ? "/search" : peerSectionBrowsePath(target)
+  return qs ? `${path}?${qs}` : path
 }
 
 function facetSummaryLabels(paramKey: string, values: string[] | undefined, limit = 2): string[] {

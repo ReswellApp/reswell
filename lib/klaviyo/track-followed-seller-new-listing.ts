@@ -7,6 +7,9 @@
  * **Building the flow:** Flows → Metric → **Followed Seller New Listing** → email with
  * `{{ event.Title }}`, `{{ event.Price }}`, `{{ event.Listing_URL }}`, `{{ event.photo_url }}`,
  * `{{ event.shop.display_name }}`, `{{ event.shop.url }}`, `{{ event.following_feed_url }}`.
+ *
+ * Do not also fire `Board Alert Match` for shop follows — that metric is for saved
+ * searches / model / brand alerts. Shop email is this metric only.
  */
 
 import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"

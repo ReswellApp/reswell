@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import type { MarketplaceModelPageRedirectInput } from "./search-redirect.ts"
-import { marketplaceModelPageHrefFromParsed } from "./search-redirect.ts"
+import {
+  catalogModelPageHrefFromParsed,
+  marketplaceModelPageHrefFromParsed,
+} from "./search-redirect.ts"
 
 function parsed(
   overrides: Partial<MarketplaceModelPageRedirectInput> = {},
@@ -28,13 +31,19 @@ function parsed(
 }
 
 describe("marketplaceModelPageHrefFromParsed", () => {
+  it("does not send unique catalog lookups to the model page", () => {
+    assert.equal(marketplaceModelPageHrefFromParsed(parsed()), null)
+  })
+})
+
+describe("catalogModelPageHrefFromParsed", () => {
   it("sends a clean model lookup to the model page", () => {
     assert.equal(
-      marketplaceModelPageHrefFromParsed(parsed()),
+      catalogModelPageHrefFromParsed(parsed()),
       "/christenson-surfboards/lane-splitter",
     )
     assert.equal(
-      marketplaceModelPageHrefFromParsed(
+      catalogModelPageHrefFromParsed(
         parsed({
           raw: "christenson lane splitter",
           cleaned: "christenson lane splitter",
@@ -46,26 +55,26 @@ describe("marketplaceModelPageHrefFromParsed", () => {
 
   it("keeps listing search when the query still has extra intent", () => {
     assert.equal(
-      marketplaceModelPageHrefFromParsed(parsed({ lengthInches: 78 })),
+      catalogModelPageHrefFromParsed(parsed({ lengthInches: 78 })),
       null,
     )
     assert.equal(
-      marketplaceModelPageHrefFromParsed(parsed({ residualText: "used" })),
+      catalogModelPageHrefFromParsed(parsed({ residualText: "used" })),
       null,
     )
     assert.equal(
-      marketplaceModelPageHrefFromParsed(parsed({ sectionIntent: "fins" })),
+      catalogModelPageHrefFromParsed(parsed({ sectionIntent: "fins" })),
       null,
     )
     assert.equal(
-      marketplaceModelPageHrefFromParsed(parsed({ styleIntent: ["fish"] })),
+      catalogModelPageHrefFromParsed(parsed({ styleIntent: ["fish"] })),
       null,
     )
   })
 
   it("does not send prefix completions to a longer catalog name", () => {
     assert.equal(
-      marketplaceModelPageHrefFromParsed(
+      catalogModelPageHrefFromParsed(
         parsed({
           raw: "dumpster",
           cleaned: "dumpster",
@@ -78,10 +87,10 @@ describe("marketplaceModelPageHrefFromParsed", () => {
   })
 
   it("returns null without a unique model and brand slug", () => {
-    assert.equal(marketplaceModelPageHrefFromParsed(null), null)
-    assert.equal(marketplaceModelPageHrefFromParsed(parsed({ model: null })), null)
+    assert.equal(catalogModelPageHrefFromParsed(null), null)
+    assert.equal(catalogModelPageHrefFromParsed(parsed({ model: null })), null)
     assert.equal(
-      marketplaceModelPageHrefFromParsed(
+      catalogModelPageHrefFromParsed(
         parsed({ brand: { id: "b", name: "Boards", slug: "boards" } }),
       ),
       null,

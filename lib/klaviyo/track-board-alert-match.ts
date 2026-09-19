@@ -5,7 +5,9 @@
  * **Metric name in Klaviyo:** `Board Alert Match` — create a flow triggered on this metric;
  * profile on the event is the subscriber (`external_id` = Supabase user id).
  *
- * Flow filters can branch on properties such as Listing_ID, Saved_Search_ID, Section, Brand, Model.
+ * Flow filters can branch on properties such as Listing_ID, Saved_Search_ID, Section, Brand, Model,
+ * Alert_Kind (`search` | `model` | `brand`). Keep one metric — do not create separate model/brand
+ * metrics. Clone the flow and filter on Alert_Kind if you want different copy.
  */
 
 import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
@@ -30,6 +32,12 @@ export type KlaviyoBoardAlertMatchPayload = {
   boardType?: string | null
   /** Peer listing section (`surfboards`, `fins`, `wetsuits`, …). */
   section?: string | null
+  /**
+   * Why the subscriber saved the alert. Same metric as filter searches —
+   * Klaviyo flows branch on this (`search` | `model` | `brand`).
+   */
+  alertKind?: string | null
+  savedSearchLabel?: string | null
 }
 
 export async function trackKlaviyoBoardAlertMatch(
@@ -60,6 +68,8 @@ export async function trackKlaviyoBoardAlertMatch(
       Condition: payload.condition ?? "",
       Board_Type: payload.boardType ?? "",
       Section: payload.section ?? "",
+      Alert_Kind: payload.alertKind ?? "",
+      Saved_Search_Label: payload.savedSearchLabel ?? "",
     },
     profile: {
       external_id: payload.subscriberUserId,

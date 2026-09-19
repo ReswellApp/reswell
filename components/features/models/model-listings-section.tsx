@@ -1,6 +1,7 @@
 import { ModelEmptyState } from "@/components/features/models/model-empty-state"
 import { ModelListingsStrip } from "@/components/features/models/model-listings-strip"
 import { ModelTopPick } from "@/components/features/models/model-top-pick"
+import { SaveEntitySearchCta } from "@/components/features/saved-search/save-entity-search-cta"
 import type { ModelMarketplaceListing } from "@/lib/db/brand-listings"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 
@@ -11,6 +12,7 @@ export function ModelListingsSection({
   soldListings,
   topPick,
   criteria,
+  initialSavedSearchId,
   favoritedListingIds,
   isLoggedIn,
   viewerUserId,
@@ -21,6 +23,7 @@ export function ModelListingsSection({
   soldListings: ModelMarketplaceListing[]
   topPick: ModelMarketplaceListing | null
   criteria: BoardSavedSearchCriteria
+  initialSavedSearchId: string | null
   favoritedListingIds: string[]
   isLoggedIn: boolean
   viewerUserId: string | null
@@ -32,6 +35,7 @@ export function ModelListingsSection({
         modelName={modelName}
         criteria={criteria}
         isLoggedIn={isLoggedIn}
+        initialSavedSearchId={initialSavedSearchId}
       />
     )
   }
@@ -45,9 +49,18 @@ export function ModelListingsSection({
           isLoggedIn={isLoggedIn}
         />
       ) : listings.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No {brandName} {modelName} listings for sale right now.
-        </p>
+        <SaveEntitySearchCta
+          heading={`No ${brandName} ${modelName} for sale right now`}
+          description={`Save this model and we'll email you when one is listed on Reswell.`}
+          criteria={criteria}
+          label="Save this model"
+          savedLabel="Model saved"
+          savedSearchLabel={`${brandName} ${modelName}`}
+          successTitle="Model saved"
+          successDescription={`We'll email you when a ${brandName} ${modelName} is listed on Reswell.`}
+          isLoggedIn={isLoggedIn}
+          initialSavedSearchId={initialSavedSearchId}
+        />
       ) : null}
 
       <ModelListingsStrip

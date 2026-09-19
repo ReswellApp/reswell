@@ -5,6 +5,8 @@ import { createAnonSupabaseClient, createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { parseBrandPageTab } from "@/lib/brands/routes"
 import { listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
+import { viewerSavedSearchIdForBrand } from "@/lib/services/viewerSavedSearch"
+import { brandSavedSearchCriteria } from "@/lib/utils/saved-search-alert-kind"
 import { absoluteUrl } from "@/lib/site-metadata"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 
@@ -92,9 +94,18 @@ export default async function BrandPage({ params, searchParams }: Props) {
     }
   }
 
+  const criteria = brandSavedSearchCriteria({
+    brandName: brand.name,
+    brandId: brand.id,
+    brandSlug: brand.slug,
+  })
+  const initialSavedSearchId = await viewerSavedSearchIdForBrand(supabase, user?.id, brand.id)
+
   return (
     <BrandProfileView
       brand={brand}
+      criteria={criteria}
+      initialSavedSearchId={initialSavedSearchId}
       initialTab={parseBrandPageTab(tab)}
       brandListings={brandListings}
       brandSoldListings={brandSoldListings}

@@ -117,7 +117,7 @@ export const buyingRetrievalDocs = [
     keywords: ["board finder", "alert", "saved search", "wishlist", "notify"],
     relatedIds: ["buying/how-to-search", "buying/how-do-favorites-work", "buying/how-do-i-buy-a-board"],
     quickAnswer:
-      "Go to Board Finder, set brand, model, size, condition, or price filters, and save the search. We email you when a new listing matches. You can keep up to 5 saved searches per account.",
+      "Go to Board Finder, set brand, model, size, condition, or price filters, and save the search. You can also save a model or brand from its page. We email you when a new listing matches. You can keep up to 5 saved searches per account.",
     sections: [
       {
         heading: "Create an alert",

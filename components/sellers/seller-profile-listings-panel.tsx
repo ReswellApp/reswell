@@ -24,6 +24,7 @@ import {
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { SaveShopAlertCta } from "@/components/sellers/save-shop-alert-cta"
 import { sellerProfileSectionSortRank } from "@/lib/peer-listing-sections"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import {
@@ -68,6 +69,14 @@ type SellerProfileListingsPanelProps = {
   /** Shown when the Listings tab is displaying sold/history because nothing is active. */
   noActiveListingsNotice?: boolean
   onViewSoldTab?: () => void
+  shopName?: string
+  sellerId?: string
+  sellerSlug?: string | null
+  sellerCity?: string | null
+  isFollowing?: boolean
+  isLoggedIn?: boolean
+  isOwnProfile?: boolean
+  showSaveShopCta?: boolean
 }
 
 function listingStatusLabel(
@@ -222,6 +231,14 @@ export function SellerProfileListingsPanel({
   showPromoCards = true,
   noActiveListingsNotice = false,
   onViewSoldTab,
+  shopName,
+  sellerId,
+  sellerSlug,
+  sellerCity,
+  isFollowing = false,
+  isLoggedIn = false,
+  isOwnProfile = false,
+  showSaveShopCta = false,
 }: SellerProfileListingsPanelProps) {
   const [query, setQuery] = useState("")
   const [viewMode, setViewMode] = useState<ViewMode>("grid")
@@ -275,6 +292,20 @@ export function SellerProfileListingsPanel({
     return result
   }, [listings, query, sectionFilter, conditionFilter, sort])
 
+  if (listings.length === 0 && showSaveShopCta && shopName && sellerId) {
+    return (
+      <SaveShopAlertCta
+        shopName={shopName}
+        sellerId={sellerId}
+        sellerSlug={sellerSlug}
+        sellerCity={sellerCity}
+        isFollowing={isFollowing}
+        isLoggedIn={isLoggedIn}
+        isOwnProfile={isOwnProfile}
+      />
+    )
+  }
+
   const activeSectionLabel =
     sectionFilter === "all"
       ? "Category"
@@ -287,7 +318,17 @@ export function SellerProfileListingsPanel({
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {noActiveListingsNotice ? (
+      {noActiveListingsNotice && showSaveShopCta && shopName && sellerId ? (
+        <SaveShopAlertCta
+          shopName={shopName}
+          sellerId={sellerId}
+          sellerSlug={sellerSlug}
+          sellerCity={sellerCity}
+          isFollowing={isFollowing}
+          isLoggedIn={isLoggedIn}
+          isOwnProfile={isOwnProfile}
+        />
+      ) : noActiveListingsNotice ? (
         <div className="rounded-xl border border-border/80 bg-muted/30 px-4 py-3.5 sm:px-5 sm:py-4">
           <p className="text-sm font-semibold text-foreground">No active listings right now</p>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
@@ -389,10 +430,22 @@ export function SellerProfileListingsPanel({
       </div>
 
       {filteredListings.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 py-14 text-center">
-          <Package className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden />
-          <p className="mt-3 text-muted-foreground">{emptyMessage}</p>
-        </div>
+        showSaveShopCta && shopName && sellerId && !noActiveListingsNotice ? (
+          <SaveShopAlertCta
+            shopName={shopName}
+            sellerId={sellerId}
+            sellerSlug={sellerSlug}
+            sellerCity={sellerCity}
+            isFollowing={isFollowing}
+            isLoggedIn={isLoggedIn}
+            isOwnProfile={isOwnProfile}
+          />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 py-14 text-center">
+            <Package className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden />
+            <p className="mt-3 text-muted-foreground">{emptyMessage}</p>
+          </div>
+        )
       ) : viewMode === "grid" ? (
         <div className={sellerProfileListingsGridClassName}>
           {filteredListings.map((listing) => (

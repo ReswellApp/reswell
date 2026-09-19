@@ -171,6 +171,14 @@ export function SellerProfileView({
                 ? "No sold listings match your filters."
                 : "No listings in this category yet."
             }
+            shopName={displayName ?? shop.shop_name ?? "this shop"}
+            sellerId={shop.id}
+            sellerSlug={shop.seller_slug}
+            sellerCity={shop.city}
+            isFollowing={isFollowing}
+            isLoggedIn={isLoggedIn}
+            isOwnProfile={isOwnProfile}
+            showSaveShopCta={!hasActiveListings}
           />
         ) : null}
 

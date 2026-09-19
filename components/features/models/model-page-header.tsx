@@ -7,11 +7,23 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
 import { formatBoardType } from "@/lib/listing-labels"
 import { LIST_YOUR_SURFBOARD_SELL_HREF } from "@/components/features/marketing/list-your-surfboard-sell-cta"
+import { SaveEntitySearchButton } from "@/components/features/saved-search/save-entity-search-button"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { formatGuideUsd, formatGuideUsdRange } from "@/lib/price-guide/format"
 import type { ModelPageData } from "@/lib/services/modelPage"
+import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 
-export function ModelPageHeader({ page }: { page: ModelPageData }) {
+export function ModelPageHeader({
+  page,
+  criteria,
+  isLoggedIn,
+  initialSavedSearchId,
+}: {
+  page: ModelPageData
+  criteria: BoardSavedSearchCriteria
+  isLoggedIn: boolean
+  initialSavedSearchId: string | null
+}) {
   const { brand, model, priceGuide, reviewStats } = page
   const imageUrl = page.listingImageUrl
   const typical = priceGuide?.typical
@@ -82,9 +94,21 @@ export function ModelPageHeader({ page }: { page: ModelPageData }) {
             <p className="mt-1 text-xs text-muted-foreground">Typical new {newRetail}</p>
           ) : null}
         </div>
-        <Button asChild variant="outline" className="rounded-full">
-          <Link href={LIST_YOUR_SURFBOARD_SELL_HREF}>Sell yours</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          <SaveEntitySearchButton
+            criteria={criteria}
+            label="Save this model"
+            savedLabel="Model saved"
+            savedSearchLabel={`${brand.name} ${model.name}`}
+            successTitle="Model saved"
+            successDescription={`We'll email you when a ${brand.name} ${model.name} is listed on Reswell.`}
+            isLoggedIn={isLoggedIn}
+            initialSavedSearchId={initialSavedSearchId}
+          />
+          <Button asChild variant="outline" className="rounded-full">
+            <Link href={LIST_YOUR_SURFBOARD_SELL_HREF}>Sell yours</Link>
+          </Button>
+        </div>
       </div>
     </header>
   )
