@@ -6,16 +6,38 @@
 
 import { isLiveChatSellerPayoutHowtoIntent } from "./howto-intent.ts"
 
+/** Retired 2026-09-19 — still treat as a generate failure if a model copies it. */
+export const LIVE_CHAT_LEGACY_UNGROUNDED_REPLY =
+  "I don't want to guess on this. If it's about an order, what's the order number, and is it a purchase or a sale? If it's about selling, shipping, or Purchase Protection, tell me the specific question and I'll answer from our guides."
+
 export const LIVE_CHAT_UNGROUNDED_REPLY =
   "I can walk you through buying, selling, payouts, shipping, or Purchase Protection from our guides. What do you need help with?"
+
+export const LIVE_CHAT_GREETING_REPLY =
+  "Hey — I'm here. Buying, selling, a shipment, payouts, or something else?"
 
 /** Published seller-payout how-to — no order number, no invented amount. */
 export const LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY =
   "After the buyer gets the board — tracked delivery plus a day, or a verified pickup — earnings land in /dashboard/earnings. Connect a bank there and cash out; standard ACH is usually a couple of business days."
 
+const GREETING_ONLY =
+  /^(hi|hey|hello|yo|sup|hiya|howdy|good (morning|afternoon|evening))(\s+there)?[\s!.,]*$/i
+
+export function isLiveChatGreeting(text: string): boolean {
+  return GREETING_ONLY.test(text.trim())
+}
+
+export function isLiveChatCannedFailureReply(text: string): boolean {
+  const trimmed = text.trim()
+  return trimmed === LIVE_CHAT_UNGROUNDED_REPLY || trimmed === LIVE_CHAT_LEGACY_UNGROUNDED_REPLY
+}
+
 export function resolveLiveChatFallbackReply(visitorMessage: string): string {
   if (isLiveChatSellerPayoutHowtoIntent(visitorMessage)) {
     return LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY
+  }
+  if (isLiveChatGreeting(visitorMessage)) {
+    return LIVE_CHAT_GREETING_REPLY
   }
   return LIVE_CHAT_UNGROUNDED_REPLY
 }
@@ -32,7 +54,8 @@ Figure out what they are trying to do, resolve it with the specific fact, and cl
 
 ## How to resolve
 - Reply to the latest message. Use the rest of the thread so you do not repeat a point already covered or ignore a follow-up.
-- If the ask needs this visitor's order, tracking, payout status, or listing fact, use the account snapshot. If they are not signed in, ask them to sign in. If more than one order could match, they can tap a tile — never invent a number, status, tracking code, or payout amount.
+- If the ask needs this visitor's order, tracking, payout status, or listing fact, use the account snapshot. Never invent a number, status, tracking code, or payout amount.
+- If they asked about a specific order, tracking, this-sale payout, or refund and they have orders, keep that reply short — the widget shows tap-to-pick order tiles. If they have both purchases and sales and did not say which, the widget asks bought or sold first. Do not ask “which order is it?” Marketplace how-tos still get a published-help answer with no tiles.
 - Ground policy in the help excerpts. If they are too thin to be sure, look the article up before you state a rule.
 - Prefer very_good rated replies for voice. Treat AVOID coach notes as mistakes you must not repeat. Never copy another customer's name, order, tracking, or address from an example.
 - Shape: one sentence that shows you understood, the specific answer, one next step. 1–3 sentences for most asks. No greeting stack.
@@ -40,8 +63,6 @@ Figure out what they are trying to do, resolve it with the specific fact, and cl
 - Set close_ticket true only when you have fully solved the issue (they confirmed, you completed the action, or your answer needs no follow-up). That is their only open live-chat ticket until it is resolved.
 - Leave close_ticket false if you asked a question, need more info, are still looking into it, offered a confirm card, or the issue is only partly handled.
 - If they asked to update a shipping label / ship-from and eligible sales exist, keep that reply short — the widget shows order tiles. If none are waiting for drop-off, say so once and help with whatever else they need.
-- If they asked about a specific order, tracking, this-sale payout, or refund and they have orders, keep that reply short — the widget shows tap-to-pick order tiles. If they have both purchases and sales and did not say which, the widget asks bought or sold first. Do not ask “which order is it?” Marketplace how-tos (buy, sell, fees, how sellers get paid) still get a published-help answer with no tiles.
-
 
 ## Auth (non-negotiable)
 - Before sharing ANY order, purchase, sale, tracking, payout amount, address, or account fact that is not already in the account snapshot, confirm they are signed in and the data belongs to THIS account (use confirm_auth / list_customer_orders / lookup_order).

@@ -3,8 +3,11 @@ import { describe, it } from "node:test"
 
 import {
   DEFAULT_LIVE_CHAT_REPLY_PROMPT,
+  LIVE_CHAT_GREETING_REPLY,
+  LIVE_CHAT_LEGACY_UNGROUNDED_REPLY,
   LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY,
   LIVE_CHAT_UNGROUNDED_REPLY,
+  isLiveChatCannedFailureReply,
   resolveLiveChatFallbackReply,
 } from "../live-chat/live-chat-cs-prompt.ts"
 import {
@@ -128,5 +131,13 @@ describe("live chat CS prompt", () => {
       resolveLiveChatFallbackReply("where is my board?"),
       LIVE_CHAT_UNGROUNDED_REPLY,
     )
+  })
+
+  it("greets instead of asking for an order number", () => {
+    assert.equal(resolveLiveChatFallbackReply("hi there"), LIVE_CHAT_GREETING_REPLY)
+    assert.equal(resolveLiveChatFallbackReply("Hey!"), LIVE_CHAT_GREETING_REPLY)
+    assert.doesNotMatch(LIVE_CHAT_GREETING_REPLY, /order number/i)
+    assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_LEGACY_UNGROUNDED_REPLY), true)
+    assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_UNGROUNDED_REPLY), true)
   })
 })

@@ -6,7 +6,7 @@ import {
 } from "@/lib/db/liveChat"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
 import {
-  LIVE_CHAT_UNGROUNDED_REPLY,
+  isLiveChatCannedFailureReply,
   resolveLiveChatFallbackReply,
 } from "@/lib/live-chat/live-chat-cs-prompt"
 import {
@@ -115,7 +115,7 @@ async function generateWithModel(
     }),
   ])
   const body = draft && "data" in draft ? draft.data.body.trim() : ""
-  if (!body || body === LIVE_CHAT_UNGROUNDED_REPLY) return null
+  if (!body || isLiveChatCannedFailureReply(body)) return null
   return {
     body,
     closeTicket: draft !== null && "closeTicket" in draft && draft.closeTicket === true,

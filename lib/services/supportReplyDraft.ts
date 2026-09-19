@@ -87,6 +87,11 @@ export function isSupportReplyDraftLlmEnabled(): boolean {
   return isAppLlmFeatureEnabled(FEATURE)
 }
 
+export function isLiveChatCsLlmEnabled(): boolean {
+  if (LIVE_CHAT_FEATURE && isAppLlmFeatureEnabled(LIVE_CHAT_FEATURE)) return true
+  return isSupportReplyDraftLlmEnabled()
+}
+
 function staffClient() {
   try {
     return createServiceRoleClient()
@@ -290,7 +295,7 @@ async function generateDraftBody(args: {
     ? (args.modelId?.trim() || liveChatCsModelId())
     : supportReplyDraftModelId()
 
-  if (!isSupportReplyDraftLlmEnabled()) {
+  if (isLiveChat ? !isLiveChatCsLlmEnabled() : !isSupportReplyDraftLlmEnabled()) {
     if (isLiveChat) {
       return {
         body: resolveLiveChatFallbackReply(lastCustomerMessage),
