@@ -30,6 +30,24 @@ describe("decideListingBrandModelCatalogCreate", () => {
     assert.equal(decision.action, "attach_existing")
   })
 
+  it("still returns attach_existing after research resolves to catalog rows", () => {
+    const decision = decideListingBrandModelCatalogCreate({
+      hasCatalogBrand: true,
+      hasCatalogModel: true,
+      extractedBrandName: "Lost",
+      extractedModelName: "RNF",
+      research: highConfidence,
+      officialSite: {
+        ok: true,
+        blocked: false,
+        fetchFailed: false,
+        modelMentioned: true,
+        host: "lostsurfboards.com",
+      },
+    })
+    assert.equal(decision.action, "attach_existing")
+  })
+
   it("queues when research is low confidence", () => {
     const decision = decideListingBrandModelCatalogCreate({
       hasCatalogBrand: false,

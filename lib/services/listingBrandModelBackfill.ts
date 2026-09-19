@@ -4,7 +4,6 @@ import {
   applyListingBrandModelAttach,
   clearListingBrandModelUnmatched,
   collectActiveListingsNeedingBrandOrModel,
-  loadBrandModelsByBrandId,
   loadBrandModelsByBrandIdForProductCategory,
   loadDirectoryBrandsForMatching,
   loadFinDirectoryBrandsForMatching,
@@ -76,17 +75,12 @@ async function loadSectionCatalog(
   supabase: SupabaseClient,
   section: ListingBrandModelBackfillSection,
 ): Promise<SectionCatalog> {
-  if (section === "fins") {
-    const [brands, modelsByBrand] = await Promise.all([
-      loadFinDirectoryBrandsForMatching(supabase),
-      loadBrandModelsByBrandIdForProductCategory(supabase, FIN_CATALOG_PRODUCT_CATEGORY),
-    ])
-    return { brands, modelsByBrand }
-  }
-
+  const productCategory = section === "fins" ? FIN_CATALOG_PRODUCT_CATEGORY : "surfboards"
   const [brands, modelsByBrand] = await Promise.all([
-    loadDirectoryBrandsForMatching(supabase),
-    loadBrandModelsByBrandId(supabase),
+    section === "fins"
+      ? loadFinDirectoryBrandsForMatching(supabase)
+      : loadDirectoryBrandsForMatching(supabase),
+    loadBrandModelsByBrandIdForProductCategory(supabase, productCategory),
   ])
   return { brands, modelsByBrand }
 }
