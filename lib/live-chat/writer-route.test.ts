@@ -4,6 +4,8 @@ import {
   LIVE_CHAT_DEFAULT_WRITER_MODELS,
   LIVE_CHAT_JEV_WRITER_CRITERIA,
   LIVE_CHAT_WRITER_FALLBACK,
+  liveChatCsAgentWriterId,
+  liveChatCsAgentWriterModel,
   liveChatWriterModelId,
   parseLiveChatWriterId,
 } from "./writer-route.ts"
@@ -29,6 +31,14 @@ describe("live chat writer route", () => {
       liveChatWriterModelId("pro", { LIVE_CHAT_WRITER_PRO_MODEL: "google/gemini-2.5-pro" }),
       "google/gemini-2.5-pro",
     )
+  })
+
+  it("upgrades flash_lite to flash for the CS agent harness", () => {
+    assert.equal(liveChatCsAgentWriterId("flash_lite"), "flash")
+    assert.equal(liveChatCsAgentWriterId("flash"), "flash")
+    assert.equal(liveChatCsAgentWriterId("pro"), "pro")
+    assert.equal(liveChatCsAgentWriterModel("flash_lite"), LIVE_CHAT_DEFAULT_WRITER_MODELS.flash)
+    assert.equal(liveChatCsAgentWriterModel("pro"), "google/gemini-2.5-pro")
   })
 
   it("keeps how-to asks on flash and order facts on pro in the Jev rubric", () => {

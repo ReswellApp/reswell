@@ -521,25 +521,14 @@ export async function generateAndStoreDraft(
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)
     if (row.source_channel === "live_chat") {
-      generated = {
-        body: LIVE_CHAT_UNGROUNDED_REPLY,
-        origin: "macro",
-        slugs: knowledge.helpArticles.map((article) => article.slug).slice(0, 3),
-        exampleIds: [],
-        model: null,
-        needsHumanReview: true,
-        closeTicket: false,
-        reason: "Live chat model did not return a grounded reply.",
-        citations: { orders: [], tickets: [] },
-      }
-    } else {
-      const fallback = fallbackDraft(
-        knowledge,
-        draftMacroVars(greetingName, row.order_ref, order),
-        lastCustomer,
-      )
-      generated = { ...fallback, model: null, needsHumanReview: true, closeTicket: false }
+      return { error: "Live chat model did not return a grounded reply." }
     }
+    const fallback = fallbackDraft(
+      knowledge,
+      draftMacroVars(greetingName, row.order_ref, order),
+      lastCustomer,
+    )
+    generated = { ...fallback, model: null, needsHumanReview: true, closeTicket: false }
   }
 
   const saved = await upsertSupportReplyDraft(service, {

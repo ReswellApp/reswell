@@ -37,6 +37,22 @@ export function liveChatWriterModelId(
   return LIVE_CHAT_DEFAULT_WRITER_MODELS[writer]
 }
 
+/**
+ * CS agent generate uses tools + `Output.object`. Gemini 2.5 Flash Lite
+ * returns AI_NoOutputGeneratedError on that harness (prod 2026-09-19).
+ * Keep flash_lite as a Jev key, but write with flash.
+ */
+export function liveChatCsAgentWriterId(writer: LiveChatWriterId): LiveChatWriterId {
+  return writer === "flash_lite" ? "flash" : writer
+}
+
+export function liveChatCsAgentWriterModel(
+  writer: LiveChatWriterId,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  return liveChatWriterModelId(liveChatCsAgentWriterId(writer), env)
+}
+
 export const LIVE_CHAT_JEV_WRITER_CRITERIA = {
   flash_lite:
     "Greeting, thanks, okay/got it, or other social filler with no Reswell product, policy, or account question.",
