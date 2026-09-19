@@ -118,7 +118,7 @@ function toUiMessage(
     created_at: row.created_at,
     agent_display_name:
       row.sender_type === "bot" || (row.sender_type === "agent" && !row.sender_agent_id)
-        ? (row.agent_display_name ?? "Reswell Team")
+        ? (row.agent_display_name ?? null)
         : (row.agent_display_name ?? null),
     sender_agent_id: row.sender_agent_id ?? null,
     pending: false,
@@ -134,11 +134,12 @@ export function useLiveChatSession(options?: {
   const [publicId, setPublicId] = useState<string | null>(null)
   const [supportCaseId, setSupportCaseId] = useState<string | null>(null)
   const [assignedAgentId, setAssignedAgentId] = useState<string | null>(null)
+  const [personaFirstName, setPersonaFirstName] = useState<string | null>(null)
   const [messages, setMessages] = useState<LiveChatUiMessage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [bootstrapping, startBootstrap] = useTransition()
   const [sending, setSending] = useState(false)
-  /** True while Reswell Team (CS agent) is generating a reply. */
+  /** True while Hayden or David (CS agent) is generating a reply. */
   const [aiThinking, setAiThinking] = useState(false)
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -191,6 +192,7 @@ export function useLiveChatSession(options?: {
     setPublicId(null)
     setSupportCaseId(null)
     setAssignedAgentId(null)
+    setPersonaFirstName(null)
     setMessages([])
     setError(null)
     setSending(false)
@@ -230,6 +232,7 @@ export function useLiveChatSession(options?: {
                 visitor_name: string
                 support_case_id?: string | null
                 assigned_agent_id?: string | null
+                persona_first_name?: string | null
               }
               messages: Array<{
                 id: string
@@ -249,17 +252,14 @@ export function useLiveChatSession(options?: {
             return
           }
 
-          const mapped = mapApiMessages(json.data.messages).map((m) =>
-            m.sender_type === "bot" || (m.sender_type === "agent" && !m.sender_agent_id)
-              ? { ...m, agent_display_name: m.agent_display_name ?? "Reswell Team" }
-              : m,
-          )
+          const mapped = mapApiMessages(json.data.messages)
           setStoredLiveChatSessionPublicId(json.data.session.public_id)
           setSessionClosed(false)
           setSessionId(json.data.session.id)
           setPublicId(json.data.session.public_id)
           setSupportCaseId(json.data.session.support_case_id ?? null)
           setAssignedAgentId(json.data.session.assigned_agent_id ?? null)
+          setPersonaFirstName(json.data.session.persona_first_name ?? null)
           publicIdRef.current = json.data.session.public_id
           sessionReadyRef.current = true
           supportCaseIdRef.current = json.data.session.support_case_id ?? null
@@ -358,6 +358,7 @@ export function useLiveChatSession(options?: {
             public_id: string
             support_case_id?: string | null
             assigned_agent_id?: string | null
+            persona_first_name?: string | null
           }
           messages: Array<{
             id: string
@@ -371,6 +372,7 @@ export function useLiveChatSession(options?: {
       }
       if (!res.ok || !json.data) return false
       adoptSession(json.data.session)
+      setPersonaFirstName(json.data.session.persona_first_name ?? null)
       const mapped = mapApiMessages(json.data.messages)
       setMessages((prev) => {
         const pending = prev.filter((m) => m.pending)
@@ -783,6 +785,7 @@ export function useLiveChatSession(options?: {
     setPublicId(null)
     setSupportCaseId(null)
     setAssignedAgentId(null)
+    setPersonaFirstName(null)
     setMessages([])
     setError(null)
     setSending(false)
@@ -801,6 +804,7 @@ export function useLiveChatSession(options?: {
     publicId,
     supportCaseId,
     assignedAgentId,
+    personaFirstName,
     messages,
     error,
     setError,

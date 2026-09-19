@@ -26,8 +26,9 @@ import {
 } from "@/lib/live-chat/errors"
 import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
 import { autoSendLiveChatCsAgentReply } from "@/lib/services/liveChatCsAgentAutoReply"
+import { resolveLiveChatPersona } from "@/lib/live-chat/human-feel"
 import { isLegacyLiveChatWidgetCopy, liveChatAgentDisplayName } from "@/lib/live-chat/team-display"
-import { LIVE_CHAT_TEAM_GREETING } from "@/lib/live-chat/widget-config"
+import { ensureLiveChatSessionPersona } from "@/lib/services/liveChatHumanFeel"
 import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
 import { openLiveChatSupportCase, syncLiveChatVisitorMessageToCase } from "@/lib/services/liveChatSupportCase"
 import { closeOpenLiveChatConversationsForVisitor } from "@/lib/services/liveChatClose"
@@ -72,6 +73,7 @@ async function attachSignedInVisitorIdentity(
 }
 
 function toVisitorSession(session: LiveChatSessionRow) {
+  const persona = resolveLiveChatPersona(session.id, session.metadata)
   return {
     id: session.id,
     public_id: session.public_id,
@@ -79,6 +81,8 @@ function toVisitorSession(session: LiveChatSessionRow) {
     status: session.status,
     support_case_id: session.support_case_id,
     assigned_agent_id: session.assigned_agent_id,
+    persona: persona.id,
+    persona_first_name: persona.firstName,
   }
 }
 
@@ -144,13 +148,8 @@ async function startFreshVisitorSession(
   })
   if (!session) return null
 
-  await insertLiveChatMessage(svc, {
-    session_id: session.id,
-    sender_type: "agent",
-    content: LIVE_CHAT_TEAM_GREETING,
-  })
-
-  return session
+  const ensured = await ensureLiveChatSessionPersona(svc, session)
+  return ensured.session
 }
 
 export type LiveChatVisitorMessage = LiveChatMessageRow & {
@@ -161,11 +160,15 @@ export type LiveChatVisitorMessage = LiveChatMessageRow & {
 async function enrichMessagesWithAgentNames(
   svc: SupabaseClient,
   messages: LiveChatMessageRow[],
+  session?: LiveChatSessionRow,
 ): Promise<LiveChatVisitorMessage[]> {
   const agentIds = messages
     .filter((m) => m.sender_type === "agent" && m.sender_agent_id)
     .map((m) => m.sender_agent_id as string)
   const names = await getAgentDisplayNamesByIds(svc, agentIds)
+  const personaFirstName = session
+    ? resolveLiveChatPersona(session.id, session.metadata).firstName
+    : null
   return messages
     .filter((m) => !isLegacyLiveChatWidgetCopy(m.content))
     .map((m) => ({
@@ -174,6 +177,7 @@ async function enrichMessagesWithAgentNames(
         senderType: m.sender_type,
         senderAgentId: m.sender_agent_id,
         lookedUpName: m.sender_agent_id ? names.get(m.sender_agent_id) : null,
+        personaFirstName,
       }),
     }))
 }
@@ -213,6 +217,7 @@ async function visitorResumePayload(
     await listLiveChatMessagesForSession(svc, session.id, {
       limit: VISITOR_RESUME_MESSAGE_LIMIT,
     }),
+    session,
   )
   return {
     success: true,
@@ -503,6 +508,7 @@ export async function getLiveChatVisitorThreadService(
     await listLiveChatMessagesForSession(svc, session.id, {
       limit: VISITOR_RESUME_MESSAGE_LIMIT,
     }),
+    session,
   )
   return {
     success: true,

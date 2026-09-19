@@ -1,4 +1,7 @@
-import { LIVE_CHAT_SUPPORT_LEAD_FALLBACK } from "@/lib/live-chat/support-lead-display"
+import {
+  LIVE_CHAT_SUPPORT_DAVID_FALLBACK,
+  LIVE_CHAT_SUPPORT_LEAD_FALLBACK,
+} from "@/lib/live-chat/support-lead-display"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
@@ -57,7 +60,7 @@ export async function getLiveChatSupportTeamDisplayService(): Promise<LiveChatSu
       .limit(12)
 
     if (error || !staffRows?.length) {
-      return [LIVE_CHAT_SUPPORT_LEAD_FALLBACK]
+      return [LIVE_CHAT_SUPPORT_LEAD_FALLBACK, LIVE_CHAT_SUPPORT_DAVID_FALLBACK]
     }
 
     const members = staffRows.map((row) =>
@@ -73,11 +76,15 @@ export async function getLiveChatSupportTeamDisplayService(): Promise<LiveChatSu
       pool.find((m) => m.initials === "HG") ??
       pool[0]
 
-    if (!lead) return [LIVE_CHAT_SUPPORT_LEAD_FALLBACK]
+    if (!lead) return [LIVE_CHAT_SUPPORT_LEAD_FALLBACK, LIVE_CHAT_SUPPORT_DAVID_FALLBACK]
 
     const rest = pool.filter((m) => m.id !== lead.id)
-    return [lead, ...rest].slice(0, 12)
+    const withDavid =
+      rest.some((m) => m.name.toLowerCase().includes("david")) || lead.name.toLowerCase().includes("david")
+        ? rest
+        : [LIVE_CHAT_SUPPORT_DAVID_FALLBACK, ...rest]
+    return [lead, ...withDavid].slice(0, 12)
   } catch {
-    return [LIVE_CHAT_SUPPORT_LEAD_FALLBACK]
+    return [LIVE_CHAT_SUPPORT_LEAD_FALLBACK, LIVE_CHAT_SUPPORT_DAVID_FALLBACK]
   }
 }

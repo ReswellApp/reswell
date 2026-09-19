@@ -6,10 +6,8 @@ import {
 } from "@/lib/db/liveChat"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
 import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
-import {
-  LIVE_CHAT_TEAM_NAME,
-  LIVE_CHAT_WIDGET_ADMIN_ONLY,
-} from "@/lib/live-chat/widget-config"
+import { LIVE_CHAT_WIDGET_ADMIN_ONLY } from "@/lib/live-chat/widget-config"
+import { liveChatPersonaAlreadyJoined } from "@/lib/live-chat/human-feel"
 import {
   appendLiveChatAgentTurnToCase,
   appendLiveChatVisitorTurnToCase,
@@ -21,6 +19,14 @@ import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
 import { resolveLiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
 import { generateAndStoreDraft } from "@/lib/services/supportReplyDraft"
 import { loadLiveChatReplyPromptBody } from "@/lib/services/supportReplyExamples"
+import {
+  announceLiveChatPersonaJoin,
+  ensureLiveChatSessionPersona,
+  holdLiveChatHumanFeel,
+  liveChatRewriteWithPersona,
+  sleepUntilLiveChatJoin,
+} from "@/lib/services/liveChatHumanFeel"
+import { routeLiveChatWriterWithJev } from "@/lib/llm/jev-live-chat-router"
 import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
 
 /** Outer budget covers order/listing preload plus the live-chat model timeout. */
@@ -39,6 +45,7 @@ async function persistTeamReply(
   session: LiveChatSessionRow,
   caseId: string | null,
   body: string,
+  displayName: string,
 ): Promise<LiveChatMessageRow | null> {
   const message = await insertLiveChatMessage(svc, {
     session_id: session.id,
@@ -61,7 +68,7 @@ async function persistTeamReply(
       sender_agent_id: null,
       content: message.content,
       created_at: message.created_at,
-      agent_display_name: LIVE_CHAT_TEAM_NAME,
+      agent_display_name: displayName,
     },
   })
 
@@ -72,9 +79,19 @@ async function generateDraftBodyWithBudget(
   svc: SupabaseClient,
   caseId: string,
   session: LiveChatSessionRow,
+  firstName: string,
+  visitorMessage: string,
 ): Promise<{ body: string; closeTicket: boolean } | null> {
   try {
-    const rewriteInstruction = await loadLiveChatReplyPromptBody(svc)
+    const route = await routeLiveChatWriterWithJev({
+      visitorMessage,
+      signedIn: Boolean(session.user_id),
+    })
+    console.info("[liveChatCsAgentAutoReply] writer", route.source, route.writer, route.model)
+    const rewriteInstruction = liveChatRewriteWithPersona(
+      await loadLiveChatReplyPromptBody(svc),
+      firstName,
+    )
     const liveChatActor = await resolveLiveChatActionActor(svc, {
       visitorUserId: session.user_id,
     })
@@ -83,6 +100,7 @@ async function generateDraftBodyWithBudget(
         rewriteInstruction,
         liveChatSession: session,
         liveChatActor,
+        modelId: route.model,
       }),
       new Promise<null>((resolve) => {
         setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
@@ -101,10 +119,10 @@ async function generateDraftBodyWithBudget(
 }
 
 /**
- * Admin-widget only: the contact-messages CS agent writes the next reply and
- * sends it in live chat. Inbox drafts stay review-before-send.
+ * Admin-widget only: the CS agent writes the next reply as Hayden or David,
+ * after a join line and a human-feel delay. Inbox drafts stay review-before-send.
  *
- * Label-update asks always get a deterministic team reply (even if a human is
+ * Label-update asks always get a deterministic reply (even if a human is
  * assigned) so the visitor is never left with silence.
  */
 export async function autoSendLiveChatCsAgentReply(
@@ -125,37 +143,74 @@ export async function autoSendLiveChatCsAgentReply(
     await appendLiveChatVisitorTurnToCase(svc, caseId, session, visitorMessage.content)
   }
 
-  await broadcastLiveChatTyping({
-    sessionId: session.id,
-    participantType: "agent",
-    displayName: LIVE_CHAT_TEAM_NAME,
-    isTyping: true,
-  })
+  const startedAtMs = Date.now()
+  const ensured = await ensureLiveChatSessionPersona(svc, session)
+  let workingSession = ensured.session
+  const persona = ensured.persona
+  const isFirstJoin = !liveChatPersonaAlreadyJoined(workingSession.metadata)
+
+  const generatePromise = isLabelIntent
+    ? bootstrapLiveChatLabelUpdate({ svc, session: workingSession }).then((bootstrap) => ({
+        body:
+          !bootstrap.authRequired && bootstrap.orders.length === 0
+            ? LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY
+            : LIVE_CHAT_LABEL_UPDATE_REPLY,
+        closeTicket: false,
+        needsHumanReview: false,
+      }))
+    : (caseId
+        ? generateDraftBodyWithBudget(
+            svc,
+            caseId,
+            workingSession,
+            persona.firstName,
+            visitorMessage.content,
+          )
+        : Promise.resolve(null)
+      ).then((generated) =>
+        generated
+          ? { ...generated, needsHumanReview: false }
+          : {
+              body: LIVE_CHAT_UNGROUNDED_REPLY,
+              closeTicket: false,
+              needsHumanReview: Boolean(caseId),
+            },
+      )
 
   try {
-    if (isLabelIntent) {
-      const bootstrap = await bootstrapLiveChatLabelUpdate({ svc, session })
-      const body =
-        !bootstrap.authRequired && bootstrap.orders.length === 0
-          ? LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY
-          : LIVE_CHAT_LABEL_UPDATE_REPLY
-      return await persistTeamReply(svc, session, caseId, body)
+    await sleepUntilLiveChatJoin({
+      sessionId: workingSession.id,
+      visitorContent: visitorMessage.content,
+      isFirstJoin,
+      startedAtMs,
+    })
+
+    if (isFirstJoin) {
+      const announced = await announceLiveChatPersonaJoin(svc, workingSession, persona)
+      workingSession = announced.session
     }
 
-    let body = LIVE_CHAT_UNGROUNDED_REPLY
-    let closeTicket = false
-    let needsHumanReview = false
-    if (caseId) {
-      const generated = await generateDraftBodyWithBudget(svc, caseId, session)
-      if (generated) {
-        body = generated.body
-        closeTicket = generated.closeTicket
-      } else {
-        needsHumanReview = true
-      }
-    }
+    await broadcastLiveChatTyping({
+      sessionId: workingSession.id,
+      participantType: "agent",
+      displayName: persona.firstName,
+      isTyping: true,
+    })
 
-    const sent = await persistTeamReply(svc, session, caseId, body)
+    const generated = await generatePromise
+    const body = generated.body
+    const closeTicket = generated.closeTicket
+    const needsHumanReview = generated.needsHumanReview
+
+    await holdLiveChatHumanFeel({
+      sessionId: workingSession.id,
+      visitorContent: visitorMessage.content,
+      replyContent: body,
+      isFirstJoin,
+      startedAtMs,
+    })
+
+    const sent = await persistTeamReply(svc, workingSession, caseId, body, persona.firstName)
     if (
       sent &&
       caseId &&
@@ -167,9 +222,9 @@ export async function autoSendLiveChatCsAgentReply(
       })
     ) {
       await resolveLiveChatConversation(svc, {
-        ...session,
+        ...workingSession,
         support_case_id: caseId,
-        contact_message_id: opened?.contactMessageId || session.contact_message_id,
+        contact_message_id: opened?.contactMessageId || workingSession.contact_message_id,
       })
     }
     return sent
@@ -177,15 +232,16 @@ export async function autoSendLiveChatCsAgentReply(
     console.error("[liveChatCsAgentAutoReply] reply failed:", error)
     return persistTeamReply(
       svc,
-      session,
+      workingSession,
       caseId,
       isLabelIntent ? LIVE_CHAT_LABEL_UPDATE_REPLY : LIVE_CHAT_UNGROUNDED_REPLY,
+      persona.firstName,
     )
   } finally {
     await broadcastLiveChatTyping({
-      sessionId: session.id,
+      sessionId: workingSession.id,
       participantType: "agent",
-      displayName: LIVE_CHAT_TEAM_NAME,
+      displayName: persona.firstName,
       isTyping: false,
     })
   }

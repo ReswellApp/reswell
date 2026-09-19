@@ -392,6 +392,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
                 supportTeam={supportTeam}
                 onlineMemberIds={onlineMemberIds}
                 assignedAgentId={session.assignedAgentId}
+                personaFirstName={session.personaFirstName}
               />
             ) : null}
 

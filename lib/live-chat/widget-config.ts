@@ -28,8 +28,8 @@ export const LIVE_CHAT_HOME_TAGLINE = "Real people at Reswell"
 export const LIVE_CHAT_HOME_HEADER_IMAGE = "/images/live-chat/home-header-barrel.jpg"
 
 export const LIVE_CHAT_HOME_MESSAGE_CTA = "Message the team"
-export const LIVE_CHAT_HOME_MESSAGE_SUBONLINE = "Reswell Team replies here"
-export const LIVE_CHAT_HOME_MESSAGE_SUBOFFLINE = "Reswell Team replies here"
+export const LIVE_CHAT_HOME_MESSAGE_SUBONLINE = "Hayden or David will jump in"
+export const LIVE_CHAT_HOME_MESSAGE_SUBOFFLINE = "Hayden or David will jump in"
 
 export const LIVE_CHAT_HOME_HELP_CTA = "Browse help guides"
 export const LIVE_CHAT_HOME_HELP_SECTION = "Popular guides"
@@ -38,7 +38,7 @@ export const LIVE_CHAT_HOME_TRUST = "Every order includes purchase protection."
 export const LIVE_CHAT_MESSAGES_EMPTY =
   "What can we help with? Share an order number, a listing link, or describe what you're running into — we'll get back to you."
 
-export const LIVE_CHAT_MESSAGES_REPLY_NOTE = "Reswell Team replies here"
+export const LIVE_CHAT_MESSAGES_REPLY_NOTE = "Hayden or David will jump in"
 
 /** Tappable prompts on the empty chat state — pre-fill the composer to lower the blank-textarea barrier. */
 export const LIVE_CHAT_STARTER_TOPICS = [
