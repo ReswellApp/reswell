@@ -50,6 +50,7 @@ import {
 import { ListingFulfillmentAccordionItem } from "@/components/features/listings/listing-fulfillment-accordion-item"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
+import { resolveListingModelPageHref } from "@/lib/services/modelPage"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
@@ -257,6 +258,11 @@ async function renderWetsuitsListingDetailPage({
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const specsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
   const modelForSpecs = (wetsuit.model as string | null)?.trim() || null
+  const modelPagePath = await resolveListingModelPageHref(supabase, {
+    brand: indexBrand,
+    brandModelId: (wetsuit.brand_model_id as string | null),
+    modelName: modelForSpecs,
+  })
 
   const sizeLabel = wetsuitSizeLabel(wetsuit.wetsuit_size as string | null)
 
@@ -367,7 +373,7 @@ async function renderWetsuitsListingDetailPage({
           href: specsBrandHref,
         }
       : null,
-    modelForSpecs ? { label: "Model", value: modelForSpecs } : null,
+    modelForSpecs ? { label: "Model", value: modelForSpecs, href: modelPagePath } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
   const aboutSellerSection = (

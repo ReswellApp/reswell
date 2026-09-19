@@ -70,6 +70,58 @@ function mapBrandModelAdminRows(rows: RawBrandModelRow[]): BrandModelAdminRow[] 
   return out
 }
 
+export async function getPublicBrandModelById(
+  supabase: SupabaseClient,
+  id: string,
+): Promise<{ id: string; brand_id: string; name: string } | null> {
+  const modelId = id.trim()
+  if (!modelId) return null
+
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select("id, brand_id, name")
+    .eq("id", modelId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("getPublicBrandModelById:", error.message)
+    return null
+  }
+  if (!data) return null
+
+  const name = data.name.trim()
+  if (!name) return null
+  return { id: data.id, brand_id: data.brand_id, name }
+}
+
+/** Full public catalog rows for a brand’s model pages. */
+export async function listBrandModelsForPublicPageByBrandId(
+  supabase: SupabaseClient,
+  brandId: string,
+): Promise<BrandModelRow[]> {
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select(
+      "id, brand_id, name, description, image_url, product_category_slug, board_category_slug, created_at, updated_at",
+    )
+    .eq("brand_id", brandId)
+    .order("name", { ascending: true })
+
+  if (error) {
+    console.error("listBrandModelsForPublicPageByBrandId:", error.message)
+    return []
+  }
+
+  return ((data ?? []) as BrandModelRow[]).map((row) => ({
+    ...row,
+    name: row.name.trim(),
+    description: row.description?.trim() || null,
+    image_url: row.image_url ?? null,
+    product_category_slug: row.product_category_slug ?? "surfboards",
+    board_category_slug: row.board_category_slug ?? null,
+  }))
+}
+
 /** Public catalog rows for sell-flow model picker (`brand_models` only — not variants). */
 export async function listBrandModelsForPublicCatalogByBrandId(
   supabase: SupabaseClient,

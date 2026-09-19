@@ -17,6 +17,7 @@ import {
 import { marketplaceSearchSuggestSections } from "@/lib/header-nav-marketplace-search"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
+import { formatStoredListingDimensions } from "@/lib/listing-dimensions-display"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
   listingTitleThumbnailCandidates,
@@ -35,6 +36,7 @@ import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
 import { parseMarketplaceQuery } from "@/lib/services/marketplaceQueryParse"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { priceGuideOrderSoldUsd } from "@/lib/price-guide/sold-item-price"
 import { absoluteUrl } from "@/lib/site-metadata"
 import { slugify } from "@/lib/slugify"
 import type {
@@ -378,8 +380,8 @@ export async function getPublicPricingService(
   const soldPrices: number[] = []
   const recentSold: PublicApiSoldComp[] = []
   for (const row of soldRows) {
-    const price = moneyUsd(row.amount)
-    if (price == null || price <= 0) continue
+    const price = priceGuideOrderSoldUsd(row)
+    if (price == null) continue
     soldPrices.push(price)
     if (recentSold.length < RECENT_SOLD_LIMIT) {
       recentSold.push(toSoldComp(row, price))
@@ -423,7 +425,7 @@ function toSoldComp(row: PublicResearchSoldOrderRow, price: number): PublicApiSo
     sold_at: row.created_at.slice(0, 10),
     condition: listing?.condition ?? null,
     condition_label: listing?.condition ? formatCondition(listing.condition) : null,
-    dimensions: listing?.dimensions?.trim() || null,
+    dimensions: formatStoredListingDimensions(listing?.dimensions),
     title: listing?.title?.trim() || null,
     listing_url: href ? absoluteUrl(href) : null,
   }

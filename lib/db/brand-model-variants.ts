@@ -62,6 +62,14 @@ function mapOverviewVariantRows(rows: Record<string, unknown>[]): BrandModelVari
   })) as BrandModelVariantRow[]
 }
 
+/** Public catalog dimensions / fin specs for a model page. */
+export async function listBrandModelVariantsForPublic(
+  supabase: SupabaseClient,
+  brandModelId: string,
+): Promise<BrandModelVariantRow[]> {
+  return listBrandModelVariantsForAdmin(supabase, brandModelId)
+}
+
 export async function listBrandModelVariantsForAdmin(
   supabase: SupabaseClient,
   brandModelId: string,

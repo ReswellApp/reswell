@@ -12,6 +12,14 @@ import {
   isPermanentRestrictionUntil,
 } from "@/lib/messages/account-ban-errors"
 import {
+  NEW_ACCOUNT_BANNED_SIGNAL_REASON,
+  isAccountNewerThanFraudBanWindow,
+} from "@/lib/messages/new-account-fraud-ban"
+import {
+  persistUserAccessSignals,
+  requestAccessSignalsAreBanned,
+} from "@/lib/services/accessSignals"
+import {
   MESSAGE_BLOCKED_ACCOUNT_RESTRICTED_ERROR,
   MESSAGE_BLOCKED_RATE_LIMITED_ERROR,
   PURCHASE_BLOCKED_ACCOUNT_RESTRICTED_ERROR,
@@ -113,6 +121,31 @@ export async function evaluateUserMessageSend(
     service = createServiceRoleClient()
   } catch {
     return { ok: true }
+  }
+
+  try {
+    const signals = await persistUserAccessSignals(service, senderId)
+    if (
+      isAccountNewerThanFraudBanWindow(state.createdAt) &&
+      (await requestAccessSignalsAreBanned(service, signals))
+    ) {
+      const { applyAdminAccountBan } = await import("@/lib/services/banUserAccount")
+      const banned = await applyAdminAccountBan({
+        userId: senderId,
+        banned: true,
+        reason: NEW_ACCOUNT_BANNED_SIGNAL_REASON,
+      })
+      if (banned.ok) {
+        const untilIso = banned.restrictedUntil ?? new Date(Date.now() + 60_000).toISOString()
+        return {
+          ok: false,
+          result: restrictionBlockedResult(MESSAGE_BLOCKED_ACCOUNT_RESTRICTED_ERROR, untilIso),
+          userMessage: ACCOUNT_BANNED_USER_MESSAGE,
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[evaluateUserMessageSend] access signals:", error)
   }
 
   const sinceIso = new Date(Date.now() - MESSAGE_RATE_LIMIT_WINDOW_MS).toISOString()

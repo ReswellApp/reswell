@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { listingDetailHref } from "@/lib/listing-href"
 import { formatCondition } from "@/lib/listing-labels"
+import { formatStoredListingDimensions } from "@/lib/listing-dimensions-display"
 import { moneyUsd } from "@/lib/price-guide/stats"
 import type { PriceGuideComp, PriceGuideCompSource } from "@/lib/types/price-guide"
 
@@ -52,7 +53,7 @@ export function mapManualComp(raw: RawComp): PriceGuideComp {
     sold_at: raw.sold_at.slice(0, 10),
     condition: raw.condition,
     condition_label: raw.condition ? formatCondition(raw.condition) : null,
-    dimensions: raw.dimensions,
+    dimensions: formatStoredListingDimensions(raw.dimensions),
     title: raw.title,
     source: raw.source,
     source_label: SOURCE_LABEL[raw.source],

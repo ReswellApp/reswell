@@ -7,6 +7,7 @@ import { brandLegacyRecallTokens } from "@/lib/utils/marketplace-brand-query"
 import { fetchRecentlySoldListingsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
 import { isPeerListingSection, PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import { canUseModelTextFallback, listingTitleMatchesModel } from "@/lib/models/match"
 
 const BRAND_MARKETPLACE_LISTING_SELECT = `
   id,
@@ -120,12 +121,14 @@ interface BrandMarketplaceListingRow {
   local_pickup?: boolean | null
   board_type?: string | null
   dimensions?: string | null
+  description?: string | null
+  created_at?: string | null
   updated_at?: string | null
   primary_image_url?: string | null
   primary_thumbnail_url?: string | null
   tile_gallery_images?: unknown
   listing_images?: RecentListing["listing_images"]
-  profiles?: RecentListing["profiles"]
+  profiles?: RecentListing["profiles"] & { seller_slug?: string | null }
   categories?: RecentListing["categories"]
 }
 
@@ -322,6 +325,134 @@ export async function listRecentlySoldListingsForBrand(
  * Active listing ids linked to catalog models — same recall path nav typeahead
  * uses when Elasticsearch over-constrains a shared model prefix.
  */
+export type ModelMarketplaceListing = RecentListing & {
+  description: string | null
+  created_at: string | null
+  photo_count: number
+  shop_verified: boolean
+  profiles?: RecentListing["profiles"] & { seller_slug?: string | null }
+}
+
+const MODEL_MARKETPLACE_LISTING_SELECT = `
+  id,
+  slug,
+  user_id,
+  title,
+  price,
+  compare_at_price,
+  is_good_deal,
+  condition,
+  section,
+  status,
+  city,
+  state,
+  shipping_available,
+  local_pickup,
+  board_type,
+  dimensions,
+  description,
+  created_at,
+  updated_at,
+  hidden_from_site,
+  archived_at,
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images,
+  profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified, seller_slug),
+  categories (name, slug)
+`
+
+function photoCountFromRow(row: BrandMarketplaceListingRow): number {
+  if (Array.isArray(row.listing_images) && row.listing_images.length > 0) {
+    return row.listing_images.length
+  }
+  if (Array.isArray(row.tile_gallery_images)) return row.tile_gallery_images.length
+  return row.primary_image_url ? 1 : 0
+}
+
+function mapRowToModelListing(row: BrandMarketplaceListingRow & {
+  description?: string | null
+  created_at?: string | null
+}): ModelMarketplaceListing {
+  const mapped = mapRowToRecentListing(row)
+  const shopVerified = Boolean(row.profiles?.shop_verified)
+  return {
+    ...mapped,
+    description: row.description?.trim() || null,
+    created_at: row.created_at ?? null,
+    photo_count: photoCountFromRow(row),
+    shop_verified: shopVerified,
+    profiles: row.profiles,
+  }
+}
+
+/**
+ * Active listings for a catalog model: exact `brand_model_id`, plus a title/model
+ * text fallback so untagged Lane Splitter-style listings still appear.
+ */
+export async function listActiveListingsForBrandModel(
+  supabase: SupabaseClient,
+  input: {
+    brand: { id: string; name: string }
+    model: { id: string; name: string }
+    limit?: number
+  },
+): Promise<ModelMarketplaceListing[]> {
+  const limit = input.limit ?? 48
+  const byId = await supabase
+    .from("listings")
+    .select(MODEL_MARKETPLACE_LISTING_SELECT)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .eq("brand_model_id", input.model.id)
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (byId.error) {
+    console.error("[listActiveListingsForBrandModel] id:", byId.error.message)
+  }
+
+  const matched = new Map<string, ModelMarketplaceListing>()
+  for (const row of (byId.data ?? []) as (BrandMarketplaceListingRow & {
+    description?: string | null
+    created_at?: string | null
+  })[]) {
+    matched.set(row.id, mapRowToModelListing(row))
+  }
+
+  if (matched.size >= limit || !canUseModelTextFallback(input.model.name)) {
+    return [...matched.values()].slice(0, limit)
+  }
+
+  const brandRows = await supabase
+    .from("listings")
+    .select(MODEL_MARKETPLACE_LISTING_SELECT)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
+    .or(brandInventoryOrClause(input.brand))
+    .order("created_at", { ascending: false })
+    .limit(Math.min(limit * 4, 120))
+
+  if (brandRows.error) {
+    console.error("[listActiveListingsForBrandModel] brand:", brandRows.error.message)
+    return [...matched.values()]
+  }
+
+  for (const row of (brandRows.data ?? []) as (BrandMarketplaceListingRow & {
+    description?: string | null
+    created_at?: string | null
+  })[]) {
+    if (matched.has(row.id)) continue
+    if (!listingTitleMatchesModel(row.title, input.model.name)) continue
+    matched.set(row.id, mapRowToModelListing(row))
+    if (matched.size >= limit) break
+  }
+
+  return [...matched.values()]
+}
+
 export async function listActiveListingIdsByBrandModelIds(
   supabase: SupabaseClient,
   modelIds: string[],

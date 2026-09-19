@@ -3,6 +3,7 @@ import {
   listingTitleThumbnailCandidates,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
+import { formatStoredListingDimensions } from "@/lib/listing-dimensions-display"
 import { listingDetailHref } from "@/lib/listing-href"
 import { formatCondition, LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import {
@@ -20,6 +21,7 @@ import {
   statsFromValues,
   typicalRangeFromStats,
 } from "@/lib/price-guide/stats"
+import { priceGuideOrderSoldUsd } from "@/lib/price-guide/sold-item-price"
 import {
   selectPriceGuideBrandsByIds,
   selectPriceGuideListings,
@@ -121,7 +123,7 @@ function resolveSales(
 
   for (const order of orders) {
     const listing = listingsById.get(order.listing_id)
-    const price = moneyUsd(order.amount)
+    const price = priceGuideOrderSoldUsd(order)
     if (!listing || price == null) continue
     soldByListing.set(listing.id, {
       listingId: listing.id,
@@ -296,7 +298,7 @@ export function compsFromSales(sales: PriceGuideResolvedSale[], limit = 12): Pri
     sold_at: sale.soldAt || "—",
     condition: sale.condition,
     condition_label: sale.condition ? formatCondition(sale.condition) : null,
-    dimensions: sale.dimensions?.trim() || null,
+    dimensions: formatStoredListingDimensions(sale.dimensions),
     title: sale.title?.trim() || null,
     source: sale.source,
     source_label: sale.sourceLabel,
@@ -370,7 +372,7 @@ export function mapLiveListings(
       title: row.title?.trim() || "Untitled listing",
       price_usd: price,
       condition_label: row.condition ? formatCondition(row.condition) : null,
-      dimensions: row.dimensions?.trim() || null,
+      dimensions: formatStoredListingDimensions(row.dimensions),
       city: row.city?.trim() || null,
       state: row.state?.trim() || null,
       image_url: listingTitleThumbnailCandidates(

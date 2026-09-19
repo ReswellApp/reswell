@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 export type UserRestrictionState = {
   isAdmin: boolean
   isEmployee: boolean
+  createdAt: string | null
   accountRestrictedUntil: string | null
   accountRestrictedReason: string | null
   messageRateLimitedUntil: string | null
@@ -22,7 +23,7 @@ export async function fetchUserRestrictionState(
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "is_admin, is_employee, account_restricted_until, account_restricted_reason, message_rate_limited_until",
+      "is_admin, is_employee, created_at, account_restricted_until, account_restricted_reason, message_rate_limited_until",
     )
     .eq("id", userId)
     .maybeSingle()
@@ -35,6 +36,7 @@ export async function fetchUserRestrictionState(
   return {
     isAdmin: data.is_admin === true,
     isEmployee: data.is_employee === true,
+    createdAt: typeof data.created_at === "string" ? data.created_at : null,
     accountRestrictedUntil:
       typeof data.account_restricted_until === "string" ? data.account_restricted_until : null,
     accountRestrictedReason:

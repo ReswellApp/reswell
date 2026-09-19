@@ -8,14 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { ListingSurfboardBreadcrumbs } from "@/components/features/listings/listing-surfboard-breadcrumbs"
 import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
 import {
   loadListingDetailPageContext,
@@ -32,7 +25,7 @@ import { ImageGallery } from "@/components/image-gallery"
 import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { orderedListingGalleryImages } from "@/lib/listing-image-display"
-import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
+import { resolveListingModelPageHref } from "@/lib/services/modelPage"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { cn } from "@/lib/utils"
@@ -70,10 +63,6 @@ import {
 } from "@/lib/utils/public-listing-price"
 import { HomePeerListingScrollTile, HomeListingScrollRow, type HomePeerScrollListing } from "@/components/features/home"
 import { fetchSimilarSurfboardsForListingPdp } from "@/lib/db/listing-detail-similar-surfboards"
-import {
-  boardsBrowseBoardTypeLabel,
-  browseTypeParamFromBoardType,
-} from "@/lib/marketplace-slug-metadata"
 import { formatDistanceToNow } from "date-fns"
 import { ListingPdpRecentSections } from "@/components/features/listings/listing-pdp-recent-sections"
 import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
@@ -287,11 +276,14 @@ async function renderSurfboardListingDetailPage({
 
   const freeBrandLabel = (board as { brand?: string | null }).brand?.trim() ?? ""
   const modelForSpecs = (board as { model?: string | null }).model?.trim() ?? ""
+  const brandModelId = (board as { brand_model_id?: string | null }).brand_model_id?.trim() ?? ""
   const boardSpecsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const boardSpecsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
-
-  const typeCrumb = boardsBrowseBoardTypeLabel(rawBoardType ?? undefined)
-  const browseBoardTypeParam = browseTypeParamFromBoardType(rawBoardType)
+  const modelPagePath = await resolveListingModelPageHref(supabase, {
+    brand: indexBrand,
+    brandModelId,
+    modelName: modelForSpecs,
+  })
   const listingTitle = capitalizeWords(board.title)
   const dimensionsLine = formatListingDimensionsLine({
     dimensions: (board as { dimensions?: string | null }).dimensions,
@@ -307,7 +299,7 @@ async function renderSurfboardListingDetailPage({
     ...(boardSpecsBrandLabel
       ? [{ label: "Brand", value: boardSpecsBrandLabel, href: boardSpecsBrandHref }]
       : []),
-    ...(modelForSpecs ? [{ label: "Model", value: modelForSpecs }] : []),
+    ...(modelForSpecs ? [{ label: "Model", value: modelForSpecs, href: modelPagePath }] : []),
   ]
 
   /** Public sold/browse price — always original list price, never negotiated offer amounts. */
@@ -438,59 +430,13 @@ async function renderSurfboardListingDetailPage({
         ) : null}
         <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
           <div className="mb-3 min-w-0 max-w-full pt-0.5 max-lg:mb-4 lg:mb-8">
-            <Breadcrumb>
-              <BreadcrumbList className="gap-1 text-[13px] font-normal tracking-wide text-muted-foreground sm:gap-1.5 sm:text-[14px]">
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
-                    <Link href="/">Home</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
-                {typeCrumb ? (
-                  <>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
-                        <Link href="/boards">{surfboardsBrowseRootLabel}</Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
-                        <Link
-                          href={
-                            browseBoardTypeParam
-                              ? `/boards?type=${encodeURIComponent(browseBoardTypeParam)}`
-                              : "/boards"
-                          }
-                        >
-                          {typeCrumb}
-                        </Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className="max-w-[min(100%,28rem)] truncate font-normal text-muted-foreground">
-                        {listingTitle}
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                ) : (
-                  <>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
-                        <Link href="/boards">{surfboardsBrowseRootLabel}</Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className="max-w-[min(100%,28rem)] truncate font-normal text-muted-foreground">
-                        {listingTitle}
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
+            <ListingSurfboardBreadcrumbs
+              brandName={boardSpecsBrandLabel}
+              brandHref={boardSpecsBrandHref}
+              modelName={modelForSpecs || null}
+              modelHref={modelPagePath}
+              listingTitle={listingTitle}
+            />
           </div>
 
           {isSold && (

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { BrandProfileView } from "@/components/brands/brand-profile-view"
 import { createAnonSupabaseClient, createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
+import { parseBrandPageTab } from "@/lib/brands/routes"
 import { listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
 import { absoluteUrl } from "@/lib/site-metadata"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
@@ -15,7 +16,10 @@ export async function generateStaticParams() {
   return (data ?? []).map((r) => ({ slug: r.slug }))
 }
 
-type Props = { params: Promise<{ slug: string }> }
+type Props = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ tab?: string }>
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
@@ -55,19 +59,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function BrandPage({ params }: Props) {
+const BRAND_PAGE_LISTING_LIMIT = 48
+
+export default async function BrandPage({ params, searchParams }: Props) {
   const { slug } = await params
+  const { tab } = await searchParams
   const supabase = await createClient()
   const brand = await getBrandBySlug(supabase, slug)
   if (!brand) {
     notFound()
   }
 
-  const previewLimit = 6
   const brandRef = { id: brand.id, name: brand.name }
-  const [brandListingsPreview, brandSoldListingsPreview] = await Promise.all([
-    listActiveListingsForBrand(supabase, brandRef, { limit: previewLimit }),
-    listRecentlySoldListingsForBrand(supabase, brandRef, { limit: previewLimit }),
+  const [brandListings, brandSoldListings] = await Promise.all([
+    listActiveListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
+    listRecentlySoldListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
   ])
 
   const {
@@ -75,7 +81,7 @@ export default async function BrandPage({ params }: Props) {
   } = await supabase.auth.getUser()
   let favoritedListingIds: string[] = []
   if (user) {
-    const ids = [...new Set([...brandListingsPreview, ...brandSoldListingsPreview].map((l) => l.id))]
+    const ids = [...new Set([...brandListings, ...brandSoldListings].map((l) => l.id))]
     if (ids.length > 0) {
       const { data: favs } = await supabase
         .from("favorites")
@@ -89,8 +95,11 @@ export default async function BrandPage({ params }: Props) {
   return (
     <BrandProfileView
       brand={brand}
-      brandListingsPreview={brandListingsPreview}
-      brandSoldListingsPreview={brandSoldListingsPreview}
+      initialTab={parseBrandPageTab(tab)}
+      brandListings={brandListings}
+      brandSoldListings={brandSoldListings}
+      listingsCapped={brandListings.length >= BRAND_PAGE_LISTING_LIMIT}
+      soldCapped={brandSoldListings.length >= BRAND_PAGE_LISTING_LIMIT}
       favoritedListingIds={favoritedListingIds}
       isLoggedIn={!!user}
       viewerUserId={user?.id ?? null}

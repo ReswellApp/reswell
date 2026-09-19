@@ -1,3 +1,5 @@
+import { isModelPagePathname } from "@/lib/models/routes"
+
 /** Public marketplace HTML routes that benefit from edge cache hints for catalog crawlers. */
 export function isPublicMarketplaceHtmlPath(pathname: string): boolean {
   if (pathname === "/" || pathname === "/boards" || pathname === "/sold") return true
@@ -23,6 +25,7 @@ export function isPublicMarketplaceHtmlPath(pathname: string): boolean {
   ) {
     return true
   }
+  if (isModelPagePathname(pathname)) return true
   return false
 }
 

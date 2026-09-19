@@ -29,7 +29,11 @@ export async function captureBlockedFraudMessage(
   }
 
   try {
-    const ban = await maybeBanNewAccountAfterFraudMessage(supabase, row.senderId)
+    const ban = await maybeBanNewAccountAfterFraudMessage(
+      supabase,
+      row.senderId,
+      row.reasonCode,
+    )
     return { ok: true, banned: ban.banned }
   } catch (error) {
     console.error("[captureBlockedFraudMessage] new-account ban:", error)

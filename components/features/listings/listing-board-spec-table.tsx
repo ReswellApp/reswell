@@ -25,7 +25,7 @@ export function ListingBoardSpecTable({ rows, className }: ListingBoardSpecTable
           <dt className="text-[13px] font-medium text-muted-foreground">{row.label}</dt>
           <dd className="min-w-0 text-[13px] leading-snug text-foreground tabular-nums">
             {row.href ? (
-              <Link href={row.href} className="underline-offset-4 hover:underline">
+              <Link href={row.href} className="underline underline-offset-4">
                 {row.value}
               </Link>
             ) : (

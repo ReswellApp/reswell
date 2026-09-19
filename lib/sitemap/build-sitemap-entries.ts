@@ -9,6 +9,7 @@ import { fetchAccessoryListingSitemapEntries } from "@/lib/db/accessory-listings
 import { fetchMagazineListingSitemapEntries } from "@/lib/db/magazine-listings"
 import { fetchTractionListingSitemapEntries } from "@/lib/db/traction-listings"
 import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
+import { fetchBrandModelSitemapEntries } from "@/lib/db/sitemap-models"
 import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
 import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
 import { fetchPublishedBlogPostSitemapEntries } from "@/lib/db/sitemap-blog-posts-published"
@@ -110,9 +111,10 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const now = new Date()
   const supabase = await supabaseForSitemapPublicRead()
 
-  const [brandRows, sellerEntries, forumEntries, blogEntries, priceGuidePaths, cityDirectory] =
+  const [brandRows, modelRows, sellerEntries, forumEntries, blogEntries, priceGuidePaths, cityDirectory] =
     await Promise.all([
       fetchBrandSlugRowsForSitemap(supabase),
+      fetchBrandModelSitemapEntries(supabase),
       fetchSellerProfileSitemapEntries(supabase),
       fetchForumThreadSitemapEntries(supabase),
       fetchPublishedBlogPostSitemapEntries(supabase),
@@ -217,6 +219,13 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: 0.55,
   }))
 
+  const modelPages: SitemapUrlEntry[] = modelRows.map((row) => ({
+    url: `${BASE}/${row.brandSlug}/${row.modelSlug}`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.65,
+  }))
+
   const cityPages: SitemapUrlEntry[] = cityDirectory.cities.map((city) => ({
     url: `${BASE}${cityLandingHref(city.slug)}`,
     lastModified: now,
@@ -279,6 +288,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     ...careerRolePages,
     ...boardFilterPages(now),
     ...brandPages,
+    ...modelPages,
     ...cityPages,
     ...surfShopPages,
     ...sellerPages,

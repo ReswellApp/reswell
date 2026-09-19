@@ -50,3 +50,27 @@ export function messagePolicyBlocksDelivery(code: MessagePolicyReasonCode): bool
     }
   }
 }
+
+/**
+ * Reasons that can auto-ban a brand-new account (and its IP/device).
+ * Phone, email, and Venmo/cash sharing are policy blocks only — real sellers
+ * type those by accident and must not be banned for it.
+ */
+export function messagePolicyCountsTowardPhishingBan(
+  code: MessagePolicyReasonCode,
+): boolean {
+  switch (code) {
+    case "phishing_like":
+      return true
+    case "phone_like":
+    case "phone_fragment":
+    case "email_like":
+    case "off_platform_payment":
+    case "external_link":
+      return false
+    default: {
+      const _exhaustive: never = code
+      return _exhaustive
+    }
+  }
+}

@@ -1,16 +1,12 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FocusScrim } from "@/components/focus-scrim"
 import {
-  navSearchTopListingThumbClassName,
-} from "@/components/features/search/nav-search-top-listing-row"
-import {
-  NavSuggestPanelSkeleton,
   SearchInputWithSuggest,
   type ExternalSuggestConfig,
   type ExternalSuggestRenderContext,
@@ -37,9 +33,6 @@ import {
 } from "@/lib/sell-flow/catalog-handoff"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import { SellListByTypeLinks } from "@/components/features/sell/sell-type-chooser"
-import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
-import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { finSetupLabel, finSizeLabel, finSystemLabel } from "@/lib/fin-listing-config"
 import { compactSearchKey } from "@/lib/utils/fin-catalog-search-rank"
 import { cn } from "@/lib/utils"
@@ -115,25 +108,6 @@ export type SellCatalogSearchProps = {
   /** Optional resume-draft prompt above the search hero. */
   resumeBanner?: React.ReactNode
   className?: string
-}
-
-function thumbForRow(row: SellCatalogSearchResultRow): string | null {
-  if (row.kind === "brand") {
-    return finCatalogSearchRowThumbUrl({ kind: "brand", logoUrl: row.logoUrl })
-  }
-  if (row.kind === "model") {
-    return finCatalogSearchRowThumbUrl({
-      kind: "model",
-      imageUrl: row.imageUrl,
-      brandLogoUrl: row.brandLogoUrl,
-    })
-  }
-  return finCatalogSearchRowThumbUrl({
-    kind: "variant",
-    imageUrl: row.imageUrl,
-    modelImageUrl: row.modelImageUrl,
-    brandLogoUrl: row.brandLogoUrl,
-  })
 }
 
 function productTitleLine(row: SellCatalogSearchResultRow): string {
@@ -212,39 +186,21 @@ function highlightQueryParts(text: string, query: string): React.ReactNode {
   })
 }
 
-function CatalogThumb({
-  src,
-  alt,
-  fallbackLetter,
-  isLogo,
-  className,
-  imageSizes = "(max-width:640px) 48px, 56px",
-}: {
-  src: string | null | undefined
-  alt: string
-  fallbackLetter: string
-  isLogo: boolean
-  className?: string
-  imageSizes?: string
-}) {
-  const displaySrc = src?.trim() ? brandLogoDisplaySrc(src) : null
+/** Single-column typeahead list. Scroll lives on the panel, not nested here. */
+const productListClassName = "min-h-0 py-1"
+
+function SellCatalogNameSkeleton() {
   return (
-    <div className={cn(navSearchTopListingThumbClassName, className)}>
-      {displaySrc ? (
-        <Image
-          src={displaySrc}
-          alt={alt}
-          fill
-          className={cn(isLogo ? "object-contain p-1.5" : "object-cover")}
-          sizes={imageSizes}
-          unoptimized={listingImageShouldBypassOptimization(displaySrc)}
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-sm font-bold text-cerulean sm:text-base">
-          {fallbackLetter.slice(0, 1).toUpperCase()}
-        </div>
-      )}
-    </div>
+    <ul className={productListClassName} aria-hidden>
+      {[0, 1, 2, 3].map((i) => (
+        <li key={i} className="px-4 py-2.5">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full max-w-[220px]" />
+            <Skeleton className="h-3 w-32 max-w-[70%]" />
+          </div>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -259,27 +215,15 @@ function ProductRow({
 }) {
   const title = productTitleLine(row)
   const meta = productMetaLine(row)
-  const thumb = thumbForRow(row)
-  const brandLogo =
-    row.kind === "brand" ? row.logoUrl?.trim() : row.brandLogoUrl?.trim()
-  const isLogo = row.kind === "brand" || Boolean(brandLogo && thumb === brandLogo)
 
   return (
     <li role="option" className="min-w-0">
       <button
         type="button"
-        className="flex w-full cursor-pointer select-none items-center gap-3 px-4 py-2 text-left outline-none transition-colors hover:bg-muted/70 focus-visible:bg-muted/70 min-h-touch"
+        className="flex w-full cursor-pointer select-none items-center px-4 py-2 text-left outline-none transition-colors hover:bg-muted/70 focus-visible:bg-muted/70 min-h-touch"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => onSelect(row)}
       >
-        <CatalogThumb
-          src={thumb}
-          alt={title}
-          fallbackLetter={title}
-          isLogo={isLogo}
-          className="h-10 w-10 rounded-sm sm:h-11 sm:w-11"
-          imageSizes="44px"
-        />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm leading-snug text-foreground" title={title}>
             {highlightQueryParts(title, query)}
@@ -294,9 +238,6 @@ function ProductRow({
     </li>
   )
 }
-
-/** Single-column typeahead list. Scroll lives on the panel, not nested here. */
-const productListClassName = "min-h-0 py-1"
 
 /** Quiet uppercase section label — lighter than the banded nav-search header. */
 function PanelSectionHeader({ title }: { title: string }) {
@@ -567,7 +508,7 @@ export function SellCatalogSearch({
       fetch: fetchSellCatalogSearch,
       shouldShowPanel: ({ query, loading, settled, error, data }) =>
         query.trim().length >= 1 && (loading || settled || Boolean(error) || data !== null),
-      renderLoadingSkeleton: () => <NavSuggestPanelSkeleton />,
+      renderLoadingSkeleton: () => <SellCatalogNameSkeleton />,
       renderPanel: (ctx) => (
         <SellCatalogSearchPanel
           ctx={ctx}
@@ -699,7 +640,7 @@ export function SellCatalogSearch({
                   }}
                 >
                     {showPanelSkeleton ? (
-                      <NavSuggestPanelSkeleton />
+                      <SellCatalogNameSkeleton />
                     ) : (
                       <SellCatalogSearchPanel
                         ctx={{

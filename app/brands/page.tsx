@@ -51,8 +51,7 @@ export default async function BrandsPage({
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Directory</p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">Surf Brands</h1>
             <p className="mx-auto mt-3 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-              Shapers and labels in the Reswell catalog — locations, story, and links to shop official gear or search
-              listings here.
+              Shapers and labels in the Reswell catalog. Browse live listings and recently sold gear by brand.
             </p>
             <div className="mx-auto mt-8 max-w-xl">
               <BrandsDirectorySearch brands={brands} />

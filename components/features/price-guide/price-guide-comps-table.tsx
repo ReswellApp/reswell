@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { formatStoredListingDimensions } from "@/lib/listing-dimensions-display"
 import { formatGuideUsd } from "@/lib/price-guide/format"
 import type { PriceGuideComp } from "@/lib/types/price-guide"
 
@@ -42,7 +43,9 @@ export function PriceGuideCompsTable({
                 {comp.condition_label ?? "—"}
               </td>
               <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
-                <span className="line-clamp-1">{comp.dimensions || comp.title || "—"}</span>
+                <span className="line-clamp-1">
+                  {formatStoredListingDimensions(comp.dimensions) || comp.title || "—"}
+                </span>
               </td>
               <td className="px-4 py-3">
                 {comp.listing_url ? (

@@ -29,6 +29,7 @@ export type PriceGuideOrderRow = {
   id: string
   listing_id: string
   amount: number | string | null
+  shipping_amount: number | string | null
   created_at: string
   refunded_at: string | null
   status: string | null
@@ -114,7 +115,7 @@ export async function selectPriceGuideOrdersForListingIds(
   for (const chunk of chunks) {
     const { data, error } = await supabase
       .from("orders")
-      .select("id, listing_id, amount, created_at, refunded_at, status")
+      .select("id, listing_id, amount, shipping_amount, created_at, refunded_at, status")
       .in("listing_id", chunk)
       .eq("status", "confirmed")
       .is("refunded_at", null)

@@ -75,6 +75,7 @@ export type PublicResearchSoldListingEmbed = {
 
 export type PublicResearchSoldOrderRow = {
   amount: number | string | null
+  shipping_amount: number | string | null
   created_at: string
   refunded_at: string | null
   listings: PublicResearchSoldListingEmbed | null
@@ -91,7 +92,7 @@ const PRICING_LISTING_SELECT =
   "id, slug, title, status, hidden_from_site, archived_at, brand_id, brand, model, condition, dimensions, price, created_at"
 
 const PRICING_ORDERS_SELECT = `
-  amount, created_at, refunded_at,
+  amount, shipping_amount, created_at, refunded_at,
   listings:listing_id ( id, slug, title, condition, dimensions, hidden_from_site, archived_at, status )
 `
 
@@ -312,12 +313,14 @@ export async function selectSoldSurfboardOrdersForPricing(
   return (
     data as Array<{
       amount: number | string | null
+      shipping_amount: number | string | null
       created_at: string
       refunded_at: string | null
       listings: PublicResearchSoldListingEmbed | PublicResearchSoldListingEmbed[] | null
     }>
   ).map((row) => ({
     amount: row.amount,
+    shipping_amount: row.shipping_amount,
     created_at: row.created_at,
     refunded_at: row.refunded_at,
     listings: pickJoinedListing(row.listings),

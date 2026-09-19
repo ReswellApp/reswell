@@ -77,10 +77,11 @@ export function FraudMessagesAdminClient() {
               Intercepted marketplace chats
             </CardTitle>
             <CardDescription>
-              Flagged marketplace DMs. Phone numbers, email, Venmo/Zelle/Cash App, cash
-              requests, and phishing are blocked before delivery. Gemini confirms fraud or
-              marks innocent wording as not fraud. Accounts newer than 24 hours are
-              permanently banned after 3 blocked scam messages.
+              Flagged marketplace DMs. Phone numbers, email, Venmo/Zelle/Cash App, and
+              phishing are blocked before delivery. Gemini confirms fraud or marks innocent
+              wording as not fraud. Sharing a phone number does not ban an account. New
+              accounts are permanently banned — including IP and device — after 3 phishing
+              / fake-Reswell / click-a-link messages.
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" disabled={loading} onClick={() => void load()}>

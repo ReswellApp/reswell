@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { listingHeroSlideSrc } from "@/lib/listing-image-display"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 export type BrandModelListingImageSourceRow = {
   image_url: string
@@ -121,4 +123,36 @@ export async function listSoldListingImagesForBrandModelAdmin(
     out.push(...rowsFromListing(row))
   }
   return out
+}
+
+/** One seller photo from a sold listing for this catalog model, when nothing is live. */
+export async function findSoldListingHeroImageForBrandModel(
+  supabase: SupabaseClient,
+  brandModelId: string,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("listings")
+    .select("primary_image_url, listing_images ( url, is_primary, sort_order )")
+    .eq("brand_model_id", brandModelId)
+    .eq("status", "sold")
+    .eq("hidden_from_site", false)
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(8)
+
+  if (error) {
+    console.error("findSoldListingHeroImageForBrandModel:", error.message)
+    return null
+  }
+
+  for (const row of (data ?? []) as Array<{
+    primary_image_url?: string | null
+    listing_images?: ListingRow["listing_images"]
+  }>) {
+    const fromGallery = listingHeroSlideSrc(row.listing_images)
+    if (fromGallery) return fromGallery
+    const primary = row.primary_image_url?.trim()
+    if (primary) return proxiedListingImageSrc(primary) || primary
+  }
+  return null
 }

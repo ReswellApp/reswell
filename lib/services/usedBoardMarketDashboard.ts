@@ -34,6 +34,8 @@ import {
   type UsedBoardMarketDashboard,
 } from "@/lib/services/usedBoardMarketDashboard.shared"
 import type { BrandModelVariantMaterial, FinBoxesType, FinBoxType } from "@/lib/validations/brand-model-variants"
+import { formatStoredListingDimensions } from "@/lib/listing-dimensions-display"
+import { priceGuideOrderSoldUsd } from "@/lib/price-guide/sold-item-price"
 import { slugify } from "@/lib/slugify"
 
 /**
@@ -131,8 +133,7 @@ function pickFirstJoined<T>(value: T | T[] | null | undefined): T | null {
 }
 
 function formatDimensions(row: { dimensions?: string | null }): string | null {
-  const stored = row.dimensions?.trim()
-  return stored || null
+  return formatStoredListingDimensions(row.dimensions)
 }
 
 function boardTypeLabel(boardType: string | null | undefined): string {
@@ -223,6 +224,7 @@ type OrderJoinedRow = {
   id: string
   order_num: string | null
   amount: number | string | null
+  shipping_amount: number | string | null
   platform_fee: number | string | null
   seller_earnings: number | string | null
   status: string | null
@@ -278,7 +280,7 @@ const LISTINGS_SELECT =
   "id, user_id, slug, title, section, status, hidden_from_site, brand, brand_id, board_type, condition, city, state, price, views, created_at, updated_at, dimensions"
 
 const ORDERS_SELECT_WITH_LISTINGS = `
-  id, order_num, amount, platform_fee, seller_earnings, status, delivery_status,
+  id, order_num, amount, shipping_amount, platform_fee, seller_earnings, status, delivery_status,
   payment_method, fulfillment_method, refunded_at, created_at, buyer_id, seller_id, listing_id,
   listings:listing_id ( ${LISTINGS_SELECT} )
 `
@@ -757,7 +759,7 @@ function computeKpis(args: {
     .filter((n): n is number => n != null && n > 0)
 
   const salePrices = args.confirmedOrders
-    .map((o) => toNumber(o.amount))
+    .map((o) => priceGuideOrderSoldUsd(o))
     .filter((n): n is number => n != null && n >= 0)
 
   const platformFees = args.confirmedOrders
@@ -795,7 +797,7 @@ function computeKpis(args: {
   for (const o of args.confirmedOrders) {
     const listing = pickFirstJoined(o.listings)
     const ask = toNumber(listing?.price ?? null)
-    const sale = toNumber(o.amount)
+    const sale = priceGuideOrderSoldUsd(o)
     if (ask != null && ask > 0 && sale != null && sale >= 0) {
       saleToAskRatios.push(sale / ask)
     }
@@ -958,7 +960,7 @@ function aggregateAtDimension(args: {
   const rows: DashboardGroupedRow[] = []
   for (const b of buckets.values()) {
     const sales = b.soldOrders
-      .map((o) => toNumber(o.amount))
+      .map((o) => priceGuideOrderSoldUsd(o))
       .filter((n): n is number => n != null && n >= 0)
     const daysToSell: number[] = []
     for (const o of b.soldOrders) {
@@ -1026,7 +1028,7 @@ function aggregateByBoardType(args: {
   const rows: DashboardBoardTypeRow[] = []
   for (const b of buckets.values()) {
     const sales = b.soldOrders
-      .map((o) => toNumber(o.amount))
+      .map((o) => priceGuideOrderSoldUsd(o))
       .filter((n): n is number => n != null && n >= 0)
     const denom = b.activeInventory + b.soldOrders.length
     rows.push({
@@ -1087,7 +1089,7 @@ function aggregateByCondition(args: {
   const rows: DashboardConditionRow[] = []
   for (const b of buckets.values()) {
     const sales = b.soldOrders
-      .map((o) => toNumber(o.amount))
+      .map((o) => priceGuideOrderSoldUsd(o))
       .filter((n): n is number => n != null && n >= 0)
     rows.push({
       condition: b.raw || "unknown",
@@ -1140,7 +1142,7 @@ function aggregateByLocation(args: {
   const rows: DashboardLocationRow[] = []
   for (const b of buckets.values()) {
     const sales = b.soldOrders
-      .map((o) => toNumber(o.amount))
+      .map((o) => priceGuideOrderSoldUsd(o))
       .filter((n): n is number => n != null && n >= 0)
     rows.push({
       state: b.state,
@@ -1161,7 +1163,7 @@ function bucketSoldPrices(orders: OrderJoinedRow[]): DashboardPriceBucketRow[] {
   const counts = PRICE_BUCKETS.map(() => 0)
   let total = 0
   for (const o of orders) {
-    const amt = toNumber(o.amount)
+    const amt = priceGuideOrderSoldUsd(o)
     if (amt == null || amt < 0) continue
     total += 1
     for (let i = 0; i < PRICE_BUCKETS.length; i++) {
@@ -1222,7 +1224,7 @@ function computePriceRealization(confirmedOrders: OrderJoinedRow[]): DashboardPr
   for (const o of confirmedOrders) {
     const listing = pickFirstJoined(o.listings)
     const ask = toNumber(listing?.price ?? null)
-    const sale = toNumber(o.amount)
+    const sale = priceGuideOrderSoldUsd(o)
     if (ask == null || ask <= 0 || sale == null || sale < 0) continue
     const ratio = sale / ask
     const discount = 1 - ratio
@@ -1337,7 +1339,7 @@ function computeTopSellers(
   const buckets = new Map<string, { sales: number[] }>()
   for (const o of confirmedOrders) {
     if (!o.seller_id) continue
-    const sale = toNumber(o.amount)
+    const sale = priceGuideOrderSoldUsd(o)
     const b = buckets.get(o.seller_id) ?? { sales: [] }
     if (sale != null && sale >= 0) b.sales.push(sale)
     else b.sales.push(0)
@@ -1390,7 +1392,7 @@ function computeChannelMix(confirmedOrders: OrderJoinedRow[]): DashboardChannelM
       const key = (getter(o) ?? "").trim().toLowerCase() || "__unspecified"
       const b = buckets.get(key) ?? { count: 0, gross: 0 }
       b.count += 1
-      const amt = toNumber(o.amount)
+      const amt = priceGuideOrderSoldUsd(o)
       if (amt != null && amt >= 0) b.gross += amt
       buckets.set(key, b)
       total += 1
@@ -1432,7 +1434,7 @@ function buildDailySeries(args: {
     const point = map.get(dayKey(o.created_at))
     if (point) {
       point.sold += 1
-      const amt = toNumber(o.amount)
+      const amt = priceGuideOrderSoldUsd(o)
       if (amt != null && amt >= 0) point.grossVolume += amt
     }
   }
@@ -1450,7 +1452,7 @@ function buildSoldHistory(
 ): DashboardSoldHistoryRow[] {
   return orders.slice(0, HISTORY_TABLE_LIMIT).map((o) => {
     const listing = pickFirstJoined(o.listings)
-    const amt = toNumber(o.amount) ?? 0
+    const amt = priceGuideOrderSoldUsd(o) ?? 0
     const fee = toNumber(o.platform_fee)
     const askingPrice = toNumber(listing?.price ?? null)
     const daysToSell = listing?.created_at

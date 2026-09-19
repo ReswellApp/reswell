@@ -1,3 +1,6 @@
+import { ACCOUNT_BANNED_ERROR } from '@/lib/messages/account-ban-errors'
+import { attachDeviceCookie, isSignupPath } from '@/lib/messages/access-signals'
+import { isNextRequestAccessBanned } from '@/lib/services/requestAccessBan'
 import { updateSession } from '@/lib/supabase/proxy'
 import { type NextRequest, NextResponse } from 'next/server'
 import { resolveSeoRedirect } from '@/lib/seo/edge-redirects'
@@ -36,19 +39,27 @@ export async function proxy(request: NextRequest) {
   if (redirect) return redirect
 
   try {
-    const response = await updateSession(request)
-
-    if (isAdCatalogCrawler(request.headers.get('user-agent'))) {
-      return applyPublicMarketplaceCacheHints(response, pathname)
+    if (isSignupPath(pathname) && (await isNextRequestAccessBanned(request))) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/auth/login'
+      url.searchParams.set('error', ACCOUNT_BANNED_ERROR)
+      return attachDeviceCookie(request, NextResponse.redirect(url))
     }
 
-    return response
+    const response = await updateSession(request)
+    const withDevice = attachDeviceCookie(request, response)
+
+    if (isAdCatalogCrawler(request.headers.get('user-agent'))) {
+      return applyPublicMarketplaceCacheHints(withDevice, pathname)
+    }
+
+    return withDevice
   } catch (error) {
     console.error('[middleware] proxy failed; passing through', {
       pathname,
       message: error instanceof Error ? error.message : String(error),
     })
-    return NextResponse.next({ request })
+    return attachDeviceCookie(request, NextResponse.next({ request }))
   }
 }
 

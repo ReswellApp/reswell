@@ -241,6 +241,24 @@ export function formatListingDimensionsLine(input: ListingDimensionsWithDisplay)
   return g ?? v
 }
 
+function looksLikeStoredDimensionsJson(raw: string): boolean {
+  const t = raw.trim()
+  return t.startsWith("{") && /"v"\s*:/.test(t)
+}
+
+/**
+ * Buyer-facing dims from `listings.dimensions` — same line as `/l` pages.
+ * Never returns the raw v2 JSON envelope.
+ */
+export function formatStoredListingDimensions(raw: string | null | undefined): string | null {
+  const t = raw?.trim()
+  if (!t) return null
+  const formatted = formatListingDimensionsLine({ dimensions: t })
+  if (formatted) return formatted
+  if (looksLikeStoredDimensionsJson(t)) return null
+  return t
+}
+
 const LEGACY_LISTING_DIMENSION_DB_KEYS = [
   "length_feet",
   "length_inches",
