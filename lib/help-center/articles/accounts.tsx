@@ -241,7 +241,7 @@ export const accountsHelpArticles: HelpArticle[] = [
     title: "How do cash outs work?",
     description:
       "Transfer ready earnings from your Reswell wallet to your bank account via ACH or instant transfer.",
-    keywords: ["cash out", "withdraw", "payout"],
+    keywords: ["cash out", "withdraw", "payout", "money", "get my money", "bank"],
     relatedSlugs: ["wallet-and-earnings-overview", "update-profile-settings"],
     sections: [
       {

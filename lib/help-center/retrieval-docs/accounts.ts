@@ -129,7 +129,7 @@ export const accountsRetrievalDocs = [
       "Transfer ready earnings from your Reswell wallet to your bank account via ACH or instant transfer.",
     audience: "seller",
     intentTags: ["payouts", "wallet", "payments"],
-    keywords: ["cash out", "withdraw", "payout", "transfer", "ACH", "instant"],
+    keywords: ["cash out", "withdraw", "payout", "transfer", "ACH", "instant", "money", "get my money", "bank"],
     relatedIds: [
       "accounts/wallet-and-earnings-overview",
       "selling/connect-payout-account",

@@ -35,7 +35,7 @@ import {
 } from "@/lib/services/csAgentLookups"
 import type { LiveChatSessionRow } from "@/lib/db/liveChat"
 import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
-import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
+import { resolveLiveChatFallbackReply } from "@/lib/live-chat/live-chat-cs-prompt"
 import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
 import {
   citedHelpFromSlugs,
@@ -85,6 +85,11 @@ export function liveChatCsModelId(): string {
 export function isSupportReplyDraftLlmEnabled(): boolean {
   if (!FEATURE) return false
   return isAppLlmFeatureEnabled(FEATURE)
+}
+
+export function isLiveChatCsLlmEnabled(): boolean {
+  if (LIVE_CHAT_FEATURE && isAppLlmFeatureEnabled(LIVE_CHAT_FEATURE)) return true
+  return isSupportReplyDraftLlmEnabled()
 }
 
 function staffClient() {
@@ -290,10 +295,10 @@ async function generateDraftBody(args: {
     ? (args.modelId?.trim() || liveChatCsModelId())
     : supportReplyDraftModelId()
 
-  if (!isSupportReplyDraftLlmEnabled()) {
+  if (isLiveChat ? !isLiveChatCsLlmEnabled() : !isSupportReplyDraftLlmEnabled()) {
     if (isLiveChat) {
       return {
-        body: LIVE_CHAT_UNGROUNDED_REPLY,
+        body: resolveLiveChatFallbackReply(lastCustomerMessage),
         origin: "macro",
         slugs: [],
         exampleIds: [],

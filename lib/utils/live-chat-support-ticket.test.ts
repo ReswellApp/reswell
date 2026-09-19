@@ -1,7 +1,15 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
-import { DEFAULT_LIVE_CHAT_REPLY_PROMPT, LIVE_CHAT_UNGROUNDED_REPLY } from "../live-chat/live-chat-cs-prompt.ts"
+import {
+  DEFAULT_LIVE_CHAT_REPLY_PROMPT,
+  LIVE_CHAT_GREETING_REPLY,
+  LIVE_CHAT_LEGACY_UNGROUNDED_REPLY,
+  LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY,
+  LIVE_CHAT_UNGROUNDED_REPLY,
+  isLiveChatCannedFailureReply,
+  resolveLiveChatFallbackReply,
+} from "../live-chat/live-chat-cs-prompt.ts"
 import {
   liveChatVisitorMatchesOpenCase,
   shouldHonorLiveChatTicketClose,
@@ -91,12 +99,16 @@ describe("live chat CS prompt", () => {
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /account snapshot/i)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /very_good/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /Hayden or David/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /How-tos vs lookups/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /how do I get my money/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /tap-to-pick order tiles/)
     assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /You are Reswell Team/)
+    assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /what's the order number/)
   })
 
   it("asks one question instead of pretending the team is already investigating", () => {
     assert.match(LIVE_CHAT_UNGROUNDED_REPLY, /\?/)
+    assert.doesNotMatch(LIVE_CHAT_UNGROUNDED_REPLY, /order number/)
     assert.equal(
       shouldHonorLiveChatTicketClose({
         closeTicket: true,
@@ -106,5 +118,26 @@ describe("live chat CS prompt", () => {
       }),
       false,
     )
+  })
+
+  it("answers seller payout how-tos without asking for an order number", () => {
+    const reply = resolveLiveChatFallbackReply("hi there. i sold a board. how do i get my money?")
+    assert.equal(reply, LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY)
+    assert.match(reply, /earnings/i)
+    assert.match(reply, /dashboard\/earnings/)
+    assert.doesNotMatch(reply, /order number/i)
+    assert.doesNotMatch(reply, /\$\d/)
+    assert.equal(
+      resolveLiveChatFallbackReply("where is my board?"),
+      LIVE_CHAT_UNGROUNDED_REPLY,
+    )
+  })
+
+  it("greets instead of asking for an order number", () => {
+    assert.equal(resolveLiveChatFallbackReply("hi there"), LIVE_CHAT_GREETING_REPLY)
+    assert.equal(resolveLiveChatFallbackReply("Hey!"), LIVE_CHAT_GREETING_REPLY)
+    assert.doesNotMatch(LIVE_CHAT_GREETING_REPLY, /order number/i)
+    assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_LEGACY_UNGROUNDED_REPLY), true)
+    assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_UNGROUNDED_REPLY), true)
   })
 })
