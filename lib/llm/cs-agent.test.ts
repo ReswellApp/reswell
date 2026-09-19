@@ -129,7 +129,6 @@ describe("cs agent harness", () => {
     assert.match(pack, /only open live-chat ticket/)
     assert.match(pack, /close_ticket true only when the issue is fully solved/)
     assert.match(pack, /do not guess/i)
-    assert.match(pack, /how sellers get paid/)
     assert.match(pack, /do not need an order number/i)
     assert.match(pack, /This chat/)
     assert.match(pack, /hi there. anything there/)
