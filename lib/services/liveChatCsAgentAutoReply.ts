@@ -5,7 +5,10 @@ import {
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
-import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
+import {
+  LIVE_CHAT_UNGROUNDED_REPLY,
+  resolveLiveChatFallbackReply,
+} from "@/lib/live-chat/live-chat-cs-prompt"
 import { LIVE_CHAT_WIDGET_ADMIN_ONLY } from "@/lib/live-chat/widget-config"
 import { liveChatPersonaAlreadyJoined } from "@/lib/live-chat/human-feel"
 import {
@@ -217,7 +220,7 @@ export async function autoSendLiveChatCsAgentReply(
         generated
           ? { ...generated, needsHumanReview: false }
           : {
-              body: LIVE_CHAT_UNGROUNDED_REPLY,
+              body: resolveLiveChatFallbackReply(visitorMessage.content),
               closeTicket: false,
               needsHumanReview: Boolean(caseId),
             },
@@ -280,7 +283,9 @@ export async function autoSendLiveChatCsAgentReply(
       svc,
       workingSession,
       caseId,
-      isLabelIntent ? LIVE_CHAT_LABEL_UPDATE_REPLY : LIVE_CHAT_UNGROUNDED_REPLY,
+      isLabelIntent
+        ? LIVE_CHAT_LABEL_UPDATE_REPLY
+        : resolveLiveChatFallbackReply(visitorMessage.content),
       persona.firstName,
     )
   } finally {

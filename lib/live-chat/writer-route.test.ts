@@ -44,8 +44,10 @@ describe("live chat writer route", () => {
   it("keeps how-to asks on flash and order facts on pro in the Jev rubric", () => {
     assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.flash, /buying a board/i)
     assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.flash, /fees/i)
+    assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.flash, /how sellers get paid/i)
     assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.pro, /tracking/)
-    assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.pro, /payout/)
+    assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.pro, /payout status/)
+    assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.pro, /Generic how-tos/)
     assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.flash_lite, /thanks/i)
   })
 })
