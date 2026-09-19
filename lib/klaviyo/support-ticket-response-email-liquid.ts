@@ -10,7 +10,7 @@
  * - `{{ event.support_ticket_id }}`
  * - `{{ event.case_ref }}` — RS-XXXXXXXX
  * - `{{ event.reply_to }}` — set the flow Reply-To to this so Gmail replies land in the thread
- * - `{{ event.response_type }}` — admin_inbox_reply | support_dm_reply | status_update
+ * - `{{ event.response_type }}` — admin_inbox_reply | support_dm_reply | status_update | live_chat_reply
  */
 
 import {
