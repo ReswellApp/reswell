@@ -21,6 +21,7 @@ import {
 } from "../live-chat/writer-route.ts"
 
 const FEATURE = APP_LLM_FEATURES.find((row) => row.id === "live_chat_jev_router")
+const CS_FEATURE = APP_LLM_FEATURES.find((row) => row.id === "live_chat_cs")
 
 const JEV_ROUTE_TIMEOUT_MS = 2_500
 
@@ -47,7 +48,7 @@ export function fallbackLiveChatWriterRoute(reason: string): LiveChatWriterRoute
   const writer = LIVE_CHAT_WRITER_FALLBACK
   return {
     writer,
-    model: liveChatWriterModelId(writer),
+    model: CS_FEATURE ? resolveConfiguredModel(CS_FEATURE) : liveChatWriterModelId(writer),
     source: "fallback",
     reason,
   }

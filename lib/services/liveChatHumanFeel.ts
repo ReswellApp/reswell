@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
+  claimLiveChatPersonaJoin,
   insertLiveChatMessage,
   listLiveChatMessagesForSession,
   mergeLiveChatSessionMetadata,
@@ -7,14 +8,12 @@ import {
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
 import {
-  LIVE_CHAT_PERSONA_JOINED_AT_KEY,
   LIVE_CHAT_PERSONA_METADATA_KEY,
   isLiveChatJoinMessage,
   liveChatHumanFeelDelay,
   liveChatAskNeedsLookup,
   liveChatHoldAfterGenerationMs,
   liveChatJoinMessage,
-  liveChatPersonaAlreadyJoined,
   liveChatPersonaVoiceNote,
   resolveLiveChatPersona,
   type LiveChatPersona,
@@ -53,28 +52,31 @@ export async function announceLiveChatPersonaJoin(
   session: LiveChatSessionRow,
   persona: LiveChatPersona,
 ): Promise<{ joined: LiveChatMessageRow | null; session: LiveChatSessionRow }> {
-  if (liveChatPersonaAlreadyJoined(session.metadata)) {
-    return { joined: null, session }
+  const claim = await claimLiveChatPersonaJoin(svc, session.id)
+  if (claim.status !== "claimed") {
+    return {
+      joined: null,
+      session: claim.status === "already_joined" ? claim.session : session,
+    }
   }
 
-  const recent = await listLiveChatMessagesForSession(svc, session.id, { limit: 40 })
+  const working = claim.session
+  const recent = await listLiveChatMessagesForSession(svc, working.id, { limit: 40 })
   if (recent.some((message) => isLiveChatJoinMessage(message.content))) {
-    const marked = await markPersonaJoined(svc, session)
-    return { joined: null, session: marked }
+    return { joined: null, session: working }
   }
 
   const joined = await insertLiveChatMessage(svc, {
-    session_id: session.id,
+    session_id: working.id,
     sender_type: "system",
     content: liveChatJoinMessage(persona.firstName),
   })
-  const marked = await markPersonaJoined(svc, session)
   if (joined) {
     await broadcastLiveChatMessage({
-      sessionId: session.id,
+      sessionId: working.id,
       message: {
         id: joined.id,
-        session_id: session.id,
+        session_id: working.id,
         sender_type: "system",
         sender_agent_id: null,
         content: joined.content,
@@ -82,7 +84,7 @@ export async function announceLiveChatPersonaJoin(
       },
     })
   }
-  return { joined, session: marked }
+  return { joined, session: working }
 }
 
 export async function holdLiveChatHumanFeel(args: {
@@ -131,20 +133,6 @@ export async function sleepUntilLiveChatJoin(args: {
   if (waitMs <= 0) return
   const sleep = args.sleep ?? defaultSleep
   await sleep(waitMs)
-}
-
-async function markPersonaJoined(
-  svc: SupabaseClient,
-  session: LiveChatSessionRow,
-): Promise<LiveChatSessionRow> {
-  const joinedAt = new Date().toISOString()
-  await mergeLiveChatSessionMetadata(svc, session, {
-    [LIVE_CHAT_PERSONA_JOINED_AT_KEY]: joinedAt,
-  })
-  return {
-    ...session,
-    metadata: { ...session.metadata, [LIVE_CHAT_PERSONA_JOINED_AT_KEY]: joinedAt },
-  }
 }
 
 function defaultSleep(ms: number): Promise<void> {

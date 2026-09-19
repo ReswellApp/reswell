@@ -143,6 +143,23 @@ export function liveChatTypingLabel(firstName: string): string {
   return `${firstName} is typing…`
 }
 
+/** Hide optimistic thinking until Hayden/David's join line is in the thread. */
+export function shouldShowLiveChatTeamTyping(args: {
+  messages: Array<{ sender_type: string; content: string }>
+  teamThinking: boolean
+  typingName: string | null
+  requireJoinBeforeTyping?: boolean
+}): boolean {
+  const hasJoin = args.messages.some((message) => isLiveChatJoinMessage(message.content))
+  const hasTeamReply = args.messages.some(
+    (message) => message.sender_type === "agent" || message.sender_type === "bot",
+  )
+  if (args.requireJoinBeforeTyping && !hasJoin && !hasTeamReply) {
+    return false
+  }
+  return args.teamThinking || Boolean(args.typingName)
+}
+
 export function liveChatPersonaTeamMember(persona: LiveChatPersona): {
   id: string
   name: string

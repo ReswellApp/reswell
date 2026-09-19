@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import {
+  LIVE_CHAT_PERSONA_JOINED_AT_KEY,
+  liveChatPersonaAlreadyJoined,
+} from "@/lib/live-chat/human-feel"
 import { formatPersonName } from "@/lib/utils/person-name"
 import type { LiveChatSenderType, LiveChatSessionStatus } from "@/lib/validations/liveChat"
 
@@ -290,6 +294,51 @@ export async function mergeLiveChatSessionMetadata(
   return updateLiveChatSessionRow(supabase, session.id, {
     metadata: { ...session.metadata, ...patch },
   })
+}
+
+export type LiveChatPersonaJoinClaim =
+  | { status: "claimed"; session: LiveChatSessionRow }
+  | { status: "already_joined"; session: LiveChatSessionRow }
+  | { status: "missing" }
+
+/** Compare-and-set so two overlapping first replies cannot both insert a join line. */
+export async function claimLiveChatPersonaJoin(
+  supabase: SupabaseClient,
+  sessionId: string,
+): Promise<LiveChatPersonaJoinClaim> {
+  const fresh = await getLiveChatSessionById(supabase, sessionId)
+  if (!fresh) return { status: "missing" }
+  if (liveChatPersonaAlreadyJoined(fresh.metadata)) {
+    return { status: "already_joined", session: fresh }
+  }
+
+  const joinedAt = new Date().toISOString()
+  const nextMeta = { ...fresh.metadata, [LIVE_CHAT_PERSONA_JOINED_AT_KEY]: joinedAt }
+
+  const { data, error } = await withSessionSelect((select) =>
+    supabase
+      .from("live_chat_sessions")
+      .update({ metadata: nextMeta })
+      .eq("id", sessionId)
+      .filter(`metadata->>${LIVE_CHAT_PERSONA_JOINED_AT_KEY}`, "is", "null")
+      .select(select)
+      .maybeSingle(),
+  )
+
+  if (error) {
+    console.error("claimLiveChatPersonaJoin", error)
+    return { status: "missing" }
+  }
+  if (data) {
+    return {
+      status: "claimed",
+      session: normalizeLiveChatSessionRow(data as Record<string, unknown>),
+    }
+  }
+
+  const raced = await getLiveChatSessionById(supabase, sessionId)
+  if (!raced) return { status: "missing" }
+  return { status: "already_joined", session: raced }
 }
 
 const OPEN_SESSION_PAGE_SIZE = 1000

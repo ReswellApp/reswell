@@ -14,6 +14,7 @@ import {
   isLiveChatSessionClosedPayload,
   isLiveChatSessionMissingPayload,
 } from "@/lib/live-chat/errors"
+import { isLiveChatJoinMessage } from "@/lib/live-chat/human-feel"
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
 
 const VISITOR_DISPLAY_NAME = "Guest"
@@ -142,6 +143,7 @@ export function useLiveChatSession(options?: {
   /** True while Hayden or David (CS agent) is generating a reply. */
   const [aiThinking, setAiThinking] = useState(false)
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const messagesRef = useRef<LiveChatUiMessage[]>([])
 
   const [sessionClosed, setSessionClosed] = useState(false)
   const visitorTokenRef = useRef<string>("")
@@ -171,6 +173,17 @@ export function useLiveChatSession(options?: {
   sessionReadyRef.current = sessionReady
   publicIdRef.current = publicId
   supportCaseIdRef.current = supportCaseId
+
+  messagesRef.current = messages
+
+  const startTeamThinking = useCallback(() => {
+    setAiThinking(true)
+    if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current)
+    thinkingTimeoutRef.current = setTimeout(() => {
+      setAiThinking(false)
+      thinkingTimeoutRef.current = null
+    }, 20_000)
+  }, [])
 
   const hasPersistedThread = messages.some(
     (m) =>
@@ -295,9 +308,11 @@ export function useLiveChatSession(options?: {
         thinkingTimeoutRef.current = null
       }
       setAiThinking(false)
+    } else if (message.sender_type === "system" && isLiveChatJoinMessage(message.content)) {
+      startTeamThinking()
     }
     setMessages((prev) => mergeIncomingMessage(prev, message))
-  }, [])
+  }, [startTeamThinking])
 
   const replaceMessage = useCallback((optimisticId: string, confirmed: LiveChatUiMessage) => {
     setMessages((prev) => {
@@ -472,12 +487,9 @@ export function useLiveChatSession(options?: {
         }
         replaceMessage(optimisticId, ui)
         onConfirmedRef.current?.(ui)
-        setAiThinking(true)
-        if (thinkingTimeoutRef.current) clearTimeout(thinkingTimeoutRef.current)
-        thinkingTimeoutRef.current = setTimeout(() => {
-          setAiThinking(false)
-          thinkingTimeoutRef.current = null
-        }, 20_000)
+        if (messagesRef.current.some((message) => isLiveChatJoinMessage(message.content))) {
+          startTeamThinking()
+        }
         return ui
       } catch {
         setError("Could not send message")
@@ -485,7 +497,7 @@ export function useLiveChatSession(options?: {
         return null
       }
     },
-    [adoptSession, bootstrapSession, reloadThread, removeMessage, replaceMessage],
+    [adoptSession, bootstrapSession, reloadThread, removeMessage, replaceMessage, startTeamThinking],
   )
 
   const flushPendingSend = useCallback(async () => {
