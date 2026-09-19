@@ -37,6 +37,9 @@ describe("live chat order tile intent", () => {
     assert.equal(isLiveChatSpecificOrderLookupIntent("how do cash outs work"), false)
     assert.equal(isLiveChatSpecificOrderLookupIntent("how do I buy a surfboard on Reswell?"), false)
     assert.equal(isLiveChatSpecificOrderLookupIntent("what's your refund policy?"), false)
+    assert.equal(isLiveChatMarketplaceHowtoIntent("I paid for this board"), false)
+    assert.equal(isLiveChatMarketplaceHowtoIntent("when do I get my money back?"), false)
+    assert.equal(isLiveChatSpecificOrderLookupIntent("I want a refund"), true)
   })
 
   it("does not show tiles when they already named an order or asked for a label update", () => {
