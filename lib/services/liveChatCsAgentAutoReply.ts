@@ -27,11 +27,9 @@ import {
   sleepUntilLiveChatJoin,
 } from "@/lib/services/liveChatHumanFeel"
 import { routeLiveChatWriterWithJev } from "@/lib/llm/jev-live-chat-router"
+import { liveChatGenerateAttemptBudgetMs } from "@/lib/live-chat/generate-budget"
 import { liveChatCsAgentWriterModel } from "@/lib/live-chat/writer-route"
 import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
-
-/** Outer budget covers order/listing preload plus the live-chat model timeout. */
-const DRAFT_GENERATE_BUDGET_MS = 28_000
 
 /** Deterministic reply when eligible undropped-off sales exist (panel shows tiles). */
 export const LIVE_CHAT_LABEL_UPDATE_REPLY =
@@ -83,7 +81,9 @@ async function generateWithModel(
   rewriteInstruction: string,
   liveChatActor: Awaited<ReturnType<typeof resolveLiveChatActionActor>>,
   modelId: string,
+  budgetMs: number,
 ): Promise<{ body: string; closeTicket: boolean } | null> {
+  if (budgetMs <= 0) return null
   const draft = await Promise.race([
     generateAndStoreDraft(svc, caseId, true, {
       rewriteInstruction,
@@ -92,7 +92,7 @@ async function generateWithModel(
       modelId,
     }),
     new Promise<null>((resolve) => {
-      setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
+      setTimeout(() => resolve(null), budgetMs)
     }),
   ])
   const body = draft && "data" in draft ? draft.data.body.trim() : ""
@@ -110,6 +110,7 @@ async function generateDraftBodyWithBudget(
   firstName: string,
   visitorMessage: string,
 ): Promise<{ body: string; closeTicket: boolean } | null> {
+  const startedAtMs = Date.now()
   try {
     const route = await routeLiveChatWriterWithJev({
       visitorMessage,
@@ -142,11 +143,17 @@ async function generateDraftBodyWithBudget(
       rewriteInstruction,
       liveChatActor,
       model,
+      liveChatGenerateAttemptBudgetMs({ startedAtMs }),
     )
     if (first) return first
 
     const pro = liveChatCsAgentWriterModel("pro")
     if (model !== pro) {
+      const retryBudget = liveChatGenerateAttemptBudgetMs({ startedAtMs, isRetry: true })
+      if (retryBudget <= 0) {
+        console.warn("[liveChatCsAgentAutoReply] first writer empty, skip pro retry — generate budget exhausted")
+        return null
+      }
       console.warn("[liveChatCsAgentAutoReply] first writer empty, retrying with pro")
       const retry = await generateWithModel(
         svc,
@@ -155,6 +162,7 @@ async function generateDraftBodyWithBudget(
         rewriteInstruction,
         liveChatActor,
         pro,
+        retryBudget,
       )
       if (retry) return retry
     }

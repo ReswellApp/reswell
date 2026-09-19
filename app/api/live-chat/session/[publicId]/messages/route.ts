@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
-/** after() runs Jev + CS agent generate + human-feel hold. Default 15s kills the reply. */
-export const maxDuration = 60
+/** after() runs Jev + first writer + optional Pro retry + persist. 60s can kill persist. */
+export const maxDuration = 120
 import {
   getLiveChatVisitorThreadService,
   sendLiveChatVisitorMessageService,

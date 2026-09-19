@@ -74,7 +74,7 @@ describe("live chat session expiry", () => {
     assert.equal(LIVE_CHAT_SESSION_STALE_MS, 24 * 60 * 60 * 1000)
   })
 
-  it("picks the newest activity timestamp for the stale clock", () => {
+  it("picks the newest message activity and ignores metadata updated_at", () => {
     assert.equal(
       liveChatSessionActivityAt({
         last_message_at: "2026-09-19T10:00:00.000Z",
@@ -88,6 +88,26 @@ describe("live chat session expiry", () => {
         created_at: "2026-09-18T10:00:00.000Z",
       }),
       "2026-09-18T10:00:00.000Z",
+    )
+    assert.equal(
+      liveChatSessionActivityAt({
+        last_message_at: "2026-09-18T10:00:00.000Z",
+        updated_at: "2026-09-19T14:50:00.000Z",
+        created_at: "2026-09-17T10:00:00.000Z",
+      }),
+      "2026-09-18T10:00:00.000Z",
+    )
+    assert.equal(
+      shouldResumeLiveChatSession({
+        status: "open",
+        lastActivityAt: liveChatSessionActivityAt({
+          last_message_at: "2026-09-18T14:59:00.000Z",
+          updated_at: "2026-09-19T14:50:00.000Z",
+          created_at: "2026-09-17T10:00:00.000Z",
+        }),
+        nowMs: NOW,
+      }),
+      false,
     )
   })
 })
