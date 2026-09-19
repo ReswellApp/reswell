@@ -663,6 +663,7 @@ export async function listSupportReplyOrdersForCustomer(
   supabase: SupabaseClient,
   userId: string,
   limit = 40,
+  options?: { failOnError?: boolean },
 ): Promise<SupportReplyOrderSnapshot[]> {
   const { data, error } = await supabase
     .from("orders")
@@ -672,6 +673,9 @@ export async function listSupportReplyOrdersForCustomer(
     .limit(limit)
   if (error || !data) {
     if (error) console.warn("[support_reply_drafts] customer orders skipped:", error.message)
+    if (options?.failOnError) {
+      throw new Error(error?.message ?? "Could not load customer orders")
+    }
     return []
   }
   return (data as Parameters<typeof toOrderSnapshot>[0][]).map(toOrderSnapshot)

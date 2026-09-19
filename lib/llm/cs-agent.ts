@@ -95,6 +95,11 @@ export type CsAgentAccountSnapshot = {
   signedIn: boolean
   orders: CsAgentAccountOrder[]
   listings: CsAgentAccountListing[]
+  /**
+   * False when orders or listings could not be loaded. Empty arrays are then
+   * not proof of no activity — omit this or set true only after a clean load.
+   */
+  authoritative?: boolean
 }
 
 export type CsAgentThreadTurn = {
@@ -173,7 +178,7 @@ You are live chat for Reswell. Your reply sends immediately as the named teammat
 
 ## Resolve it (do this before you write)
 1. Name the ask: order status, label, payout, protection, listing, account, or general help. Reply to the latest message. Do not restart an earlier ask they already moved past.
-2. If the ask needs an order, tracking, payout, address, or listing fact, use the account snapshot in the context pack. If they are not signed in, or the snapshot is missing or ambiguous, call confirm_auth, list_customer_orders, lookup_order, lookup_tracking, or help_article before you answer. Never guess a status, amount, tracking number, or payout.
+2. If the ask needs an order, tracking, payout, address, or listing fact, use the account snapshot in the context pack only when it is marked authoritative. If they are not signed in, or the snapshot is missing, incomplete, or not authoritative, call confirm_auth, list_customer_orders, lookup_order, lookup_tracking, or help_article before you answer. Never guess a status, amount, tracking number, or payout. Never treat a failed load as "no orders" or "no listings".
 3. If more than one order could match, name the order numbers and statuses and ask which one. Leave close_ticket false.
 4. Ground every policy claim in the help excerpts or a help_article result. If the excerpt is too thin to be sure, call help_article.
 5. Write the reply as I/me: show you understood, give the specific answer, then one next step. 1–3 sentences for most asks. Under ~80 words unless a short list of their orders is required. No "happy to help" or greeting stack.
@@ -347,30 +352,41 @@ function formatAccountSnapshot(snapshot: CsAgentAccountSnapshot): string {
     return "Account snapshot: visitor is not signed in. Do not share order, tracking, payout, or listing facts. Ask them to sign in."
   }
 
-  const orders =
-    snapshot.orders.length > 0
-      ? snapshot.orders
-          .map((order) => {
-            const ref = order.orderNum ?? order.id.slice(0, 8)
-            const tracking = order.trackingNumber
-              ? `tracking ${order.trackingNumber}${order.trackingCarrier ? ` (${order.trackingCarrier})` : ""}`
-              : "no tracking on file"
-            const delivery = order.deliveryStatus ? ` · delivery ${order.deliveryStatus}` : ""
-            const fulfillment = order.fulfillmentMethod ?? "fulfillment unknown"
-            return `- ${order.role} ${ref} · status ${order.status}${delivery} · $${order.amount.toFixed(2)} order total · ${fulfillment} · ${tracking}`
-          })
-          .join("\n")
-      : "(no recent orders on this account)"
+  const authoritative = snapshot.authoritative !== false
+  const orderLines = snapshot.orders.map((order) => {
+    const ref = order.orderNum ?? order.id.slice(0, 8)
+    const tracking = order.trackingNumber
+      ? `tracking ${order.trackingNumber}${order.trackingCarrier ? ` (${order.trackingCarrier})` : ""}`
+      : "no tracking on file"
+    const delivery = order.deliveryStatus ? ` · delivery ${order.deliveryStatus}` : ""
+    const fulfillment = order.fulfillmentMethod ?? "fulfillment unknown"
+    return `- ${order.role} ${ref} · status ${order.status}${delivery} · $${order.amount.toFixed(2)} order total · ${fulfillment} · ${tracking}`
+  })
+  const listingLines = snapshot.listings.map((listing) => {
+    const price = listing.price != null ? `$${listing.price.toFixed(2)}` : "price unknown"
+    return `- ${listing.title ?? "Untitled"} · ${listing.status ?? "unknown"} · ${price} · ${listing.href}`
+  })
 
+  if (!authoritative) {
+    const orders =
+      orderLines.length > 0
+        ? orderLines.join("\n")
+        : "(orders could not be loaded — do not assume they have none; call list_customer_orders)"
+    const listings =
+      listingLines.length > 0
+        ? listingLines.join("\n")
+        : "(listings could not be loaded — do not assume they have none)"
+    return `Account snapshot (incomplete — not authoritative. Use tools to confirm before answering. Do not treat this as a visitor with no orders or listings):
+Orders:
+${orders}
+Listings:
+${listings}`
+  }
+
+  const orders =
+    orderLines.length > 0 ? orderLines.join("\n") : "(no recent orders on this account)"
   const listings =
-    snapshot.listings.length > 0
-      ? snapshot.listings
-          .map((listing) => {
-            const price = listing.price != null ? `$${listing.price.toFixed(2)}` : "price unknown"
-            return `- ${listing.title ?? "Untitled"} · ${listing.status ?? "unknown"} · ${price} · ${listing.href}`
-          })
-          .join("\n")
-      : "(no listings on this account)"
+    listingLines.length > 0 ? listingLines.join("\n") : "(no listings on this account)"
 
   return `Account snapshot (this signed-in visitor only — these facts are authoritative; call a tool only for an order or article that is not here):
 Orders:

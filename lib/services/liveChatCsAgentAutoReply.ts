@@ -30,7 +30,10 @@ import { routeLiveChatWriterWithJev } from "@/lib/llm/jev-live-chat-router"
 import { liveChatCsAgentWriterModel } from "@/lib/live-chat/writer-route"
 import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
 
-/** Outer budget covers order/listing preload plus the live-chat model timeout. */
+/**
+ * Outer budget covers order/listing preload plus the live-chat model timeout.
+ * The visitor message route must export maxDuration above this plus persist time.
+ */
 const DRAFT_GENERATE_BUDGET_MS = 28_000
 
 /** Deterministic reply when eligible undropped-off sales exist (panel shows tiles). */

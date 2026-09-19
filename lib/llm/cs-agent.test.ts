@@ -183,6 +183,64 @@ describe("cs agent harness", () => {
     const okayAt = pack.indexOf("[okay]")
     assert.ok(veryGoodAt >= 0 && okayAt >= 0 && veryGoodAt < okayAt)
     assert.match(pack, /copy the voice of very_good/)
+    assert.match(pack, /these facts are authoritative/)
+  })
+
+  it("does not treat a failed account snapshot as a visitor with no orders", () => {
+    const pack = formatCsAgentContextPack({
+      greetingName: "Sam",
+      caseSubject: "Where is my board?",
+      caseKind: "order_question",
+      caseStatus: "submitted",
+      sourceChannel: "live_chat",
+      requesterRole: "buyer",
+      lastCustomerMessage: "Where is my order?",
+      thread: [{ role: "customer", body: "Where is my order?" }],
+      order: null,
+      priorTickets: [],
+      help: [],
+      examples: [],
+      macros: [],
+      accountSnapshot: {
+        signedIn: true,
+        orders: [],
+        listings: [],
+        authoritative: false,
+      },
+    })
+    assert.match(pack, /not authoritative/)
+    assert.match(pack, /could not be loaded/)
+    assert.match(pack, /list_customer_orders/)
+    assert.doesNotMatch(pack, /no recent orders on this account/)
+    assert.doesNotMatch(pack, /no listings on this account/)
+    assert.doesNotMatch(pack, /these facts are authoritative/)
+  })
+
+  it("still says no activity when an authoritative snapshot is empty", () => {
+    const pack = formatCsAgentContextPack({
+      greetingName: "Sam",
+      caseSubject: "Help",
+      caseKind: "general",
+      caseStatus: "submitted",
+      sourceChannel: "live_chat",
+      requesterRole: "member",
+      lastCustomerMessage: "Do I have any orders?",
+      thread: [{ role: "customer", body: "Do I have any orders?" }],
+      order: null,
+      priorTickets: [],
+      help: [],
+      examples: [],
+      macros: [],
+      accountSnapshot: {
+        signedIn: true,
+        orders: [],
+        listings: [],
+        authoritative: true,
+      },
+    })
+    assert.match(pack, /no recent orders on this account/)
+    assert.match(pack, /no listings on this account/)
+    assert.match(pack, /these facts are authoritative/)
   })
 
   it("tells the live-chat agent when it may resolve the ticket", () => {
@@ -192,6 +250,7 @@ describe("cs agent harness", () => {
     assert.match(prompt, /Set close_ticket to false if you asked a question/)
     assert.match(prompt, /account snapshot/i)
     assert.match(prompt, /Never guess/)
+    assert.match(prompt, /failed load/)
     assert.match(prompt, /very_good/)
     assert.match(prompt, new RegExp(`Marketplace fee is ${MARKETPLACE_FEE_PERCENT}%`))
     assert.match(prompt, new RegExp(`The seller keeps ${SELLER_SHARE_PERCENT}%`))
