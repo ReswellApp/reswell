@@ -24,6 +24,34 @@ export function latestConversationalIsVisitor(
   return latestConversationalSender(messages) === "visitor"
 }
 
+/** Latest auto-sent Hayden/David bubble — only this one can be re-rolled. */
+export function latestLiveChatAutoReplyId(
+  messages: Array<{
+    id: string
+    sender_type: "visitor" | "agent" | "system" | "bot"
+    sender_agent_id?: string | null
+  }>,
+): string | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (!message || message.sender_type === "system") continue
+    if (message.sender_type === "agent" && !message.sender_agent_id) return message.id
+    return null
+  }
+  return null
+}
+
+export function isLatestLiveChatAutoReply(
+  messages: Array<{
+    id: string
+    sender_type: "visitor" | "agent" | "system" | "bot"
+    sender_agent_id?: string | null
+  }>,
+  messageId: string,
+): boolean {
+  return latestLiveChatAutoReplyId(messages) === messageId
+}
+
 export function hasTeamReplySince(
   messages: Array<{
     sender_type: "visitor" | "agent" | "system" | "bot"

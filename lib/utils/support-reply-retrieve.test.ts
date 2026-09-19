@@ -6,6 +6,8 @@ import {
   lastCustomerSupportText,
   rankBySupportReplyScore,
   supportReplyRetrievalQuery,
+  mergeRatedReplyExamples,
+  rankAvoidExamplesForQuery,
   rankExamplesForQuery,
   rankHelpArticlesForQuery,
   scoreSupportReplyOverlap,
@@ -124,6 +126,84 @@ describe("support reply retrieval", () => {
     )
     assert.equal(hits[0]?.id, "1")
     assert.ok(hits.every((hit) => hit.rating !== "bad"))
+  })
+
+  it("ranks bad+note examples the live-chat writer should avoid", () => {
+    const hits = rankAvoidExamplesForQuery(
+      [
+        {
+          id: "avoid-match",
+          kind: "general",
+          customer_excerpt: "I am having trouble with my shipping address",
+          staff_reply: "Please double-check your shipping address.",
+          rating: "bad" as const,
+          rating_note: "Ask what sort of issue is going on first.",
+        },
+        {
+          id: "avoid-other",
+          kind: "payments",
+          customer_excerpt: "Where is my payout?",
+          staff_reply: "I cannot help with money.",
+          rating: "bad" as const,
+          rating_note: "Do not refuse payout how-tos.",
+        },
+        {
+          id: "no-note",
+          kind: "general",
+          customer_excerpt: "address problem",
+          staff_reply: "Ignore this.",
+          rating: "bad" as const,
+        },
+      ],
+      "trouble with my shipping address at checkout",
+      "general",
+    )
+    assert.equal(hits[0]?.id, "avoid-match")
+    assert.match(hits[0]?.ratingNote ?? "", /Ask what sort of issue/)
+    assert.ok(hits.every((hit) => hit.rating === "bad" && hit.ratingNote))
+  })
+
+  it("merges good examples before avoid examples and drops duplicate replies", () => {
+    const merged = mergeRatedReplyExamples(
+      [
+        [
+          {
+            id: "good",
+            kind: "general",
+            customerExcerpt: "how do I buy",
+            staffReply: "Browse /boards and check out.",
+            rating: "very_good",
+            ratingNote: "Short and specific.",
+            score: 0.9,
+          },
+        ],
+        [
+          {
+            id: "bad",
+            kind: "general",
+            customerExcerpt: "how do I buy",
+            staffReply: "Here are some options:",
+            rating: "bad",
+            ratingNote: "No menus.",
+            score: 0.8,
+          },
+          {
+            id: "dup",
+            kind: "general",
+            customerExcerpt: "buy a board",
+            staffReply: "Browse /boards and check out.",
+            rating: "okay",
+            ratingNote: null,
+            score: 0.4,
+          },
+        ],
+      ],
+      5,
+    )
+    assert.deepEqual(
+      merged.map((row) => row.id),
+      ["good", "bad"],
+    )
   })
 
   it("changes fingerprint when the customer message changes", () => {

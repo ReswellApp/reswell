@@ -410,6 +410,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
                 sessionId={session.sessionId}
                 visitorToken={session.visitorToken}
                 enableReplyRatings={LIVE_CHAT_WIDGET_ADMIN_ONLY}
+                onAgentMessageUpdated={appendRemoteMessage}
                 visitorEmail={signedInEmail}
                 isSignedIn={isSignedIn}
                 onAuthRequired={() => {

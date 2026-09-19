@@ -11,6 +11,8 @@ import {
 } from "@/lib/db/supportReplyDrafts"
 import { listSupportMacros, type SupportMacroRow } from "@/lib/db/supportCases"
 import {
+  mergeRatedReplyExamples,
+  rankAvoidExamplesForQuery,
   rankBySupportReplyScore,
   rankExamplesForQuery,
   rankHelpArticlesForQuery,
@@ -85,15 +87,28 @@ export async function gatherSupportReplyKnowledge(
     : examples
 
   const learned = retrieveExamplesForQuery(examplePool, args.query, args.kind)
-  const avoidExamples: RetrievedReplyExample[] = isLiveChat
+  const avoidPool = isLiveChat
+    ? examples.filter((example) => {
+        if (example.rating !== "bad") return false
+        if (!example.rated_by) return false
+        if (!example.rating_note?.trim()) return false
+        if (example.source_channel && example.source_channel !== "live_chat") return false
+        if (isLiveChatCannedFailureReply(example.staff_reply)) return false
+        return true
+      })
+    : []
+  const avoidExamples = isLiveChat
+    ? rankAvoidExamplesForQuery(avoidPool, args.query, args.kind, 2)
+    : []
+  const recentCoached: RetrievedReplyExample[] = isLiveChat
     ? examples
-        .filter(
-          (example) =>
-            example.rating === "bad" &&
-            Boolean(example.rated_by) &&
-            Boolean(example.rating_note?.trim()) &&
-            (!example.source_channel || example.source_channel === "live_chat"),
-        )
+        .filter((example) => {
+          if (!example.rated_by) return false
+          if (!example.rating_note?.trim()) return false
+          if (example.source_channel && example.source_channel !== "live_chat") return false
+          if (isLiveChatCannedFailureReply(example.staff_reply)) return false
+          return true
+        })
         .slice(0, 2)
         .map((example) => ({
           id: example.id,
@@ -102,7 +117,7 @@ export async function gatherSupportReplyKnowledge(
           staffReply: example.staff_reply,
           rating: example.rating,
           ratingNote: example.rating_note,
-          score: 1,
+          score: 0.5,
         }))
     : []
   const helpArticles = retrieveHelpArticlesForQuery(args.query)
@@ -165,12 +180,12 @@ export async function gatherSupportReplyKnowledge(
     })
     .slice(0, 3)
 
-  const seenReplies = new Set(learned.map((row) => row.staffReply.toLowerCase()))
-  const mergedExamples = [
-    ...learned,
-    ...avoidExamples.filter((row) => !seenReplies.has(row.staffReply.toLowerCase())),
-    ...historical.filter((row) => !seenReplies.has(row.staffReply.toLowerCase())),
-  ].slice(0, isLiveChat ? 5 : 5)
+  const mergedExamples = mergeRatedReplyExamples(
+    isLiveChat
+      ? [learned, avoidExamples, recentCoached]
+      : [learned, historical],
+    5,
+  )
 
   const macrosForKind = macros.filter(
     (macro) => !macro.kind_filter || !args.kind || macro.kind_filter === args.kind,

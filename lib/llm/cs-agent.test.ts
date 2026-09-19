@@ -190,6 +190,41 @@ describe("cs agent harness", () => {
     assert.match(pack, /copy the voice of very_good/)
   })
 
+  it("grounds a live-chat re-roll on the previous reply plus coach note", () => {
+    const pack = formatCsAgentContextPack({
+      greetingName: "Sam",
+      caseSubject: "Address help",
+      caseKind: "general",
+      caseStatus: "submitted",
+      sourceChannel: "live_chat",
+      requesterRole: "member",
+      lastCustomerMessage: "I am having trouble with my address",
+      thread: [{ role: "customer", body: "I am having trouble with my address" }],
+      order: null,
+      priorTickets: [],
+      help: [],
+      examples: [
+        {
+          rating: "bad",
+          customerExcerpt: "trouble with my address",
+          staffReply: "Please double-check your shipping address.",
+          ratingNote: "Ask what sort of issue is going on first.",
+        },
+      ],
+      macros: [],
+      liveChatRegenerate: {
+        previousReply: "Please double-check your shipping address.",
+        rating: "bad",
+        note: "Ask what sort of issue is going on first.",
+      },
+    })
+    assert.match(pack, /\[AVOID\]/)
+    assert.match(pack, /coach \(bad\): Ask what sort of issue/)
+    assert.match(pack, /Staff is re-rolling the last live-chat reply/)
+    assert.match(pack, /Coach for this re-roll: Ask what sort of issue/)
+    assert.doesNotMatch(pack, /Staff rewrite instruction/)
+  })
+
   it("tells the live-chat agent when it may resolve the ticket", () => {
     const prompt = csAgentLiveChatSystemPrompt("Hayden")
     assert.match(prompt, /close_ticket to true only when the issue is fully solved/)

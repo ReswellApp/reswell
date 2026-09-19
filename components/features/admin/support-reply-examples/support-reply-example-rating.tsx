@@ -16,7 +16,7 @@ const RATING_TONE: Record<SupportReplyDraftRating, "green" | "amber" | "red"> = 
 const RATING_TOAST: Record<SupportReplyDraftRating, string> = {
   very_good: "Marked very good — later drafts will prefer this",
   okay: "Marked okay — later drafts can learn from this",
-  bad: "Marked bad — later drafts will ignore this",
+  bad: "Marked bad — later replies will avoid this when you leave a note",
 }
 
 interface SupportReplyExampleRatingProps {

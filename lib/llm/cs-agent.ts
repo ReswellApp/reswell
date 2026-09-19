@@ -129,6 +129,12 @@ export type CsAgentContextPack = {
   liveChatTurns?: CsAgentThreadTurn[]
   /** Live chat: order tools only. How-tos and small talk stay conversation. */
   liveChatUseOrderTools?: boolean
+  /** Staff re-roll of the last auto-reply. Not used for inbox drafts. */
+  liveChatRegenerate?: {
+    previousReply: string
+    rating?: string
+    note?: string | null
+  }
 }
 
 export type CsAgentDraftOutput = {
@@ -283,6 +289,7 @@ ${pack.rewriteInstruction.trim()}`
 Current draft they are rewriting (revise this; do not ignore the latest customer message):
 ${pack.currentDraft.trim()}`
       : ""
+  const regenerate = formatLiveChatRegenerate(pack)
 
   const opener =
     pack.sourceChannel === "live_chat"
@@ -299,7 +306,7 @@ ${pack.currentDraft.trim()}`
       ? "\nRated-reply rule: copy the voice of very_good, not the facts. AVOID coach notes are hard constraints."
       : ""
 
-  return `${opener}${rewrite}${previousDraft}${snapshot}
+  return `${opener}${rewrite}${previousDraft}${regenerate}${snapshot}
 
 Case: ${pack.caseSubject}
 Kind: ${pack.caseKind}
@@ -326,6 +333,21 @@ ${examples}
 
 Saved macros (tone/structure only — adapt, do not paste blindly if facts differ):
 ${macros}`
+}
+
+function formatLiveChatRegenerate(pack: CsAgentContextPack): string {
+  if (pack.sourceChannel !== "live_chat") return ""
+  const reRoll = pack.liveChatRegenerate
+  const previous = reRoll?.previousReply.trim() ?? ""
+  if (!previous) return ""
+  const rating = reRoll?.rating?.trim() || "unrated"
+  const note = reRoll?.note?.trim()
+  return `
+
+Staff is re-rolling the last live-chat reply. Write a fresh answer to the latest customer message. Do not apologize for the previous version. Do not say you already answered.
+Previous reply (rated ${rating}):
+${previous.slice(0, 900)}
+${note ? `Coach for this re-roll: ${note.slice(0, 400)}` : "Coach: improve voice and specificity. Copy the voice of very_good examples, not their facts."}`
 }
 
 function ratingRank(rating: string): number {
