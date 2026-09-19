@@ -8,8 +8,8 @@ import {
   liveChatOrderLookupRole,
   liveChatOrderTileClickMessage,
   liveChatOrderTileReplyForOrders,
+  liveChatWriterNeedsTools,
   resolveLiveChatOrderTileRole,
-
 } from "./order-tile-intent.ts"
 
 describe("live chat order tile intent", () => {
@@ -37,6 +37,14 @@ describe("live chat order tile intent", () => {
     assert.equal(isLiveChatSpecificOrderLookupIntent("how do cash outs work"), false)
     assert.equal(isLiveChatSpecificOrderLookupIntent("how do I buy a surfboard on Reswell?"), false)
     assert.equal(isLiveChatSpecificOrderLookupIntent("what's your refund policy?"), false)
+  })
+
+  it("attaches writer tools only for this-order asks", () => {
+    assert.equal(liveChatWriterNeedsTools("Where is my order?"), true)
+    assert.equal(liveChatWriterNeedsTools("It's order #1042"), true)
+    assert.equal(liveChatWriterNeedsTools("I need to update my shipping label"), true)
+    assert.equal(liveChatWriterNeedsTools("hi there. anything there?"), false)
+    assert.equal(liveChatWriterNeedsTools("how do I buy a surfboard on Reswell?"), false)
   })
 
   it("does not show tiles when they already named an order or asked for a label update", () => {

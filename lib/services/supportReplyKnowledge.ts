@@ -17,6 +17,7 @@ import {
   scoreSupportReplyOverlap,
   tokenizeSupportReplyQuery,
 } from "@/lib/utils/support-reply-retrieve"
+import { isLiveChatPresenceIntent } from "@/lib/live-chat/greeting-intent"
 import { CS_AGENT_PROMPT_VERSION } from "@/lib/llm/cs-agent"
 import { liveChatPinnedHelpSlugs } from "@/lib/live-chat/howto-intent"
 import { isLiveChatCannedFailureReply } from "@/lib/live-chat/live-chat-cs-prompt"
@@ -106,14 +107,16 @@ export async function gatherSupportReplyKnowledge(
     : []
   const helpArticles = retrieveHelpArticlesForQuery(args.query)
 
-  // Live chat: pin help that matches the ask. Seller-payout how-tos get Earnings /
-  // cash-out articles instead of the default protection set.
-  const liveChatPinned = isLiveChat
-    ? findHelpArticlesBySlugs(liveChatPinnedHelpSlugs(args.query)).map((article) => ({
-        ...article,
-        score: 1,
-      }))
-    : []
+  // Pin help that matches the ask. Presence pings get no claim/return stuffing
+  // even when retrieval pads a short hello with the thread/subject.
+  const liveChatQueryHead = args.query.split("\n")[0] ?? args.query
+  const liveChatPinned =
+    isLiveChat && !isLiveChatPresenceIntent(liveChatQueryHead)
+      ? findHelpArticlesBySlugs(liveChatPinnedHelpSlugs(args.query)).map((article) => ({
+          ...article,
+          score: 1,
+        }))
+      : []
   const helpMerged = [
     ...liveChatPinned,
     ...helpArticles.filter((article) => !liveChatPinned.some((pin) => pin.slug === article.slug)),

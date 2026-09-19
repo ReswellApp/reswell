@@ -1,11 +1,13 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
+import { LIVE_CHAT_ORDER_LOOKUP_FALLBACK, LIVE_CHAT_PRESENCE_REPLY } from "../live-chat/fallback-reply.ts"
 import {
   DEFAULT_LIVE_CHAT_REPLY_PROMPT,
   LIVE_CHAT_GREETING_REPLY,
   LIVE_CHAT_LEGACY_UNGROUNDED_REPLY,
   LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY,
+  LIVE_CHAT_TOPIC_MENU_REPLY,
   LIVE_CHAT_UNGROUNDED_REPLY,
   isLiveChatCannedFailureReply,
   resolveLiveChatFallbackReply,
@@ -87,6 +89,10 @@ describe("shouldHonorLiveChatTicketClose", () => {
       shouldHonorLiveChatTicketClose({ ...solved, lastCustomerMessage: "Hi!" }),
       false,
     )
+    assert.equal(
+      shouldHonorLiveChatTicketClose({ ...solved, lastCustomerMessage: "hi there" }),
+      false,
+    )
     assert.equal(shouldHonorLiveChatTicketClose({ ...solved, needsHumanReview: true }), false)
     assert.equal(shouldHonorLiveChatTicketClose({ ...solved, closeTicket: false }), false)
   })
@@ -102,17 +108,20 @@ describe("live chat CS prompt", () => {
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /How-tos vs lookups/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /how do I get my money/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /tap-to-pick order tiles/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /anything there/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /Never list buying/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /Do not ask for an order number on a greeting/)
     assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /You are Reswell Team/)
     assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /what's the order number/)
   })
 
   it("asks one question instead of pretending the team is already investigating", () => {
-    assert.match(LIVE_CHAT_UNGROUNDED_REPLY, /\?/)
-    assert.doesNotMatch(LIVE_CHAT_UNGROUNDED_REPLY, /order number/)
+    assert.match(LIVE_CHAT_ORDER_LOOKUP_FALLBACK, /\?/)
+    assert.doesNotMatch(LIVE_CHAT_ORDER_LOOKUP_FALLBACK, /buying, selling/)
     assert.equal(
       shouldHonorLiveChatTicketClose({
         closeTicket: true,
-        reply: LIVE_CHAT_UNGROUNDED_REPLY,
+        reply: LIVE_CHAT_ORDER_LOOKUP_FALLBACK,
         lastCustomerMessage: "Where is my board?",
         needsHumanReview: false,
       }),
@@ -129,15 +138,18 @@ describe("live chat CS prompt", () => {
     assert.doesNotMatch(reply, /\$\d/)
     assert.equal(
       resolveLiveChatFallbackReply("where is my board?"),
-      LIVE_CHAT_UNGROUNDED_REPLY,
+      LIVE_CHAT_ORDER_LOOKUP_FALLBACK,
     )
   })
 
-  it("greets instead of asking for an order number", () => {
+  it("answers presence pings instead of a topic catalog", () => {
     assert.equal(resolveLiveChatFallbackReply("hi there"), LIVE_CHAT_GREETING_REPLY)
-    assert.equal(resolveLiveChatFallbackReply("Hey!"), LIVE_CHAT_GREETING_REPLY)
-    assert.doesNotMatch(LIVE_CHAT_GREETING_REPLY, /order number/i)
+    assert.equal(resolveLiveChatFallbackReply("hi there. anything there?"), LIVE_CHAT_PRESENCE_REPLY)
+    assert.equal(resolveLiveChatFallbackReply("Hey!"), LIVE_CHAT_PRESENCE_REPLY)
+    assert.doesNotMatch(LIVE_CHAT_PRESENCE_REPLY, /buying, selling/i)
+    assert.doesNotMatch(LIVE_CHAT_PRESENCE_REPLY, /order number/i)
     assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_LEGACY_UNGROUNDED_REPLY), true)
     assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_UNGROUNDED_REPLY), true)
+    assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_TOPIC_MENU_REPLY), true)
   })
 })

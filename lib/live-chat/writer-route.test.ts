@@ -48,6 +48,7 @@ describe("live chat writer route", () => {
     assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.pro, /tracking/)
     assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.pro, /payout status/)
     assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.pro, /Generic how-tos/)
+    assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.flash_lite, /Greeting/)
     assert.match(LIVE_CHAT_JEV_WRITER_CRITERIA.flash_lite, /thanks/i)
   })
 })
