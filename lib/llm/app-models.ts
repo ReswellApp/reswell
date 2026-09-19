@@ -157,7 +157,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "live_chat_cs",
     name: "Live chat customer-service agent",
     purpose:
-      "Auto-sends the next Hayden or David reply in admin live chat after a join line and a human-feel delay. Jev (typesafe-ai/jev) routes which chat model writes the reply; Jev never generates customer-facing text. Writers are Gemini Flash Lite / Flash / Pro via Gateway. Same guidelines, tools, and rating memory as inbox drafts. Ratings stay on very_good / okay / bad.",
+      "Auto-sends the next Hayden or David reply in admin live chat after a join line and a human-feel delay. Jev (typesafe-ai/jev) routes which chat model writes the reply; Jev never generates customer-facing text. Writers are Gemini Flash / Pro via Gateway (Flash Lite is upgraded — it cannot emit tools + Output.object). Same guidelines, tools, and rating memory as inbox drafts. Ratings stay on very_good / okay / bad.",
     gatewayFeatureTag: "feature:live-chat-cs",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-pro",

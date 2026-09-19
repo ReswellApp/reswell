@@ -23,6 +23,9 @@ import {
 export const LIVE_CHAT_SOLVED_SYSTEM_MESSAGE =
   "This conversation looks solved, so we closed the ticket. Start a new chat anytime you need help."
 
+export const LIVE_CHAT_STALE_SYSTEM_MESSAGE =
+  "This chat went quiet, so we closed it. Start a new conversation anytime."
+
 async function insertAndBroadcastSystemMessage(
   svc: SupabaseClient,
   sessionId: string,

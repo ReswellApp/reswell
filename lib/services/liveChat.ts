@@ -31,7 +31,15 @@ import { isLegacyLiveChatWidgetCopy, liveChatAgentDisplayName } from "@/lib/live
 import { ensureLiveChatSessionPersona } from "@/lib/services/liveChatHumanFeel"
 import { assertLiveChatVisitorAccess } from "@/lib/services/liveChatVisitorAccess"
 import { openLiveChatSupportCase, syncLiveChatVisitorMessageToCase } from "@/lib/services/liveChatSupportCase"
-import { closeOpenLiveChatConversationsForVisitor } from "@/lib/services/liveChatClose"
+import {
+  closeOpenLiveChatConversationsForVisitor,
+  LIVE_CHAT_STALE_SYSTEM_MESSAGE,
+  resolveLiveChatConversation,
+} from "@/lib/services/liveChatClose"
+import {
+  liveChatSessionActivityAt,
+  shouldResumeLiveChatSession,
+} from "@/lib/live-chat/session-expiry"
 
 function isPlaceholderVisitorName(name: string | null | undefined): boolean {
   const trimmed = name?.trim() ?? ""
@@ -102,6 +110,38 @@ async function linkSupportCase(
   }
 }
 
+function isResumableVisitorSession(session: LiveChatSessionRow): boolean {
+  return shouldResumeLiveChatSession({
+    status: session.status,
+    lastActivityAt: liveChatSessionActivityAt(session),
+  })
+}
+
+async function expireStaleVisitorSession(
+  svc: SupabaseClient,
+  session: LiveChatSessionRow,
+): Promise<void> {
+  if (session.status === "resolved" || session.status === "closed") return
+  await resolveLiveChatConversation(svc, session, {
+    note: LIVE_CHAT_STALE_SYSTEM_MESSAGE,
+  })
+}
+
+async function pickResumableVisitorSession(
+  svc: SupabaseClient,
+  rows: LiveChatSessionRow[],
+): Promise<LiveChatSessionRow | null> {
+  let chosen: LiveChatSessionRow | null = null
+  for (const row of rows) {
+    if (isResumableVisitorSession(row)) {
+      if (!chosen) chosen = row
+      continue
+    }
+    await expireStaleVisitorSession(svc, row)
+  }
+  return chosen
+}
+
 async function findOpenSessionForVisitor(
   svc: SupabaseClient,
   args: {
@@ -112,7 +152,10 @@ async function findOpenSessionForVisitor(
 ): Promise<LiveChatSessionRow | null> {
   if (args.userId) {
     const recentForUser = await listRecentOpenLiveChatSessionsForUser(svc, args.userId, 20)
-    const match = recentForUser.find((row) => sessionMatchesPrefer(row, args.prefer)) ?? null
+    const match = await pickResumableVisitorSession(
+      svc,
+      recentForUser.filter((row) => sessionMatchesPrefer(row, args.prefer)),
+    )
     if (match) return match
   }
   const recentForToken = await listRecentOpenLiveChatSessionsForVisitorToken(
@@ -120,14 +163,15 @@ async function findOpenSessionForVisitor(
     args.visitorToken,
     20,
   )
-  return (
-    recentForToken.find((row) => {
+  return pickResumableVisitorSession(
+    svc,
+    recentForToken.filter((row) => {
       // Never let a guest (or different member) inherit another member's open chat —
       // that reused tickets and admin replies from the wrong person.
       if (row.user_id && row.user_id !== (args.userId ?? null)) return false
       if (args.userId && row.user_id && row.user_id !== args.userId) return false
       return sessionMatchesPrefer(row, args.prefer)
-    }) ?? null
+    }),
   )
 }
 
@@ -278,13 +322,19 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
     // even if localStorage still has the public id after sign-out.
     const canResumeAsCurrentVisitor =
       existing &&
-      existing.status !== "closed" &&
-      existing.status !== "resolved" &&
+      isResumableVisitorSession(existing) &&
       (!existing.user_id || existing.user_id === user?.id) &&
       sessionMatchesPrefer(existing, prefer)
     if (canResumeAsCurrentVisitor && existing) {
       const attached = await attachSignedInVisitorIdentity(svc, existing, user)
       return visitorResumePayload(svc, attached)
+    }
+    if (
+      existing &&
+      (existing.status === "open" || existing.status === "assigned") &&
+      !isResumableVisitorSession(existing)
+    ) {
+      await expireStaleVisitorSession(svc, existing)
     }
   }
 
@@ -371,6 +421,13 @@ export async function sendLiveChatVisitorMessageService(
 
   let startedFresh = false
   let session = await getLiveChatSessionForVisitor(svc, publicId, parsed.data.visitor_token)
+  if (session && !isResumableVisitorSession(session)) {
+    if (session.status === "open" || session.status === "assigned") {
+      await expireStaleVisitorSession(svc, session)
+    }
+    session = null
+    startedFresh = true
+  }
   if (!session) {
     // Prefer adopting an existing open thread over minting a parallel session/case.
     const existingOpen = await findOpenSessionForVisitor(svc, {

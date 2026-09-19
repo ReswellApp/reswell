@@ -27,6 +27,7 @@ import {
   sleepUntilLiveChatJoin,
 } from "@/lib/services/liveChatHumanFeel"
 import { routeLiveChatWriterWithJev } from "@/lib/llm/jev-live-chat-router"
+import { liveChatCsAgentWriterModel } from "@/lib/live-chat/writer-route"
 import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
 
 /** Outer budget covers order/listing preload plus the live-chat model timeout. */
@@ -75,6 +76,33 @@ async function persistTeamReply(
   return message
 }
 
+async function generateWithModel(
+  svc: SupabaseClient,
+  caseId: string,
+  session: LiveChatSessionRow,
+  rewriteInstruction: string,
+  liveChatActor: Awaited<ReturnType<typeof resolveLiveChatActionActor>>,
+  modelId: string,
+): Promise<{ body: string; closeTicket: boolean } | null> {
+  const draft = await Promise.race([
+    generateAndStoreDraft(svc, caseId, true, {
+      rewriteInstruction,
+      liveChatSession: session,
+      liveChatActor,
+      modelId,
+    }),
+    new Promise<null>((resolve) => {
+      setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
+    }),
+  ])
+  const body = draft && "data" in draft ? draft.data.body.trim() : ""
+  if (!body || body === LIVE_CHAT_UNGROUNDED_REPLY) return null
+  return {
+    body,
+    closeTicket: draft !== null && "closeTicket" in draft && draft.closeTicket === true,
+  }
+}
+
 async function generateDraftBodyWithBudget(
   svc: SupabaseClient,
   caseId: string,
@@ -87,7 +115,19 @@ async function generateDraftBodyWithBudget(
       visitorMessage,
       signedIn: Boolean(session.user_id),
     })
-    console.info("[liveChatCsAgentAutoReply] writer", route.source, route.writer, route.model)
+    const model = liveChatCsAgentWriterModel(route.writer)
+    if (model !== route.model) {
+      console.info(
+        "[liveChatCsAgentAutoReply] writer",
+        route.source,
+        route.writer,
+        "upgraded to",
+        model,
+        "— flash_lite cannot run CS agent tools + Output.object",
+      )
+    } else {
+      console.info("[liveChatCsAgentAutoReply] writer", route.source, route.writer, model)
+    }
     const rewriteInstruction = liveChatRewriteWithPersona(
       await loadLiveChatReplyPromptBody(svc),
       firstName,
@@ -95,22 +135,28 @@ async function generateDraftBodyWithBudget(
     const liveChatActor = await resolveLiveChatActionActor(svc, {
       visitorUserId: session.user_id,
     })
-    const draft = await Promise.race([
-      generateAndStoreDraft(svc, caseId, true, {
+    const first = await generateWithModel(
+      svc,
+      caseId,
+      session,
+      rewriteInstruction,
+      liveChatActor,
+      model,
+    )
+    if (first) return first
+
+    const pro = liveChatCsAgentWriterModel("pro")
+    if (model !== pro) {
+      console.warn("[liveChatCsAgentAutoReply] first writer empty, retrying with pro")
+      const retry = await generateWithModel(
+        svc,
+        caseId,
+        session,
         rewriteInstruction,
-        liveChatSession: session,
         liveChatActor,
-        modelId: route.model,
-      }),
-      new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
-      }),
-    ])
-    if (draft && "data" in draft && draft.data.body.trim()) {
-      return {
-        body: draft.data.body.trim(),
-        closeTicket: draft.closeTicket === true,
-      }
+        pro,
+      )
+      if (retry) return retry
     }
   } catch (error) {
     console.error("[liveChatCsAgentAutoReply] generate failed:", error)
