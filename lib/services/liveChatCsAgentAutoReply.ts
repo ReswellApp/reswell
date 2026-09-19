@@ -4,6 +4,12 @@ import {
   type LiveChatMessageRow,
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
+import {
+  LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY,
+  LIVE_CHAT_LABEL_UPDATE_REPLY,
+  LIVE_CHAT_ORDER_TILE_REPLY,
+  liveChatCsAgentCatchFallback,
+} from "@/lib/live-chat/auto-reply-fallback"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
 import { isLiveChatSpecificOrderLookupIntent } from "@/lib/live-chat/order-tile-intent"
 import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
@@ -35,17 +41,11 @@ import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ti
 /** Outer budget covers order/listing preload plus the live-chat model timeout. */
 const DRAFT_GENERATE_BUDGET_MS = 28_000
 
-/** Deterministic reply when eligible undropped-off sales exist (panel shows tiles). */
-export const LIVE_CHAT_LABEL_UPDATE_REPLY =
-  "You can update the ship-from address on a label for sales still waiting for carrier drop-off. Use the tiles below — pick the sale, say why, then choose the ship-from address. Ship-to stays the same."
-
-/** When nothing is eligible — don't pin them in the label flow. */
-export const LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY =
-  "I don't see any of your sales with a label still waiting for carrier drop-off, so we can't reprint a ship-from label from here right now. If a label already scanned or the sale shipped, ship-from can't change. Tell me the order number or what else you need help with."
-
-/** Deterministic reply when this-order tiles are on screen. */
-export const LIVE_CHAT_ORDER_TILE_REPLY =
-  "Tap the order below and I'll look that one up."
+export {
+  LIVE_CHAT_LABEL_UPDATE_EMPTY_REPLY,
+  LIVE_CHAT_LABEL_UPDATE_REPLY,
+  LIVE_CHAT_ORDER_TILE_REPLY,
+} from "@/lib/live-chat/auto-reply-fallback"
 
 async function persistTeamReply(
   svc: SupabaseClient,
@@ -299,7 +299,7 @@ export async function autoSendLiveChatCsAgentReply(
       svc,
       workingSession,
       caseId,
-      isLabelIntent ? LIVE_CHAT_LABEL_UPDATE_REPLY : LIVE_CHAT_UNGROUNDED_REPLY,
+      liveChatCsAgentCatchFallback(visitorMessage.content),
       persona.firstName,
     )
   } finally {

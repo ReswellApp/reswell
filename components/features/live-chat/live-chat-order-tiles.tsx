@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LiveChatOrderTileButton } from "@/components/features/live-chat/live-chat-order-tile-button"
@@ -31,14 +31,20 @@ export function LiveChatOrderTiles({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [orders, setOrders] = useState<LiveChatVisitorOrderTile[]>([])
+  const requestIdRef = useRef(0)
+  const onAuthRequiredRef = useRef(onAuthRequired)
+  const onDismissRef = useRef(onDismiss)
+  onAuthRequiredRef.current = onAuthRequired
+  onDismissRef.current = onDismiss
 
   const load = useCallback(async () => {
     if (!publicId || !enabled) return
     if (!isSignedIn) {
-      onAuthRequired?.()
-      onDismiss?.()
+      onAuthRequiredRef.current?.()
+      onDismissRef.current?.()
       return
     }
+    const requestId = ++requestIdRef.current
     setLoading(true)
     setError(null)
     try {
@@ -50,23 +56,25 @@ export function LiveChatOrderTiles({
         data?: { orders: LiveChatVisitorOrderTile[]; authRequired: boolean }
         error?: string
       }
+      if (requestId !== requestIdRef.current) return
       if (!res.ok || !json.data) {
-        if (res.status === 401) onAuthRequired?.()
+        if (res.status === 401) onAuthRequiredRef.current?.()
         setError(json.error ?? "Could not load your orders.")
         return
       }
       if (json.data.authRequired) {
-        onAuthRequired?.()
-        onDismiss?.()
+        onAuthRequiredRef.current?.()
+        onDismissRef.current?.()
         return
       }
       setOrders(json.data.orders)
     } catch {
+      if (requestId !== requestIdRef.current) return
       setError("Could not load your orders.")
     } finally {
-      setLoading(false)
+      if (requestId === requestIdRef.current) setLoading(false)
     }
-  }, [enabled, isSignedIn, onAuthRequired, onDismiss, publicId, visitorToken])
+  }, [enabled, isSignedIn, publicId, visitorToken])
 
   useEffect(() => {
     void load()
@@ -76,10 +84,10 @@ export function LiveChatOrderTiles({
     if (!enabled || loading || error) return
     if (orders.length > 0) return
     const timer = window.setTimeout(() => {
-      onDismiss?.()
+      onDismissRef.current?.()
     }, 2_500)
     return () => window.clearTimeout(timer)
-  }, [enabled, error, loading, onDismiss, orders.length])
+  }, [enabled, error, loading, orders.length])
 
   if (!enabled) return null
   if (!isSignedIn) return null
@@ -107,14 +115,14 @@ export function LiveChatOrderTiles({
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
-      {loading ? (
+      {loading && orders.length === 0 ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
           Loading your orders…
         </div>
       ) : null}
 
-      {!loading && orders.length > 0 ? (
+      {orders.length > 0 ? (
         <ul className="grid grid-cols-2 gap-2">
           {orders.map((order) => (
             <li key={order.orderId}>

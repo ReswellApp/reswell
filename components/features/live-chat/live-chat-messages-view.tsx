@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft } from "lucide-react"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -108,6 +108,23 @@ export function LiveChatMessagesView({
   const visitorMessageCount = useMemo(
     () => serverMessages.filter((message) => message.sender_type === "visitor").length,
     [serverMessages],
+  )
+  const visitorMessageCountRef = useRef(visitorMessageCount)
+  visitorMessageCountRef.current = visitorMessageCount
+
+  const dismissLabelPanel = useCallback(() => {
+    setLabelPanelDismissedThroughCount(visitorMessageCountRef.current)
+  }, [])
+
+  const dismissOrderTiles = useCallback(() => {
+    setOrderTilesDismissedThroughCount(visitorMessageCountRef.current)
+  }, [])
+
+  const selectOrderTile = useCallback(
+    (content: string) => {
+      void onSendMessage(content, visitorEmail)
+    },
+    [onSendMessage, visitorEmail],
   )
 
   const latestLabelAsk = useMemo(
@@ -364,9 +381,7 @@ export function LiveChatMessagesView({
           enabled
           isSignedIn={isSignedIn}
           onAuthRequired={onAuthRequired}
-          onDismiss={() => {
-            setLabelPanelDismissedThroughCount(visitorMessageCount)
-          }}
+          onDismiss={dismissLabelPanel}
         />
       ) : null}
       {!sessionClosed && showOrderTiles ? (
@@ -376,13 +391,9 @@ export function LiveChatMessagesView({
           enabled
           isSignedIn={isSignedIn}
           sending={sending}
-          onSelect={(content) => {
-            void onSendMessage(content, visitorEmail)
-          }}
+          onSelect={selectOrderTile}
           onAuthRequired={onAuthRequired}
-          onDismiss={() => {
-            setOrderTilesDismissedThroughCount(visitorMessageCount)
-          }}
+          onDismiss={dismissOrderTiles}
         />
       ) : null}
       {!sessionClosed ? (
