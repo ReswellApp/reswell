@@ -14,8 +14,16 @@ import { LiveChatWordmark } from "@/components/features/live-chat/live-chat-word
 import { LiveChatReplyRatingControls } from "@/components/features/live-chat/live-chat-reply-rating-controls"
 import { supportReplyExampleRatingToast } from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
 import { cn } from "@/lib/utils"
-import { LIVE_CHAT_MESSAGES_EMPTY, LIVE_CHAT_TEAM_NAME } from "@/lib/live-chat/widget-config"
-import { isLiveChatJoinMessage, liveChatTypingLabel } from "@/lib/live-chat/human-feel"
+import {
+  LIVE_CHAT_MESSAGES_EMPTY,
+  LIVE_CHAT_TEAM_NAME,
+  LIVE_CHAT_WIDGET_ADMIN_ONLY,
+} from "@/lib/live-chat/widget-config"
+import {
+  isLiveChatJoinMessage,
+  liveChatTypingLabel,
+  shouldShowLiveChatTeamTyping,
+} from "@/lib/live-chat/human-feel"
 import { latestLiveChatShipFromLabelUpdateMessage } from "@/lib/live-chat/label-update-intent"
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
 import { liveChatThreadSurfaceClass } from "@/lib/live-chat/widget-ui"
@@ -225,7 +233,12 @@ export function LiveChatMessagesView({
   const isAssignedAgentOnline = Boolean(
     assignedAgent && onlineMemberIds.includes(assignedAgent.id),
   )
-  const showTeamTyping = teamThinking || Boolean(typingName)
+  const showTeamTyping = shouldShowLiveChatTeamTyping({
+    messages: visibleThreadMessages,
+    teamThinking,
+    typingName,
+    requireJoinBeforeTyping: LIVE_CHAT_WIDGET_ADMIN_ONLY,
+  })
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/20">

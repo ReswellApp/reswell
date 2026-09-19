@@ -185,10 +185,8 @@ export async function autoSendLiveChatCsAgentReply(
       startedAtMs,
     })
 
-    if (isFirstJoin) {
-      const announced = await announceLiveChatPersonaJoin(svc, workingSession, persona)
-      workingSession = announced.session
-    }
+    const announced = await announceLiveChatPersonaJoin(svc, workingSession, persona)
+    workingSession = announced.session
 
     await broadcastLiveChatTyping({
       sessionId: workingSession.id,

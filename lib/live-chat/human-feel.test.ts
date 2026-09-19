@@ -11,6 +11,7 @@ import {
   liveChatPersonaAlreadyJoined,
   liveChatPersonaVoiceNote,
   liveChatTypingLabel,
+  shouldShowLiveChatTeamTyping,
   pickLiveChatPersonaId,
   readLiveChatPersonaFromMetadata,
   resolveLiveChatPersona,
@@ -48,6 +49,49 @@ describe("live chat human-feel persona", () => {
   it("treats persona_joined_at as join-once", () => {
     assert.equal(liveChatPersonaAlreadyJoined({}), false)
     assert.equal(liveChatPersonaAlreadyJoined({ persona_joined_at: "2026-09-19T00:00:00.000Z" }), true)
+  })
+
+  it("hides thinking until the join line is in the thread", () => {
+    const visitorOnly = [{ sender_type: "visitor", content: "hi" }]
+    assert.equal(
+      shouldShowLiveChatTeamTyping({
+        messages: visitorOnly,
+        teamThinking: true,
+        typingName: null,
+        requireJoinBeforeTyping: true,
+      }),
+      false,
+    )
+    assert.equal(
+      shouldShowLiveChatTeamTyping({
+        messages: visitorOnly,
+        teamThinking: true,
+        typingName: "Hayden is typing…",
+        requireJoinBeforeTyping: true,
+      }),
+      false,
+    )
+    assert.equal(
+      shouldShowLiveChatTeamTyping({
+        messages: [
+          ...visitorOnly,
+          { sender_type: "system", content: "Hayden joined the chat" },
+        ],
+        teamThinking: true,
+        typingName: null,
+        requireJoinBeforeTyping: true,
+      }),
+      true,
+    )
+    assert.equal(
+      shouldShowLiveChatTeamTyping({
+        messages: visitorOnly,
+        teamThinking: true,
+        typingName: null,
+        requireJoinBeforeTyping: false,
+      }),
+      true,
+    )
   })
 })
 
