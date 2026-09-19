@@ -17,6 +17,7 @@ export function liveChatSessionActivityAt(session: {
   last_message_at?: string | null
   last_visitor_message_at?: string | null
   last_agent_message_at?: string | null
+  /** Ignored — identity/persona/claim writes bump this without a message. */
   updated_at?: string | null
   created_at?: string | null
 }): string | null {
@@ -24,7 +25,6 @@ export function liveChatSessionActivityAt(session: {
     session.last_message_at,
     session.last_visitor_message_at,
     session.last_agent_message_at,
-    session.updated_at,
     session.created_at,
   ].filter((value): value is string => Boolean(value?.trim()))
   if (candidates.length === 0) return null
