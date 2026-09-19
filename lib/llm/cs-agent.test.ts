@@ -18,7 +18,7 @@ import { SHIPPING_DEADLINE_DAYS } from "../shipping-deadline.ts"
 
 describe("cs agent harness", () => {
   it("pins a dedicated prompt version for draft fingerprints", () => {
-    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v5")
+    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v6")
   })
 
   it("caps inbox tool rounds, and gives live chat more steps and time", () => {
@@ -128,6 +128,8 @@ describe("cs agent harness", () => {
     assert.match(pack, /only open live-chat ticket/)
     assert.match(pack, /close_ticket true only when the issue is fully solved/)
     assert.match(pack, /do not guess/i)
+    assert.match(pack, /how sellers get paid/)
+    assert.match(pack, /do not need an order number/i)
   })
 
   it("grounds live chat in this visitor's orders and prefers very_good examples", () => {
@@ -197,8 +199,13 @@ describe("cs agent harness", () => {
     assert.match(prompt, new RegExp(`The seller keeps ${SELLER_SHARE_PERCENT}%`))
     assert.match(prompt, new RegExp(`within ${SHIPPING_DEADLINE_DAYS} days`))
     assert.match(prompt, /do not compute a payout from that total/i)
+    assert.match(prompt, /Seller earnings stay pending/)
+    assert.match(prompt, /2 to 3 business days/)
     assert.doesNotMatch(prompt, /never send/i)
     assert.match(prompt, /Hayden or David/)
+    assert.match(prompt, /Marketplace how-tos/)
+    assert.match(prompt, /how sellers get paid/)
+    assert.match(prompt, /Do not ask for an order number/)
     assert.doesNotMatch(prompt, /sends immediately as Reswell Team/)
   })
 

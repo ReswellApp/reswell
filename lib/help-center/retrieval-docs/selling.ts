@@ -267,7 +267,7 @@ export const sellingRetrievalDocs = [
       "Your listing sold on Reswell. Here is how to ship it, coordinate pickup, and get your earnings released.",
     audience: "seller",
     intentTags: ["sale", "shipping"],
-    keywords: ["sold", "ship", "next steps", "fulfill"],
+    keywords: ["sold", "ship", "next steps", "fulfill", "get paid", "money"],
     relatedIds: [
       "selling/how-to-ship-an-order",
       "selling/how-long-to-get-paid",
@@ -329,7 +329,7 @@ export const sellingRetrievalDocs = [
       "When your Reswell sale earnings move from pending to ready, and how long bank cash outs take.",
     audience: "seller",
     intentTags: ["payouts", "wallet", "payments"],
-    keywords: ["paid", "payout", "timing", "pending", "ready"],
+    keywords: ["paid", "payout", "timing", "pending", "ready", "money", "get my money", "get paid", "sold a board"],
     relatedIds: [
       "selling/i-sold-an-item-whats-next",
       "accounts/how-cash-outs-work",

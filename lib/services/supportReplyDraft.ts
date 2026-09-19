@@ -35,7 +35,7 @@ import {
 } from "@/lib/services/csAgentLookups"
 import type { LiveChatSessionRow } from "@/lib/db/liveChat"
 import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
-import { LIVE_CHAT_UNGROUNDED_REPLY } from "@/lib/live-chat/live-chat-cs-prompt"
+import { resolveLiveChatFallbackReply } from "@/lib/live-chat/live-chat-cs-prompt"
 import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
 import {
   citedHelpFromSlugs,
@@ -293,7 +293,7 @@ async function generateDraftBody(args: {
   if (!isSupportReplyDraftLlmEnabled()) {
     if (isLiveChat) {
       return {
-        body: LIVE_CHAT_UNGROUNDED_REPLY,
+        body: resolveLiveChatFallbackReply(lastCustomerMessage),
         origin: "macro",
         slugs: [],
         exampleIds: [],

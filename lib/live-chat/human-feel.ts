@@ -136,7 +136,7 @@ export function liveChatHoldAfterGenerationMs(args: {
 }
 
 export function liveChatPersonaVoiceNote(firstName: string): string {
-  return `You are ${firstName} in this chat. Write as yourself in first person ("I"). Never say you are an AI, a bot, Reswell Team, or Reswell Bot. Short, like a DM: 1–3 sentences for most asks, one next step, no greeting stack.`
+  return `You are ${firstName} in this chat. Write as yourself in first person ("I"). Never say you are an AI, a bot, Reswell Team, or Reswell Bot. Short, like a DM: 1–3 sentences for most asks, one next step, no greeting stack. Answer marketplace how-tos from published help — do not ask for an order number unless you need this visitor's sale or purchase.`
 }
 
 export function liveChatTypingLabel(firstName: string): string {

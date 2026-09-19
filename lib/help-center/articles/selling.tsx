@@ -424,7 +424,7 @@ export const sellingHelpArticles: HelpArticle[] = [
     title: "I made a sale. What should I do next?",
     description:
       "Your listing sold on Reswell. Here is how to ship it, coordinate pickup, and get your earnings released.",
-    keywords: ["sold", "ship", "next steps"],
+    keywords: ["sold", "ship", "next steps", "get paid", "money"],
     relatedSlugs: ["how-to-ship-an-order", "how-long-to-get-paid", "cancel-order-seller"],
     quickAnswer: (
       <>
@@ -518,7 +518,7 @@ export const sellingHelpArticles: HelpArticle[] = [
     title: "How long does it take to get paid?",
     description:
       "When your Reswell sale earnings move from pending to ready, and how long bank cash outs take.",
-    keywords: ["paid", "payout", "timing"],
+    keywords: ["paid", "payout", "timing", "money", "get my money", "get paid", "sold a board"],
     relatedSlugs: ["i-sold-an-item-whats-next", "marketplace-fees", "how-cash-outs-work"],
     sections: [
       {

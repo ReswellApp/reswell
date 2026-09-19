@@ -60,6 +60,10 @@ describe("help retrieval documents", () => {
 
     const promo = searchHelpRetrievalDocuments("promo code").map((doc) => doc.slug)
     assert.ok(promo.includes("promo-codes"))
+
+    const payout = searchHelpRetrievalDocuments("get my money").map((doc) => doc.slug)
+    assert.ok(payout.includes("how-long-to-get-paid"))
+    assert.ok(payout.includes("how-cash-outs-work"))
   })
 
   it("looks up a document by topic and slug", () => {

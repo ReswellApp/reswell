@@ -73,6 +73,27 @@ describe("support reply retrieval", () => {
     assert.equal(hits[0]?.title, "How do I buy on Reswell?")
   })
 
+  it("ranks seller payout help for sold-board money how-tos", () => {
+    const hits = rankHelpArticlesForQuery(
+      [
+        {
+          title: "How long does it take to get paid?",
+          keywords: ["paid", "payout", "money", "get my money", "sold a board"],
+          description: "When sale earnings move from pending to ready.",
+          body: "Earnings land in Earnings after delivery or pickup. Cash out to your bank.",
+        },
+        {
+          title: "How do I change my profile?",
+          keywords: ["profile", "password"],
+          description: "Update your display name.",
+          body: "Go to Profile.",
+        },
+      ],
+      "hi there. i sold a board. how do i get my money?",
+    )
+    assert.equal(hits[0]?.title, "How long does it take to get paid?")
+  })
+
   it("drops bad examples and prefers the matching kind", () => {
     const hits = rankExamplesForQuery(
       [

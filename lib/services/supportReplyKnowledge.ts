@@ -18,6 +18,7 @@ import {
   tokenizeSupportReplyQuery,
 } from "@/lib/utils/support-reply-retrieve"
 import { CS_AGENT_PROMPT_VERSION } from "@/lib/llm/cs-agent"
+import { liveChatPinnedHelpSlugs } from "@/lib/live-chat/howto-intent"
 
 export type RetrievedHelpArticle = HelpArticlePlainText & { score: number }
 export type RetrievedReplyExample = ReturnType<typeof rankExamplesForQuery>[number]
@@ -103,13 +104,13 @@ export async function gatherSupportReplyKnowledge(
     : []
   const helpArticles = retrieveHelpArticlesForQuery(args.query)
 
-  // Live chat: always surface Purchase Protection + core seller/buyer help alongside retrieval.
+  // Live chat: pin help that matches the ask. Seller-payout how-tos get Earnings /
+  // cash-out articles instead of the default protection set.
   const liveChatPinned = isLiveChat
-    ? findHelpArticlesBySlugs([
-        "purchase-protection-claim",
-        "seller-returns",
-        "package-delayed-or-lost",
-      ]).map((article) => ({ ...article, score: 1 }))
+    ? findHelpArticlesBySlugs(liveChatPinnedHelpSlugs(args.query)).map((article) => ({
+        ...article,
+        score: 1,
+      }))
     : []
   const helpMerged = [
     ...liveChatPinned,
