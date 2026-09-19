@@ -66,6 +66,11 @@ export function TicketRow({
           >
             {ticketDisplayTitle(ticket)}
           </button>
+          {ticket.cursorAgent ? (
+            <span className="shrink-0 rounded bg-[#e8f1fb] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2383e2]">
+              Cursor
+            </span>
+          ) : null}
           {selected ? (
             <button
               type="button"
