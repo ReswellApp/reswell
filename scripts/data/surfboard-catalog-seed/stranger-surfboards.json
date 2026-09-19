@@ -1,0 +1,43 @@
+{
+  "generated_for": "Stranger Surfboards official named standup catalog",
+  "source": "https://www.strangersurfboards.com.au/shapes plus official Twin Fin, Fish, and Mid length pages (excludes repairs, custom-only deposits, and untitled longboard/log tiles that have no first-party model copy)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "stranger-surfboards",
+      "name": "Stranger Surfboards",
+      "website_url": "https://www.strangersurfboards.com.au/",
+      "location_label": "Lauderdale, Tasmania, Australia",
+      "founder_name": "Nick Stranger",
+      "lead_shaper_name": "Nick Stranger",
+      "short_description": "Hand-shaped custom surfboards by Nick Stranger in Lauderdale, Tasmania — twins, fish, shortboards and mid-lengths built one at a time.",
+      "logo_url": "https://static.wixstatic.com/media/076088_1d6b05ad47b04f3b81bda57f512fc936~mv2.png",
+      "models": [
+        {
+          "name": "Twin Fin",
+          "image_url": "https://static.wixstatic.com/media/b8df53_aae73fac17874e05b0f95196627ed1a2~mv2.jpg",
+          "description": "The modern Twin boards are high performance fun and considered a go to board for every day surf. They are really fast and loose with more area and buoyancy to get you into waves quick and easy - even really small ones. This board is fitted with a rear fin box so a small stabilizer fin can be added to give more drive and more of a thruster feel. Twin fins don't have the same feeling of positive control in turns that a tri-fin or even a fish does, but these board more than makes up for that with incredible looseness and speed - you arrive at the top of a turn before you even know you've left! You can ride one of these in any surf up to overhead. Recommended range: 5'6\"-6'3\", 19 3/4\"-21\", light constant rocker, single concave to double-V in the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://static.wixstatic.com/media/b8df53_a6188f394306496ca86645737f142ba6~mv2.jpg",
+          "description": "This board puts fun and performance into small, even shitty waves. But it will also give you unbelievable performance in solid overhead surf. It is a slightly wider board with a fuller nose to provide buoyancy, combined with a light rocker to provide maximum planing speed in small waves. It is also shorter with an outline that maximizes manoeuvrability. This can be further enhanced by the three fin setup, with a middle fin smaller than the two standard twin side fins. Recommended range: 5'4\"-6'4\", 20\"-21 1/2\", swallow fish tail, V middle to tail with concaves either side of V.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Performance Shortboard",
+          "image_url": "https://static.wixstatic.com/media/b8df53_ff261233f1ec44d5872c9947a2f284b7~mv2.jpg",
+          "description": "This is your everyday performance board. Very responsive with quick rail to rail transition. Great for open face carving as well as tight pocket turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mid length",
+          "image_url": "https://static.wixstatic.com/media/b8df53_07b79351055e424ba8b19514434f22e3~mv2.jpg/v1/crop/x_1087,y_1162,w_3275,h_1518/fill/w_1600,h_742,al_c,q_85,usm_0.66_1.00_0.01/b8df53_07b79351055e424ba8b19514434f22e3~mv2.jpg",
+          "description": "Mid length boards have gained a large following recent in years. With there sweet flowing lines and modern bottom shapes. These boards are very capable in a wide range of surf from waist high through to well over head. Set up as a twin fin (with or without channels) or as a single fin with the option of side bite fins. A real all rounder for surfers of all abilities.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
