@@ -199,6 +199,7 @@ describe("cs agent harness", () => {
     assert.match(prompt, /do not compute a payout from that total/i)
     assert.doesNotMatch(prompt, /never send/i)
     assert.match(prompt, /Hayden or David/)
+    assert.match(prompt, /order tiles/)
     assert.doesNotMatch(prompt, /sends immediately as Reswell Team/)
   })
 

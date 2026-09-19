@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { LiveChatAdminOnlyBadge } from "@/components/features/live-chat/live-chat-admin-only-badge"
 import { LiveChatComposer } from "@/components/features/live-chat/live-chat-composer"
 import { LiveChatLabelUpdatePanel } from "@/components/features/live-chat/live-chat-label-update-panel"
+import { LiveChatOrderTiles } from "@/components/features/live-chat/live-chat-order-tiles"
 import { LiveChatPendingActions } from "@/components/features/live-chat/live-chat-pending-actions"
 import { LiveChatWaitingBanner } from "@/components/features/live-chat/live-chat-waiting-banner"
 import { LiveChatWordmark } from "@/components/features/live-chat/live-chat-wordmark"
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils"
 import { LIVE_CHAT_MESSAGES_EMPTY, LIVE_CHAT_TEAM_NAME } from "@/lib/live-chat/widget-config"
 import { isLiveChatJoinMessage, liveChatTypingLabel } from "@/lib/live-chat/human-feel"
 import { latestLiveChatShipFromLabelUpdateMessage } from "@/lib/live-chat/label-update-intent"
+import { latestLiveChatSpecificOrderLookupMessage } from "@/lib/live-chat/order-tile-intent"
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
 import { liveChatThreadSurfaceClass } from "@/lib/live-chat/widget-ui"
 import { rateLiveChatReplyAction } from "@/lib/actions/liveChatAdmin"
@@ -95,6 +97,8 @@ export function LiveChatMessagesView({
   const [emailError, setEmailError] = useState<string | null>(null)
   /** Hide the label panel until a newer visitor message arrives. */
   const [labelPanelDismissedThroughCount, setLabelPanelDismissedThroughCount] = useState(0)
+  /** Hide order tiles until a newer visitor message arrives. */
+  const [orderTilesDismissedThroughCount, setOrderTilesDismissedThroughCount] = useState(0)
   const [ratingMessageId, setRatingMessageId] = useState<string | null>(null)
   const [ratedMessageIds, setRatedMessageIds] = useState<Set<string>>(() => new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -111,17 +115,30 @@ export function LiveChatMessagesView({
     [serverMessages],
   )
 
+  const latestOrderLookup = useMemo(
+    () => latestLiveChatSpecificOrderLookupMessage(serverMessages),
+    [serverMessages],
+  )
+
   const showLabelUpdatePanel =
     !sessionClosed &&
     Boolean(publicId) &&
     latestLabelAsk !== null &&
     visitorMessageCount > labelPanelDismissedThroughCount
 
+  const showOrderTiles =
+    !sessionClosed &&
+    !showLabelUpdatePanel &&
+    Boolean(publicId) &&
+    isSignedIn &&
+    latestOrderLookup !== null &&
+    visitorMessageCount > orderTilesDismissedThroughCount
+
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     el.scrollTop = el.scrollHeight
-  }, [serverMessages, typingName, sending, teamThinking, showLabelUpdatePanel])
+  }, [serverMessages, typingName, sending, teamThinking, showLabelUpdatePanel, showOrderTiles])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -352,11 +369,27 @@ export function LiveChatMessagesView({
           }}
         />
       ) : null}
+      {!sessionClosed && showOrderTiles ? (
+        <LiveChatOrderTiles
+          publicId={publicId}
+          visitorToken={visitorToken}
+          enabled
+          isSignedIn={isSignedIn}
+          sending={sending}
+          onSelect={(content) => {
+            void onSendMessage(content, visitorEmail)
+          }}
+          onAuthRequired={onAuthRequired}
+          onDismiss={() => {
+            setOrderTilesDismissedThroughCount(visitorMessageCount)
+          }}
+        />
+      ) : null}
       {!sessionClosed ? (
         <LiveChatPendingActions
           publicId={publicId}
           visitorToken={visitorToken}
-          enabled={Boolean(publicId) && !showLabelUpdatePanel}
+          enabled={Boolean(publicId) && !showLabelUpdatePanel && !showOrderTiles}
           isSignedIn={isSignedIn}
           onAuthRequired={onAuthRequired}
         />
