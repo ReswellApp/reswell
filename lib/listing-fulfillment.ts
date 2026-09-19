@@ -67,9 +67,9 @@ export function boardFulfillmentSectionTitle(
 /**
  * One label per enabled option for listing detail metadata.
  * Shipping is listed first when both options are offered.
- * When the seller set a flat shipping amount, include it so buyers see the add-on clearly.
- * For Reswell-calculated shipping, `shipping_price` is often 0 until checkout; use `boardShippingCostMode`
- * so the listing can say the price is determined at checkout vs free shipping.
+ * When the seller set a flat shipping amount or free shipping, include that in the label.
+ * Reswell-calculated and unknown $0 rates stay “Shipping” — the price caption under the
+ * list price already says the rate is calculated at checkout.
  */
 export function boardFulfillmentDetailLabels(
   localPickup: boolean | null | undefined,
@@ -88,11 +88,8 @@ export function boardFulfillmentDetailLabels(
       labels.push(`Shipping (+$${n.toFixed(2)})`)
     } else if (n > 0) {
       labels.push(`Shipping (+$${n.toFixed(2)})`)
-    } else if (mode === "reswell") {
-      labels.push("Shipping (price determined in checkout)")
     } else {
-      // Legacy rows (mode unknown) with $0 shipping, or flat $0: neutral copy
-      labels.push("Shipping (rate at checkout)")
+      labels.push("Shipping")
     }
   }
   if (localPickup !== false) labels.push("Local pickup")

@@ -60,12 +60,6 @@ function shippingStatusRow({
         detail: [`+ $${shippingFlatRate.toFixed(2)} shipping`, from].filter(Boolean).join(" "),
       }
     }
-    if (shippingCostMode === "reswell") {
-      return {
-        title: "Shipping or local pickup",
-        detail: ["calculated at checkout", from].filter(Boolean).join(" "),
-      }
-    }
     return { title: "Shipping or local pickup", detail: from }
   }
   if (shippingOffered && shippingCostMode === "free") {
@@ -76,9 +70,6 @@ function shippingStatusRow({
   }
   if (shippingOffered && shippingFlatRate > 0) {
     return { title: "Shipping", detail: [`+ $${shippingFlatRate.toFixed(2)}`, from].filter(Boolean).join(" ") }
-  }
-  if (shippingOffered && shippingCostMode === "reswell") {
-    return { title: "Shipping", detail: ["calculated at checkout", from].filter(Boolean).join(" ") }
   }
   if (shippingOffered) {
     return { title: "Shipping", detail: from }

@@ -4,15 +4,12 @@ import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-countr
 import {
   checkoutPoBoxErrorForSections,
   isBuyerAddressValidationFresh,
+  localBuyerAddressFieldsFromInput,
   matchedAddressToBuyerFields,
   type BuyerAddressCarrierFields,
 } from "@/lib/shipping/buyer-address-validation"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
-import {
-  formatShipEngineAddressValidationError,
-  shipEngineAddressValidationIsAcceptable,
-  validateShipEngineAddress,
-} from "@/lib/shipengine/validate-address"
+import { validateShipEngineAddress } from "@/lib/shipengine/validate-address"
 
 export type NormalizeBuyerAddressForCarriersResult =
   | { ok: true; fields: BuyerAddressCarrierFields }
@@ -34,37 +31,55 @@ export async function normalizeBuyerAddressForCarriers(
     }
   }
 
-  const result = await validateShipEngineAddress({
-    name: input.full_name,
-    phone: input.phone,
-    address_line1: input.line1,
-    address_line2: input.line2,
-    city_locality: input.city,
-    state_province: input.state ?? "",
-    postal_code: input.postal_code,
-    country_code: country,
-  })
-
-  if (!result.ok) {
-    return {
-      ok: false,
-      fatal: !result.unavailable,
-      error: result.error,
-    }
-  }
-
-  if (!shipEngineAddressValidationIsAcceptable(result.validation)) {
+  const line1 = input.line1.trim()
+  const city = input.city.trim()
+  const postal_code = input.postal_code.trim()
+  if (!line1 || !city || !postal_code) {
     return {
       ok: false,
       fatal: true,
-      error: formatShipEngineAddressValidationError(result.validation),
+      error: "Street, city, and ZIP are required.",
     }
   }
 
-  return {
-    ok: true,
-    fields: matchedAddressToBuyerFields(result.validation.matched!),
+  const result = await validateShipEngineAddress({
+    name: input.full_name,
+    phone: input.phone,
+    address_line1: line1,
+    address_line2: input.line2,
+    city_locality: city,
+    state_province: input.state ?? "",
+    postal_code,
+    country_code: country,
+  })
+
+  if (result.ok && result.validation.matched) {
+    return { ok: true, fields: matchedAddressToBuyerFields(result.validation.matched) }
   }
+
+  const local = localBuyerAddressFieldsFromInput({
+    line1,
+    line2: input.line2,
+    city,
+    state: input.state,
+    postal_code,
+    country,
+  })
+  if (!local.ok) {
+    return { ok: false, fatal: true, error: local.error }
+  }
+
+  if (!result.ok) {
+    console.info("[checkoutBuyerAddress] carrier lookup unavailable; using buyer-entered address", {
+      unavailable: result.unavailable,
+    })
+  } else {
+    console.info("[checkoutBuyerAddress] carrier did not confirm address; using buyer-entered address", {
+      status: result.validation.status,
+    })
+  }
+
+  return { ok: true, fields: local.fields }
 }
 
 export async function persistBuyerAddressCarrierFields(

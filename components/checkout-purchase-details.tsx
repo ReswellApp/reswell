@@ -120,6 +120,7 @@ export function CheckoutPurchaseDetails({
     return (
       draft.line1.trim().length > 0 &&
       draft.city.trim().length > 0 &&
+      (draft.state ?? "").trim().length > 0 &&
       draft.postal_code.trim().length > 0 &&
       draft.country.trim().length >= 2
     )
@@ -232,7 +233,7 @@ export function CheckoutPurchaseDetails({
 
   const saveNewAddress = async () => {
     if (!draftValid) {
-      toast.error("Fill in street, city, postal code, and country.")
+      toast.error("Fill in street, city, state, ZIP, and country.")
       return
     }
     if (!phoneValid) {
@@ -416,8 +417,8 @@ export function CheckoutPurchaseDetails({
                   </Label>
                   <p className="text-[12px] leading-relaxed text-neutral-500">
                     {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
-                      ? "US street addresses (Google). We verify the saved address with UPS, FedEx, and USPS."
-                      : "US street addresses only. We verify the saved address with UPS, FedEx, and USPS."}
+                      ? "US addresses (Google). We standardize the street with the carrier when we can."
+                      : "US addresses only. We standardize the street with the carrier when we can."}
                   </p>
                   <CheckoutAddressLine1Field
                     id="addr-line1"
@@ -503,10 +504,10 @@ export function CheckoutPurchaseDetails({
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying…
+                      Saving…
                     </>
                   ) : (
-                    "Save and verify address"
+                    "Save address"
                   )}
                 </Button>
                 {addresses.length > 0 && showNewForm && (

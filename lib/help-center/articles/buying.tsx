@@ -246,7 +246,7 @@ export const buyingHelpArticles: HelpArticle[] = [
                 <><strong>Local pickup</strong> means you meet the seller in person to inspect and grab the item.</>,
                 <><strong>Flat rate shipping</strong> is a fixed amount shown on the listing and in checkout.</>,
                 <><strong>Free shipping</strong> means no extra shipping charge. The item price is your total before tax.</>,
-                <><strong>Shipping (rate at checkout)</strong> means Reswell calculates the carrier rate from the box size and your address when you check out.</>,
+                <><strong>Shipping rate calculated at checkout</strong> means Reswell calculates the carrier rate from the box size and your address when you check out.</>,
               ]}
             />
           </>

@@ -60,6 +60,23 @@ export const US_STATE_NAME_TO_CODE: Record<string, string> = {
   "u.s. virgin islands": "VI",
   "united states virgin islands": "VI",
   "virgin islands": "VI",
+  "armed forces americas": "AA",
+  "armed forces europe": "AE",
+  "armed forces pacific": "AP",
+}
+
+/** APO / FPO / DPO military states — valid USPS codes, not in the 50-state list. */
+const USPS_MILITARY_STATE_CODES = new Set(["AA", "AE", "AP"])
+
+const USPS_STATE_PROVINCE_CODES = new Set<string>([
+  ...Object.values(US_STATE_NAME_TO_CODE),
+  ...USPS_MILITARY_STATE_CODES,
+])
+
+/** True for a 2-letter USPS state, territory, or military code. */
+export function isUspsStateProvinceCode(code: string | null | undefined): boolean {
+  const c = (code ?? "").trim().toUpperCase()
+  return c.length === 2 && USPS_STATE_PROVINCE_CODES.has(c)
 }
 
 /** First canonical lowercase name for each USPS code (CA → "california"). */

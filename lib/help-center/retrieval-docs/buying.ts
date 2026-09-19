@@ -237,7 +237,7 @@ export const buyingRetrievalDocs = [
     sections: [
       {
         heading: "Reading the listing",
-        text: "Local pickup means you meet the seller in person. Flat rate shipping is a fixed amount. Free shipping means no extra shipping charge before tax. Shipping (rate at checkout) means Reswell calculates the carrier rate from the box size and your address.",
+        text: "Local pickup means you meet the seller in person. Flat rate shipping is a fixed amount. Free shipping means no extra shipping charge before tax. Shipping rate calculated at checkout means Reswell calculates the carrier rate from the box size and your address.",
       },
       {
         heading: "Choosing at checkout",
