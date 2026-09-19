@@ -7,12 +7,24 @@ import {
 } from "./team-display.ts"
 
 describe("liveChatAgentDisplayName", () => {
-  it("labels unassigned agent and bot messages as Reswell Team", () => {
+  it("labels unassigned agent and bot messages as the persona when set", () => {
     assert.equal(
       liveChatAgentDisplayName({ senderType: "agent", senderAgentId: null }),
       "Reswell Team",
     )
+    assert.equal(
+      liveChatAgentDisplayName({
+        senderType: "agent",
+        senderAgentId: null,
+        personaFirstName: "Hayden",
+      }),
+      "Hayden",
+    )
     assert.equal(liveChatAgentDisplayName({ senderType: "bot" }), "Reswell Team")
+    assert.equal(
+      liveChatAgentDisplayName({ senderType: "bot", personaFirstName: "David" }),
+      "David",
+    )
     assert.equal(
       liveChatAgentDisplayName({
         senderType: "agent",

@@ -1,4 +1,5 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { resolveLiveChatPersona } from "@/lib/live-chat/human-feel"
 import { liveChatAgentDisplayName } from "@/lib/live-chat/team-display"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
 import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
@@ -142,12 +143,14 @@ export async function loadLiveChatAdminThreadService(sessionId: string): Promise
   if (session.assigned_agent_id) agentIds.push(session.assigned_agent_id)
   const agentNames = await getAgentDisplayNamesByIds(supabase, agentIds)
 
+  const personaFirstName = resolveLiveChatPersona(session.id, session.metadata).firstName
   const enrichedMessages: LiveChatAdminMessage[] = messages.map((m) => ({
     ...m,
     agent_display_name: liveChatAgentDisplayName({
       senderType: m.sender_type,
       senderAgentId: m.sender_agent_id,
       lookedUpName: m.sender_agent_id ? agentNames.get(m.sender_agent_id) : null,
+      personaFirstName,
     }),
   }))
 

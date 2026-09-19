@@ -14,7 +14,8 @@ import { LiveChatWordmark } from "@/components/features/live-chat/live-chat-word
 import { LiveChatReplyRatingControls } from "@/components/features/live-chat/live-chat-reply-rating-controls"
 import { supportReplyExampleRatingToast } from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
 import { cn } from "@/lib/utils"
-import { LIVE_CHAT_TEAM_NAME } from "@/lib/live-chat/widget-config"
+import { LIVE_CHAT_MESSAGES_EMPTY, LIVE_CHAT_TEAM_NAME } from "@/lib/live-chat/widget-config"
+import { isLiveChatJoinMessage, liveChatTypingLabel } from "@/lib/live-chat/human-feel"
 import { latestLiveChatShipFromLabelUpdateMessage } from "@/lib/live-chat/label-update-intent"
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
 import { liveChatThreadSurfaceClass } from "@/lib/live-chat/widget-ui"
@@ -55,6 +56,7 @@ interface LiveChatMessagesViewProps {
   supportTeam?: LiveChatSupportTeamMember[]
   onlineMemberIds?: string[]
   assignedAgentId?: string | null
+  personaFirstName?: string | null
 }
 
 export function LiveChatMessagesView({
@@ -87,6 +89,7 @@ export function LiveChatMessagesView({
   supportTeam = [],
   onlineMemberIds = [],
   assignedAgentId = null,
+  personaFirstName = null,
 }: LiveChatMessagesViewProps) {
   const [draft, setDraft] = useState("")
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -208,7 +211,10 @@ export function LiveChatMessagesView({
         return message.id === confirmed.id
       }
     }
-    return message.sender_type !== "system" || index > 0
+    if (message.sender_type === "system") {
+      return isLiveChatJoinMessage(message.content) || index > 0
+    }
+    return true
   })
 
   const assignedAgent = resolveWorkingSupportAgent(
@@ -232,7 +238,9 @@ export function LiveChatMessagesView({
             <LiveChatWordmark className="max-h-5" />
             <LiveChatAdminOnlyBadge />
           </div>
-          <p className="truncate text-[11px] text-muted-foreground">{LIVE_CHAT_TEAM_NAME}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {assignedAgent?.name.split(/\s+/)[0] ?? personaFirstName ?? "Hayden or David"}
+          </p>
         </div>
       </div>
 
@@ -255,8 +263,7 @@ export function LiveChatMessagesView({
             >
               {!isVisitor ? (
                 <span className="px-1 text-[11px] text-muted-foreground">
-                  {message.agent_display_name ?? LIVE_CHAT_TEAM_NAME}
-                  {isTeamAutoReply ? " · auto" : ""}
+                  {message.agent_display_name ?? personaFirstName ?? LIVE_CHAT_TEAM_NAME}
                 </span>
               ) : null}
               <div
@@ -286,15 +293,25 @@ export function LiveChatMessagesView({
           )
         })}
 
+        {visibleThreadMessages.length === 0 && !showTeamTyping ? (
+          <p className="px-2 py-6 text-center text-sm leading-relaxed text-muted-foreground">
+            {LIVE_CHAT_MESSAGES_EMPTY}
+          </p>
+        ) : null}
+
         {showTeamTyping ? (
-          <div className="flex items-center gap-2" aria-live="polite" aria-label={`${LIVE_CHAT_TEAM_NAME} is typing`}>
+          <div
+            className="flex items-center gap-2"
+            aria-live="polite"
+            aria-label={typingName ?? liveChatTypingLabel(personaFirstName ?? "Hayden")}
+          >
             <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border/50 bg-background px-3 py-2.5 shadow-sm">
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
               <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
             </div>
             <span className="text-[11px] text-muted-foreground">
-              {typingName ?? `${LIVE_CHAT_TEAM_NAME} is typing…`}
+              {typingName ?? liveChatTypingLabel(personaFirstName ?? "Hayden")}
             </span>
           </div>
         ) : null}

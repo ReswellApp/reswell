@@ -156,7 +156,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "live_chat_cs",
     name: "Live chat customer-service agent",
     purpose:
-      "Auto-sends the next Reswell Team reply in admin live chat. Same guidelines, tools, and rating memory as inbox drafts, with a stronger model, this visitor's order snapshot, and extra tool steps so the answer is specific and the ticket closes only when the issue is solved. Ratings stay on very_good / okay / bad.",
+      "Auto-sends the next Hayden or David reply in admin live chat after a join line and a human-feel delay. Same guidelines, tools, and rating memory as inbox drafts, with a stronger model, this visitor's order snapshot, and extra tool steps so the answer is specific and the ticket closes only when the issue is solved. Writer is LIVE_CHAT_CS_MODEL (Gemini Pro via Gateway) — Jev (typesafe-ai/jev) is an evaluation model and cannot generate replies. Ratings stay on very_good / okay / bad.",
     gatewayFeatureTag: "feature:live-chat-cs",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-pro",

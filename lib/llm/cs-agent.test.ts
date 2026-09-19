@@ -198,6 +198,8 @@ describe("cs agent harness", () => {
     assert.match(prompt, new RegExp(`within ${SHIPPING_DEADLINE_DAYS} days`))
     assert.match(prompt, /do not compute a payout from that total/i)
     assert.doesNotMatch(prompt, /never send/i)
+    assert.match(prompt, /Hayden or David/)
+    assert.doesNotMatch(prompt, /sends immediately as Reswell Team/)
   })
 
   it("includes a staff rewrite instruction and the draft they are revising", () => {
