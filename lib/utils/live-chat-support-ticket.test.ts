@@ -131,6 +131,14 @@ describe("live chat CS prompt", () => {
       resolveLiveChatFallbackReply("where is my board?"),
       LIVE_CHAT_UNGROUNDED_REPLY,
     )
+    assert.equal(
+      resolveLiveChatFallbackReply("I paid for this board"),
+      LIVE_CHAT_UNGROUNDED_REPLY,
+    )
+    assert.equal(
+      resolveLiveChatFallbackReply("when do I get my money back?"),
+      LIVE_CHAT_UNGROUNDED_REPLY,
+    )
   })
 
   it("greets instead of asking for an order number", () => {
