@@ -3,6 +3,7 @@ import { resolveLiveChatPersona } from "@/lib/live-chat/human-feel"
 import { liveChatAgentDisplayName } from "@/lib/live-chat/team-display"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
 import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
+import { notifyLiveChatReplyViaKlaviyo } from "@/lib/services/liveChatKlaviyoReply"
 import { syncLiveChatAgentMessageToCase } from "@/lib/services/liveChatSupportCase"
 import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
 import { recordSentSupportReplyExample } from "@/lib/services/supportReplyDraft"
@@ -221,8 +222,13 @@ export async function sendLiveChatAgentMessageService(raw: unknown): Promise<
   }
 
   const svc = createServiceRoleClient()
-  await syncLiveChatAgentMessageToCase(svc, session, message.content, {
+  const synced = await syncLiveChatAgentMessageToCase(svc, session, message.content, {
     authorUserId: staff.userId,
+  })
+  void notifyLiveChatReplyViaKlaviyo(svc, {
+    session: synced,
+    messageId: message.id,
+    content: message.content,
   })
 
   const patch: Parameters<typeof updateLiveChatSessionRow>[2] = {}

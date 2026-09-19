@@ -34,6 +34,7 @@ import {
 } from "@/lib/services/liveChatHumanFeel"
 import { routeLiveChatWriterWithJev } from "@/lib/llm/jev-live-chat-router"
 import { liveChatCsAgentWriterModel } from "@/lib/live-chat/writer-route"
+import { notifyLiveChatReplyViaKlaviyo } from "@/lib/services/liveChatKlaviyoReply"
 import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
 
 /** Outer budget covers order/listing preload plus the live-chat model timeout. */
@@ -81,6 +82,12 @@ async function persistTeamReply(
       created_at: message.created_at,
       agent_display_name: displayName,
     },
+  })
+
+  void notifyLiveChatReplyViaKlaviyo(svc, {
+    session: { ...session, support_case_id: caseId ?? session.support_case_id },
+    messageId: message.id,
+    content: message.content,
   })
 
   return message

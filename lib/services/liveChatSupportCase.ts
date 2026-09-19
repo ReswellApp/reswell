@@ -87,8 +87,9 @@ export async function attachLiveChatSessionToOpenVisitorCase(
 }
 
 /**
- * Soft-open a support case for live chat. Intentionally does NOT fire Klaviyo —
- * see `shouldNotifyKlaviyoOnLiveChatSoftOpen` in lib/live-chat/klaviyo-policy.ts.
+ * Soft-open a support case for live chat. Intentionally does NOT fire Klaviyo
+ * (no “we got your chat” email). Replies use `notifyLiveChatReplyViaKlaviyo`
+ * → Support Tickets Response. See `lib/live-chat/klaviyo-policy.ts`.
  *
  * One open ticket per visitor until that ticket is resolved. Re-reads + claims
  * so concurrent visitor sends cannot open duplicate tickets.
