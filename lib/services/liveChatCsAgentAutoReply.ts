@@ -7,7 +7,7 @@ import {
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
 import { replaceLatestMatchingSupportCaseAgentBody } from "@/lib/db/supportCases"
-import { isLatestLiveChatAutoReply } from "@/lib/live-chat/thread-sync"
+import { isLatestLiveChatAutoReply, latestLiveChatVisitorContent } from "@/lib/live-chat/thread-sync"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
 import { resolveLiveChatFallbackReply } from "@/lib/live-chat/fallback-reply"
 import { isLiveChatPresenceIntent } from "@/lib/live-chat/greeting-intent"
@@ -28,7 +28,7 @@ import { listLiveChatVisitorOrderTiles } from "@/lib/services/liveChatVisitorOrd
 import { broadcastLiveChatMessage, broadcastLiveChatTyping } from "@/lib/services/liveChatRealtime"
 import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
 import { resolveLiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
-import { generateAndStoreDraft } from "@/lib/services/supportReplyDraft"
+import { generateAndStoreDraft, generateLiveChatReplyBody } from "@/lib/services/supportReplyDraft"
 import { loadLiveChatReplyPromptBody } from "@/lib/services/supportReplyExamples"
 import {
   announceLiveChatPersonaJoin,
@@ -100,7 +100,7 @@ async function persistTeamReply(
 
 async function generateWithModel(
   svc: SupabaseClient,
-  caseId: string,
+  caseId: string | null,
   session: LiveChatSessionRow,
   rewriteInstruction: string,
   liveChatActor: Awaited<ReturnType<typeof resolveLiveChatActionActor>>,
@@ -113,29 +113,39 @@ async function generateWithModel(
   },
 ): Promise<{ body: string; closeTicket: boolean } | null> {
   const draft = await Promise.race([
-    generateAndStoreDraft(svc, caseId, true, {
-      rewriteInstruction,
-      liveChatSession: session,
-      liveChatActor,
-      modelId,
-      latestVisitorMessage: visitorMessage,
-      liveChatRegenerate,
-    }),
+    caseId
+      ? generateAndStoreDraft(svc, caseId, true, {
+          rewriteInstruction,
+          liveChatSession: session,
+          liveChatActor,
+          modelId,
+          latestVisitorMessage: visitorMessage,
+          liveChatRegenerate,
+        })
+      : generateLiveChatReplyBody(svc, {
+          session,
+          liveChatActor,
+          rewriteInstruction,
+          modelId,
+          latestVisitorMessage: visitorMessage,
+          liveChatRegenerate,
+        }),
     new Promise<null>((resolve) => {
       setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
     }),
   ])
-  const body = draft && "data" in draft ? draft.data.body.trim() : ""
+  if (!draft || "error" in draft) return null
+  const body = "data" in draft ? draft.data.body.trim() : draft.body.trim()
   if (!body || isLiveChatCannedFailureReply(body)) return null
   return {
     body,
-    closeTicket: draft !== null && "closeTicket" in draft && draft.closeTicket === true,
+    closeTicket: "closeTicket" in draft && draft.closeTicket === true,
   }
 }
 
 async function generateDraftBodyWithBudget(
   svc: SupabaseClient,
-  caseId: string,
+  caseId: string | null,
   session: LiveChatSessionRow,
   firstName: string,
   visitorMessage: string,
@@ -376,10 +386,7 @@ export async function regenerateLiveChatCsAgentReply(
     return { error: "Only an auto-reply can be regenerated." }
   }
 
-  const lastVisitor = [...thread]
-    .reverse()
-    .find((row) => row.sender_type === "visitor")
-  const visitorMessage = lastVisitor?.content.trim() || ""
+  const visitorMessage = latestLiveChatVisitorContent(thread)
   if (!visitorMessage) {
     return { error: "No visitor message to answer." }
   }
@@ -387,10 +394,7 @@ export async function regenerateLiveChatCsAgentReply(
   const opened = await openLiveChatSupportCase(svc, session, {
     initialVisitorMessage: visitorMessage,
   })
-  const caseId = opened?.supportCaseId ?? session.support_case_id
-  if (!caseId) {
-    return { error: "Link a support case before regenerating." }
-  }
+  const caseId = opened?.supportCaseId ?? session.support_case_id ?? null
 
   const ensured = await ensureLiveChatSessionPersona(svc, session)
   const persona = ensured.persona
@@ -426,7 +430,9 @@ export async function regenerateLiveChatCsAgentReply(
       return { error: "Could not replace the last reply." }
     }
 
-    await replaceLatestMatchingSupportCaseAgentBody(svc, caseId, message.content, body)
+    if (caseId) {
+      await replaceLatestMatchingSupportCaseAgentBody(svc, caseId, message.content, body)
+    }
     await broadcastLiveChatMessage({
       sessionId: workingSession.id,
       message: {

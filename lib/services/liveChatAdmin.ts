@@ -389,17 +389,9 @@ export async function rateLiveChatReplyAdminService(
     return { error: "Reply not found." }
   }
 
-  let caseId = session.support_case_id
-  if (!caseId) {
-    const svc = createServiceRoleClient()
-    const escalated = await escalateLiveChatSessionToTicket(svc, session, "manual")
-    if ("error" in escalated) return { error: escalated.error }
-    caseId = escalated.supportCaseId
-  }
-  if (!caseId) return { error: "Link a support case before rating." }
-
   await recordSentSupportReplyExample({
-    caseId,
+    caseId: session.support_case_id,
+    sessionId: session.id,
     sentBody: message.content,
     staffUserId: staff.userId,
     sourceChannel: "live_chat",

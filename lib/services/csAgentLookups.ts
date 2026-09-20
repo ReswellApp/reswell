@@ -37,7 +37,7 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export type CsAgentLookupScope = {
-  caseId: string
+  caseId?: string | null
   requesterUserId: string | null
   requesterEmail: string | null
   linkedOrderId: string | null
@@ -99,7 +99,7 @@ export async function listPriorTicketsForCsAgent(
   const seen = new Set<string>()
   const merged: CsAgentPriorTicket[] = []
   for (const row of [...byUser, ...byEmail]) {
-    if (row.id === scope.caseId || seen.has(row.id)) continue
+    if ((scope.caseId && row.id === scope.caseId) || seen.has(row.id)) continue
     seen.add(row.id)
     merged.push(ticketView(row))
     if (merged.length >= limit) break

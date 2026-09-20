@@ -41,6 +41,18 @@ export function latestLiveChatAutoReplyId(
   return null
 }
 
+export function latestLiveChatVisitorContent(
+  messages: Array<{ sender_type: "visitor" | "agent" | "system" | "bot"; content: string }>,
+): string {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (message?.sender_type === "visitor" && message.content.trim()) {
+      return message.content.trim()
+    }
+  }
+  return ""
+}
+
 export function isLatestLiveChatAutoReply(
   messages: Array<{
     id: string

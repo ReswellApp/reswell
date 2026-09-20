@@ -423,7 +423,7 @@ export async function deleteSupportReplyExample(
 export async function insertSupportReplyExample(
   supabase: SupabaseClient,
   row: {
-    caseId: string
+    caseId?: string | null
     kind: string | null
     customerExcerpt: string
     staffReply: string
@@ -436,7 +436,7 @@ export async function insertSupportReplyExample(
   },
 ): Promise<void> {
   const base = {
-    case_id: row.caseId,
+    case_id: row.caseId ?? null,
     kind: row.kind,
     customer_excerpt: row.customerExcerpt.slice(0, 4000),
     staff_reply: row.staffReply.slice(0, 12000),
