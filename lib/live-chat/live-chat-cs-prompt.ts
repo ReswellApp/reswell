@@ -6,16 +6,20 @@
 
 import {
   LIVE_CHAT_GREETING_REPLY,
+  LIVE_CHAT_LOOK_INTO_IT_REPLY,
   LIVE_CHAT_PRESENCE_REPLY,
   LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY,
+  isLiveChatLookIntoItReply,
   resolveLiveChatFallbackReply,
 } from "./fallback-reply.ts"
 import { isLiveChatGreetingIntent, isLiveChatPresenceIntent } from "./greeting-intent.ts"
 
 export {
   LIVE_CHAT_GREETING_REPLY,
+  LIVE_CHAT_LOOK_INTO_IT_REPLY,
   LIVE_CHAT_PRESENCE_REPLY,
   LIVE_CHAT_SELLER_PAYOUT_HOWTO_REPLY,
+  isLiveChatLookIntoItReply,
   resolveLiveChatFallbackReply,
 }
 export { isLiveChatGreetingIntent, isLiveChatPresenceIntent }
@@ -44,7 +48,8 @@ export function isLiveChatCannedFailureReply(text: string): boolean {
     trimmed === LIVE_CHAT_TOPIC_MENU_REPLY ||
     trimmed === LIVE_CHAT_LEGACY_UNGROUNDED_REPLY ||
     trimmed === LIVE_CHAT_TOPIC_GREETING_REPLY ||
-    trimmed === LIVE_CHAT_UNGROUNDED_REPLY
+    trimmed === LIVE_CHAT_UNGROUNDED_REPLY ||
+    isLiveChatLookIntoItReply(trimmed)
   )
 }
 
@@ -66,6 +71,7 @@ Read the latest visitor turn in context of the last messages. Reply like a perso
 - Marketplace how-tos (how to buy, sell, fees, how sellers get paid, shipping rules, Purchase Protection coverage) get a real answer from published help. One next step. Do not ask for an order number.
 - "I sold a board, how do I get my money?" is seller payout how-to, not an order lookup. Tell them earnings go to Earnings after delivery or pickup clears, then they connect a bank and cash out. Do not invent their amount or sale status.
 - Ask for an order number only when they need THIS sale or purchase — status, tracking, a hold, refund, or label.
+- If published help, the snapshot, and tools still cannot answer, say you will look into it now and update them shortly. Never a topic menu. Never stay silent. Do not ask for an order number on an unknown ask.
 
 ## How to resolve
 - Reply to the latest message. Use the rest of the thread so you do not repeat a point already covered or ignore a follow-up.
