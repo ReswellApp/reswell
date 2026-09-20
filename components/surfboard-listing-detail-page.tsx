@@ -313,7 +313,11 @@ async function renderSurfboardListingDetailPage({
   const offerPct = effectiveMinimumOfferPct(
     board as { minimum_offer_pct?: number | null },
   )
-  const minOfferAmount = Math.round(listPriceNum * (offerPct / 100) * 100) / 100
+  
+  const hasFixedMinimumAmount = !!(board as { minimum_offer_amount?: string | number | null }).minimum_offer_amount
+  const minOfferAmount = hasFixedMinimumAmount
+    ? Math.round(parseFloat(String((board as { minimum_offer_amount?: string | number | null }).minimum_offer_amount ?? 0)) * 100) / 100
+    : Math.round(listPriceNum * (offerPct / 100) * 100) / 100
   const acceptOffers = buyerOffersOn
 
   const primaryImageRaw =
@@ -336,6 +340,7 @@ async function renderSurfboardListingDetailPage({
           shippingFlatRate: Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0),
           shippingCostMode:
             (board.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
+          hideMinimumUntilViolated: hasFixedMinimumAmount,
         }
       : undefined
 

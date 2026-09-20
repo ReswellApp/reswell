@@ -17,6 +17,7 @@ import { appendConversationMessage } from "@/lib/services/conversationThread"
 import { syncOfferThreadIfMissing } from "@/lib/services/syncOfferMessagesThread"
 import { formatOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
+import { effectiveMinimumOfferAmount } from "@/lib/utils/offers-minimum-amount"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
@@ -105,13 +106,13 @@ export async function createListingOffer(
   }
 
   const minPct = effectiveMinimumOfferPct(listing)
-  const minOffer = roundMoney(listPrice * (minPct / 100))
+  const minOffer = effectiveMinimumOfferAmount(listing, listPrice)
   const amount = roundMoney(body.amount)
   if (amount < minOffer) {
     return {
       ok: false,
       status: 400,
-      error: `Your offer must be at least $${minOffer.toFixed(2)} (${minPct}% of the list price).`,
+      error: `Your offer must be at least $${minOffer.toFixed(2)}${listing.minimum_offer_amount ? "" : ` (${minPct}% of the list price)`}.`,
     }
   }
   if (amount > listPrice) {

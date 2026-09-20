@@ -128,6 +128,12 @@ export function buildSurfboardDraftListingRow(
       return Number.isFinite(n) ? n : null
     })(),
     buyer_offers_enabled: fd.buyerOffers !== false,
+    minimum_offer_amount: (() => {
+      const t = (fd.minimumOfferAmount ?? "").trim().replace(/[$,]/g, "")
+      if (!t) return null
+      const n = parseFloat(t)
+      return Number.isFinite(n) && n > 0 ? n : null
+    })(),
     brand: fd.brand?.trim() ? fd.brand.trim() : null,
     brand_id: fd.boardBrandId?.trim() || null,
     seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice ?? ""),

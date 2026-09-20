@@ -19,6 +19,7 @@ export const listingDraftAutosaveSchema = z.object({
   autoPriceDrop: z.boolean().optional(),
   autoPriceDropFloor: z.string().optional(),
   buyerOffers: z.boolean().optional(),
+  minimumOfferAmount: z.string().optional(),
   boardType: z.string().optional(),
   boardLength: z.string().optional(),
   boardLengthFt: z.string().optional(),

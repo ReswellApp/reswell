@@ -3,10 +3,10 @@ import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { LISTING_BUYER_OPEN_OFFER_STATUSES } from "@/lib/utils/offer-messages-href"
 
 const SELLER_OFFER_LISTING_SELECT =
-  "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)"
+  "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, minimum_offer_amount, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)"
 
 const SELLER_OFFER_LISTING_SELECT_NO_IMAGES =
-  "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode"
+  "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, minimum_offer_amount, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode"
 
 const SELLER_OFFER_BUNDLE_LIMIT = 40
 
@@ -21,6 +21,7 @@ export type ListingRowForOffer = {
   hidden_from_site: boolean | null
   buyer_offers_enabled: boolean | null
   minimum_offer_pct: number | null
+  minimum_offer_amount: string | number | null
   shipping_available: boolean | null
   local_pickup: boolean | null
   shipping_price: string | number | null
@@ -39,7 +40,7 @@ export async function fetchListingForOffer(
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)",
+      "id, user_id, slug, title, price, status, section, hidden_from_site, buyer_offers_enabled, minimum_offer_pct, minimum_offer_amount, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)",
     )
     .eq("id", listingId)
     .maybeSingle()
