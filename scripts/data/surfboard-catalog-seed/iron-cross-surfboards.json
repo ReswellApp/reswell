@@ -1,0 +1,91 @@
+{
+  "generated_for": "Iron Cross Surfboards official named standup catalog",
+  "source": "https://ironcrosssurfboards.com/pages/longboards, /pages/shortboards, /pages/alternative (official Shopify model pages — excludes apparel, ding repair, rentals, fins, sunscreen, and wakesurf)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "iron-cross-surfboards",
+      "name": "Iron Cross Surfboards",
+      "website_url": "https://ironcrosssurfboards.com",
+      "location_label": "Cardiff-by-the-Sea, California",
+      "founder_name": "Jeff Grygera",
+      "lead_shaper_name": "Jeff Grygera",
+      "short_description": "Cardiff-by-the-Sea family shaping bay — Jeff Grygera shapes and his son Jay glasses Iron Cross longboards, shortboards, and fish at their San Marcos factory.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/iron-cross-surfboards.png",
+      "models": [
+        {
+          "name": "The 5150",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4483.jpg?format=jpg",
+          "description": "The 5150 is our Performance nose rider. Everyone wants the best of both worlds and we did just that. Featuring our motherlode nose with a bevel and slight nose concave into a comp tail that can be any shape. Lots of edge in the tail with a deep double barrel between the 2+1 fin setup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Motherlode",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4486.jpg?format=jpg",
+          "description": "The Motherlode is our classic all around nose rider. With the wide square tail for stability on the nose this board makes everyday fun. The nose is wide with a slight nose concave but not to much which does not slow down the paddling power of this board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Pancho Villa",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4489.jpg?format=jpg",
+          "description": "The Pancho Villa is inspired from a board Jeff use to ride as a kid at Cardiff Reef. It has a rolled bottom with a pinched out 50/50 rails.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Comp",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4501.jpg?format=jpg",
+          "description": "The Comp is our most famous and loved board. If you want to surf your long board like a short board this is the one. Thin, light weight and fast!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Red Baron",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4497.jpg?format=jpg",
+          "description": "The Red Baron is another classic that has been with us since the beginning. It's our comp model but just a little wider and thicker for extra floatation.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Daily Driver",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4493.jpg?format=jpg",
+          "description": "The Daily Driver is our newest nose rider. Hands down the new favorite of the guys at the shop. This board paddles like a dream because of its low rocker. A couple key features is the tail shape and fin box placement at 4''.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Trog",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4523.jpg?format=jpg",
+          "description": "The Trog is our all around short board. With the wide point pushed forward into the chest area this allows better paddling. Also with a lower rocker and single to double concave through the bottom makes this board super fun. Perfect for punchy little beach break or over head surf it can handle anything.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Push Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4528.jpg?format=jpg",
+          "description": "The Push up is our high performance short board with just a little more width in the nose. Bottom consist of flat in the nose to single concave to double barrel between the fins. Also has a nice full soft rail. We find this works great for San Diego surf. Any tail shape can be shaped in to this board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "California Gold",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/caligoldtop.jpg?format=jpg",
+          "description": "If you had to choose only one board…. The California Gold is just that. It is one of our newest and very versatile models due to its design. It has a wider and slight beak nose that hides foam for easy paddling, a nice rounded pin, and hard tail edge that goes up 1/3 of the board for drive. This board is recommended as a 2+1 but could easily be fun as a single fin. Recommended wave size are as little as you want to double overhead.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Mod Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4505.jpg?format=jpg",
+          "description": "The Mod fish has a curvy attractive outline that makes the board move rail to rail. The tail has slight double bump wing that helps bring in the tail to a baby swallow tail. The bottom consist of a single concave with a quad fin set up.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4512.jpg?format=jpg",
+          "description": "Our Retro Fish is straight from the 70's. Jeff use to shape a lot of boards like this! Featuring a classic beak nose that helps keep foam in the nose and chest area for extra volume and flotation that equates to paddle power. Available with glass ons or a removable fin system for fin variety.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The DBD",
+          "image_url": "https://cdn.shopify.com/s/files/1/1482/2686/files/IMG_4530.jpg?format=jpg",
+          "description": "The Double Black Diamon \"DBD\". Well theres a lot going on here. First it has a cut off blunt nose with a straight outline. This makes the board go super fast. The bottom starts of flat in the nose to a single concave to a double barrel between the fins. We also put in two little channels out of the rear quads. We find this acts like little fins when riding it as a quad fin. Allowing the board to be fast down the line but also releasing for top turns.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
