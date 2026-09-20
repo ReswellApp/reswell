@@ -32,6 +32,15 @@ export interface AppLlmFeatureDefinition {
   sourceFiles: string[]
 }
 
+/**
+ * Live-chat writers Jev routes between. IDs are Vercel AI Gateway model slugs
+ * confirmed on GET https://ai-gateway.vercel.sh/v1/models — do not invent aliases.
+ * Listing copy uses Anthropic-direct `claude-sonnet-4-5-20250929`; the Gateway
+ * equivalent is `anthropic/claude-sonnet-4.5` (dot, not `claude-sonnet-4-5`).
+ */
+export const LIVE_CHAT_FAST_WRITER_MODEL = "anthropic/claude-haiku-4.5"
+export const LIVE_CHAT_FRONTIER_WRITER_MODEL = "anthropic/claude-sonnet-4.5"
+
 export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
   {
     id: "marketplace_nl_search",
@@ -157,10 +166,10 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "live_chat_cs",
     name: "Live chat customer-service agent",
     purpose:
-      "Auto-sends the next Hayden or David reply in admin live chat after a join line and a human-feel delay. Jev (typesafe-ai/jev) routes which chat model writes the reply; Jev never generates customer-facing text. Writers are Gemini Flash / Pro via Gateway (Flash Lite is upgraded — it cannot emit tools + Output.object). Same guidelines, tools, and rating memory as inbox drafts. Ratings stay on very_good / okay / bad.",
+      "Auto-sends the next Hayden or David reply in admin live chat after a join line and a human-feel delay. Jev (typesafe-ai/jev) routes which chat model writes the reply; Jev never generates customer-facing text. How-tos use Claude Haiku 4.5; orders, payouts, and claims use Claude Sonnet 4.5 (same writing family as listing copy, Gateway slug). Flash Lite is a Jev key only — the harness upgrades it to Haiku (it cannot emit tools + Output.object). Empty Haiku output retries Sonnet. Same guidelines, tools, and rating memory as inbox drafts. Ratings stay on very_good / okay / bad.",
     gatewayFeatureTag: "feature:live-chat-cs",
     transport: "vercel_ai_gateway",
-    defaultModel: "google/gemini-2.5-pro",
+    defaultModel: LIVE_CHAT_FRONTIER_WRITER_MODEL,
     modelEnvVar: "LIVE_CHAT_CS_MODEL",
     enabledEnvVar: "LIVE_CHAT_CS_ENABLED",
     surfaces: ["live chat widget (admin)", "/admin/live-chat", "/admin/support-reply-examples"],
@@ -179,7 +188,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "live_chat_jev_router",
     name: "Live chat Jev writer router",
     purpose:
-      "TypeSafe Jev evaluates the visitor message and picks flash_lite, flash, or pro. It does not write the reply. Requires AI SDK experimental_evaluate (ai >= 7.0.105) and Gateway auth. On failure, the writer falls back to Gemini Pro — no fake Jev scores.",
+      "TypeSafe Jev evaluates the visitor message and picks flash_lite, flash, or pro. It does not write the reply. Requires AI SDK experimental_evaluate (ai >= 7.0.105) and Gateway auth. On failure, the writer falls back to Claude Sonnet 4.5 — no fake Jev scores.",
     gatewayFeatureTag: "feature:live-chat-jev-router",
     transport: "vercel_ai_gateway",
     defaultModel: "typesafe-ai/jev",
