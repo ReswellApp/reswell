@@ -1,13 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { LiveChatSessionRow } from "@/lib/db/liveChat"
 import {
   claimLiveChatSessionEscalation,
   detachOtherLiveChatSessionsFromSupportCase,
   getLiveChatSessionById,
   isLiveChatEscalationClaimExpired,
+  mergeLiveChatSessionMetadata,
   releaseLiveChatSessionEscalationClaim,
   updateLiveChatSessionRow,
+  type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
+import {
+  LIVE_CHAT_LOOK_INTO_IT_AT_KEY,
+  LIVE_CHAT_NEEDS_FOLLOW_UP_KEY,
+  liveChatLookIntoItInternalNote,
+} from "@/lib/live-chat/fallback-reply"
 import {
   findOpenLiveChatSupportCaseForVisitor,
   getSupportCaseByContactMessageId,
@@ -277,6 +283,49 @@ export async function syncLiveChatVisitorMessageToCase(
     support_case_id: caseId,
     contact_message_id: opened?.contactMessageId || session.contact_message_id,
   }
+}
+
+/**
+ * Real follow-up when Hayden/David cannot answer: keep the session on the
+ * staff desk, soft-open a support case when email is on file, and leave an
+ * internal note. Soft-open stays silent. Staff / later replies still use
+ * `notifyLiveChatReplyViaKlaviyo` (Support Tickets Response).
+ *
+ * Does not post a visitor-facing “we opened a support case” system line.
+ */
+export async function ensureLiveChatLookIntoItFollowUp(
+  svc: SupabaseClient,
+  session: LiveChatSessionRow,
+  visitorMessage: string,
+): Promise<{ session: LiveChatSessionRow; caseId: string | null }> {
+  const opened = await openLiveChatSupportCase(svc, session, {
+    initialVisitorMessage: visitorMessage,
+  })
+  const caseId = opened?.supportCaseId ?? session.support_case_id ?? null
+  const next: LiveChatSessionRow = {
+    ...session,
+    support_case_id: caseId ?? session.support_case_id,
+    contact_message_id: opened?.contactMessageId || session.contact_message_id,
+    metadata: {
+      ...session.metadata,
+      [LIVE_CHAT_NEEDS_FOLLOW_UP_KEY]: true,
+      [LIVE_CHAT_LOOK_INTO_IT_AT_KEY]: new Date().toISOString(),
+    },
+  }
+
+  await mergeLiveChatSessionMetadata(svc, next, {
+    [LIVE_CHAT_NEEDS_FOLLOW_UP_KEY]: true,
+    [LIVE_CHAT_LOOK_INTO_IT_AT_KEY]: next.metadata[LIVE_CHAT_LOOK_INTO_IT_AT_KEY],
+  })
+
+  if (caseId) {
+    await appendLiveChatVisitorTurnToCase(svc, caseId, next, visitorMessage)
+    await appendLiveChatAgentTurnToCase(svc, caseId, liveChatLookIntoItInternalNote(visitorMessage), {
+      isInternal: true,
+    })
+  }
+
+  return { session: next, caseId }
 }
 
 /** Ensure a live-chat soft case exists, then append an agent turn. */

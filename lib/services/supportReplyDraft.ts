@@ -34,11 +34,15 @@ import {
   loadLiveChatAccountSnapshot,
 } from "@/lib/services/csAgentLookups"
 import { listLiveChatMessagesForSession, type LiveChatSessionRow } from "@/lib/db/liveChat"
+import { isLiveChatGeneratedUngroundedReply } from "@/lib/live-chat/fallback-reply"
 import { isLiveChatJoinMessage } from "@/lib/live-chat/human-feel"
-import { latestLiveChatVisitorContent } from "@/lib/live-chat/thread-sync"
+import {
+  isLiveChatCannedFailureReply,
+  resolveLiveChatFallbackReply,
+} from "@/lib/live-chat/live-chat-cs-prompt"
 import { liveChatWriterNeedsTools } from "@/lib/live-chat/order-tile-intent"
+import { latestLiveChatVisitorContent } from "@/lib/live-chat/thread-sync"
 import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
-import { resolveLiveChatFallbackReply } from "@/lib/live-chat/live-chat-cs-prompt"
 import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
 import {
   citedHelpFromSlugs,
@@ -335,8 +339,15 @@ async function generateDraftBody(args: {
 
   if (isLiveChat ? !isLiveChatCsLlmEnabled() : !isSupportReplyDraftLlmEnabled()) {
     if (isLiveChat) {
+      const body = resolveLiveChatFallbackReply(lastCustomerMessage)
+      if (
+        isLiveChatCannedFailureReply(body) ||
+        isLiveChatGeneratedUngroundedReply(body, lastCustomerMessage)
+      ) {
+        throw new Error("Live chat model is off.")
+      }
       return {
-        body: resolveLiveChatFallbackReply(lastCustomerMessage),
+        body,
         origin: "macro",
         slugs: [],
         exampleIds: [],
@@ -653,10 +664,14 @@ export async function generateLiveChatReplyBody(
   })
 
   if (!isLiveChatCsLlmEnabled()) {
-    return {
-      body: resolveLiveChatFallbackReply(lastCustomerMessage),
-      closeTicket: false,
+    const body = resolveLiveChatFallbackReply(lastCustomerMessage)
+    if (
+      isLiveChatCannedFailureReply(body) ||
+      isLiveChatGeneratedUngroundedReply(body, lastCustomerMessage)
+    ) {
+      return { error: "Live chat model is off." }
     }
+    return { body, closeTicket: false }
   }
 
   const greetingName = supportReplyGreetingName({
@@ -713,7 +728,13 @@ export async function generateLiveChatReplyBody(
       lookups: lookupSession.lookups,
     })
     const body = generated.reply.trim()
-    if (!body) return { error: "Live chat model did not return a grounded reply." }
+    if (
+      !body ||
+      isLiveChatCannedFailureReply(body) ||
+      isLiveChatGeneratedUngroundedReply(body, lastCustomerMessage)
+    ) {
+      return { error: "Live chat model did not return a grounded reply." }
+    }
     return { body, closeTicket: generated.closeTicket === true }
   } catch (error) {
     console.error("[supportReplyDraft] live chat generate failed:", error)
