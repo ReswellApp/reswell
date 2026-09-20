@@ -64,7 +64,7 @@ export async function routeLiveChatWriterWithJev(
 ): Promise<LiveChatWriterRoute> {
   if (!liveChatJevRouterEnabled()) {
     return fallbackLiveChatWriterRoute(
-      "Jev router off — no Gateway auth or LIVE_CHAT_JEV_ROUTER_ENABLED=false. Writer is the existing live-chat CS default (pro).",
+      "Jev router off — no Gateway auth or LIVE_CHAT_JEV_ROUTER_ENABLED=false. Writer is the live-chat CS frontier default (pro).",
     )
   }
 

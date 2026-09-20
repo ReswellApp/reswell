@@ -77,7 +77,7 @@ export function supportReplyDraftModelId(): string {
 
 const LIVE_CHAT_FEATURE = APP_LLM_FEATURES.find((f) => f.id === "live_chat_cs")
 
-/** Stronger model for auto-sent live chat. Falls back to the inbox model if disabled. */
+/** Frontier live-chat writer (Claude Sonnet 4.5 by default). Falls back to the inbox model if disabled. */
 export function liveChatCsModelId(): string {
   if (!LIVE_CHAT_FEATURE || !isAppLlmFeatureEnabled(LIVE_CHAT_FEATURE)) {
     return supportReplyDraftModelId()

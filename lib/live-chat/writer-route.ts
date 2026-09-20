@@ -3,6 +3,11 @@
  * Jev never writes the customer-facing reply — it only picks a key.
  */
 
+import {
+  LIVE_CHAT_FAST_WRITER_MODEL,
+  LIVE_CHAT_FRONTIER_WRITER_MODEL,
+} from "../llm/app-models.ts"
+
 export const LIVE_CHAT_WRITER_IDS = ["flash_lite", "flash", "pro"] as const
 export type LiveChatWriterId = (typeof LIVE_CHAT_WRITER_IDS)[number]
 
@@ -10,8 +15,8 @@ export const LIVE_CHAT_WRITER_FALLBACK: LiveChatWriterId = "pro"
 
 export const LIVE_CHAT_DEFAULT_WRITER_MODELS: Record<LiveChatWriterId, string> = {
   flash_lite: "google/gemini-2.5-flash-lite",
-  flash: "google/gemini-2.5-flash",
-  pro: "google/gemini-2.5-pro",
+  flash: LIVE_CHAT_FAST_WRITER_MODEL,
+  pro: LIVE_CHAT_FRONTIER_WRITER_MODEL,
 }
 
 export const LIVE_CHAT_WRITER_MODEL_ENV: Record<LiveChatWriterId, string> = {
@@ -40,7 +45,7 @@ export function liveChatWriterModelId(
 /**
  * CS agent generate uses tools + `Output.object`. Gemini 2.5 Flash Lite
  * returns AI_NoOutputGeneratedError on that harness (prod 2026-09-19).
- * Keep flash_lite as a Jev key, but write with flash.
+ * Keep flash_lite as a Jev key, but write with the fast Claude writer.
  */
 export function liveChatCsAgentWriterId(writer: LiveChatWriterId): LiveChatWriterId {
   return writer === "flash_lite" ? "flash" : writer
@@ -51,6 +56,11 @@ export function liveChatCsAgentWriterModel(
   env: NodeJS.ProcessEnv = process.env,
 ): string {
   return liveChatWriterModelId(liveChatCsAgentWriterId(writer), env)
+}
+
+/** Gateway models that actually call generateText for live chat (spend attribution). */
+export function liveChatCsSpendModels(env: NodeJS.ProcessEnv = process.env): string[] {
+  return [...new Set([liveChatCsAgentWriterModel("flash", env), liveChatCsAgentWriterModel("pro", env)])]
 }
 
 export const LIVE_CHAT_JEV_WRITER_CRITERIA = {

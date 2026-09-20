@@ -11,6 +11,7 @@ import {
   type AppLlmFeatureId,
   type LlmTransport,
 } from "@/lib/llm/app-models"
+import { liveChatCsSpendModels } from "@/lib/live-chat/writer-route"
 
 const ALLOWED_RANGE_DAYS = new Set([7, 14, 30, 90])
 
@@ -191,6 +192,17 @@ function gatewayAuthConfigured(): boolean {
   )
 }
 
+function gatewayModelUsedByApp(modelId: string): boolean {
+  if (
+    APP_LLM_FEATURES.some(
+      (f) => f.transport === "vercel_ai_gateway" && resolveConfiguredModel(f) === modelId,
+    )
+  ) {
+    return true
+  }
+  return liveChatCsSpendModels().includes(modelId)
+}
+
 function featureStatus(
   feature: AppLlmFeatureDefinition,
   tagSpend: Map<string, { cost: number; requests: number }>,
@@ -359,6 +371,9 @@ export async function getLlmUsageDashboard(options?: {
         usedModelIds.add(resolveConfiguredModel(feature))
       }
     }
+    for (const model of liveChatCsSpendModels()) {
+      usedModelIds.add(model)
+    }
 
     const costByModel = new Map(byModel.map((m) => [m.key, m]))
 
@@ -373,10 +388,7 @@ export async function getLlmUsageDashboard(options?: {
           ownedBy: m.id.split("/")[0] ?? "unknown",
           pricingInputPerMillion: perMillionFromPerToken(m.pricing?.input),
           pricingOutputPerMillion: perMillionFromPerToken(m.pricing?.output),
-          usedByApp: APP_LLM_FEATURES.some(
-            (f) =>
-              f.transport === "vercel_ai_gateway" && resolveConfiguredModel(f) === m.id,
-          ),
+          usedByApp: gatewayModelUsedByApp(m.id),
           rangeCostUsd: spend?.totalCostUsd ?? 0,
           rangeRequestCount: spend?.requestCount ?? 0,
         } satisfies LlmGatewayModelInfo
@@ -398,10 +410,7 @@ export async function getLlmUsageDashboard(options?: {
         ownedBy: row.key.split("/")[0] ?? "unknown",
         pricingInputPerMillion: null,
         pricingOutputPerMillion: null,
-        usedByApp: APP_LLM_FEATURES.some(
-          (f) =>
-            f.transport === "vercel_ai_gateway" && resolveConfiguredModel(f) === row.key,
-        ),
+        usedByApp: gatewayModelUsedByApp(row.key),
         rangeCostUsd: row.totalCostUsd,
         rangeRequestCount: row.requestCount,
       })
