@@ -6,6 +6,7 @@ import {
   latestConversationalIsTeam,
   latestConversationalIsVisitor,
   latestLiveChatAutoReplyId,
+  latestLiveChatVisitorContent,
 } from "./thread-sync.ts"
 
 function row(sender_type: "visitor" | "agent" | "system" | "bot") {
@@ -39,6 +40,20 @@ describe("latestLiveChatAutoReplyId", () => {
         { id: "h1", sender_type: "agent", sender_agent_id: "staff" },
       ]),
       null,
+    )
+  })
+})
+
+describe("latestLiveChatVisitorContent", () => {
+  it("returns the latest visitor bubble for caseless rating and regenerate", () => {
+    assert.equal(
+      latestLiveChatVisitorContent([
+        { sender_type: "visitor", content: "first" },
+        { sender_type: "agent", content: "Yeah, I'm here — what's up?" },
+        { sender_type: "visitor", content: "  shipping address not valid  " },
+        { sender_type: "agent", content: "Yeah, I'm here — what's up?" },
+      ]),
+      "shipping address not valid",
     )
   })
 })
