@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { mergeLiveChatUiMessages } from "./merge-messages.ts"
+import { mergeIncomingLiveChatUiMessage, mergeLiveChatUiMessages } from "./merge-messages.ts"
 
 describe("mergeLiveChatUiMessages", () => {
   it("appends a new message", () => {
@@ -21,5 +21,52 @@ describe("mergeLiveChatUiMessages", () => {
     )
     assert.equal(next.length, 1)
     assert.equal(next[0]?.content, "new")
+  })
+})
+
+describe("mergeIncomingLiveChatUiMessage", () => {
+  it("replaces a re-rolled bubble instead of keeping the stale row", () => {
+    const next = mergeIncomingLiveChatUiMessage(
+      [
+        {
+          id: "a1",
+          created_at: "2026-09-19T12:00:00.000Z",
+          sender_type: "agent",
+          content: "old auto reply",
+        },
+      ],
+      {
+        id: "a1",
+        created_at: "2026-09-19T12:00:00.000Z",
+        sender_type: "agent",
+        content: "new auto reply",
+      },
+    )
+    assert.equal(next.length, 1)
+    assert.equal(next[0]?.content, "new auto reply")
+  })
+
+  it("confirms an optimistic visitor send when the server id differs", () => {
+    const next = mergeIncomingLiveChatUiMessage(
+      [
+        {
+          id: "tmp",
+          created_at: "2026-09-19T12:00:00.000Z",
+          sender_type: "visitor",
+          content: "hello",
+          pending: true,
+        },
+      ],
+      {
+        id: "v1",
+        created_at: "2026-09-19T12:00:01.000Z",
+        sender_type: "visitor",
+        content: "hello",
+      },
+    )
+    assert.deepEqual(
+      next.map((row) => ({ id: row.id, pending: row.pending })),
+      [{ id: "v1", pending: false }],
+    )
   })
 })

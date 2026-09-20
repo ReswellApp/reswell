@@ -421,6 +421,11 @@ export async function regenerateLiveChatCsAgentReply(
       return { error: "Could not generate a new reply. Try again." }
     }
 
+    const latestThread = await listLiveChatMessagesForSession(svc, workingSession.id)
+    if (!isLatestLiveChatAutoReply(latestThread, message.id)) {
+      return { error: "The conversation changed while regenerating." }
+    }
+
     const updated = await updateLiveChatMessageContent(svc, message.id, body)
     if (!updated) {
       return { error: "Could not replace the last reply." }

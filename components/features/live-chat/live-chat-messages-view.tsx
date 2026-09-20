@@ -225,28 +225,33 @@ export function LiveChatMessagesView({
       return
     }
     setRegeneratingMessageId(message.id)
-    const result = await requestLiveChatReplyRegenerate({
-      sessionId,
-      messageId: message.id,
-      rating,
-      note,
-    })
-    setRegeneratingMessageId(null)
-    if ("error" in result) {
-      toast.error(result.error)
-      return
+    try {
+      const result = await requestLiveChatReplyRegenerate({
+        sessionId,
+        messageId: message.id,
+        rating,
+        note,
+      })
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      setRatedMessageIds((prev) => {
+        const next = new Set(prev)
+        next.delete(message.id)
+        return next
+      })
+      onAgentMessageUpdated?.({
+        ...message,
+        content: result.content,
+        created_at: result.created_at,
+      })
+      toast.success("New reply is ready to rate.")
+    } catch {
+      toast.error("Could not regenerate that reply.")
+    } finally {
+      setRegeneratingMessageId(null)
     }
-    setRatedMessageIds((prev) => {
-      const next = new Set(prev)
-      next.delete(message.id)
-      return next
-    })
-    onAgentMessageUpdated?.({
-      ...message,
-      content: result.content,
-      created_at: result.created_at,
-    })
-    toast.success("New reply is ready to rate.")
   }
 
   function handleDraftChange(value: string) {
