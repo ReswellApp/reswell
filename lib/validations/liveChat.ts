@@ -44,6 +44,13 @@ export const rateLiveChatReplySchema = z.object({
   rating_note: z.string().trim().max(1000).optional(),
 })
 
+export const regenerateLiveChatReplySchema = z.object({
+  session_id: z.string().uuid(),
+  message_id: z.string().uuid(),
+  rating: z.enum(["very_good", "okay", "bad"]).optional(),
+  rating_note: z.string().trim().max(1000).optional(),
+})
+
 export const liveChatTypingSchema = z.object({
   visitor_token: z.string().uuid().optional(),
   participant_type: z.enum(["visitor", "agent"]),

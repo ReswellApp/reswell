@@ -639,6 +639,25 @@ export async function insertLiveChatMessage(
   return normalizeLiveChatMessageRow(data as Record<string, unknown>)
 }
 
+export async function updateLiveChatMessageContent(
+  supabase: SupabaseClient,
+  messageId: string,
+  content: string,
+): Promise<LiveChatMessageRow | null> {
+  const { data, error } = await supabase
+    .from("live_chat_messages")
+    .update({ content })
+    .eq("id", messageId)
+    .select(LIVE_CHAT_MESSAGE_SELECT)
+    .single()
+
+  if (error || !data) {
+    console.error("updateLiveChatMessageContent", error)
+    return null
+  }
+  return normalizeLiveChatMessageRow(data as Record<string, unknown>)
+}
+
 export async function hasAgentMessagedInSession(
   supabase: SupabaseClient,
   sessionId: string,

@@ -6,6 +6,7 @@ import {
   listLiveChatAdminQueueService,
   loadLiveChatAdminThreadService,
   rateLiveChatReplyAdminService,
+  regenerateLiveChatReplyAdminService,
   sendLiveChatAgentMessageService,
   updateLiveChatSessionAdminService,
 } from "@/lib/services/liveChatAdmin"
@@ -57,6 +58,15 @@ export async function escalateLiveChatSessionAdminAction(raw: unknown) {
 
 export async function rateLiveChatReplyAction(raw: unknown) {
   const result = await rateLiveChatReplyAdminService(raw)
+  if ("success" in result) {
+    revalidateLiveChatAdmin()
+    revalidatePath("/admin/support-reply-examples")
+  }
+  return result
+}
+
+export async function regenerateLiveChatReplyAction(raw: unknown) {
+  const result = await regenerateLiveChatReplyAdminService(raw)
   if ("success" in result) {
     revalidateLiveChatAdmin()
     revalidatePath("/admin/support-reply-examples")

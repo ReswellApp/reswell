@@ -301,6 +301,11 @@ async function generateDraftBody(args: {
   liveChatActor?: LiveChatActionActor
   modelId?: string
   latestVisitorMessage?: string
+  liveChatRegenerate?: {
+    previousReply: string
+    rating?: string
+    note?: string | null
+  }
 }): Promise<{
   body: string
   origin: SupportReplyDraftOrigin
@@ -397,6 +402,7 @@ async function generateDraftBody(args: {
       rewriteInstruction: args.rewriteInstruction,
       currentDraft: args.currentDraft,
       accountSnapshot,
+      liveChatRegenerate: args.liveChatRegenerate,
     },
     lookups: lookupSession.lookups,
   })
@@ -495,6 +501,11 @@ export async function generateAndStoreDraft(
     modelId?: string
     /** Latest visitor bubble — writer must answer this turn. */
     latestVisitorMessage?: string
+    liveChatRegenerate?: {
+      previousReply: string
+      rating?: string
+      note?: string | null
+    }
   },
 ): Promise<{ data: SupportReplyDraftView; closeTicket: boolean } | { error: string }> {
   const loaded = await loadCaseContext(service, caseId)
@@ -562,6 +573,7 @@ export async function generateAndStoreDraft(
       liveChatActor: rewrite?.liveChatActor,
       modelId: force ? rewrite?.modelId : undefined,
       latestVisitorMessage: rewrite?.latestVisitorMessage,
+      liveChatRegenerate: rewrite?.liveChatRegenerate,
     })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)

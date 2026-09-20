@@ -1,9 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   insertLiveChatMessage,
+  listLiveChatMessagesForSession,
+  updateLiveChatMessageContent,
   type LiveChatMessageRow,
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
+import { replaceLatestMatchingSupportCaseAgentBody } from "@/lib/db/supportCases"
+import { isLatestLiveChatAutoReply } from "@/lib/live-chat/thread-sync"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
 import { resolveLiveChatFallbackReply } from "@/lib/live-chat/fallback-reply"
 import { isLiveChatPresenceIntent } from "@/lib/live-chat/greeting-intent"
@@ -102,6 +106,11 @@ async function generateWithModel(
   liveChatActor: Awaited<ReturnType<typeof resolveLiveChatActionActor>>,
   modelId: string,
   visitorMessage: string,
+  liveChatRegenerate?: {
+    previousReply: string
+    rating?: string
+    note?: string | null
+  },
 ): Promise<{ body: string; closeTicket: boolean } | null> {
   const draft = await Promise.race([
     generateAndStoreDraft(svc, caseId, true, {
@@ -110,6 +119,7 @@ async function generateWithModel(
       liveChatActor,
       modelId,
       latestVisitorMessage: visitorMessage,
+      liveChatRegenerate,
     }),
     new Promise<null>((resolve) => {
       setTimeout(() => resolve(null), DRAFT_GENERATE_BUDGET_MS)
@@ -129,6 +139,11 @@ async function generateDraftBodyWithBudget(
   session: LiveChatSessionRow,
   firstName: string,
   visitorMessage: string,
+  liveChatRegenerate?: {
+    previousReply: string
+    rating?: string
+    note?: string | null
+  },
 ): Promise<{ body: string; closeTicket: boolean } | null> {
   try {
     const route = await routeLiveChatWriterWithJev({
@@ -163,6 +178,7 @@ async function generateDraftBodyWithBudget(
       liveChatActor,
       model,
       visitorMessage,
+      liveChatRegenerate,
     )
     if (first) return first
 
@@ -177,6 +193,7 @@ async function generateDraftBodyWithBudget(
         liveChatActor,
         pro,
         visitorMessage,
+        liveChatRegenerate,
       )
       if (retry) return retry
     }
@@ -328,6 +345,105 @@ export async function autoSendLiveChatCsAgentReply(
         : resolveLiveChatFallbackReply(visitorMessage.content),
       persona.firstName,
     )
+  } finally {
+    await broadcastLiveChatTyping({
+      sessionId: workingSession.id,
+      participantType: "agent",
+      displayName: persona.firstName,
+      isTyping: false,
+    })
+  }
+}
+
+/**
+ * Staff re-roll of the last auto-sent Hayden/David reply. Replaces that bubble
+ * in place so Hayden can rate again. Does not email again.
+ */
+export async function regenerateLiveChatCsAgentReply(
+  svc: SupabaseClient,
+  session: LiveChatSessionRow,
+  message: LiveChatMessageRow,
+  coach: {
+    rating?: string
+    note?: string | null
+  },
+): Promise<{ message: LiveChatMessageRow; displayName: string } | { error: string }> {
+  const thread = await listLiveChatMessagesForSession(svc, session.id)
+  if (!isLatestLiveChatAutoReply(thread, message.id)) {
+    return { error: "Only the latest auto-reply can be regenerated." }
+  }
+  if (message.sender_type !== "agent" || message.sender_agent_id) {
+    return { error: "Only an auto-reply can be regenerated." }
+  }
+
+  const lastVisitor = [...thread]
+    .reverse()
+    .find((row) => row.sender_type === "visitor")
+  const visitorMessage = lastVisitor?.content.trim() || ""
+  if (!visitorMessage) {
+    return { error: "No visitor message to answer." }
+  }
+
+  const opened = await openLiveChatSupportCase(svc, session, {
+    initialVisitorMessage: visitorMessage,
+  })
+  const caseId = opened?.supportCaseId ?? session.support_case_id
+  if (!caseId) {
+    return { error: "Link a support case before regenerating." }
+  }
+
+  const ensured = await ensureLiveChatSessionPersona(svc, session)
+  const persona = ensured.persona
+  const workingSession = ensured.session
+
+  try {
+    await broadcastLiveChatTyping({
+      sessionId: workingSession.id,
+      participantType: "agent",
+      displayName: persona.firstName,
+      isTyping: true,
+    })
+
+    const generated = await generateDraftBodyWithBudget(
+      svc,
+      caseId,
+      workingSession,
+      persona.firstName,
+      visitorMessage,
+      {
+        previousReply: message.content,
+        rating: coach.rating,
+        note: coach.note,
+      },
+    )
+    const body = generated?.body.trim() ?? ""
+    if (!body) {
+      return { error: "Could not generate a new reply. Try again." }
+    }
+
+    const updated = await updateLiveChatMessageContent(svc, message.id, body)
+    if (!updated) {
+      return { error: "Could not replace the last reply." }
+    }
+
+    await replaceLatestMatchingSupportCaseAgentBody(svc, caseId, message.content, body)
+    await broadcastLiveChatMessage({
+      sessionId: workingSession.id,
+      message: {
+        id: updated.id,
+        session_id: workingSession.id,
+        sender_type: "agent",
+        sender_agent_id: null,
+        content: updated.content,
+        created_at: updated.created_at,
+        agent_display_name: persona.firstName,
+      },
+    })
+
+    return { message: updated, displayName: persona.firstName }
+  } catch (error) {
+    console.error("[liveChatCsAgentAutoReply] regenerate failed:", error)
+    return { error: "Could not generate a new reply. Try again." }
   } finally {
     await broadcastLiveChatTyping({
       sessionId: workingSession.id,

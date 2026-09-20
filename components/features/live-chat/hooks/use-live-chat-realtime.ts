@@ -8,6 +8,7 @@ import {
   liveChatSessionChannel,
   type LiveChatBroadcastEvent,
 } from "@/lib/live-chat/realtime-channels"
+import { mergeLiveChatUiMessages } from "@/lib/live-chat/merge-messages"
 
 export type LiveChatUiMessage = {
   id: string
@@ -21,10 +22,7 @@ export type LiveChatUiMessage = {
 }
 
 function mergeMessages(prev: LiveChatUiMessage[], incoming: LiveChatUiMessage): LiveChatUiMessage[] {
-  if (prev.some((m) => m.id === incoming.id)) return prev
-  return [...prev, incoming].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-  )
+  return mergeLiveChatUiMessages(prev, incoming)
 }
 
 type LiveChatBroadcastListener = (event: LiveChatBroadcastEvent) => void
