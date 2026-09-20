@@ -238,10 +238,17 @@ export async function generateCsAgentDraft(args: {
       )
     : csAgentSystemPrompt(args.pack.greetingName, args.rootPrompt)
 
+  const attachOrderTools = !isLiveChat || args.pack.liveChatUseOrderTools === true
   const { output } = await generateText({
     model: args.model,
-    tools: createCsAgentTools(args.lookups, allowed),
-    stopWhen: isStepCount(isLiveChat ? CS_AGENT_LIVE_CHAT_MAX_STEPS : CS_AGENT_MAX_STEPS),
+    ...(attachOrderTools ? { tools: createCsAgentTools(args.lookups, allowed) } : {}),
+    stopWhen: isStepCount(
+      isLiveChat
+        ? attachOrderTools
+          ? CS_AGENT_LIVE_CHAT_MAX_STEPS
+          : 1
+        : CS_AGENT_MAX_STEPS,
+    ),
     abortSignal: AbortSignal.timeout(
       isLiveChat ? CS_AGENT_LIVE_CHAT_TIMEOUT_MS : CS_AGENT_GENERATE_TIMEOUT_MS,
     ),

@@ -6,7 +6,9 @@ import { resolveLiveChatConversation } from "@/lib/services/liveChatClose"
 import { notifyLiveChatReplyViaKlaviyo } from "@/lib/services/liveChatKlaviyoReply"
 import { syncLiveChatAgentMessageToCase } from "@/lib/services/liveChatSupportCase"
 import { broadcastLiveChatMessage } from "@/lib/services/liveChatRealtime"
+import { regenerateLiveChatCsAgentReply } from "@/lib/services/liveChatCsAgentAutoReply"
 import { recordSentSupportReplyExample } from "@/lib/services/supportReplyDraft"
+import { isLatestLiveChatAutoReply } from "@/lib/live-chat/thread-sync"
 import { formatPersonName } from "@/lib/utils/person-name"
 import {
   countOpenLiveChatSessions,
@@ -25,6 +27,7 @@ import {
 import {
   escalateLiveChatSessionSchema,
   rateLiveChatReplySchema,
+  regenerateLiveChatReplySchema,
   sendLiveChatAgentMessageSchema,
   updateLiveChatSessionAdminSchema,
 } from "@/lib/validations/liveChat"
@@ -405,6 +408,63 @@ export async function rateLiveChatReplyAdminService(
   })
 
   return { success: true }
+}
+
+export async function regenerateLiveChatReplyAdminService(
+  raw: unknown,
+): Promise<
+  | { success: true; message: { id: string; content: string; created_at: string } }
+  | { error: string }
+> {
+  const parsed = regenerateLiveChatReplySchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid regenerate request." }
+
+  const staff = await requireStaffUser()
+  if (!staff.ok) return { error: staff.error }
+
+  const supabase = await createClient()
+  const session = await getLiveChatSessionById(supabase, parsed.data.session_id)
+  if (!session) return { error: "Session not found" }
+
+  const messages = await listLiveChatMessagesForSession(supabase, session.id)
+  const message = messages.find((row) => row.id === parsed.data.message_id)
+  if (!message || message.sender_type !== "agent" || message.sender_agent_id) {
+    return { error: "Reply not found." }
+  }
+  if (!isLatestLiveChatAutoReply(messages, message.id)) {
+    return { error: "Only the latest auto-reply can be regenerated." }
+  }
+
+  if (parsed.data.rating) {
+    const rated = await rateLiveChatReplyAdminService({
+      session_id: parsed.data.session_id,
+      message_id: parsed.data.message_id,
+      rating: parsed.data.rating,
+      rating_note: parsed.data.rating_note,
+    })
+    if ("error" in rated) return rated
+  }
+
+  let svc
+  try {
+    svc = createServiceRoleClient()
+  } catch {
+    return { error: "Server is missing SUPABASE_SERVICE_ROLE_KEY" }
+  }
+  const result = await regenerateLiveChatCsAgentReply(svc, session, message, {
+    rating: parsed.data.rating,
+    note: parsed.data.rating_note ?? null,
+  })
+  if ("error" in result) return result
+
+  return {
+    success: true,
+    message: {
+      id: result.message.id,
+      content: result.message.content,
+      created_at: result.message.created_at,
+    },
+  }
 }
 
 export async function countOpenLiveChatSessionsForAdminNav(): Promise<number> {

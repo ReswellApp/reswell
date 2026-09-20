@@ -29,22 +29,34 @@ const RATING_SELECTED_CLASS: Record<SupportReplyDraftRating, string> = {
 interface LiveChatReplyRatingControlsProps {
   disabled?: boolean
   saving?: boolean
+  regenerating?: boolean
+  saved?: boolean
   onSubmit: (rating: SupportReplyDraftRating, note: string) => void | Promise<void>
+  onRegenerate?: (rating: SupportReplyDraftRating | null, note: string) => void | Promise<void>
   className?: string
 }
 
 export function LiveChatReplyRatingControls({
   disabled = false,
   saving = false,
+  regenerating = false,
+  saved = false,
   onSubmit,
+  onRegenerate,
   className,
 }: LiveChatReplyRatingControlsProps) {
   const [selected, setSelected] = useState<SupportReplyDraftRating | null>(null)
   const [note, setNote] = useState("")
+  const busy = saving || regenerating
 
   async function save() {
-    if (!selected || saving || disabled) return
+    if (!selected || busy || disabled) return
     await onSubmit(selected, note.trim())
+  }
+
+  async function regenerate() {
+    if (!onRegenerate || busy || disabled) return
+    await onRegenerate(selected, note.trim())
   }
 
   return (
@@ -55,7 +67,7 @@ export function LiveChatReplyRatingControls({
           <button
             key={rating}
             type="button"
-            disabled={disabled || saving}
+            disabled={disabled || busy}
             onClick={() => setSelected(rating)}
             className={cn(
               "rounded-full border px-2.5 py-0.5 text-[10px] font-semibold transition-colors",
@@ -66,6 +78,18 @@ export function LiveChatReplyRatingControls({
             {supportReplyExampleRatingLabel(rating)}
           </button>
         ))}
+        {onRegenerate ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-6 rounded-full px-2.5 text-[10px]"
+            disabled={disabled || busy}
+            onClick={() => void regenerate()}
+          >
+            {regenerating ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : "Regenerate"}
+          </Button>
+        ) : null}
       </div>
       {selected ? (
         <div className="space-y-1.5 rounded-xl border border-border/60 bg-background/80 p-2">
@@ -74,7 +98,7 @@ export function LiveChatReplyRatingControls({
             onChange={(event) => setNote(event.target.value)}
             rows={2}
             maxLength={1000}
-            disabled={disabled || saving}
+            disabled={disabled || busy}
             placeholder={
               selected === "very_good"
                 ? "Optional: what made this reply good?"
@@ -84,21 +108,27 @@ export function LiveChatReplyRatingControls({
           />
           <div className="flex items-center justify-between gap-2">
             <p className="text-[10px] text-muted-foreground">
-              {selected === "bad"
-                ? "Bad + note teaches what to avoid."
-                : "Saved to reply examples with your note."}
+              {saved
+                ? "Saved. Regenerate to try another reply."
+                : selected === "bad"
+                  ? "Bad + note teaches what to avoid."
+                  : "Saved to reply examples with your note."}
             </p>
             <Button
               type="button"
               size="sm"
               className="h-7 rounded-full px-3 text-[11px]"
-              disabled={disabled || saving}
+              disabled={disabled || busy}
               onClick={() => void save()}
             >
               {saving ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : "Save rating"}
             </Button>
           </div>
         </div>
+      ) : saved ? (
+        <p className="text-[10px] text-muted-foreground">
+          Saved. Regenerate to try another reply, or rate again.
+        </p>
       ) : null}
     </div>
   )

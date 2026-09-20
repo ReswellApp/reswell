@@ -441,6 +441,38 @@ export async function listSupportCaseMessages(
   return (data ?? []) as SupportCaseMessageRow[]
 }
 
+export async function replaceLatestMatchingSupportCaseAgentBody(
+  supabase: SupabaseClient,
+  caseId: string,
+  previousBody: string,
+  nextBody: string,
+): Promise<void> {
+  const previous = previousBody.trim()
+  const next = nextBody.trim()
+  if (!previous || !next || previous === next) return
+
+  const messages = await listSupportCaseMessages(supabase, caseId, { includeInternal: true })
+  const last = [...messages]
+    .reverse()
+    .find(
+      (message) =>
+        message.author_role === "agent" &&
+        !message.is_internal &&
+        message.body.trim() === previous,
+    )
+  if (!last) return
+
+  const { error } = await supabase
+    .from("support_case_messages")
+    .update({ body: next })
+    .eq("id", last.id)
+  if (error) {
+    console.warn("[support_case_messages] replace skipped:", error.message)
+    return
+  }
+  await touchSupportCaseAfterMessage(supabase, { id: caseId, preview: next })
+}
+
 export async function touchSupportCaseAfterMessage(
   supabase: SupabaseClient,
   args: { id: string; preview: string; status?: SupportCaseStatus },

@@ -36,7 +36,8 @@ import {
 } from "@/components/features/admin/support-reply-examples/support-reply-example-rating"
 import { LiveChatReplyRatingControls } from "@/components/features/live-chat/live-chat-reply-rating-controls"
 import type { SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
-import { latestConversationalIsVisitor } from "@/lib/live-chat/thread-sync"
+import { latestConversationalIsVisitor, latestLiveChatAutoReplyId } from "@/lib/live-chat/thread-sync"
+import { requestLiveChatReplyRegenerate } from "@/lib/live-chat/request-regenerate"
 
 interface LiveChatAdminClientProps {
   initialStaff: { userId: string; displayName: string }
@@ -211,6 +212,7 @@ function ThreadPane({
   const [linkedCaseId, setLinkedCaseId] = useState<string | null>(session.support_case_id)
   const [escalateError, setEscalateError] = useState<string | null>(null)
   const [ratingMessageId, setRatingMessageId] = useState<string | null>(null)
+  const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
   const [ratedMessageIds, setRatedMessageIds] = useState<Set<string>>(() => new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -340,6 +342,44 @@ function ThreadPane({
     toast.success(supportReplyExampleRatingToast(rating))
   }
 
+  async function regenerateTeamReply(
+    messageId: string,
+    rating: SupportReplyDraftRating | null,
+    note: string,
+  ) {
+    setRegeneratingMessageId(messageId)
+    const result = await requestLiveChatReplyRegenerate({
+      sessionId: session.id,
+      messageId,
+      rating,
+      note,
+    })
+    setRegeneratingMessageId(null)
+    if ("error" in result) {
+      toast.error(result.error)
+      return
+    }
+    setRatedMessageIds((prev) => {
+      const next = new Set(prev)
+      next.delete(messageId)
+      return next
+    })
+    setLocalMessages((prev) =>
+      mergeAdminMessages(prev, [
+        {
+          id: result.id,
+          session_id: session.id,
+          sender_type: "agent",
+          sender_agent_id: null,
+          content: result.content,
+          created_at: result.created_at,
+          agent_display_name: null,
+        },
+      ]),
+    )
+    toast.success("New reply is ready to rate.")
+  }
+
   return (
     <div className="flex min-h-[min(72vh,720px)] flex-1 flex-col overflow-hidden rounded-xl border border-border/70 bg-card">
       <div className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
@@ -429,14 +469,19 @@ function ThreadPane({
               >
                 {message.content}
               </div>
-              {isTeamAutoReply && !ratedMessageIds.has(message.id) ? (
+              {isTeamAutoReply ? (
                 <LiveChatReplyRatingControls
+                  key={`${message.id}:${message.content}`}
                   saving={ratingMessageId === message.id}
+                  regenerating={regeneratingMessageId === message.id}
+                  saved={ratedMessageIds.has(message.id)}
                   onSubmit={(rating, note) => rateTeamReply(message.id, rating, note)}
+                  onRegenerate={
+                    message.id === latestLiveChatAutoReplyId(localMessages)
+                      ? (rating, note) => regenerateTeamReply(message.id, rating, note)
+                      : undefined
+                  }
                 />
-              ) : null}
-              {isTeamAutoReply && ratedMessageIds.has(message.id) ? (
-                <span className="px-1 text-[10px] text-muted-foreground">Rated — saved to reply examples</span>
               ) : null}
               <span className="px-1 text-[10px] text-muted-foreground">
                 {format(new Date(message.created_at), "h:mm a")}

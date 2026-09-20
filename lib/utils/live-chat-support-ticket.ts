@@ -3,6 +3,8 @@
  * resolve that case only when the issue is actually solved.
  */
 
+import { isLiveChatGreetingIntent } from "../live-chat/greeting-intent.ts"
+
 export function isOpenLiveChatSupportStatus(status: string | null | undefined): boolean {
   return Boolean(status && status !== "resolved")
 }
@@ -29,7 +31,6 @@ export function liveChatVisitorMatchesOpenCase(
 
 const CONFIRMATION_ONLY =
   /^(thanks|thank you|thx|ok|okay|perfect|great|awesome|got it|that('s| is) (all|it)|resolved|solved)[!.,\s]*$/i
-const GREETING_ONLY = /^(hi|hello|hey|yo|hiya)[!.,\s]*$/i
 const STILL_WORKING =
   /\b(looking into|i('ll| will) (check|look|review)|let me (check|look|review)|follow up (shortly|here|soon)|we('re| are) looking)\b/i
 
@@ -53,7 +54,7 @@ export function shouldHonorLiveChatTicketClose(args: HonorLiveChatTicketCloseArg
   if (STILL_WORKING.test(reply)) return false
 
   const last = args.lastCustomerMessage.trim()
-  if (last && GREETING_ONLY.test(last) && !CONFIRMATION_ONLY.test(last)) return false
+  if (last && isLiveChatGreetingIntent(last) && !CONFIRMATION_ONLY.test(last)) return false
 
   return true
 }

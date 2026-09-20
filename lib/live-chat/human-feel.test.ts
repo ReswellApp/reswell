@@ -114,6 +114,7 @@ describe("live chat persona voice", () => {
     assert.match(note, /Never say you are an AI/)
     assert.match(note, /Reswell Team/)
     assert.match(note, /1–3 sentences/)
+    assert.match(note, /anything there/)
     assert.match(note, /marketplace how-tos/i)
     assert.match(note, /order number/)
   })

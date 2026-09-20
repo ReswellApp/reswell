@@ -22,6 +22,8 @@ import { latestLiveChatSpecificOrderLookupMessage } from "@/lib/live-chat/order-
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
 import { liveChatThreadSurfaceClass } from "@/lib/live-chat/widget-ui"
 import { rateLiveChatReplyAction } from "@/lib/actions/liveChatAdmin"
+import { requestLiveChatReplyRegenerate } from "@/lib/live-chat/request-regenerate"
+import { latestLiveChatAutoReplyId } from "@/lib/live-chat/thread-sync"
 import type { SupportReplyDraftRating } from "@/lib/validations/supportReplyDraft"
 import type { LiveChatUiMessage } from "@/components/features/live-chat/hooks/use-live-chat-realtime"
 import type { LiveChatSupportTeamMember } from "@/lib/services/liveChatSupportTeamDisplay"
@@ -46,6 +48,7 @@ interface LiveChatMessagesViewProps {
   visitorToken?: string | null
   /** Soft-launch: show staff rating controls on auto team replies. */
   enableReplyRatings?: boolean
+  onAgentMessageUpdated?: (message: LiveChatUiMessage) => void
   visitorEmail: string | null
   isSignedIn: boolean
   onAuthRequired?: () => void
@@ -79,6 +82,7 @@ export function LiveChatMessagesView({
   sessionId = null,
   visitorToken = null,
   enableReplyRatings = false,
+  onAgentMessageUpdated,
   visitorEmail,
   isSignedIn,
   onAuthRequired,
@@ -100,6 +104,7 @@ export function LiveChatMessagesView({
   /** Hide order tiles until a newer visitor message arrives. */
   const [orderTilesDismissedThroughCount, setOrderTilesDismissedThroughCount] = useState(0)
   const [ratingMessageId, setRatingMessageId] = useState<string | null>(null)
+  const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null)
   const [ratedMessageIds, setRatedMessageIds] = useState<Set<string>>(() => new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -210,6 +215,40 @@ export function LiveChatMessagesView({
     toast.success(supportReplyExampleRatingToast(rating))
   }
 
+  async function regenerateTeamReply(
+    message: LiveChatUiMessage,
+    rating: SupportReplyDraftRating | null,
+    note: string,
+  ) {
+    if (!sessionId) {
+      toast.error("Chat session not ready to regenerate yet.")
+      return
+    }
+    setRegeneratingMessageId(message.id)
+    const result = await requestLiveChatReplyRegenerate({
+      sessionId,
+      messageId: message.id,
+      rating,
+      note,
+    })
+    setRegeneratingMessageId(null)
+    if ("error" in result) {
+      toast.error(result.error)
+      return
+    }
+    setRatedMessageIds((prev) => {
+      const next = new Set(prev)
+      next.delete(message.id)
+      return next
+    })
+    onAgentMessageUpdated?.({
+      ...message,
+      content: result.content,
+      created_at: result.created_at,
+    })
+    toast.success("New reply is ready to rate.")
+  }
+
   function handleDraftChange(value: string) {
     if (inputLocked) return
     setDraft(value)
@@ -243,6 +282,7 @@ export function LiveChatMessagesView({
     assignedAgent && onlineMemberIds.includes(assignedAgent.id),
   )
   const showTeamTyping = teamThinking || Boolean(typingName)
+  const latestAutoReplyId = latestLiveChatAutoReplyId(visibleThreadMessages)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/20">
@@ -294,17 +334,20 @@ export function LiveChatMessagesView({
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
-              {enableReplyRatings && isTeamAutoReply && !ratedMessageIds.has(message.id) ? (
+              {enableReplyRatings && isTeamAutoReply ? (
                 <LiveChatReplyRatingControls
+                  key={`${message.id}:${message.content}`}
                   disabled={!sessionId}
                   saving={ratingMessageId === message.id}
+                  regenerating={regeneratingMessageId === message.id}
+                  saved={ratedMessageIds.has(message.id)}
                   onSubmit={(rating, note) => rateTeamReply(message.id, rating, note)}
+                  onRegenerate={
+                    message.id === latestAutoReplyId
+                      ? (rating, note) => regenerateTeamReply(message, rating, note)
+                      : undefined
+                  }
                 />
-              ) : null}
-              {enableReplyRatings && isTeamAutoReply && ratedMessageIds.has(message.id) ? (
-                <span className="px-1 text-[10px] text-muted-foreground">
-                  Rated — teaches later live chat replies
-                </span>
               ) : null}
             </div>
           )

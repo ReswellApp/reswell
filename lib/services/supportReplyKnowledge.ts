@@ -11,12 +11,15 @@ import {
 } from "@/lib/db/supportReplyDrafts"
 import { listSupportMacros, type SupportMacroRow } from "@/lib/db/supportCases"
 import {
+  mergeRatedReplyExamples,
+  rankAvoidExamplesForQuery,
   rankBySupportReplyScore,
   rankExamplesForQuery,
   rankHelpArticlesForQuery,
   scoreSupportReplyOverlap,
   tokenizeSupportReplyQuery,
 } from "@/lib/utils/support-reply-retrieve"
+import { isLiveChatPresenceIntent } from "@/lib/live-chat/greeting-intent"
 import { CS_AGENT_PROMPT_VERSION } from "@/lib/llm/cs-agent"
 import { liveChatPinnedHelpSlugs } from "@/lib/live-chat/howto-intent"
 import { isLiveChatCannedFailureReply } from "@/lib/live-chat/live-chat-cs-prompt"
@@ -84,15 +87,28 @@ export async function gatherSupportReplyKnowledge(
     : examples
 
   const learned = retrieveExamplesForQuery(examplePool, args.query, args.kind)
-  const avoidExamples: RetrievedReplyExample[] = isLiveChat
+  const avoidPool = isLiveChat
+    ? examples.filter((example) => {
+        if (example.rating !== "bad") return false
+        if (!example.rated_by) return false
+        if (!example.rating_note?.trim()) return false
+        if (example.source_channel && example.source_channel !== "live_chat") return false
+        if (isLiveChatCannedFailureReply(example.staff_reply)) return false
+        return true
+      })
+    : []
+  const avoidExamples = isLiveChat
+    ? rankAvoidExamplesForQuery(avoidPool, args.query, args.kind, 2)
+    : []
+  const recentCoached: RetrievedReplyExample[] = isLiveChat
     ? examples
-        .filter(
-          (example) =>
-            example.rating === "bad" &&
-            Boolean(example.rated_by) &&
-            Boolean(example.rating_note?.trim()) &&
-            (!example.source_channel || example.source_channel === "live_chat"),
-        )
+        .filter((example) => {
+          if (!example.rated_by) return false
+          if (!example.rating_note?.trim()) return false
+          if (example.source_channel && example.source_channel !== "live_chat") return false
+          if (isLiveChatCannedFailureReply(example.staff_reply)) return false
+          return true
+        })
         .slice(0, 2)
         .map((example) => ({
           id: example.id,
@@ -101,19 +117,21 @@ export async function gatherSupportReplyKnowledge(
           staffReply: example.staff_reply,
           rating: example.rating,
           ratingNote: example.rating_note,
-          score: 1,
+          score: 0.5,
         }))
     : []
   const helpArticles = retrieveHelpArticlesForQuery(args.query)
 
-  // Live chat: pin help that matches the ask. Seller-payout how-tos get Earnings /
-  // cash-out articles instead of the default protection set.
-  const liveChatPinned = isLiveChat
-    ? findHelpArticlesBySlugs(liveChatPinnedHelpSlugs(args.query)).map((article) => ({
-        ...article,
-        score: 1,
-      }))
-    : []
+  // Pin help that matches the ask. Presence pings get no claim/return stuffing
+  // even when retrieval pads a short hello with the thread/subject.
+  const liveChatQueryHead = args.query.split("\n")[0] ?? args.query
+  const liveChatPinned =
+    isLiveChat && !isLiveChatPresenceIntent(liveChatQueryHead)
+      ? findHelpArticlesBySlugs(liveChatPinnedHelpSlugs(args.query)).map((article) => ({
+          ...article,
+          score: 1,
+        }))
+      : []
   const helpMerged = [
     ...liveChatPinned,
     ...helpArticles.filter((article) => !liveChatPinned.some((pin) => pin.slug === article.slug)),
@@ -162,12 +180,12 @@ export async function gatherSupportReplyKnowledge(
     })
     .slice(0, 3)
 
-  const seenReplies = new Set(learned.map((row) => row.staffReply.toLowerCase()))
-  const mergedExamples = [
-    ...learned,
-    ...avoidExamples.filter((row) => !seenReplies.has(row.staffReply.toLowerCase())),
-    ...historical.filter((row) => !seenReplies.has(row.staffReply.toLowerCase())),
-  ].slice(0, isLiveChat ? 5 : 5)
+  const mergedExamples = mergeRatedReplyExamples(
+    isLiveChat
+      ? [learned, avoidExamples, recentCoached]
+      : [learned, historical],
+    5,
+  )
 
   const macrosForKind = macros.filter(
     (macro) => !macro.kind_filter || !args.kind || macro.kind_filter === args.kind,

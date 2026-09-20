@@ -25,7 +25,7 @@ import {
   isAppLlmFeatureEnabled,
   resolveConfiguredModel,
 } from "@/lib/llm/app-models"
-import { defaultCsAgentReason } from "@/lib/llm/cs-agent"
+import { defaultCsAgentReason, type CsAgentThreadTurn } from "@/lib/llm/cs-agent"
 import { generateCsAgentDraft } from "@/lib/llm/cs-agent-generate"
 import { getSupportReplyRootPromptBody } from "@/lib/db/supportReplyRootPrompt"
 import {
@@ -33,7 +33,9 @@ import {
   listPriorTicketsForCsAgent,
   loadLiveChatAccountSnapshot,
 } from "@/lib/services/csAgentLookups"
-import type { LiveChatSessionRow } from "@/lib/db/liveChat"
+import { listLiveChatMessagesForSession, type LiveChatSessionRow } from "@/lib/db/liveChat"
+import { isLiveChatJoinMessage } from "@/lib/live-chat/human-feel"
+import { liveChatWriterNeedsTools } from "@/lib/live-chat/order-tile-intent"
 import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
 import { resolveLiveChatFallbackReply } from "@/lib/live-chat/live-chat-cs-prompt"
 import { citationsFromAgent } from "@/lib/utils/cs-agent-citations"
@@ -124,6 +126,31 @@ async function requireStaffService(): Promise<
 
 function lastCustomerText(row: SupportCaseRow, messages: SupportCaseMessageRow[]): string {
   return lastCustomerSupportText(messages, row.subject)
+}
+
+async function loadLiveChatWriterTurns(
+  service: SupabaseClient,
+  sessionId: string,
+  latestVisitorMessage?: string,
+): Promise<{ lastCustomer: string; turns: CsAgentThreadTurn[] }> {
+  const rows = await listLiveChatMessagesForSession(service, sessionId, { limit: 24 })
+  const turns: CsAgentThreadTurn[] = rows
+    .filter((message) => message.content.trim() && !isLiveChatJoinMessage(message.content))
+    .map((message) => ({
+      role:
+        message.sender_type === "visitor"
+          ? "customer"
+          : message.sender_type === "agent"
+            ? "staff"
+            : "system",
+      body: message.content.trim(),
+    }))
+  const lastVisitor = [...turns].reverse().find((turn) => turn.role === "customer")
+  const latest = latestVisitorMessage?.trim() || ""
+  if (latest && lastVisitor?.body !== latest) {
+    turns.push({ role: "customer", body: latest })
+  }
+  return { lastCustomer: latest || lastVisitor?.body || "", turns }
 }
 
 function lastMessageAt(messages: SupportCaseMessageRow[]): string | null {
@@ -273,6 +300,12 @@ async function generateDraftBody(args: {
   liveChatSession?: LiveChatSessionRow
   liveChatActor?: LiveChatActionActor
   modelId?: string
+  latestVisitorMessage?: string
+  liveChatRegenerate?: {
+    previousReply: string
+    rating?: string
+    note?: string | null
+  }
 }): Promise<{
   body: string
   origin: SupportReplyDraftOrigin
@@ -284,8 +317,12 @@ async function generateDraftBody(args: {
   reason: string
   citations: SupportReplyDraftCitations
 }> {
-  const lastCustomerMessage = lastCustomerText(args.row, args.messages)
-  const thread = visibleSupportConversation(args.messages)
+  const caseLastCustomer = lastCustomerText(args.row, args.messages)
+  const liveChat = args.liveChatSession
+    ? await loadLiveChatWriterTurns(args.service, args.liveChatSession.id, args.latestVisitorMessage)
+    : { lastCustomer: args.latestVisitorMessage?.trim() || caseLastCustomer, turns: [] }
+  const lastCustomerMessage = liveChat.lastCustomer || caseLastCustomer
+  const thread = liveChat.turns.length > 0 ? liveChat.turns : visibleSupportConversation(args.messages)
 
   const exampleIds = args.knowledge.examples
     .map((example) => example.id)
@@ -353,6 +390,10 @@ async function generateDraftBody(args: {
       requesterRole: args.row.requester_role,
       lastCustomerMessage,
       thread,
+      liveChatTurns: liveChat.turns,
+      liveChatUseOrderTools: args.row.source_channel === "live_chat"
+        ? liveChatWriterNeedsTools(lastCustomerMessage)
+        : undefined,
       order: args.order,
       priorTickets,
       help: args.knowledge.helpArticles,
@@ -361,6 +402,7 @@ async function generateDraftBody(args: {
       rewriteInstruction: args.rewriteInstruction,
       currentDraft: args.currentDraft,
       accountSnapshot,
+      liveChatRegenerate: args.liveChatRegenerate,
     },
     lookups: lookupSession.lookups,
   })
@@ -457,13 +499,21 @@ export async function generateAndStoreDraft(
     liveChatActor?: LiveChatActionActor
     /** Jev-selected writer. Inbox drafts ignore this. */
     modelId?: string
+    /** Latest visitor bubble — writer must answer this turn. */
+    latestVisitorMessage?: string
+    liveChatRegenerate?: {
+      previousReply: string
+      rating?: string
+      note?: string | null
+    }
   },
 ): Promise<{ data: SupportReplyDraftView; closeTicket: boolean } | { error: string }> {
   const loaded = await loadCaseContext(service, caseId)
   if ("error" in loaded) return loaded
 
   const { row, messages } = loaded
-  const lastCustomer = lastCustomerText(row, messages)
+  const lastCustomer =
+    rewrite?.latestVisitorMessage?.trim() || lastCustomerText(row, messages)
   const rootPrompt = await getSupportReplyRootPromptBody(service)
   const fingerprint = supportReplyDraftFingerprint({
     promptVersion: SUPPORT_REPLY_PROMPT_VERSION,
@@ -522,6 +572,8 @@ export async function generateAndStoreDraft(
       liveChatSession: rewrite?.liveChatSession,
       liveChatActor: rewrite?.liveChatActor,
       modelId: force ? rewrite?.modelId : undefined,
+      latestVisitorMessage: rewrite?.latestVisitorMessage,
+      liveChatRegenerate: rewrite?.liveChatRegenerate,
     })
   } catch (error) {
     console.error("[supportReplyDraft] generate failed:", error)

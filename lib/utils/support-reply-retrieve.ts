@@ -147,6 +147,74 @@ export function rankExamplesForQuery<
     .slice(0, limit)
 }
 
+export type RankedReplyExample = {
+  id: string
+  kind: string | null
+  customerExcerpt: string
+  staffReply: string
+  rating: "very_good" | "okay" | "bad"
+  ratingNote: string | null
+  score: number
+}
+
+/** Bad + coach-note examples the live-chat writer must not repeat. */
+export function rankAvoidExamplesForQuery<
+  T extends {
+    id: string
+    kind: string | null
+    customer_excerpt: string
+    staff_reply: string
+    rating: "very_good" | "okay" | "bad"
+    rating_note?: string | null
+  },
+>(
+  examples: T[],
+  query: string,
+  kind: string | null,
+  limit = 2,
+): RankedReplyExample[] {
+  const tokens = tokenizeSupportReplyQuery(query)
+  return examples
+    .filter((example) => example.rating === "bad" && Boolean(example.rating_note?.trim()))
+    .map((example) => {
+      const note = example.rating_note?.trim() ?? ""
+      const hay = `${example.customer_excerpt} ${example.staff_reply} ${note}`
+      const overlap = tokens.length === 0 ? 0.25 : scoreSupportReplyOverlap(tokens, hay)
+      const kindBoost = kind && example.kind === kind ? 0.25 : 0
+      return {
+        id: example.id,
+        kind: example.kind,
+        customerExcerpt: example.customer_excerpt,
+        staffReply: example.staff_reply,
+        rating: example.rating,
+        ratingNote: note || null,
+        score: overlap + kindBoost + 0.15,
+      }
+    })
+    .filter((example) => example.score > 0.2)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+}
+
+export function mergeRatedReplyExamples(
+  groups: RankedReplyExample[][],
+  limit: number,
+): RankedReplyExample[] {
+  const seen = new Set<string>()
+  const merged: RankedReplyExample[] = []
+  for (const group of groups) {
+    for (const row of group) {
+      const replyKey = row.staffReply.trim().toLowerCase()
+      if (!replyKey || seen.has(row.id) || seen.has(replyKey)) continue
+      seen.add(row.id)
+      seen.add(replyKey)
+      merged.push(row)
+      if (merged.length >= limit) return merged
+    }
+  }
+  return merged
+}
+
 export type SupportConversationMessage = {
   author_role: string
   is_internal?: boolean
