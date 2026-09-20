@@ -23,7 +23,7 @@ type VacationModeListingRow = {
   slug: string | null
   section: string | null
   price: string | number | null
-  listing_images: KlaviyoListingImage[] | null
+  tile_gallery_images: KlaviyoListingImage[] | null
 }
 
 function runAfterResponse(work: () => Promise<void>): void {
@@ -57,7 +57,7 @@ export async function setListingVacationModeForSeller(params: {
 
   const { data: listing, error: listingErr } = await params.supabase
     .from("listings")
-    .select("id, user_id, status, hidden_from_site, title, slug, section, price, listing_images")
+    .select("id, user_id, status, hidden_from_site, title, slug, section, price, tile_gallery_images")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -148,7 +148,7 @@ export async function setListingVacationModeForSeller(params: {
     }
 
     if (hiddenFromSite && source === "seller_inactivity") {
-      const images = Array.isArray(row.listing_images) ? row.listing_images : null
+      const images = Array.isArray(row.tile_gallery_images) ? row.tile_gallery_images : null
       try {
         const klaviyoResult = await trackKlaviyoListingAutoVacation({
           sellerUserId: params.userId,
