@@ -60,9 +60,9 @@ export function BoardsBrowsePagination({ page, totalPages }: BoardsBrowsePaginat
       {page < totalPages ? (
         <Button
           type="button"
-          variant="outline"
           onMouseDown={preventBlurBeforeClick}
           onClick={() => goToPage(page + 1)}
+          className="rounded-full bg-[#001A4A] px-5 font-semibold text-white hover:bg-[#001A4A]/90"
         >
           Next
         </Button>
