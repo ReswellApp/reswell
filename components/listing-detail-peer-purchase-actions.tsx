@@ -36,6 +36,8 @@ export type ListingMakeOfferConfig = {
   canShip: boolean
   shippingFlatRate: number
   shippingCostMode?: OfferShippingCostMode | null
+  /** When true, the minimum is hidden until user enters below it */
+  hideMinimumUntilViolated?: boolean
 }
 
 export type ListingDetailPeerPurchaseActionsProps = {
@@ -254,6 +256,7 @@ export function ListingDetailPeerPurchaseActions({
             isLoggedIn={isLoggedIn}
             open={offerOpen}
             onOpenChange={setOfferOpen}
+            hideMinimumUntilViolated={makeOffer.hideMinimumUntilViolated}
           />
         </>
       ) : null}

@@ -649,6 +649,7 @@ function createInitialSellFormData() {
     loadedPublishedPriceUsd: null as number | null,
     loadedCompareAtPriceUsd: null as number | null,
     buyerOffers: true,
+    minimumOfferAmount: "",
     boardType: "",
     boardLength: "",
     boardWidthInches: "",
@@ -3522,6 +3523,9 @@ function SellPageContentInner({
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
             : null,
           buyer_offers_enabled: fd.buyerOffers !== false,
+          minimum_offer_amount: fd.minimumOfferAmount.trim()
+            ? parseFloat(fd.minimumOfferAmount.trim().replace(/[$,]/g, "")) || null
+            : null,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
@@ -3627,6 +3631,9 @@ function SellPageContentInner({
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
             : null,
           buyer_offers_enabled: fd.buyerOffers !== false,
+          minimum_offer_amount: fd.minimumOfferAmount.trim()
+            ? parseFloat(fd.minimumOfferAmount.trim().replace(/[$,]/g, "")) || null
+            : null,
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
@@ -4825,6 +4832,33 @@ function SellPageContentInner({
                             </p>
                           </div>
                         </div>
+
+                        {formData.buyerOffers ? (
+                          <div className="ml-11 mt-4 space-y-2">
+                            <Label htmlFor="minimum-offer-amount" className="text-sm font-medium">
+                              Minimum offer amount
+                            </Label>
+                            <div className="relative max-w-xs">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                $
+                              </span>
+                              <Input
+                                id="minimum-offer-amount"
+                                type="text"
+                                inputMode="decimal"
+                                value={formData.minimumOfferAmount}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, minimumOfferAmount: e.target.value })
+                                }
+                                placeholder="Optional"
+                                className="pl-6"
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              The lowest dollar amount you'll accept. If left blank, we'll use 70% of your list price.
+                            </p>
+                          </div>
+                        ) : null}
                       </div>
                     }
                   />
