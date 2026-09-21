@@ -90,7 +90,7 @@ export type SellFormValidationInput = {
  * Title string used for max-length validation and the live character counter (what we persist as `listings.title`).
  */
 export function buildResolvedListingTitle(form: SellFormValidationInput): string {
-  return form.title.trim()
+  return (form.title ?? "").trim()
 }
 
 export function validateSellListingForm(
