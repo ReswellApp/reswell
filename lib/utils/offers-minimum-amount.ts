@@ -1,4 +1,4 @@
-import { effectiveMinimumOfferPct } from "./offers-minimum-pct"
+import { effectiveMinimumOfferPct } from "./offers-minimum-pct.ts"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
