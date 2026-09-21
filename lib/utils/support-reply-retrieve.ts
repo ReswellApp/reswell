@@ -358,12 +358,3 @@ export function inboxReplyDraftStatus(args: {
   return "writing"
 }
 
-/** Same-deployment origin only — never fall back to production from local/preview. */
-export function supportReplyDraftWorkerOrigin(env: {
-  VERCEL_URL?: string
-} = process.env): string | null {
-  const vercel = env.VERCEL_URL?.trim()
-  if (!vercel) return null
-  const host = vercel.replace(/^https?:\/\//, "")
-  return host ? `https://${host}` : null
-}

@@ -5,3 +5,5 @@ ALTER TABLE public.support_reply_examples
 
 COMMENT ON COLUMN public.support_reply_examples.rating_note IS
   'Optional free-form coach note explaining the rating; used as few-shot learning signal.';
+
+NOTIFY pgrst, 'reload schema';
