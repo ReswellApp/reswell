@@ -10,3 +10,5 @@ COMMENT ON COLUMN public.support_reply_drafts.reason IS
 
 COMMENT ON COLUMN public.support_reply_drafts.citations IS
   'Order and ticket citations used to ground the draft. Help slugs stay in cited_help_slugs.';
+
+NOTIFY pgrst, 'reload schema';
