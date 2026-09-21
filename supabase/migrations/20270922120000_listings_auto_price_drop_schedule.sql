@@ -60,3 +60,5 @@ CREATE INDEX IF NOT EXISTS listings_auto_price_drop_due_idx
   WHERE auto_price_drop_floor IS NOT NULL
     AND auto_price_drop_scheduled_for IS NOT NULL
     AND status = 'active';
+
+NOTIFY pgrst, 'reload schema';

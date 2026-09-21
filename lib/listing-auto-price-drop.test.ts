@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
+import { isAutoPriceDropScheduleSchemaMissing } from "./db/listingAutoPriceDrop.ts"
 import {
   listingAutoPriceDropDue,
   omitClientAutoPriceDropSchedule,
@@ -102,6 +103,29 @@ describe("planListingAutoPriceDrop", () => {
         referenceTime: now,
       }),
       { action: "skip" },
+    )
+  })
+})
+
+describe("isAutoPriceDropScheduleSchemaMissing", () => {
+  it("matches the production cron error", () => {
+    assert.equal(
+      isAutoPriceDropScheduleSchemaMissing(
+        "column listings.auto_price_drop_scheduled_for does not exist",
+      ),
+      true,
+    )
+    assert.equal(
+      isAutoPriceDropScheduleSchemaMissing({
+        code: "PGRST204",
+        message:
+          "Could not find the 'auto_price_drop_scheduled_for' column of 'listings' in the schema cache",
+      }),
+      true,
+    )
+    assert.equal(
+      isAutoPriceDropScheduleSchemaMissing("column listings.price does not exist"),
+      false,
     )
   })
 })
