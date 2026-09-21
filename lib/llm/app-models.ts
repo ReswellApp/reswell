@@ -15,6 +15,7 @@ export type AppLlmFeatureId =
   | "live_chat_cs"
   | "live_chat_jev_router"
   | "listing_brand_model_research"
+  | "sell_catalog_image_scan"
   | "message_fraud_review"
 
 export interface AppLlmFeatureDefinition {
@@ -209,6 +210,22 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/listingBrandModelResearch.ts",
       "lib/services/listingBrandModelBackfill.ts",
       "lib/utils/listing-brand-model-research-decision.ts",
+    ],
+  },
+  {
+    id: "sell_catalog_image_scan",
+    name: "Sell catalog image scan",
+    purpose:
+      "Admin-only /sell/scan: Gemini vision reads a board or fin photo, extracts brand/model/category, then the existing catalog search matches it. The LLM never scans catalog rows.",
+    gatewayFeatureTag: "feature:sell-catalog-image-scan",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-flash",
+    modelEnvVar: "SELL_CATALOG_IMAGE_SCAN_MODEL",
+    enabledEnvVar: "SELL_CATALOG_IMAGE_SCAN_ENABLED",
+    surfaces: ["/sell/scan", "POST /api/sell/catalog-scan"],
+    sourceFiles: [
+      "lib/services/sellCatalogImageUnderstand.ts",
+      "lib/services/sellCatalogImageMatch.ts",
     ],
   },
   {

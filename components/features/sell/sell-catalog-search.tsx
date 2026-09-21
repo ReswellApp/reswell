@@ -32,6 +32,7 @@ import {
   writeSellCatalogHandoff,
 } from "@/lib/sell-flow/catalog-handoff"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
+import { SellCatalogImageScanEntry } from "@/components/features/sell/sell-catalog-image-scan-entry"
 import { SellListByTypeLinks } from "@/components/features/sell/sell-type-chooser"
 import { finSetupLabel, finSizeLabel, finSystemLabel } from "@/lib/fin-listing-config"
 import { compactSearchKey } from "@/lib/utils/fin-catalog-search-rank"
@@ -664,10 +665,11 @@ export function SellCatalogSearch({
 
           <div
             className={cn(
-              "transition-opacity duration-300 ease-out motion-reduce:transition-none",
+              "space-y-3 transition-opacity duration-300 ease-out motion-reduce:transition-none",
               focusMode && "opacity-35",
             )}
           >
+            {isAdmin ? <SellCatalogImageScanEntry /> : null}
             <SellListByTypeLinks
               isAdmin={isAdmin}
               surfboardHref={surfboardSellHref}
