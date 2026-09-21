@@ -13,7 +13,6 @@ import {
   scoreSupportReplyOverlap,
   inboxReplyDraftStatus,
   supportReplyDraftFingerprint,
-  supportReplyDraftWorkerOrigin,
   selectOpenCaseIdsNeedingDraft,
   tokenizeSupportReplyQuery,
 } from "./support-reply-retrieve.ts"
@@ -294,14 +293,6 @@ describe("support reply retrieval", () => {
       limit: 3,
     })
     assert.deepEqual(ids, ["a", "b"])
-  })
-
-  it("only detaches draft writes onto the current Vercel deployment", () => {
-    assert.equal(supportReplyDraftWorkerOrigin({}), null)
-    assert.equal(
-      supportReplyDraftWorkerOrigin({ VERCEL_URL: "reswell-abc.vercel.app" }),
-      "https://reswell-abc.vercel.app",
-    )
   })
 
   it("marks a current stored reply as ready before the ticket is opened", () => {
