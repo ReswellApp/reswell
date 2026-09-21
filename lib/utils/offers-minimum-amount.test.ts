@@ -8,6 +8,8 @@ import {
 
 describe("minimumOfferAmountToDb", () => {
   it("returns null when the optional field is missing so edit-publish does not throw", () => {
+    const fd: { minimumOfferAmount?: string } = {}
+    assert.equal(minimumOfferAmountToDb(fd.minimumOfferAmount), null)
     assert.equal(minimumOfferAmountToDb(undefined), null)
     assert.equal(minimumOfferAmountToDb(null), null)
     assert.equal(minimumOfferAmountToDb(""), null)
