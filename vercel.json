@@ -118,6 +118,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/support-reply-drafts",
+      "schedule": "20 * * * *"
+    },
+    {
       "path": "/api/cron/review-fraud-messages",
       "schedule": "*/5 * * * *"
     },

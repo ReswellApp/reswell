@@ -14,6 +14,8 @@ const schema = z.object({
 })
 
 export const dynamic = "force-dynamic"
+/** after() writes the inbox draft. Default 15s kills that CS-agent work. */
+export const maxDuration = 60
 
 /**
  * POST /api/orders/:id/seller-support

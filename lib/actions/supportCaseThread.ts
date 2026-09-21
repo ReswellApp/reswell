@@ -7,6 +7,9 @@ import {
   sendSupportCaseMemberReplyService,
 } from "@/lib/services/supportCaseThread"
 
+/** after() writes the inbox draft. Default 15s kills that CS-agent work. */
+export const maxDuration = 60
+
 function revalidateCase(caseId?: string) {
   revalidatePath("/dashboard/support")
   revalidatePath("/admin/contact-messages")

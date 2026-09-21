@@ -11,6 +11,8 @@ import { orderBuyerSupportRequestSchema } from "@/lib/validations/order-buyer-su
 import { orderRequestTypeSubject, orderRequestTypeToKind } from "@/lib/utils/support-case-display"
 
 export const dynamic = "force-dynamic"
+/** after() writes the inbox draft. Default 15s kills that CS-agent work. */
+export const maxDuration = 60
 
 export async function POST(
   request: NextRequest,
