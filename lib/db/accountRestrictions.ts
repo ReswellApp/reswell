@@ -121,18 +121,55 @@ export async function countDistinctMessageRecipientsSince(
   senderId: string,
   sinceIso: string,
 ): Promise<number | null> {
-  const { data, error } = await supabase.rpc("count_distinct_dm_recipients_since", {
-    p_sender_id: senderId,
-    p_since: sinceIso,
-  })
+  const ids = await listDistinctMessageRecipientIdsSince(supabase, senderId, sinceIso)
+  return ids == null ? null : ids.length
+}
+
+/** Other-party profile ids this sender delivered a DM to in the window. */
+export async function listDistinctMessageRecipientIdsSince(
+  supabase: SupabaseClient,
+  senderId: string,
+  sinceIso: string,
+): Promise<string[] | null> {
+  const { data: rows, error } = await supabase
+    .from("messages")
+    .select("conversation_id")
+    .eq("sender_id", senderId)
+    .gte("created_at", sinceIso)
 
   if (error) {
-    console.error("[countDistinctMessageRecipientsSince]", error.message)
+    console.error("[listDistinctMessageRecipientIdsSince]", error.message)
     return null
   }
 
-  const n = typeof data === "number" ? data : Number(data)
-  return Number.isFinite(n) ? n : 0
+  const conversationIds = [
+    ...new Set(
+      (rows ?? [])
+        .map((row) => row.conversation_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ]
+  if (conversationIds.length === 0) return []
+
+  const { data: conversations, error: convErr } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .in("id", conversationIds)
+
+  if (convErr) {
+    console.error("[listDistinctMessageRecipientIdsSince] conversations:", convErr.message)
+    return null
+  }
+
+  const ids = new Set<string>()
+  for (const conversation of conversations ?? []) {
+    if (conversation.buyer_id === senderId && typeof conversation.seller_id === "string") {
+      ids.add(conversation.seller_id)
+    } else if (conversation.seller_id === senderId && typeof conversation.buyer_id === "string") {
+      ids.add(conversation.buyer_id)
+    }
+  }
+  return [...ids]
 }
 
 export async function senderMessagedRecipientSince(

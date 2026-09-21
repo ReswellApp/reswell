@@ -1,12 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
-  countDistinctMessageRecipientsSince,
   fetchUserRestrictionState,
-  senderMessagedRecipientSince,
+  listDistinctMessageRecipientIdsSince,
   setAccountRestrictionForUser,
   setMessageRateLimitedUntil,
 } from "@/lib/db/accountRestrictions"
+import { listDistinctFraudRecipientIdsSince } from "@/lib/db/fraudMessages"
+import {
+  shouldRateLimitNewRecipient,
+  unionRecipientIds,
+} from "@/lib/messages/message-ban-protocol"
 import {
   ACCOUNT_BANNED_USER_MESSAGE,
   isPermanentRestrictionUntil,
@@ -149,18 +153,22 @@ export async function evaluateUserMessageSend(
   }
 
   const sinceIso = new Date(Date.now() - MESSAGE_RATE_LIMIT_WINDOW_MS).toISOString()
-  const [distinctCount, alreadyMessagedRecipient] = await Promise.all([
-    countDistinctMessageRecipientsSince(service, senderId, sinceIso),
-    senderMessagedRecipientSince(service, senderId, recipientId, sinceIso),
+  const [deliveredIds, fraudAttemptIds] = await Promise.all([
+    listDistinctMessageRecipientIdsSince(service, senderId, sinceIso),
+    listDistinctFraudRecipientIdsSince(service, senderId, sinceIso),
   ])
 
-  if (distinctCount == null || alreadyMessagedRecipient == null) {
+  if (deliveredIds == null || fraudAttemptIds == null) {
     return { ok: true }
   }
 
+  const distinctRecipientIds = unionRecipientIds(deliveredIds, fraudAttemptIds)
   if (
-    distinctCount >= MAX_UNIQUE_MESSAGE_RECIPIENTS &&
-    alreadyMessagedRecipient === false
+    shouldRateLimitNewRecipient({
+      distinctRecipientIds,
+      recipientId,
+      maxUniqueRecipients: MAX_UNIQUE_MESSAGE_RECIPIENTS,
+    })
   ) {
     const untilIso = new Date(Date.now() + MESSAGE_RATE_LIMIT_COOLDOWN_MS).toISOString()
     await setMessageRateLimitedUntil(service, senderId, untilIso)

@@ -32,6 +32,10 @@ import {
 } from '@/lib/utils/unread-message-count-events'
 import { getPolicyBlockFromSendResult, isPolicyBlockedSendResult } from '@/lib/messages/policy-block-client'
 import {
+  isAccountRestrictedSendResult,
+  sendRestrictionMessageFromResult,
+} from '@/lib/messages/send-restriction-client'
+import {
   createLocalPolicyBlockMessage,
   mergeServerMessagesPreservingLocalPolicyBlocks,
   parseLocalPolicyBlockMetadata,
@@ -211,6 +215,7 @@ export function ConversationThreadClient({
   )
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendLockedMessage, setSendLockedMessage] = useState<string | null>(null)
   const composerUnlock = useComposerUnlock({ scope: 'marketplace' })
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     () => initialData.currentUserId ?? null,
@@ -637,6 +642,12 @@ export function ConversationThreadClient({
           }
           return withoutPending
         })
+        if (isAccountRestrictedSendResult(result)) {
+          const locked = sendRestrictionMessageFromResult(result)
+          if (locked) setSendLockedMessage(locked)
+          toast.error(locked ?? result.error)
+          return
+        }
         if (!isPolicyBlockedSendResult(result)) {
           setNewMessage(content)
           const messageText =
@@ -1288,6 +1299,11 @@ export function ConversationThreadClient({
           </div>
         </div>
 
+        {sendLockedMessage ? (
+          <div className="border-t border-border/60 px-4 py-3">
+            <p className="text-sm leading-relaxed text-muted-foreground">{sendLockedMessage}</p>
+          </div>
+        ) : (
         <MessageThreadMobileComposerDock>
           <MessageComposerBar
             value={newMessage}
@@ -1315,6 +1331,10 @@ export function ConversationThreadClient({
               conversationId: id,
               disabled: !currentUserId || !conversation,
               onSent: handleMediaSent,
+              onRestricted: (message) => {
+                setSendLockedMessage(message)
+                toast.error(message)
+              },
               onBlockedPolicy: (originalContent, reasonCode) => {
                 if (!currentUserId) return
                 setMessages((prev) => [
@@ -1330,6 +1350,7 @@ export function ConversationThreadClient({
             }}
           />
         </MessageThreadMobileComposerDock>
+        )}
         </div>
       </div>
       <MessageMediaImageLightbox
