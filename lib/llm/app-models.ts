@@ -140,6 +140,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     surfaces: [
       "/admin/contact-messages",
       "/admin/support-reply-examples",
+      "GET /api/cron/support-reply-drafts",
     ],
     sourceFiles: [
       "lib/llm/cs-agent.ts",

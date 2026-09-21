@@ -13,6 +13,7 @@ import {
   getSupportReplyOrderSnapshot,
   getSupportReplyRequesterNames,
   insertSupportReplyExample,
+  listOpenCaseIdsNeedingDraft,
   upsertSupportReplyDraft,
   type SupportReplyOrderSnapshot,
 } from "@/lib/db/supportReplyDrafts"
@@ -805,6 +806,7 @@ export async function recordSentSupportReplyExample(args: {
   }
 }
 
+/** Callers must export maxDuration ≥ 60 so after() can finish generateAndStoreDraft. */
 export function scheduleSupportReplyDraft(caseId: string): void {
   const id = caseId.trim()
   if (!id) return
@@ -830,4 +832,21 @@ export function scheduleSupportReplyDraft(caseId: string): void {
   } catch {
     void run()
   }
+}
+
+export async function warmOpenSupportReplyDraftsService(limit = 12): Promise<{
+  warmed: number
+  skipped: number
+  errors: number
+}> {
+  const service = createServiceRoleClient()
+  const ids = await listOpenCaseIdsNeedingDraft(service, limit)
+  let warmed = 0
+  let errors = 0
+  for (const id of ids) {
+    const result = await generateAndStoreDraft(service, id, false)
+    if ("error" in result) errors += 1
+    else warmed += 1
+  }
+  return { warmed, skipped: 0, errors }
 }
