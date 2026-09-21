@@ -122,6 +122,7 @@ import {
   sellActionErrorMessage,
   sellSubmitErrorMessage,
 } from "@/lib/sell-flow/sell-submit-error"
+import { minimumOfferAmountFromDb, minimumOfferAmountToDb } from "@/lib/utils/offers-minimum-amount"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import {
@@ -1326,6 +1327,7 @@ function SellPageContentInner({
       autoPriceDrop: formData.autoPriceDrop,
       autoPriceDropFloor: formData.autoPriceDropFloor,
       buyerOffers: formData.buyerOffers,
+      minimumOfferAmount: formData.minimumOfferAmount,
       boardType: formData.boardType,
       boardLength: formData.boardLength,
       boardWidthInches: formData.boardWidthInches,
@@ -1488,6 +1490,7 @@ function SellPageContentInner({
         },
       )
       setFormData({
+        ...createInitialSellFormData(),
         title: listing.title ?? "",
         description: (listing.description ?? "").trim() === "" ? "" : (listing.description ?? ""),
         price: String(listing.price ?? ""),
@@ -1553,6 +1556,9 @@ function SellPageContentInner({
         })(),
         buyerOffers:
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
+        minimumOfferAmount: minimumOfferAmountFromDb(
+          (listing as { minimum_offer_amount?: string | number | null }).minimum_offer_amount,
+        ),
         boardType: listing.board_type ?? "",
         boardLength: parsedDims.boardLength,
         boardWidthInches: parsedDims.boardWidthInches,
@@ -3523,9 +3529,7 @@ function SellPageContentInner({
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
             : null,
           buyer_offers_enabled: fd.buyerOffers !== false,
-          minimum_offer_amount: fd.minimumOfferAmount.trim()
-            ? parseFloat(fd.minimumOfferAmount.trim().replace(/[$,]/g, "")) || null
-            : null,
+          minimum_offer_amount: minimumOfferAmountToDb(fd.minimumOfferAmount),
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
@@ -3631,9 +3635,7 @@ function SellPageContentInner({
             ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
             : null,
           buyer_offers_enabled: fd.buyerOffers !== false,
-          minimum_offer_amount: fd.minimumOfferAmount.trim()
-            ? parseFloat(fd.minimumOfferAmount.trim().replace(/[$,]/g, "")) || null
-            : null,
+          minimum_offer_amount: minimumOfferAmountToDb(fd.minimumOfferAmount),
           brand: fd.brand.trim() ? fd.brand.trim() : null,
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
@@ -4846,7 +4848,7 @@ function SellPageContentInner({
                                 id="minimum-offer-amount"
                                 type="text"
                                 inputMode="decimal"
-                                value={formData.minimumOfferAmount}
+                                value={formData.minimumOfferAmount ?? ""}
                                 onChange={(e) =>
                                   setFormData({ ...formData, minimumOfferAmount: e.target.value })
                                 }
