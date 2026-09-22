@@ -6,13 +6,11 @@ const SECTION_SCROLL_CLASS =
 
 export function ModelPageSection({
   id,
-  tone = "plain",
   first = false,
   last = false,
   children,
 }: {
   id: string
-  tone?: "plain" | "muted"
   first?: boolean
   last?: boolean
   children: ReactNode
@@ -22,19 +20,11 @@ export function ModelPageSection({
       id={id}
       className={cn(
         SECTION_SCROLL_CLASS,
-        !first && "border-t border-border/80",
-        tone === "muted" ? "bg-neutral-100" : "bg-background",
+        first ? "pt-8 sm:pt-10" : "mt-10 border-t border-border/80 pt-10 sm:mt-12 sm:pt-12",
+        last && "pb-0",
       )}
     >
-      <div
-        className={cn(
-          "container mx-auto max-w-6xl px-4 sm:px-6",
-          first ? "py-8 sm:py-10" : "py-10 sm:py-12",
-          last && "pb-16 sm:pb-20",
-        )}
-      >
-        {children}
-      </div>
+      {children}
     </section>
   )
 }
@@ -47,12 +37,12 @@ export function ModelPageSectionHeading({
   action?: ReactNode
 }) {
   if (!action) {
-    return <h2 className="text-lg font-semibold tracking-tight text-foreground">{children}</h2>
+    return <h2 className="text-xl font-bold tracking-tight text-foreground">{children}</h2>
   }
 
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">{children}</h2>
+      <h2 className="text-xl font-bold tracking-tight text-foreground">{children}</h2>
       {action}
     </div>
   )

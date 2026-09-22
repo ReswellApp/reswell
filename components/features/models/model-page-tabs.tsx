@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 
 const TAB_ITEMS: { id: ModelPageTab; label: (reviewCount: number) => string }[] = [
   { id: "listings", label: () => "Listings" },
-  { id: "details", label: () => "Product details" },
+  { id: "details", label: () => "Specs" },
   { id: "price-guide", label: () => "Price guide" },
   { id: "reviews", label: (count) => (count > 0 ? `Reviews (${count})` : "Reviews") },
 ]

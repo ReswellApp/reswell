@@ -7,8 +7,10 @@ import {
 } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
-import { LISTING_SHIPPING_EMPHASIS_CLASS } from "@/lib/listing-fulfillment"
-import { formatHomePeerListingConditionLine } from "@/lib/listing-labels"
+import {
+  LISTING_SHIPPING_EMPHASIS_CLASS,
+  listingPickupCaption,
+} from "@/lib/listing-fulfillment"
 import { cn } from "@/lib/utils"
 
 const RECENTLY_LISTED_MS = 14 * 24 * 60 * 60 * 1000
@@ -66,7 +68,7 @@ function shippingStatusRow({
     return { title: "Free Shipping", detail: from }
   }
   if (!shippingOffered && pickupOffered) {
-    return { title: "Local pickup", detail: from }
+    return { title: listingPickupCaption(true, locationLine) ?? "Local pickup", detail: null }
   }
   if (shippingOffered && shippingFlatRate > 0) {
     return { title: "Shipping", detail: [`+ $${shippingFlatRate.toFixed(2)}`, from].filter(Boolean).join(" ") }
@@ -80,7 +82,6 @@ function shippingStatusRow({
 export interface ListingMobileBuySummaryProps {
   listingId: string
   isLoggedIn: boolean
-  condition?: string | null
   priceUsd: number
   isSold: boolean
   soldShipped?: boolean
@@ -107,7 +108,6 @@ export interface ListingMobileBuySummaryProps {
 export function ListingMobileBuySummary({
   listingId,
   isLoggedIn,
-  condition,
   priceUsd,
   isSold,
   soldShipped = false,
@@ -129,7 +129,6 @@ export function ListingMobileBuySummary({
   afterPrice = null,
   children,
 }: ListingMobileBuySummaryProps) {
-  const conditionLine = formatHomePeerListingConditionLine(condition)?.replace(" — ", " – ") ?? null
   const shippingNote = isSold ? null : priceShippingNote(shippingPriceCaption)
   const shippingRow = shippingStatusRow({
     isSold,
@@ -150,13 +149,6 @@ export function ListingMobileBuySummary({
 
   return (
     <div className="min-w-0">
-      {conditionLine ? (
-        <div>
-          <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-[13px] text-muted-foreground">
-            <span className="border-b border-dashed border-muted-foreground/55 pb-px">{conditionLine}</span>
-          </span>
-        </div>
-      ) : null}
       <ListingDetailEngagementMetrics
         views={views}
         watchers={watchers}
@@ -170,7 +162,7 @@ export function ListingMobileBuySummary({
               }
             : null
         }
-        className="mt-1.5 text-[13px]"
+        className="text-[13px]"
       />
 
       {isSold ? (

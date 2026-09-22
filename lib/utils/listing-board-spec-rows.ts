@@ -7,6 +7,7 @@ import {
   formatListingVolumePart,
 } from "@/lib/listing-dimensions-display"
 import { FIN_SETUP_LABELS, parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
+import { formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 
 export type ListingBoardSpecRow = {
   label: string
@@ -15,11 +16,20 @@ export type ListingBoardSpecRow = {
 }
 
 export type ListingBoardSpecSource = {
+  condition?: string | null
   dimensions?: string | null
   construction?: string | null
   fin_system?: string | null
   fins_setup?: string | null
   fins_included?: boolean | null
+}
+
+export function listingConditionSpecRow(
+  condition: string | null | undefined,
+): ListingBoardSpecRow | null {
+  const value = formatHomePeerListingConditionLine(condition)?.replace(" — ", " – ") ?? null
+  if (!value) return null
+  return { label: "Condition", value }
 }
 
 const SKIP_SLUGS = new Set(["other"])
@@ -39,6 +49,9 @@ function labelForOption(
  */
 export function listingBoardSpecRows(input: ListingBoardSpecSource): ListingBoardSpecRow[] {
   const rows: ListingBoardSpecRow[] = []
+
+  const condition = listingConditionSpecRow(input.condition)
+  if (condition) rows.push(condition)
 
   const geometry = formatListingGeometryLine({ dimensions: input.dimensions })
   if (geometry) rows.push({ label: "Dimensions", value: geometry })

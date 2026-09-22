@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { ListingSurfboardBreadcrumbs } from "@/components/features/listings/listing-surfboard-breadcrumbs"
-import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
+import { capitalizeWords } from "@/lib/listing-labels"
 import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
@@ -35,7 +35,7 @@ import {
 } from "@/components/listing-sold-detail-notice"
 
 import { TranslateableDescription } from "@/components/translateable-description"
-import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
+import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
 import { getCachedSoldSurfboardUsedShippingFulfillment } from "@/lib/cache/marketplace-sold-feed"
 import {
   ListingAboutSellerSection,
@@ -54,10 +54,7 @@ import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-det
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { formatListingDimensionsLine } from "@/lib/listing-dimensions-display"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
-import {
-  ListingCatalogIdentity,
-  ListingFulfillmentSubline,
-} from "@/components/features/listings/listing-catalog-identity"
+import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { listingBoardSpecRows } from "@/lib/utils/listing-board-spec-rows"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
@@ -292,15 +289,14 @@ async function renderSurfboardListingDetailPage({
   const dimensionsLine = formatListingDimensionsLine({
     dimensions: (board as { dimensions?: string | null }).dimensions,
   })
-  const boardSpecRows = [
-    ...listingBoardSpecRows({
-      dimensions: (board as { dimensions?: string | null }).dimensions,
-      construction: (board as { construction?: string | null }).construction,
-      fin_system: (board as { fin_system?: string | null }).fin_system,
-      fins_setup: (board as { fins_setup?: string | null }).fins_setup,
-      fins_included: (board as { fins_included?: boolean | null }).fins_included,
-    }),
-  ]
+  const boardSpecRows = listingBoardSpecRows({
+    condition: board.condition,
+    dimensions: (board as { dimensions?: string | null }).dimensions,
+    construction: (board as { construction?: string | null }).construction,
+    fin_system: (board as { fin_system?: string | null }).fin_system,
+    fins_setup: (board as { fins_setup?: string | null }).fins_setup,
+    fins_included: (board as { fins_included?: boolean | null }).fins_included,
+  })
 
   /** Public sold/browse price — always original list price, never negotiated offer amounts. */
   const publicListPriceUsd = publicListingListPriceUsd(board.price)
@@ -359,14 +355,6 @@ async function renderSurfboardListingDetailPage({
     (board as { board_shipping_cost_mode?: "reswell" | "flat" | "free" | null })
       .board_shipping_cost_mode ?? null
   const shippingFlatRate = Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0)
-
-  const fulfillmentLabels = boardFulfillmentDetailLabels(
-    board.local_pickup,
-    board.shipping_available,
-    board.shipping_price,
-    boardShippingCostMode,
-  )
-  const conditionWords = formatCondition(board.condition)
 
   let shippingPriceCaption: string | null = null
   if (!isSold) {
@@ -503,7 +491,6 @@ async function renderSurfboardListingDetailPage({
               <ListingMobileBuySummary
                 listingId={board.id}
                 isLoggedIn={!!user}
-                condition={board.condition}
                 priceUsd={isSold ? publicListPriceUsd : board.price}
                 isSold={isSold}
                 soldShipped={soldUsedShipping}
@@ -568,16 +555,13 @@ async function renderSurfboardListingDetailPage({
                   brandHref={boardSpecsBrandHref}
                   modelName={modelForSpecs || null}
                   modelHref={modelPagePath}
-                  condition={conditionWords}
                   detail={
                     isSold && soldUsedShipping ? (
                       <span className="inline-flex items-center gap-1.5">
                         <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
                         This board was shipped
                       </span>
-                    ) : (
-                      <ListingFulfillmentSubline labels={fulfillmentLabels} />
-                    )
+                    ) : null
                   }
                   className="mt-2"
                 />
@@ -596,9 +580,12 @@ async function renderSurfboardListingDetailPage({
                           compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums xl:text-2xl"
                         />
                       </p>
-                      {shippingPriceCaption ? (
-                        <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
-                      ) : null}
+                      <ListingPdpDeliveryCaption
+                        shippingOffered={shippingOffered}
+                        pickupOffered={pickupOffered}
+                        shippingPriceCaption={shippingPriceCaption}
+                        locationLine={listingLocationLine}
+                      />
                       {listingPurchasable ? (
                         <ListingKlarnaAsLowAs listingId={board.id} isLoggedIn={!!user} className="mt-2" />
                       ) : null}

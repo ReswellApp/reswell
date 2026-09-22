@@ -47,7 +47,7 @@ export function ModelTopPick({
 
   return (
     <section className="rounded-2xl border border-border/80 bg-background p-4 sm:p-6">
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">
+      <h2 className="text-xl font-bold tracking-tight text-foreground">
         {isNew ? "Top pick for brand new" : "Top pick"}
       </h2>
       <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr_16rem] lg:items-start">

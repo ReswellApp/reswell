@@ -1,6 +1,7 @@
 import { ShoppingCart } from "lucide-react"
 
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
+import { LISTING_SHIPPING_EMPHASIS_CLASS } from "@/lib/listing-fulfillment"
 import { cn } from "@/lib/utils"
 
 export type ListingOfferToCartProps = {
@@ -62,9 +63,9 @@ export function ListingDetailEngagementMetrics({
             triggerVariant="stat"
           />
         ) : (
-          <span className="inline-flex items-center gap-1">
-            <ShoppingCart className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
-            <span className="font-medium text-foreground/80">
+          <span className={cn("inline-flex items-center gap-1", LISTING_SHIPPING_EMPHASIS_CLASS)}>
+            <ShoppingCart className="h-3 w-3 shrink-0" aria-hidden />
+            <span>
               {cartHolderCount === 1
                 ? "In someone’s cart"
                 : `In ${cartHolderCount} buyers’ carts`}

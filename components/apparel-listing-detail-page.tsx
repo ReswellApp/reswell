@@ -17,7 +17,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
+import { capitalizeWords } from "@/lib/listing-labels"
 import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
@@ -32,10 +32,9 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { orderedListingGalleryImages } from "@/lib/listing-image-display"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
-import {
-  ListingCatalogIdentity,
-  ListingFulfillmentSubline,
-} from "@/components/features/listings/listing-catalog-identity"
+import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
+import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
+import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
@@ -45,7 +44,6 @@ import {
   ListingSoldOwnerNotice,
 } from "@/components/listing-sold-detail-notice"
 import { TranslateableDescription } from "@/components/translateable-description"
-import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
 import {
   ListingAboutSellerSection,
   ListingBuyerProtectionTrustRibbon,
@@ -317,15 +315,6 @@ async function renderApparelListingDetailPage({
 
   const boardShippingCostMode = shippingOffered ? ("reswell" as const) : null
 
-  const fulfillmentLabels = boardFulfillmentDetailLabels(
-    apparel.local_pickup,
-    apparel.shipping_available,
-    apparel.shipping_price,
-    boardShippingCostMode,
-  )
-
-  const conditionWords = formatCondition(apparel.condition as string | null)
-
   let shippingPriceCaption: string | null = null
   if (!isSold) {
     if (!shippingOffered && pickupOffered) {
@@ -352,6 +341,7 @@ async function renderApparelListingDetailPage({
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
   const specRows = [
+    listingConditionSpecRow(apparel.condition as string | null),
     kindLabel ? { label: "Category", value: kindLabel } : null,
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
@@ -463,7 +453,6 @@ async function renderApparelListingDetailPage({
             <ListingMobileBuySummary
               listingId={apparel.id}
               isLoggedIn={!!user}
-              condition={apparel.condition as string | null}
               priceUsd={isSold ? publicListPriceUsd : listPriceNum}
               isSold={isSold}
               shippingPriceCaption={shippingPriceCaption}
@@ -525,8 +514,6 @@ async function renderApparelListingDetailPage({
                 brandHref={specsBrandHref}
                 modelName={modelForSpecs}
                 modelHref={modelPagePath}
-                condition={conditionWords}
-                detail={<ListingFulfillmentSubline labels={fulfillmentLabels} />}
                 className="mt-2"
               />
               {isSold ? (
@@ -544,9 +531,12 @@ async function renderApparelListingDetailPage({
                         compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums xl:text-2xl"
                       />
                     </p>
-                    {shippingPriceCaption ? (
-                      <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
-                    ) : null}
+                    <ListingPdpDeliveryCaption
+                      shippingOffered={shippingOffered}
+                      pickupOffered={pickupOffered}
+                      shippingPriceCaption={shippingPriceCaption}
+                      locationLine={listingLocationLine}
+                    />
                     {listingPurchasable ? (
                       <ListingKlarnaAsLowAs listingId={apparel.id} isLoggedIn={!!user} className="mt-2" />
                     ) : null}

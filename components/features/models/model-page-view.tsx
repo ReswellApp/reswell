@@ -27,7 +27,7 @@ export function ModelPageView({
 }) {
   return (
     <main className="flex-1">
-      <div className="container mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8">
+      <div className="container mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8">
         <ModelPageBreadcrumbs
           brandName={page.brand.name}
           brandSlug={page.brand.slug}
@@ -45,40 +45,40 @@ export function ModelPageView({
         <div className="mt-8">
           <ModelPageTabs reviewCount={page.reviewStats.reviewCount} />
         </div>
-      </div>
 
-      <ModelPageSection id={modelPageSectionId("listings")} first>
-        <ModelListingsSection
-          brandName={page.brand.name}
-          modelName={page.model.name}
-          listings={page.listings}
-          soldListings={page.soldListings}
-          topPick={page.topPick}
-          criteria={criteria}
-          initialSavedSearchId={initialSavedSearchId}
-          favoritedListingIds={favoritedListingIds}
-          isLoggedIn={isLoggedIn}
-          viewerUserId={viewerUserId}
-        />
-      </ModelPageSection>
-      <ModelPageSection id={modelPageSectionId("details")} tone="muted">
-        <ModelProductDetails page={page} />
-      </ModelPageSection>
-      <ModelPageSection id={modelPageSectionId("price-guide")}>
-        <ModelPriceGuidePanel
-          page={page.priceGuide}
-          brandSlug={page.brand.slug}
-          modelSlug={page.modelSlug}
-        />
-      </ModelPageSection>
-      <ModelPageSection id={modelPageSectionId("reviews")} tone="muted" last>
-        <ModelReviewsPanel
-          reviews={page.reviews}
-          avgRating={page.reviewStats.avgRating}
-          reviewCount={page.reviewStats.reviewCount}
-          modelName={page.model.name}
-        />
-      </ModelPageSection>
+        <ModelPageSection id={modelPageSectionId("listings")} first>
+          <ModelListingsSection
+            brandName={page.brand.name}
+            modelName={page.model.name}
+            listings={page.listings}
+            soldListings={page.soldListings}
+            topPick={page.topPick}
+            criteria={criteria}
+            initialSavedSearchId={initialSavedSearchId}
+            favoritedListingIds={favoritedListingIds}
+            isLoggedIn={isLoggedIn}
+            viewerUserId={viewerUserId}
+          />
+        </ModelPageSection>
+        <ModelPageSection id={modelPageSectionId("details")}>
+          <ModelProductDetails page={page} />
+        </ModelPageSection>
+        <ModelPageSection id={modelPageSectionId("price-guide")}>
+          <ModelPriceGuidePanel
+            page={page.priceGuide}
+            brandSlug={page.brand.slug}
+            modelSlug={page.modelSlug}
+          />
+        </ModelPageSection>
+        <ModelPageSection id={modelPageSectionId("reviews")} last>
+          <ModelReviewsPanel
+            reviews={page.reviews}
+            avgRating={page.reviewStats.avgRating}
+            reviewCount={page.reviewStats.reviewCount}
+            modelName={page.model.name}
+          />
+        </ModelPageSection>
+      </div>
     </main>
   )
 }

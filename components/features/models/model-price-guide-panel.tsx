@@ -19,7 +19,7 @@ export function ModelPriceGuidePanel({
     return (
       <div>
         <ModelPageSectionHeading>Price guide</ModelPageSectionHeading>
-        <p className="mt-6 rounded-2xl border border-dashed border-border/80 bg-neutral-100 px-5 py-10 text-center text-sm text-muted-foreground">
+        <p className="mt-6 rounded-2xl border border-dashed border-border/80 bg-muted/30 px-5 py-10 text-center text-sm text-muted-foreground">
           We&apos;re still gathering sold comps for this model.
         </p>
       </div>

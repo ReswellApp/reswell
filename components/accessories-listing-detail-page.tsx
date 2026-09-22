@@ -17,7 +17,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
+import { capitalizeWords } from "@/lib/listing-labels"
 import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
@@ -37,7 +37,6 @@ import {
   ListingSoldOwnerNotice,
 } from "@/components/listing-sold-detail-notice"
 import { TranslateableDescription } from "@/components/translateable-description"
-import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
 import {
   ListingAboutSellerSection,
   ListingBuyerProtectionTrustRibbon,
@@ -82,10 +81,10 @@ import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { formatDistanceToNow } from "date-fns"
 import { ACCESSORIES_SECTION, accessorySizeLabel } from "@/lib/accessory-listing-config"
-import {
-  ListingCatalogIdentity,
-  ListingFulfillmentSubline,
-} from "@/components/features/listings/listing-catalog-identity"
+import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
+import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
+import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
+import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -307,15 +306,6 @@ async function renderAccessoriesListingDetailPage({
   const boardShippingCostMode =
     (accessory.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null
 
-  const fulfillmentLabels = boardFulfillmentDetailLabels(
-    accessory.local_pickup,
-    accessory.shipping_available,
-    accessory.shipping_price,
-    boardShippingCostMode,
-  )
-
-  const conditionWords = formatCondition(accessory.condition as string | null)
-
   let shippingPriceCaption: string | null = null
   if (!isSold) {
     if (!shippingOffered && pickupOffered) {
@@ -346,6 +336,7 @@ async function renderAccessoriesListingDetailPage({
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
   const specRows = [
+    listingConditionSpecRow(accessory.condition as string | null),
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
@@ -456,7 +447,6 @@ async function renderAccessoriesListingDetailPage({
             <ListingMobileBuySummary
               listingId={accessory.id}
               isLoggedIn={!!user}
-              condition={accessory.condition as string | null}
               priceUsd={isSold ? publicListPriceUsd : listPriceNum}
               isSold={isSold}
               shippingPriceCaption={shippingPriceCaption}
@@ -477,7 +467,10 @@ async function renderAccessoriesListingDetailPage({
               createdAt={accessory.created_at}
               showPurchaseProtection={canPeerPurchase}
               agreedPriceUsd={buyerAgreedPriceUsd}
-                compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
+              compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
+              afterPrice={
+                specRows.length > 0 ? <ListingBoardSpecTable rows={specRows} /> : null
+              }
             >
               {canPeerPurchase ? (
                 <ListingDetailPeerPurchaseActionsLoader
@@ -515,8 +508,6 @@ async function renderAccessoriesListingDetailPage({
                 brandHref={specsBrandHref}
                 modelName={modelForSpecs}
                 modelHref={modelPagePath}
-                condition={conditionWords}
-                detail={<ListingFulfillmentSubline labels={fulfillmentLabels} />}
                 className="mt-2"
               />
               {isSold ? (
@@ -534,9 +525,12 @@ async function renderAccessoriesListingDetailPage({
                         compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums xl:text-2xl"
                       />
                     </p>
-                    {shippingPriceCaption ? (
-                      <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
-                    ) : null}
+                    <ListingPdpDeliveryCaption
+                      shippingOffered={shippingOffered}
+                      pickupOffered={pickupOffered}
+                      shippingPriceCaption={shippingPriceCaption}
+                      locationLine={listingLocationLine}
+                    />
                     {listingPurchasable ? (
                       <ListingKlarnaAsLowAs listingId={accessory.id} isLoggedIn={!!user} className="mt-2" />
                     ) : null}
@@ -548,6 +542,7 @@ async function renderAccessoriesListingDetailPage({
                   ) : null}
                 </>
               )}
+              <ListingBoardSpecTable rows={specRows} className="mt-5" />
               {!isSold && !isOwnListing && listingPurchasable && accessory.status === "active" ? (
                 <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
                   <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />

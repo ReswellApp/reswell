@@ -99,6 +99,31 @@ export function isShippingFulfillmentLabel(label: string): boolean {
   return label.startsWith("Shipping") || label.startsWith("Free shipping")
 }
 
+/** Location-aware pickup line for listing PDPs. */
+export function listingPickupCaption(
+  pickupOffered: boolean,
+  locationLine: string | null | undefined,
+): string | null {
+  if (!pickupOffered) return null
+  const location = locationLine?.trim() || null
+  return location ? `Local pickup in ${location}` : "Local pickup"
+}
+
+/**
+ * Shipping line under list price. Drops pickup-only captions so pickup can
+ * render as its own row instead of “Local pickup · shipping not offered”.
+ */
+export function listingShippingCaptionForPdp(
+  shippingOffered: boolean,
+  shippingPriceCaption: string | null | undefined,
+): string | null {
+  if (!shippingOffered) return null
+  const caption = shippingPriceCaption?.trim() || null
+  if (!caption) return "Shipping"
+  if (/local pickup/i.test(caption)) return null
+  return caption
+}
+
 /** Shared emphasis for shipping-at-checkout / free-shipping copy on listing PDPs. */
 export const LISTING_SHIPPING_EMPHASIS_CLASS = "font-medium text-[#4263eb]"
 

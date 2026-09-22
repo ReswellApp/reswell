@@ -23,7 +23,7 @@ export function ModelListingsStrip({
 
   return (
     <section aria-label={heading}>
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">{heading}</h2>
+      <h2 className="text-xl font-bold tracking-tight text-foreground">{heading}</h2>
       {countLabel ? <p className="mt-1 text-sm text-muted-foreground">{countLabel}</p> : null}
       <div className="mt-4">
         <HomeListingScrollRow uniformCardHeights>

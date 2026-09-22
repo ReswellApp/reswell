@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { SellerMakeOfferToBuyerDialog } from "@/components/features/messages/seller-make-offer-to-buyer-dialog"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { LISTING_SHIPPING_EMPHASIS_CLASS } from "@/lib/listing-fulfillment"
 import { offerMessagesHref } from "@/lib/utils/offer-messages-href"
 import { cn } from "@/lib/utils"
 import type { ListingCartHolder } from "@/lib/types/listing-cart-holders"
@@ -119,14 +120,15 @@ export function SellerOfferToCartHolders({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 font-medium text-foreground/80 transition-colors hover:text-foreground",
+            "inline-flex items-center gap-1 transition-colors hover:opacity-80",
+            LISTING_SHIPPING_EMPHASIS_CLASS,
             triggerClassName,
           )}
           aria-haspopup="dialog"
           aria-label={`${statLabel}. Make an offer`}
           onClick={openList}
         >
-          <ShoppingCart className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+          <ShoppingCart className="h-3 w-3 shrink-0" aria-hidden />
           <span>{statLabel}</span>
           <span className="text-listingHeart underline decoration-listingHeart/50 underline-offset-2">
             Offer

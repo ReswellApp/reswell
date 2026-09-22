@@ -53,7 +53,7 @@ export function ModelReviewsPanel({
           ))}
         </ul>
       ) : (
-        <p className="mt-6 rounded-2xl border border-border/80 bg-background px-5 py-10 text-sm text-muted-foreground">
+        <p className="mt-6 rounded-2xl border border-dashed border-border/80 bg-background px-5 py-10 text-center text-sm text-muted-foreground">
           No reviews for the {modelName} yet.
         </p>
       )}

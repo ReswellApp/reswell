@@ -1,9 +1,5 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
-import {
-  isShippingFulfillmentLabel,
-  LISTING_SHIPPING_EMPHASIS_CLASS,
-} from "@/lib/listing-fulfillment"
 import { cn } from "@/lib/utils"
 
 function IdentityLink({
@@ -38,35 +34,11 @@ function MetaDot() {
   )
 }
 
-export function ListingFulfillmentSubline({ labels }: { labels: string[] }) {
-  if (labels.length === 0) return null
-
-  return (
-    <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
-      {labels.map((label, index) => (
-        <span key={label} className="inline-flex items-baseline gap-x-1.5">
-          {index > 0 ? <MetaDot /> : null}
-          <span
-            className={
-              isShippingFulfillmentLabel(label)
-                ? LISTING_SHIPPING_EMPHASIS_CLASS
-                : "text-muted-foreground"
-            }
-          >
-            {label}
-          </span>
-        </span>
-      ))}
-    </span>
-  )
-}
-
 export function ListingCatalogIdentity({
   brandName,
   brandHref,
   modelName,
   modelHref,
-  condition,
   detail,
   className,
 }: {
@@ -74,19 +46,17 @@ export function ListingCatalogIdentity({
   brandHref?: string | null
   modelName?: string | null
   modelHref?: string | null
-  condition?: string | null
   detail?: ReactNode
   className?: string
 }) {
   const brand = brandName?.trim() || null
   const model = modelName?.trim() || null
-  const conditionLabel = condition?.trim() || null
   const hasDetail = Boolean(detail)
-  if (!brand && !model && !conditionLabel && !hasDetail) return null
+  if (!brand && !model && !hasDetail) return null
 
   return (
     <div className={cn("min-w-0", className)}>
-      {brand || model || conditionLabel ? (
+      {brand || model ? (
         <nav
           aria-label="Brand and model"
           className="flex flex-wrap items-baseline gap-x-2 text-[15px] leading-snug"
@@ -97,14 +67,6 @@ export function ListingCatalogIdentity({
           {brand && model ? <MetaDot /> : null}
           {model ? (
             <IdentityLink name={model} href={modelHref?.trim() || null} kind="model" />
-          ) : null}
-          {conditionLabel ? (
-            <>
-              {brand || model ? <MetaDot /> : null}
-              <span className="text-[13px] font-normal text-muted-foreground">
-                Used – {conditionLabel}
-              </span>
-            </>
           ) : null}
         </nav>
       ) : null}

@@ -16,7 +16,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
+import { capitalizeWords } from "@/lib/listing-labels"
 import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
@@ -30,10 +30,9 @@ import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { orderedListingGalleryImages } from "@/lib/listing-image-display"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
-import {
-  ListingCatalogIdentity,
-  ListingFulfillmentSubline,
-} from "@/components/features/listings/listing-catalog-identity"
+import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
+import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
+import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
@@ -43,7 +42,6 @@ import {
   ListingSoldOwnerNotice,
 } from "@/components/listing-sold-detail-notice"
 import { TranslateableDescription } from "@/components/translateable-description"
-import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
 import {
   ListingAboutSellerSection,
   ListingBuyerProtectionTrustRibbon,
@@ -267,15 +265,6 @@ async function renderMagazinesListingDetailPage({
   const boardShippingCostMode =
     (magazine.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null
 
-  const fulfillmentLabels = boardFulfillmentDetailLabels(
-    false,
-    magazine.shipping_available,
-    magazine.shipping_price,
-    boardShippingCostMode,
-  )
-
-  const conditionWords = formatCondition(magazine.condition as string | null)
-
   let shippingPriceCaption: string | null = null
   if (!isSold && shippingOffered) {
     if (boardShippingCostMode === "free") {
@@ -308,6 +297,7 @@ async function renderMagazinesListingDetailPage({
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
   const specRows = [
+    listingConditionSpecRow(magazine.condition as string | null),
     magazineYear ? { label: "Year", value: magazineYear } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
@@ -422,7 +412,6 @@ async function renderMagazinesListingDetailPage({
             <ListingMobileBuySummary
               listingId={magazine.id}
               isLoggedIn={!!user}
-              condition={magazine.condition as string | null}
               priceUsd={isSold ? publicListPriceUsd : listPriceNum}
               isSold={isSold}
               shippingPriceCaption={shippingPriceCaption}
@@ -469,8 +458,6 @@ async function renderMagazinesListingDetailPage({
               </h1>
               <ListingCatalogIdentity
                 brandName={specsBrandLabel}
-                condition={conditionWords}
-                detail={<ListingFulfillmentSubline labels={fulfillmentLabels} />}
                 className="mt-2"
               />
               {isSold ? (
@@ -488,9 +475,12 @@ async function renderMagazinesListingDetailPage({
                         compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums xl:text-2xl"
                       />
                     </p>
-                    {shippingPriceCaption ? (
-                      <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
-                    ) : null}
+                    <ListingPdpDeliveryCaption
+                      shippingOffered={shippingOffered}
+                      pickupOffered={false}
+                      shippingPriceCaption={shippingPriceCaption}
+                      locationLine={listingLocationLine}
+                    />
                     {listingPurchasable ? (
                       <ListingKlarnaAsLowAs listingId={magazine.id} isLoggedIn={!!user} className="mt-2" />
                     ) : null}

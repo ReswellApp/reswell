@@ -1,5 +1,6 @@
+import { RecentFeedClient } from "@/components/recent-feed-client"
 import { ModelEmptyState } from "@/components/features/models/model-empty-state"
-import { ModelListingsStrip } from "@/components/features/models/model-listings-strip"
+import { ModelPageSectionHeading } from "@/components/features/models/model-page-section"
 import { ModelTopPick } from "@/components/features/models/model-top-pick"
 import { SaveEntitySearchCta } from "@/components/features/saved-search/save-entity-search-cta"
 import type { ModelMarketplaceListing } from "@/lib/db/brand-listings"
@@ -40,9 +41,11 @@ export function ModelListingsSection({
     )
   }
 
+  const showTopPick = Boolean(topPick && listings.length >= 3)
+
   return (
-    <div className="space-y-8">
-      {topPick ? (
+    <div className="space-y-10">
+      {showTopPick && topPick ? (
         <ModelTopPick
           listing={topPick}
           isFavorited={favoritedListingIds.includes(topPick.id)}
@@ -63,26 +66,40 @@ export function ModelListingsSection({
         />
       ) : null}
 
-      <ModelListingsStrip
-        heading={`Live ${modelName} listings`}
-        countLabel={listings.length > 0 ? `${listings.length} for sale` : undefined}
-        listings={listings}
-        favoritedListingIds={favoritedListingIds}
-        viewerUserId={viewerUserId}
-      />
+      {listings.length > 0 ? (
+        <div>
+          <ModelPageSectionHeading>For sale</ModelPageSectionHeading>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {listings.length} listing{listings.length === 1 ? "" : "s"}
+          </p>
+          <div className="mt-6">
+            <RecentFeedClient
+              listings={listings}
+              favoritedListingIds={favoritedListingIds}
+              isLoggedIn={isLoggedIn}
+              viewerUserId={viewerUserId}
+            />
+          </div>
+        </div>
+      ) : null}
 
-      <ModelListingsStrip
-        heading="Recent sales"
-        countLabel={
-          soldListings.length > 0
-            ? `${soldListings.length} sale${soldListings.length === 1 ? "" : "s"}`
-            : undefined
-        }
-        listings={soldListings}
-        favoritedListingIds={favoritedListingIds}
-        viewerUserId={viewerUserId}
-        statusLabel="sold"
-      />
+      {soldListings.length > 0 ? (
+        <div>
+          <ModelPageSectionHeading>Recently sold</ModelPageSectionHeading>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {soldListings.length} sale{soldListings.length === 1 ? "" : "s"}
+          </p>
+          <div className="mt-6">
+            <RecentFeedClient
+              listings={soldListings}
+              favoritedListingIds={favoritedListingIds}
+              isLoggedIn={isLoggedIn}
+              viewerUserId={viewerUserId}
+              soldPresentation
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
