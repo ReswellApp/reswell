@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
-import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
+import {
+  listingCoverImageForCard,
+  listingImagesFromPrimaryFields,
+} from "@/lib/listing-image-display"
 
 const LISTING_SELECT = `
   id,
@@ -20,7 +23,6 @@ const LISTING_SELECT = `
   created_at,
   primary_image_url,
   primary_thumbnail_url,
-  tile_gallery_images,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
@@ -49,10 +51,11 @@ function rowToRecentListing(row: ListingRow): RecentListing {
     shipping_available: Boolean(row.shipping_available),
     board_type: row.board_type != null ? String(row.board_type) : null,
     board_length: boardLength,
-    listing_images: listingImagesFromPrimaryFields(
-      row.primary_image_url as string | null | undefined,
-      row.primary_thumbnail_url as string | null | undefined,
-      row.tile_gallery_images,
+    listing_images: listingCoverImageForCard(
+      listingImagesFromPrimaryFields(
+        row.primary_image_url as string | null | undefined,
+        row.primary_thumbnail_url as string | null | undefined,
+      ),
     ),
     profiles: row.profiles as RecentListing["profiles"],
     categories: row.categories as RecentListing["categories"],

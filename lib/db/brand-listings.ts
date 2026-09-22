@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
-import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
+import {
+  coalesceListingImagesForCard,
+  listingCoverImageForCard,
+} from "@/lib/listing-image-display"
 import { brandTextAliasesForSearch } from "@/lib/utils/marketplace-brand-synonyms"
 import { brandLegacyRecallTokens } from "@/lib/utils/marketplace-brand-query"
 import { fetchRecentlySoldListingsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
@@ -157,13 +160,7 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
     board_type: row.board_type,
     board_length: boardLength,
     updated_at: row.updated_at ?? null,
-    listing_images:
-      row.listing_images ??
-      listingImagesFromPrimaryFields(
-        row.primary_image_url,
-        row.primary_thumbnail_url,
-        row.tile_gallery_images,
-      ),
+    listing_images: listingCoverImageForCard(coalesceListingImagesForCard(row)),
     profiles: row.profiles,
     categories: row.categories,
   }

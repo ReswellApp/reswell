@@ -3,6 +3,7 @@ import { describe, it } from "node:test"
 import {
   LISTING_TILE_GALLERY_MAX_IMAGES,
   coalesceListingImagesForCard,
+  listingCoverImageForCard,
   listingImagesFromPrimaryFields,
   listingTileCarouselImageCandidateLists,
   listingTileImageSrcCandidatesFromRow,
@@ -84,6 +85,20 @@ describe("listing tile vs compact thumb sources", () => {
     ])
     assert.equal(candidates[0], "/media/listings/u/1-thumb.webp")
     assert.equal(candidates[1], "/media/listings/u/1-full.webp?variant=tile2")
+  })
+})
+
+describe("listingCoverImageForCard", () => {
+  it("keeps the primary photo and drops the rest of the gallery", () => {
+    const images = listingCoverImageForCard([
+      { url: "https://cdn.example/2.webp", thumbnail_url: "https://cdn.example/2-t.webp" },
+      {
+        url: "https://cdn.example/1.webp",
+        thumbnail_url: "https://cdn.example/1-t.webp",
+        is_primary: true,
+      },
+    ])
+    assert.deepEqual(images, [{ url: "https://cdn.example/1.webp", is_primary: true }])
   })
 })
 

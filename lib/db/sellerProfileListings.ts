@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SellerProfileListing } from "@/components/sellers/seller-profile-listings-panel"
-import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
+import {
+  listingCoverImageForCard,
+  listingImagesFromPrimaryFields,
+} from "@/lib/listing-image-display"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
 /**
@@ -27,7 +30,6 @@ const SELLER_PROFILE_LISTING_SELECT = `
   board_type,
   primary_image_url,
   primary_thumbnail_url,
-  tile_gallery_images,
   categories (name, slug)
 `
 
@@ -56,7 +58,6 @@ type SellerProfileListingRow = {
   board_type?: string | null
   primary_image_url?: string | null
   primary_thumbnail_url?: string | null
-  tile_gallery_images?: unknown
   categories?: { name?: string | null; slug?: string | null } | { name?: string | null; slug?: string | null }[] | null
 }
 
@@ -96,10 +97,8 @@ function mapListing(row: SellerProfileListingRow): SellerProfileListing {
     shipping_available: row.shipping_available,
     condition: row.condition,
     created_at: row.created_at,
-    listing_images: listingImagesFromPrimaryFields(
-      row.primary_image_url,
-      row.primary_thumbnail_url,
-      row.tile_gallery_images,
+    listing_images: listingCoverImageForCard(
+      listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url),
     ),
     categories: normalizeCategories(row.categories),
     board_type: row.board_type,

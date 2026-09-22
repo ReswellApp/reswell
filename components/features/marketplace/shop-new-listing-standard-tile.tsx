@@ -59,7 +59,7 @@ export function ShopNewListingStandardTile({
       listingId={listing.id}
       title={listing.title}
       imageAlt={capitalizeWords(listing.title)}
-      listingImages={listing.listing_images}
+      imageUrl={imageUrl}
       price={listing.price}
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}

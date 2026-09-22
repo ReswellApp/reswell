@@ -13,7 +13,7 @@ import { ListingTile, ListingTileSoldStamp } from "@/components/listing-tile"
 import { RelativeTime } from "@/components/ui/relative-time"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import { listingCardImageSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import {
   homePeerListingTileTitleClass,
   homePeerTilePriceClass,
@@ -57,7 +57,7 @@ function ShippedBoardCard({ board }: { board: SantaBarbaraShippedBoard }) {
       listingId={board.id}
       title={board.title}
       imageAlt={capitalizeWords(board.title)}
-      listingImages={board.listingImages}
+      imageUrl={listingCardImageSrc(board.listingImages)}
       price={board.soldPrice}
       imageTopLeftOverlay={<ListingTileSoldStamp />}
       linkLayout="unified"

@@ -10,7 +10,7 @@ import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import { listingCardImageSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { shouldShowListingGoodDeal } from "@/lib/utils/listing-good-deal"
 import {
   homeListingScrollImageSizes,
@@ -131,7 +131,7 @@ export function HomePeerListingScrollTile({
       listingId={listing.id}
       title={listing.title}
       imageAlt={capitalizeWords(listing.title)}
-      listingImages={listing.listing_images}
+      imageUrl={listingCardImageSrc(listing.listing_images)}
       price={Number(listing.price)}
       imageTopLeftOverlay={
         imageTopLeftOverlay ?? (showGoodDeal ? <ListingTileGoodDealStamp /> : undefined)

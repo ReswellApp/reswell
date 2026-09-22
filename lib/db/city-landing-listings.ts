@@ -4,7 +4,10 @@ import type { CityLandingListing } from "@/lib/types/city-landing"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
-import { coalesceListingImagesForCard } from "@/lib/listing-image-display"
+import {
+  listingCoverImageForCard,
+  listingImagesFromPrimaryFields,
+} from "@/lib/listing-image-display"
 
 const CITY_LANDING_LISTING_SELECT = `
   id,
@@ -36,7 +39,6 @@ const CITY_LANDING_LISTING_SELECT = `
   archived_at,
   primary_image_url,
   primary_thumbnail_url,
-  tile_gallery_images,
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
@@ -70,7 +72,6 @@ type CityLandingListingRow = {
   updated_at?: string | null
   primary_image_url?: string | null
   primary_thumbnail_url?: string | null
-  tile_gallery_images?: unknown
   listing_images?: RecentListing["listing_images"]
   profiles?: RecentListing["profiles"]
   categories?: RecentListing["categories"]
@@ -104,7 +105,9 @@ function mapRowToRecentListing(row: CityLandingListingRow): CityLandingListing {
     dimensions: row.dimensions ?? null,
     board_length: boardLength,
     updated_at: row.updated_at ?? null,
-    listing_images: coalesceListingImagesForCard(row),
+    listing_images: listingCoverImageForCard(
+      listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url),
+    ),
     profiles: row.profiles,
     categories: row.categories,
   }

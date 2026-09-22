@@ -6,10 +6,12 @@ import {
 import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
 import type { HomeTrendingBrandRow } from "@/lib/db/home-trending-brands"
 import {
+  listingCoverImageForCard,
   listingHeroSlideSrc,
   listingImagesFromPrimaryFields,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
+import { projectHomePeerCardListing } from "@/lib/db/home-peer-listing-feed"
 import type { HomePeerScrollListing } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrendingBrands"
 import {
@@ -67,7 +69,6 @@ const featuredNewSelect = `
   compare_at_price,
   primary_image_url,
   primary_thumbnail_url,
-  tile_gallery_images,
   stock_quantity,
   categories (name)
 `
@@ -235,7 +236,6 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
           price: number
           primary_image_url?: string | null
           primary_thumbnail_url?: string | null
-          tile_gallery_images?: unknown
         }
         return {
           listing: {
@@ -243,10 +243,8 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
             slug: row.slug,
             title: row.title,
             price: Number(row.price),
-            listing_images: listingImagesFromPrimaryFields(
-              row.primary_image_url,
-              row.primary_thumbnail_url,
-              row.tile_gallery_images,
+            listing_images: listingCoverImageForCard(
+              listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url),
             ),
           },
           stockQuantity: qty,
@@ -306,7 +304,8 @@ async function loadHomeTrendingBrandsCatalogUncached(): Promise<HomeTrendingBran
 async function loadHomeRecentlyAddedSurfboardsCatalogUncached(): Promise<HomeRecentlyAddedSurfboardsCatalog> {
   const supabase = getDb({ consistency: "eventual" })
   const rows = (await loadHomeFeaturedSurfboardRows(supabase)) as HomePeerScrollListing[]
-  const featuredBoards = rows.length > 0 ? rows : null
+  const featuredBoards =
+    rows.length > 0 ? rows.map((row) => projectHomePeerCardListing(row)) : null
 
   return {
     featuredBoards,
@@ -317,7 +316,8 @@ async function loadHomeRecentlyAddedSurfboardsCatalogUncached(): Promise<HomeRec
 async function loadHomeRecentlyAddedFinsCatalogUncached(): Promise<HomeRecentlyAddedFinsCatalog> {
   const supabase = getDb({ consistency: "eventual" })
   const rows = (await loadHomeFeaturedFinRows(supabase)) as HomePeerScrollListing[]
-  const featuredFins = rows.length > 0 ? rows : null
+  const featuredFins =
+    rows.length > 0 ? rows.map((row) => projectHomePeerCardListing(row)) : null
 
   return {
     featuredFins,
@@ -330,7 +330,9 @@ async function loadHomeRecentlySoldCatalogUncached(): Promise<HomeRecentlySoldCa
   const recentlySoldFeaturedRows = await loadHomeRecentlySoldSurfboardRows(supabase)
   const rawRecentlySoldSurfboards = recentlySoldFeaturedRows as HomePeerScrollListing[]
   const featuredRecentlySold =
-    rawRecentlySoldSurfboards.length > 0 ? rawRecentlySoldSurfboards : null
+    rawRecentlySoldSurfboards.length > 0
+      ? rawRecentlySoldSurfboards.map((row) => projectHomePeerCardListing(row))
+      : null
 
   return {
     featuredRecentlySold,
@@ -340,7 +342,7 @@ async function loadHomeRecentlySoldCatalogUncached(): Promise<HomeRecentlySoldCa
 
 export const getCachedHomeStableCatalog = unstable_cache(
   loadHomeStableCatalogUncached,
-  ["home-stable-catalog-v6"],
+  ["home-stable-catalog-v7"],
   {
     revalidate: HOME_STABLE_CATALOG_REVALIDATE_SECONDS,
     tags: [HOME_STABLE_CATALOG_CACHE_TAG],
@@ -358,7 +360,7 @@ export const getCachedHomeTrendingBrandsCatalog = unstable_cache(
 
 export const getCachedHomeRecentlyAddedSurfboardsCatalog = unstable_cache(
   loadHomeRecentlyAddedSurfboardsCatalogUncached,
-  ["home-recently-added-surfboards-catalog-v1"],
+  ["home-recently-added-surfboards-catalog-v2"],
   {
     revalidate: HOME_RECENTLY_ADDED_SURFBOARDS_REVALIDATE_SECONDS,
     tags: [HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG],
@@ -367,7 +369,7 @@ export const getCachedHomeRecentlyAddedSurfboardsCatalog = unstable_cache(
 
 export const getCachedHomeRecentlyAddedFinsCatalog = unstable_cache(
   loadHomeRecentlyAddedFinsCatalogUncached,
-  ["home-recently-added-fins-catalog-v1"],
+  ["home-recently-added-fins-catalog-v2"],
   {
     revalidate: HOME_RECENTLY_ADDED_FINS_REVALIDATE_SECONDS,
     tags: [HOME_RECENTLY_ADDED_FINS_CACHE_TAG],
@@ -394,7 +396,7 @@ async function loadHomeMostViewedCatalogUncached(): Promise<HomeMostViewedCatalo
 
 export const getCachedHomeRecentlySoldCatalog = unstable_cache(
   loadHomeRecentlySoldCatalogUncached,
-  ["home-recently-sold-catalog-v2"],
+  ["home-recently-sold-catalog-v3"],
   {
     revalidate: HOME_RECENTLY_SOLD_REVALIDATE_SECONDS,
     tags: [HOME_RECENTLY_SOLD_CACHE_TAG],
@@ -413,7 +415,8 @@ export const getCachedHomeMostViewedCatalog = unstable_cache(
 async function loadHomeRecentlyListedGridCatalogUncached(): Promise<HomeRecentlyListedGridCatalog> {
   const supabase = getDb({ consistency: "eventual" })
   const rows = await loadHomeRecentlyListedGridRows(supabase)
-  const recentlyListedGrid = rows.length > 0 ? rows : null
+  const recentlyListedGrid =
+    rows.length > 0 ? rows.map((row) => projectHomePeerCardListing(row)) : null
 
   return {
     recentlyListedGrid,
@@ -423,7 +426,7 @@ async function loadHomeRecentlyListedGridCatalogUncached(): Promise<HomeRecently
 
 export const getCachedHomeRecentlyListedGridCatalog = unstable_cache(
   loadHomeRecentlyListedGridCatalogUncached,
-  ["home-recently-listed-grid-catalog-v4"],
+  ["home-recently-listed-grid-catalog-v5"],
   {
     revalidate: HOME_RECENTLY_LISTED_GRID_REVALIDATE_SECONDS,
     tags: [HOME_RECENTLY_LISTED_GRID_CACHE_TAG],

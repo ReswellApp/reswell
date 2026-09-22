@@ -107,6 +107,23 @@ export function listingCardImageSrc(
   return listingTileImageSrcFromRow(primary)
 }
 
+/**
+ * One cover for a marketplace card. Drops extra slides and stored thumbs so the
+ * RSC payload carries a single photo URL.
+ */
+export function listingCoverImageForCard(
+  images: ListingImageForCard[] | ListingImageForCard | null | undefined | unknown,
+): ListingImageForCard[] | null {
+  const list = asListingImageArray(images)
+  const primary = list.find((i) => i.is_primary) || list[0]
+  if (!primary) return null
+  const url = primary.url?.trim()
+  if (url) return [{ url, is_primary: true }]
+  const thumb = primary.thumbnail_url?.trim()
+  if (!thumb) return null
+  return [{ url: thumb, is_primary: true }]
+}
+
 /** Matches `listings.tile_gallery_images` trigger cap — keep in sync with the SQL function. */
 export const LISTING_TILE_GALLERY_MAX_IMAGES = 12
 

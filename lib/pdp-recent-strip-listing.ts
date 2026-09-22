@@ -1,5 +1,6 @@
 import {
   coalesceListingImagesForCard,
+  listingCoverImageForCard,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
 
@@ -47,7 +48,7 @@ export function pdpRecentStripListingFromRow(row: Record<string, unknown>): PdpR
     local_pickup:
       row.local_pickup === null || row.local_pickup === undefined ? null : row.local_pickup !== false,
     section: typeof row.section === "string" ? row.section : "surfboards",
-    listing_images: coalesceListingImagesForCard(row),
+    listing_images: listingCoverImageForCard(coalesceListingImagesForCard(row)),
     categories: (cat as PdpRecentStripListing["categories"]) ?? null,
   }
 }

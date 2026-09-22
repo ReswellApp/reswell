@@ -43,7 +43,7 @@ const getCachedSoldFeedPayload = unstable_cache(
 
     return payload
   },
-  ["marketplace-sold-feed-v11"],
+  ["marketplace-sold-feed-v12"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
@@ -93,7 +93,7 @@ const getCachedShippedFeedPagePayload = unstable_cache(
     const brandSlug = brandKey === BRAND_NONE ? null : brandKey
     return loadMarketplaceShippedFeedPage(supabase, brandSlug, page)
   },
-  ["marketplace-shipped-feed-v1"],
+  ["marketplace-shipped-feed-v2"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
@@ -125,7 +125,7 @@ const getCachedNewListingsFeedPagePayload = unstable_cache(
     const totalPages = Math.max(1, Math.ceil(totalCount / NEW_LISTINGS_FEED_PAGE_SIZE))
     return { listings, totalCount, totalPages }
   },
-  ["marketplace-new-listings-feed-v1"],
+  ["marketplace-new-listings-feed-v2"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],

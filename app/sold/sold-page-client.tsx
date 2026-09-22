@@ -9,7 +9,7 @@ import { formatDistanceToNowStrict } from "date-fns"
 import { RelativeTime } from "@/components/ui/relative-time"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { ListingTile, ListingTileSoldStamp } from "@/components/listing-tile"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import { listingCardImageSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import {
   homePeerListingGridCardClass,
   homeUniformScrollBodyClass,
@@ -108,7 +108,7 @@ function SoldListingCard({
       listingId={listing.id}
       title={listing.title}
       imageAlt={capitalizeWords(listing.title)}
-      listingImages={listing.listing_images ?? null}
+      imageUrl={listingCardImageSrc(listing.listing_images)}
       price={listing.price}
       imageTopLeftOverlay={<ListingTileSoldStamp />}
       linkLayout="unified"
