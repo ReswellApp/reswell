@@ -6,6 +6,7 @@ import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-rout
 import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
 import { ListingTileScrollRowSkeleton } from "@/components/listing-tile-skeleton"
 import { RouteTransitionMark } from "@/components/route-transition-mark"
+import { isCategoryBrowsePathname } from "@/lib/site-category-browse-paths"
 import { cn } from "@/lib/utils"
 
 /**
@@ -56,8 +57,12 @@ export function RootRouteLoading() {
   if (pathname?.startsWith("/sell")) {
     return <SellFlowRouteSkeleton />
   }
-  if (pathname === "/boards") {
-    return <BoardsBrowsePageSkeleton />
+  if (isCategoryBrowsePathname(pathname)) {
+    return (
+      <BoardsBrowsePageSkeleton
+        ariaLabel={pathname === "/boards" ? "Loading surfboards" : "Loading category"}
+      />
+    )
   }
   return <RouteTransitionMark variant="overlay" />
 }
