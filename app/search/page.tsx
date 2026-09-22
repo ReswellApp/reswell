@@ -33,32 +33,17 @@ export const metadata = pageSeoMetadata({
   path: "/search",
 })
 
-export default function SearchPage(props: {
+export default async function SearchPage(props: {
   searchParams: Promise<SearchParams>
 }) {
-  return (
-    <>
-      <Suspense fallback={null}>
-        <NavSearchQueryParamCleanup />
-      </Suspense>
-      <Suspense fallback={<SearchResultsPageSkeleton />}>
-        <SearchPageFromParams searchParams={props.searchParams} />
-      </Suspense>
-    </>
-  )
-}
-
-async function SearchPageFromParams({
-  searchParams: searchParamsPromise,
-}: {
-  searchParams: Promise<SearchParams>
-}) {
-  const searchParams = await searchParamsPromise
+  const searchParams = await props.searchParams
   const rawQuery = (searchParams.q ?? "").trim()
   const categorySlugFromUrl = (searchParams.category ?? "").trim()
   const brandSlugFromUrl = (searchParams.brandSlug ?? "").trim()
   const analyticsOriginHeaderNav = searchParams.nq === "1"
 
+  // These must run in the page (outside Suspense). Redirects inside a Suspense
+  // child stream HTTP 200 + skeleton + NEXT_REDIRECT instead of 307/308.
   if (!rawQuery && !brandSlugFromUrl) {
     const sp = new URLSearchParams()
     if (categorySlugFromUrl) sp.set("category", categorySlugFromUrl)
@@ -78,11 +63,18 @@ async function SearchPageFromParams({
   }
 
   return (
-    <SearchPageView
-      rawQuery={rawQuery}
-      brandSlugFromUrl={brandSlugFromUrl}
-      categorySlugFromUrl={categorySlugFromUrl}
-      analyticsOriginHeaderNav={analyticsOriginHeaderNav}
-    />
+    <>
+      <Suspense fallback={null}>
+        <NavSearchQueryParamCleanup />
+      </Suspense>
+      <Suspense fallback={<SearchResultsPageSkeleton />}>
+        <SearchPageView
+          rawQuery={rawQuery}
+          brandSlugFromUrl={brandSlugFromUrl}
+          categorySlugFromUrl={categorySlugFromUrl}
+          analyticsOriginHeaderNav={analyticsOriginHeaderNav}
+        />
+      </Suspense>
+    </>
   )
 }
