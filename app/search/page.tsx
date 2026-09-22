@@ -3,11 +3,7 @@ import { permanentRedirect, redirect } from "next/navigation"
 import { NavSearchQueryParamCleanup } from "@/components/features/search/nav-search-query-param-cleanup"
 import { SearchResultsPageSkeleton } from "@/components/search-results-page-skeleton"
 import { pageSeoMetadata } from "@/lib/site-metadata"
-import {
-  extractMarketplaceSectionIntent,
-  isMarketplaceSectionOnlyQuery,
-  marketplaceSectionBrowseHref,
-} from "@/lib/utils/marketplace-brand-query"
+import { marketplaceSearchRedirect } from "@/lib/utils/marketplace-search-redirect"
 import { marketplaceBoardStyleBrowseHref } from "@/lib/utils/marketplace-style-query"
 import { SearchPageView } from "./search-page-view"
 
@@ -42,24 +38,19 @@ export default async function SearchPage(props: {
   const brandSlugFromUrl = (searchParams.brandSlug ?? "").trim()
   const analyticsOriginHeaderNav = searchParams.nq === "1"
 
-  // These must run in the page (outside Suspense). Redirects inside a Suspense
-  // child stream HTTP 200 + skeleton + NEXT_REDIRECT instead of 307/308.
-  if (!rawQuery && !brandSlugFromUrl) {
-    const sp = new URLSearchParams()
-    if (categorySlugFromUrl) sp.set("category", categorySlugFromUrl)
-    permanentRedirect(`/search/recent${sp.size ? `?${sp}` : ""}`)
-  }
-
-  // Bare "fins" / "wetsuits" / etc. → section browse, not a brand that contains that word.
-  if (rawQuery && !brandSlugFromUrl && isMarketplaceSectionOnlyQuery(rawQuery)) {
-    const browseHref = marketplaceSectionBrowseHref(extractMarketplaceSectionIntent(rawQuery))
-    if (browseHref) redirect(browseHref)
-  }
-
-  // Bare "fish" / "shortboard" / etc. → board-type browse, not Fish Stix / similar.
-  if (rawQuery && !brandSlugFromUrl) {
-    const styleHref = marketplaceBoardStyleBrowseHref(rawQuery)
-    if (styleHref) redirect(styleHref)
+  // Edge proxy emits these as HTTP 307/308. Keep the same rules here so
+  // server-rendered /search still cannot fall through if proxy is skipped.
+  const dest = marketplaceSearchRedirect(
+    {
+      rawQuery,
+      brandSlug: brandSlugFromUrl,
+      categorySlug: categorySlugFromUrl,
+    },
+    marketplaceBoardStyleBrowseHref,
+  )
+  if (dest) {
+    if (dest.permanent) permanentRedirect(dest.href)
+    redirect(dest.href)
   }
 
   return (

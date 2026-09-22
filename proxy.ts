@@ -4,6 +4,8 @@ import { isNextRequestAccessBanned } from '@/lib/services/requestAccessBan'
 import { updateSession } from '@/lib/supabase/proxy'
 import { type NextRequest, NextResponse } from 'next/server'
 import { resolveSeoRedirect } from '@/lib/seo/edge-redirects'
+import { marketplaceSearchRedirect } from '@/lib/utils/marketplace-search-redirect'
+import { marketplaceBoardStyleBrowseHref } from '@/lib/utils/marketplace-style-query'
 import {
   evaluateAdCatalogCrawlerAccess,
   isAdCatalogCrawler,
@@ -37,6 +39,22 @@ export async function proxy(request: NextRequest) {
   // Admin-managed 301/302 redirects short-circuit before any session work.
   const redirect = await resolveSeoRedirect(request)
   if (redirect) return redirect
+
+  // URL-only /search redirects must run here. The page sits behind loading.tsx
+  // / Suspense, so redirect() there streams HTTP 200 + NEXT_REDIRECT.
+  if (pathname === '/search') {
+    const dest = marketplaceSearchRedirect(
+      {
+        rawQuery: request.nextUrl.searchParams.get('q') ?? '',
+        brandSlug: request.nextUrl.searchParams.get('brandSlug') ?? '',
+        categorySlug: request.nextUrl.searchParams.get('category') ?? '',
+      },
+      marketplaceBoardStyleBrowseHref,
+    )
+    if (dest) {
+      return NextResponse.redirect(new URL(dest.href, request.url), dest.permanent ? 308 : 307)
+    }
+  }
 
   try {
     if (isSignupPath(pathname) && (await isNextRequestAccessBanned(request))) {
