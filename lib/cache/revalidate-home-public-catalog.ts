@@ -9,12 +9,14 @@ import {
   HOME_TRENDING_BRANDS_CACHE_TAG,
 } from "@/lib/cache/home-public-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { revalidateListYourSurfboardShowcase } from "@/lib/cache/revalidate-list-your-surfboard-showcase"
 
 /** Bust admin-curated homepage sections after CMS or homepage-visibility changes. */
 export function revalidateHomeStableCatalog(): void {
   revalidateTag(HOME_STABLE_CATALOG_CACHE_TAG, 'max')
   revalidatePath("/", "layout")
   revalidatePath("/", "page")
+  revalidateListYourSurfboardShowcase()
 }
 
 /** Bust the homepage “Trending brands” strip after curation or featured-brand logo edits. */
@@ -60,7 +62,7 @@ export function revalidateRecentlySoldSurfaces(): void {
   revalidateMarketplaceSoldFeedCatalog()
   revalidatePath("/sold", "page")
   revalidatePath("/sold", "layout")
-  revalidatePath("/listyoursurfboard", "page")
+  revalidateListYourSurfboardShowcase()
 }
 
 /** Admin CMS mutations — stable sections only; recently sold keeps its hourly TTL. */
