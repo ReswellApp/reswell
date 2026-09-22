@@ -4,6 +4,7 @@ import {
   coalesceListingImagesForCard,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
+import { listingIdsEligibleForFavoriteLookup } from "@/lib/utils/favorite-listing-ids"
 
 /** Listing fields needed for the cart page favorites carousel (surfboard tiles). */
 export type CartCarouselFavoriteListing = {
@@ -274,4 +275,29 @@ export async function getSavedFavoritesForUser(
   }
 
   return { favorites, error: null }
+}
+
+/**
+ * Favorites for a signed-in user among a known listing page — never the full
+ * `favorites` table. Empty or non-UUID ids skip the query.
+ */
+export async function listFavoritedListingIdsAmong(
+  supabase: SupabaseClient,
+  userId: string,
+  listingIds: readonly string[],
+): Promise<string[]> {
+  const ids = listingIdsEligibleForFavoriteLookup(listingIds)
+  if (ids.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("favorites")
+    .select("listing_id")
+    .eq("user_id", userId)
+    .in("listing_id", ids)
+
+  if (error) {
+    console.error("[favorites] listFavoritedListingIdsAmong failed:", error.message)
+    return []
+  }
+  return (data ?? []).map((row) => row.listing_id)
 }

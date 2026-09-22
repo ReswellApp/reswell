@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { permanentRedirect, redirect } from "next/navigation"
 import { NavSearchQueryParamCleanup } from "@/components/features/search/nav-search-query-param-cleanup"
+import { SearchResultsPageSkeleton } from "@/components/search-results-page-skeleton"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 import {
   extractMarketplaceSectionIntent,
@@ -20,8 +21,11 @@ interface SearchParams {
   nq?: string
 }
 
-/** Search uses query params + auth; must not be statically prerendered. */
-export const dynamic = "force-dynamic"
+/**
+ * ISR shell + cached listing results (60s), matching `/search/recent`.
+ * Auth/favorites stay inside Suspense so cookies do not dynamize the route.
+ */
+export const revalidate = 60
 
 export const metadata = pageSeoMetadata({
   title: "Search — Reswell",
@@ -29,10 +33,27 @@ export const metadata = pageSeoMetadata({
   path: "/search",
 })
 
-export default async function SearchPage(props: {
+export default function SearchPage(props: {
   searchParams: Promise<SearchParams>
 }) {
-  const searchParams = await props.searchParams
+  return (
+    <>
+      <Suspense fallback={null}>
+        <NavSearchQueryParamCleanup />
+      </Suspense>
+      <Suspense fallback={<SearchResultsPageSkeleton />}>
+        <SearchPageFromParams searchParams={props.searchParams} />
+      </Suspense>
+    </>
+  )
+}
+
+async function SearchPageFromParams({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const searchParams = await searchParamsPromise
   const rawQuery = (searchParams.q ?? "").trim()
   const categorySlugFromUrl = (searchParams.category ?? "").trim()
   const brandSlugFromUrl = (searchParams.brandSlug ?? "").trim()
@@ -57,16 +78,11 @@ export default async function SearchPage(props: {
   }
 
   return (
-    <>
-      <Suspense fallback={null}>
-        <NavSearchQueryParamCleanup />
-      </Suspense>
-      <SearchPageView
-        rawQuery={rawQuery}
-        brandSlugFromUrl={brandSlugFromUrl}
-        categorySlugFromUrl={categorySlugFromUrl}
-        analyticsOriginHeaderNav={analyticsOriginHeaderNav}
-      />
-    </>
+    <SearchPageView
+      rawQuery={rawQuery}
+      brandSlugFromUrl={brandSlugFromUrl}
+      categorySlugFromUrl={categorySlugFromUrl}
+      analyticsOriginHeaderNav={analyticsOriginHeaderNav}
+    />
   )
 }
