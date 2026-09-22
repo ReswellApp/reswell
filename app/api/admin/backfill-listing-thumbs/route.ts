@@ -20,7 +20,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { createClient } from "@/lib/supabase/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { resizeListingImageBufferToTileVariant } from "@/lib/media/listing-tile-variant-resize"
+import { resizeListingImageBufferToStoredThumb } from "@/lib/media/listing-tile-variant-resize"
 import { listingStorageObjectPathFromUrl } from "@/lib/listing-media-proxy-url"
 
 export const maxDuration = 60
@@ -94,8 +94,8 @@ export async function POST(request: NextRequest) {
 
       const originalBuffer = Buffer.from(await fetchResp.arrayBuffer())
 
-      // Resize to 640px WebP using the same pipeline as the on-demand route
-      const thumbBuffer = await resizeListingImageBufferToTileVariant(originalBuffer)
+      // Resize to 640px WebP for compact-row thumbs (not the 1280px tile variant).
+      const thumbBuffer = await resizeListingImageBufferToStoredThumb(originalBuffer)
 
       // Derive thumb path: strip extension, append -thumb.webp
       const thumbObjectPath = objectPath.replace(/\.[^./]+$/, "") + "-thumb.webp"

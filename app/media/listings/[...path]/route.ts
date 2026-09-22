@@ -5,11 +5,13 @@ import {
   LISTING_MEDIA_MERCHANT_VARIANT_PARAM,
   LISTING_MEDIA_PDP_VARIANT_PARAM,
   LISTING_MEDIA_TILE_VARIANT_PARAM,
+  LISTING_MEDIA_TILE_VARIANT_PARAM_LEGACY,
 } from "@/lib/listing-media-proxy-url"
 import { cachedPublicStorageGetResponse } from "@/lib/media/cached-public-storage-get-response"
 import {
   getCachedListingVariantBody,
   LISTING_MEDIA_MERCHANT_VARIANT,
+  LISTING_MEDIA_TILE_VARIANT,
   listingMediaPathLooksLikeStoredThumb,
   type ListingMediaResizeVariant,
 } from "@/lib/media/listing-tile-variant-resize"
@@ -49,8 +51,9 @@ export async function GET(
 
   const variantParam = new URL(request.url).searchParams.get("variant")
   const resizeVariant: ListingMediaResizeVariant | null =
-    variantParam === LISTING_MEDIA_TILE_VARIANT_PARAM
-      ? LISTING_MEDIA_TILE_VARIANT_PARAM
+    variantParam === LISTING_MEDIA_TILE_VARIANT_PARAM ||
+    variantParam === LISTING_MEDIA_TILE_VARIANT_PARAM_LEGACY
+      ? LISTING_MEDIA_TILE_VARIANT
       : variantParam === LISTING_MEDIA_PDP_VARIANT_PARAM
         ? LISTING_MEDIA_PDP_VARIANT_PARAM
         : variantParam === LISTING_MEDIA_MERCHANT_VARIANT_PARAM
@@ -62,7 +65,7 @@ export async function GET(
       ? path.replace(/-thumb\./, "-full.")
       : path
 
-  // Stored thumbs (≤640px) are already smaller than tile/pdp — serve as-is unless merchant needs full-res.
+  // Stored thumbs (≤640px) are smaller than tile/pdp — serve as-is unless merchant needs full-res.
   const serveStoredThumbWithoutResize =
     listingMediaPathLooksLikeStoredThumb(objectPath) &&
     resizeVariant !== LISTING_MEDIA_MERCHANT_VARIANT

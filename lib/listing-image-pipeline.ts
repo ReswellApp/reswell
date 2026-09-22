@@ -9,7 +9,7 @@ import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-er
 
 export const LISTING_IMAGE_MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 export const LISTING_FULL_MAX_LONG_EDGE = 2000
-/** Browse grids (retina / 2–5 columns) need ~600px+ long edge so thumbs are not upscaled and look soft. */
+/** Persisted compact-row thumbs (cart, checkout, nav). Marketplace tiles use the 1280px `tile` variant. */
 export const LISTING_THUMB_MAX_LONG_EDGE = 640
 export const LISTING_WEBP_QUALITY_FULL = 0.82
 export const LISTING_WEBP_QUALITY_THUMB = 0.74

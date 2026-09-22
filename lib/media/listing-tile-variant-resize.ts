@@ -15,6 +15,13 @@ export const LISTING_MEDIA_PDP_VARIANT = "pdp" as const
 /** Google Merchant / catalog crawlers — high-res WebP (≤1600px long edge). */
 export const LISTING_MEDIA_MERCHANT_VARIANT = "merchant" as const
 
+/**
+ * Browse / home / search cards. 640px thumbs upscale on retina (3:4 tile at
+ * ~320 CSS px needs ~850–1000px). 1280 matches listing video posters.
+ */
+export const LISTING_TILE_MAX_LONG_EDGE = 1280
+const LISTING_WEBP_QUALITY_TILE = 0.86
+
 /** PDP hero renders ≤~512 CSS px wide — 1024px covers 2x retina without full-res payloads. */
 export const LISTING_PDP_MAX_LONG_EDGE = 1024
 const LISTING_WEBP_QUALITY_PDP = 0.78
@@ -23,7 +30,8 @@ const LISTING_WEBP_QUALITY_PDP = 0.78
 export const LISTING_MERCHANT_MAX_LONG_EDGE = 1600
 const LISTING_WEBP_QUALITY_MERCHANT = 0.88
 
-const TILE_VARIANT_CACHE_TAG_PREFIX = "listing-tile-variant" as const
+/** v1 was 640px @ 0.74 — bump the key so Data Cache does not keep serving those. */
+const TILE_VARIANT_CACHE_TAG_PREFIX = "listing-tile-variant-v2" as const
 
 export type ListingMediaResizeVariant =
   | typeof LISTING_MEDIA_TILE_VARIANT
@@ -35,8 +43,8 @@ const VARIANT_SPECS: Record<
   { maxLongEdge: number; quality: number }
 > = {
   [LISTING_MEDIA_TILE_VARIANT]: {
-    maxLongEdge: LISTING_THUMB_MAX_LONG_EDGE,
-    quality: LISTING_WEBP_QUALITY_THUMB,
+    maxLongEdge: LISTING_TILE_MAX_LONG_EDGE,
+    quality: LISTING_WEBP_QUALITY_TILE,
   },
   [LISTING_MEDIA_PDP_VARIANT]: {
     maxLongEdge: LISTING_PDP_MAX_LONG_EDGE,
@@ -70,6 +78,18 @@ export async function resizeListingImageBufferToVariant(
 
 export async function resizeListingImageBufferToTileVariant(input: Buffer): Promise<Buffer> {
   return resizeListingImageBufferToVariant(input, LISTING_MEDIA_TILE_VARIANT)
+}
+
+/** Persisted `*-thumb.webp` for compact rows (cart, checkout, nav) — not marketplace tiles. */
+export async function resizeListingImageBufferToStoredThumb(input: Buffer): Promise<Buffer> {
+  return sharp(input, { failOn: "none" })
+    .rotate()
+    .resize(LISTING_THUMB_MAX_LONG_EDGE, LISTING_THUMB_MAX_LONG_EDGE, {
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: Math.round(LISTING_WEBP_QUALITY_THUMB * 100), effort: 4 })
+    .toBuffer()
 }
 
 function variantCacheTag(
@@ -107,7 +127,7 @@ async function loadListingVariantBody(
 
 /**
  * On-demand resized variant for listing objects.
- * `tile`: ≤640px long edge WebP (matches the client upload thumb pipeline).
+ * `tile`: ≤1280px long edge WebP for marketplace cards (not the stored 640px thumb).
  * `pdp`: ≤1024px long edge WebP for the listing detail hero.
  * `merchant`: ≤1600px long edge WebP for Google Merchant / catalog feeds.
  */
