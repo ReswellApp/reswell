@@ -6,6 +6,11 @@ import {
 } from "@/lib/listing-detail-admin-bar"
 import { listListingCartHoldersForAdmin } from "@/lib/services/listingCartHolders"
 
+/**
+ * Signed-in admin bar. Do not render this on the public listing page — it
+ * reads cookies and opts the document out of the Full Route Cache.
+ * Cached pages use `ListingPrivateChromeIsland` instead.
+ */
 export async function ListingDetailAdminBarGate({
   listing,
   anonymousPublicView,

@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { usePathname } from "next/navigation"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { Header } from "@/components/header"
@@ -23,6 +23,8 @@ import {
 } from "@/components/features/giveaways/giveaway-marquee"
 import { GiveawaySignupPopup } from "@/components/features/giveaways/giveaway-signup-popup"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
+import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
+import { createClient } from "@/lib/supabase/client"
 import type { ImpersonationData } from "@/lib/impersonation"
 import {
   isMessageThreadDetailRoute,
@@ -80,6 +82,7 @@ export function SiteChromeClient({
   initialImpersonation?: ImpersonationData | null
 }) {
   const pathname = usePathname()
+  const [clientHasUser, setClientHasUser] = useState(Boolean(headerAuth.user))
   const flatMobileMessagesInbox = useFlatMobileMessagesInbox()
   const isMobileLg = useMobileLg()
   // Lock the viewport to a fixed-height app shell on conversation threads at
@@ -92,6 +95,23 @@ export function SiteChromeClient({
   const lockDesktopMessagesShell =
     !isMobileLg && isMessagesDesktopShellRoute(pathname)
   const lockViewport = lockThreadViewport || lockDesktopMessagesShell
+  const hasUser = Boolean(headerAuth.user) || clientHasUser
+
+  useEffect(() => {
+    if (headerAuth.user) {
+      setClientHasUser(true)
+      return
+    }
+    if (!hasSupabaseAuthCookiesClient()) return
+    let cancelled = false
+    const supabase = createClient()
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!cancelled) setClientHasUser(Boolean(data.user))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [headerAuth.user])
 
   useEffect(() => {
     forceReleaseBodyScrollLock()
@@ -112,7 +132,7 @@ export function SiteChromeClient({
   const showGiveawayMarquee =
     showTopCategoryBar &&
     !pathname?.startsWith("/giveaways") &&
-    !headerAuth.user &&
+    !hasUser &&
     isGiveawayMarqueeActive()
 
   if (hideSiteChrome(pathname)) {
@@ -120,7 +140,7 @@ export function SiteChromeClient({
       <AuthModalProvider>
         <AddedToCartProvider>
           <div className="flex min-h-dvh flex-col">
-            <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
+            <GiveawayEntryBootstrap isLoggedIn={hasUser} />
             <GiveawaySignupPopup serverUser={headerAuth.user} />
             <NewsletterPromoPopup serverUser={headerAuth.user} />
             <RouteProgressBar />
@@ -133,7 +153,7 @@ export function SiteChromeClient({
   return (
     <AuthModalProvider>
       <AddedToCartProvider>
-        <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
+        <GiveawayEntryBootstrap isLoggedIn={hasUser} />
         <GiveawaySignupPopup serverUser={headerAuth.user} />
         <NewsletterPromoPopup serverUser={headerAuth.user} />
         <div

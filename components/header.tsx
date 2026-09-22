@@ -14,6 +14,7 @@ import {
   type MouseEvent,
 } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { Button } from "@/components/ui/button"
 import {
@@ -732,6 +733,13 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     if (!user) return
     void refetchFromClient()
   }, [authLoaded, user, refetchFromClient])
+
+  /** Cached HTML is anonymous. Fill the account menu when the browser has a session. */
+  useEffect(() => {
+    if (serverHeaderAuth.user) return
+    if (!hasSupabaseAuthCookiesClient()) return
+    void refetchFromClient()
+  }, [serverHeaderAuth.user, refetchFromClient])
 
   /** Server saw the OAuth cookies before the browser client storage caught up. */
   useEffect(() => {

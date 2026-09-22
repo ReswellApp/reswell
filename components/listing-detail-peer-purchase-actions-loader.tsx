@@ -1,4 +1,5 @@
 import { cache } from "react"
+import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { captureException } from "@/lib/services/opsIngest"
 import {
@@ -11,7 +12,16 @@ import {
   type ListingDetailPeerPurchaseActionsProps,
 } from "@/components/listing-detail-peer-purchase-actions"
 
-const loadPeerPurchaseViewerState = cache(async (listingId: string) => {
+const loadPeerPurchaseViewerState = cache(async (listingId: string, anonymous: boolean) => {
+  if (anonymous) {
+    const supabase = createAnonSupabaseClient()
+    const fields = await fetchListingExclusiveBuyerFields(supabase, listingId)
+    const exclusivePurchaseAccess = fields
+      ? resolveListingExclusivePurchaseAccess(fields, null)
+      : ({ kind: "open" } as const)
+    return { exclusivePurchaseAccess, openOfferHref: null as string | null }
+  }
+
   const { supabase, user } = await getCachedRequestSession()
 
   const [fields, openOfferHref] = await Promise.all([
@@ -32,6 +42,7 @@ export async function ListingDetailPeerPurchaseActionsLoader(
   try {
     const { exclusivePurchaseAccess, openOfferHref } = await loadPeerPurchaseViewerState(
       props.listingId,
+      !props.isLoggedIn,
     )
 
     return (

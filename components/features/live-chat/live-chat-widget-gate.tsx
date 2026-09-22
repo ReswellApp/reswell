@@ -1,21 +1,39 @@
-import { cookies } from "next/headers"
+"use client"
+
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { LiveChatWidgetLoader } from "@/components/features/live-chat/live-chat-widget-loader"
-import { getSiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
-import { hasSupabaseAuthCookies } from "@/lib/auth/has-supabase-auth-cookies"
 import { LIVE_CHAT_WIDGET_ADMIN_ONLY } from "@/lib/live-chat/widget-config"
+import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 
 /**
- * Public live chat launcher. While `LIVE_CHAT_WIDGET_ADMIN_ONLY` is on,
- * only `profiles.is_admin` sees the widget. Employees and members do not.
+ * Admin-only launcher. Resolved in the browser so the root layout does not
+ * read cookies during the public HTML render.
  */
-export async function LiveChatWidgetGate() {
-  if (LIVE_CHAT_WIDGET_ADMIN_ONLY) {
-    const cookieStore = await cookies()
-    if (!hasSupabaseAuthCookies(cookieStore.getAll())) return null
+export function LiveChatWidgetGate() {
+  const [allowed, setAllowed] = useState(!LIVE_CHAT_WIDGET_ADMIN_ONLY)
 
-    const { bootstrap } = await getSiteChromeAuthPayload()
-    if (bootstrap?.profile?.is_admin !== true) return null
-  }
+  useEffect(() => {
+    if (!LIVE_CHAT_WIDGET_ADMIN_ONLY) return
+    if (!hasSupabaseAuthCookiesClient()) return
 
+    let cancelled = false
+    const supabase = createClient()
+    void supabase.auth.getUser().then(async ({ data }) => {
+      if (cancelled || !data.user) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", data.user.id)
+        .maybeSingle()
+      if (!cancelled && profile?.is_admin === true) setAllowed(true)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!allowed) return null
   return <LiveChatWidgetLoader />
 }

@@ -10,6 +10,7 @@ import { getInventoryProductById } from "@/app/actions/marketplace"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useHydratedIsLoggedIn } from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
@@ -50,6 +51,7 @@ export function QuantitySelector({
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
   const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
+  const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
 
   useEffect(() => {
     if (itemProp) {
@@ -86,7 +88,7 @@ export function QuantitySelector({
       toast.error("Out of stock")
       return
     }
-    if (!isLoggedIn) {
+    if (!loggedIn) {
       const safe = safeRedirectPath(here)
       if (authModal) {
         authModal.openLogin(here)

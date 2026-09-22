@@ -25,6 +25,8 @@ import { submitGiveawayEntry } from "@/lib/giveaways/submit-entry"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { peekJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
+import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
+import { createClient } from "@/lib/supabase/client"
 
 const RECENT_SIGNUP_MS = 24 * 60 * 60 * 1000
 
@@ -76,13 +78,26 @@ export function GiveawaySignupPopup({
       return
     }
     if (!giveaway || !isGiveawayOpen(giveaway)) return
-    if (!isRecentSignup(serverUser)) return
-    if (shouldSkipPath(pathname)) {
-      setOpen(false)
-      return
+
+    let cancelled = false
+    void (async () => {
+      let user = serverUser
+      if (!user && hasSupabaseAuthCookiesClient()) {
+        const { data } = await createClient().auth.getUser()
+        user = data.user
+      }
+      if (cancelled || !isRecentSignup(user)) return
+      if (shouldSkipPath(pathname)) {
+        setOpen(false)
+        return
+      }
+      if (hasDismissedGiveawaySignupPopup()) return
+      setOpen(true)
+    })()
+
+    return () => {
+      cancelled = true
     }
-    if (hasDismissedGiveawaySignupPopup()) return
-    setOpen(true)
   }, [forceOpen, pathname, serverUser, giveaway])
 
   const close = useCallback(() => {

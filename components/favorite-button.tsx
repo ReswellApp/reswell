@@ -10,6 +10,11 @@ import { cn } from "@/lib/utils"
 import { Heart } from "lucide-react"
 import { toast } from "sonner"
 import posthog from "posthog-js"
+import { createClient } from "@/lib/supabase/client"
+import {
+  useHydratedIsLoggedIn,
+  useListingViewer,
+} from "@/components/features/listings/listing-viewer-provider"
 
 interface FavoriteButtonProps {
   listingId: string
@@ -46,20 +51,44 @@ export function FavoriteButton({
   heartAccent = "default",
 }: FavoriteButtonProps) {
   const router = useRouter()
+  const viewer = useListingViewer()
+  const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
   const openSignIn = useSignInGate()
+  const isOwner = Boolean(
+    viewer?.userId && viewer.sellerUserId && viewer.userId === viewer.sellerUserId,
+  )
 
   // ISR / client-island pages hydrate favorites after mount. Sync so hearts fill
   // when `initialFavorited` arrives (FavoriteButton only read the first value).
   useEffect(() => {
     setFavorited(initialFavorited)
   }, [initialFavorited])
+
+  useEffect(() => {
+    if (!viewer?.userId || initialFavorited || isOwner) return
+    let cancelled = false
+    void createClient()
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", viewer.userId)
+      .eq("listing_id", listingId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data) setFavorited(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [viewer?.userId, initialFavorited, isOwner, listingId])
+  if (isOwner) return null
+
   const useListingTileHeart = heartAccent === "listingTile"
   const useListingPdpHeart = heartAccent === "listingPdp"
 
   async function toggleFavorite() {
-    if (!isLoggedIn) {
+    if (!loggedIn) {
       openSignIn(redirectPath ?? `/l/${listingId}`, { skipSessionProbe: true })
       return
     }

@@ -8,7 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { createClient } from "@/lib/supabase/server"
+import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import {
   getCachedPublicShopListing,
   getCachedShopRelatedListings,
@@ -38,8 +38,8 @@ export async function ShopListingDetailPage({
   }
 
   if (!listing) {
-    const authSupabase = await createClient()
-    const r = await findListingByParam(authSupabase, listingParam, {
+    const anon = createAnonSupabaseClient()
+    const r = await findListingByParam(anon, listingParam, {
       select: SHOP_LISTING_SELECT,
       section: "new",
       includeHiddenListings: true,
@@ -51,11 +51,7 @@ export async function ShopListingDetailPage({
     notFound()
   }
 
-  const authSupabaseForUser = await createClient()
-  const {
-    data: { user },
-  } = await authSupabaseForUser.auth.getUser()
-  const viewerId = user?.id ?? null
+  const viewerId = null
 
   const stockQuantity = Number((listing as { stock_quantity?: number }).stock_quantity) || 0
   const images = (

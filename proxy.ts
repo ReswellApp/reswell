@@ -6,17 +6,20 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { resolveSeoRedirect } from '@/lib/seo/edge-redirects'
 import {
   evaluateAdCatalogCrawlerAccess,
-  isAdCatalogCrawler,
 } from '@/lib/crawler/ad-catalog-crawler'
 import {
-  isPublicMarketplaceHtmlPath,
-  PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
+  publicMarketplaceCdnCacheControl,
+  shouldAttachDeviceCookieOnDocument,
 } from '@/lib/crawler/public-marketplace-paths'
 
 function applyPublicMarketplaceCacheHints(response: NextResponse, pathname: string): NextResponse {
-  if (!isPublicMarketplaceHtmlPath(pathname)) return response
   if (response.status >= 300 && response.status < 400) return response
-  response.headers.set('CDN-Cache-Control', PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL)
+  const cacheControl = publicMarketplaceCdnCacheControl(
+    pathname,
+    response.headers.has('set-cookie'),
+  )
+  if (!cacheControl) return response
+  response.headers.set('CDN-Cache-Control', cacheControl)
   return response
 }
 
@@ -47,19 +50,20 @@ export async function proxy(request: NextRequest) {
     }
 
     const response = await updateSession(request)
-    const withDevice = attachDeviceCookie(request, response)
+    const withDevice = shouldAttachDeviceCookieOnDocument(pathname)
+      ? attachDeviceCookie(request, response)
+      : response
 
-    if (isAdCatalogCrawler(request.headers.get('user-agent'))) {
-      return applyPublicMarketplaceCacheHints(withDevice, pathname)
-    }
-
-    return withDevice
+    return applyPublicMarketplaceCacheHints(withDevice, pathname)
   } catch (error) {
     console.error('[middleware] proxy failed; passing through', {
       pathname,
       message: error instanceof Error ? error.message : String(error),
     })
-    return attachDeviceCookie(request, NextResponse.next({ request }))
+    const passthrough = NextResponse.next({ request })
+    return shouldAttachDeviceCookieOnDocument(pathname)
+      ? attachDeviceCookie(request, passthrough)
+      : passthrough
   }
 }
 

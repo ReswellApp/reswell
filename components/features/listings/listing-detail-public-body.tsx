@@ -1,6 +1,7 @@
 import { Suspense } from "react"
+import { ListingPrivateChromeIsland } from "@/components/features/listings/listing-private-chrome-island"
+import { ListingViewerProvider } from "@/components/features/listings/listing-viewer-provider"
 import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
-import { ListingDetailAdminBarGate } from "@/components/features/listings/listing-detail-admin-bar-gate"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 import { ListingPdpProductJsonLd } from "@/components/features/listings/listing-pdp-product-json-ld"
 import { isGoogleMerchantPeerSection } from "@/lib/google-merchant/config"
@@ -131,23 +132,21 @@ export async function ListingDetailPublicBody({
 
   const sectionPage = await renderListingSectionPage(listing, listingParam, cachedPublicProps)
 
+  const sellerUserId = typeof listing.user_id === "string" ? listing.user_id : null
+
   return (
-    <>
+    <ListingViewerProvider sellerUserId={sellerUserId}>
+      <ListingPrivateChromeIsland listing={listing} />
       {isGoogleMerchantPeerSection(listing.section) ? (
         <ListingPdpProductJsonLd listing={listing as GoogleMerchantListingRow} />
       ) : null}
       <ListingViewTracker listingId={listing.id} />
-      {sectionProps.anonymousPublicView === true ? null : (
-        <Suspense fallback={null}>
-          <ListingDetailAdminBarGate listing={listing} anonymousPublicView={false} />
-        </Suspense>
-      )}
       {sectionPage}
       {EMBEDDED_RELATED_CONTENT_SECTIONS.has(listing.section) ? null : (
         <Suspense fallback={null}>
           <ListingRelatedContentSection listingId={listing.id} />
         </Suspense>
       )}
-    </>
+    </ListingViewerProvider>
   )
 }

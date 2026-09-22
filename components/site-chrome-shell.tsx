@@ -1,25 +1,7 @@
-import { Suspense, type ReactNode } from "react"
-import { SiteChromeClient } from "@/components/site-chrome-client"
+import type { ReactNode } from "react"
 import { SiteChrome } from "@/components/site-chrome"
-import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 
-const ANONYMOUS_SITE_CHROME_AUTH: SiteChromeAuthPayload = {
-  user: null,
-  bootstrap: null,
-}
-
-/**
- * Keeps `cookies()` inside a Suspense boundary so public marketplace pages can
- * prerender / ISR while signed-in header bootstrap streams in separately.
- */
+/** Anonymous shell. Auth chrome hydrates on the client after paint. */
 export function SiteChromeShell({ children }: { children: ReactNode }) {
-  return (
-    <Suspense
-      fallback={
-        <SiteChromeClient headerAuth={ANONYMOUS_SITE_CHROME_AUTH}>{children}</SiteChromeClient>
-      }
-    >
-      <SiteChrome>{children}</SiteChrome>
-    </Suspense>
-  )
+  return <SiteChrome>{children}</SiteChrome>
 }

@@ -15,6 +15,10 @@ import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import {
+  useHydratedIsLoggedIn,
+  useListingViewer,
+} from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { toast } from "sonner"
@@ -71,6 +75,8 @@ export function ListingDetailPeerPurchaseActions({
   const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const authModal = useOptionalAuthModal()
+  const viewer = useListingViewer()
+  const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
   const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
@@ -78,9 +84,9 @@ export function ListingDetailPeerPurchaseActions({
   const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam)
 
   useEffect(() => {
-    if (!isLoggedIn) return
+    if (!loggedIn) return
     void prefetchStripeCheckout()
-  }, [isLoggedIn])
+  }, [loggedIn])
 
   function openLoginGate(redirect: string = here) {
     if (authModal) {
@@ -92,7 +98,7 @@ export function ListingDetailPeerPurchaseActions({
 
   async function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
-    if (!isLoggedIn) {
+    if (!loggedIn) {
       openLoginGate(here)
       return
     }
@@ -125,7 +131,7 @@ export function ListingDetailPeerPurchaseActions({
   }
 
   function openMakeOffer() {
-    if (!isLoggedIn) {
+    if (!loggedIn) {
       openLoginGate(here)
       return
     }
@@ -136,6 +142,11 @@ export function ListingDetailPeerPurchaseActions({
     exclusivePurchaseAccess.kind === "blocked_for_viewer" ||
     exclusivePurchaseAccess.kind === "blocked_sign_in"
   const exclusiveForViewer = exclusivePurchaseAccess.kind === "exclusive_for_viewer"
+  const isOwner = Boolean(
+    viewer?.userId && viewer.sellerUserId && viewer.userId === viewer.sellerUserId,
+  )
+
+  if (isOwner) return null
 
   return (
     <div className="flex flex-col gap-[10px]">
@@ -163,7 +174,7 @@ export function ListingDetailPeerPurchaseActions({
       ) : null}
       {!purchaseBlocked ? (
       <div className="flex flex-col gap-[10px]">
-        {isLoggedIn ? (
+        {loggedIn ? (
           <Button
             size="lg"
             className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
@@ -183,7 +194,7 @@ export function ListingDetailPeerPurchaseActions({
             Buy it now
           </Button>
         )}
-        {isLoggedIn ? (
+        {loggedIn ? (
           <Button
             type="button"
             variant="secondary"
@@ -253,7 +264,7 @@ export function ListingDetailPeerPurchaseActions({
             shippingFlatRate={makeOffer.shippingFlatRate}
             shippingCostMode={makeOffer.shippingCostMode ?? null}
             section={section}
-            isLoggedIn={isLoggedIn}
+            isLoggedIn={loggedIn}
             open={offerOpen}
             onOpenChange={setOfferOpen}
             hideMinimumUntilViolated={makeOffer.hideMinimumUntilViolated}
