@@ -4,10 +4,7 @@ import { installAbortErrorSuppressor } from '@/lib/client/install-abort-error-su
 import { installChunkLoadRecovery } from '@/lib/client/install-chunk-load-recovery'
 import { installSafeTouchEventGuard } from '@/lib/client/install-safe-touch-event-guard'
 import { installWebViewBridgeNoiseSuppressor } from '@/lib/client/install-webview-bridge-noise-suppressor'
-import { isPostHogBenignClientFetchError } from '@/lib/utils/is-abort-error'
-import { isPostHogAndroidWebViewBridgeNoise } from '@/lib/utils/is-android-webview-bridge-noise'
-import { isPostHogStaleFileNotFoundError } from '@/lib/utils/is-stale-file-not-found-error'
-import posthog from 'posthog-js'
+import { deferUntilIdleOrInteraction } from '@/lib/analytics/defer-until-idle'
 
 initBotId({
   protect: [...BOTID_PROTECTED_ROUTES],
@@ -24,9 +21,8 @@ installSafeTouchEventGuard()
 // the user onto the in-app browser's native "This page couldn't load" screen.
 installChunkLoadRecovery()
 
-// PostHog client-side analytics initialization.
+// PostHog is deferred until idle / first input so posthog-js stays off the first-paint path.
 const posthogToken = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
-const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST
 
 if (!posthogToken && process.env.NODE_ENV !== 'production') {
   console.error(
@@ -37,21 +33,9 @@ if (!posthogToken && process.env.NODE_ENV !== 'production') {
 }
 
 if (posthogToken) {
-  const uiHost = (posthogHost ?? 'https://us.posthog.com')
-    .replace('us.i.posthog.com', 'us.posthog.com')
-    .replace('eu.i.posthog.com', 'eu.posthog.com')
-
-  posthog.init(posthogToken, {
-    api_host: '/ingest',
-    ui_host: uiHost,
-    defaults: '2026-01-30',
-    capture_exceptions: true,
-    debug: process.env.NODE_ENV === 'development',
-    before_send: (event) => {
-      if (isPostHogAndroidWebViewBridgeNoise(event)) return null
-      if (isPostHogBenignClientFetchError(event)) return null
-      if (isPostHogStaleFileNotFoundError(event)) return null
-      return event
-    },
+  deferUntilIdleOrInteraction(() => {
+    void import('@/lib/client/init-posthog-client').then((mod) => {
+      void mod.ensurePostHogClient()
+    })
   })
 }

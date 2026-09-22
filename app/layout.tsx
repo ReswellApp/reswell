@@ -1,7 +1,6 @@
 import React, { Suspense } from "react"
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
-import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
 import { SiteChromeShell } from '@/components/site-chrome-shell'
@@ -13,14 +12,11 @@ import { publicSiteOrigin } from '@/lib/public-site-origin'
 import { GoogleAdsGtag } from '@/components/google-ads-gtag'
 import { GoogleAnalyticsGtag } from '@/components/google-analytics-gtag'
 import { GoogleSignUpWelcomeRedirect } from '@/components/auth/google-sign-up-welcome-redirect'
-import { KlaviyoOnsite } from '@/components/klaviyo-onsite'
-import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
-import { PostHogIdentify } from '@/components/posthog-identify'
+import { DeferredMarketingRuntime } from '@/components/deferred-marketing-runtime'
 import { MetaPixel } from '@/components/meta-pixel'
 import { OpenAiAdsPixel } from '@/components/openai-ads-pixel'
 import { MetaCapiParamBootstrap } from '@/components/meta/meta-capi-param-bootstrap'
 import { AdClickAttributionBootstrap } from '@/components/ads/ad-click-attribution-bootstrap'
-import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
 import { JsonLd } from '@/components/seo/json-ld'
 import { organizationSchema, webSiteSchema } from '@/lib/seo/structured-data'
 
@@ -92,6 +88,10 @@ export default function RootLayout({
         <JsonLd data={[organizationSchema(publicSiteOrigin()), webSiteSchema(publicSiteOrigin())]} />
         <AbortErrorSuppressor />
         <OpsErrorReporter />
+        {/* Ads tags stay in the document with next/script lazyOnload so gclid / first
+            load measurement still happen after window load without competing with LCP.
+            Klaviyo, PostHog identify, page-view beacons, and Vercel Analytics mount
+            from DeferredMarketingRuntime after idle or first interaction. */}
         <GoogleAdsGtag />
         <GoogleAnalyticsGtag />
         <MetaPixel />
@@ -100,9 +100,6 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <AdClickAttributionBootstrap />
             <MetaCapiParamBootstrap />
-            <KlaviyoPageViewTracker />
-            <PostHogIdentify />
-            <MetaPixelPageViewTracker />
             <GoogleSignUpWelcomeRedirect />
           </Suspense>
           <SiteChromeShell>{children}</SiteChromeShell>
@@ -110,9 +107,8 @@ export default function RootLayout({
             <LiveChatWidgetGate />
           </Suspense>
           <Toaster />
-          <Analytics />
         </LocaleProvider>
-        <KlaviyoOnsite />
+        <DeferredMarketingRuntime />
       </body>
     </html>
   )

@@ -11,6 +11,9 @@ import {
  *
  * Init captures the `oppref` click reference from ChatGPT ad landings. `page_viewed`
  * is not auto-fired by the SDK, so the first full page load is measured here.
+ * Subsequent App Router navigations are consolidated in {@link MarketingPageViewTracker}.
+ *
+ * `lazyOnload` keeps the OpenAI SDK off the first-paint path.
  */
 export function OpenAiAdsPixel() {
   const id = getOpenAiAdsPixelId()
@@ -19,7 +22,7 @@ export function OpenAiAdsPixel() {
   const debug = isOpenAiAdsPixelDebugEnabled()
 
   return (
-    <Script id="openai-ads-pixel" strategy="afterInteractive">
+    <Script id="openai-ads-pixel" strategy="lazyOnload">
       {`
 !function(w,d,s,u){if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;var j=d.createElement(s);j.async=1;j.src=u;var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(j,f)}(window,document,"script","https://bzrcdn.openai.com/sdk/oaiq.min.js");
 oaiq("init",{pixelId:${JSON.stringify(id)},debug:${debug ? "true" : "false"}});
