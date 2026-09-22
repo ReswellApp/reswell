@@ -1,3 +1,4 @@
+import { revalidateListYourSurfboardShowcase } from "@/lib/cache/revalidate-list-your-surfboard-showcase"
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
@@ -129,6 +130,7 @@ export async function POST(
   if (isBuyer && order.seller_id) {
     await revalidateSellerProfileAndDirectoryCatalog(supabase, order.seller_id)
   }
+  revalidateListYourSurfboardShowcase()
 
   return NextResponse.json({ success: true, id: data.id, created_at: data.created_at })
 }

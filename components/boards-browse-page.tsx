@@ -24,6 +24,7 @@ import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
 import {
   BOARDS_BROWSE_PAGE_SIZE,
+  GEO_BROWSE_HTML_MAX_ROWS,
   buildSurfboardBrowseBaseQuery,
   compareBoardBrowseRows,
   compareBoardBrowseRowsDailyRotate,
@@ -42,7 +43,14 @@ import {
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
-import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
+import { getCachedForwardGeocodePlace } from "@/lib/cache/forward-geocode-place"
+import { resolveBoardsBrowseGeocodeRedirectHref } from "@/lib/services/boardsBrowseGeocode"
+import {
+  boardsBrowseHasLatLng,
+  boardsBrowsePathWithSearchParams,
+  boardsBrowseSearchParamsToURLSearchParams,
+  parseBoardsBrowseCoord,
+} from "@/lib/utils/boards-browse-geocode"
 import {
   boardDimensionBrowseFieldsFromSearchParams,
   boardDimensionBrowseIlikeTokens,
@@ -160,11 +168,12 @@ async function BoardListings({
     ? true
     : undefined
   const radiusMi = searchParams.radius ? Number(searchParams.radius) : undefined
-  const lat = searchParams.lat ? Number(searchParams.lat) : undefined
-  const lng = searchParams.lng ? Number(searchParams.lng) : undefined
-  const geoBrowseMaxRows = 500
-
-  const hasLatLng = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)
+  const parsedLat = parseBoardsBrowseCoord(searchParams.lat)
+  const parsedLng = parseBoardsBrowseCoord(searchParams.lng)
+  const hasLatLng = boardsBrowseHasLatLng(searchParams.lat, searchParams.lng)
+  const lat = hasLatLng ? parsedLat : undefined
+  const lng = hasLatLng ? parsedLng : undefined
+  const geoBrowseMaxRows = GEO_BROWSE_HTML_MAX_ROWS
   const hasRadius = radiusMi != null && !Number.isNaN(radiusMi) && radiusMi > 0
   const filterByRadius = hasLatLng && hasRadius
   const isNearestSort = sort === "nearest" && hasLatLng
@@ -281,7 +290,9 @@ async function BoardListings({
 
       let esPage = await getBoardsBrowseListingsPageViaEs(supabase, esBrowseInput)
       // Length from free-text is a hint — if it zeros out results, retry without it.
+      // Page 2+ already proved page 1 empty (or would have rewritten the query); skip the extra ES hop.
       if (
+        page === 1 &&
         esPage &&
         esPage.boards.length === 0 &&
         esLengthInches != null &&
@@ -455,7 +466,7 @@ async function BoardListings({
       location.trim().length >= 2
 
     if (geocodedForFallback) {
-      const g = await forwardGeocodePlaceForServer(location.trim())
+      const g = await getCachedForwardGeocodePlace(location.trim())
       if (g) {
         anchorLat = g.lat
         anchorLng = g.lng
@@ -743,6 +754,8 @@ async function BoardListingsTileGridWithFavorites({
 
 export async function BoardsBrowsePage(props: {
   searchParams: Promise<BoardsBrowseSearchParams>
+  /** Canonical path for type-alias / geocode redirects. Defaults to `/boards`. */
+  browsePath?: string
   showListYourSurfboardCta?: boolean
   /** When `sort` is omitted from the URL, listings use this value. */
   defaultSort?: string
@@ -750,6 +763,7 @@ export async function BoardsBrowsePage(props: {
   heroListingImages?: readonly string[]
 }) {
   const rawSearchParams = await props.searchParams
+  const browsePath = props.browsePath?.trim() || "/boards"
   const pageDefaultSort = props.defaultSort ?? BOARDS_BROWSE_DEFAULT_SORT
   const searchParams: BoardsBrowseSearchParams = {
     ...rawSearchParams,
@@ -757,48 +771,27 @@ export async function BoardsBrowsePage(props: {
   }
   const searchParamsPromise = Promise.resolve(searchParams)
   if (searchParams.type === "foamie") {
-    const next = new URLSearchParams()
-    for (const [k, v] of Object.entries(searchParams)) {
-      if (k === "type" || v == null || v === "") continue
-      next.set(k, v)
-    }
-    redirect(next.toString() ? `/boards?${next.toString()}` : "/boards")
+    const next = boardsBrowseSearchParamsToURLSearchParams(searchParams, new Set(["type"]))
+    redirect(boardsBrowsePathWithSearchParams(browsePath, next))
   }
   if (searchParams.type === "funboard") {
-    const next = new URLSearchParams()
-    for (const [k, v] of Object.entries(searchParams)) {
-      if (v == null || v === "") continue
-      if (k === "type") {
-        next.set("type", "hybrid")
-        continue
-      }
-      next.set(k, v)
-    }
-    redirect(`/boards?${next.toString()}`)
+    const next = boardsBrowseSearchParamsToURLSearchParams(searchParams)
+    next.set("type", "hybrid")
+    redirect(boardsBrowsePathWithSearchParams(browsePath, next))
   }
   if (searchParams.type === "mid-length") {
-    const next = new URLSearchParams()
-    for (const [k, v] of Object.entries(searchParams)) {
-      if (v == null || v === "") continue
-      if (k === "type") {
-        next.set("type", "hybrid")
-        continue
-      }
-      next.set(k, v)
-    }
-    redirect(`/boards?${next.toString()}`)
+    const next = boardsBrowseSearchParamsToURLSearchParams(searchParams)
+    next.set("type", "hybrid")
+    redirect(boardsBrowsePathWithSearchParams(browsePath, next))
   }
   if (searchParams.type === "step-up" || searchParams.type === "gun") {
-    const next = new URLSearchParams()
-    for (const [k, v] of Object.entries(searchParams)) {
-      if (v == null || v === "") continue
-      if (k === "type") {
-        next.set("type", "step-up-gun")
-        continue
-      }
-      next.set(k, v)
-    }
-    redirect(`/boards?${next.toString()}`)
+    const next = boardsBrowseSearchParamsToURLSearchParams(searchParams)
+    next.set("type", "step-up-gun")
+    redirect(boardsBrowsePathWithSearchParams(browsePath, next))
+  }
+  const geocodeRedirectHref = await resolveBoardsBrowseGeocodeRedirectHref(browsePath, searchParams)
+  if (geocodeRedirectHref) {
+    redirect(geocodeRedirectHref)
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
   const pageTitle = typeCrumb ?? surfboardsBrowseRootLabel
