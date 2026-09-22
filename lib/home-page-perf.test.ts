@@ -12,12 +12,21 @@ describe("homepage performance constraints", () => {
     assert.match(src, /HomeHeroPrimaryCta/)
   })
 
-  it("keeps the hero LCP image at quality 75–80 with a capped sizes hint", () => {
+  it("keeps the hero LCP image at quality 85–90 with a capped sizes hint", () => {
     const src = readFileSync(new URL("../components/hero-backdrop.tsx", import.meta.url), "utf8")
-    assert.match(src, /quality=\{7[5-9]\}|quality=\{80\}/)
+    assert.match(src, /quality=\{8[5-9]\}|quality=\{90\}/)
     assert.match(src, /sizes="\(max-width: 1023px\) 100vw, 1440px"/)
     assert.match(src, /priority/)
     assert.doesNotMatch(src, /quality=\{95\}/)
+    assert.doesNotMatch(src, /quality=\{75\}/)
     assert.doesNotMatch(src, /sizes="100vw"/)
+  })
+
+  it("serves homepage listing tiles at pdp density instead of 640px thumbs", () => {
+    const src = readFileSync(
+      new URL("../components/features/home/home-viewer-hydration.tsx", import.meta.url),
+      "utf8",
+    )
+    assert.match(src, /imageDensity="pdp"/)
   })
 })

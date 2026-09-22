@@ -2,7 +2,11 @@ import { ListingTile } from "@/components/listing-tile"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { ListingTileShopInventoryCartIcon } from "@/components/listing-tile-shop-inventory-cart-icon"
 import { capitalizeWords, formatCategory } from "@/lib/listing-labels"
-import { listingCardImageSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  listingCardImageSrc,
+  type ListingImageForCard,
+  type ListingTileImageDensity,
+} from "@/lib/listing-image-display"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
   homeListingScrollImageSizes,
@@ -40,6 +44,7 @@ export function ShopNewListingStandardTile({
   categoryName,
   layout = "homeScroll",
   showFavorites = true,
+  imageDensity = "tile",
 }: {
   listing: ShopNewListingStandardTileListing
   stockQuantity: number
@@ -48,6 +53,7 @@ export function ShopNewListingStandardTile({
   categoryName: string | null
   layout?: "homeScroll" | "grid"
   showFavorites?: boolean
+  imageDensity?: ListingTileImageDensity
 }) {
   const imageUrl = listingCardImageSrc(listing.listing_images ?? null)
   const pill = categoryName?.trim() ? formatCategory(categoryName) : ""
@@ -66,6 +72,7 @@ export function ShopNewListingStandardTile({
       cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}
       cardContentClassName={homeUniformScrollBodyClass}
       imageSizes={isGrid ? gridImageSizes : homeListingScrollImageSizes}
+      imageDensity={imageDensity}
       titleSlot={
         <div className={homeUniformScrollTitleSlotClass}>
           <h3 className={homePeerListingTileTitleClass}>{capitalizeWords(listing.title)}</h3>

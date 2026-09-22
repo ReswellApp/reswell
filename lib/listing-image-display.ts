@@ -1,6 +1,7 @@
 /**
  * - `listingTileImageSrcFromRow` — single image row for browse tiles: persisted thumb first
  *   (only when it is distinct from the full URL), then on-demand `?variant=tile` resize.
+ *   Pass `{ density: "pdp" }` for homepage tiles (≤1024px WebP, skips stored thumbs).
  *   Does not guess `*-thumb.` siblings — those 404s serialized every card on first paint.
  * - `listingCardImageSrc` — primary photo for marketplace tiles (`ListingTile` and similar).
  * - `listingImagesFromPrimaryFields` — card gallery from denorm cover + `tile_gallery_images`.
@@ -10,10 +11,15 @@
  */
 
 import {
+  listingFullImageUrlFromRef,
   proxiedListingImageSrc,
+  withListingMediaPdpVariant,
   withListingMediaTileVariant,
 } from "@/lib/listing-media-proxy-url"
 import { listingStoredThumbIsDistinctFromFull } from "@/lib/listing-thumb-url"
+
+/** `tile` = stored 640px thumb first. `pdp` = ≤1024px WebP so retina homepage tiles stay sharp. */
+export type ListingTileImageDensity = "tile" | "pdp"
 
 export type ListingImageForCard = {
   url?: string | null
@@ -29,15 +35,37 @@ function pushUniqueCandidate(out: string[], seen: Set<string>, candidate: string
 }
 
 /** Ordered fallbacks for one listing photo — persisted thumb, resized full, then raw full. */
-export function listingTileImageSrcCandidatesFromRow(img: ListingImageForCard): string[] {
+export function listingTileImageSrcCandidatesFromRow(
+  img: ListingImageForCard,
+  options?: { density?: ListingTileImageDensity },
+): string[] {
   const out: string[] = []
   const seen = new Set<string>()
 
   const storedThumb = img.thumbnail_url?.trim() || ""
-  const full = img.url?.trim() || ""
+  const fullRaw = img.url?.trim() || ""
+  const full = listingFullImageUrlFromRef(fullRaw) ?? fullRaw
+
+  if (options?.density === "pdp") {
+    if (full) {
+      const proxiedFull = proxiedListingImageSrc(full)
+      if (proxiedFull.startsWith("/media/listings/")) {
+        // Do not start from `-thumb.` — /media serves stored thumbs as-is even with ?variant=pdp.
+        pushUniqueCandidate(out, seen, withListingMediaPdpVariant(proxiedFull))
+      }
+      pushUniqueCandidate(out, seen, proxiedFull)
+      if (!proxiedFull.startsWith("/media/listings/")) {
+        pushUniqueCandidate(out, seen, full)
+      }
+    } else if (listingStoredThumbIsDistinctFromFull(storedThumb, fullRaw)) {
+      pushUniqueCandidate(out, seen, proxiedListingImageSrc(storedThumb))
+    }
+    return out
+  }
+
   // Imports used to copy the full URL into thumbnail_url. That is not a thumb —
   // skip it so we hit `?variant=tile` instead of downloading the original first.
-  if (listingStoredThumbIsDistinctFromFull(storedThumb, full)) {
+  if (listingStoredThumbIsDistinctFromFull(storedThumb, fullRaw)) {
     pushUniqueCandidate(out, seen, proxiedListingImageSrc(storedThumb))
   }
 
@@ -59,8 +87,11 @@ export function listingTileImageSrcCandidatesFromRow(img: ListingImageForCard): 
  * Best src for a listing photo in browse grids / carousels — never returns an unscaled full-res
  * proxy unless `?variant=tile` is appended for server-side resize.
  */
-export function listingTileImageSrcFromRow(img: ListingImageForCard): string {
-  return listingTileImageSrcCandidatesFromRow(img)[0] ?? ""
+export function listingTileImageSrcFromRow(
+  img: ListingImageForCard,
+  options?: { density?: ListingTileImageDensity },
+): string {
+  return listingTileImageSrcCandidatesFromRow(img, options)[0] ?? ""
 }
 
 /**
@@ -199,6 +230,7 @@ export function listingTileCarouselImageUrls(
 /** Per-slide URL fallbacks for carousel tiles (primary photo first). */
 export function listingTileCarouselImageCandidateLists(
   images: ListingImageForCard[] | null | undefined | unknown,
+  options?: { density?: ListingTileImageDensity },
 ): string[][] {
   const list = asListingImageArray(images)
   if (list.length === 0) return []
@@ -210,7 +242,7 @@ export function listingTileCarouselImageCandidateLists(
       : [list[primaryIdx]!, ...list.filter((_, i) => i !== primaryIdx)]
 
   return ordered
-    .map((img) => listingTileImageSrcCandidatesFromRow(img))
+    .map((img) => listingTileImageSrcCandidatesFromRow(img, options))
     .filter((candidates) => candidates.length > 0)
 }
 

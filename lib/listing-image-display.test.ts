@@ -5,7 +5,10 @@ import {
   coalesceListingImagesForCard,
   listingImagesFromPrimaryFields,
   listingTileCarouselImageCandidateLists,
+  listingTileImageSrcCandidatesFromRow,
 } from "./listing-image-display.ts"
+
+const STORAGE = "https://proj.supabase.co/storage/v1/object/public/listings"
 
 describe("listingImagesFromPrimaryFields", () => {
   it("falls back to a single cover when the gallery is empty", () => {
@@ -47,6 +50,31 @@ describe("listingImagesFromPrimaryFields", () => {
       })),
     )
     assert.equal(images?.length, LISTING_TILE_GALLERY_MAX_IMAGES)
+  })
+})
+
+describe("listingTileImageSrcCandidatesFromRow density", () => {
+  it("prefers stored thumbs for default tile density", () => {
+    const candidates = listingTileImageSrcCandidatesFromRow({
+      url: `${STORAGE}/u/1-full.webp`,
+      thumbnail_url: `${STORAGE}/u/1-thumb.webp`,
+    })
+    assert.equal(candidates[0], "/media/listings/u/1-thumb.webp")
+  })
+
+  it("uses the 1024px pdp variant on homepage density so retina tiles stay sharp", () => {
+    const candidates = listingTileImageSrcCandidatesFromRow(
+      {
+        url: `${STORAGE}/u/1-full.webp`,
+        thumbnail_url: `${STORAGE}/u/1-thumb.webp`,
+      },
+      { density: "pdp" },
+    )
+    assert.equal(candidates[0], "/media/listings/u/1-full.webp?variant=pdp")
+    assert.equal(
+      candidates.some((src) => src.includes("-thumb.")),
+      false,
+    )
   })
 })
 

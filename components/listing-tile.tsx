@@ -7,6 +7,7 @@ import {
   listingCardImageSrc,
   listingTileCarouselImageCandidateLists,
   type ListingImageForCard,
+  type ListingTileImageDensity,
 } from "@/lib/listing-image-display"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
 import { ListingTileImageMedia } from "@/components/listing-tile-image-media"
@@ -95,6 +96,8 @@ export interface ListingTileProps {
   imageClassName?: string
   /** Forwarded to ListingTileImageMedia — see its JSDoc for usage rules. */
   imagePriority?: boolean
+  /** Homepage tiles use `pdp` (≤1024px) so retina cards are not upscaled 640px thumbs. */
+  imageDensity?: ListingTileImageDensity
 
   cardClassName?: string
   linkLayout?: ListingTileLinkLayout
@@ -166,6 +169,7 @@ export function ListingTile({
   imageFit = "cover",
   imageClassName,
   imagePriority = false,
+  imageDensity = "tile",
   cardClassName = listingProductCardGridClassName,
   linkLayout = "split",
   linkClassName,
@@ -189,7 +193,9 @@ export function ListingTile({
   children,
 }: ListingTileProps) {
   const src = resolveSrc(listingImages ?? null, imageUrl ?? null)
-  const slideCandidates = listingTileCarouselImageCandidateLists(listingImages ?? null)
+  const slideCandidates = listingTileCarouselImageCandidateLists(listingImages ?? null, {
+    density: imageDensity,
+  })
   const tileSlideCandidates = slideCandidates.length > 0 ? slideCandidates : src ? [[src]] : []
   const aspectClass =
     imageAspect === "square" ? "aspect-square" : "aspect-[3/4]"
