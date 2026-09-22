@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Flag, MoreHorizontal, RotateCcw, Tag } from "lucide-react"
+import { Flag, Instagram, MoreHorizontal, RotateCcw, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -84,6 +84,12 @@ export function ListingDetailAdminMoreMenu({
           {listing.suppressedOnBoardsBrowse ? "Show normally on /boards" : "Sort last on /boards"}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={`/admin/hayden-shop?listingId=${listing.id}`}>
+            <Instagram />
+            Build Instagram post
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href={`/admin/users/${listing.userId}`}>Seller's page</Link>
         </DropdownMenuItem>

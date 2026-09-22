@@ -11,6 +11,7 @@ import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-e
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
+import { syncHaydenShopPnlOnSale } from "@/lib/services/pnlHaydenShopSale"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
@@ -284,6 +285,22 @@ export async function POST(request: NextRequest) {
   void syncListingToGoogleMerchantBestEffort(serviceSupabase, listing.id)
 
   void markUserListingBoardModelDataSold(serviceSupabase, listing.id, itemPriceUsd)
+  void syncHaydenShopPnlOnSale({
+    sellerId: listing.user_id,
+    sales: [
+      {
+        listingId: listing.id,
+        salePrice: itemPriceUsd,
+        saleDate:
+          typeof (purchase as { created_at?: string }).created_at === "string"
+            ? (purchase as { created_at: string }).created_at
+            : new Date().toISOString(),
+        orderId: purchase.id,
+        orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+        platformFee,
+      },
+    ],
+  })
 
   void postPurchaseThreadNotification(supabase, {
     buyerId: user.id,

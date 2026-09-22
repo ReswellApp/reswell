@@ -17,6 +17,7 @@ import { getSellerEarnings } from "@/lib/seller-fees"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
+import { syncHaydenShopPnlOnSale } from "@/lib/services/pnlHaydenShopSale"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
@@ -792,6 +793,22 @@ export async function completeAdminTerminalCashSale(
 
   void syncListingToGoogleMerchantBestEffort(service, listing.id)
   void markUserListingBoardModelDataSold(service, listing.id, itemPrice)
+  void syncHaydenShopPnlOnSale({
+    sellerId,
+    sales: [
+      {
+        listingId: listing.id,
+        salePrice: itemPrice,
+        saleDate:
+          typeof (purchase as { created_at?: string }).created_at === "string"
+            ? (purchase as { created_at: string }).created_at
+            : new Date().toISOString(),
+        orderId: purchase.id,
+        orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+        platformFee,
+      },
+    ],
+  })
 
   if (buyerId) {
     void deleteBuyerCartRowsForListings(service, buyerId, [listing.id])

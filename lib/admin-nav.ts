@@ -82,6 +82,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/listings/bulk',
   '/admin/shop',
   '/admin/shop/orders',
+  '/admin/hayden-shop',
 ])
 
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
@@ -91,6 +92,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin/home', label: 'Home', icon: 'layoutDashboard' },
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
+      { href: '/admin/hayden-shop', label: "Hayden's Shop", icon: 'megaphone' },
       { href: '/admin/users', label: 'Users', icon: 'users' },
     ],
   },

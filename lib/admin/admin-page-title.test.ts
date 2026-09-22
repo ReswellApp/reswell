@@ -6,6 +6,7 @@ import { getAdminPageTitle } from './admin-page-title.ts'
 describe('getAdminPageTitle', () => {
   it('returns the exact nav label for a top-level page', () => {
     assert.equal(getAdminPageTitle('/admin/listings', ADMIN_NAV_GROUPS), 'Listings')
+    assert.equal(getAdminPageTitle('/admin/hayden-shop', ADMIN_NAV_GROUPS), "Hayden's Shop")
     assert.equal(getAdminPageTitle('/admin/related-content', ADMIN_NAV_GROUPS), 'Related content')
     assert.equal(getAdminPageTitle('/admin/home', ADMIN_NAV_GROUPS), 'Home')
     assert.equal(getAdminPageTitle('/admin/contact-messages', ADMIN_NAV_GROUPS), 'Support tickets')

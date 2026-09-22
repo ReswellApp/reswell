@@ -73,7 +73,12 @@ export interface ReswellOrderOption {
   refunded: boolean
 }
 
-/** An active (live, unsold) listing the admin owns — attachable as held inventory. */
+export type ReswellListingAvailability = "active" | "sold" | "removed"
+
+/** Hayden shop P&L attach picker — surfboards and fins only. */
+export const PNL_HAYDEN_SHOP_SECTIONS = ["surfboards", "fins"] as const
+
+/** A Hayden shop listing — live inventory or an already-sold board. */
 export interface ReswellListingOption {
   listing_id: string
   listing_slug: string | null
@@ -82,6 +87,12 @@ export interface ReswellListingOption {
   thumbnail_url: string | null
   price: number
   created_at: string
+  status: ReswellListingAvailability
+  sale_price: number | null
+  sale_date: string | null
+  order_id: string | null
+  order_num: string | null
+  platform_fee: number
 }
 
 const PNL_ENTRY_COLUMNS =
@@ -138,6 +149,26 @@ export async function insertPnlEntry(
 
   if (error) throw error
   return mapPnlEntry(data as PnlEntryRow)
+}
+
+const INSERT_CHUNK = 80
+
+export async function insertPnlEntries(
+  supabase: SupabaseClient,
+  values: PnlEntryInsert[],
+): Promise<PnlEntryRow[]> {
+  if (values.length === 0) return []
+  const inserted: PnlEntryRow[] = []
+  for (let i = 0; i < values.length; i += INSERT_CHUNK) {
+    const chunk = values.slice(i, i + INSERT_CHUNK)
+    const { data, error } = await supabase
+      .from("pnl_entries")
+      .insert(chunk)
+      .select(PNL_ENTRY_COLUMNS)
+    if (error) throw error
+    inserted.push(...((data ?? []) as PnlEntryRow[]).map(mapPnlEntry))
+  }
+  return inserted
 }
 
 export async function updatePnlEntryRow(
@@ -296,41 +327,136 @@ export async function listReswellOrdersForUser(
   })
 }
 
-type RawActiveListingRow = {
+type RawShopListingRow = {
   id: string
   title: string | null
   slug: string | null
   price: number | string | null
   board_type: string | null
   created_at: string
+  status: string
+  sold_off_platform_at: string | null
+  updated_at: string
   listing_images: RawListingImage[] | null
 }
 
-/**
- * The admin's own active (live, unsold) listings — attachable as held inventory.
- * RLS lets owners read their listings; active listings are public anyway.
- */
-export async function listActiveListingsForUser(
+type RawSellerOrderRow = {
+  id: string
+  order_num: string | null
+  amount: number | string | null
+  shipping_amount: number | string | null
+  platform_fee: number | string | null
+  created_at: string
+  listing_id: string | null
+  refunded_at: string | null
+}
+
+const SHOP_LISTING_SELECT =
+  "id, title, slug, price, board_type, created_at, status, sold_off_platform_at, updated_at, listing_images (thumbnail_url, url, is_primary, sort_order)"
+
+async function listShopListingsByStatus(
   supabase: SupabaseClient,
   userId: string,
-): Promise<ReswellListingOption[]> {
+  status: ReswellListingAvailability,
+): Promise<RawShopListingRow[]> {
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, slug, price, board_type, created_at, listing_images (thumbnail_url, url, is_primary, sort_order)")
+    .select(SHOP_LISTING_SELECT)
     .eq("user_id", userId)
-    .eq("status", "active")
+    .eq("status", status)
+    .in("section", [...PNL_HAYDEN_SHOP_SECTIONS])
     .order("created_at", { ascending: false })
     .limit(MAX_ORDER_OPTIONS)
 
   if (error) throw error
+  return (data ?? []) as RawShopListingRow[]
+}
 
-  return ((data ?? []) as RawActiveListingRow[]).map((listing) => ({
+async function listLatestSellerOrdersByListingIds(
+  supabase: SupabaseClient,
+  sellerId: string,
+  listingIds: string[],
+): Promise<Map<string, RawSellerOrderRow>> {
+  const latest = new Map<string, RawSellerOrderRow>()
+  if (listingIds.length === 0) return latest
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, order_num, amount, shipping_amount, platform_fee, created_at, listing_id, refunded_at")
+    .eq("seller_id", sellerId)
+    .in("listing_id", listingIds)
+    .order("created_at", { ascending: false })
+
+  if (error) throw error
+
+  for (const row of (data ?? []) as RawSellerOrderRow[]) {
+    if (!row.listing_id || latest.has(row.listing_id)) continue
+    if (row.refunded_at) continue
+    latest.set(row.listing_id, row)
+  }
+  return latest
+}
+
+function mapShopListing(
+  listing: RawShopListingRow,
+  order: RawSellerOrderRow | undefined,
+): ReswellListingOption {
+  const isSold = listing.status === "sold" || (listing.status === "removed" && order != null)
+  const isRemoved = listing.status === "removed" && !isSold
+  const listingPrice = toNum(listing.price)
+  const salePrice = order
+    ? Math.max(0, Math.round((toNum(order.amount) - toNum(order.shipping_amount)) * 100) / 100)
+    : listingPrice
+  const saleDate = order?.created_at ?? listing.sold_off_platform_at ?? (isSold ? listing.updated_at : null)
+  return {
     listing_id: listing.id,
     listing_slug: listing.slug,
     board_name: listing.title ?? "Reswell listing",
     category: listing.board_type,
     thumbnail_url: pickThumbnail(listing.listing_images),
-    price: toNum(listing.price),
+    price: listingPrice,
     created_at: listing.created_at,
-  }))
+    status: isSold ? "sold" : isRemoved ? "removed" : "active",
+    sale_price: isSold ? salePrice : null,
+    sale_date: saleDate,
+    order_id: order?.id ?? null,
+    order_num: order?.order_num ?? null,
+    platform_fee: order ? toNum(order.platform_fee) : 0,
+  }
+}
+
+/**
+ * Hayden shop surfboards and fins for the P&L attach picker — live, sold, and ended.
+ */
+export async function listHaydenShopListingsForPnl(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ReswellListingOption[]> {
+  const [activeRows, soldRows, removedRows] = await Promise.all([
+    listShopListingsByStatus(supabase, userId, "active"),
+    listShopListingsByStatus(supabase, userId, "sold"),
+    listShopListingsByStatus(supabase, userId, "removed"),
+  ])
+  const orderListingIds = [...soldRows, ...removedRows].map((row) => row.id)
+  const orders = await listLatestSellerOrdersByListingIds(supabase, userId, orderListingIds)
+
+  return [
+    ...activeRows.map((row) => mapShopListing(row, undefined)),
+    ...soldRows.map((row) => mapShopListing(row, orders.get(row.id))),
+    ...removedRows.map((row) => mapShopListing(row, orders.get(row.id))),
+  ]
+}
+
+export async function listPnlEntriesByListingIds(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<PnlEntryRow[]> {
+  if (listingIds.length === 0) return []
+  const { data, error } = await supabase
+    .from("pnl_entries")
+    .select(PNL_ENTRY_COLUMNS)
+    .in("listing_id", listingIds)
+
+  if (error) throw error
+  return ((data ?? []) as PnlEntryRow[]).map(mapPnlEntry)
 }

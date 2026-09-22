@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache"
 import {
+  attachHaydenShopActiveAndSoldService,
   attachReswellListingService,
   attachReswellOrderService,
   createPnlEntryService,
   deletePnlEntryService,
   listReswellTransactionsService,
+  updatePnlEntriesService,
   updatePnlEntryService,
   type ReswellAttachables,
 } from "@/lib/services/pnl"
@@ -35,6 +37,15 @@ export async function updatePnlEntryAction(
   raw: unknown,
 ): Promise<{ data: PnlEntryRow } | { error: string }> {
   const result = await updatePnlEntryService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidatePath(PNL_PATH)
+  return { data: result.data }
+}
+
+export async function updatePnlEntriesAction(
+  raw: unknown,
+): Promise<{ data: PnlEntryRow[] } | { error: string }> {
+  const result = await updatePnlEntriesService(raw)
   if ("error" in result) return { error: result.error }
   revalidatePath(PNL_PATH)
   return { data: result.data }
@@ -71,6 +82,15 @@ export async function attachReswellListingAction(
   if ("error" in result) return { error: result.error }
   revalidatePath(PNL_PATH)
   return { data: result.data }
+}
+
+export async function attachHaydenShopActiveAndSoldAction(): Promise<
+  { data: PnlEntryRow[]; skipped: number } | { error: string }
+> {
+  const result = await attachHaydenShopActiveAndSoldService()
+  if ("error" in result) return { error: result.error }
+  revalidatePath(PNL_PATH)
+  return result
 }
 
 export async function createLoanAction(

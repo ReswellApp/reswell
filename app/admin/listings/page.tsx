@@ -55,6 +55,7 @@ import {
   Eye,
   EyeOff,
   Globe,
+  Instagram,
   Filter,
   Flag,
   Layers,
@@ -883,6 +884,11 @@ export default function AdminListingsPage() {
                 </DropdownMenuItem>
                 {isAdminUser ? (
                   <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/hayden-shop">
+                        <Instagram className="mr-2 h-4 w-4" /> Hayden's Shop Instagram
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/admin/listings/bulk">
                         <Layers className="mr-2 h-4 w-4" /> Bulk list

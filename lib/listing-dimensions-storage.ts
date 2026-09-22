@@ -17,11 +17,11 @@ import {
   parseLengthFeet,
   parseVolumeLiters,
   isTapeStyleInchesEntryComplete,
-} from "@/lib/board-measurements"
+} from "./board-measurements.ts"
 import {
   resolveLengthTotalInches,
   resolveVolumeLiters,
-} from "@/lib/listing-browse-facet-measurements"
+} from "./listing-browse-facet-measurements.ts"
 
 const MAX_DIMENSIONS_COLUMN_LEN = 512
 
@@ -193,6 +193,10 @@ export function composeListingDimensionsFromSplitListingFields(row: {
   })
 }
 
+function isPartialDimensionsVersion(value: unknown): boolean {
+  return value === DIMENSIONS_PARTIAL_JSON_VERSION || value === String(DIMENSIONS_PARTIAL_JSON_VERSION)
+}
+
 function parseListingDimensionsPartialJsonEnvelope(trimmedJson: string): {
   boardLength: string
   boardWidthInches: string
@@ -207,15 +211,24 @@ function parseListingDimensionsPartialJsonEnvelope(trimmedJson: string): {
   }
   if (!o || typeof o !== "object") return null
   const rec = o as Record<string, unknown>
-  if (rec.v !== DIMENSIONS_PARTIAL_JSON_VERSION) return null
+  const hasCanonicalVersion = isPartialDimensionsVersion(rec.v)
   const boardLength =
     typeof rec.L === "string" && rec.L.trim() ? normalizeBoardLengthInput(rec.L) : ""
   const boardWidthInches =
     typeof rec.W === "string" ? normalizeTapeStyleInchesInput(rec.W) : ""
   const boardThicknessInches =
     typeof rec.T === "string" ? normalizeTapeStyleInchesInput(rec.T) : ""
-  const boardVolumeL =
-    typeof rec.V === "string" ? normalizeVolumeLitersInput(rec.V) : ""
+  const hasGeometry = !!(boardLength.trim() || boardWidthInches.trim() || boardThicknessInches.trim())
+  // Canonical: `{"v":2,"L","W","T","V"?}` where `V` is volume.
+  // Older rows: `{"V":"2","L","W","T"}` used uppercase `V` as the version.
+  const volumeRaw =
+    hasCanonicalVersion && typeof rec.V === "string"
+      ? rec.V
+      : !hasCanonicalVersion && typeof rec.V === "string" && !isPartialDimensionsVersion(rec.V)
+        ? rec.V
+        : ""
+  const boardVolumeL = volumeRaw ? normalizeVolumeLitersInput(volumeRaw) : ""
+  if (!hasCanonicalVersion && !hasGeometry && !boardVolumeL.trim()) return null
   const any =
     boardLength.trim() ||
     boardWidthInches.trim() ||

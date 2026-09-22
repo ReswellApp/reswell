@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { LifeBuoy, ShoppingBag, Ticket } from 'lucide-react'
+import { Instagram, LifeBuoy, ShoppingBag, Ticket } from 'lucide-react'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import { AdminHomeCountChart } from '@/components/features/admin/admin-home-count-chart'
 import { AdminHomeGreeting } from '@/components/features/admin/admin-home-greeting'
@@ -37,6 +37,7 @@ function countChartSubtitle(trend: AdminHomeCountTrend, noun: string): string {
 }
 
 const HOME_QUICK_LINKS = [
+  { href: '/admin/hayden-shop', label: "Hayden's Shop", icon: Instagram },
   { href: '/admin/reswelltickets', label: 'Reswell tickets', icon: Ticket },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/contact-messages', label: 'Support tickets', icon: LifeBuoy },

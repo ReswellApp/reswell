@@ -2,9 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import {
   deletePnlEntryRow,
   insertPnlEntry,
-  listActiveListingsForUser,
   listAttachedListingIds,
   listAttachedOrderIds,
+  listHaydenShopListingsForPnl,
   listPnlEntries,
   listReswellOrdersForUser,
   updatePnlEntryRow,
@@ -12,15 +12,19 @@ import {
   type PnlEntryRow,
   type PnlEntryUpdate,
   type ReswellListingOption,
-  type ReswellOrderOption,
 } from "@/lib/db/pnl"
 import {
   attachReswellListingSchema,
   attachReswellOrderSchema,
   createPnlEntrySchema,
   deletePnlEntrySchema,
+  updatePnlEntriesSchema,
   updatePnlEntrySchema,
+  type UpdatePnlEntryInput,
 } from "@/lib/validations/pnl"
+import { haydenShopListingToPnlInsert } from "@/lib/pnl-hayden-shop-sale"
+import { attachHaydenShopActiveAndSoldListings } from "@/lib/services/pnlHaydenShopAttach"
+import { pnlCatalogClient, resolveHaydenShopUserId } from "@/lib/services/pnlHaydenShopSale"
 import { requireStaffUserId, type PnlServiceError } from "@/lib/services/pnlAuth"
 
 type ServiceError = PnlServiceError
@@ -80,18 +84,7 @@ export async function createPnlEntryService(
   }
 }
 
-export async function updatePnlEntryService(
-  raw: unknown,
-): Promise<{ data: PnlEntryRow } | ServiceError> {
-  const staff = await requireStaffUserId()
-  if ("error" in staff) return staff
-
-  const parsed = updatePnlEntrySchema.safeParse(raw)
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid update." }
-  }
-  const { id, ...input } = parsed.data
-
+function valuesFromUpdateInput(input: Omit<UpdatePnlEntryInput, "id">): PnlEntryUpdate {
   const values: PnlEntryUpdate = {}
   if (input.boardName !== undefined) values.board_name = input.boardName
   if (input.category !== undefined) values.category = input.category || null
@@ -107,7 +100,21 @@ export async function updatePnlEntryService(
   if (input.platformFee !== undefined) values.platform_fee = input.platformFee
   if (input.otherCosts !== undefined) values.other_costs = input.otherCosts
   if (input.notes !== undefined) values.notes = input.notes || null
+  return values
+}
 
+export async function updatePnlEntryService(
+  raw: unknown,
+): Promise<{ data: PnlEntryRow } | ServiceError> {
+  const staff = await requireStaffUserId()
+  if ("error" in staff) return staff
+
+  const parsed = updatePnlEntrySchema.safeParse(raw)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid update." }
+  }
+  const { id, ...input } = parsed.data
+  const values = valuesFromUpdateInput(input)
   if (Object.keys(values).length === 0) {
     return { error: "Nothing to update." }
   }
@@ -121,9 +128,51 @@ export async function updatePnlEntryService(
   }
 }
 
+export async function updatePnlEntriesService(
+  raw: unknown,
+): Promise<{ data: PnlEntryRow[] } | ServiceError> {
+  const staff = await requireStaffUserId()
+  if ("error" in staff) return staff
+
+  const parsed = updatePnlEntriesSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid update." }
+  }
+
+  try {
+    const supabase = await createClient()
+    const data: PnlEntryRow[] = []
+    const chunkSize = 20
+    for (let i = 0; i < parsed.data.entries.length; i += chunkSize) {
+      const chunk = parsed.data.entries.slice(i, i + chunkSize)
+      const rows = await Promise.all(
+        chunk.map(async (entry) => {
+          const { id, ...input } = entry
+          const values = valuesFromUpdateInput(input)
+          if (Object.keys(values).length === 0) return null
+          return updatePnlEntryRow(supabase, id, values)
+        }),
+      )
+      for (const row of rows) {
+        if (row) data.push(row)
+      }
+    }
+    return { data }
+  } catch {
+    return { error: "Could not save these boards." }
+  }
+}
+
 export type ReswellAttachables = {
-  orders: ReswellOrderOption[]
   listings: ReswellListingOption[]
+}
+
+async function requireHaydenShopUserId(
+  supabase: Parameters<typeof resolveHaydenShopUserId>[0],
+): Promise<{ userId: string } | ServiceError> {
+  const userId = await resolveHaydenShopUserId(supabase)
+  if (!userId) return { error: "Could not find Hayden's shop." }
+  return { userId }
 }
 
 export async function listReswellTransactionsService(): Promise<
@@ -133,20 +182,20 @@ export async function listReswellTransactionsService(): Promise<
   if ("error" in staff) return staff
   try {
     const supabase = await createClient()
-    const [orders, listings, attachedOrders, attachedListings] = await Promise.all([
-      listReswellOrdersForUser(supabase, staff.userId),
-      listActiveListingsForUser(supabase, staff.userId),
-      listAttachedOrderIds(supabase),
+    const catalog = pnlCatalogClient(supabase)
+    const shop = await requireHaydenShopUserId(catalog)
+    if ("error" in shop) return shop
+    const [listings, attachedListings] = await Promise.all([
+      listHaydenShopListingsForPnl(catalog, shop.userId),
       listAttachedListingIds(supabase),
     ])
     return {
       data: {
-        orders: orders.filter((o) => !attachedOrders.has(o.order_id)),
         listings: listings.filter((l) => !attachedListings.has(l.listing_id)),
       },
     }
   } catch {
-    return { error: "Could not load your Reswell transactions." }
+    return { error: "Could not load Hayden's shop inventory." }
   }
 }
 
@@ -161,10 +210,13 @@ export async function attachReswellListingService(
 
   try {
     const supabase = await createClient()
-    const listings = await listActiveListingsForUser(supabase, staff.userId)
+    const catalog = pnlCatalogClient(supabase)
+    const shop = await requireHaydenShopUserId(catalog)
+    if ("error" in shop) return shop
+    const listings = await listHaydenShopListingsForPnl(catalog, shop.userId)
     const listing = listings.find((l) => l.listing_id === parsed.data.listingId)
     if (!listing) {
-      return { error: "Active listing not found or not one of yours." }
+      return { error: "Listing not found on Hayden's shop." }
     }
 
     const attached = await listAttachedListingIds(supabase)
@@ -172,33 +224,41 @@ export async function attachReswellListingService(
       return { error: "This board is already on the balance sheet." }
     }
 
-    const values: PnlEntryInsert = {
-      board_name: listing.board_name,
-      category: listing.category,
-      status: "listed",
-      source_kind: "outside",
-      bought_from: null,
-      purchase_price: 0,
-      purchase_date: null,
-      asking_price: listing.price,
-      sale_price: null,
-      sale_date: null,
-      shipping_cost: 0,
-      platform_fee: 0,
-      other_costs: 0,
-      notes: null,
-      order_id: null,
-      listing_id: listing.listing_id,
-      order_role: null,
-      order_num: null,
-      listing_slug: listing.listing_slug,
-      created_by: staff.userId,
+    if (listing.order_id) {
+      const attachedOrders = await listAttachedOrderIds(supabase)
+      if (attachedOrders.has(listing.order_id)) {
+        return { error: "This sale is already on the balance sheet." }
+      }
+    }
+
+    const values = haydenShopListingToPnlInsert(listing, staff.userId)
+    if (!values) {
+      return { error: "Only active and sold Hayden shop listings can be attached." }
     }
 
     const data = await insertPnlEntry(supabase, values)
     return { data }
   } catch {
     return { error: "Could not attach this listing." }
+  }
+}
+
+export async function attachHaydenShopActiveAndSoldService(): Promise<
+  { data: PnlEntryRow[]; skipped: number } | ServiceError
+> {
+  const staff = await requireStaffUserId()
+  if ("error" in staff) return staff
+  try {
+    const supabase = await createClient()
+    const catalog = pnlCatalogClient(supabase)
+    const shop = await requireHaydenShopUserId(catalog)
+    if ("error" in shop) return shop
+    return attachHaydenShopActiveAndSoldListings(catalog, {
+      shopUserId: shop.userId,
+      createdBy: staff.userId,
+    })
+  } catch {
+    return { error: "Could not attach Hayden's shop listings." }
   }
 }
 

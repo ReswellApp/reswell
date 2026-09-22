@@ -2,8 +2,8 @@ import {
   formatDecimalDimension,
   parseBoardLengthParts,
   parseLengthFeet,
-} from "@/lib/board-measurements"
-import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
+} from "./board-measurements.ts"
+import { parseListingDimensionsColumn } from "./listing-dimensions-storage.ts"
 
 function formatInchesForLength(inches: number): string {
   return formatDecimalDimension(inches) || "0"
@@ -243,7 +243,15 @@ export function formatListingDimensionsLine(input: ListingDimensionsWithDisplay)
 
 function looksLikeStoredDimensionsJson(raw: string): boolean {
   const t = raw.trim()
-  return t.startsWith("{") && /"v"\s*:/.test(t)
+  if (!t.startsWith("{")) return false
+  try {
+    const parsed: unknown = JSON.parse(t)
+    if (!parsed || typeof parsed !== "object") return false
+    const rec = parsed as Record<string, unknown>
+    return "v" in rec || "V" in rec || "L" in rec || "W" in rec || "T" in rec
+  } catch {
+    return /"[vVlWtT]"\s*:/.test(t)
+  }
 }
 
 /**

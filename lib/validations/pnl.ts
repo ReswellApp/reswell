@@ -63,6 +63,10 @@ export const updatePnlEntrySchema = z.object({
   notes: z.union([z.string().trim().max(5000), z.literal(""), z.null()]).optional(),
 })
 
+export const updatePnlEntriesSchema = z.object({
+  entries: z.array(updatePnlEntrySchema).min(1).max(500),
+})
+
 export const deletePnlEntrySchema = z.object({
   id: z.string().uuid(),
 })

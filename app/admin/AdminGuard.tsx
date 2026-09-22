@@ -41,7 +41,9 @@ export function AdminGuard({
         pathname === '/admin/promo-codes' ||
         pathname === '/admin/fbcatalog' ||
         pathname === '/admin/facebook-marketplace-bulk' ||
-        pathname === '/admin/shop'
+        pathname === '/admin/shop' ||
+        pathname === '/admin/hayden-shop' ||
+        pathname.startsWith('/admin/hayden-shop/')
       ) {
         router.replace('/admin')
       }

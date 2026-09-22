@@ -8,8 +8,8 @@ import {
   formatBoardLengthInputFromParts,
   parseVolumeLiters,
   totalBoardLengthInchesFromCombinedInput,
-} from "@/lib/board-measurements"
-import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
+} from "./board-measurements.ts"
+import { parseListingDimensionsColumn } from "./listing-dimensions-storage.ts"
 
 export type ListingBrowseFacetMeasurementRow = {
   length_total_inches?: number | null

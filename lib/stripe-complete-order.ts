@@ -52,6 +52,7 @@ import {
 } from "@/lib/ads/attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
+import { syncHaydenShopPnlOnSale } from "@/lib/services/pnlHaydenShopSale"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
@@ -1027,6 +1028,21 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   for (const line of bundle.lines) {
     void markUserListingBoardModelDataSold(serviceSupabase, line.listingId, line.itemPrice)
   }
+
+  void syncHaydenShopPnlOnSale({
+    sellerId: bundleSellerId,
+    sales: bundle.lines.map((line) => ({
+      listingId: line.listingId,
+      salePrice: line.itemPrice,
+      saleDate:
+        typeof (purchase as { created_at?: string }).created_at === "string"
+          ? (purchase as { created_at: string }).created_at
+          : new Date().toISOString(),
+      orderId: purchase.id,
+      orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+      platformFee: line.platformFee,
+    })),
+  })
 
   if (buyerId) {
     void deleteBuyerCartRowsForListings(serviceSupabase, buyerId, listingIdsOrdered)

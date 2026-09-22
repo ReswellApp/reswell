@@ -30,7 +30,8 @@ import {
   summarizeBalanceSheet,
   type PnlComputedEntry,
 } from "@/lib/pnl-calc"
-import { deletePnlEntryAction, updatePnlEntryAction } from "@/lib/actions/pnlAdmin"
+import { deletePnlEntryAction, updatePnlEntriesAction } from "@/lib/actions/pnlAdmin"
+import type { UpdatePnlEntryInput } from "@/lib/validations/pnl"
 import { downloadPnlCsv } from "./pnl-export"
 import { PnlBalanceSheet } from "./pnl-balance-sheet"
 import { PnlTable } from "./pnl-table"
@@ -64,6 +65,8 @@ export function PnlAdminClient({
   const [editing, setEditing] = useState<PnlEntryRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PnlComputedEntry | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [savingSheet, setSavingSheet] = useState(false)
+  const [needsCostOnly, setNeedsCostOnly] = useState(false)
 
   const computed = useMemo(() => entries.map(computeEntry), [entries])
 
@@ -73,6 +76,7 @@ export function PnlAdminClient({
       if (statusFilter !== "all" && e.status !== statusFilter) return false
       if (sourceFilter !== "all" && e.source_kind !== sourceFilter) return false
       if (monthFilter !== "all" && entryMonthKey(e) !== monthFilter) return false
+      if (needsCostOnly && e.purchase_price > 0) return false
       if (q) {
         const haystack =
           `${e.board_name} ${e.category ?? ""} ${e.bought_from ?? ""} ${e.notes ?? ""}`.toLowerCase()
@@ -89,34 +93,40 @@ export function PnlAdminClient({
       return bDate.localeCompare(aDate)
     })
     return rows
-  }, [computed, search, statusFilter, sourceFilter, monthFilter, sortKey])
+  }, [computed, search, statusFilter, sourceFilter, monthFilter, sortKey, needsCostOnly])
 
   const sheet = useMemo(() => summarizeBalanceSheet(filtered), [filtered])
+  const missingCostCount = useMemo(
+    () => computed.filter((entry) => entry.purchase_price <= 0).length,
+    [computed],
+  )
 
   function upsertEntry(row: PnlEntryRow) {
+    upsertEntries([row])
+  }
+
+  function upsertEntries(rows: PnlEntryRow[]) {
+    if (rows.length === 0) return
     setEntries((prev) => {
-      const exists = prev.some((e) => e.id === row.id)
-      return exists ? prev.map((e) => (e.id === row.id ? row : e)) : [row, ...prev]
+      const incoming = new Map(rows.map((row) => [row.id, row]))
+      const next = prev.map((entry) => incoming.get(entry.id) ?? entry)
+      const existingIds = new Set(prev.map((entry) => entry.id))
+      const added = rows.filter((row) => !existingIds.has(row.id))
+      return [...added, ...next]
     })
   }
 
-  async function handleUpdatePurchasePrice(id: string, price: number): Promise<boolean> {
-    const result = await updatePnlEntryAction({ id, purchasePrice: price })
+  async function handleSaveChanges(payloads: UpdatePnlEntryInput[]): Promise<boolean> {
+    if (payloads.length === 0) return true
+    setSavingSheet(true)
+    const result = await updatePnlEntriesAction({ entries: payloads })
+    setSavingSheet(false)
     if ("error" in result) {
       toast.error(result.error)
       return false
     }
-    upsertEntry(result.data)
-    return true
-  }
-
-  async function handleUpdateAskingPrice(id: string, price: number): Promise<boolean> {
-    const result = await updatePnlEntryAction({ id, askingPrice: price })
-    if ("error" in result) {
-      toast.error(result.error)
-      return false
-    }
-    upsertEntry(result.data)
+    upsertEntries(result.data)
+    toast.success(`Saved ${result.data.length} board${result.data.length === 1 ? "" : "s"}`)
     return true
   }
 
@@ -174,8 +184,8 @@ export function PnlAdminClient({
             ) : null}
           </div>
           <p className="max-w-2xl text-muted-foreground">
-            Inventory you bought on Reswell or outside — title, source, cost, date, and asking
-            price.
+            Hayden&apos;s shop books. Tab through the sheet, then Save all — or click a title for
+            notes and fees.
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -199,7 +209,11 @@ export function PnlAdminClient({
         </div>
       </div>
 
-      <PnlBalanceSheet sheet={sheet} periodLabel={periodLabel ?? undefined} />
+      <PnlBalanceSheet
+        sheet={sheet}
+        periodLabel={periodLabel ?? undefined}
+        missingCostCount={missingCostCount}
+      />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -232,6 +246,12 @@ export function PnlAdminClient({
             <SelectItem value="sold">Sold</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          variant={needsCostOnly ? "default" : "outline"}
+          onClick={() => setNeedsCostOnly((on) => !on)}
+        >
+          Needs cost{missingCostCount > 0 ? ` (${missingCostCount})` : ""}
+        </Button>
         <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
           <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="Sort" />
@@ -253,10 +273,10 @@ export function PnlAdminClient({
 
       <PnlTable
         rows={filtered}
+        saving={savingSheet}
         onEdit={openEdit}
         onDelete={setDeleteTarget}
-        onUpdatePurchasePrice={handleUpdatePurchasePrice}
-        onUpdateAskingPrice={handleUpdateAskingPrice}
+        onSaveChanges={handleSaveChanges}
       />
 
       <PnlEntryDialog
@@ -266,7 +286,7 @@ export function PnlAdminClient({
         onSaved={upsertEntry}
       />
 
-      <PnlAttachDialog open={attachOpen} onOpenChange={setAttachOpen} onAttached={upsertEntry} />
+      <PnlAttachDialog open={attachOpen} onOpenChange={setAttachOpen} onAttached={upsertEntries} />
 
       <AlertDialog open={deleteTarget != null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
