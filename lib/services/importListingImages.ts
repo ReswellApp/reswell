@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { resizeListingImageBufferToTileVariant } from "@/lib/media/listing-tile-variant-resize"
+import { resizeListingImageBufferToStoredThumb } from "@/lib/media/listing-tile-variant-resize"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import { isAbortError } from "@/lib/utils/is-abort-error"
 
@@ -64,7 +64,7 @@ export async function mirrorExternalListingImagesToStorage(opts: {
       const publicUrl = listingObjectPublicUrl(supabaseUrl, fullPath)
       let thumbnailUrl: string | null = null
       try {
-        const thumbBuffer = await resizeListingImageBufferToTileVariant(bytes)
+        const thumbBuffer = await resizeListingImageBufferToStoredThumb(bytes)
         const thumbPath = `${opts.userId}/import-${stamp}-${i}-thumb.webp`
         const { error: thumbError } = await opts.supabase.storage
           .from("listings")

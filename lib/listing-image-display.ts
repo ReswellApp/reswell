@@ -1,6 +1,6 @@
 /**
- * - `listingTileImageSrcFromRow` — single image row for browse tiles: persisted thumb first
- *   (only when it is distinct from the full URL), then on-demand `?variant=tile` resize.
+ * - `listingTileImageSrcFromRow` — marketplace cards: on-demand `?variant=tile2` from the
+ *   full object (≤1280px WebP). Skips stored 640px thumbs so retina tiles are not upscaled.
  *   Does not guess `*-thumb.` siblings — those 404s serialized every card on first paint.
  * - `listingCardImageSrc` — primary photo for marketplace tiles (`ListingTile` and similar).
  * - `listingImagesFromPrimaryFields` — card gallery from denorm cover + `tile_gallery_images`.
@@ -10,10 +10,11 @@
  */
 
 import {
+  listingFullImageUrlFromRef,
   proxiedListingImageSrc,
   withListingMediaTileVariant,
-} from "@/lib/listing-media-proxy-url"
-import { listingStoredThumbIsDistinctFromFull } from "@/lib/listing-thumb-url"
+} from "./listing-media-src.ts"
+import { listingStoredThumbIsDistinctFromFull } from "./listing-thumb-url.ts"
 
 export type ListingImageForCard = {
   url?: string | null
@@ -28,36 +29,42 @@ function pushUniqueCandidate(out: string[], seen: Set<string>, candidate: string
   out.push(t)
 }
 
-/** Ordered fallbacks for one listing photo — persisted thumb, resized full, then raw full. */
-export function listingTileImageSrcCandidatesFromRow(img: ListingImageForCard): string[] {
-  const out: string[] = []
-  const seen = new Set<string>()
-
-  const storedThumb = img.thumbnail_url?.trim() || ""
-  const full = img.url?.trim() || ""
-  // Imports used to copy the full URL into thumbnail_url. That is not a thumb —
-  // skip it so we hit `?variant=tile` instead of downloading the original first.
-  if (listingStoredThumbIsDistinctFromFull(storedThumb, full)) {
-    pushUniqueCandidate(out, seen, proxiedListingImageSrc(storedThumb))
-  }
-
-  if (!full) return out
-
+function listingFullObjectSrcCandidates(full: string, out: string[], seen: Set<string>): void {
   const proxiedFull = proxiedListingImageSrc(full)
   if (proxiedFull.startsWith("/media/listings/")) {
+    // Never start from `-thumb.` — /media serves stored thumbs as-is even with ?variant=tile2.
     pushUniqueCandidate(out, seen, withListingMediaTileVariant(proxiedFull))
   }
   pushUniqueCandidate(out, seen, proxiedFull)
   if (!proxiedFull.startsWith("/media/listings/")) {
     pushUniqueCandidate(out, seen, full)
   }
+}
+
+/** Ordered fallbacks for one listing photo — resized full first, then raw full. */
+export function listingTileImageSrcCandidatesFromRow(img: ListingImageForCard): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+
+  const storedThumb = img.thumbnail_url?.trim() || ""
+  const fullRaw = img.url?.trim() || ""
+  const full = listingFullImageUrlFromRef(fullRaw) ?? fullRaw
+
+  if (full) {
+    listingFullObjectSrcCandidates(full, out, seen)
+    return out
+  }
+
+  if (listingStoredThumbIsDistinctFromFull(storedThumb, fullRaw)) {
+    pushUniqueCandidate(out, seen, proxiedListingImageSrc(storedThumb))
+  }
 
   return out
 }
 
 /**
- * Best src for a listing photo in browse grids / carousels — never returns an unscaled full-res
- * proxy unless `?variant=tile` is appended for server-side resize.
+ * Best src for a listing photo in browse grids / carousels — `?variant=tile2` from the full
+ * object. Never leads with a stored 640px thumb.
  */
 export function listingTileImageSrcFromRow(img: ListingImageForCard): string {
   return listingTileImageSrcCandidatesFromRow(img)[0] ?? ""
@@ -221,7 +228,22 @@ export function listingTitleThumbnailCandidates(
   const list = asListingImageArray(images)
   const primary = list.find((i) => i.is_primary) || list[0]
   if (!primary) return []
-  return listingTileImageSrcCandidatesFromRow(primary)
+
+  const out: string[] = []
+  const seen = new Set<string>()
+  const storedThumb = primary.thumbnail_url?.trim() || ""
+  const fullRaw = primary.url?.trim() || ""
+  const full = listingFullImageUrlFromRef(fullRaw) ?? fullRaw
+
+  // Compact rows stay on the persisted 640px thumb. Marketplace tiles do not.
+  if (listingStoredThumbIsDistinctFromFull(storedThumb, fullRaw)) {
+    pushUniqueCandidate(out, seen, proxiedListingImageSrc(storedThumb))
+  }
+  if (full) {
+    listingFullObjectSrcCandidates(full, out, seen)
+  }
+
+  return out
 }
 
 /**
