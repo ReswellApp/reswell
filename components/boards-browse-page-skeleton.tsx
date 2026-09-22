@@ -30,10 +30,14 @@ export function BoardsBrowseFiltersSectionSkeleton({
   )
 }
 
-/** Route-level skeleton for `/boards` — breadcrumb, header, and listing grid placeholders. */
-export function BoardsBrowsePageSkeleton() {
+/** Route-level skeleton for category browse — breadcrumb, header, and listing grid placeholders. */
+export function BoardsBrowsePageSkeleton({
+  ariaLabel = "Loading surfboards",
+}: {
+  ariaLabel?: string
+} = {}) {
   return (
-    <main className="flex-1" role="status" aria-busy="true" aria-label="Loading surfboards">
+    <main className="flex-1" role="status" aria-busy="true" aria-label={ariaLabel}>
       <section className="bg-offwhite pt-1 sm:pt-2 lg:pt-6">
         <div className="container mx-auto">
           <div className="border-t border-neutral-200 pt-2 lg:pt-3">

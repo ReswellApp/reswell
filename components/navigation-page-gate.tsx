@@ -12,12 +12,15 @@ import {
   scrollPageToMessageThreadBottom,
 } from "@/lib/utils/message-thread-routes"
 import { useMobileLg } from "@/hooks/use-mobile-lg"
+import { shouldSkipPageEnterAnimation } from "@/lib/site-category-browse-paths"
 import { cn } from "@/lib/utils"
 
 /**
- * Scrolls to top and applies a CSS fade+slide entrance animation on client-side
- * navigations. `navCount` increments only on actual navigations (not initial load),
- * so the `page-enter` animation is skipped on first render to prevent FOIC.
+ * Scrolls to top and applies a CSS slide entrance on client-side navigations.
+ * `navCount` increments only on actual navigations (not initial load), so the
+ * `page-enter` animation is skipped on first render to prevent FOIC.
+ * Listing PDPs and category browse pages skip the animation entirely — a
+ * fade-from-transparent flashes listing photos when returning from `/l`.
  */
 export function NavigationPageGate({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -68,8 +71,9 @@ export function NavigationPageGate({ children }: { children: ReactNode }) {
         key={navCount}
         className={cn(
           flatMobileMessagesInbox ? "flex w-full flex-col" : "flex w-full min-h-0 min-w-0 flex-1 flex-col",
-          // Listing photos should stay on screen — opacity-0 page-enter is a white flash on /l.
-          navCount > 0 && !pathname.startsWith("/l/") && "page-enter",
+          // Photo-heavy marketplace surfaces: opacity-0 page-enter is a white
+          // flash on /l and when returning from a listing to category browse.
+          navCount > 0 && !shouldSkipPageEnterAnimation(pathname) && "page-enter",
         )}
         onAnimationEnd={(event) => {
           // Drop the class so no animated transform can linger on this wrapper.
