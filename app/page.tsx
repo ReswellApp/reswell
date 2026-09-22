@@ -3,7 +3,6 @@ import { HeroBackdrop } from "@/components/hero-backdrop"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowRight, MapPin } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
@@ -12,16 +11,17 @@ import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { ProfileBannerImage } from "@/components/features/dashboard/profile-banner-image"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import {
+  HomeHeroPrimaryCta,
+  HomeHydratedPeerListingTile,
+  HomeHydratedShopNewTile,
+  HomeHydratedTrendingBrandsSection,
   HomeListingScrollRow,
-  HomePeerListingScrollTile,
   HomeRecentlyListedGrid,
-  TrendingBrandsSection,
+  HomeViewerProvider,
 } from "@/components/features/home"
-import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 import {
   marketingCtaBannerCtaLabelClassName,
   marketingCtaBannerDescriptionClassName,
@@ -44,7 +44,12 @@ export async function generateMetadata() {
   return resolvePageMetadata("home")
 }
 
-/** Page ISR matches recently sold strip TTL; stable sections use a longer `unstable_cache` TTL. Trending brands are tag-only. */
+/**
+ * ISR: catalog HTML is the same for everyone. User-specific state (hero CTA,
+ * favorites, admin trending-brands bar) hydrates in HomeViewerProvider after
+ * mount so signed-in requests do not re-run auth / favorites / admin probes
+ * on the RSC path. See /search/recent for the same pattern.
+ */
 export const revalidate = 3600
 
 export default async function HomePage() {
@@ -72,36 +77,18 @@ export default async function HomePage() {
   const { featuredRecentlySold } = recentlySoldCatalog
   const { recentlyListedGrid } = recentlyListedGridCatalog
 
-  const featuredListingIds = [
-    ...stableCatalog.featuredListingIds,
-    ...recentlyAddedSurfboardsCatalog.featuredListingIds,
-    ...recentlyAddedFinsCatalog.featuredListingIds,
-    ...recentlySoldCatalog.featuredListingIds,
-    ...recentlyListedGridCatalog.featuredListingIds,
-  ]
-
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const [favoritesRes, adminRes] = await Promise.all([
-    user && featuredListingIds.length > 0
-      ? supabase
-          .from("favorites")
-          .select("listing_id")
-          .eq("user_id", user.id)
-          .in("listing_id", featuredListingIds)
-      : Promise.resolve({ data: null as { listing_id: string }[] | null }),
-    user
-      ? supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle()
-      : Promise.resolve({ data: null as { is_admin: boolean | null } | null }),
-  ])
-
-  const favoritedIds = (favoritesRes.data ?? []).map((f) => f.listing_id)
-  const isHomeHeroAdmin = adminRes.data?.is_admin === true
+  const featuredListingIds = Array.from(
+    new Set([
+      ...stableCatalog.featuredListingIds,
+      ...recentlyAddedSurfboardsCatalog.featuredListingIds,
+      ...recentlyAddedFinsCatalog.featuredListingIds,
+      ...recentlySoldCatalog.featuredListingIds,
+      ...recentlyListedGridCatalog.featuredListingIds,
+    ]),
+  )
 
   return (
+    <HomeViewerProvider listingIds={featuredListingIds}>
       <main className="flex-1">
         <PageStructuredData pageKey="home" />
         {/* Hero + recently listed grid share a white surface on mobile/tablet (Vinted-style overlap). */}
@@ -136,15 +123,7 @@ export default async function HomePage() {
                 Join surfers buying and selling surf gear.
               </p>
               <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:mt-7 sm:gap-3.5 lg:mt-6 lg:justify-start">
-                {user ? (
-                  <Button size="lg" className="w-full" asChild>
-                    <Link href="/sell">Start Selling</Link>
-                  </Button>
-                ) : (
-                  <Button size="lg" className="w-full" asChild>
-                    <Link href={authLandingHref("/auth/sign-up")}>Sign up</Link>
-                  </Button>
-                )}
+                <HomeHeroPrimaryCta />
                 <Button size="lg" variant="outline" className="w-full lg:w-full" asChild>
                   <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                     Browse surfboards
@@ -169,11 +148,7 @@ export default async function HomePage() {
                 <div className="mb-4 flex min-w-0 items-center justify-between lg:mb-8">
                   <h2 className="text-2xl font-bold">Recently listed</h2>
                 </div>
-                <HomeRecentlyListedGrid
-                  listings={recentlyListedGrid}
-                  userId={user?.id ?? null}
-                  favoritedIds={favoritedIds}
-                />
+                <HomeRecentlyListedGrid listings={recentlyListedGrid} />
               </div>
             </section>
           </FadeInSection>
@@ -197,12 +172,7 @@ export default async function HomePage() {
                 </div>
                 <HomeListingScrollRow uniformCardHeights>
                   {featuredFins.map((fin) => (
-                    <HomePeerListingScrollTile
-                      key={fin.id}
-                      listing={fin}
-                      userId={user?.id ?? null}
-                      isFavorited={favoritedIds.includes(fin.id)}
-                    />
+                    <HomeHydratedPeerListingTile key={fin.id} listing={fin} />
                   ))}
                 </HomeListingScrollRow>
               </div>
@@ -229,7 +199,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <TrendingBrandsSection rows={homeTrendingBrandRows} isAdmin={isHomeHeroAdmin} />
+        <HomeHydratedTrendingBrandsSection rows={homeTrendingBrandRows} />
 
         {/* Featured Surfboards */}
         {featuredBoards && featuredBoards.length > 0 && (
@@ -248,14 +218,8 @@ export default async function HomePage() {
                 </Button>
               </div>
               <HomeListingScrollRow uniformCardHeights>
-                {featuredBoards.map((board, tileIdx) => (
-                  <HomePeerListingScrollTile
-                    key={board.id}
-                    listing={board}
-                    userId={user?.id ?? null}
-                    isFavorited={favoritedIds.includes(board.id)}
-                    imagePriority={tileIdx === 0}
-                  />
+                {featuredBoards.map((board) => (
+                  <HomeHydratedPeerListingTile key={board.id} listing={board} />
                 ))}
               </HomeListingScrollRow>
             </div>
@@ -299,12 +263,7 @@ export default async function HomePage() {
                 </div>
                 <HomeListingScrollRow uniformCardHeights>
                   {featuredRecentlySold.map((board) => (
-                    <HomePeerListingScrollTile
-                      key={board.id}
-                      listing={board}
-                      userId={user?.id ?? null}
-                      isFavorited={favoritedIds.includes(board.id)}
-                    />
+                    <HomeHydratedPeerListingTile key={board.id} listing={board} />
                   ))}
                 </HomeListingScrollRow>
               </div>
@@ -425,13 +384,10 @@ export default async function HomePage() {
               </div>
               <HomeListingScrollRow uniformCardHeights>
                 {featuredNew.map(({ listing, stockQuantity, categoryName }) => (
-                  <ShopNewListingStandardTile
+                  <HomeHydratedShopNewTile
                     key={listing.id}
-                    layout="homeScroll"
                     listing={listing}
                     stockQuantity={stockQuantity}
-                    userId={user?.id ?? null}
-                    isFavorited={favoritedIds.includes(listing.id)}
                     categoryName={categoryName}
                   />
                 ))}
@@ -442,5 +398,6 @@ export default async function HomePage() {
         )}
 
       </main>
+    </HomeViewerProvider>
   )
 }
