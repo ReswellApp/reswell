@@ -1,5 +1,6 @@
 {
   "installCommand": "npm install",
+  "regions": ["iad1", "sfo1"],
   "headers": [
     {
       "source": "/media/(.*)",
