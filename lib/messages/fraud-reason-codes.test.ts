@@ -7,9 +7,9 @@ import {
 } from "./fraud-reason-codes.ts"
 
 describe("messagePolicyBlocksDelivery", () => {
-  it("blocks phone sharing and off-platform payment", () => {
-    assert.equal(messagePolicyBlocksDelivery("phone_like"), true)
-    assert.equal(messagePolicyBlocksDelivery("phone_fragment"), true)
+  it("allows phone sharing and still blocks off-platform payment", () => {
+    assert.equal(messagePolicyBlocksDelivery("phone_like"), false)
+    assert.equal(messagePolicyBlocksDelivery("phone_fragment"), false)
     assert.equal(messagePolicyBlocksDelivery("off_platform_payment"), true)
     assert.equal(messagePolicyBlocksDelivery("email_like"), true)
   })

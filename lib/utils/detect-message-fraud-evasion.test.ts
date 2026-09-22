@@ -19,4 +19,13 @@ describe("messageLooksLikeFraudEvasion", () => {
     assert.equal(messageLooksLikeFraudEvasion("I can meet Saturday morning"), false)
     assert.equal(messageLooksLikeFraudEvasion("The board is 5'10 19 2 1/4"), false)
   })
+
+  it("ignores phone contact while phone sharing is allowed", () => {
+    const options = { ignorePhoneContact: true }
+    assert.equal(messageLooksLikeFraudEvasion("text me at 949-689-0987", options), false)
+    assert.equal(messageLooksLikeFraudEvasion("here is my number", options), false)
+    assert.equal(messageLooksLikeFraudEvasion("five five five one two", options), false)
+    assert.equal(messageLooksLikeFraudEvasion("v3nmo me", options), true)
+    assert.equal(messageLooksLikeFraudEvasion("send it to $surfbuyer", options), true)
+  })
 })

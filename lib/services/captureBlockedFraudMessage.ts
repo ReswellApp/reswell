@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
-import { messagePolicyBlocksDelivery, type MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import {
+  PHONE_SHARING_POLICY_ENFORCED,
+  isPhoneSharingPolicyReason,
+  messagePolicyBlocksDelivery,
+  type MessagePolicyReasonCode,
+} from "@/lib/messages/fraud-reason-codes"
 import { maybeBanNewAccountAfterFraudMessage } from "@/lib/services/newAccountFraudBan"
 import type { MessageFraudLlmReviewStatus, MessageFraudReviewSource } from "@/lib/validations/message-fraud-review"
 
@@ -19,6 +24,10 @@ export async function captureBlockedFraudMessage(
     llmReviewSource?: MessageFraudReviewSource
   },
 ): Promise<{ ok: boolean; banned: boolean; errorMessage?: string }> {
+  if (!PHONE_SHARING_POLICY_ENFORCED && isPhoneSharingPolicyReason(row.reasonCode)) {
+    return { ok: true, banned: false }
+  }
+
   const inserted = await insertFraudMessageCapturedContent(supabase, row)
   if (!inserted.ok) {
     return { ok: false, banned: false, errorMessage: inserted.errorMessage }

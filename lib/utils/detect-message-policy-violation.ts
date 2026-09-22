@@ -1,9 +1,12 @@
-import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
-import { messageAppearsToShareEmailAddress } from "@/lib/utils/detect-message-email-sharing"
-import { messageContainsExternalLink } from "@/lib/utils/detect-message-external-link"
-import { messageAppearsToBePhishing } from "@/lib/utils/detect-message-phishing"
-import { messageContainsOffPlatformPaymentTerms } from "@/lib/utils/detect-message-off-platform-payment"
-import { messageAppearsToSharePhoneNumber } from "@/lib/utils/detect-message-phone-sharing"
+import {
+  PHONE_SHARING_POLICY_ENFORCED,
+  type MessagePolicyReasonCode,
+} from "../messages/fraud-reason-codes.ts"
+import { messageAppearsToShareEmailAddress } from "./detect-message-email-sharing.ts"
+import { messageContainsExternalLink } from "./detect-message-external-link.ts"
+import { messageAppearsToBePhishing } from "./detect-message-phishing.ts"
+import { messageContainsOffPlatformPaymentTerms } from "./detect-message-off-platform-payment.ts"
+import { messageAppearsToSharePhoneNumber } from "./detect-message-phone-sharing.ts"
 
 export function detectMessagePolicyViolation(text: string): MessagePolicyReasonCode | null {
   const t = text.trim()
@@ -13,8 +16,8 @@ export function detectMessagePolicyViolation(text: string): MessagePolicyReasonC
   if (messageAppearsToShareEmailAddress(t)) return "email_like"
   if (messageContainsOffPlatformPaymentTerms(t)) return "off_platform_payment"
   // Phone is checked last so a message that also contains email / Venmo / phishing
-  // still returns that more specific reason. Delivery is blocked for every code.
-  if (messageAppearsToSharePhoneNumber(t)) return "phone_like"
+  // still returns that more specific reason. Phone sharing is paused for now.
+  if (PHONE_SHARING_POLICY_ENFORCED && messageAppearsToSharePhoneNumber(t)) return "phone_like"
 
   return null
 }

@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import {
+  PHONE_SHARING_POLICY_ENFORCED,
+  type MessagePolicyReasonCode,
+} from "@/lib/messages/fraud-reason-codes"
 import { getTrailingMessagesForConversation } from "@/lib/db/conversationTrailingMessages"
 import {
   applyMessageFraudReviewDecision,
@@ -82,6 +85,7 @@ async function detectPhoneFragmentViolation(
   text: string,
   priorSenderMessages: string[],
 ): Promise<MessagePolicyReasonCode | null> {
+  if (!PHONE_SHARING_POLICY_ENFORCED) return null
   if (!messageIsPhoneNumberFragmentCandidate(text)) return null
 
   const { data: profile } = await supabase
@@ -174,7 +178,11 @@ export async function evaluateMessagePolicyForSend(
   }
 
   let priorSenderMessages: string[] | null = null
-  if (conversationId && messageIsPhoneNumberFragmentCandidate(text)) {
+  if (
+    PHONE_SHARING_POLICY_ENFORCED &&
+    conversationId &&
+    messageIsPhoneNumberFragmentCandidate(text)
+  ) {
     priorSenderMessages = await priorSenderMessagesForConversation(
       supabase,
       conversationId,
@@ -196,7 +204,7 @@ export async function evaluateMessagePolicyForSend(
     }
   }
 
-  if (messageLooksLikeFraudEvasion(text)) {
+  if (messageLooksLikeFraudEvasion(text, { ignorePhoneContact: !PHONE_SHARING_POLICY_ENFORCED })) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("is_admin, is_employee")
@@ -229,7 +237,7 @@ export async function getMessagePolicyViolationForSender(
  * Same as {@link getMessagePolicyViolationForSender}, plus a cross-message check:
  * phone numbers split into short digit-only messages ("843" / "997" / "5252")
  * are caught by combining the sender's trailing digit-only messages with the
- * new one. Phone hits now block delivery after LLM confirm (or fail-closed).
+ * new one. Phone sharing is paused, so those hits are delivered.
  */
 export async function getMessagePolicyViolationForSenderInConversation(
   supabase: SupabaseClient,
