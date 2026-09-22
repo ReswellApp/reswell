@@ -132,6 +132,7 @@ export function HomeHydratedPeerListingTile({
       userId={userId}
       isFavorited={favoritedIds.includes(listing.id)}
       imagePriority={imagePriority}
+      imageDensity="pdp"
       layout={layout}
       imageSizesOverride={imageSizesOverride}
     />
@@ -166,6 +167,7 @@ export function HomeHydratedShopNewTile({
       userId={userId}
       isFavorited={favoritedIds.includes(listing.id)}
       categoryName={categoryName}
+      imageDensity="pdp"
     />
   )
 }

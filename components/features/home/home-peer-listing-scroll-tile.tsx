@@ -10,7 +10,7 @@ import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import type { ListingImageForCard, ListingTileImageDensity } from "@/lib/listing-image-display"
 import { shouldShowListingGoodDeal } from "@/lib/utils/listing-good-deal"
 import {
   homeListingScrollImageSizes,
@@ -73,6 +73,7 @@ export function HomePeerListingScrollTile({
   showFavorites = true,
   onFavoritedChange,
   imagePriority = false,
+  imageDensity = "tile",
   compact = false,
   cardContentClassName,
   cardClassName,
@@ -94,6 +95,7 @@ export function HomePeerListingScrollTile({
   onFavoritedChange?: (favorited: boolean) => void
   /** Forwarded to ListingTile → ListingTileImageMedia — see its JSDoc for usage rules. */
   imagePriority?: boolean
+  imageDensity?: ListingTileImageDensity
   /** Narrower tile typography for homepage “most viewed” mosaic / scroll strip. */
   compact?: boolean
   /** Overrides default body inset (e.g. auth landing grid). */
@@ -138,6 +140,7 @@ export function HomePeerListingScrollTile({
       }
       imageSizes={imageSizes}
       imagePriority={imagePriority}
+      imageDensity={imageDensity}
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={
