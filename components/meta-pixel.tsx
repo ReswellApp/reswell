@@ -5,6 +5,9 @@ import { getMetaPixelId } from '@/lib/meta/pixel-config'
 /**
  * Meta (Facebook) Pixel base snippet. Renders nothing unless NEXT_PUBLIC_META_PIXEL_ID is set
  * to a numeric pixel ID (see .env.example).
+ *
+ * `lazyOnload` keeps fbevents.js off the first-paint path. SPA PageViews are
+ * consolidated in {@link MarketingPageViewTracker}.
  */
 export function MetaPixel() {
   const id = getMetaPixelId()
@@ -12,7 +15,7 @@ export function MetaPixel() {
 
   return (
     <>
-      <Script id="meta-pixel" strategy="afterInteractive">
+      <Script id="meta-pixel" strategy="lazyOnload">
         {`
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

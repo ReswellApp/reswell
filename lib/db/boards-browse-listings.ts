@@ -94,6 +94,11 @@ export const BOARDS_BROWSE_PAGE_SIZE = 30
 
 export const LOCATION_FALLBACK_RADIUS_MI = 100
 export const LOCATION_FALLBACK_WIDE_RADIUS_MI = 2200
+/**
+ * Max listings fetched for HTML radius/nearest post-processing (Postgres path).
+ * Lower than the old 500-row cap so TTFB stays reasonable; ES geo_distance does not use this.
+ */
+export const GEO_BROWSE_HTML_MAX_ROWS = 180
 
 export function suppressedBrowseRank(row: BoardBrowseListingRow): number {
   return row.suppressed_on_boards_browse === true ? 1 : 0

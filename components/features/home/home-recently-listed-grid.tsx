@@ -1,7 +1,5 @@
-import {
-  HomePeerListingScrollTile,
-  type HomePeerScrollListing,
-} from "@/components/features/home/home-peer-listing-scroll-tile"
+import { HomeHydratedPeerListingTile } from "@/components/features/home/home-viewer-hydration"
+import type { HomePeerScrollListing } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { HOME_RECENTLY_LISTED_GRID_DESKTOP_TILE_COUNT } from "@/lib/db/home-recently-listed-grid"
 import { cn } from "@/lib/utils"
 
@@ -10,18 +8,17 @@ const HOME_RECENTLY_LISTED_GRID_IMAGE_SIZES =
 
 export const homeRecentlyListedGridClassName = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
 
+/** First row on mobile may sit near the fold under the hero sheet; the rest stay lazy. */
+const HOME_RECENTLY_LISTED_PRIORITY_TILE_COUNT = 2
+
 /** Recently listed surfboards + fins — 16 tiles on mobile, 15 on desktop (5×3). */
 export function HomeRecentlyListedGrid({
   listings,
-  userId,
-  favoritedIds,
   gridClassName = homeRecentlyListedGridClassName,
   imageSizes = HOME_RECENTLY_LISTED_GRID_IMAGE_SIZES,
   hideExtraDesktopTiles = true,
 }: {
   listings: HomePeerScrollListing[]
-  userId: string | null
-  favoritedIds: string[]
   gridClassName?: string
   imageSizes?: string
   /** When true, hides tile 16+ on `lg` (homepage mobile/desktop split). */
@@ -40,12 +37,10 @@ export function HomeRecentlyListedGrid({
               "lg:hidden",
           )}
         >
-          <HomePeerListingScrollTile
+          <HomeHydratedPeerListingTile
             layout="grid"
             listing={listing}
-            userId={userId}
-            isFavorited={favoritedIds.includes(listing.id)}
-            imagePriority={tileIdx < 5}
+            imagePriority={tileIdx < HOME_RECENTLY_LISTED_PRIORITY_TILE_COUNT}
             imageSizesOverride={imageSizes}
           />
         </div>

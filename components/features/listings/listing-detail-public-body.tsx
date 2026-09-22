@@ -1,15 +1,3 @@
-import { Suspense } from "react"
-import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
-import { FinsListingDetailPage } from "@/components/fins-listing-detail-page"
-import { WetsuitsListingDetailPage } from "@/components/wetsuits-listing-detail-page"
-import { BoardbagsListingDetailPage } from "@/components/boardbags-listing-detail-page"
-import { SurfpacksListingDetailPage } from "@/components/surfpacks-listing-detail-page"
-import { LeashesListingDetailPage } from "@/components/leashes-listing-detail-page"
-import { ApparelListingDetailPage } from "@/components/apparel-listing-detail-page"
-import { AccessoriesListingDetailPage } from "@/components/accessories-listing-detail-page"
-import { MagazinesListingDetailPage } from "@/components/magazines-listing-detail-page"
-import { TractionListingDetailPage } from "@/components/traction-listing-detail-page"
-import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { ListingDetailAdminBarGate } from "@/components/features/listings/listing-detail-admin-bar-gate"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
@@ -46,7 +34,85 @@ function normalizePublicListingRow(listing: PublicListingRow): PublicListingRow 
   }
 }
 
-export function ListingDetailPublicBody({
+/**
+ * Section PDPs are async Server Components. `import()` per `listing.section` keeps
+ * unused section trees (and their client islands) out of this route's graph.
+ * `next/dynamic` is for Client Components and would wrap these in the wrong boundary.
+ */
+async function renderListingSectionPage(
+  listing: PublicListingRow,
+  listingParam: string,
+  cachedPublicProps: ListingDetailPageSharedProps,
+) {
+  switch (listing.section) {
+    case "surfboards": {
+      const { SurfboardListingDetailPage } = await import(
+        "@/components/surfboard-listing-detail-page"
+      )
+      return <SurfboardListingDetailPage {...cachedPublicProps} />
+    }
+    case "fins": {
+      const { FinsListingDetailPage } = await import("@/components/fins-listing-detail-page")
+      return <FinsListingDetailPage {...cachedPublicProps} />
+    }
+    case "wetsuits": {
+      const { WetsuitsListingDetailPage } = await import(
+        "@/components/wetsuits-listing-detail-page"
+      )
+      return <WetsuitsListingDetailPage {...cachedPublicProps} />
+    }
+    case "boardbags": {
+      const { BoardbagsListingDetailPage } = await import(
+        "@/components/boardbags-listing-detail-page"
+      )
+      return <BoardbagsListingDetailPage {...cachedPublicProps} />
+    }
+    case "surfpacks": {
+      const { SurfpacksListingDetailPage } = await import(
+        "@/components/surfpacks-listing-detail-page"
+      )
+      return <SurfpacksListingDetailPage {...cachedPublicProps} />
+    }
+    case "leashes": {
+      const { LeashesListingDetailPage } = await import(
+        "@/components/leashes-listing-detail-page"
+      )
+      return <LeashesListingDetailPage {...cachedPublicProps} />
+    }
+    case "apparel": {
+      const { ApparelListingDetailPage } = await import(
+        "@/components/apparel-listing-detail-page"
+      )
+      return <ApparelListingDetailPage {...cachedPublicProps} />
+    }
+    case "accessories": {
+      const { AccessoriesListingDetailPage } = await import(
+        "@/components/accessories-listing-detail-page"
+      )
+      return <AccessoriesListingDetailPage {...cachedPublicProps} />
+    }
+    case "magazines": {
+      const { MagazinesListingDetailPage } = await import(
+        "@/components/magazines-listing-detail-page"
+      )
+      return <MagazinesListingDetailPage {...cachedPublicProps} />
+    }
+    case "traction": {
+      const { TractionListingDetailPage } = await import(
+        "@/components/traction-listing-detail-page"
+      )
+      return <TractionListingDetailPage {...cachedPublicProps} />
+    }
+    case "new": {
+      const { ShopListingDetailPage } = await import("@/components/shop-listing-detail-page")
+      return <ShopListingDetailPage listingParam={listingParam} prefetchedListing={listing} />
+    }
+    default:
+      return null
+  }
+}
+
+export async function ListingDetailPublicBody({
   listing: listingRaw,
   listingParam,
   sectionProps,
@@ -62,6 +128,8 @@ export function ListingDetailPublicBody({
     anonymousPublicView: sectionProps.anonymousPublicView ?? false,
   }
 
+  const sectionPage = await renderListingSectionPage(listing, listingParam, cachedPublicProps)
+
   return (
     <>
       {isGoogleMerchantPeerSection(listing.section) ? (
@@ -73,34 +141,7 @@ export function ListingDetailPublicBody({
           <ListingDetailAdminBarGate listing={listing} anonymousPublicView={false} />
         </Suspense>
       )}
-      {(() => {
-        switch (listing.section) {
-          case "surfboards":
-            return <SurfboardListingDetailPage {...cachedPublicProps} />
-          case "fins":
-            return <FinsListingDetailPage {...cachedPublicProps} />
-          case "wetsuits":
-            return <WetsuitsListingDetailPage {...cachedPublicProps} />
-          case "boardbags":
-            return <BoardbagsListingDetailPage {...cachedPublicProps} />
-          case "surfpacks":
-            return <SurfpacksListingDetailPage {...cachedPublicProps} />
-          case "leashes":
-            return <LeashesListingDetailPage {...cachedPublicProps} />
-          case "apparel":
-            return <ApparelListingDetailPage {...cachedPublicProps} />
-          case "accessories":
-            return <AccessoriesListingDetailPage {...cachedPublicProps} />
-          case "magazines":
-            return <MagazinesListingDetailPage {...cachedPublicProps} />
-          case "traction":
-            return <TractionListingDetailPage {...cachedPublicProps} />
-          case "new":
-            return <ShopListingDetailPage listingParam={listingParam} prefetchedListing={listing} />
-          default:
-            return null
-        }
-      })()}
+      {sectionPage}
       {EMBEDDED_RELATED_CONTENT_SECTIONS.has(listing.section) ? null : (
         <Suspense fallback={null}>
           <ListingRelatedContentSection listingId={listing.id} />

@@ -59,3 +59,9 @@ export function trackMetaAddToCart(params: MetaProductEventParams): void {
   if (!params.contentId?.trim()) return
   track("AddToCart", buildProductParams(params), params.eventId)
 }
+
+/** SPA PageView. The base snippet already tracks the first full document load. */
+export function sendMetaPixelPageView(): void {
+  if (typeof window === "undefined" || typeof window.fbq !== "function") return
+  window.fbq("track", "PageView")
+}

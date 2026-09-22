@@ -6,3 +6,10 @@ export { HomePeerListingScrollTile, type HomePeerScrollListing } from "./home-pe
 export { TrendingBrandsSection } from "./trending-brands-section"
 export { TrendingBrandsStrip, type TrendingStripBrand } from "./trending-brands-strip"
 export { HomeHowItWorksSection, type HomeHowItWorksBuyerHighlightImages } from "./home-how-it-works-section"
+export {
+  HomeViewerProvider,
+  HomeHeroPrimaryCta,
+  HomeHydratedPeerListingTile,
+  HomeHydratedShopNewTile,
+  HomeHydratedTrendingBrandsSection,
+} from "./home-viewer-hydration"

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { toggleFavoriteListing } from "@/app/actions/favorites"
@@ -49,6 +49,12 @@ export function FavoriteButton({
   const [favorited, setFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
   const openSignIn = useSignInGate()
+
+  // ISR / client-island pages hydrate favorites after mount. Sync so hearts fill
+  // when `initialFavorited` arrives (FavoriteButton only read the first value).
+  useEffect(() => {
+    setFavorited(initialFavorited)
+  }, [initialFavorited])
   const useListingTileHeart = heartAccent === "listingTile"
   const useListingPdpHeart = heartAccent === "listingPdp"
 
