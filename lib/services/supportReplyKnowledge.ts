@@ -53,7 +53,7 @@ export async function gatherSupportReplyKnowledge(
   args: {
     query: string
     kind: string | null
-    excludeCaseId: string
+    excludeCaseId?: string | null
     /** When set (e.g. live_chat), do not pull other customers' resolved-case admin replies. */
     sourceChannel?: string | null
     requesterUserId?: string | null

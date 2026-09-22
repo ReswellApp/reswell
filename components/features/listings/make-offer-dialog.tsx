@@ -102,6 +102,8 @@ export type MakeOfferDialogProps = {
   isLoggedIn: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** When true, the minimum is hidden until user enters below it */
+  hideMinimumUntilViolated?: boolean
 }
 
 export function MakeOfferDialog({
@@ -119,6 +121,7 @@ export function MakeOfferDialog({
   isLoggedIn,
   open,
   onOpenChange,
+  hideMinimumUntilViolated = false,
 }: MakeOfferDialogProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -168,6 +171,12 @@ export function MakeOfferDialog({
 
   const offerAmount = useMemo(() => parseAmountInput(amountInput), [amountInput])
 
+  const amountBelowMinimum =
+    offerAmount !== null && offerAmount < minOfferAmount
+
+  const amountValid =
+    offerAmount !== null && offerAmount >= minOfferAmount && offerAmount <= listPrice
+
   const shippingLabel =
     fulfillment === "shipping" && canShip
       ? offerShippingCostLabel(shippingCostMode, shippingFlatRate)
@@ -191,9 +200,6 @@ export function MakeOfferDialog({
         ? roundMoney(offerAmount + knownFlatShipping)
         : offerAmount
       : null
-
-  const amountValid =
-    offerAmount !== null && offerAmount >= minOfferAmount && offerAmount <= listPrice
 
   const setQuickDiscount = useCallback(
     (pctOff: number) => {
@@ -421,9 +427,11 @@ export function MakeOfferDialog({
                       <Label className="text-sm font-semibold">
                         Your offer <span className="text-destructive">*</span>
                       </Label>
-                      <p className="text-[11px] text-muted-foreground sm:text-xs">
-                        Min ${minOfferAmount.toFixed(0)} ({minOfferPct}% of ${listPrice.toFixed(0)})
-                      </p>
+                      {!hideMinimumUntilViolated ? (
+                        <p className="text-[11px] text-muted-foreground sm:text-xs">
+                          Min ${minOfferAmount.toFixed(0)} ({minOfferPct}% of ${listPrice.toFixed(0)})
+                        </p>
+                      ) : null}
                     </div>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -444,6 +452,11 @@ export function MakeOfferDialog({
                         aria-invalid={!amountValid && amountInput.trim() !== ""}
                       />
                     </div>
+                    {hideMinimumUntilViolated && amountBelowMinimum ? (
+                      <p className="text-xs text-destructive">
+                        The lowest the seller will accept for this item is ${minOfferAmount.toFixed(2)}.
+                      </p>
+                    ) : null}
                     <div className="flex flex-wrap gap-1.5">
                       {([5, 10, 15] as const).map((pct) => (
                         <Button

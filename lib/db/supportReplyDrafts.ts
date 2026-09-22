@@ -6,6 +6,10 @@ import type {
   SupportReplyExampleRow,
 } from "@/lib/types/supportReplyDraft"
 import { supportReplyExampleSearchOrClause } from "@/lib/utils/support-reply-examples"
+import {
+  isMissingDraftHarnessColumn,
+  isMissingExampleExtendedColumn,
+} from "@/lib/utils/support-reply-schema"
 import { selectOpenCaseIdsNeedingDraft } from "@/lib/utils/support-reply-retrieve"
 import {
   normalizeSupportReplyDraftRating,
@@ -121,13 +125,61 @@ function toDraftRow(data: Record<string, unknown>): SupportReplyDraftRow {
   }
 }
 
-function isMissingHarnessColumn(message: string): boolean {
-  return (
-    message.includes("reason") ||
-    message.includes("citations") ||
-    message.includes("Could not find the") ||
-    message.includes("schema cache")
-  )
+/** Skip unmigrated columns this long after the first 42703 / schema-cache miss. */
+const SUPPORT_REPLY_SCHEMA_MISS_TTL_MS = 10 * 60 * 1000
+
+let draftHarnessUnavailableUntilMs = 0
+let exampleExtendedUnavailableUntilMs = 0
+let loggedDraftHarnessMiss = false
+let loggedExampleExtendedMiss = false
+
+export { isMissingDraftHarnessColumn, isMissingExampleExtendedColumn }
+
+export function resetSupportReplySchemaCircuits(nowMs = 0): void {
+  draftHarnessUnavailableUntilMs = nowMs
+  exampleExtendedUnavailableUntilMs = nowMs
+  loggedDraftHarnessMiss = false
+  loggedExampleExtendedMiss = false
+}
+
+function markDraftHarnessUnavailable(nowMs = Date.now()): void {
+  draftHarnessUnavailableUntilMs = nowMs + SUPPORT_REPLY_SCHEMA_MISS_TTL_MS
+  if (!loggedDraftHarnessMiss) {
+    loggedDraftHarnessMiss = true
+    console.warn(
+      "[support_reply_drafts] reason/citations not in schema; using legacy columns for 10m. Apply 20270920120000_support_reply_draft_harness.sql.",
+    )
+  }
+}
+
+function markExampleExtendedUnavailable(nowMs = Date.now()): void {
+  exampleExtendedUnavailableUntilMs = nowMs + SUPPORT_REPLY_SCHEMA_MISS_TTL_MS
+  if (!loggedExampleExtendedMiss) {
+    loggedExampleExtendedMiss = true
+    console.warn(
+      "[support_reply_examples] rating_note/source_channel not in schema; using legacy columns for 10m. Apply 20270927120000_support_reply_example_rating_note.sql.",
+    )
+  }
+}
+
+function draftSelect(nowMs = Date.now()): string {
+  return nowMs < draftHarnessUnavailableUntilMs ? DRAFT_SELECT_LEGACY : DRAFT_SELECT
+}
+
+function exampleSelect(nowMs = Date.now()): string {
+  return nowMs < exampleExtendedUnavailableUntilMs ? EXAMPLE_SELECT_LEGACY : EXAMPLE_SELECT
+}
+
+function noteDraftHarnessError(message: string): boolean {
+  if (!isMissingDraftHarnessColumn(message)) return false
+  markDraftHarnessUnavailable()
+  return true
+}
+
+function noteExampleExtendedError(message: string): boolean {
+  if (!isMissingExampleExtendedColumn(message)) return false
+  markExampleExtendedUnavailable()
+  return true
 }
 
 export type SupportReplyDraftMeta = {
@@ -173,13 +225,13 @@ export async function getSupportReplyDraftByCaseId(
 ): Promise<SupportReplyDraftRow | null> {
   const first = await supabase
     .from("support_reply_drafts")
-    .select(DRAFT_SELECT)
+    .select(draftSelect())
     .eq("case_id", caseId)
     .maybeSingle()
   if (!first.error) {
     return first.data ? toDraftRow(first.data as Record<string, unknown>) : null
   }
-  if (!isMissingHarnessColumn(first.error.message)) {
+  if (!noteDraftHarnessError(first.error.message)) {
     console.warn("[support_reply_drafts] get skipped:", first.error.message)
     return null
   }
@@ -211,7 +263,7 @@ export async function upsertSupportReplyDraft(
   },
 ): Promise<SupportReplyDraftRow | null> {
   const now = new Date().toISOString()
-  const payload = {
+  const legacy = {
     case_id: row.caseId,
     body: row.body,
     model: row.model,
@@ -220,33 +272,25 @@ export async function upsertSupportReplyDraft(
     cited_help_slugs: row.citedHelpSlugs,
     retrieved_example_ids: row.retrievedExampleIds,
     origin: row.origin,
-    reason: row.reason ?? null,
-    citations: row.citations ?? emptyCitations(),
     updated_at: now,
   }
+  const payload = {
+    ...legacy,
+    reason: row.reason ?? null,
+    citations: row.citations ?? emptyCitations(),
+  }
+  const useLegacy = Date.now() < draftHarnessUnavailableUntilMs
   const first = await supabase
     .from("support_reply_drafts")
-    .upsert(payload, { onConflict: "case_id" })
-    .select(DRAFT_SELECT)
+    .upsert(useLegacy ? legacy : payload, { onConflict: "case_id" })
+    .select(draftSelect())
     .single()
 
   if (!first.error) return toDraftRow(first.data as Record<string, unknown>)
 
-  if (!isMissingHarnessColumn(first.error.message)) {
+  if (!noteDraftHarnessError(first.error.message)) {
     console.warn("[support_reply_drafts] upsert skipped:", first.error.message)
     return null
-  }
-
-  const legacy = {
-    case_id: payload.case_id,
-    body: payload.body,
-    model: payload.model,
-    prompt_version: payload.prompt_version,
-    source_fingerprint: payload.source_fingerprint,
-    cited_help_slugs: payload.cited_help_slugs,
-    retrieved_example_ids: payload.retrieved_example_ids,
-    origin: payload.origin,
-    updated_at: payload.updated_at,
   }
   const fallback = await supabase
     .from("support_reply_drafts")
@@ -270,12 +314,12 @@ export async function listSupportReplyExamples(
 ): Promise<SupportReplyExampleRow[]> {
   const { data, error } = await supabase
     .from("support_reply_examples")
-    .select(EXAMPLE_SELECT)
+    .select(exampleSelect())
     .order("created_at", { ascending: false })
     .limit(limit)
 
   if (error) {
-    if (error.message.includes("source_channel")) {
+    if (noteExampleExtendedError(error.message)) {
       const legacy = await supabase
         .from("support_reply_examples")
         .select(EXAMPLE_SELECT_LEGACY)
@@ -317,8 +361,8 @@ export async function listSupportReplyExamplesPage(
     return query
   }
 
-  let { data, error, count } = await run(EXAMPLE_SELECT)
-  if (error?.message.includes("source_channel")) {
+  let { data, error, count } = await run(exampleSelect())
+  if (error && noteExampleExtendedError(error.message)) {
     ;({ data, error, count } = await run(EXAMPLE_SELECT_LEGACY))
   }
   if (error) {
@@ -355,10 +399,10 @@ export async function getSupportReplyExampleById(
 ): Promise<SupportReplyExampleRow | null> {
   const { data, error } = await supabase
     .from("support_reply_examples")
-    .select(EXAMPLE_SELECT)
+    .select(exampleSelect())
     .eq("id", id)
     .maybeSingle()
-  if (error?.message.includes("source_channel")) {
+  if (error && noteExampleExtendedError(error.message)) {
     const legacy = await supabase
       .from("support_reply_examples")
       .select(EXAMPLE_SELECT_LEGACY)
@@ -398,7 +442,7 @@ export async function updateSupportReplyExample(
       kind: row.kind,
     })
     .eq("id", row.id)
-    .select(EXAMPLE_SELECT)
+    .select(exampleSelect())
     .single()
 
   if (error || !data) {
@@ -423,7 +467,7 @@ export async function deleteSupportReplyExample(
 export async function insertSupportReplyExample(
   supabase: SupabaseClient,
   row: {
-    caseId: string
+    caseId?: string | null
     kind: string | null
     customerExcerpt: string
     staffReply: string
@@ -436,7 +480,7 @@ export async function insertSupportReplyExample(
   },
 ): Promise<void> {
   const base = {
-    case_id: row.caseId,
+    case_id: row.caseId ?? null,
     kind: row.kind,
     customer_excerpt: row.customerExcerpt.slice(0, 4000),
     staff_reply: row.staffReply.slice(0, 12000),
@@ -451,8 +495,11 @@ export async function insertSupportReplyExample(
     rating_note: row.ratingNote?.trim() ? row.ratingNote.trim().slice(0, 1000) : null,
   }
 
-  const { error } = await supabase.from("support_reply_examples").insert(withChannel)
-  if (error?.message.includes("rating_note") || error?.message.includes("source_channel")) {
+  const useLegacy = Date.now() < exampleExtendedUnavailableUntilMs
+  const { error } = await supabase
+    .from("support_reply_examples")
+    .insert(useLegacy ? base : withChannel)
+  if (error && noteExampleExtendedError(error.message)) {
     const retry = await supabase.from("support_reply_examples").insert({
       ...base,
       ...(error.message.includes("source_channel")

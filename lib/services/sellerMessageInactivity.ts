@@ -75,12 +75,12 @@ async function fetchListingImagesForKlaviyo(
 ): Promise<KlaviyoListingImage[] | null> {
   const { data, error } = await supabase
     .from("listings")
-    .select("listing_images")
+    .select("tile_gallery_images")
     .eq("id", listingId)
     .maybeSingle()
 
   if (error || !data) return null
-  const images = (data as { listing_images?: KlaviyoListingImage[] | null }).listing_images
+  const images = (data as { tile_gallery_images?: KlaviyoListingImage[] | null }).tile_gallery_images
   return Array.isArray(images) ? images : null
 }
 

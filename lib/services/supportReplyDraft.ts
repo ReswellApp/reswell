@@ -13,7 +13,6 @@ import {
   getSupportReplyOrderSnapshot,
   getSupportReplyRequesterNames,
   insertSupportReplyExample,
-  listOpenCaseIdsNeedingDraft,
   upsertSupportReplyDraft,
   type SupportReplyOrderSnapshot,
 } from "@/lib/db/supportReplyDrafts"
@@ -35,6 +34,7 @@ import {
 } from "@/lib/services/csAgentLookups"
 import { listLiveChatMessagesForSession, type LiveChatSessionRow } from "@/lib/db/liveChat"
 import { isLiveChatJoinMessage } from "@/lib/live-chat/human-feel"
+import { latestLiveChatVisitorContent } from "@/lib/live-chat/thread-sync"
 import { liveChatWriterNeedsTools } from "@/lib/live-chat/order-tile-intent"
 import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
 import { resolveLiveChatFallbackReply } from "@/lib/live-chat/live-chat-cs-prompt"
@@ -61,7 +61,6 @@ import {
   lastCustomerSupportText,
   scoreSupportReplyOverlap,
   supportReplyDraftFingerprint,
-  supportReplyDraftWorkerOrigin,
   supportReplyRetrievalQuery,
   tokenizeSupportReplyQuery,
   visibleSupportConversation,
@@ -608,6 +607,118 @@ export async function generateAndStoreDraft(
   }
 }
 
+/**
+ * Live-chat writer used when the thread has no support case (guest / no email).
+ * Inbox drafts still require a case. This does not persist a draft row.
+ */
+export async function generateLiveChatReplyBody(
+  service: SupabaseClient,
+  args: {
+    session: LiveChatSessionRow
+    liveChatActor: LiveChatActionActor
+    rewriteInstruction: string
+    modelId: string
+    latestVisitorMessage: string
+    liveChatRegenerate?: {
+      previousReply: string
+      rating?: string
+      note?: string | null
+    }
+  },
+): Promise<{ body: string; closeTicket: boolean } | { error: string }> {
+  const liveChat = await loadLiveChatWriterTurns(
+    service,
+    args.session.id,
+    args.latestVisitorMessage,
+  )
+  const lastCustomerMessage =
+    liveChat.lastCustomer || args.latestVisitorMessage.trim()
+  if (!lastCustomerMessage) return { error: "No visitor message to answer." }
+
+  const rootPrompt = args.rewriteInstruction.trim()
+  const query = supportReplyRetrievalQuery({
+    lastCustomerMessage,
+    conversation: liveChat.turns.map((turn) => turn.body).join("\n"),
+    subject: "Live chat",
+  })
+  const knowledge = await gatherSupportReplyKnowledge(service, {
+    query,
+    kind: null,
+    excludeCaseId: args.session.support_case_id,
+    sourceChannel: "live_chat",
+    requesterUserId: args.session.user_id,
+    requesterEmail: args.session.visitor_email,
+  })
+
+  if (!isLiveChatCsLlmEnabled()) {
+    return {
+      body: resolveLiveChatFallbackReply(lastCustomerMessage),
+      closeTicket: false,
+    }
+  }
+
+  const greetingName = supportReplyGreetingName({
+    contactName: args.session.visitor_name,
+    displayName: args.session.visitor_name,
+    role: args.session.user_id ? "member" : "guest",
+  })
+
+  const [priorTickets, accountSnapshot] = await Promise.all([
+    listPriorTicketsForCsAgent(service, {
+      caseId: args.session.support_case_id,
+      requesterUserId: args.session.user_id,
+      requesterEmail: args.session.visitor_email,
+      linkedOrderId: null,
+    }),
+    loadLiveChatAccountSnapshot(service, args.session.user_id),
+  ])
+
+  const lookupSession = createCsAgentLookups(
+    service,
+    {
+      caseId: args.session.support_case_id,
+      requesterUserId: args.session.user_id,
+      requesterEmail: args.session.visitor_email,
+      linkedOrderId: null,
+    },
+    { liveChatSession: args.session, liveChatActor: args.liveChatActor },
+  )
+
+  try {
+    const generated = await generateCsAgentDraft({
+      model: args.modelId.trim() || liveChatCsModelId(),
+      rootPrompt,
+      pack: {
+        greetingName,
+        caseSubject: "Live chat",
+        caseKind: "general",
+        caseStatus: "submitted",
+        sourceChannel: "live_chat",
+        requesterRole: args.session.user_id ? "member" : "guest",
+        lastCustomerMessage,
+        thread: liveChat.turns,
+        liveChatTurns: liveChat.turns,
+        liveChatUseOrderTools: liveChatWriterNeedsTools(lastCustomerMessage),
+        order: null,
+        priorTickets,
+        help: knowledge.helpArticles,
+        examples: knowledge.examples,
+        macros: knowledge.macros,
+        rewriteInstruction: rootPrompt,
+        accountSnapshot,
+        liveChatRegenerate: args.liveChatRegenerate,
+      },
+      lookups: lookupSession.lookups,
+    })
+    const body = generated.reply.trim()
+    if (!body) return { error: "Live chat model did not return a grounded reply." }
+    return { body, closeTicket: generated.closeTicket === true }
+  } catch (error) {
+    console.error("[supportReplyDraft] live chat generate failed:", error)
+    return { error: "Live chat model did not return a grounded reply." }
+  }
+}
+
 export async function recordSupportReplyFeedbackService(
   raw: unknown,
 ): Promise<{ success: true } | { error: string }> {
@@ -639,7 +750,8 @@ export async function recordSupportReplyFeedbackService(
 }
 
 export async function recordSentSupportReplyExample(args: {
-  caseId: string
+  caseId?: string | null
+  sessionId?: string | null
   sentBody: string
   staffUserId: string | null
   sourceChannel?: string | null
@@ -649,64 +761,47 @@ export async function recordSentSupportReplyExample(args: {
   try {
     const service = staffClient()
     if (!service) return
-    const loaded = await loadCaseContext(service, args.caseId)
-    if ("error" in loaded) return
-
-    const draft = await getSupportReplyDraftByCaseId(service, loaded.row.id)
     const sent = args.sentBody.trim()
     if (!sent) return
 
-    const rating = args.rating ?? supportReplyRatingForSentBody(draft?.body, sent)
+    if (args.caseId) {
+      const loaded = await loadCaseContext(service, args.caseId)
+      if ("error" in loaded) return
+      const draft = await getSupportReplyDraftByCaseId(service, loaded.row.id)
+      const rating = args.rating ?? supportReplyRatingForSentBody(draft?.body, sent)
+      await insertSupportReplyExample(service, {
+        caseId: loaded.row.id,
+        kind: loaded.row.kind,
+        customerExcerpt: lastCustomerText(loaded.row, loaded.messages),
+        staffReply: sent,
+        citedHelpSlugs: draft?.cited_help_slugs ?? [],
+        rating,
+        draftId: draft?.id ?? null,
+        ratedBy: args.staffUserId,
+        sourceChannel: args.sourceChannel ?? loaded.row.source_channel ?? null,
+        ratingNote: args.ratingNote ?? null,
+      })
+      return
+    }
+
+    if (!args.sessionId) return
+    const messages = await listLiveChatMessagesForSession(service, args.sessionId)
+    const customerExcerpt = latestLiveChatVisitorContent(messages)
+    if (!customerExcerpt) return
 
     await insertSupportReplyExample(service, {
-      caseId: loaded.row.id,
-      kind: loaded.row.kind,
-      customerExcerpt: lastCustomerText(loaded.row, loaded.messages),
+      caseId: null,
+      kind: null,
+      customerExcerpt,
       staffReply: sent,
-      citedHelpSlugs: draft?.cited_help_slugs ?? [],
-      rating,
-      draftId: draft?.id ?? null,
+      citedHelpSlugs: [],
+      rating: args.rating ?? "okay",
       ratedBy: args.staffUserId,
-      sourceChannel: args.sourceChannel ?? loaded.row.source_channel ?? null,
+      sourceChannel: args.sourceChannel ?? "live_chat",
       ratingNote: args.ratingNote ?? null,
     })
   } catch (error) {
     console.warn("[supportReplyDraft] learn-from-send skipped:", error)
-  }
-}
-
-async function enqueueDetachedSupportReplyDraft(caseId: string): Promise<boolean> {
-  const secret = process.env.CRON_SECRET?.trim()
-  const origin = supportReplyDraftWorkerOrigin()
-  if (!secret || !origin) return false
-
-  try {
-    const url = new URL("/api/cron/support-reply-drafts", origin)
-    url.searchParams.set("case_id", caseId)
-    const response = await fetch(url, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${secret}` },
-      cache: "no-store",
-    })
-    return response.ok || response.status === 202
-  } catch (error) {
-    console.warn(
-      "[supportReplyDraft] detached enqueue failed:",
-      error instanceof Error ? error.message : error,
-    )
-    return false
-  }
-}
-
-async function generateInboundSupportReplyDraft(caseId: string): Promise<void> {
-  const enqueued = await enqueueDetachedSupportReplyDraft(caseId)
-  if (enqueued) return
-
-  const service = staffClient()
-  if (!service) return
-  const result = await generateAndStoreDraft(service, caseId, false)
-  if ("error" in result) {
-    console.warn("[supportReplyDraft] inbound generate:", result.error)
   }
 }
 
@@ -716,7 +811,12 @@ export function scheduleSupportReplyDraft(caseId: string): void {
 
   const run = async () => {
     try {
-      await generateInboundSupportReplyDraft(id)
+      const service = staffClient()
+      if (!service) return
+      const result = await generateAndStoreDraft(service, id, false)
+      if ("error" in result) {
+        console.warn("[supportReplyDraft] inbound generate:", result.error)
+      }
     } catch (error) {
       console.error(
         "[supportReplyDraft] inbound generate failed:",
@@ -730,21 +830,4 @@ export function scheduleSupportReplyDraft(caseId: string): void {
   } catch {
     void run()
   }
-}
-
-export async function warmOpenSupportReplyDraftsService(limit = 12): Promise<{
-  warmed: number
-  skipped: number
-  errors: number
-}> {
-  const service = createServiceRoleClient()
-  const ids = await listOpenCaseIdsNeedingDraft(service, limit)
-  let warmed = 0
-  let errors = 0
-  for (const id of ids) {
-    const result = await generateAndStoreDraft(service, id, false)
-    if ("error" in result) errors += 1
-    else warmed += 1
-  }
-  return { warmed, skipped: 0, errors }
 }

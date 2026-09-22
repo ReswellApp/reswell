@@ -18,6 +18,25 @@ const DUE_LISTING_SELECT =
 
 const DEFAULT_DUE_LIMIT = 100
 
+export function isAutoPriceDropScheduleSchemaMissing(
+  error: { code?: string; message?: string } | string | null | undefined,
+): boolean {
+  const code = typeof error === "object" && error ? error.code : undefined
+  const message =
+    typeof error === "string"
+      ? error
+      : typeof error === "object" && error
+        ? (error.message ?? "")
+        : ""
+  const lower = message.toLowerCase()
+  if (!lower.includes("auto_price_drop_scheduled_for")) return false
+  return (
+    code === "PGRST204" ||
+    lower.includes("schema cache") ||
+    lower.includes("does not exist")
+  )
+}
+
 export async function listDueAutoPriceDropListings(
   client: SupabaseClient,
   referenceTime: Date,
@@ -34,6 +53,12 @@ export async function listDueAutoPriceDropListings(
     .limit(limit)
 
   if (error) {
+    if (isAutoPriceDropScheduleSchemaMissing(error)) {
+      console.warn(
+        "[listingAutoPriceDrop] auto_price_drop_scheduled_for is not in the schema cache; skip until 20270922120000_listings_auto_price_drop_schedule.sql is applied.",
+      )
+      return []
+    }
     throw new Error(error.message)
   }
 

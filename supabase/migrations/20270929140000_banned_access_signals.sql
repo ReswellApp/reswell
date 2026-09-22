@@ -38,3 +38,5 @@ REVOKE ALL ON TABLE public.user_access_signals FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON TABLE public.banned_access_signals FROM PUBLIC, anon, authenticated;
 GRANT ALL ON TABLE public.user_access_signals TO service_role;
 GRANT ALL ON TABLE public.banned_access_signals TO service_role;
+
+NOTIFY pgrst, 'reload schema';

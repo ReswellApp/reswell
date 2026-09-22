@@ -11,6 +11,7 @@ import {
 import { isListingSellableCondition } from "@/lib/listing-labels"
 import type { ListingDraftAutosaveInput } from "@/lib/validations/listing-draft-autosave"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
+import { minimumOfferAmountToDb } from "@/lib/utils/offers-minimum-amount"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import {
   isListingDimensionDisplaySchemaCacheError,
@@ -128,6 +129,7 @@ export function buildSurfboardDraftListingRow(
       return Number.isFinite(n) ? n : null
     })(),
     buyer_offers_enabled: fd.buyerOffers !== false,
+    minimum_offer_amount: minimumOfferAmountToDb(fd.minimumOfferAmount),
     brand: fd.brand?.trim() ? fd.brand.trim() : null,
     brand_id: fd.boardBrandId?.trim() || null,
     seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice ?? ""),

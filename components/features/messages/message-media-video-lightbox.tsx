@@ -31,9 +31,8 @@ export function MessageMediaVideoLightbox({
     if (!video) return
 
     if (open) {
-      void video.play().catch(() => {
-        // Autoplay may be blocked until user interacts; controls remain available.
-      })
+      setReady(false)
+      // Wait for loadedmetadata to fire before attempting play
       return
     }
 
@@ -42,10 +41,19 @@ export function MessageMediaVideoLightbox({
     setReady(false)
   }, [open])
 
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !open || !ready) return
+
+    void video.play().catch(() => {
+      // Autoplay may be blocked until user interacts; controls remain available.
+    })
+  }, [open, ready])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <DialogOverlay className={cn(MESSAGE_MEDIA_LIGHTBOX_Z, "touch-none bg-background")} />
+        <DialogOverlay className={cn(MESSAGE_MEDIA_LIGHTBOX_Z, "touch-none bg-black")} />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           className={cn(
@@ -66,7 +74,7 @@ export function MessageMediaVideoLightbox({
                       type="button"
                       size="icon"
                       variant="secondary"
-                      className="h-11 w-11 shrink-0 rounded-full border border-border/55 bg-background/90 text-foreground shadow-sm backdrop-blur-md hover:bg-muted/40 [&_svg]:size-6"
+                      className="h-11 w-11 shrink-0 rounded-full border border-white/20 bg-black/70 text-white shadow-sm backdrop-blur-md hover:bg-black/60 [&_svg]:size-6"
                     >
                       <X className="stroke-[2]" />
                       <span className="sr-only">Close</span>
@@ -76,7 +84,7 @@ export function MessageMediaVideoLightbox({
 
                 <div
                   className={cn(
-                    "relative shrink-0 overflow-hidden rounded-xl bg-black/90 sm:rounded-2xl",
+                    "relative shrink-0 overflow-hidden rounded-xl bg-black sm:rounded-2xl",
                     "max-md:w-full max-md:max-w-[min(calc(100vw-1rem),100%)]",
                     isPortrait
                       ? "md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]"
@@ -91,26 +99,23 @@ export function MessageMediaVideoLightbox({
                       <Loader2 className="h-7 w-7 animate-spin text-white/70" />
                     </span>
                   ) : null}
-                  {open ? (
-                    <video
-                      ref={videoRef}
-                      src={src}
-                      controls
-                      autoPlay
-                      playsInline
-                      preload="auto"
-                      onLoadedMetadata={(event) => {
-                        const video = event.currentTarget
-                        setIsPortrait(video.videoHeight >= video.videoWidth)
-                        setReady(true)
-                      }}
-                      className={cn(
-                        "mx-auto block max-h-[min(88dvh,calc(100dvh-10rem))] w-auto max-w-full object-contain",
-                        ready ? "opacity-100 transition-opacity duration-200" : "absolute inset-0 h-full opacity-0",
-                      )}
-                      aria-label={`Video: ${fileName}`}
-                    />
-                  ) : null}
+                  <video
+                    ref={videoRef}
+                    src={open ? src : undefined}
+                    controls
+                    playsInline
+                    preload="auto"
+                    onLoadedMetadata={(event) => {
+                      const video = event.currentTarget
+                      setIsPortrait(video.videoHeight >= video.videoWidth)
+                      setReady(true)
+                    }}
+                    className={cn(
+                      "relative z-[1] mx-auto block max-h-[min(88dvh,calc(100dvh-10rem))] w-auto max-w-full bg-black object-contain",
+                      ready ? "opacity-100 transition-opacity duration-200" : "opacity-0",
+                    )}
+                    aria-label={`Video: ${fileName}`}
+                  />
                 </div>
               </div>
             </div>

@@ -122,6 +122,7 @@ import {
   sellActionErrorMessage,
   sellSubmitErrorMessage,
 } from "@/lib/sell-flow/sell-submit-error"
+import { minimumOfferAmountFromDb, minimumOfferAmountToDb } from "@/lib/utils/offers-minimum-amount"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import {
@@ -649,6 +650,7 @@ function createInitialSellFormData() {
     loadedPublishedPriceUsd: null as number | null,
     loadedCompareAtPriceUsd: null as number | null,
     buyerOffers: true,
+    minimumOfferAmount: "",
     boardType: "",
     boardLength: "",
     boardWidthInches: "",
@@ -677,8 +679,8 @@ function createInitialSellFormData() {
 function listingSurfboardBrandFieldsForDb(
   fd: ReturnType<typeof createInitialSellFormData>,
 ): { brand_model_id: string | null; model: string | null } {
-  const catalogId = fd.boardBrandModelId.trim()
-  const modelText = fd.boardModelName.trim()
+  const catalogId = (fd.boardBrandModelId ?? "").trim()
+  const modelText = (fd.boardModelName ?? "").trim()
   return {
     brand_model_id: catalogId || null,
     model: modelText || null,
@@ -1325,6 +1327,7 @@ function SellPageContentInner({
       autoPriceDrop: formData.autoPriceDrop,
       autoPriceDropFloor: formData.autoPriceDropFloor,
       buyerOffers: formData.buyerOffers,
+      minimumOfferAmount: formData.minimumOfferAmount,
       boardType: formData.boardType,
       boardLength: formData.boardLength,
       boardWidthInches: formData.boardWidthInches,
@@ -1487,6 +1490,7 @@ function SellPageContentInner({
         },
       )
       setFormData({
+        ...createInitialSellFormData(),
         title: listing.title ?? "",
         description: (listing.description ?? "").trim() === "" ? "" : (listing.description ?? ""),
         price: String(listing.price ?? ""),
@@ -1552,6 +1556,9 @@ function SellPageContentInner({
         })(),
         buyerOffers:
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
+        minimumOfferAmount: minimumOfferAmountFromDb(
+          (listing as { minimum_offer_amount?: string | number | null }).minimum_offer_amount,
+        ),
         boardType: listing.board_type ?? "",
         boardLength: parsedDims.boardLength,
         boardWidthInches: parsedDims.boardWidthInches,
@@ -3382,7 +3389,7 @@ function SellPageContentInner({
         fulfillmentFlags.shipping_available &&
         !listingImpersonation &&
         !adminImpersonationEditListing &&
-        !fd.dropoffLocationId.trim()
+        !(fd.dropoffLocationId ?? "").trim()
       ) {
         const shipFromReady = await shipFrom.ensureShipFrom()
         if (!shipFromReady) {
@@ -3404,8 +3411,11 @@ function SellPageContentInner({
 
       const boardLocationLat = fd.locationLat ? fd.locationLat : null
       const boardLocationLng = fd.locationLng ? fd.locationLng : null
-      const boardLocationCity = fd.locationCity.trim() || null
-      const boardLocationState = fd.locationState.trim() || null
+      const boardLocationCity = (fd.locationCity ?? "").trim() || null
+      const boardLocationState = (fd.locationState ?? "").trim() || null
+      const dropoffLocationId = (fd.dropoffLocationId ?? "").trim()
+      const brandName = (fd.brand ?? "").trim()
+      const boardBrandId = (fd.boardBrandId ?? "").trim()
 
       function persistDefaultListingLocalityForProfile() {
         if (listingImpersonation) return
@@ -3415,7 +3425,7 @@ function SellPageContentInner({
           state: (boardLocationState ?? "").trim() || undefined,
           lat: boardLocationLat ?? undefined,
           lng: boardLocationLng ?? undefined,
-          display: fd.locationDisplay.trim() || undefined,
+          display: (fd.locationDisplay ?? "").trim() || undefined,
         })
       }
 
@@ -3514,16 +3524,17 @@ function SellPageContentInner({
           shipping_price: fulfillmentRow.shipping_price,
           board_shipping_cost_mode: fulfillmentRow.board_shipping_cost_mode,
           dropoff_location_id:
-            fulfillmentRow.shipping_available && fd.dropoffLocationId.trim()
-              ? fd.dropoffLocationId.trim()
+            fulfillmentRow.shipping_available && dropoffLocationId
+              ? dropoffLocationId
               : null,
           ...packedRow,
           auto_price_drop_floor: fd.autoPriceDrop
-            ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
+            ? parseFloat((fd.autoPriceDropFloor ?? "").trim().replace(/,/g, ""))
             : null,
           buyer_offers_enabled: fd.buyerOffers !== false,
-          brand: fd.brand.trim() ? fd.brand.trim() : null,
-          brand_id: fd.boardBrandId.trim() || null,
+          minimum_offer_amount: minimumOfferAmountToDb(fd.minimumOfferAmount),
+          brand: brandName || null,
+          brand_id: boardBrandId || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
           compare_at_price: resolveCompareAtPriceOnUpdate({
@@ -3619,16 +3630,17 @@ function SellPageContentInner({
           shipping_price: fulfillmentRow.shipping_price,
           board_shipping_cost_mode: fulfillmentRow.board_shipping_cost_mode,
           dropoff_location_id:
-            fulfillmentRow.shipping_available && fd.dropoffLocationId.trim()
-              ? fd.dropoffLocationId.trim()
+            fulfillmentRow.shipping_available && dropoffLocationId
+              ? dropoffLocationId
               : null,
           ...packedRowNew,
           auto_price_drop_floor: fd.autoPriceDrop
-            ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
+            ? parseFloat((fd.autoPriceDropFloor ?? "").trim().replace(/,/g, ""))
             : null,
           buyer_offers_enabled: fd.buyerOffers !== false,
-          brand: fd.brand.trim() ? fd.brand.trim() : null,
-          brand_id: fd.boardBrandId.trim() || null,
+          minimum_offer_amount: minimumOfferAmountToDb(fd.minimumOfferAmount),
+          brand: brandName || null,
+          brand_id: boardBrandId || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
           compare_at_price: null,
@@ -4825,6 +4837,33 @@ function SellPageContentInner({
                             </p>
                           </div>
                         </div>
+
+                        {formData.buyerOffers ? (
+                          <div className="ml-11 mt-4 space-y-2">
+                            <Label htmlFor="minimum-offer-amount" className="text-sm font-medium">
+                              Minimum offer amount
+                            </Label>
+                            <div className="relative max-w-xs">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                $
+                              </span>
+                              <Input
+                                id="minimum-offer-amount"
+                                type="text"
+                                inputMode="decimal"
+                                value={formData.minimumOfferAmount ?? ""}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, minimumOfferAmount: e.target.value })
+                                }
+                                placeholder="Optional"
+                                className="pl-6"
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              The lowest dollar amount you'll accept. If left blank, we'll use 70% of your list price.
+                            </p>
+                          </div>
+                        ) : null}
                       </div>
                     }
                   />
