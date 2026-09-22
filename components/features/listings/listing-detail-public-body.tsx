@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { ListingDetailAdminBarGate } from "@/components/features/listings/listing-detail-admin-bar-gate"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
