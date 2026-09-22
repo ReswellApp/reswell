@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { permanentRedirect, redirect } from "next/navigation"
 import { NavSearchQueryParamCleanup } from "@/components/features/search/nav-search-query-param-cleanup"
+import { SearchResultsPageSkeleton } from "@/components/search-results-page-skeleton"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 import {
   extractMarketplaceSectionIntent,
@@ -20,8 +21,11 @@ interface SearchParams {
   nq?: string
 }
 
-/** Search uses query params + auth; must not be statically prerendered. */
-export const dynamic = "force-dynamic"
+/**
+ * ISR shell + cached listing results (60s), matching `/search/recent`.
+ * Auth/favorites stay inside Suspense so cookies do not dynamize the route.
+ */
+export const revalidate = 60
 
 export const metadata = pageSeoMetadata({
   title: "Search — Reswell",
@@ -38,6 +42,8 @@ export default async function SearchPage(props: {
   const brandSlugFromUrl = (searchParams.brandSlug ?? "").trim()
   const analyticsOriginHeaderNav = searchParams.nq === "1"
 
+  // These must run in the page (outside Suspense). Redirects inside a Suspense
+  // child stream HTTP 200 + skeleton + NEXT_REDIRECT instead of 307/308.
   if (!rawQuery && !brandSlugFromUrl) {
     const sp = new URLSearchParams()
     if (categorySlugFromUrl) sp.set("category", categorySlugFromUrl)
@@ -61,12 +67,14 @@ export default async function SearchPage(props: {
       <Suspense fallback={null}>
         <NavSearchQueryParamCleanup />
       </Suspense>
-      <SearchPageView
-        rawQuery={rawQuery}
-        brandSlugFromUrl={brandSlugFromUrl}
-        categorySlugFromUrl={categorySlugFromUrl}
-        analyticsOriginHeaderNav={analyticsOriginHeaderNav}
-      />
+      <Suspense fallback={<SearchResultsPageSkeleton />}>
+        <SearchPageView
+          rawQuery={rawQuery}
+          brandSlugFromUrl={brandSlugFromUrl}
+          categorySlugFromUrl={categorySlugFromUrl}
+          analyticsOriginHeaderNav={analyticsOriginHeaderNav}
+        />
+      </Suspense>
     </>
   )
 }

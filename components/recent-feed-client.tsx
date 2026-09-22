@@ -62,6 +62,7 @@ export function RecentFeedClient({
   useEffect(() => {
     if (!hydrateOwnFavorites) return
     let cancelled = false
+    const listingIds = listings.map((listing) => listing.id)
 
     async function hydrate() {
       const supabase = createClient()
@@ -70,7 +71,7 @@ export function RecentFeedClient({
       } = await supabase.auth.getUser()
       if (cancelled) return
       setClientViewerUserId(user?.id ?? null)
-      if (!user) {
+      if (!user || listingIds.length === 0) {
         setClientFavIds([])
         return
       }
@@ -78,6 +79,7 @@ export function RecentFeedClient({
         .from("favorites")
         .select("listing_id")
         .eq("user_id", user.id)
+        .in("listing_id", listingIds)
       if (!cancelled) {
         setClientFavIds((favs ?? []).map((f) => f.listing_id))
       }
@@ -87,7 +89,7 @@ export function RecentFeedClient({
     return () => {
       cancelled = true
     }
-  }, [hydrateOwnFavorites])
+  }, [hydrateOwnFavorites, listings])
 
   // When hydrateOwnFavorites is set, clientFavIds starts null (before hydration)
   // and updates after the auth check; fall back to the server-provided array

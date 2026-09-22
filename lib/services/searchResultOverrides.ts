@@ -2,6 +2,7 @@ import { unstable_cache, revalidateTag } from "next/cache"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { listEnabledOverrideListingIdsForQuery } from "@/lib/db/searchCuration"
 import { normalizeSearchCurationKey } from "@/lib/validations/searchCuration"
+import { revalidateMarketplaceSearch } from "@/lib/cache/revalidate-marketplace-search"
 
 export const SEARCH_OVERRIDES_CACHE_TAG = "search-overrides"
 
@@ -33,4 +34,5 @@ export async function resolveSearchOverrideListingIds(rawQuery: string): Promise
 /** Call after any admin override write so search picks up the change. */
 export function revalidateSearchOverrides(): void {
   revalidateTag(SEARCH_OVERRIDES_CACHE_TAG)
+  revalidateMarketplaceSearch()
 }
