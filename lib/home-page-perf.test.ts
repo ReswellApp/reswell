@@ -12,12 +12,11 @@ describe("homepage performance constraints", () => {
     assert.match(src, /HomeHeroPrimaryCta/)
   })
 
-  it("keeps the hero LCP image at quality 75–80 with a capped sizes hint", () => {
+  it("keeps the hero LCP image high quality, prioritized, and full-bleed", () => {
     const src = readFileSync(new URL("../components/hero-backdrop.tsx", import.meta.url), "utf8")
-    assert.match(src, /quality=\{7[5-9]\}|quality=\{80\}/)
-    assert.match(src, /sizes="\(max-width: 1023px\) 100vw, 1440px"/)
+    assert.match(src, /quality=\{90\}/)
+    assert.match(src, /sizes="100vw"/)
     assert.match(src, /priority/)
-    assert.doesNotMatch(src, /quality=\{95\}/)
-    assert.doesNotMatch(src, /sizes="100vw"/)
+    assert.match(src, /hero-backdrop-tahiti/)
   })
 })

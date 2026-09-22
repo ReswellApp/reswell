@@ -2,7 +2,8 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import useEmblaCarousel from "embla-carousel-react"
-import Image from "next/image"
+import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { listingDerivativeProxySrc } from "@/lib/listing-media-src"
 import {
   useCallback,
   useEffect,
@@ -26,10 +27,7 @@ import {
   listingPhotoIsCached,
   preventNativeListingImageDrag,
 } from "@/components/features/listings/listing-gallery-photo"
-import {
-  listingImageShouldBypassOptimization,
-  withListingMediaPdpVariant,
-} from "@/lib/listing-media-proxy-url"
+import { withListingMediaPdpVariant } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
@@ -216,13 +214,11 @@ function LightboxSlide({
         onClick={(event) => event.stopPropagation()}
       >
         {underlaySrc ? (
-          <Image
+          <ListingMediaFillImage
             key={`underlay-${underlaySrc}`}
             aria-hidden
             src={underlaySrc}
             alt=""
-            fill
-            unoptimized={listingImageShouldBypassOptimization(underlaySrc)}
             draggable={false}
             onDragStart={preventNativeListingImageDrag}
             className={cn(
@@ -281,12 +277,10 @@ function LightboxSlide({
             wrapperClass="!h-full !w-full !bg-transparent"
             contentClass="!relative !h-full !w-full !bg-transparent [&_img]:!pointer-events-auto"
           >
-            <Image
+            <ListingMediaFillImage
               key={src}
               src={src}
               alt={`${title} — full size ${slideIndex + 1}`}
-              fill
-              unoptimized
               draggable={false}
               onDragStart={preventNativeListingImageDrag}
               className={cn(
@@ -654,7 +648,7 @@ function LightboxThumbRow({
         className="flex justify-start snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain pb-1 md:justify-center [-ms-overflow-style:none] [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
       >
         {urls.map((url, thumbIndex) => {
-          const src = url && url !== "/placeholder.svg" ? withListingMediaPdpVariant(url) : url
+          const src = url && url !== "/placeholder.svg" ? listingDerivativeProxySrc(url, "film") : url
           const selected = thumbIndex === selectedIndex
           return (
             <button
@@ -673,11 +667,9 @@ function LightboxThumbRow({
             >
               <span className="listing-tile-shimmer relative block w-11 shrink-0" style={{ paddingBottom: "133.33%" }}>
                 <span className="absolute inset-0">
-                  <Image
+                  <ListingMediaFillImage
                     src={src || "/placeholder.svg"}
                     alt={`${title} — thumbnail ${thumbIndex + 1}`}
-                    fill
-                    unoptimized={listingImageShouldBypassOptimization(src)}
                     className="object-cover object-center"
                     sizes="44px"
                   />

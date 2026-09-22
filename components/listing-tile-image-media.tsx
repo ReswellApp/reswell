@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
 import {
   Fragment,
   useCallback,
@@ -12,7 +12,6 @@ import {
   type SyntheticEvent,
 } from "react"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
 const hoverRevealNav =
@@ -90,20 +89,12 @@ function ListingTileCarouselSlide({
 
   if (!src) return null
 
-  const objectStyle =
-    imageFit === "contain"
-      ? ({ objectFit: "contain" } as const)
-      : ({ objectFit: "cover" } as const)
-
   return (
-    <Image
+    <ListingMediaFillImage
       key={src}
       src={src}
       alt=""
-      fill
       sizes={imageSizes}
-      quality={90}
-      unoptimized={listingImageShouldBypassOptimization(src)}
       aria-hidden={!active}
       loading={imagePriority && active ? "eager" : "lazy"}
       className={cn(
@@ -116,7 +107,6 @@ function ListingTileCarouselSlide({
         imageFit === "contain" && "object-contain",
         imageClassName,
       )}
-      style={objectStyle}
       ref={(img) => {
         if (img?.complete && img.naturalWidth > 0) {
           setLoaded(true)

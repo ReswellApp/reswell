@@ -5,8 +5,12 @@ import type {
   PrepareListingImagePairOptions,
 } from "@/lib/listing-image-pipeline"
 import {
+  LISTING_CARD_MAX_LONG_EDGE,
+  LISTING_FILM_MAX_LONG_EDGE,
   LISTING_FULL_MAX_LONG_EDGE,
   LISTING_THUMB_MAX_LONG_EDGE,
+  LISTING_WEBP_QUALITY_CARD,
+  LISTING_WEBP_QUALITY_FILM,
   LISTING_WEBP_QUALITY_FULL,
   LISTING_WEBP_QUALITY_THUMB,
 } from "@/lib/listing-image-pipeline"
@@ -125,8 +129,12 @@ self.onmessage = async function (e) {
       return encode(canvas, preferWebp, quality)
     }
 
-    var full = await render(msg.fullMax, msg.qFull, true)
-    var thumb = await render(msg.thumbMax, msg.qThumb, full.contentType === "image/webp")
+    var preferWebp = true
+    var full = await render(msg.fullMax, msg.qFull, preferWebp)
+    preferWebp = full.contentType === "image/webp"
+    var thumb = await render(msg.thumbMax, msg.qThumb, preferWebp)
+    var card = await render(msg.cardMax, msg.qCard, preferWebp)
+    var film = await render(msg.filmMax, msg.qFilm, preferWebp)
     if (bitmap.close) bitmap.close()
 
     self.postMessage({
@@ -134,10 +142,16 @@ self.onmessage = async function (e) {
       ok: true,
       full: full.blob,
       thumb: thumb.blob,
+      card: card.blob,
+      film: film.blob,
       fullContentType: full.contentType,
       thumbContentType: thumb.contentType,
+      cardContentType: card.contentType,
+      filmContentType: film.contentType,
       fullExt: full.ext,
       thumbExt: thumb.ext,
+      cardExt: card.ext,
+      filmExt: film.ext,
     })
   } catch (err) {
     self.postMessage({
@@ -155,10 +169,16 @@ type WorkerResult = {
   error?: string
   full?: Blob
   thumb?: Blob
+  card?: Blob
+  film?: Blob
   fullContentType?: PreparedListingImagePair["fullContentType"]
   thumbContentType?: PreparedListingImagePair["thumbContentType"]
+  cardContentType?: PreparedListingImagePair["cardContentType"]
+  filmContentType?: PreparedListingImagePair["filmContentType"]
   fullExt?: PreparedListingImagePair["fullExt"]
   thumbExt?: PreparedListingImagePair["thumbExt"]
+  cardExt?: PreparedListingImagePair["cardExt"]
+  filmExt?: PreparedListingImagePair["filmExt"]
 }
 
 type Pending = {
@@ -206,18 +226,30 @@ function getWorker(): Worker | null {
         data.ok &&
         data.full &&
         data.thumb &&
+        data.card &&
+        data.film &&
         data.fullContentType &&
         data.thumbContentType &&
+        data.cardContentType &&
+        data.filmContentType &&
         data.fullExt &&
-        data.thumbExt
+        data.thumbExt &&
+        data.cardExt &&
+        data.filmExt
       ) {
         entry.resolve({
           full: data.full,
           thumb: data.thumb,
+          card: data.card,
+          film: data.film,
           fullContentType: data.fullContentType,
           thumbContentType: data.thumbContentType,
+          cardContentType: data.cardContentType,
+          filmContentType: data.filmContentType,
           fullExt: data.fullExt,
           thumbExt: data.thumbExt,
+          cardExt: data.cardExt,
+          filmExt: data.filmExt,
         })
       } else {
         entry.reject(new Error(data.error || "Image worker failed"))
@@ -267,8 +299,12 @@ export async function prepareListingImagePairInWorker(
         rotateClockwiseQuarterTurns: Number(options?.rotateClockwiseQuarterTurns) || 0,
         fullMax: LISTING_FULL_MAX_LONG_EDGE,
         thumbMax: LISTING_THUMB_MAX_LONG_EDGE,
+        cardMax: LISTING_CARD_MAX_LONG_EDGE,
+        filmMax: LISTING_FILM_MAX_LONG_EDGE,
         qFull: LISTING_WEBP_QUALITY_FULL,
         qThumb: LISTING_WEBP_QUALITY_THUMB,
+        qCard: LISTING_WEBP_QUALITY_CARD,
+        qFilm: LISTING_WEBP_QUALITY_FILM,
       },
       [buffer],
     )

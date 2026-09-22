@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Image from "next/image"
+import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
 import Link from "next/link"
 import { LayoutGrid, List, Package, Search } from "lucide-react"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
@@ -23,7 +23,6 @@ import {
 } from "@/lib/listing-labels"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingDetailHref } from "@/lib/listing-href"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { SaveShopAlertCta } from "@/components/sellers/save-shop-alert-cta"
 import { sellerProfileSectionSortRank } from "@/lib/peer-listing-sections"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
@@ -171,13 +170,11 @@ function SellerProfileListingListRow({
       >
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-28 sm:w-28">
           {imageSrc ? (
-            <Image
+            <ListingMediaFillImage
               src={imageSrc}
               alt=""
-              fill
               sizes="112px"
               className="object-cover"
-              unoptimized={listingImageShouldBypassOptimization(imageSrc)}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-muted-foreground" aria-hidden>

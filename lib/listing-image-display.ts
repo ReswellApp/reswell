@@ -1,6 +1,6 @@
 /**
- * - `listingTileImageSrcFromRow` — marketplace cards: on-demand `?variant=tile2` from the
- *   full object (≤1280px WebP). Skips stored 640px thumbs so retina tiles are not upscaled.
+ * - `listingTileImageSrcFromRow` — marketplace cards: stored `*-card2.*` (~960px) from the
+ *   full object. Skips stored 640px thumbs so cards are not the cart thumbnail.
  *   Does not guess `*-thumb.` siblings — those 404s serialized every card on first paint.
  * - `listingCardImageSrc` — primary photo for marketplace tiles (`ListingTile` and similar).
  * - `listingImagesFromPrimaryFields` — card gallery from denorm cover + `tile_gallery_images`.
@@ -12,7 +12,7 @@
 import {
   listingFullImageUrlFromRef,
   proxiedListingImageSrc,
-  withListingMediaTileVariant,
+  listingDerivativeProxySrc,
 } from "./listing-media-src.ts"
 import { listingStoredThumbIsDistinctFromFull } from "./listing-thumb-url.ts"
 
@@ -32,8 +32,8 @@ function pushUniqueCandidate(out: string[], seen: Set<string>, candidate: string
 function listingFullObjectSrcCandidates(full: string, out: string[], seen: Set<string>): void {
   const proxiedFull = proxiedListingImageSrc(full)
   if (proxiedFull.startsWith("/media/listings/")) {
-    // Never start from `-thumb.` — /media serves stored thumbs as-is even with ?variant=tile2.
-    pushUniqueCandidate(out, seen, withListingMediaTileVariant(proxiedFull))
+    // Never start from `-thumb.` — /media serves stored thumbs as-is even with a variant query.
+    pushUniqueCandidate(out, seen, listingDerivativeProxySrc(full, "card"))
   }
   pushUniqueCandidate(out, seen, proxiedFull)
   if (!proxiedFull.startsWith("/media/listings/")) {
@@ -63,11 +63,19 @@ export function listingTileImageSrcCandidatesFromRow(img: ListingImageForCard): 
 }
 
 /**
- * Best src for a listing photo in browse grids / carousels — `?variant=tile2` from the full
- * object. Never leads with a stored 640px thumb.
+ * Best src for a listing photo in browse grids — stored ~960px card, or an on-demand
+ * resize for older uploads. Never leads with a stored 640px thumb.
  */
 export function listingTileImageSrcFromRow(img: ListingImageForCard): string {
   return listingTileImageSrcCandidatesFromRow(img)[0] ?? ""
+}
+
+/** Filmstrip thumb (~400px) beside the listing hero. Not the hero stand-in. */
+export function listingFilmImageSrcFromRow(img: ListingImageForCard): string {
+  const fullRaw = img.url?.trim() || ""
+  const full = listingFullImageUrlFromRef(fullRaw) ?? fullRaw
+  if (!full) return listingTileImageSrcFromRow(img)
+  return listingDerivativeProxySrc(full, "film")
 }
 
 /**

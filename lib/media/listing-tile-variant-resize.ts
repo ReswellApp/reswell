@@ -1,7 +1,11 @@
 import { revalidateTag, unstable_cache } from "next/cache"
 import sharp from "sharp"
 import {
+  LISTING_CARD_MAX_LONG_EDGE,
+  LISTING_FILM_MAX_LONG_EDGE,
   LISTING_THUMB_MAX_LONG_EDGE,
+  LISTING_WEBP_QUALITY_CARD,
+  LISTING_WEBP_QUALITY_FILM,
   LISTING_WEBP_QUALITY_THUMB,
 } from "@/lib/listing-image-pipeline"
 import {
@@ -12,12 +16,16 @@ import {
 
 export const LISTING_MEDIA_TILE_VARIANT = "tile" as const
 export const LISTING_MEDIA_PDP_VARIANT = "pdp" as const
+/** Browse cards. Stored at upload as `*-card2.*`; older objects are resized on demand. */
+export const LISTING_MEDIA_CARD_VARIANT = "card" as const
+/** Listing filmstrip. Stored at upload as `*-film2.*`; older objects are resized on demand. */
+export const LISTING_MEDIA_FILM_VARIANT = "film" as const
 /** Google Merchant / catalog crawlers — high-res WebP (≤1600px long edge). */
 export const LISTING_MEDIA_MERCHANT_VARIANT = "merchant" as const
 
 /**
- * Browse / home / search cards. 640px thumbs upscale on retina (3:4 tile at
- * ~320 CSS px needs ~850–1000px). 1280 matches listing video posters.
+ * Legacy `?variant=tile2` resize. Browse cards use the stored `*-card2.*`
+ * derivative (960px) instead of this path.
  */
 export const LISTING_TILE_MAX_LONG_EDGE = 1280
 const LISTING_WEBP_QUALITY_TILE = 0.86
@@ -32,10 +40,15 @@ const LISTING_WEBP_QUALITY_MERCHANT = 0.88
 
 /** v1 was 640px @ 0.74 — bump the key so Data Cache does not keep serving those. */
 const TILE_VARIANT_CACHE_TAG_PREFIX = "listing-tile-variant-v2" as const
+/** v1 was 480px @ 0.80. v1 film was 200px @ 0.72. */
+const CARD_VARIANT_CACHE_TAG_PREFIX = "listing-card-variant-v2" as const
+const FILM_VARIANT_CACHE_TAG_PREFIX = "listing-film-variant-v2" as const
 
 export type ListingMediaResizeVariant =
   | typeof LISTING_MEDIA_TILE_VARIANT
   | typeof LISTING_MEDIA_PDP_VARIANT
+  | typeof LISTING_MEDIA_CARD_VARIANT
+  | typeof LISTING_MEDIA_FILM_VARIANT
   | typeof LISTING_MEDIA_MERCHANT_VARIANT
 
 const VARIANT_SPECS: Record<
@@ -54,11 +67,31 @@ const VARIANT_SPECS: Record<
     maxLongEdge: LISTING_MERCHANT_MAX_LONG_EDGE,
     quality: LISTING_WEBP_QUALITY_MERCHANT,
   },
+  [LISTING_MEDIA_CARD_VARIANT]: {
+    maxLongEdge: LISTING_CARD_MAX_LONG_EDGE,
+    quality: LISTING_WEBP_QUALITY_CARD,
+  },
+  [LISTING_MEDIA_FILM_VARIANT]: {
+    maxLongEdge: LISTING_FILM_MAX_LONG_EDGE,
+    quality: LISTING_WEBP_QUALITY_FILM,
+  },
 }
 
 export function listingMediaPathLooksLikeStoredThumb(objectPath: string): boolean {
   const file = objectPath.split("/").pop() ?? ""
   return file.includes("-thumb.")
+}
+
+export function listingMediaStoredDerivativeKind(objectPath: string): "card" | "film" | null {
+  const file = objectPath.split("/").pop() ?? ""
+  if (file.includes("-card2.") || file.includes("-card.")) return "card"
+  if (file.includes("-film2.") || file.includes("-film.")) return "film"
+  return null
+}
+
+/** Map a stored derivative path back to its `*-full.*` sibling. */
+export function listingFullObjectPathFromDerivative(objectPath: string): string {
+  return objectPath.replace(/-(?:card2|film2|card|film)\./, "-full.")
 }
 
 export async function resizeListingImageBufferToVariant(
@@ -101,7 +134,11 @@ function variantCacheTag(
   const prefix =
     variant === LISTING_MEDIA_TILE_VARIANT
       ? TILE_VARIANT_CACHE_TAG_PREFIX
-      : `listing-${variant}-variant`
+      : variant === LISTING_MEDIA_CARD_VARIANT
+        ? CARD_VARIANT_CACHE_TAG_PREFIX
+        : variant === LISTING_MEDIA_FILM_VARIANT
+          ? FILM_VARIANT_CACHE_TAG_PREFIX
+          : `listing-${variant}-variant`
   return `${prefix}:${bucket}:${objectPath}`
 }
 
@@ -140,7 +177,11 @@ export function getCachedListingVariantBody(
   const keyPrefix =
     variant === LISTING_MEDIA_TILE_VARIANT
       ? TILE_VARIANT_CACHE_TAG_PREFIX
-      : `listing-${variant}-variant`
+      : variant === LISTING_MEDIA_CARD_VARIANT
+        ? CARD_VARIANT_CACHE_TAG_PREFIX
+        : variant === LISTING_MEDIA_FILM_VARIANT
+          ? FILM_VARIANT_CACHE_TAG_PREFIX
+          : `listing-${variant}-variant`
   const loader = unstable_cache(
     () => loadListingVariantBody(bucket, objectPath, upstreamUrl, variant),
     [keyPrefix, bucket, objectPath],
@@ -170,6 +211,8 @@ export function getCachedListingTileVariantBody(
 const LISTING_MEDIA_VARIANTS: ListingMediaResizeVariant[] = [
   LISTING_MEDIA_TILE_VARIANT,
   LISTING_MEDIA_PDP_VARIANT,
+  LISTING_MEDIA_CARD_VARIANT,
+  LISTING_MEDIA_FILM_VARIANT,
   LISTING_MEDIA_MERCHANT_VARIANT,
 ]
 

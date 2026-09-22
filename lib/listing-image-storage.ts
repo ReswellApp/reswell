@@ -111,13 +111,27 @@ export async function uploadListingImagePairToSupabase(opts: {
     const ts = Date.now()
     const fullPath = `${userId}/${ts}-${clientId}-full.${prepared.fullExt}`
     const thumbPath = `${userId}/${ts}-${clientId}-thumb.${prepared.thumbExt}`
+    const cardPath = `${userId}/${ts}-${clientId}-card2.${prepared.cardExt}`
+    const filmPath = `${userId}/${ts}-${clientId}-film2.${prepared.filmExt}`
 
-    // Thumb first (smaller), then full — one connection at a time for flaky mobile networks.
+    // Small files first, then full — one connection at a time for flaky mobile networks.
     await uploadListingBlob({
       supabase,
       pathInBucket: thumbPath,
       body: prepared.thumb,
       contentType: prepared.thumbContentType,
+    })
+    await uploadListingBlob({
+      supabase,
+      pathInBucket: filmPath,
+      body: prepared.film,
+      contentType: prepared.filmContentType,
+    })
+    await uploadListingBlob({
+      supabase,
+      pathInBucket: cardPath,
+      body: prepared.card,
+      contentType: prepared.cardContentType,
     })
     opts.onProgressThumb?.(prepared.thumb.size, prepared.thumb.size)
     opts.onProgressFull?.(Math.round(prepared.full.size * 0.35), prepared.full.size)

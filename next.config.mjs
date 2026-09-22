@@ -220,13 +220,15 @@ const nextConfig = {
     // Static listing photos: edge-rewrite to Supabase public objects so Google Merchant /
     // Googlebot-Image fetch a direct image file instead of a serverless resize handler.
     // Requests with ?variant= still hit app/media/listings/[...path]/route.ts.
+    // `-card2.` / `-film2.` (and the first-generation names) stay on that route so a
+    // missing derivative is resized from `*-full.*`.
     return {
       beforeFiles: supabaseUrl
         ? [
             {
-              source: "/media/listings/:path*",
+              source: "/media/listings/:userId/:file((?!.*(?:-card2|-film2|-card|-film)\\.).+)",
               missing: [{ type: "query", key: "variant" }],
-              destination: `${supabaseUrl}/storage/v1/object/public/listings/:path*`,
+              destination: `${supabaseUrl}/storage/v1/object/public/listings/:userId/:file`,
             },
           ]
         : [],

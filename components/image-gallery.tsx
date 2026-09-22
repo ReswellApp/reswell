@@ -5,7 +5,7 @@ import { preload } from "react-dom"
 import dynamic from "next/dynamic"
 import useEmblaCarousel from "embla-carousel-react"
 import { cn } from "@/lib/utils"
-import { listingTileImageSrcFromRow } from "@/lib/listing-image-display"
+import { listingFilmImageSrcFromRow, listingTileImageSrcFromRow } from "@/lib/listing-image-display"
 import {
   proxiedListingImageSrc,
   withListingMediaPdpVariant,
@@ -187,14 +187,14 @@ export function ImageGallery({
     emblaApi.scrollTo(selectedIndex, true)
   }, [emblaApi, selectedIndex])
 
-  // Warm every hero + tile URL so swipe never lands on an unloaded white slide.
+  // Warm every hero + card preview so a thumb click or swipe lands on a painted slide.
   useEffect(() => {
     for (const url of heroUrls) warmListingImageSrc(url)
     for (const url of previewUrls) {
       if (url) warmListingImageSrc(url)
     }
     warmHeroSlideNeighbors(galleryUrls, selectedIndex)
-  }, [galleryUrlsKey, selectedIndex])
+  }, [galleryUrlsKey, heroUrls, previewUrls, selectedIndex])
 
   useEffect(() => {
     const row = thumbRowRef.current
@@ -506,7 +506,7 @@ export function ImageGallery({
                 <span className="absolute inset-0">
                   <ListingGalleryPhoto
                     src={
-                      listingTileImageSrcFromRow(image) ||
+                      listingFilmImageSrcFromRow(image) ||
                       proxiedListingImageSrc(
                         image.thumbnail_url?.trim() || image.url,
                       ) ||

@@ -1,9 +1,8 @@
 "use client"
 
-import Image from "next/image"
 import { useState, type CSSProperties, type DragEvent } from "react"
+import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
 export interface ListingGalleryPhotoProps {
@@ -109,12 +108,10 @@ export function ListingGalleryPhoto({
   return (
     <>
       {preview ? (
-        <Image
+        <ListingMediaFillImage
           key={`preview-${preview}`}
           src={preview}
           alt=""
-          fill
-          unoptimized={listingImageShouldBypassOptimization(preview)}
           draggable={false}
           onDragStart={preventNativeListingImageDrag}
           aria-hidden
@@ -136,12 +133,10 @@ export function ListingGalleryPhoto({
           }}
         />
       ) : null}
-      <Image
+      <ListingMediaFillImage
         key={src}
         src={src}
         alt={alt}
-        fill
-        unoptimized={listingImageShouldBypassOptimization(src)}
         draggable={false}
         onDragStart={preventNativeListingImageDrag}
         className={cn(

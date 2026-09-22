@@ -9,18 +9,37 @@ import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-er
 
 export const LISTING_IMAGE_MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 export const LISTING_FULL_MAX_LONG_EDGE = 2000
-/** Persisted compact-row thumbs (cart, checkout, nav). Marketplace tiles use the 1280px `tile` variant. */
+/** Persisted compact-row thumbs (cart, checkout, nav). */
 export const LISTING_THUMB_MAX_LONG_EDGE = 640
+/**
+ * Marketplace cards, stored as `*-card2.*`.
+ * Grids are ~50vw on phones (3× ≈ 720px long edge) and ~20vw on desktop (2× ≈ 900px).
+ * 960 covers that. WebP 85 stays sharp; the old 480px files looked soft when scaled up.
+ */
+export const LISTING_CARD_MAX_LONG_EDGE = 960
+/**
+ * Filmstrip thumbs, stored as `*-film2.*`.
+ * The strip is 44–64 CSS px (3× long edge ≈ 256). 400 covers that without stretching a 200px frame.
+ */
+export const LISTING_FILM_MAX_LONG_EDGE = 400
 export const LISTING_WEBP_QUALITY_FULL = 0.82
 export const LISTING_WEBP_QUALITY_THUMB = 0.74
+export const LISTING_WEBP_QUALITY_CARD = 0.85
+export const LISTING_WEBP_QUALITY_FILM = 0.82
 
 export type PreparedListingImagePair = {
   full: Blob
   thumb: Blob
+  card: Blob
+  film: Blob
   fullContentType: "image/webp" | "image/jpeg"
   thumbContentType: "image/webp" | "image/jpeg"
+  cardContentType: "image/webp" | "image/jpeg"
+  filmContentType: "image/webp" | "image/jpeg"
   fullExt: "webp" | "jpg"
   thumbExt: "webp" | "jpg"
+  cardExt: "webp" | "jpg"
+  filmExt: "webp" | "jpg"
 }
 
 let webpEncodeSupported: boolean | null = null
@@ -334,17 +353,25 @@ async function prepareListingImagePairOnMainThread(
       drawable = rotateClockwise90(drawable)
     }
     const useWebp = await canvasSupportsWebp()
-    const [fullPack, thumbPack] = await Promise.all([
+    const [fullPack, thumbPack, cardPack, filmPack] = await Promise.all([
       renderResizedToBlob(drawable, LISTING_FULL_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_FULL, useWebp),
       renderResizedToBlob(drawable, LISTING_THUMB_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_THUMB, useWebp),
+      renderResizedToBlob(drawable, LISTING_CARD_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_CARD, useWebp),
+      renderResizedToBlob(drawable, LISTING_FILM_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_FILM, useWebp),
     ])
     return {
       full: fullPack.blob,
       thumb: thumbPack.blob,
+      card: cardPack.blob,
+      film: filmPack.blob,
       fullContentType: fullPack.contentType,
       thumbContentType: thumbPack.contentType,
+      cardContentType: cardPack.contentType,
+      filmContentType: filmPack.contentType,
       fullExt: fullPack.ext,
       thumbExt: thumbPack.ext,
+      cardExt: cardPack.ext,
+      filmExt: filmPack.ext,
     }
   } finally {
     decoded.release()
@@ -352,7 +379,8 @@ async function prepareListingImagePairOnMainThread(
 }
 
 /**
- * Single decode; produces full (≤2000px long edge) + thumb (≤640px) in one pipeline step.
+ * Single decode; produces full (≤2000px), card (≤480px), filmstrip (≤200px), and the
+ * compact thumb (≤640px) in one pipeline step.
  *
  * Runs in an OffscreenCanvas worker when supported so heavy canvas work never blocks scrolling on
  * mobile; otherwise falls back to a main-thread path serialized through the shared CPU queue.

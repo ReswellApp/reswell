@@ -4,6 +4,7 @@ import {
   LISTING_TILE_GALLERY_MAX_IMAGES,
   coalesceListingImagesForCard,
   listingCoverImageForCard,
+  listingFilmImageSrcFromRow,
   listingImagesFromPrimaryFields,
   listingTileCarouselImageCandidateLists,
   listingTileImageSrcCandidatesFromRow,
@@ -56,23 +57,30 @@ describe("listingImagesFromPrimaryFields", () => {
 })
 
 describe("listing tile vs compact thumb sources", () => {
-  it("serves marketplace tiles from the 1280px tile variant, not the stored 640px thumb", () => {
+  it("serves marketplace tiles from the stored card derivative, not the stored 640px thumb", () => {
     const candidates = listingTileImageSrcCandidatesFromRow({
       url: `${STORAGE}/u/1-full.webp`,
       thumbnail_url: `${STORAGE}/u/1-thumb.webp`,
     })
-    assert.equal(candidates[0], "/media/listings/u/1-full.webp?variant=tile2")
+    assert.equal(candidates[0], "/media/listings/u/1-card2.webp")
+    assert.equal(
+      listingFilmImageSrcFromRow({
+        url: `${STORAGE}/u/1-full.webp`,
+        thumbnail_url: `${STORAGE}/u/1-thumb.webp`,
+      }),
+      "/media/listings/u/1-film2.webp",
+    )
     assert.equal(
       candidates.some((src) => src.includes("-thumb.")),
       false,
     )
   })
 
-  it("rewrites a thumb-only url to the full object before requesting the tile variant", () => {
+  it("rewrites a thumb-only url to the card derivative", () => {
     const candidates = listingTileImageSrcCandidatesFromRow({
       url: `${STORAGE}/u/1-thumb.webp`,
     })
-    assert.equal(candidates[0], "/media/listings/u/1-full.webp?variant=tile2")
+    assert.equal(candidates[0], "/media/listings/u/1-card2.webp")
   })
 
   it("keeps compact rows on the stored thumb", () => {
@@ -84,7 +92,7 @@ describe("listing tile vs compact thumb sources", () => {
       },
     ])
     assert.equal(candidates[0], "/media/listings/u/1-thumb.webp")
-    assert.equal(candidates[1], "/media/listings/u/1-full.webp?variant=tile2")
+    assert.equal(candidates[1], "/media/listings/u/1-card2.webp")
   })
 })
 

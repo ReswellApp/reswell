@@ -67,6 +67,51 @@ export function withListingMediaTileVariant(src: string): string {
   return withListingMediaVariant(src, LISTING_MEDIA_TILE_VARIANT_PARAM)
 }
 
+/** On-demand fallback when a listing has no stored card/film object yet. */
+export const LISTING_MEDIA_CARD_VARIANT_PARAM = "card" as const
+export const LISTING_MEDIA_FILM_VARIANT_PARAM = "film" as const
+
+/**
+ * Filename token for the stored derivative. `2` busts the immutable cache of the
+ * first generation (480px cards / 200px film, which looked soft on retina).
+ */
+const LISTING_DERIVATIVE_FILE_TOKEN = {
+  card: "card2",
+  film: "film2",
+} as const
+
+/**
+ * Stored sibling of a `*-full.*` upload (`*-card2.webp`, `*-film2.webp`).
+ * Returns null when the URL is not a paired full object.
+ */
+export function listingStoredDerivativeUrl(
+  url: string | null | undefined,
+  kind: "card" | "film",
+): string | null {
+  const full = listingFullImageUrlFromRef(url)
+  if (!full || !full.includes("-full.")) return null
+  return full.replace("-full.", `-${LISTING_DERIVATIVE_FILE_TOKEN[kind]}.`)
+}
+
+/** Same-origin URL for a stored card/film file, or `?variant=` when the name cannot be derived. */
+export function listingDerivativeProxySrc(
+  full: string,
+  kind: "card" | "film",
+): string {
+  const derived = listingStoredDerivativeUrl(full, kind)
+  if (derived) {
+    const proxied = proxiedListingImageSrc(derived)
+    if (proxied.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)) return proxied
+  }
+  const proxiedFull = proxiedListingImageSrc(full)
+  if (proxiedFull.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)) {
+    const variant =
+      kind === "card" ? LISTING_MEDIA_CARD_VARIANT_PARAM : LISTING_MEDIA_FILM_VARIANT_PARAM
+    return withListingMediaVariant(proxiedFull, variant)
+  }
+  return proxiedFull || full
+}
+
 /**
  * Prefer the full-res storage object when a row only has a `-thumb.` URL.
  * Pair uploads store `*-full.*` beside `*-thumb.webp`.
