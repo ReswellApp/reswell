@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { fetchAdminNavBadgeCounts } from '@/lib/db/adminNavCounts'
+import { getCachedAdminNavBadgeCounts } from '@/lib/cache/admin-nav-badge-counts'
 import { AdminHomeDashboard } from '@/components/features/admin/admin-home-dashboard'
 import {
   loadAdminBusinessInsights,
@@ -7,7 +7,7 @@ import {
   loadAdminRevenueTrend,
 } from '@/lib/services/adminBusinessInsights'
 import { loadAdminHomeGrowthTrends } from '@/lib/services/adminHomeGrowth'
-import { loadAdminHomePulse } from '@/lib/services/adminHomePulse'
+import { getCachedAdminHomePulse } from '@/lib/cache/admin-home-pulse'
 import { parseAdminInsightsPeriodSearch } from '@/lib/utils/adminInsightsPeriod'
 import { privatePageMetadata } from '@/lib/site-metadata'
 
@@ -45,13 +45,13 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
 
   const [badgeCounts, trendResult, pulseResult, growthResult, insightsResult, monthlyResult] =
     await Promise.all([
-      fetchAdminNavBadgeCounts(supabase, {
+      getCachedAdminNavBadgeCounts(supabase, {
         includeBrandRequests: isAdmin,
       }),
       isAdmin
         ? loadAdminRevenueTrend({ yearMonth: selectedYearMonth, range })
         : Promise.resolve(null),
-      loadAdminHomePulse(),
+      getCachedAdminHomePulse(),
       isAdmin
         ? loadAdminHomeGrowthTrends({ yearMonth: selectedYearMonth, range })
         : Promise.resolve(null),

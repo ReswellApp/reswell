@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache"
 import { searchFinCatalogForSell } from "@/lib/services/finCatalogSearch"
 import type { FinCatalogSearchResult } from "@/lib/types/fin-catalog-search"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { getFinCatalogBrandIdsCached } from "@/lib/cache/fin-catalog-brand-ids"
 
 /** `/sell/fins` catalog search — keyed by normalized query. */
@@ -13,7 +13,7 @@ function normalizeFinCatalogSearchQuery(qRaw: string): string {
 }
 
 async function loadFinCatalogSearchSell(qNormalized: string): Promise<FinCatalogSearchResult> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const finBrandIds = await getFinCatalogBrandIdsCached()
   return searchFinCatalogForSell(supabase, qNormalized, { finBrandIds })
 }

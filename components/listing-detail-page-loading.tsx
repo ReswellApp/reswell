@@ -8,7 +8,7 @@ import { ListingTileShimmer, Skeleton } from "@/components/ui/skeleton"
  * Listing-shaped skeleton for App Router `loading.tsx` under `/l/*` (and anywhere else
  * we want the next screen to resemble `SurfboardListingDetailPage` instead of the logo mark).
  */
-function ListingDetailBottomStripSkeleton({
+export function ListingDetailBottomStripSkeleton({
   titleWidthClass,
   tileCount,
 }: {

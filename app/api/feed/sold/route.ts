@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { loadMarketplaceSoldFeedPage } from "@/lib/services/marketplaceSoldFeed"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 const soldFeedPageQuerySchema = z
   .object({
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const data = await loadMarketplaceSoldFeedPage(
       supabase,
       parsed.data.brandSlug ?? null,

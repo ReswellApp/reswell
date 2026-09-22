@@ -10,7 +10,6 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from '@/lib/listing-dimensions-display'
-import { applyCanonicalSurfboardCategoryToListingRow } from '@/lib/surfboard-category-display'
 import { deleteListingDocument } from '@/lib/elasticsearch/listings-index'
 import { removeListingFromGoogleMerchantFeed } from '@/lib/services/googleMerchantSync'
 import {
@@ -22,10 +21,8 @@ import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
 } from '@/lib/listing-dimensions-storage'
-import {
-  fetchAdminListingsMonthlyCreated,
-  resolveAdminListingsMonthlyCreated,
-} from '@/lib/db/adminListings'
+import { getAdminListingsList } from '@/lib/services/adminListingsList'
+import { adminListingsListQuerySchema } from '@/lib/validations/admin-listings-list'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -38,7 +35,7 @@ function canAccessAdminListings(
   return profile?.is_admin === true || profile?.is_employee === true
 }
 
-/** Full listing rows for /admin/listings — bypasses RLS so staff see every row. */
+/** One page of listing rows for /admin/listings — never selects the whole table. */
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   const {
@@ -59,96 +56,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  let service: ReturnType<typeof createServiceRoleClient>
-  try {
-    service = createServiceRoleClient()
-  } catch (e) {
-    console.error('[admin listings GET] service role:', e)
-    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
-  }
-
-  const status = request.nextUrl.searchParams.get('status')?.trim() || 'all'
-  const section = request.nextUrl.searchParams.get('section')?.trim() || 'all'
-
-  const selectWithHidden = `
-    id, user_id, slug, title, price, status, section, views, created_at,
-    category_id,
-    brand, model, brand_id, brand_model_id,
-    hidden_from_site,
-    profiles!listings_user_id_fkey(display_name, email),
-    categories(name, slug),
-    listing_images(url)
-  `
-
-  const selectWithoutHidden = `
-    id, user_id, slug, title, price, status, section, views, created_at,
-    category_id,
-    brand, model, brand_id, brand_model_id,
-    profiles!listings_user_id_fkey(display_name, email),
-    categories(name, slug),
-    listing_images(url)
-  `
-
-  let q = service.from('listings').select(selectWithHidden).order('created_at', { ascending: false })
-
-  if (status !== 'all') {
-    q = q.eq('status', status)
-  }
-  if (section !== 'all') {
-    q = q.eq('section', section)
-  }
-
-  const [{ data, error }, monthlyCreatedResult] = await Promise.all([
-    q,
-    fetchAdminListingsMonthlyCreated(service, 12),
-  ])
-
-  if (error) {
-    const msg = error.message ?? ''
-    const missingColumn =
-      msg.includes('hidden_from_site') ||
-      msg.includes('does not exist') ||
-      error.code === '42703'
-
-    if (missingColumn) {
-      let q2 = service.from('listings').select(selectWithoutHidden).order('created_at', { ascending: false })
-      if (status !== 'all') q2 = q2.eq('status', status)
-      if (section !== 'all') q2 = q2.eq('section', section)
-      const retry = await q2
-      if (retry.error) {
-        console.error('[admin listings GET] retry:', retry.error)
-        return NextResponse.json({ error: 'Failed to load listings' }, { status: 500 })
-      }
-      const listings = (retry.data ?? []).map((row: Record<string, unknown>) =>
-        applyCanonicalSurfboardCategoryToListingRow({
-          ...row,
-          hidden_from_site: false,
-        }),
-      )
-      const monthlyCreated = resolveAdminListingsMonthlyCreated(
-        monthlyCreatedResult,
-        listings as unknown as { created_at: string; status: string }[],
-      )
-      return NextResponse.json({
-        listings,
-        monthlyCreated,
-      })
-    }
-
-    console.error('[admin listings GET]:', error)
-    return NextResponse.json({ error: 'Failed to load listings' }, { status: 500 })
-  }
-
-  const listings = (data ?? []).map((row: Record<string, unknown>) =>
-    applyCanonicalSurfboardCategoryToListingRow(row),
+  const parsed = adminListingsListQuerySchema.safeParse(
+    Object.fromEntries(request.nextUrl.searchParams),
   )
-  const monthlyCreated = resolveAdminListingsMonthlyCreated(
-    monthlyCreatedResult,
-    listings as unknown as { created_at: string; status: string }[],
-  )
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid params' }, { status: 400 })
+  }
+
+  const result = await getAdminListingsList(parsed.data)
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 })
+  }
+
   return NextResponse.json({
-    listings,
-    monthlyCreated,
+    listings: result.data.listings,
+    total: result.data.total,
+    stats: result.data.stats,
   })
 }
 

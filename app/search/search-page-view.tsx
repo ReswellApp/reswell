@@ -2,7 +2,8 @@ import { Suspense, type ReactNode } from "react"
 import { after } from "next/server"
 import { unstable_cache } from "next/cache"
 import { redirect } from "next/navigation"
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
+import { createClient } from "@/lib/supabase/server"
 import { marketplaceModelPageHrefFromParsed } from "@/lib/models/search-redirect"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
@@ -61,7 +62,7 @@ const getCachedBrowseCategories = unstable_cache(
   async () => {
     // Must not use the cookie-bound client here: cookies() is forbidden
     // inside an unstable_cache scope. Categories are public data anyway.
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     const { data } = await supabase
       .from("categories")
       .select("id, name, slug, board")

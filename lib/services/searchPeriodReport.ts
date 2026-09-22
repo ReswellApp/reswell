@@ -24,6 +24,7 @@ import {
   resolveConfiguredModel,
 } from "@/lib/llm/app-models"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import {
   SEARCH_PERIOD_ALL_TIME_KEY,
   SEARCH_PERIOD_MONTH_RE,
@@ -545,7 +546,7 @@ export async function getSearchPeriodReportService(
   kind: SearchPeriodKind,
   key: string,
 ): Promise<SearchPeriodReportRow | null> {
-  const supabase = createServiceRoleClient()
+  const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
   const { row, error } = await getSearchPeriodReport(supabase, kind, key)
   if (error) throw error
   return row
@@ -555,7 +556,7 @@ export async function listSearchPeriodReportsService(
   kind: SearchPeriodKind,
   limit: number,
 ): Promise<SearchPeriodReportRow[]> {
-  const supabase = createServiceRoleClient()
+  const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
   const { rows, error } = await listSearchPeriodReports(supabase, kind, limit)
   if (error) throw error
   return rows

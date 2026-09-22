@@ -5,7 +5,7 @@ import {
   SHOP_LISTING_SELECT,
   SURFBOARD_LISTING_SELECT,
 } from "@/lib/listing-detail-cache-selects"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 /** Hourly cache for anonymous `/l/[listing]` metadata + page shells. */
 export const LISTING_PUBLIC_DETAIL_CACHE_TAG = "listing-public-detail"
@@ -23,7 +23,8 @@ async function loadPublicListingByParam(
   select: string,
   section?: string,
 ): Promise<PublicListingLookupResult> {
-  const supabase = createAnonSupabaseClient()
+  // Strong/primary: replica lag must not cache a 404 after publish.
+  const supabase = getDb({ consistency: "strong" })
   return findListingByParam(supabase, param, {
     select,
     section,

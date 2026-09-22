@@ -41,7 +41,7 @@ export async function createClient() {
   )
 }
 
-export { createAnonSupabaseClient } from "./anon"
+export { createAnonReadClient, createAnonSupabaseClient } from "./anon"
 
 /**
  * RLS as the user for this JWT — use when the session cookie is not on the request yet
@@ -62,13 +62,7 @@ export function createUserJwtSupabaseClient(accessToken: string) {
   })
 }
 
-/**
- * Service role client for server-only use (e.g. webhooks). Bypasses RLS.
- * Only use when no user session is available.
- */
-export function createServiceRoleClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
-  return createSupabaseClient(url, key)
-}
+export {
+  createServiceRoleClient,
+  createServiceRoleReadClient,
+} from "./service-role"

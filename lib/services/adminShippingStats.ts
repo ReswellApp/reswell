@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import {
   dbCountAllShippingLabels,
   dbGetOrderShippingAmounts,
@@ -42,9 +42,9 @@ export type AdminShippingStatsResult =
   | { ok: true; data: AdminShippingStats }
   | { ok: false; message: string; status: number }
 
-function getServiceOrNull(): ReturnType<typeof createServiceRoleClient> | null {
+function getServiceOrNull(): ReturnType<typeof getDb> | null {
   try {
-    return createServiceRoleClient()
+    return getDb({ consistency: "eventual", purpose: "analytics" })
   } catch {
     return null
   }

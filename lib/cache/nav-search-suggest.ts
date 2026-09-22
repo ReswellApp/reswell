@@ -6,7 +6,7 @@ import {
   normalizeMarketplaceSearchSuggestQuery,
   runMarketplaceSearchSuggest,
 } from "@/lib/services/marketplaceSearchSuggest"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 /** Header nav typeahead (Top listings, brands, categories). */
 export const NAV_SEARCH_SUGGEST_CACHE_TAG = "nav-search-suggest"
@@ -17,7 +17,7 @@ async function loadNavSearchSuggest(
   qNormalized: string,
   sectionNormalized: NavSearchSuggestSectionKey,
 ): Promise<SearchSuggestResult> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   return runMarketplaceSearchSuggest(supabase, qNormalized, sectionNormalized)
 }
 

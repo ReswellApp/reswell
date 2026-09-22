@@ -1,4 +1,4 @@
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
 import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
@@ -18,7 +18,7 @@ export type BoardsOgPayload =
  * Matches default `/boards` sort: most recently added first.
  */
 export async function getBoardsBrowseOgPayload(typeParam: string | undefined): Promise<BoardsOgPayload> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
 
   let q = supabase
     .from("listings")

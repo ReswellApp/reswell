@@ -11,7 +11,7 @@ import {
   type MarketplaceShippedFeedPayload,
   type MarketplaceSoldFeedPayload,
 } from "@/lib/services/marketplaceSoldFeed"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 /** Hourly cache for anonymous `/sold` sold + shipped feeds. */
 export const MARKETPLACE_SOLD_FEED_CACHE_TAG = "marketplace-sold-feed"
@@ -30,7 +30,7 @@ function isPoisonedSoldFeedPayload(
 
 const getCachedSoldFeedPayload = unstable_cache(
   async (brandKey: string, shippedOnly: boolean): Promise<MarketplaceSoldFeedPayload> => {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const brandSlug = brandKey === BRAND_NONE ? null : brandKey
     const payload = await loadMarketplaceSoldFeed(supabase, brandSlug, { shippedOnly })
 
@@ -71,7 +71,7 @@ export async function getCachedMarketplaceSoldFeed(
   // Dev: skip `unstable_cache` so RPC/migration fixes show up without waiting out the 1h TTL
   // or restarting after an earlier failed fetch cached an empty listing grid.
   if (process.env.NODE_ENV === "development") {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
   }
 
@@ -80,7 +80,7 @@ export async function getCachedMarketplaceSoldFeed(
     console.warn(
       "[marketplace-sold-feed] cached sold feed is inconsistent — refetching without cache",
     )
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
   }
 
@@ -89,7 +89,7 @@ export async function getCachedMarketplaceSoldFeed(
 
 const getCachedShippedFeedPagePayload = unstable_cache(
   async (brandKey: string, page: number): Promise<MarketplaceShippedFeedPayload> => {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const brandSlug = brandKey === BRAND_NONE ? null : brandKey
     return loadMarketplaceShippedFeedPage(supabase, brandSlug, page)
   },
@@ -108,7 +108,7 @@ export async function getCachedMarketplaceShippedFeedPage(
   const safePage = Math.max(1, Math.floor(page) || 1)
 
   if (process.env.NODE_ENV === "development") {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     return loadMarketplaceShippedFeedPage(supabase, normalizedBrandSlug, safePage)
   }
 
@@ -117,7 +117,7 @@ export async function getCachedMarketplaceShippedFeedPage(
 
 const getCachedNewListingsFeedPagePayload = unstable_cache(
   async (page: number) => {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const { listings, totalCount } = await fetchNewestActiveListingsPage(supabase, {
       categoryId: null,
       page,

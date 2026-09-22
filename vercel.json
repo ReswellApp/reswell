@@ -90,10 +90,6 @@
       "schedule": "0 15 1 * *"
     },
     {
-      "path": "/api/cron/intelligence-report",
-      "schedule": "0 15 * * *"
-    },
-    {
       "path": "/api/cron/backfill-listing-brand-model",
       "schedule": "0 5,17 * * *"
     },
@@ -116,10 +112,6 @@
     {
       "path": "/api/cron/support-case-backfill",
       "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/review-fraud-messages",
-      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/auto-price-drop",

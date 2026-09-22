@@ -8,7 +8,7 @@ import {
 } from "@/lib/types/sell-catalog-search"
 import { APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { createClient } from "@/lib/supabase/server"
 
 export const maxDuration = 30
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const categories = await resolveSearchableCategories()
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const result = await runSellCatalogNlHelper(supabase, parsed.data.q, categories)
     return NextResponse.json(result)
   } catch (e) {

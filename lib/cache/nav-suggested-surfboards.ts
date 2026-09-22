@@ -4,7 +4,7 @@ import type {
   NavSuggestedSurfboardPoolRow,
   NavSuggestedSurfboardsMode,
 } from "@/lib/types/nav-suggested-surfboards"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 /** Nav search idle dropdown — popular / newest surfboard pools. */
 export const NAV_SUGGESTED_SURFBOARDS_CACHE_TAG = "nav-suggested-surfboards"
@@ -13,7 +13,7 @@ export const NAV_SUGGESTED_SURFBOARDS_REVALIDATE_SECONDS = 60 * 60 * 6
 async function loadNavSuggestedSurfboardPool(
   mode: NavSuggestedSurfboardsMode,
 ): Promise<NavSuggestedSurfboardPoolRow[]> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   return fetchNavSuggestedSurfboardPool(supabase, mode)
 }
 

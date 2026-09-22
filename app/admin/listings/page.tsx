@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
 import { listingDetailHref } from '@/lib/listing-href'
 import { proxiedListingImageSrc } from '@/lib/listing-media-proxy-url'
 import { setImpersonation } from '@/lib/impersonation'
@@ -239,7 +238,15 @@ function pageItems(current: number, total: number): Array<number | 'ellipsis'> {
   return items
 }
 
-const PAGE_SIZE_OPTIONS = [25, 50, 100]
+const PAGE_SIZE_OPTIONS = [25, 50, 100] as const
+const SEARCH_DEBOUNCE_MS = 300
+
+type ListingStats = {
+  total: number
+  active: number
+  sold: number
+  hidden: number
+}
 
 const TOGGLEABLE_COLUMNS = [
   { key: 'seller', label: 'Seller' },
@@ -315,16 +322,20 @@ function downloadListingsCsv(rows: Listing[]): void {
 
 export default function AdminListingsPage() {
   const [listings, setListings] = useState<Listing[]>([])
+  const [filteredTotal, setFilteredTotal] = useState(0)
+  const [stats, setStats] = useState<ListingStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [visibilityFilter, setVisibilityFilter] = useState('all')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(25)
+  const [selectedById, setSelectedById] = useState<Record<string, Listing>>({})
+  const [refreshNonce, setRefreshNonce] = useState(0)
   const [columns, setColumns] = useState<ColumnVisibility>(DEFAULT_COLUMNS)
   const [bulkBusy, setBulkBusy] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
@@ -334,12 +345,11 @@ export default function AdminListingsPage() {
   const [categorySaving, setCategorySaving] = useState(false)
   const [dialogCategoryRows, setDialogCategoryRows] = useState<CategoryOption[]>([])
   const [dialogCategoriesLoading, setDialogCategoriesLoading] = useState(false)
-  const supabase = createClient()
 
   useEffect(() => {
-    void fetchListings()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery), SEARCH_DEBOUNCE_MS)
+    return () => window.clearTimeout(timer)
+  }, [searchQuery])
 
   useEffect(() => {
     let cancelled = false
@@ -353,10 +363,26 @@ export default function AdminListingsPage() {
     }
   }, [])
 
-  // Reset to first page whenever the working set changes.
   useEffect(() => {
     setPage(1)
-  }, [searchQuery, statusFilter, sectionFilter, visibilityFilter, pageSize, sortKey, sortDir])
+  }, [debouncedSearch, statusFilter, sectionFilter, visibilityFilter, pageSize, sortKey, sortDir])
+
+  useEffect(() => {
+    const ac = new AbortController()
+    void fetchListings(ac.signal)
+    return () => ac.abort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    page,
+    pageSize,
+    statusFilter,
+    sectionFilter,
+    visibilityFilter,
+    sortKey,
+    sortDir,
+    debouncedSearch,
+    refreshNonce,
+  ])
 
   useEffect(() => {
     if (!categoryDialogListing) {
@@ -419,26 +445,52 @@ export default function AdminListingsPage() {
     }
   }, [categoryDialogListing, sectionPick])
 
-  async function fetchListings() {
+  async function fetchListings(signal?: AbortSignal) {
     setLoading(true)
     try {
-      const res = await fetch('/api/admin/listings', { credentials: 'include' })
+      const params = new URLSearchParams({
+        status: statusFilter,
+        section: sectionFilter,
+        visibility: visibilityFilter,
+        sort: sortKey,
+        dir: sortDir,
+        limit: String(pageSize),
+        offset: String((page - 1) * pageSize),
+      })
+      const q = debouncedSearch.trim()
+      if (q) params.set('q', q)
+
+      const res = await fetch(`/api/admin/listings?${params}`, {
+        credentials: 'include',
+        signal,
+      })
       const json = (await res.json()) as {
         listings?: Listing[]
-        monthlyCreated?: { month_key: string; listing_count: number }[]
+        total?: number
+        stats?: ListingStats
         error?: string
       }
       if (!res.ok) {
         toast.error(typeof json.error === 'string' ? json.error : 'Failed to load listings')
         setListings([])
+        setFilteredTotal(0)
         return
       }
-      setListings(json.listings ?? [])
-    } catch {
+      const rows = json.listings ?? []
+      const total = typeof json.total === 'number' ? json.total : rows.length
+      setListings(rows)
+      setFilteredTotal(total)
+      if (json.stats) setStats(json.stats)
+      if (rows.length === 0 && total > 0 && page > 1) {
+        setPage((p) => Math.max(1, p - 1))
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return
       toast.error('Failed to load listings')
       setListings([])
+      setFilteredTotal(0)
     } finally {
-      setLoading(false)
+      if (!signal?.aborted) setLoading(false)
     }
   }
 
@@ -468,18 +520,11 @@ export default function AdminListingsPage() {
       return
     }
     const slug = typeof json.data?.slug === 'string' ? json.data.slug : null
-    setListings((prev) =>
-      prev.map((l) =>
-        l.id === listing.id
-          ? {
-              ...l,
-              status: 'active',
-              hidden_from_site: false,
-              slug: slug ?? l.slug,
-            }
-          : l,
-      ),
-    )
+    patchListing(listing.id, {
+      status: 'active',
+      hidden_from_site: false,
+      slug: slug ?? listing.slug,
+    })
     toast.success('Draft published')
   }
 
@@ -495,20 +540,11 @@ export default function AdminListingsPage() {
       error?: unknown
     }
     if (res.ok) {
-      setListings((prev) =>
-        prev.map((l) =>
-          l.id === id
-            ? {
-                ...l,
-                status: newStatus,
-                hidden_from_site:
-                  newStatus === 'removed' || newStatus === 'delinquent'
-                    ? true
-                    : l.hidden_from_site,
-              }
-            : l,
-        ),
-      )
+      const patch: Partial<Listing> = { status: newStatus }
+      if (newStatus === 'removed' || newStatus === 'delinquent') {
+        patch.hidden_from_site = true
+      }
+      patchListing(id, patch)
       toast.success(`Listing marked as ${newStatus}`)
     } else {
       const errMsg =
@@ -533,9 +569,7 @@ export default function AdminListingsPage() {
     const next = !Boolean(listing.hidden_from_site)
     const ok = await setVisibilityRequest(listing.id, next)
     if (ok) {
-      setListings((prev) =>
-        prev.map((l) => (l.id === listing.id ? { ...l, hidden_from_site: next } : l)),
-      )
+      patchListing(listing.id, { hidden_from_site: next })
       toast.success(next ? 'Hidden from site' : 'Visible on site again')
     } else {
       toast.error('Failed to update visibility')
@@ -556,12 +590,8 @@ export default function AdminListingsPage() {
     if (!confirm('Permanently delete this listing? This cannot be undone.')) return
     const result = await deleteListingRequest(id)
     if (result.ok) {
-      setListings((prev) => prev.filter((l) => l.id !== id))
-      setSelectedIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+      removeSelectedIds([id])
+      setRefreshNonce((n) => n + 1)
       toast.success('Listing deleted')
     } else {
       toast.error(result.error ?? 'Failed to delete listing')
@@ -628,18 +658,11 @@ export default function AdminListingsPage() {
         dialogCategoryRows.find((c) => c.id === categoryPick)?.name ??
         categoryDialogListing.categories?.name ??
         'Category'
-      setListings((prev) =>
-        prev.map((l) =>
-          l.id === categoryDialogListing.id
-            ? {
-                ...l,
-                section: sectionPick,
-                category_id: categoryPick.trim(),
-                categories: { name: label },
-              }
-            : l,
-        ),
-      )
+      patchListing(categoryDialogListing.id, {
+        section: sectionPick,
+        category_id: categoryPick.trim(),
+        categories: { name: label },
+      })
       toast.success('Listing type updated')
       setCategoryDialogListing(null)
     } finally {
@@ -649,88 +672,64 @@ export default function AdminListingsPage() {
 
   // --- Derived data ------------------------------------------------------
 
-  const stats = useMemo(() => {
-    let active = 0
-    let sold = 0
-    let hidden = 0
-    let inventoryValue = 0
-    let views = 0
-    for (const l of listings) {
-      if (l.status === 'active') {
-        active += 1
-        inventoryValue += Number(l.price) || 0
-      }
-      if (l.status === 'sold') sold += 1
-      if (l.hidden_from_site) hidden += 1
-      views += Number(l.views) || 0
-    }
-    return { total: listings.length, active, sold, hidden, inventoryValue, views }
-  }, [listings])
+  function patchListing(id: string, patch: Partial<Listing>) {
+    const apply = (listing: Listing): Listing =>
+      listing.id === id ? { ...listing, ...patch } : listing
+    setListings((prev) => prev.map(apply))
+    setSelectedById((prev) => (prev[id] ? { ...prev, [id]: apply(prev[id]) } : prev))
+  }
 
-  const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    const result = listings.filter((listing) => {
-      if (statusFilter !== 'all' && listing.status !== statusFilter) return false
-      if (sectionFilter !== 'all' && listing.section !== sectionFilter) return false
-      if (visibilityFilter === 'hidden' && !listing.hidden_from_site) return false
-      if (visibilityFilter === 'visible' && listing.hidden_from_site) return false
-      if (!q) return true
-      const brand = (listing.brand ?? '').toLowerCase()
-      const model = (listing.model ?? '').toLowerCase()
-      return (
-        listing.title.toLowerCase().includes(q) ||
-        (listing.profiles?.display_name?.toLowerCase().includes(q) ?? false) ||
-        (listing.profiles?.email?.toLowerCase().includes(q) ?? false) ||
-        brand.includes(q) ||
-        model.includes(q)
-      )
+  function removeSelectedIds(ids: string[]) {
+    const idSet = new Set(ids)
+    setSelectedById((prev) => {
+      const next = { ...prev }
+      for (const id of ids) delete next[id]
+      return next
     })
+    setListings((prev) => prev.filter((l) => !idSet.has(l.id)))
+  }
 
-    const dir = sortDir === 'asc' ? 1 : -1
-    result.sort((a, b) => {
-      switch (sortKey) {
-        case 'price':
-          return (Number(a.price) - Number(b.price)) * dir
-        case 'views':
-          return (Number(a.views) - Number(b.views)) * dir
-        case 'title':
-          return a.title.localeCompare(b.title) * dir
-        case 'created_at':
-        default:
-          return (
-            (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir
-          )
-      }
-    })
-    return result
-  }, [listings, searchQuery, statusFilter, sectionFilter, visibilityFilter, sortKey, sortDir])
+  const selectedIds = useMemo(() => new Set(Object.keys(selectedById)), [selectedById])
+  const selectedListings = useMemo(() => Object.values(selectedById), [selectedById])
+  const hasActiveFilters =
+    debouncedSearch.trim().length > 0 ||
+    statusFilter !== 'all' ||
+    sectionFilter !== 'all' ||
+    visibilityFilter !== 'all'
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize))
   const currentPage = Math.min(page, totalPages)
-  const pageStart = (currentPage - 1) * pageSize
-  const pageRows = filtered.slice(pageStart, pageStart + pageSize)
+  const pageRows = listings
 
   const pageIds = pageRows.map((l) => l.id)
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
   const somePageSelected = pageIds.some((id) => selectedIds.has(id))
 
   function toggleSelectAllOnPage() {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
+    setSelectedById((prev) => {
+      const next = { ...prev }
       if (allPageSelected) {
-        pageIds.forEach((id) => next.delete(id))
+        pageIds.forEach((id) => {
+          delete next[id]
+        })
       } else {
-        pageIds.forEach((id) => next.add(id))
+        pageRows.forEach((listing) => {
+          next[listing.id] = listing
+        })
       }
       return next
     })
   }
 
   function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+    setSelectedById((prev) => {
+      const next = { ...prev }
+      if (next[id]) {
+        delete next[id]
+      } else {
+        const listing = pageRows.find((row) => row.id === id)
+        if (listing) next[id] = listing
+      }
       return next
     })
   }
@@ -744,11 +743,6 @@ export default function AdminListingsPage() {
     }
   }
 
-  const selectedListings = useMemo(
-    () => listings.filter((l) => selectedIds.has(l.id)),
-    [listings, selectedIds],
-  )
-
   async function bulkSetVisibility(hidden: boolean) {
     const targets = selectedListings.filter((l) => Boolean(l.hidden_from_site) !== hidden)
     if (targets.length === 0) {
@@ -758,9 +752,9 @@ export default function AdminListingsPage() {
     setBulkBusy(true)
     const results = await Promise.all(targets.map((l) => setVisibilityRequest(l.id, hidden)))
     const okIds = new Set(targets.filter((_, i) => results[i]).map((l) => l.id))
-    setListings((prev) =>
-      prev.map((l) => (okIds.has(l.id) ? { ...l, hidden_from_site: hidden } : l)),
-    )
+    for (const id of okIds) {
+      patchListing(id, { hidden_from_site: hidden })
+    }
     const failed = results.filter((r) => !r).length
     setBulkBusy(false)
     if (failed === 0) toast.success(`${okIds.size} ${hidden ? 'hidden' : 'made visible'}`)
@@ -782,19 +776,13 @@ export default function AdminListingsPage() {
       toast.error('Failed to update selection')
       return
     }
-    const idSet = new Set(ids)
-    setListings((prev) =>
-      prev.map((l) =>
-        idSet.has(l.id)
-          ? {
-              ...l,
-              status,
-              hidden_from_site:
-                status === 'removed' || status === 'delinquent' ? true : l.hidden_from_site,
-            }
-          : l,
-      ),
-    )
+    const patch: Partial<Listing> = { status }
+    if (status === 'removed' || status === 'delinquent') {
+      patch.hidden_from_site = true
+    }
+    for (const id of ids) {
+      patchListing(id, patch)
+    }
     toast.success(`${ids.length} marked as ${status}`)
   }
 
@@ -810,19 +798,13 @@ export default function AdminListingsPage() {
       return
     setBulkBusy(true)
     const results = await Promise.all(selectedListings.map((l) => deleteListingRequest(l.id)))
-    const deletedIds = new Set(
-      selectedListings.filter((_, i) => results[i].ok).map((l) => l.id),
-    )
-    setListings((prev) => prev.filter((l) => !deletedIds.has(l.id)))
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      deletedIds.forEach((id) => next.delete(id))
-      return next
-    })
+    const deletedIds = selectedListings.filter((_, i) => results[i].ok).map((l) => l.id)
+    removeSelectedIds(deletedIds)
+    setRefreshNonce((n) => n + 1)
     const failed = results.filter((r) => !r.ok).length
     setBulkBusy(false)
-    if (failed === 0) toast.success(`${deletedIds.size} deleted`)
-    else toast.warning(`${deletedIds.size} deleted, ${failed} could not be removed (order history)`)
+    if (failed === 0) toast.success(`${deletedIds.length} deleted`)
+    else toast.warning(`${deletedIds.length} deleted, ${failed} could not be removed (order history)`)
   }
 
   function getListingViewHref(section: string, id: string, slug?: string | null) {
@@ -874,7 +856,7 @@ export default function AdminListingsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled={loading} onClick={() => void fetchListings()}>
+                <DropdownMenuItem disabled={loading} onClick={() => setRefreshNonce((n) => n + 1)}>
                   <RotateCcw className="mr-2 h-4 w-4" /> Refresh
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -903,10 +885,10 @@ export default function AdminListingsPage() {
                 ) : null}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  disabled={loading || filtered.length === 0}
-                  onClick={() => downloadListingsCsv(filtered)}
+                  disabled={loading || listings.length === 0}
+                  onClick={() => downloadListingsCsv(listings)}
                 >
-                  <Download className="mr-2 h-4 w-4" /> Export
+                  <Download className="mr-2 h-4 w-4" /> Export page
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -918,7 +900,7 @@ export default function AdminListingsPage() {
         items={[
           {
             label: 'Total Listings',
-            value: loading ? '—' : compactNumber(stats.total),
+            value: stats ? compactNumber(stats.total) : '—',
             footnote: 'All marketplace listings',
             tone: 'teal',
             active: statusFilter === 'all' && visibilityFilter === 'all',
@@ -929,7 +911,7 @@ export default function AdminListingsPage() {
           },
           {
             label: 'Active',
-            value: loading ? '—' : compactNumber(stats.active),
+            value: stats ? compactNumber(stats.active) : '—',
             footnote: 'Live on the site',
             tone: 'green',
             active: statusFilter === 'active' && visibilityFilter === 'all',
@@ -940,7 +922,7 @@ export default function AdminListingsPage() {
           },
           {
             label: 'Sold',
-            value: loading ? '—' : compactNumber(stats.sold),
+            value: stats ? compactNumber(stats.sold) : '—',
             footnote: 'Marked sold',
             tone: 'blue',
             active: statusFilter === 'sold',
@@ -951,7 +933,7 @@ export default function AdminListingsPage() {
           },
           {
             label: 'Hidden',
-            value: loading ? '—' : compactNumber(stats.hidden),
+            value: stats ? compactNumber(stats.hidden) : '—',
             footnote: 'Hidden from the site',
             tone: 'amber',
             active: visibilityFilter === 'hidden',
@@ -1046,7 +1028,12 @@ export default function AdminListingsPage() {
                     <SelectItem value="title:asc">Title A → Z</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) =>
+                    setPageSize(Number(v) as (typeof PAGE_SIZE_OPTIONS)[number])
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -1119,7 +1106,7 @@ export default function AdminListingsPage() {
             >
               <Trash2 className="mr-1.5 h-4 w-4" /> Delete
             </Button>
-            <Button variant="ghost" size="sm" disabled={bulkBusy} onClick={() => setSelectedIds(new Set())}>
+            <Button variant="ghost" size="sm" disabled={bulkBusy} onClick={() => setSelectedById({})}>
               <X className="mr-1.5 h-4 w-4" /> Clear
             </Button>
           </div>
@@ -1243,18 +1230,18 @@ export default function AdminListingsPage() {
               </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : filteredTotal === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
               <Package className="h-6 w-6 text-muted-foreground" />
             </span>
             <p className="mt-3 font-medium text-foreground">No listings found</p>
             <p className="text-sm text-muted-foreground">
-              {listings.length === 0
-                ? 'There are no listings yet.'
-                : 'Try adjusting your search or filters.'}
+              {hasActiveFilters
+                ? 'Try adjusting your search or filters.'
+                : 'There are no listings yet.'}
             </p>
-            {listings.length > 0 ? (
+            {hasActiveFilters ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -1491,7 +1478,7 @@ export default function AdminListingsPage() {
           </Table>
         )}
 
-        {!loading && filtered.length > 0 ? (
+        {!loading && filteredTotal > 0 ? (
           <div className="flex flex-col items-center justify-between gap-3 border-t border-border/70 px-4 py-3 sm:flex-row">
             <Button
               variant="outline"

@@ -19,7 +19,7 @@ import {
 import { loadHomeMostViewedMosaic, type HomeMostViewedMosaicLayout } from "@/lib/services/homeMostViewedSection"
 import { loadHomeRecentlyListedGridRows } from "@/lib/services/homeRecentlyListedGridSection"
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { brandLogoStorageRef } from "@/lib/brand-media-proxy-url"
 import {
   getCachedPublicStorageObject,
@@ -182,7 +182,7 @@ function buildHeroSlideUrls(
 }
 
 async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
 
   const [
     curatedHeroUrls,
@@ -297,14 +297,14 @@ async function warmTrendingBrandLogo(logoUrl: string | null): Promise<void> {
 }
 
 async function loadHomeTrendingBrandsCatalogUncached(): Promise<HomeTrendingBrandsCatalog> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const homeTrendingBrandRows = await listHomeTrendingBrandsForPublicService(supabase)
   await Promise.all(homeTrendingBrandRows.map((row) => warmTrendingBrandLogo(row.brand.logo_url)))
   return { homeTrendingBrandRows }
 }
 
 async function loadHomeRecentlyAddedSurfboardsCatalogUncached(): Promise<HomeRecentlyAddedSurfboardsCatalog> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const rows = (await loadHomeFeaturedSurfboardRows(supabase)) as HomePeerScrollListing[]
   const featuredBoards = rows.length > 0 ? rows : null
 
@@ -315,7 +315,7 @@ async function loadHomeRecentlyAddedSurfboardsCatalogUncached(): Promise<HomeRec
 }
 
 async function loadHomeRecentlyAddedFinsCatalogUncached(): Promise<HomeRecentlyAddedFinsCatalog> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const rows = (await loadHomeFeaturedFinRows(supabase)) as HomePeerScrollListing[]
   const featuredFins = rows.length > 0 ? rows : null
 
@@ -326,7 +326,7 @@ async function loadHomeRecentlyAddedFinsCatalogUncached(): Promise<HomeRecentlyA
 }
 
 async function loadHomeRecentlySoldCatalogUncached(): Promise<HomeRecentlySoldCatalog> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const recentlySoldFeaturedRows = await loadHomeRecentlySoldSurfboardRows(supabase)
   const rawRecentlySoldSurfboards = recentlySoldFeaturedRows as HomePeerScrollListing[]
   const featuredRecentlySold =
@@ -375,7 +375,7 @@ export const getCachedHomeRecentlyAddedFinsCatalog = unstable_cache(
 )
 
 async function loadHomeMostViewedCatalogUncached(): Promise<HomeMostViewedCatalog> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const mostViewedMosaic = await loadHomeMostViewedMosaic(supabase)
 
   const featuredListingIds = mostViewedMosaic
@@ -411,7 +411,7 @@ export const getCachedHomeMostViewedCatalog = unstable_cache(
 )
 
 async function loadHomeRecentlyListedGridCatalogUncached(): Promise<HomeRecentlyListedGridCatalog> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const rows = await loadHomeRecentlyListedGridRows(supabase)
   const recentlyListedGrid = rows.length > 0 ? rows : null
 

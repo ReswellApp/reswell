@@ -2,7 +2,7 @@ import {
   fetchAdminOverviewSnapshot,
   type AdminOverviewSnapshot,
 } from '@/lib/db/adminOverview'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { getDb } from '@/lib/supabase/db'
 
 /**
  * Platform-wide admin home snapshot (listings, members, orders, support).
@@ -11,6 +11,6 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 export async function loadAdminOverviewSnapshot(options: {
   includeBrandRequestQueries: boolean
 }): Promise<AdminOverviewSnapshot> {
-  const db = createServiceRoleClient()
+  const db = getDb({ consistency: "eventual", purpose: "analytics" })
   return fetchAdminOverviewSnapshot(db, options)
 }

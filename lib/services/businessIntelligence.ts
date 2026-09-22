@@ -17,17 +17,14 @@ import {
 } from "@/lib/services/adminBusinessInsights"
 import { isGoogleAnalyticsConfigured, runGoogleAnalyticsReport } from "@/lib/services/googleAnalytics"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import type {
   BusinessIntelligenceReportListItem,
   BusinessIntelligenceReportRow,
   IntelligenceLiveDashboard,
   IntelligenceTopPath,
 } from "@/lib/types/businessIntelligence"
-import { BUSINESS_TIMEZONE, businessDayKeyFromMs } from "@/lib/utils/business-timezone"
-import {
-  defaultIntelligencePeriodKey,
-  resolveIntelligencePeriod,
-} from "@/lib/utils/businessIntelligencePeriod"
+import { resolveIntelligencePeriod } from "@/lib/utils/businessIntelligencePeriod"
 import type { BusinessIntelligencePeriodKind } from "@/lib/validations/businessIntelligence"
 
 export type { IntelligenceLiveDashboard } from "@/lib/types/businessIntelligence"
@@ -88,7 +85,7 @@ async function notifyIntelligenceAdmins(
 }
 
 export async function loadIntelligenceDashboard(): Promise<IntelligenceLiveDashboard> {
-  const db = createServiceRoleClient()
+  const db = getDb({ consistency: "eventual", purpose: "analytics" })
 
   const [insightsResult, monthlyResult, daily, weekly, monthly, archive, topPages] =
     await Promise.all([
@@ -232,52 +229,4 @@ export async function generateAndStoreIntelligenceReport(input: {
     console.error("[business-intelligence]", message)
     return { ok: false, error: message }
   }
-}
-
-export async function runScheduledIntelligenceReports(nowMs = Date.now()): Promise<{
-  generated: { kind: BusinessIntelligencePeriodKind; periodKey: string }[]
-  skipped: { kind: BusinessIntelligencePeriodKind; periodKey: string; reason: string }[]
-  failed: { kind: BusinessIntelligencePeriodKind; periodKey: string; error: string }[]
-  notify: { sent: number; skipped: number }
-}> {
-  const generated: { kind: BusinessIntelligencePeriodKind; periodKey: string }[] = []
-  const skipped: { kind: BusinessIntelligencePeriodKind; periodKey: string; reason: string }[] = []
-  const failed: { kind: BusinessIntelligencePeriodKind; periodKey: string; error: string }[] = []
-  const notify = { sent: 0, skipped: 0 }
-
-  const todayDate = businessDayKeyFromMs(nowMs)
-  const weekday = new Intl.DateTimeFormat("en-US", {
-    timeZone: BUSINESS_TIMEZONE,
-    weekday: "short",
-  }).format(new Date(nowMs))
-
-  const jobs: { kind: BusinessIntelligencePeriodKind; periodKey: string }[] = [
-    { kind: "daily", periodKey: defaultIntelligencePeriodKey("daily", nowMs) },
-  ]
-  if (weekday === "Mon") {
-    jobs.push({ kind: "weekly", periodKey: defaultIntelligencePeriodKey("weekly", nowMs) })
-  }
-  if (todayDate.endsWith("-01")) {
-    jobs.push({ kind: "monthly", periodKey: defaultIntelligencePeriodKey("monthly", nowMs) })
-  }
-
-  for (const job of jobs) {
-    const result = await generateAndStoreIntelligenceReport({
-      kind: job.kind,
-      periodKey: job.periodKey,
-      force: false,
-    })
-    if (!result.ok) {
-      failed.push({ ...job, error: result.error })
-    } else if (result.reused) {
-      skipped.push({ ...job, reason: "already complete" })
-    } else {
-      generated.push(job)
-      const notifyResult = await notifyIntelligenceAdmins(result.data)
-      notify.sent += notifyResult.sent
-      notify.skipped += notifyResult.skipped
-    }
-  }
-
-  return { generated, skipped, failed, notify }
 }

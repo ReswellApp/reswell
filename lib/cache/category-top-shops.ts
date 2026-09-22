@@ -1,7 +1,6 @@
 import { unstable_cache } from "next/cache"
 import { listCategoryTopShops } from "@/lib/services/categoryTopShops"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import type { CategoryTopShop, CategoryTopShopSection } from "@/lib/types/category-top-shops"
 
 export const CATEGORY_TOP_SHOPS_CACHE_TAG = "category-top-shops"
@@ -9,9 +8,9 @@ export const CATEGORY_TOP_SHOPS_REVALIDATE_SECONDS = 60 * 60
 
 function createSupabaseForCategoryTopShops() {
   if (process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
-    return createServiceRoleClient()
+    return getDb({ consistency: "eventual", purpose: "analytics" })
   }
-  return createAnonSupabaseClient()
+  return getDb({ consistency: "eventual" })
 }
 
 async function loadCategoryTopShopsUncached(

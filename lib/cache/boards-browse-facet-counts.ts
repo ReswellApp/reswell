@@ -30,7 +30,7 @@ import {
   mergeNlOverlayIntoFacets,
   resolveBoardsSearchQuery,
 } from "@/lib/services/searchBoards"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { isUuidString } from "@/lib/utils/isUuid"
 
 function facetCountContextFromSearchParams(
@@ -62,7 +62,7 @@ async function loadSurfboardFacetCountRows(
   location: string,
   shippingAvailable: boolean,
 ): Promise<FacetCountRow[]> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   return fetchSurfboardFacetCountRows(supabase, {
     query: query || undefined,
     brand: brand || undefined,
@@ -131,7 +131,7 @@ export async function getBoardsBrowseFacetCountsMapCached(
 
   if (isBoardsBrowseEsEnabled()) {
     try {
-      const supabase = createAnonSupabaseClient()
+      const supabase = getDb({ consistency: "eventual" })
       const brandId = isUuidString(ctx.brandId?.trim() ?? "") ? ctx.brandId!.trim() : undefined
       const brandModelId = isUuidString(ctx.brandModelId?.trim() ?? "")
         ? ctx.brandModelId!.trim()

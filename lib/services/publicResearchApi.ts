@@ -1,4 +1,4 @@
-import { createAnonSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import { searchBrandModelsWithBrandsForSuggest } from "@/lib/db/brand-models"
 import {
   PUBLIC_RESEARCH_LISTING_SELECT,
@@ -165,9 +165,9 @@ function toListingCard(row: PublicResearchListingRow): PublicApiListingCard {
 
 function researchDb() {
   try {
-    return createServiceRoleClient()
+    return getDb({ consistency: "eventual", purpose: "analytics" })
   } catch {
-    return createAnonSupabaseClient()
+    return getDb({ consistency: "eventual" })
   }
 }
 
@@ -201,7 +201,7 @@ export function getPublicApiCatalog(): PublicApiCatalog {
 export async function searchPublicResearchService(
   input: PublicApiSearchQuery,
 ): Promise<PublicResearchResult<{ type: PublicApiSearchQuery["type"]; results: unknown[] }>> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
 
   if (input.type === "models") {
     const models = await searchBrandModelsWithBrandsForSuggest(researchDb(), input.q, input.limit)
@@ -264,7 +264,7 @@ export async function searchPublicResearchService(
 export async function getPublicListingService(
   listingParam: string,
 ): Promise<PublicResearchResult<PublicApiListingDetail>> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const found = await findListingByParam(supabase, listingParam, {
     select: PUBLIC_RESEARCH_LISTING_SELECT,
   })

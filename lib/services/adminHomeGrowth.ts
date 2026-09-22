@@ -2,7 +2,7 @@ import {
   fetchListingCreatedAtSince,
   fetchProfileCreatedAtSince,
 } from '@/lib/db/adminHomeSignups'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { getDb } from '@/lib/supabase/db'
 import {
   resolveAdminHomeRevenuePeriod,
   type AdminHomeRevenueRange,
@@ -112,7 +112,7 @@ export async function loadAdminHomeGrowthTrends(options?: {
   range?: AdminHomeRevenueRange
 }): Promise<{ ok: true; data: AdminHomeGrowthTrends } | { ok: false; error: string }> {
   try {
-    const db = createServiceRoleClient()
+    const db = getDb({ consistency: "eventual", purpose: "analytics" })
     const range = options?.range ?? 'ytd'
     const period = resolveAdminHomeRevenuePeriod(options?.yearMonth, range)
     const sinceIso = new Date(period.periodStartMs).toISOString()

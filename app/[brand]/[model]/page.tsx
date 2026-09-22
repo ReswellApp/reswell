@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { ModelPageView } from "@/components/features/models/model-page-view"
-import { createAnonSupabaseClient, createClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
+import { createClient } from "@/lib/supabase/server"
 import { fetchBrandModelSitemapEntries } from "@/lib/db/sitemap-models"
 import { isReservedModelPageBrandSegment } from "@/lib/models/routes"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
@@ -18,7 +19,7 @@ type Props = {
 }
 
 export async function generateStaticParams() {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const rows = await fetchBrandModelSitemapEntries(supabase)
   return rows.map((row) => ({ brand: row.brandSlug, model: row.modelSlug }))
 }
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Model — Reswell" }
   }
 
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const page = await getModelPage(supabase, brandSlug, modelSlug)
   if (!page) return { title: "Model — Reswell" }
 

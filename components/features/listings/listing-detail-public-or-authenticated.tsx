@@ -1,6 +1,5 @@
 import { cookies } from "next/headers"
 import { hasSupabaseAuthCookies } from "@/lib/auth/has-supabase-auth-cookies"
-import { ListingDetailDynamicGate } from "@/components/features/listings/listing-detail-dynamic-gate"
 import {
   ListingDetailPublicBody,
   type PublicListingRow,
@@ -8,33 +7,25 @@ import {
 import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-load"
 
 /**
- * Public PDP branch: hourly cached shell for guests/crawlers; live session for signed-in
- * viewers (owner tools, favorites, offers) without opting the route shell out of ISR.
+ * Visible catalog PDP: render the cached listing immediately.
+ * Signed-in extras (favorites, owner tools, admin bar) stream in from the
+ * section page — do not re-fetch the full listing row just because a session exists.
  */
 export async function ListingDetailPublicOrAuthenticated({
   listingParam,
   listing,
-  redirectSlug,
 }: {
   listingParam: string
   listing: PublicListingRow
   redirectSlug: string | null
 }) {
   const cookieStore = await cookies()
-  if (hasSupabaseAuthCookies(cookieStore.getAll())) {
-    return (
-      <ListingDetailDynamicGate
-        listingParam={listingParam}
-        prefetchedListing={listing as Record<string, unknown>}
-        prefetchedRedirectSlug={redirectSlug}
-      />
-    )
-  }
+  const hasAuth = hasSupabaseAuthCookies(cookieStore.getAll())
 
   const sectionProps: ListingDetailPageSharedProps = {
     listingParam,
     prefetchedListing: listing.section === "new" ? undefined : listing,
-    anonymousPublicView: true,
+    anonymousPublicView: !hasAuth,
   }
 
   return (

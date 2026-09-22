@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { getDb } from '@/lib/supabase/db'
 import { countCheckoutBlockedHiddenActiveListings } from '@/lib/db/adminHiddenListings'
 import { countSubmittedBoardBuys } from '@/lib/db/boardBuy'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
@@ -10,7 +10,7 @@ export { sumAdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 /** Hidden listing counts require service role (RLS hides rows from staff session). */
 async function fetchHiddenActiveCheckoutBlockedCount(): Promise<number> {
   try {
-    const service = createServiceRoleClient()
+    const service = getDb({ consistency: "eventual", purpose: "analytics" })
     return await countCheckoutBlockedHiddenActiveListings(service)
   } catch {
     return 0

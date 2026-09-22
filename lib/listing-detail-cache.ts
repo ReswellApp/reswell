@@ -1,4 +1,4 @@
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 export {
   LISTING_META_SELECT,
@@ -17,7 +17,7 @@ export {
 
 /** Public catalog rows only (anon, `hidden_from_site = false`). */
 export async function getCachedShopRelatedListings(excludeListingId: string) {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const { data: relatedListings } = await supabase
     .from("listings")
     .select(`

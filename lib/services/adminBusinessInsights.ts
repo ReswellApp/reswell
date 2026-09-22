@@ -10,7 +10,7 @@ import type {
   AdminOverviewUserPreview,
 } from '@/lib/db/adminOverview'
 import type { ContactMessageSupportStatus } from '@/lib/db/contactMessages'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { getDb } from '@/lib/supabase/db'
 import type {
   AdminBusinessInsights,
   AdminInsightsBrandRow,
@@ -224,7 +224,7 @@ export async function loadAdminBusinessInsights(
   { ok: true; data: AdminBusinessInsights } | { ok: false; error: string }
 > {
   try {
-    const db = createServiceRoleClient()
+    const db = getDb({ consistency: "eventual", purpose: "analytics" })
 
     const now = Date.now()
     const period = resolveAdminHomeRevenuePeriod(
@@ -631,7 +631,7 @@ export async function loadAdminRevenueTrend(
   options?: LoadAdminRevenueTrendOptions,
 ): Promise<{ ok: true; data: AdminRevenueTrend } | { ok: false; error: string }> {
   try {
-    const db = createServiceRoleClient()
+    const db = getDb({ consistency: "eventual", purpose: "analytics" })
     const range = options?.range ?? 'ytd'
     const period = resolveAdminHomeRevenuePeriod(options?.yearMonth, range)
     const periodStartIso = new Date(period.periodStartMs).toISOString()
@@ -886,7 +886,7 @@ export async function loadAdminMomentumMatrix(): Promise<
   { ok: true; data: AdminMomentumMatrix } | { ok: false; error: string }
 > {
   try {
-    const db = createServiceRoleClient()
+    const db = getDb({ consistency: "eventual", purpose: "analytics" })
     const now = Date.now()
     const sinceIso = new Date(now - MOMENTUM_LOOKBACK_DAYS * DAY_MS).toISOString()
 
@@ -1013,7 +1013,7 @@ export async function loadAdminMonthlyRevenueBreakdown(
   { ok: true; data: AdminMonthlyRevenueRow[] } | { ok: false; error: string }
 > {
   try {
-    const db = createServiceRoleClient()
+    const db = getDb({ consistency: "eventual", purpose: "analytics" })
     const months = businessYearMonthChoices(monthCount)
     const earliestYm = months[months.length - 1]
     const sinceIso = earliestYm ? businessMonthStartIso(earliestYm) : null

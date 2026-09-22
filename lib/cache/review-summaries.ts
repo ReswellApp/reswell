@@ -1,6 +1,6 @@
 import { cache } from "react"
 import { unstable_cache } from "next/cache"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { getSellerReviewSummary, type SellerReviewSummary } from "@/lib/db/seller-reviews"
 import {
   getReswellPlatformReviewSummary,
@@ -17,7 +17,7 @@ export const REVIEW_SUMMARY_REVALIDATE_SECONDS = 60 * 5
 
 const getCachedReswellPlatformReviewSummaryRow = unstable_cache(
   async (): Promise<ReswellPlatformReviewSummary> => {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const { data } = await getReswellPlatformReviewSummary(supabase)
     return data
   },
@@ -30,7 +30,7 @@ const getCachedReswellPlatformReviewSummaryRow = unstable_cache(
 
 const getCachedSellerReviewSummaryRow = unstable_cache(
   async (sellerId: string): Promise<SellerReviewSummary> => {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const { data } = await getSellerReviewSummary(supabase, sellerId)
     return data
   },

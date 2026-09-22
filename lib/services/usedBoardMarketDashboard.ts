@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import {
   finBoxesDisplayName,
@@ -298,13 +298,12 @@ export async function getUsedBoardMarketDashboardService(
   const warnings: string[] = []
 
   try {
-    db = createServiceRoleClient()
+    db = getDb({ consistency: "eventual", purpose: "analytics" })
   } catch {
     warnings.push(
       "Service role key not configured — falling back to anon client. Some inventory/order rows may be hidden by RLS.",
     )
-    const { createAnonSupabaseClient } = await import("@/lib/supabase/server")
-    db = createAnonSupabaseClient()
+    db = getDb({ consistency: "eventual" })
   }
 
   const rangeOption =

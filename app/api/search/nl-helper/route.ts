@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { attachNlHelperSnapshotToEvent } from "@/lib/services/searchQuality"
 import { runMarketplaceNlHelper } from "@/lib/services/marketplaceNlHelper"
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const result = await runMarketplaceNlHelper(supabase, q)
     try {
       await attachNlHelperSnapshotToEvent({

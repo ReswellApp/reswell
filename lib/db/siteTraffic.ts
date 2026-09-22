@@ -5,7 +5,7 @@ import type {
   SiteTrafficMonthRow,
   SiteTrafficWindowStats,
 } from '@/lib/types/siteTraffic'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { getDb } from '@/lib/supabase/db'
 
 /** Persists client-reported page navigation (paired with Klaviyo page-view). */
 export async function insertSiteTrafficPageView(
@@ -30,7 +30,7 @@ export async function fetchAdminSiteTrafficDashboard(
   months: number,
 ): Promise<{ ok: true; data: SiteTrafficDashboardRow } | { ok: false; error: string }> {
   try {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     const { data, error } = await supabase.rpc('admin_site_traffic_dashboard', {
       p_months: months,
     })

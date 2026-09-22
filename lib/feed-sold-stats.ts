@@ -1,5 +1,5 @@
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 type ConfirmedSaleStatsRpcRow = {
   items_sold: number | string | null
@@ -39,7 +39,7 @@ function parseRpcStats(data: unknown): { soldCount: number; gmvTotal: number } |
 export async function getSoldFeedStats(
   sections: readonly string[] = PEER_LISTING_SECTIONS_FILTER,
 ): Promise<{ soldCount: number; gmvTotal: number }> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const useSurfboardsOnly = sections.length === 1 && sections[0] === "surfboards"
 
   const { data, error } = useSurfboardsOnly

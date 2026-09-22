@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import { getDb } from "@/lib/supabase/db"
 import {
   isPeerSimilarFacetColumn,
   isPeerSimilarSection,
@@ -20,7 +21,7 @@ export type SimilarPeerListingRow = Record<string, unknown>
  * then recent same-section inventory.
  */
 export async function fetchSimilarPeerListingsForListingPdp(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   opts: {
     excludeListingId: string
     section: string
@@ -36,6 +37,7 @@ export async function fetchSimilarPeerListingsForListingPdp(
   const facetColumn =
     opts.facet && isPeerSimilarFacetColumn(opts.facet.column) ? opts.facet.column : null
   const facetValue = facetColumn ? normalizePeerSimilarFacetValue(opts.facet?.value) : null
+  const supabase = getDb({ consistency: "eventual" })
 
   try {
     if (price > 0 && facetColumn && facetValue != null) {

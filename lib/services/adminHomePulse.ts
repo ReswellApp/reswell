@@ -16,7 +16,7 @@ import { isElasticsearchConfigured } from '@/lib/elasticsearch/config'
 import { countMarketplaceSearchesInRange } from '@/lib/elasticsearch/search-analytics-index'
 import { listCurrentGiveaways, listGiveaways } from '@/lib/giveaways/catalog'
 import { marketplaceGmvExcludingShippingUsd } from '@/lib/seller-fees'
-import { createServiceRoleClient } from '@/lib/supabase/server'
+import { getDb } from '@/lib/supabase/db'
 import { shiftYearMonth } from '@/lib/utils/adminInsightsPeriod'
 import {
   addBusinessDays,
@@ -78,7 +78,7 @@ function inWindow(iso: string, startMs: number, endMs: number): boolean {
 }
 
 async function loadPulseCounts(params: {
-  db: ReturnType<typeof createServiceRoleClient>
+  db: ReturnType<typeof getDb>
   sinceIso: string
   untilIso?: string
   nowIso: string
@@ -116,7 +116,7 @@ async function loadPulseCounts(params: {
 }
 
 async function loadPulseOps(
-  db: ReturnType<typeof createServiceRoleClient>,
+  db: ReturnType<typeof getDb>,
 ): Promise<AdminHomePulseOps> {
   const [openShipping, openPickup, adjusted] = await Promise.all([
     countOpenShippingAwaitingDropoff(db),
@@ -144,7 +144,7 @@ export async function loadAdminHomePulse(): Promise<
   { ok: true; data: AdminHomePulse } | { ok: false; error: string }
 > {
   try {
-    const db = createServiceRoleClient()
+    const db = getDb({ consistency: "eventual", purpose: "analytics" })
     const now = Date.now()
     const todayKey = businessDayKeyFromMs(now)
     const todayStartMs = businessDayStartMs(todayKey)

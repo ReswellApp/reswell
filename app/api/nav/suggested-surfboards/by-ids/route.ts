@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { fetchNavSuggestedSurfboardsByIds } from "@/lib/db/nav-suggested-surfboards"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 const idsQuerySchema = z
   .string()
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Invalid or missing ids" }, { status: 400 })
     }
 
-    const supabase = createAnonSupabaseClient()
+    const supabase = getDb({ consistency: "eventual" })
     const rows = await fetchNavSuggestedSurfboardsByIds(supabase, parsed.data)
 
     return NextResponse.json({ data: { rows } }, { status: 200 })

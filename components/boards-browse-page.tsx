@@ -8,7 +8,7 @@ import { CategoryBrowseBreadcrumbs } from "@/components/category-browse-breadcru
 import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curator"
 
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import {
   CategoryTopShopsSection,
@@ -124,7 +124,7 @@ async function BoardListings({
   searchParams: Promise<BoardsBrowseSearchParams>
 }) {
   const searchParams = await searchParamsPromise
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const parsedPage = parseInt(searchParams.page || "1", 10)
   const page = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : 1
   const limit = BOARDS_BROWSE_PAGE_SIZE

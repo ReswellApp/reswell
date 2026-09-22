@@ -1,7 +1,7 @@
 import { cache } from "react"
 import { unstable_cache } from "next/cache"
 import { listRelatedContentPublicForListing } from "@/lib/services/listingRelatedContent"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import {
   LISTING_RELATED_CONTENT_CACHE_TAG,
   listingRelatedContentCacheTag,
@@ -13,7 +13,7 @@ export { LISTING_RELATED_CONTENT_CACHE_TAG, listingRelatedContentCacheTag }
 export const LISTING_RELATED_CONTENT_REVALIDATE_SECONDS = 60 * 60
 
 async function loadListingRelatedContent(listingId: string): Promise<ListingRelatedContentCard[]> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   return listRelatedContentPublicForListing(supabase, listingId)
 }
 

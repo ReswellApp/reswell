@@ -4,7 +4,7 @@ import type {
   SellCatalogSearchCategory,
   SellCatalogSearchModelRow,
 } from "@/lib/types/sell-catalog-search"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 /** `/sell` trending-brand drill-in — one brand's catalog models, keyed by brand + categories. */
 export const SELL_BRAND_CATALOG_MODELS_CACHE_TAG = "sell-brand-catalog-models"
@@ -14,7 +14,7 @@ async function loadSellBrandCatalogModels(
   brandId: string,
   categories: SellCatalogSearchCategory[],
 ): Promise<SellCatalogSearchModelRow[]> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   return listSellCatalogModelRowsByBrandId(supabase, brandId, categories)
 }
 

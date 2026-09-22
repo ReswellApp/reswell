@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import {
   dbGetAdminOrdersDashboard,
   isPostgrestSchemaStaleError,
@@ -23,9 +23,9 @@ export type AdminOrdersStatsResult =
   | { ok: true; data: AdminOrdersDashboardPayload }
   | { ok: false; message: string; status: number }
 
-function getServiceOrThrow(): ReturnType<typeof createServiceRoleClient> | null {
+function getServiceOrThrow(): ReturnType<typeof getDb> | null {
   try {
-    return createServiceRoleClient()
+    return getDb({ consistency: "eventual", purpose: "analytics" })
   } catch {
     return null
   }

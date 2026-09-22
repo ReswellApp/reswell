@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import {
   buildOpenAiCatalogFeed,
   gzipOpenAiCatalogFeed,
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
   let supabase
   try {
-    supabase = createServiceRoleClient()
+    supabase = getDb({ consistency: "eventual", purpose: "analytics" })
   } catch {
     return NextResponse.json(
       { error: "Server config: missing service role" },

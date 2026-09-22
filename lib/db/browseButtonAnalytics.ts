@@ -1,11 +1,11 @@
 import type { BrowseButtonAnalyticsDashboard } from "@/lib/types/browseButtonAnalytics"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 
 export async function fetchAdminBrowseButtonClicksDashboard(input: {
   days: number
 }): Promise<{ ok: true; data: BrowseButtonAnalyticsDashboard } | { ok: false; error: string }> {
   try {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     const { data, error } = await supabase.rpc("admin_browse_button_clicks_dashboard", {
       p_days: input.days,
     })

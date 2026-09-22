@@ -5,7 +5,7 @@ import {
   type SellCatalogSearchCategory,
   type SellCatalogSearchResult,
 } from "@/lib/types/sell-catalog-search"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 
 /** `/sell` cross-category catalog search — keyed by normalized query + category scope. */
 export const SELL_CATALOG_SEARCH_CACHE_TAG = "sell-catalog-search"
@@ -19,7 +19,7 @@ async function loadSellCatalogSearch(
   qNormalized: string,
   categoriesKey: string,
 ): Promise<SellCatalogSearchResult> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const categories = categoriesKey
     .split(",")
     .filter(isSellCatalogSearchCategory)

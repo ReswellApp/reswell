@@ -107,9 +107,11 @@ async function renderListingDetailDynamicGate({
   let listing = prefetchedListing
   let redirectSlug = prefetchedRedirectSlug
 
-  // Signed-in viewers (sellers returning from Edit → Save) must not reuse the
-  // hourly ISR snapshot. Guest/crawler hits keep the prefetch when present.
-  if (user || !listing) {
+  // Live lookup only when the hourly public cache missed or the row is hidden.
+  // Visible catalog PDPs keep the cached row — signed-in is not a reason to
+  // select the full listing again. Edit → Save already revalidates the cache.
+  const needsLiveLookup = !listing || listing.hidden_from_site === true
+  if (needsLiveLookup) {
     const live = await findListingByParam(supabase, listingParam, {
       select: SURFBOARD_LISTING_SELECT,
       section: undefined,
@@ -122,7 +124,7 @@ async function renderListingDetailDynamicGate({
       console.error("[ListingDetailDynamicGate] live lookup failed; keeping cached listing", {
         listingParam,
       })
-    } else if (user || !listing) {
+    } else {
       listing = live.listing as Record<string, unknown> | null
       redirectSlug = live.redirectSlug
     }

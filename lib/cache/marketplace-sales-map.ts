@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache"
 import { loadMarketplaceSalesMap } from "@/lib/services/marketplaceSalesMap"
 import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 
 /** Hourly cache for the public `/map` sales-flow visualization. */
 export const MARKETPLACE_SALES_MAP_CACHE_TAG = "marketplace-sales-map"
@@ -9,7 +9,7 @@ export const MARKETPLACE_SALES_MAP_REVALIDATE_SECONDS = 60 * 60
 
 const getCachedMarketplaceSalesMapPayload = unstable_cache(
   async (): Promise<MarketplaceSalesMapPayload> => {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     return loadMarketplaceSalesMap(supabase)
   },
   ["marketplace-sales-map-v4"],
@@ -21,7 +21,7 @@ const getCachedMarketplaceSalesMapPayload = unstable_cache(
 
 export function getCachedMarketplaceSalesMap(): Promise<MarketplaceSalesMapPayload> {
   if (process.env.NODE_ENV === "development") {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     return loadMarketplaceSalesMap(supabase)
   }
   return getCachedMarketplaceSalesMapPayload()

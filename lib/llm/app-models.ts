@@ -118,7 +118,6 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     enabledEnvVar: "BUSINESS_INTELLIGENCE_ENABLED",
     surfaces: [
       "/admin/intelligence",
-      "GET /api/cron/intelligence-report",
       "POST /api/admin/intelligence/reports",
     ],
     sourceFiles: [
@@ -215,7 +214,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "message_fraud_review",
     name: "Marketplace message fraud review",
     purpose:
-      "Second-pass Gemini review for marketplace DMs that regex already flagged (phone, Venmo/Zelle/cash, email, phishing) or that look like evasion. Confirms fraud or allows innocent wording. Send-path timeout is sub-second; a cron re-reviews pending rows.",
+      "Second-pass Gemini review for marketplace DMs that regex already flagged (phone, Venmo/Zelle/cash, email, phishing) or that look like evasion. Confirms fraud or allows innocent wording. Send-path timeout is sub-second.",
     gatewayFeatureTag: "feature:message-fraud-review",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-flash-lite",
@@ -224,7 +223,6 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     surfaces: [
       "marketplace DMs",
       "/admin/fraud-messages",
-      "GET /api/cron/review-fraud-messages",
     ],
     sourceFiles: [
       "lib/services/messageFraudReview.ts",

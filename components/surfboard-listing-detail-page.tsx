@@ -1,7 +1,6 @@
-import type { ComponentProps } from "react"
+import { Suspense, type ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import {
   Accordion,
   AccordionContent,
@@ -15,7 +14,7 @@ import {
   type ListingDetailPageSharedProps,
 } from "@/lib/listing-detail-page-load"
 import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { computeListingEnrichmentGaps } from "@/lib/sell-flow/listing-enrichment"
@@ -28,7 +27,6 @@ import { orderedListingGalleryImages } from "@/lib/listing-image-display"
 import { resolveListingModelPageHref } from "@/lib/services/modelPage"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import { cn } from "@/lib/utils"
 import {
   ListingSoldDetailNotice,
   ListingSoldOwnerNotice,
@@ -62,18 +60,13 @@ import {
   publicListingCompareAtPriceUsd,
   publicListingListPriceUsd,
 } from "@/lib/utils/public-listing-price"
-import { HomePeerListingScrollTile, HomeListingScrollRow, type HomePeerScrollListing } from "@/components/features/home"
-import { fetchSimilarSurfboardsForListingPdp } from "@/lib/db/listing-detail-similar-surfboards"
 import { formatDistanceToNow } from "date-fns"
-import { ListingPdpRecentSections } from "@/components/features/listings/listing-pdp-recent-sections"
-import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
-import { fetchSignedInPdpRecentlyViewedSurfboards } from "@/lib/services/pdp-recent-strip-listings"
+import {
+  SurfboardListingPdpCatalogStrips,
+  SurfboardListingPdpCatalogStripsFallback,
+} from "@/components/features/listings/surfboard-listing-pdp-catalog-strips"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -88,8 +81,6 @@ import {
 } from "@/lib/listing-public-visibility"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
-
-const SELLER_BOARDS_PDP_LIMIT = 12
 
 export async function SurfboardListingDetailPage(props: ListingDetailPageSharedProps) {
   return renderListingDetailWithGuestFallback(props, renderSurfboardListingDetailPage)
@@ -137,7 +128,6 @@ async function renderSurfboardListingDetailPage({
   const sellerId = board.user_id
   const isSold = board.status === "sold"
   const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
-  const rawBoardType = board.board_type?.trim() || null
   const listPriceNum =
     typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
 
@@ -148,10 +138,8 @@ async function renderSurfboardListingDetailPage({
     error: null,
   }
   let reswellPlatformReviewSummaryRes = { avgRating: 0, reviewCount: 0 }
-  let sellerBoardsRes: { data: Record<string, unknown>[] | null } = { data: [] }
   let soldUsedShipping: boolean = false
   let indexBrand: Awaited<ReturnType<typeof getBrandById>> = null
-  let similarBoardsRaw: Awaited<ReturnType<typeof fetchSimilarSurfboardsForListingPdp>> = []
   let cartHolderCount = 0
   let listingWatchersCount = 0
   try {
@@ -159,87 +147,54 @@ async function renderSurfboardListingDetailPage({
       sellerReviewSummaryRes,
       sellerReviewPreviewRes,
       reswellPlatformReviewSummaryRes,
-      sellerBoardsRes,
       soldUsedShipping,
       indexBrand,
-      similarBoardsRaw,
       [cartHolderCount, listingWatchersCount],
     ] = await Promise.all([
       getCachedSellerReviewSummary(sellerId),
-      listSellerReviewPreviews(createAnonSupabaseClient(), sellerId),
+      listSellerReviewPreviews(getDb({ consistency: "eventual" }), sellerId),
       getCachedReswellPlatformReviewSummary(),
-      supabase
-        .from("listings")
-        .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-        .eq("user_id", sellerId)
-        .eq("status", "active")
-        .eq("section", "surfboards")
-        .eq("hidden_from_site", false)
-        .neq("id", board.id)
-        .order("created_at", { ascending: false })
-        .limit(SELLER_BOARDS_PDP_LIMIT),
       isSold
         ? getCachedSoldSurfboardUsedShippingFulfillment(board.id)
         : Promise.resolve(false as const),
-      brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
-      fetchSimilarSurfboardsForListingPdp(supabase, {
-        excludeListingId: board.id,
-        boardType: rawBoardType,
-        priceUsd: listPriceNum,
-      }),
+      brandId ? getBrandById(getDb({ consistency: "eventual" }), brandId) : Promise.resolve(null),
       Promise.all([
         !isSold ? getListingCartHolderCount(supabase, board.id) : Promise.resolve(0),
         !isSold ? getListingFavoriteCount(supabase, board.id) : Promise.resolve(0),
       ]),
     ])
   } catch (error) {
-    console.error("[surfboard-pdp] catalog extras failed", error)
+    console.error("[surfboard-pdp] hero extras failed", error)
   }
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerBoards = hydrateHomePeerListingRows((sellerBoardsRes.data ?? []) as Record<string, unknown>[])
-  const similarBoards = hydrateHomePeerListingRows(similarBoardsRaw)
-
-  const sellerBoardIds = (sellerBoards ?? []).map((b) => b.id)
-  const similarBoardIds = similarBoards.map((r) => String(r.id))
   const isOwnListing = user?.id === board.user_id
 
-  // Wave 2: everything that depends on the viewer runs in parallel,
-  // with all favorite lookups coalesced into a single query.
   let favoriteRowsRes: { data: { listing_id: string }[] | null } = { data: null }
   let acceptedOffer: Awaited<ReturnType<typeof fetchAcceptedOfferForBuyerListing>> = null
-  let dbRecentListings: Awaited<
-    ReturnType<typeof fetchSignedInPdpRecentlyViewedSurfboards>
-  > | undefined
   try {
-    ;[favoriteRowsRes, acceptedOffer, dbRecentListings] = await Promise.all([
+    ;[favoriteRowsRes, acceptedOffer] = await Promise.all([
       user
         ? supabase
             .from("favorites")
             .select("listing_id")
             .eq("user_id", user.id)
-            .in("listing_id", [board.id, ...sellerBoardIds, ...similarBoardIds])
+            .eq("listing_id", board.id)
         : Promise.resolve({ data: null }),
       user && !isOwnListing && board.status === "active"
         ? fetchAcceptedOfferForBuyerListing(supabase, user.id, board.id)
         : Promise.resolve(null),
-      user
-        ? fetchSignedInPdpRecentlyViewedSurfboards(supabase, user.id, board.id)
-        : Promise.resolve(undefined),
     ])
   } catch (error) {
     console.error("[surfboard-pdp] viewer personalization failed", error)
   }
 
-  const favoritedIds = new Set(
-    (favoriteRowsRes.data ?? []).map((f: { listing_id: string }) => f.listing_id),
+  const isFavorited = (favoriteRowsRes.data ?? []).some(
+    (row: { listing_id: string }) => row.listing_id === board.id,
   )
-  const isFavorited = favoritedIds.has(board.id)
-  const sellerBoardFavoritedIds = sellerBoardIds.filter((id) => favoritedIds.has(id))
-  const similarBoardFavoritedIds = similarBoardIds.filter((id) => favoritedIds.has(id))
 
   const images = orderedListingGalleryImages(board.listing_images)
 
@@ -280,7 +235,7 @@ async function renderSurfboardListingDetailPage({
   const brandModelId = (board as { brand_model_id?: string | null }).brand_model_id?.trim() ?? ""
   const boardSpecsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const boardSpecsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
-  const modelPagePath = await resolveListingModelPageHref(supabase, {
+  const modelPagePath = await resolveListingModelPageHref(getDb({ consistency: "eventual" }), {
     brand: indexBrand,
     brandModelId,
     modelName: modelForSpecs,
@@ -781,54 +736,19 @@ async function renderSurfboardListingDetailPage({
               ) : null}
             </div>
 
-            {similarBoards.length > 0 ? (
-              <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
-                <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
-                  <HomeListingScrollRow uniformCardHeights>
-                    {similarBoards.map((row) => (
-                      <HomePeerListingScrollTile
-                        key={String(row.id)}
-                        listing={row as unknown as HomePeerScrollListing}
-                        userId={user?.id ?? null}
-                        isFavorited={similarBoardFavoritedIds.includes(String(row.id))}
-                      />
-                    ))}
-                  </HomeListingScrollRow>
-                </section>
-              </div>
-            ) : null}
           </div>
 
-          <ListingRelatedContentSection listingId={board.id} variant="embedded" />
-
-          {/* Seller's other boards — full-width horizontal scroll row */}
-          {sellerBoards && sellerBoards.length > 0 && (
-            <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-              <h2 className="mb-8 text-2xl font-bold text-foreground">
-                More boards from this seller
-              </h2>
-              <HomeListingScrollRow uniformCardHeights>
-                {sellerBoards.map((item) => (
-                  <HomePeerListingScrollTile
-                    key={item.id}
-                    listing={item}
-                    userId={user?.id ?? null}
-                    isFavorited={sellerBoardFavoritedIds.includes(item.id)}
-                  />
-                ))}
-              </HomeListingScrollRow>
-            </section>
-          )}
-
-          <ListingPdpRecentSections
-            key={board.id}
-            currentListingId={board.id}
-            viewerUserId={user?.id ?? null}
-            moreListings={[]}
-            padStripWithRecommendations={false}
-            initialDbRecentListings={dbRecentListings}
-          />
+          <Suspense fallback={<SurfboardListingPdpCatalogStripsFallback />}>
+            <SurfboardListingPdpCatalogStrips
+              board={{
+                id: board.id,
+                user_id: board.user_id,
+                price: board.price,
+                board_type: board.board_type,
+              }}
+              viewerUser={user}
+            />
+          </Suspense>
         </div>
       </main>
   )

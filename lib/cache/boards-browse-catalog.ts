@@ -7,7 +7,7 @@ import {
   type BoardsBrowseCategoryTypePage,
 } from "@/lib/db/boards-browse-listings"
 import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { getDb } from "@/lib/supabase/db"
 import { boardsBrowseDailyRotateSeed } from "@/lib/utils/boards-browse-daily-rotate"
 
 /** Hourly cache for nav category views (`/boards`, `/boards?type=…`). */
@@ -23,7 +23,7 @@ async function loadBoardsBrowseCategoryTypePage(
   page: number,
   rotateSeed: string,
 ): Promise<BoardsBrowseCategoryTypePage> {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   return fetchBoardsBrowseCategoryTypePage(supabase, {
     boardType,
     condition,

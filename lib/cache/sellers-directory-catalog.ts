@@ -18,8 +18,7 @@ import {
   type SellerListingForTileMeta,
 } from "@/lib/sellers/directory-tile-meta"
 import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
-import { createAnonSupabaseClient } from "@/lib/supabase/anon"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 
 /** 7-day cache for `/sellers` directory tiles (profiles, tile images, tile metadata). */
 export const SELLERS_DIRECTORY_CACHE_TAG = "sellers-directory"
@@ -54,9 +53,9 @@ export type SellersDirectoryCatalog = {
 
 function createSupabaseForSellersDirectoryCatalog() {
   if (process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
-    return createServiceRoleClient()
+    return getDb({ consistency: "eventual", purpose: "analytics" })
   }
-  return createAnonSupabaseClient()
+  return getDb({ consistency: "eventual" })
 }
 
 function sellerMatchesDirectoryQuery(shop: SellerDirectoryCardShop, term: string): boolean {

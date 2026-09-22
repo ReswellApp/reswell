@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import type { PriceGuideCategorySlug } from "@/lib/price-guide/categories"
 import {
   getPriceGuideBrandPage,
@@ -19,7 +19,7 @@ export const PRICE_GUIDE_REVALIDATE_SECONDS = 60 * 60
 
 const getCachedHubPayload = unstable_cache(
   async (): Promise<PriceGuideHub> => {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     return getPriceGuideHub(supabase)
   },
   ["price-guide-hub-v1"],
@@ -28,7 +28,7 @@ const getCachedHubPayload = unstable_cache(
 
 export function getCachedPriceGuideHub(): Promise<PriceGuideHub> {
   if (process.env.NODE_ENV === "development") {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     return getPriceGuideHub(supabase)
   }
   return getCachedHubPayload()
@@ -38,12 +38,12 @@ export function getCachedPriceGuideCategory(
   category: PriceGuideCategorySlug,
 ): Promise<PriceGuideCategoryPage> {
   if (process.env.NODE_ENV === "development") {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     return getPriceGuideCategoryPage(supabase, category)
   }
   const cached = unstable_cache(
     async (): Promise<PriceGuideCategoryPage> => {
-      const supabase = createServiceRoleClient()
+      const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
       return getPriceGuideCategoryPage(supabase, category)
     },
     ["price-guide-category-v1", category],
@@ -57,12 +57,12 @@ export function getCachedPriceGuideBrand(
   brandSlug: string,
 ): Promise<PriceGuideBrandPage | null> {
   if (process.env.NODE_ENV === "development") {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     return getPriceGuideBrandPage(supabase, category, brandSlug)
   }
   const cached = unstable_cache(
     async (): Promise<PriceGuideBrandPage | null> => {
-      const supabase = createServiceRoleClient()
+      const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
       return getPriceGuideBrandPage(supabase, category, brandSlug)
     },
     ["price-guide-brand-v1", category, brandSlug],
@@ -77,12 +77,12 @@ export function getCachedPriceGuideModel(
   modelSlug: string,
 ): Promise<PriceGuideModelPage | null> {
   if (process.env.NODE_ENV === "development") {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     return getPriceGuideModelPage(supabase, category, brandSlug, modelSlug)
   }
   const cached = unstable_cache(
     async (): Promise<PriceGuideModelPage | null> => {
-      const supabase = createServiceRoleClient()
+      const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
       return getPriceGuideModelPage(supabase, category, brandSlug, modelSlug)
     },
     ["price-guide-model-v1", category, brandSlug, modelSlug],

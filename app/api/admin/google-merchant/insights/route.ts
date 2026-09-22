@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import { buildGoogleMerchantInsights } from "@/lib/services/googleMerchantInsights"
 
 export const dynamic = "force-dynamic"
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     let supabase = gate.ctx.supabase
     try {
-      supabase = createServiceRoleClient()
+      supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     } catch {
       // Local dev without service role — fall back to admin session client.
     }

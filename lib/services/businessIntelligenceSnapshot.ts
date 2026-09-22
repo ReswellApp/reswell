@@ -14,7 +14,7 @@ import {
   runGoogleAnalyticsReport,
 } from "@/lib/services/googleAnalytics"
 import { getSellFunnelAnalyticsForAdmin } from "@/lib/services/sellFunnelAnalytics"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import type {
   BusinessIntelligenceSnapshot,
   IntelligenceAdsSnapshot,
@@ -156,7 +156,7 @@ function pickMostClicked(
 export async function buildBusinessIntelligenceSnapshot(
   period: IntelligencePeriodResolved,
 ): Promise<BusinessIntelligenceSnapshot> {
-  const db = createServiceRoleClient()
+  const db = getDb({ consistency: "eventual", purpose: "analytics" })
   const listingViewsPeriod = period.periodDays <= 10 ? "7d" : "30d"
   const funnelDays = Math.min(90, Math.max(1, period.periodDays))
 

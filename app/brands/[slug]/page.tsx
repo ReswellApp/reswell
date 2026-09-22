@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { BrandProfileView } from "@/components/brands/brand-profile-view"
-import { createAnonSupabaseClient, createClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
+import { createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { parseBrandPageTab } from "@/lib/brands/routes"
 import { listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
@@ -13,7 +14,7 @@ import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 export const revalidate = 3600
 
 export async function generateStaticParams() {
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const { data } = await supabase.from("brands").select("slug")
   return (data ?? []).map((r) => ({ slug: r.slug }))
 }
@@ -25,7 +26,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const supabase = createAnonSupabaseClient()
+  const supabase = getDb({ consistency: "eventual" })
   const brand = await getBrandBySlug(supabase, slug)
   if (!brand) {
     return { title: "Brand — Reswell" }

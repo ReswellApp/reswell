@@ -18,7 +18,7 @@ import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { getCachedTopCitiesDirectory } from "@/lib/cache/top-cities-directory"
 import { cityLandingHref } from "@/lib/city-landing-path"
 import { CITY_SURF_SHOPS, surfShopHref } from "@/lib/city-landing-surf-shops"
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import { CAREERS_GENERAL_APPLY_HREF, careerRoleApplyHref, careerRoleHref, careerRoles } from "@/lib/careers"
 import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import { getAllHelpRetrievalDocuments } from "@/lib/help-center/retrieval-docs"
@@ -32,9 +32,9 @@ const BASE = publicSiteOrigin()
 
 async function supabaseForSitemapPublicRead() {
   if (process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
-    return createServiceRoleClient()
+    return getDb({ consistency: "eventual", purpose: "analytics" })
   }
-  return createClient()
+  return getDb({ consistency: "eventual" })
 }
 
 /**

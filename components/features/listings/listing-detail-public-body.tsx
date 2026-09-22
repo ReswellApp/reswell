@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
 import { FinsListingDetailPage } from "@/components/fins-listing-detail-page"
 import { WetsuitsListingDetailPage } from "@/components/wetsuits-listing-detail-page"
@@ -68,7 +69,9 @@ export function ListingDetailPublicBody({
       ) : null}
       <ListingViewTracker listingId={listing.id} />
       {sectionProps.anonymousPublicView === true ? null : (
-        <ListingDetailAdminBarGate listing={listing} anonymousPublicView={false} />
+        <Suspense fallback={null}>
+          <ListingDetailAdminBarGate listing={listing} anonymousPublicView={false} />
+        </Suspense>
       )}
       {(() => {
         switch (listing.section) {
@@ -99,7 +102,9 @@ export function ListingDetailPublicBody({
         }
       })()}
       {EMBEDDED_RELATED_CONTENT_SECTIONS.has(listing.section) ? null : (
-        <ListingRelatedContentSection listingId={listing.id} />
+        <Suspense fallback={null}>
+          <ListingRelatedContentSection listingId={listing.id} />
+        </Suspense>
       )}
     </>
   )

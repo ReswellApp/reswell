@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { AdminGuard } from './AdminGuard'
 import { AdminAppShell } from '@/components/features/admin/admin-app-shell'
 import { getAdminNavGroupsForUser } from '@/lib/admin-nav'
-import { fetchAdminNavBadgeCounts } from '@/lib/db/adminNavCounts'
+import { getCachedAdminNavBadgeCounts } from '@/lib/cache/admin-nav-badge-counts'
 import type { AdminShellUser } from '@/lib/admin/admin-shell-user'
 
 export default async function AdminLayout({
@@ -34,7 +34,7 @@ export default async function AdminLayout({
   }
 
   const navGroups = getAdminNavGroupsForUser(isAdmin)
-  const navBadgeCounts = await fetchAdminNavBadgeCounts(supabase, {
+  const navBadgeCounts = await getCachedAdminNavBadgeCounts(supabase, {
     includeBrandRequests: isAdmin,
   })
 

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { getDb } from "@/lib/supabase/db"
 
 /** Tight band first; widen if marketplace is sparse so the PDP still surfaces results. */
 const PRICE_BANDS: readonly { minFactor: number; maxFactor: number }[] = [
@@ -20,7 +21,7 @@ export type SimilarSurfboardListingRow = Record<string, unknown>
  * Used for PDP “similar category + similar price” horizontal strips.
  */
 export async function fetchSimilarSurfboardsForListingPdp(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   opts: {
     excludeListingId: string
     boardType: string | null | undefined
@@ -38,6 +39,7 @@ export async function fetchSimilarSurfboardsForListingPdp(
   if (price <= 0) return []
 
   const limit = Math.min(Math.max(opts.limit ?? 16, 1), 24)
+  const supabase = getDb({ consistency: "eventual" })
 
   for (const { minFactor, maxFactor } of PRICE_BANDS) {
     const low = Math.max(0, Math.floor(price * minFactor))
