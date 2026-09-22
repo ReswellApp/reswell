@@ -7,8 +7,9 @@ export interface SellerProfileSitemapEntry {
 }
 
 /**
- * Public seller shops (`/sellers/[slug]`) — same eligibility signal as the sellers directory:
- * shops (`is_shop`) or anyone with at least one active, visible peer marketplace listing.
+ * Public seller profile URLs (`/sellers/[slug]`). Includes shop accounts and anyone
+ * with an active, visible peer marketplace listing. The `/sellers` directory itself
+ * only lists profiles that currently have an active listing.
  * Reswell retail (`section = new`) is excluded.
  */
 export async function fetchSellerProfileSitemapEntries(

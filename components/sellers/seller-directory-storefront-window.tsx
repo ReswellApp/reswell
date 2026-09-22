@@ -104,7 +104,7 @@ export function SellerDirectoryStorefrontWindow({
   return (
     <Link
       href={href}
-      className="relative block aspect-[4/5] w-full overflow-hidden rounded-t-xl outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+      className="relative block aspect-[4/3] w-full overflow-hidden rounded-t-xl outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
     >
       {hasImages ? (
         <StorefrontMosaic slots={slots} imagePriority={imagePriority} />
@@ -124,9 +124,9 @@ export function SellerDirectoryStorefrontWindow({
         </div>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-2.5 pb-2.5 pt-16">
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-2.5 pb-2 pt-10">
         <div className="flex items-end gap-2">
-          <Avatar className="h-9 w-9 shrink-0 border-2 border-white/90 shadow-sm sm:h-10 sm:w-10">
+          <Avatar className="h-8 w-8 shrink-0 border-2 border-white/90 shadow-sm sm:h-9 sm:w-9">
             {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
             <AvatarFallback className="bg-white/15 text-xs font-semibold text-white">
               {label.charAt(0).toUpperCase()}

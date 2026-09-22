@@ -61,6 +61,14 @@ export type ProfileShopTabCopy = {
   saved: string
   seeMyStore: string
   sellerBannerTitle: string
+  tileBannerTitle: string
+  tileBannerHint: string
+  changeTileBanner: string
+  editTileBanner: string
+  removeTileBanner: string
+  removingTileBanner: string
+  editTileBannerTitle: string
+  editTileBannerDescription: string
 }
 
 interface ProfileShopTabProps {
@@ -78,12 +86,19 @@ interface ProfileShopTabProps {
   bannerPreviewUrl?: string | null
   bannerSavedFlash: boolean
   bannerCropRequestKey?: number
+  uploadingTileBanner: boolean
+  removingTileBanner: boolean
+  tileBannerPreviewUrl?: string | null
+  tileBannerSavedFlash: boolean
+  tileBannerCropRequestKey?: number
   onProfileChange: (patch: Partial<DashboardProfileRow>) => void
   onSave: () => void
   onAvatarUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
   onRemoveAvatar: () => void
   onBannerUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
   onRemoveBanner: () => void
+  onTileBannerUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onRemoveTileBanner: () => void
 }
 
 export function ProfileShopTab({
@@ -101,17 +116,25 @@ export function ProfileShopTab({
   bannerPreviewUrl = null,
   bannerSavedFlash,
   bannerCropRequestKey = 0,
+  uploadingTileBanner,
+  removingTileBanner,
+  tileBannerPreviewUrl = null,
+  tileBannerSavedFlash,
+  tileBannerCropRequestKey = 0,
   onProfileChange,
   onSave,
   onAvatarUpload,
   onRemoveAvatar,
   onBannerUpload,
   onRemoveBanner,
+  onTileBannerUpload,
+  onRemoveTileBanner,
 }: ProfileShopTabProps) {
   const username = profile.seller_slug?.trim() || "—"
   const profilePhotoUrl = profile.shop_logo_url || profile.avatar_url
   const [avatarCropOpen, setAvatarCropOpen] = useState(false)
   const [bannerCropOpen, setBannerCropOpen] = useState(false)
+  const [tileBannerCropOpen, setTileBannerCropOpen] = useState(false)
 
   useEffect(() => {
     if (avatarCropRequestKey > 0 && profilePhotoUrl?.trim()) {
@@ -125,6 +148,12 @@ export function ProfileShopTab({
     }
   }, [bannerCropRequestKey, profile.shop_banner_url])
 
+  useEffect(() => {
+    if (tileBannerCropRequestKey > 0 && profile.shop_tile_banner_url?.trim()) {
+      setTileBannerCropOpen(true)
+    }
+  }, [tileBannerCropRequestKey, profile.shop_tile_banner_url])
+
   function handleAvatarCropSaved(focal: ProfileBannerFocal) {
     onProfileChange({
       avatar_focal_x_pct: focal.x,
@@ -136,6 +165,13 @@ export function ProfileShopTab({
     onProfileChange({
       shop_banner_focal_x_pct: focal.x,
       shop_banner_focal_y_pct: focal.y,
+    })
+  }
+
+  function handleTileBannerCropSaved(focal: ProfileBannerFocal) {
+    onProfileChange({
+      shop_tile_banner_focal_x_pct: focal.x,
+      shop_tile_banner_focal_y_pct: focal.y,
     })
   }
 
@@ -373,6 +409,90 @@ export function ProfileShopTab({
             copy={{
               title: copy.editBannerTitle,
               description: copy.editBannerDescription,
+              hint: copy.editBannerHint,
+              cancel: copy.editBannerCancel,
+              save: copy.editBannerSave,
+              saving: copy.editBannerSaving,
+            }}
+          />
+        ) : null}
+      </div>
+
+      <div className="space-y-3 border-t border-neutral-200/80 pt-6">
+        <div>
+          <p className={profileSectionTitleClass}>{copy.tileBannerTitle}</p>
+          <p className={cn(profileSectionHintClass, "mt-1")}>{copy.tileBannerHint}</p>
+        </div>
+        <div className="overflow-hidden rounded-xl">
+          <div
+            className="relative aspect-[4/3] w-full bg-neutral-100"
+          >
+            {profile.shop_tile_banner_url || tileBannerPreviewUrl ? (
+              <ProfileBannerImage
+                bannerUrl={profile.shop_tile_banner_url}
+                previewSrc={tileBannerPreviewUrl}
+                focalX={profile.shop_tile_banner_focal_x_pct}
+                focalY={profile.shop_tile_banner_focal_y_pct}
+                sizes="(max-width: 768px) 100vw, 640px"
+              />
+            ) : null}
+            <input
+              id="shop-tile-banner-upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+              className="sr-only"
+              onChange={onTileBannerUpload}
+              disabled={uploadingTileBanner || removingTileBanner}
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          {tileBannerSavedFlash ? <span className="font-medium text-emerald-600">Updated</span> : null}
+          <label
+            htmlFor="shop-tile-banner-upload"
+            className={cn(
+              "cursor-pointer font-medium text-primary hover:underline",
+              (uploadingTileBanner || removingTileBanner) && "pointer-events-none opacity-60",
+            )}
+          >
+            {uploadingTileBanner ? copy.uploading : copy.changeTileBanner}
+          </label>
+          {profile.shop_tile_banner_url ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setTileBannerCropOpen(true)}
+                disabled={uploadingTileBanner || removingTileBanner}
+                className="font-medium text-primary hover:underline disabled:opacity-60"
+              >
+                {copy.editTileBanner}
+              </button>
+              <button
+                type="button"
+                onClick={onRemoveTileBanner}
+                disabled={uploadingTileBanner || removingTileBanner}
+                className="font-medium text-muted-foreground hover:text-destructive hover:underline disabled:opacity-60"
+              >
+                {removingTileBanner ? copy.removingTileBanner : copy.removeTileBanner}
+              </button>
+            </>
+          ) : null}
+        </div>
+
+        {profile.shop_tile_banner_url ? (
+          <ProfileBannerCropDialog
+            open={tileBannerCropOpen}
+            onOpenChange={setTileBannerCropOpen}
+            bannerUrl={profile.shop_tile_banner_url}
+            previewSrc={tileBannerPreviewUrl}
+            initialFocalX={profile.shop_tile_banner_focal_x_pct}
+            initialFocalY={profile.shop_tile_banner_focal_y_pct}
+            persistPath="/api/profile/tile-banner"
+            frameClassName="aspect-[4/3]"
+            onSaved={handleTileBannerCropSaved}
+            copy={{
+              title: copy.editTileBannerTitle,
+              description: copy.editTileBannerDescription,
               hint: copy.editBannerHint,
               cancel: copy.editBannerCancel,
               save: copy.editBannerSave,

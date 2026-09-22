@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import type { DragEvent, SyntheticEvent } from "react"
+import type { CSSProperties, DragEvent, SyntheticEvent } from "react"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
@@ -9,6 +9,7 @@ type ListingMediaFillImageProps = {
   src: string
   alt: string
   className?: string
+  style?: CSSProperties
   sizes?: string
   priority?: boolean
   fetchPriority?: "high" | "low" | "auto"
@@ -30,6 +31,7 @@ export function ListingMediaFillImage({
   src,
   alt,
   className,
+  style,
   sizes,
   priority = false,
   fetchPriority,
@@ -55,6 +57,7 @@ export function ListingMediaFillImage({
         onLoad={onLoad}
         onError={onError}
         className={cn("absolute inset-0 h-full w-full", className)}
+        style={style}
       />
     )
   }
@@ -76,6 +79,7 @@ export function ListingMediaFillImage({
       onLoad={onLoad}
       onError={onError}
       className={className}
+      style={style}
     />
   )
 }

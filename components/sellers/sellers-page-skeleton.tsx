@@ -19,16 +19,15 @@ export function SellerDirectoryCardSkeleton({ index = 0 }: { index?: number }) {
       className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
       aria-hidden
     >
-      <div className="relative aspect-[4/5] w-full">
+      <div className="relative aspect-[4/3] w-full">
         <ListingTileShimmer className="h-full w-full rounded-none" />
-        <div className="absolute inset-x-0 bottom-0 flex items-end gap-2 px-2.5 pb-2.5">
-          <ListingTileShimmer className="h-10 w-10 shrink-0 rounded-full" />
+        <div className="absolute inset-x-0 bottom-0 flex items-end gap-2 px-2.5 pb-2">
+          <ListingTileShimmer className="h-8 w-8 shrink-0 rounded-full" />
           <ListingTileShimmer className={cn("mb-1 h-3.5", titleWidth)} />
         </div>
       </div>
-      <div className="space-y-2 px-2.5 pb-2.5 pt-2">
+      <div className="px-2.5 py-2">
         <ListingTileShimmer className="h-3 w-28" />
-        <ListingTileShimmer className="h-3 w-20" />
       </div>
     </div>
   )

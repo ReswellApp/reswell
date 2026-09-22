@@ -4,9 +4,8 @@ import { getElasticsearchClient } from "./client"
 
 /**
  * Sellers (shop + seller profile) search index for the `/sellers` directory dropdown.
- * A document represents a `profiles` row that qualifies as a seller — either:
- *   - `is_shop = true`, or
- *   - Has at least one active, visible peer marketplace listing.
+ * A document represents a `profiles` row with at least one active, visible peer
+ * marketplace listing. Shop accounts without a live listing are not sellers here.
  *
  * Reswell retail (`section = new`) does not qualify a profile as a marketplace seller.
  * Profiles that stop qualifying are removed from the index.
@@ -163,7 +162,7 @@ export function profileRowToSellerDoc(
 const SELLER_PROFILE_FIELDS =
   "id, seller_slug, display_name, shop_name, shop_description, bio, city, shop_address, is_shop, shop_verified" as const
 
-/** A profile is a seller if they are a shop OR currently have any active, visible listing. */
+/** True when the profile has an active, visible peer marketplace listing. */
 export async function userHasActiveListings(
   supabase: SupabaseClient,
   userId: string,
@@ -204,9 +203,8 @@ export async function syncProfileToSellerIndex(
 
   const row = data as SellerProfileRow
   const hasListings = await userHasActiveListings(supabase, profileId)
-  const eligible = Boolean(row.is_shop) || hasListings
 
-  if (!eligible || !row.seller_slug) {
+  if (!hasListings || !row.seller_slug) {
     await deleteSellerDocument(profileId)
     return
   }
@@ -279,6 +277,7 @@ export async function searchSellerIdsFromElasticsearch(
         bool: {
           should,
           minimum_should_match: 1,
+          filter: [{ term: { has_active_listings: true } }],
         },
       },
       sort: [

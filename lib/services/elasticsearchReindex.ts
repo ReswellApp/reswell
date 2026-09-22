@@ -434,8 +434,7 @@ export async function reindexElasticsearchFromSupabase(
       for (const row of sellerRows as SellerProfileRow[]) {
         try {
           const hasListings = activeListingUserIds.has(row.id)
-          const eligible = Boolean(row.is_shop) || hasListings
-          if (!eligible || !row.seller_slug) {
+          if (!hasListings || !row.seller_slug) {
             await deleteSellerDocument(row.id)
             sellersRemoved++
             continue

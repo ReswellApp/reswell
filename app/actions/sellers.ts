@@ -55,7 +55,7 @@ function normalizeRow(row: Record<string, unknown>): SellerSuggestRow {
 }
 
 /**
- * Search the seller directory — shops and sellers with active inventory or sold surfboards.
+ * Search the seller directory — sellers with at least one active listing.
  * Returns profile rows only (never listings / brands / categories).
  *
  * Uses Elasticsearch when configured; otherwise falls back to Supabase `ilike` with the

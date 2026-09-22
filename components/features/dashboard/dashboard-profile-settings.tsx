@@ -67,6 +67,11 @@ export function DashboardProfileSettings({
   const [bannerSavedFlash, setBannerSavedFlash] = useState(false)
   const [avatarCropRequestKey, setAvatarCropRequestKey] = useState(0)
   const [bannerCropRequestKey, setBannerCropRequestKey] = useState(0)
+  const [uploadingTileBanner, setUploadingTileBanner] = useState(false)
+  const [removingTileBanner, setRemovingTileBanner] = useState(false)
+  const [tileBannerPreviewUrl, setTileBannerPreviewUrl] = useState<string | null>(null)
+  const [tileBannerSavedFlash, setTileBannerSavedFlash] = useState(false)
+  const [tileBannerCropRequestKey, setTileBannerCropRequestKey] = useState(0)
   const [resetPasswordSending, setResetPasswordSending] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -90,6 +95,14 @@ export function DashboardProfileSettings({
       }
     }
   }, [bannerPreviewUrl])
+
+  useEffect(() => {
+    return () => {
+      if (tileBannerPreviewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(tileBannerPreviewUrl)
+      }
+    }
+  }, [tileBannerPreviewUrl])
 
   useEffect(() => {
     const applyHash = () => {
@@ -361,6 +374,124 @@ export function DashboardProfileSettings({
     }
   }
 
+  async function handleTileBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+
+    if (file.size > PROFILE_BANNER_MAX_INPUT_BYTES) {
+      setTileBannerPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
+      toast.error(
+        `Image must be under ${Math.round(PROFILE_BANNER_MAX_INPUT_BYTES / (1024 * 1024))}MB`,
+      )
+      e.target.value = ""
+      return
+    }
+
+    const localPreview = URL.createObjectURL(file)
+    setTileBannerPreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+      return localPreview
+    })
+
+    setUploadingTileBanner(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const res = await fetch("/api/profile/tile-banner", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      })
+
+      const json = (await res.json()) as {
+        data?: { bannerUrl: string; focalX?: number; focalY?: number }
+        error?: string
+      }
+
+      if (!res.ok) {
+        throw new Error(json.error || "Upload failed")
+      }
+
+      const bannerUrl = json.data?.bannerUrl
+      if (!bannerUrl) throw new Error("Missing tile banner URL")
+
+      setProfile({
+        ...profile,
+        shop_tile_banner_url: bannerUrl,
+        shop_tile_banner_focal_x_pct: json.data?.focalX ?? 50,
+        shop_tile_banner_focal_y_pct: json.data?.focalY ?? 50,
+      })
+      setTileBannerCropRequestKey((key) => key + 1)
+      setTileBannerSavedFlash(true)
+      window.setTimeout(() => setTileBannerSavedFlash(false), 2000)
+      router.refresh()
+
+      const remote = new window.Image()
+      const clearPreview = () => {
+        setTileBannerPreviewUrl((prev) => {
+          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+          return null
+        })
+      }
+      remote.onload = clearPreview
+      remote.onerror = clearPreview
+      remote.src = profileMediaDisplaySrc(bannerUrl)
+    } catch (err: unknown) {
+      setTileBannerPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
+      const message = err instanceof Error ? err.message : "Failed to upload tile photo"
+      console.error("Tile banner upload error:", message)
+      toast.error(message)
+    } finally {
+      setUploadingTileBanner(false)
+      e.target.value = ""
+    }
+  }
+
+  async function handleRemoveTileBanner() {
+    if (!profile?.shop_tile_banner_url) return
+
+    setRemovingTileBanner(true)
+    try {
+      const res = await fetch("/api/profile/tile-banner", {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      const json = (await res.json()) as { data?: { removed: boolean }; error?: string }
+
+      if (!res.ok) {
+        throw new Error(json.error || "Remove failed")
+      }
+
+      setTileBannerPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
+      setProfile({
+        ...profile,
+        shop_tile_banner_url: null,
+        shop_tile_banner_focal_x_pct: null,
+        shop_tile_banner_focal_y_pct: null,
+      })
+      setTileBannerSavedFlash(true)
+      window.setTimeout(() => setTileBannerSavedFlash(false), 2000)
+      router.refresh()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to remove tile photo"
+      console.error("Tile banner remove error:", message)
+      toast.error(message)
+    } finally {
+      setRemovingTileBanner(false)
+    }
+  }
+
   async function handleSendPasswordReset() {
     const acctStrings = t("settings").account
     if (!profile?.email) {
@@ -467,6 +598,14 @@ export function DashboardProfileSettings({
             saved: p.saved,
             seeMyStore: p.seeMyStore,
             sellerBannerTitle: p.sellerBannerTitle,
+            tileBannerTitle: p.tileBannerTitle,
+            tileBannerHint: p.tileBannerHint,
+            changeTileBanner: p.changeTileBanner,
+            editTileBanner: p.editTileBanner,
+            removeTileBanner: p.removeTileBanner,
+            removingTileBanner: p.removingTileBanner,
+            editTileBannerTitle: p.editTileBannerTitle,
+            editTileBannerDescription: p.editTileBannerDescription,
           }}
           sellerStoreHref={sellerStoreHref}
           saving={saving}
@@ -480,12 +619,19 @@ export function DashboardProfileSettings({
           bannerPreviewUrl={bannerPreviewUrl}
           bannerSavedFlash={bannerSavedFlash}
           bannerCropRequestKey={bannerCropRequestKey}
+          uploadingTileBanner={uploadingTileBanner}
+          removingTileBanner={removingTileBanner}
+          tileBannerPreviewUrl={tileBannerPreviewUrl}
+          tileBannerSavedFlash={tileBannerSavedFlash}
+          tileBannerCropRequestKey={tileBannerCropRequestKey}
           onProfileChange={(patch) => setProfile({ ...profile, ...patch })}
           onSave={() => void handleSave()}
           onAvatarUpload={(e) => void handleAvatarUpload(e)}
           onRemoveAvatar={() => void handleRemoveAvatar()}
           onBannerUpload={(e) => void handleBannerUpload(e)}
           onRemoveBanner={() => void handleRemoveBanner()}
+          onTileBannerUpload={(e) => void handleTileBannerUpload(e)}
+          onRemoveTileBanner={() => void handleRemoveTileBanner()}
         />
       ) : null}
 

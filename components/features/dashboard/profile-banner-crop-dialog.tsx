@@ -32,6 +32,10 @@ type ProfileBannerCropDialogProps = {
   initialFocalX?: number | null
   initialFocalY?: number | null
   onSaved?: (focal: ProfileBannerFocal) => void
+  /** Crop save endpoint. Defaults to the profile header banner. */
+  persistPath?: string
+  /** Preview frame. Profile header is 4:1; the directory tile is 4:3. */
+  frameClassName?: string
   copy?: {
     title: string
     description: string
@@ -59,6 +63,8 @@ export function ProfileBannerCropDialog({
   initialFocalX,
   initialFocalY,
   onSaved,
+  persistPath = "/api/profile/banner",
+  frameClassName = "aspect-[4/1]",
   copy = DEFAULT_COPY,
 }: ProfileBannerCropDialogProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -132,7 +138,7 @@ export function ProfileBannerCropDialog({
   async function handleSave() {
     setSaving(true)
     try {
-      const res = await fetch("/api/profile/banner", {
+      const res = await fetch(persistPath, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -172,7 +178,8 @@ export function ProfileBannerCropDialog({
           <div
             ref={containerRef}
             className={cn(
-              "relative aspect-[4/1] w-full overflow-hidden rounded-xl bg-neutral-900 touch-none",
+              "relative w-full overflow-hidden rounded-xl bg-neutral-900 touch-none",
+              frameClassName,
               naturalSize ? "cursor-grab active:cursor-grabbing" : "cursor-wait",
             )}
             onPointerDown={onPointerDown}

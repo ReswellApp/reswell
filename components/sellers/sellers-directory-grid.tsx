@@ -8,23 +8,20 @@ import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 
 export type SellerDirectoryGridItem = {
   shop: SellerDirectoryCardShop
-  thumbs: SellerDirectoryListingThumb[]
+  thumbs?: SellerDirectoryListingThumb[]
   tileMeta: SellerDirectoryTileMeta
   avgRating: number
   reviewCount: number
   inventoryCount: number
   avatarSrc?: string
   mosaicSlots?: SellerDirectoryMosaicSlot[]
-  initialFollowing: boolean
-  isOwnProfile: boolean
 }
 
 type SellersDirectoryGridProps = {
   items: SellerDirectoryGridItem[]
-  isLoggedIn: boolean
 }
 
-export function SellersDirectoryGrid({ items, isLoggedIn }: SellersDirectoryGridProps) {
+export function SellersDirectoryGrid({ items }: SellersDirectoryGridProps) {
   return (
     <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((item, index) => (
@@ -38,9 +35,6 @@ export function SellersDirectoryGrid({ items, isLoggedIn }: SellersDirectoryGrid
             inventoryCount={item.inventoryCount}
             avatarSrc={item.avatarSrc}
             mosaicSlots={item.mosaicSlots}
-            initialFollowing={item.initialFollowing}
-            isLoggedIn={isLoggedIn}
-            isOwnProfile={item.isOwnProfile}
             imagePriority={index < 4}
           />
         </li>

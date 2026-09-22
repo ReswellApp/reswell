@@ -62,6 +62,14 @@ type Translations = {
       seeMyStore: string
       saved: string
       sellerBannerTitle: string
+      tileBannerTitle: string
+      tileBannerHint: string
+      changeTileBanner: string
+      editTileBanner: string
+      removeTileBanner: string
+      removingTileBanner: string
+      editTileBannerTitle: string
+      editTileBannerDescription: string
       save: string
       saving: string
     }
@@ -203,6 +211,14 @@ const en: Translations = {
       seeMyStore: 'See my store',
       saved: 'Saved',
       sellerBannerTitle: 'Shop banner',
+      tileBannerTitle: 'Directory tile',
+      tileBannerHint: 'Photo on your tile in the sellers directory. Separate from your profile banner.',
+      changeTileBanner: 'Upload tile photo',
+      editTileBanner: 'Edit tile photo',
+      removeTileBanner: 'Remove tile photo',
+      removingTileBanner: 'Removing...',
+      editTileBannerTitle: 'Edit directory tile',
+      editTileBannerDescription: 'Drag the image to choose what shows on your sellers directory tile.',
       save: 'Save',
       saving: 'Saving...',
     },
@@ -353,6 +369,14 @@ const es: Translations = {
       seeMyStore: 'Ver mi tienda',
       saved: 'Guardado',
       sellerBannerTitle: 'Banner de la tienda',
+      tileBannerTitle: 'Ficha del directorio',
+      tileBannerHint: 'Foto de tu ficha en el directorio de vendedores. Es distinta del banner de tu perfil.',
+      changeTileBanner: 'Subir foto de la ficha',
+      editTileBanner: 'Editar foto de la ficha',
+      removeTileBanner: 'Quitar foto de la ficha',
+      removingTileBanner: 'Quitando...',
+      editTileBannerTitle: 'Editar ficha del directorio',
+      editTileBannerDescription: 'Arrastra la imagen para elegir qué se muestra en tu ficha del directorio.',
       save: 'Guardar',
       saving: 'Guardando...',
     },

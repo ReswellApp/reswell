@@ -8,6 +8,7 @@ import {
   buildSellerDirectoryMosaicSlots,
   type SellerDirectoryMosaicSlot,
 } from "@/lib/sellers/directory-mosaic-images"
+import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { fetchSellersDirectoryEligibleSellerIds } from "@/lib/sellers/directory-eligibility"
 import { orderSellersWithDemotions } from "@/lib/sellers/directory-ranking"
@@ -28,7 +29,7 @@ const THUMB_PER_SELLER = 4
 const LISTINGS_FETCH_CAP = 4000
 
 const profilePublicFields =
-  "id, seller_slug, display_name, avatar_url, avatar_focal_x_pct, avatar_focal_y_pct, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
+  "id, seller_slug, display_name, avatar_url, avatar_focal_x_pct, avatar_focal_y_pct, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_tile_banner_url, shop_tile_banner_focal_x_pct, shop_tile_banner_focal_y_pct, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
 
 type ListingDirectoryRow = SellerDirectoryListingThumb &
   SellerListingForTileMeta & {
@@ -120,7 +121,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
     supabase
       .from("listings")
       .select(
-        "id, user_id, title, price, slug, section, created_at, city, state, shipping_available, listing_images (url, thumbnail_url, is_primary)",
+        "id, user_id, title, price, slug, section, created_at, city, state, shipping_available, primary_image_url, primary_thumbnail_url",
       )
       .in("user_id", orderedSellerIds)
       .eq("status", "active")
@@ -132,7 +133,12 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
     supabase.from("reviews").select("reviewed_id, rating").in("reviewed_id", orderedSellerIds),
   ])
 
-  const accumulateDirectoryListingRow = (row: ListingDirectoryRow) => {
+  const accumulateDirectoryListingRow = (
+    row: ListingDirectoryRow & {
+      primary_image_url?: string | null
+      primary_thumbnail_url?: string | null
+    },
+  ) => {
     const metaRow: SellerListingForTileMeta = {
       city: row.city ?? null,
       state: row.state ?? null,
@@ -145,7 +151,17 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
 
     const cur = thumbsBySeller.get(row.user_id) ?? []
     if (cur.length < THUMB_PER_SELLER) {
-      cur.push(row)
+      cur.push({
+        id: row.id,
+        title: row.title,
+        price: row.price,
+        slug: row.slug,
+        section: row.section,
+        listing_images: listingImagesFromPrimaryFields(
+          row.primary_image_url,
+          row.primary_thumbnail_url,
+        ),
+      })
       thumbsBySeller.set(row.user_id, cur)
     }
   }
@@ -166,7 +182,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
     const { data: soldRows, error: soldError } = await supabase
       .from("listings")
       .select(
-        "id, user_id, title, price, slug, section, created_at, city, state, shipping_available, listing_images (url, thumbnail_url, is_primary)",
+        "id, user_id, title, price, slug, section, created_at, city, state, shipping_available, primary_image_url, primary_thumbnail_url",
       )
       .in("user_id", sellerIdsNeedingSoldListings)
       .eq("status", "sold")
@@ -216,7 +232,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
 
 export const getCachedSellersDirectoryCatalog = unstable_cache(
   loadSellersDirectoryCatalogUncached,
-  ["sellers-directory-catalog-v3"],
+  ["sellers-directory-catalog-v7"],
   {
     revalidate: SELLERS_DIRECTORY_REVALIDATE_SECONDS,
     tags: [SELLERS_DIRECTORY_CACHE_TAG],

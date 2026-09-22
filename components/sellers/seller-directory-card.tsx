@@ -35,6 +35,9 @@ export type SellerDirectoryCardShop = {
   shop_name: string | null
   shop_description: string | null
   shop_banner_url: string | null
+  shop_tile_banner_url?: string | null
+  shop_tile_banner_focal_x_pct?: number | string | null
+  shop_tile_banner_focal_y_pct?: number | string | null
   shop_logo_url: string | null
   shop_verified: boolean | null
   shop_address: string | null
@@ -43,14 +46,11 @@ export type SellerDirectoryCardShop = {
 
 type SellerDirectoryCardProps = {
   shop: SellerDirectoryCardShop
-  thumbs: SellerDirectoryListingThumb[]
+  thumbs?: SellerDirectoryListingThumb[]
   tileMeta: SellerDirectoryTileMeta
   avgRating: number
   reviewCount: number
   inventoryCount: number
-  initialFollowing: boolean
-  isLoggedIn: boolean
-  isOwnProfile: boolean
   /** Pre-resolved from the sellers directory cache when available. */
   avatarSrc?: string
   mosaicSlots?: SellerDirectoryMosaicSlot[]
@@ -80,9 +80,6 @@ export function SellerDirectoryCard({
   avgRating,
   reviewCount,
   inventoryCount,
-  initialFollowing,
-  isLoggedIn,
-  isOwnProfile,
   avatarSrc: avatarSrcProp,
   mosaicSlots: mosaicSlotsProp,
   imagePriority = false,
@@ -99,7 +96,7 @@ export function SellerDirectoryCard({
     <article
       className={cn(
         listingProductCardSolidClassName,
-        "flex h-full min-w-0 flex-col [content-visibility:auto] [contain-intrinsic-size:auto_28rem]",
+        "flex h-full min-w-0 flex-col [content-visibility:auto] [contain-intrinsic-size:auto_16rem]",
         className,
       )}
     >
@@ -121,41 +118,39 @@ export function SellerDirectoryCard({
             sellerId={shop.id}
             sellerSlug={shop.seller_slug}
             sellerName={label}
-            initialFollowing={initialFollowing}
-            isLoggedIn={isLoggedIn}
-            isOwnProfile={isOwnProfile}
           />
         </div>
       </div>
 
       {tileMeta.specialtyLine || stockLine || reviewCount > 0 || tileMeta.offersShipping ? (
-        <div className="flex flex-1 flex-col gap-1.5 px-2.5 pb-2.5 pt-2">
+        <div className="flex items-center gap-1.5 px-2.5 py-2">
           {tileMeta.specialtyLine || stockLine ? (
-            <p className="truncate text-[11px] font-medium leading-snug text-muted-foreground">
+            <p className="min-w-0 flex-1 truncate text-[11px] font-medium leading-none text-muted-foreground">
               {[tileMeta.specialtyLine, stockLine].filter(Boolean).join(" · ")}
             </p>
-          ) : null}
+          ) : (
+            <span className="min-w-0 flex-1" />
+          )}
 
           {reviewCount > 0 ? (
-            <div
-              className="flex min-w-0 items-center gap-1"
+            <span
+              className="inline-flex shrink-0 items-center gap-0.5"
               role="img"
               aria-label={`${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
             >
-              <SellerRatingStarRow value={avgRating} size="sm" className="shrink-0" />
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">({reviewCount})</span>
-            </div>
+              <SellerRatingStarRow value={avgRating} size="sm" />
+              <span className="text-[11px] tabular-nums text-muted-foreground">{reviewCount}</span>
+            </span>
           ) : null}
 
           {tileMeta.offersShipping ? (
-            <div className="flex items-center gap-1.5">
-              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
-                <Truck className="h-3 w-3" aria-hidden />
-              </span>
-              <p className="truncate text-[11px] font-medium leading-snug text-muted-foreground">
-                {tileMeta.shippingLine}
-              </p>
-            </div>
+            <span
+              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-primary"
+              title={tileMeta.shippingLine ?? "Ships"}
+              aria-label={tileMeta.shippingLine ?? "Ships"}
+            >
+              <Truck className="h-3 w-3" aria-hidden />
+            </span>
           ) : null}
         </div>
       ) : null}
