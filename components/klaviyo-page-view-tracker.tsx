@@ -1,36 +1,21 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import React from "react"
 
 import { useDebouncedEffect } from "@/hooks/use-debounced-effect"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
-import { hasMarketingConsent } from "@/lib/analytics/marketing-consent"
+import { sendKlaviyoClientPageView } from "@/lib/analytics/klaviyo-client-page-view"
+import { shouldTrackPublicPageView } from "@/lib/analytics/public-page-view"
 
-const STORAGE_KEY = "rw_klaviyo_anon_id"
 /** Coalesce rapid client navigations (filter toggles, back/forward) into one beacon. */
 const PAGE_VIEW_DEBOUNCE_MS = 800
-
-function getOrCreateAnonymousId(): string {
-  try {
-    let id = localStorage.getItem(STORAGE_KEY)
-    if (!id || id.length < 8) {
-      id =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `anon_${Math.random().toString(36).slice(2)}_${Date.now()}`
-      localStorage.setItem(STORAGE_KEY, id)
-    }
-    return id
-  } catch {
-    return `sess_${Math.random().toString(36).slice(2)}_${Date.now()}`
-  }
-}
 
 /**
  * Sends a Klaviyo event on each App Router navigation (including first paint).
  * Skips `/admin` routes entirely.
- * Logged-out users need `anonymous_id` → stable id in localStorage.
+ *
+ * The site shell uses {@link MarketingPageViewTracker} instead so Klaviyo / Meta /
+ * OpenAI share one pathname subscriber. This standalone tracker stays for reuse.
  */
 export function KlaviyoPageViewTracker(): null {
   const pathname = usePathname()
@@ -39,21 +24,8 @@ export function KlaviyoPageViewTracker(): null {
 
   useDebouncedEffect(
     () => {
-      if (!pathname || !pathname.startsWith("/")) return
-      if (pathname === "/admin" || pathname.startsWith("/admin/")) return
-      if (!hasMarketingConsent()) return
-
-      const anonId = getOrCreateAnonymousId()
-      void fetch("/api/integrations/klaviyo/page-view", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        keepalive: true,
-        body: JSON.stringify({
-          pathname,
-          ...(searchString ? { search: searchString } : {}),
-          anonymous_id: anonId,
-        }),
-      }).catch(() => {})
+      if (!shouldTrackPublicPageView(pathname)) return
+      sendKlaviyoClientPageView(pathname, searchString)
     },
     [pathname, searchString],
     PAGE_VIEW_DEBOUNCE_MS,
