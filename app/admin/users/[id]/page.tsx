@@ -14,6 +14,7 @@ import {
 import {
   Copy,
   ExternalLink,
+  LifeBuoy,
   Loader2,
   MessageSquarePlus,
   MoreHorizontal,
@@ -22,6 +23,7 @@ import {
 import { toast } from 'sonner'
 import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
 import { revalidateListingDetailAfterProfileUpdate } from '@/app/actions/listing-detail-cache'
+import { AdminCreateSupportCaseDialog } from '@/components/features/admin/admin-create-support-case-dialog'
 import { AdminSendUserMessageDialog } from '@/components/features/admin/admin-start-user-conversation-dialog'
 import { AdminPageHeader } from '@/components/features/admin/admin-page-header'
 import { AdminStatStrip } from '@/components/features/admin/admin-stat-strip'
@@ -51,6 +53,7 @@ import { AdminUserDetailOrders } from '@/components/features/admin/admin-user-de
 import { peerListingEditHref } from '@/lib/peer-listing-sections'
 import { withAdminListingEditEntry } from '@/lib/utils/admin-listing-edit-entry'
 import { sellerProfileHref } from '@/lib/seller-slug'
+import { adminSupportCaseHref } from '@/lib/utils/support-case-paths'
 import { formatAdminUsd } from '@/lib/admin/admin-user-detail-display'
 import type {
   AdminUserAuthFacts,
@@ -92,6 +95,7 @@ export default function AdminUserDetailPage() {
   const [accountBanSaving, setAccountBanSaving] = useState(false)
   const [accountBanReason, setAccountBanReason] = useState('')
   const [messageDialogOpen, setMessageDialogOpen] = useState(false)
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false)
 
   const listingCounts = useMemo(() => {
     let active = 0
@@ -579,6 +583,19 @@ export default function AdminUserDetailPage() {
     }
   }
 
+  const supportTarget = useMemo(
+    () =>
+      profile
+        ? {
+            id: profile.id,
+            display_name: profile.display_name,
+            email: profile.email,
+            avatar_url: profile.avatar_url,
+          }
+        : null,
+    [profile],
+  )
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
@@ -625,6 +642,10 @@ export default function AdminUserDetailPage() {
             <Button type="button" className="admin-btn-primary gap-2" onClick={() => setMessageDialogOpen(true)}>
               <MessageSquarePlus className="h-4 w-4" aria-hidden />
               Message user
+            </Button>
+            <Button type="button" variant="outline" className="gap-2" onClick={() => setSupportDialogOpen(true)}>
+              <LifeBuoy className="h-4 w-4" aria-hidden />
+              Open support ticket
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -783,6 +804,16 @@ export default function AdminUserDetailPage() {
           avatar_url: profile.avatar_url,
         }}
         trigger={null}
+      />
+
+      <AdminCreateSupportCaseDialog
+        open={supportDialogOpen}
+        onOpenChange={setSupportDialogOpen}
+        trigger={null}
+        defaultTargetUser={supportTarget}
+        onCreated={(caseId) => {
+          router.push(adminSupportCaseHref(caseId))
+        }}
       />
 
       <AdminWalletCreditDialog

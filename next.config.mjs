@@ -152,6 +152,14 @@ const nextConfig = {
       '@radix-ui/react-icons',
       'date-fns',
     ],
+    // Client router cache. Static pages already keep a segment for 5 minutes.
+    // Dynamic navigations (listing and seller RSC) default to 0, so Back and
+    // the next card refetch every time. 300s matches that static window.
+    // Server actions and router.refresh() still drop the cache.
+    staleTimes: {
+      dynamic: 300,
+      static: 300,
+    },
   },
   async headers() {
     // Static marketing photos (content-hashed via next/image imports; public path

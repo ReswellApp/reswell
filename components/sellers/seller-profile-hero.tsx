@@ -56,10 +56,11 @@ type SellerProfileHeroProps = {
   reviewCount: number
   currentListingCount: number
   followerCount: number
-  followingCount: number | null
   isFollowing: boolean
   isOwnProfile: boolean
   isLoggedIn: boolean
+  /** Remounts the follow control once viewer state arrives. */
+  viewerHydrated?: boolean
   activeTab: SellerProfileTab
   onTabChange: (tab: SellerProfileTab) => void
   soldCount: number
@@ -125,10 +126,10 @@ export function SellerProfileHero({
   reviewCount,
   currentListingCount,
   followerCount,
-  followingCount: _followingCount,
   isFollowing,
   isOwnProfile,
   isLoggedIn,
+  viewerHydrated = false,
   activeTab,
   onTabChange,
   soldCount,
@@ -193,6 +194,7 @@ export function SellerProfileHero({
                   </h1>
                   {!isOwnProfile ? (
                     <FollowButton
+                      key={viewerHydrated ? "live" : "shell"}
                       sellerId={shop.id}
                       sellerName={displayName ?? undefined}
                       sellerSlug={shop.seller_slug || undefined}

@@ -10,6 +10,7 @@ export function SaveShopAlertCta({
   isFollowing,
   isLoggedIn,
   isOwnProfile,
+  viewerHydrated = false,
 }: {
   shopName: string
   sellerId: string
@@ -18,6 +19,7 @@ export function SaveShopAlertCta({
   isFollowing: boolean
   isLoggedIn: boolean
   isOwnProfile: boolean
+  viewerHydrated?: boolean
 }) {
   if (isOwnProfile) return null
 
@@ -37,6 +39,7 @@ export function SaveShopAlertCta({
       </p>
       <div className="mt-6 flex justify-center">
         <FollowButton
+          key={viewerHydrated ? "live" : "shell"}
           sellerId={sellerId}
           sellerSlug={sellerSlug}
           sellerName={shopName}

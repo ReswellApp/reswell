@@ -10,6 +10,22 @@ describe("homepage performance constraints", () => {
     assert.doesNotMatch(src, /\.from\(\s*["']profiles["']/)
     assert.match(src, /HomeViewerProvider/)
     assert.match(src, /HomeHeroPrimaryCta/)
+    assert.match(src, /getCachedHomeRecentlyListedGridCatalog/)
+    assert.doesNotMatch(src, /Promise\.all/)
+    assert.match(src, /HomeBelowFold/)
+  })
+
+  it("streams homepage rails below the recently listed grid", () => {
+    const src = readFileSync(
+      new URL("../components/features/home/home-below-fold.tsx", import.meta.url),
+      "utf8",
+    )
+    assert.match(src, /Suspense/)
+    assert.match(src, /getCachedHomeRecentlyAddedFinsCatalog/)
+    assert.match(src, /getCachedHomeTrendingBrandsCatalog/)
+    assert.match(src, /getCachedHomeRecentlyAddedSurfboardsCatalog/)
+    assert.match(src, /getCachedHomeRecentlySoldCatalog/)
+    assert.match(src, /getCachedHomeStableCatalog/)
   })
 
   it("keeps the hero LCP image high quality, prioritized, and full-bleed", () => {

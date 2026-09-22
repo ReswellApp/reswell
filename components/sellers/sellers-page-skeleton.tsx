@@ -33,6 +33,23 @@ export function SellerDirectoryCardSkeleton({ index = 0 }: { index?: number }) {
   )
 }
 
+/** Tile grid placeholder while the cached directory catalog streams in. */
+export function SellersDirectoryGridSkeleton() {
+  return (
+    <section className="py-10 sm:py-14" aria-hidden>
+      <div className="container mx-auto px-4 sm:px-6">
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          {SKELETON_CARD_KEYS.map((key) => (
+            <li key={key} className="min-h-0">
+              <SellerDirectoryCardSkeleton index={key} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
 /** Full-route placeholder while `/sellers` streams — matches hero + directory card grid layout. */
 export function SellersPageSkeleton() {
   return (
@@ -50,17 +67,7 @@ export function SellersPageSkeleton() {
           </div>
         </div>
       </section>
-      <section className="py-10 sm:py-14" aria-hidden>
-        <div className="container mx-auto px-4 sm:px-6">
-          <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-            {SKELETON_CARD_KEYS.map((key) => (
-              <li key={key} className="min-h-0">
-                <SellerDirectoryCardSkeleton index={key} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <SellersDirectoryGridSkeleton />
     </main>
   )
 }

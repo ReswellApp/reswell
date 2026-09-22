@@ -60,10 +60,23 @@ function memberLabel(row: AdminMarketplaceProfilePickerRow): string {
 
 export function AdminCreateSupportCaseDialog({
   onCreated,
+  defaultTargetUser = null,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  trigger,
 }: {
   onCreated: (caseId: string) => void
+  /** Pre-select a member (for example from /admin/users) and skip search. */
+  defaultTargetUser?: AdminMarketplaceProfilePickerRow | null
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Custom trigger. Pass `null` when the parent controls `open`. */
+  trigger?: React.ReactNode | null
 }) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = controlledOnOpenChange ?? setInternalOpen
+  const memberLocked = Boolean(defaultTargetUser)
   const [dialogSurfaceEl, setDialogSurfaceEl] = useState<HTMLElement | null>(null)
   const [memberPickerOpen, setMemberPickerOpen] = useState(false)
   const [search, setSearch] = useState("")
@@ -87,6 +100,7 @@ export function AdminCreateSupportCaseDialog({
   const [subjectDirty, setSubjectDirty] = useState(false)
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const member = selected ?? (open && defaultTargetUser ? defaultTargetUser : null)
 
   const applySuggestedSubject = useCallback(
     (nextKind: SupportCaseKind, order: SupportCaseCustomerOrder | null, dirty: boolean) => {
@@ -95,6 +109,13 @@ export function AdminCreateSupportCaseDialog({
     },
     [],
   )
+
+  useEffect(() => {
+    if (!open || !defaultTargetUser) return
+    setSelected((current) =>
+      current?.id === defaultTargetUser.id ? current : defaultTargetUser,
+    )
+  }, [defaultTargetUser, open])
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebounced(search.trim()), 300)
@@ -107,7 +128,7 @@ export function AdminCreateSupportCaseDialog({
   }, [orderSearch])
 
   useEffect(() => {
-    if (!open || selected) return
+    if (!open || member) return
     if (debounced.length < 2) {
       setResults([])
       setSearching(false)
@@ -142,10 +163,10 @@ export function AdminCreateSupportCaseDialog({
     return () => {
       cancelled = true
     }
-  }, [debounced, open, selected])
+  }, [debounced, member, open])
 
   useEffect(() => {
-    if (!open || !selected) {
+    if (!open || !member) {
       setOrders([])
       setOrdersTotal(0)
       setOrdersHasMore(false)
@@ -154,7 +175,7 @@ export function AdminCreateSupportCaseDialog({
     let cancelled = false
     setOrdersLoading(true)
     void listAdminUserOrdersForSupportAction({
-      user_id: selected.id,
+      user_id: member.id,
       offset: 0,
       search: debouncedOrderSearch,
       role: orderRole,
@@ -175,7 +196,7 @@ export function AdminCreateSupportCaseDialog({
     return () => {
       cancelled = true
     }
-  }, [debouncedOrderSearch, open, orderRole, selected])
+  }, [debouncedOrderSearch, member?.id, open, orderRole])
 
   const resetForm = useCallback(() => {
     setSearch("")
@@ -228,10 +249,10 @@ export function AdminCreateSupportCaseDialog({
   }
 
   const loadMoreOrders = () => {
-    if (!selected || ordersLoadingMore) return
+    if (!member || ordersLoadingMore) return
     setOrdersLoadingMore(true)
     void listAdminUserOrdersForSupportAction({
-      user_id: selected.id,
+      user_id: member.id,
       offset: orders.length,
       search: debouncedOrderSearch,
       role: orderRole,
@@ -248,14 +269,14 @@ export function AdminCreateSupportCaseDialog({
   }
 
   const submit = async () => {
-    if (!selected) {
+    if (!member) {
       toast.error("Select a member")
       return
     }
     setSubmitting(true)
     try {
       const result = await adminCreateSupportCaseAction({
-        user_id: selected.id,
+        user_id: member.id,
         order_id: selectedOrder?.id ?? null,
         kind,
         subject,
@@ -265,7 +286,12 @@ export function AdminCreateSupportCaseDialog({
         toast.error(result.error)
         return
       }
-      toast.success("Ticket opened")
+      if (result.klaviyoNotified) {
+        toast.success("Ticket opened. They’ll get an email from Reswell support.")
+      } else {
+        toast.success("Ticket opened")
+        toast.warning("The support email did not send. Check that this member has an email on file.")
+      }
       handleOpenChange(false)
       onCreated(result.caseId)
     } catch {
@@ -277,12 +303,16 @@ export function AdminCreateSupportCaseDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button type="button" size="sm" className="h-8 shrink-0 gap-1.5">
-          <Plus className="h-3.5 w-3.5" aria-hidden />
-          New ticket
-        </Button>
-      </DialogTrigger>
+      {trigger === null ? null : (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button type="button" size="sm" className="h-8 shrink-0 gap-1.5">
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+              New ticket
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent
         ref={setDialogSurfaceEl}
         className="sm:max-w-lg"
@@ -298,37 +328,40 @@ export function AdminCreateSupportCaseDialog({
         <DialogHeader>
           <DialogTitle>Open a support ticket</DialogTitle>
           <DialogDescription>
-            Find a member, optionally connect one of their orders, and send the first message.
-            They will see this in Help like any other case.
+            {memberLocked
+              ? "Optionally connect one of their orders and send the first message. They will see this in Help and get the Reswell support email."
+              : "Find a member, optionally connect one of their orders, and send the first message. They will see this in Help and get the Reswell support email."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-1">
           <div className="space-y-2">
             <Label htmlFor="admin-case-user-search">Member</Label>
-            {selected ? (
+            {member ? (
               <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/25 px-3 py-2 text-sm">
-                <MemberAvatar row={selected} />
+                <MemberAvatar row={member} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-foreground">{memberLabel(selected)}</p>
-                  {selected.email ? (
-                    <p className="truncate text-xs text-muted-foreground">{selected.email}</p>
+                  <p className="truncate font-medium text-foreground">{memberLabel(member)}</p>
+                  {member.email ? (
+                    <p className="truncate text-xs text-muted-foreground">{member.email}</p>
                   ) : null}
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 shrink-0"
-                  disabled={submitting}
-                  onClick={() => {
-                    setSelected(null)
-                    setSelectedOrder(null)
-                    setMemberPickerOpen(true)
-                  }}
-                >
-                  Change
-                </Button>
+                {memberLocked ? null : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 shrink-0"
+                    disabled={submitting}
+                    onClick={() => {
+                      setSelected(null)
+                      setSelectedOrder(null)
+                      setMemberPickerOpen(true)
+                    }}
+                  >
+                    Change
+                  </Button>
+                )}
               </div>
             ) : (
               <Popover
@@ -408,7 +441,7 @@ export function AdminCreateSupportCaseDialog({
             )}
           </div>
 
-          {selected ? (
+          {member ? (
             <>
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
@@ -580,7 +613,7 @@ export function AdminCreateSupportCaseDialog({
           </Button>
           <Button
             type="button"
-            disabled={!selected || message.trim().length < 10 || subject.trim().length < 2 || submitting}
+            disabled={!member || message.trim().length < 10 || subject.trim().length < 2 || submitting}
             onClick={() => void submit()}
           >
             {submitting ? (

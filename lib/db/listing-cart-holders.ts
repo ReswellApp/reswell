@@ -1,17 +1,29 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { listingAdminCartHolderFromSource } from "@/lib/listing-detail-admin-bar"
 import type { ListingAdminCartHolder, ListingCartHolder } from "@/lib/types/listing-cart-holders"
+import {
+  isTransientNetworkError,
+  retryOnTransientNetworkError,
+} from "@/lib/utils/transient-network-retry"
 
 /** Buyers with this listing saved in cart (peer listings; excludes ineligible listing states). */
 export async function getListingCartHolderCount(
   supabase: SupabaseClient,
   listingId: string,
 ): Promise<number> {
-  const { data, error } = await supabase.rpc("count_listing_cart_holders", {
-    p_listing_id: listingId,
-  })
+  const { data, error } = await retryOnTransientNetworkError(() =>
+    supabase.rpc("count_listing_cart_holders", {
+      p_listing_id: listingId,
+    }),
+  )
   if (error) {
-    console.error("count_listing_cart_holders:", error.message)
+    if (isTransientNetworkError(error.message)) {
+      console.warn(
+        `count_listing_cart_holders: transient network failure, showing 0: ${error.message}`,
+      )
+    } else {
+      console.error("count_listing_cart_holders:", error.message)
+    }
     return 0
   }
   if (data == null) return 0

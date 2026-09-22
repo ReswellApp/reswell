@@ -6,7 +6,8 @@
  * the support inbox (or linked support DM / status update), and when Hayden / David
  * or a staff member replies in live chat (`response_type: live_chat_reply`).
  * Live-chat hook: `notifyLiveChatReplyViaKlaviyo`. Inbox hook:
- * `sendSupportTicketAdminReplyService` (`response_type: admin_inbox_reply`).
+ * `sendSupportCaseAdminReplyService` (`response_type: admin_inbox_reply`), including the
+ * opening message when staff open a ticket from the inbox or an admin user profile.
  * HTML paste template: `lib/klaviyo/support-ticket-response-email-liquid.ts`
  *
  * Template properties:
@@ -23,7 +24,10 @@
  * @see https://developers.klaviyo.com/en/reference/create_event
  */
 
-import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import {
+  sendKlaviyoServerEvent,
+  type SendKlaviyoServerEventResult,
+} from "@/lib/klaviyo/send-event"
 import { resolveSupportCaseByAnyId } from "@/lib/db/supportCases"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -77,28 +81,32 @@ function trimResponse(text: string): string {
   return `${t.slice(0, RESPONSE_PROP_MAX)}…`
 }
 
+function skippedResult(skipReason: string): SendKlaviyoServerEventResult {
+  return { ok: false, status: 0, skipped: true, skipReason, detail: "" }
+}
+
 export async function trackKlaviyoSupportTicketResponse(
   payload: KlaviyoSupportTicketResponsePayload,
-): Promise<void> {
+): Promise<SendKlaviyoServerEventResult> {
   const email = payload.email.trim()
   if (!email) {
     console.warn(
       "[klaviyo] Support Tickets Response skipped — no email",
       payload.responseType,
     )
-    return
+    return skippedResult("no email")
   }
 
   const supportTicketId = payload.supportTicketId.trim()
   if (!supportTicketId) {
     console.warn("[klaviyo] Support Tickets Response skipped — no ticket id")
-    return
+    return skippedResult("no ticket id")
   }
 
   const response = trimResponse(payload.response)
   if (!response) {
     console.warn("[klaviyo] Support Tickets Response skipped — empty response")
-    return
+    return skippedResult("empty response")
   }
 
   const time = new Date().toISOString()
@@ -112,7 +120,7 @@ export async function trackKlaviyoSupportTicketResponse(
     mailbox: process.env.SUPPORT_INBOUND_REPLY_TO,
   })
 
-  await sendKlaviyoServerEvent({
+  return sendKlaviyoServerEvent({
     metricName: "Support Tickets Response",
     profile: {
       email,

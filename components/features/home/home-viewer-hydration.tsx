@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
@@ -33,8 +33,23 @@ const HomeViewerContext = createContext<HomeViewerState>({
   hydrated: false,
 })
 
+const HomeViewerListingIdsContext = createContext<(ids: string[]) => void>(() => {})
+
 export function useHomeViewer(): HomeViewerState {
   return useContext(HomeViewerContext)
+}
+
+/** Rails that stream in after the shell register their listing ids for the favorites lookup. */
+export function HomeViewerListingScope({ ids }: { ids: string[] }) {
+  const registerListingIds = useContext(HomeViewerListingIdsContext)
+  const idsKey = ids.filter((id) => id.length > 0).join(",")
+
+  useEffect(() => {
+    if (!idsKey) return
+    registerListingIds(idsKey.split(","))
+  }, [idsKey, registerListingIds])
+
+  return null
 }
 
 export function HomeViewerProvider({
@@ -44,18 +59,46 @@ export function HomeViewerProvider({
   listingIds: string[]
   children: ReactNode
 }) {
-  const listingIdsKey = useMemo(
-    () => Array.from(new Set(listingIds.filter((id) => id.length > 0))).join(","),
-    [listingIds],
-  )
+  const [registeredIdsKey, setRegisteredIdsKey] = useState("")
+  const listingIdsKey = useMemo(() => {
+    const ids = new Set<string>()
+    for (const id of listingIds) {
+      if (id.length > 0) ids.add(id)
+    }
+    if (registeredIdsKey) {
+      for (const id of registeredIdsKey.split(",")) {
+        if (id.length > 0) ids.add(id)
+      }
+    }
+    return Array.from(ids).join(",")
+  }, [listingIds, registeredIdsKey])
   const [state, setState] = useState<HomeViewerState>({
     userId: null,
     favoritedIds: [],
     isAdmin: false,
     hydrated: false,
   })
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  const registerListingIds = useCallback((ids: string[]) => {
+    setRegisteredIdsKey((prev) => {
+      const known = new Set(prev ? prev.split(",") : [])
+      let changed = false
+      for (const id of ids) {
+        if (id.length > 0 && !known.has(id)) {
+          known.add(id)
+          changed = true
+        }
+      }
+      if (!changed) return prev
+      return Array.from(known).join(",")
+    })
+  }, [])
 
   useEffect(() => {
+    if (stateRef.current.hydrated && !stateRef.current.userId) return
+
     let cancelled = false
     const ids = listingIdsKey.length > 0 ? listingIdsKey.split(",") : []
 
@@ -92,7 +135,11 @@ export function HomeViewerProvider({
     }
   }, [listingIdsKey])
 
-  return <HomeViewerContext.Provider value={state}>{children}</HomeViewerContext.Provider>
+  return (
+    <HomeViewerListingIdsContext.Provider value={registerListingIds}>
+      <HomeViewerContext.Provider value={state}>{children}</HomeViewerContext.Provider>
+    </HomeViewerListingIdsContext.Provider>
+  )
 }
 
 /** Sign up vs Start Selling — defaults to the anonymous CTA until the island hydrates. */

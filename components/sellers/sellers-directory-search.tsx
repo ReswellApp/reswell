@@ -25,6 +25,9 @@ const MIN_QUERY_LENGTH = 1
 
 type SellersDirectorySearchProps = {
   defaultValue?: string
+  /** Controlled query from the directory page. Filters the grid without a navigation. */
+  directoryQuery?: string
+  onDirectoryQuery?: (term: string) => void
   className?: string
   placeholder?: string
 }
@@ -44,11 +47,13 @@ function sellerLocationLabel(row: SellerSuggestRow): string | null {
  * `/sellers` directory typeahead. Elasticsearch-backed when configured, with a Supabase
  * `ilike` fallback. Only surfaces seller/shop profiles — never listings or other entities.
  *
- * Clicking a suggestion navigates to the shop profile. Pressing Enter or the Search button
- * submits as a GET to `/sellers?q=…` so the existing SSR list fallback still works.
+ * Clicking a suggestion navigates to the shop profile. Pressing Enter filters the
+ * directory in the browser when `onDirectoryQuery` is set.
  */
 export function SellersDirectorySearch({
   defaultValue = "",
+  directoryQuery,
+  onDirectoryQuery,
   className,
   placeholder = "Search sellers by name, shop, or city…",
 }: SellersDirectorySearchProps) {
@@ -75,6 +80,11 @@ export function SellersDirectorySearch({
   const q = value.trim()
   const hasRows = (rows?.length ?? 0) > 0
   const showDropdown = open && hasRows
+
+  React.useEffect(() => {
+    if (directoryQuery === undefined) return
+    setValue(directoryQuery)
+  }, [directoryQuery])
 
   React.useEffect(() => {
     setHighlight(0)
@@ -173,13 +183,17 @@ export function SellersDirectorySearch({
       invalidatePending()
       setOpen(false)
       const t = term.trim()
+      if (onDirectoryQuery) {
+        onDirectoryQuery(t)
+        return
+      }
       if (!t) {
         router.push("/sellers")
         return
       }
       router.push(`/sellers?q=${encodeURIComponent(t)}`)
     },
-    [router, invalidatePending],
+    [onDirectoryQuery, router, invalidatePending],
   )
 
   function handleSubmit(e: React.FormEvent) {

@@ -18,8 +18,11 @@ import {
   type SellerDirectoryTileMeta,
   type SellerListingForTileMeta,
 } from "@/lib/sellers/directory-tile-meta"
+import { filterSellersDirectoryCatalog } from "@/lib/sellers/directory-catalog-filter"
 import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
 import { getDb } from "@/lib/supabase/db"
+
+export { filterSellersDirectoryCatalog }
 
 /** 7-day cache for `/sellers` directory tiles (profiles, tile images, tile metadata). */
 export const SELLERS_DIRECTORY_CACHE_TAG = "sellers-directory"
@@ -57,33 +60,6 @@ function createSupabaseForSellersDirectoryCatalog() {
     return getDb({ consistency: "eventual", purpose: "analytics" })
   }
   return getDb({ consistency: "eventual" })
-}
-
-function sellerMatchesDirectoryQuery(shop: SellerDirectoryCardShop, term: string): boolean {
-  const haystack = [
-    shop.shop_name,
-    shop.shop_description,
-    shop.display_name,
-    shop.city,
-    shop.shop_address,
-  ]
-    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-    .join(" ")
-    .toLowerCase()
-
-  return haystack.includes(term)
-}
-
-export function filterSellersDirectoryCatalog(
-  catalog: SellersDirectoryCatalog,
-  q: string | undefined,
-): SellersDirectoryCatalog {
-  const term = (q ?? "").trim().toLowerCase()
-  if (!term) return catalog
-
-  const items = catalog.items.filter(({ shop }) => sellerMatchesDirectoryQuery(shop, term))
-  const totalInventory = items.reduce((sum, item) => sum + item.inventoryCount, 0)
-  return { items, totalInventory }
 }
 
 async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCatalog> {
@@ -232,7 +208,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
 
 export const getCachedSellersDirectoryCatalog = unstable_cache(
   loadSellersDirectoryCatalogUncached,
-  ["sellers-directory-catalog-v7"],
+  ["sellers-directory-catalog-v8"],
   {
     revalidate: SELLERS_DIRECTORY_REVALIDATE_SECONDS,
     tags: [SELLERS_DIRECTORY_CACHE_TAG],

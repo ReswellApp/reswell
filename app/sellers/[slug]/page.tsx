@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { SellerProfileViewerProvider } from "@/components/sellers/seller-profile-viewer"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 import { SellerProfileView } from "@/components/sellers/seller-profile-view"
 import { deriveSellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
@@ -45,7 +46,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
+  const supabase = createAnonSupabaseClient()
   const byId = PROFILE_UUID_RE.test(slug)
   const metaSelect =
     "seller_slug, is_shop, shop_name, display_name, shop_description, bio, shop_logo_url, avatar_url, shop_banner_url, city, shop_address, shop_verified"
@@ -110,13 +111,19 @@ export async function generateMetadata({
   }
 }
 
+/**
+ * ISR: profile HTML is the same for every visitor. Follow state, favorites, and
+ * owner tools hydrate in SellerProfileViewerProvider after mount.
+ */
+export const revalidate = 3600
+
 export default async function SellerProfilePage({
   params,
 }: {
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const supabase = await createClient()
+  const supabase = createAnonSupabaseClient()
 
   const byId = PROFILE_UUID_RE.test(slug)
 
@@ -176,10 +183,6 @@ export default async function SellerProfilePage({
   }
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const {
     currentListings,
     pastListings,
     tileMetaSource,
@@ -236,38 +239,7 @@ export default async function SellerProfilePage({
       : 0
   const reviewCount = allReviews.length
 
-  let favoritedIds: string[] = []
-  if (user && listingIds.length > 0) {
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", listingIds)
-    favoritedIds = (favs ?? []).map((f) => f.listing_id)
-  }
-
-  const isOwnProfile = user?.id === id
-  let isFollowing = false
   const followerCount = shop.follower_count ?? 0
-  if (user && !isOwnProfile) {
-    const { data: follow } = await supabase
-      .from("seller_follows")
-      .select("id")
-      .eq("follower_id", user.id)
-      .eq("seller_id", id)
-      .maybeSingle()
-    isFollowing = !!follow
-  }
-
-  let followingCount: number | null = null
-  if (isOwnProfile) {
-    const { count } = await supabase
-      .from("seller_follows")
-      .select("id", { count: "exact", head: true })
-      .eq("follower_id", id)
-    followingCount = count ?? 0
-  }
-
   const tileMeta = deriveSellerDirectoryTileMeta(tileMetaSource)
 
   const isShop = shop.is_shop
@@ -290,26 +262,22 @@ export default async function SellerProfilePage({
   }
 
   return (
-    <SellerProfileView
-      shop={shop}
-      displayName={displayName}
-      isShop={isShop}
-      avgRating={avgRating}
-      reviewCount={reviewCount}
-      currentListingCount={currentListings.length}
-      followerCount={followerCount}
-      followingCount={followingCount}
-      soldCount={soldCount}
-      isFollowing={isFollowing}
-      isOwnProfile={isOwnProfile}
-      isLoggedIn={!!user}
-      currentListings={currentListings}
-      pastListings={pastListings}
-      favoritedIds={favoritedIds}
-      viewerId={user?.id ?? null}
-      tileMeta={tileMeta}
-      reviewsAsSeller={reviewsAsSeller.map((review) => mapReview(review, "Verified buyer"))}
-      reviewsAsBuyer={reviewsAsBuyer.map((review) => mapReview(review, "Verified seller"))}
-    />
+    <SellerProfileViewerProvider sellerId={id} listingIds={listingIds}>
+      <SellerProfileView
+        shop={shop}
+        displayName={displayName}
+        isShop={isShop}
+        avgRating={avgRating}
+        reviewCount={reviewCount}
+        currentListingCount={currentListings.length}
+        followerCount={followerCount}
+        soldCount={soldCount}
+        currentListings={currentListings}
+        pastListings={pastListings}
+        tileMeta={tileMeta}
+        reviewsAsSeller={reviewsAsSeller.map((review) => mapReview(review, "Verified buyer"))}
+        reviewsAsBuyer={reviewsAsBuyer.map((review) => mapReview(review, "Verified seller"))}
+      />
+    </SellerProfileViewerProvider>
   )
 }

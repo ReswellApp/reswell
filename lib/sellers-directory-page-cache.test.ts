@@ -10,6 +10,8 @@ describe("sellers directory cache constraints", () => {
     assert.doesNotMatch(src, /auth\.getUser\(/)
     assert.match(src, /SellersDirectoryViewerProvider/)
     assert.match(src, /SellersDirectoryGuestSellCta/)
+    assert.doesNotMatch(src, /searchParams/)
+    assert.match(src, /Suspense/)
   })
 
   it("hydrates follow state in the client after the shared document renders", () => {
@@ -28,5 +30,14 @@ describe("sellers directory cache constraints", () => {
     assert.match(follow, /useSellersDirectoryViewer/)
     assert.doesNotMatch(follow, /isLoggedIn:/)
     assert.doesNotMatch(follow, /initialFollowing:/)
+  })
+
+  it("serves directory mosaics from the film derivative", () => {
+    const src = readFileSync(
+      new URL("../lib/sellers/directory-mosaic-images.ts", import.meta.url),
+      "utf8",
+    )
+    assert.match(src, /listingFilmImageSrcFromRow/)
+    assert.doesNotMatch(src, /listingCardImageSrc/)
   })
 })

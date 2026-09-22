@@ -18,6 +18,7 @@ import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { sellerProfileShellClassName } from "@/lib/sellers/seller-profile-layout"
 import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
 import type { MarketplaceReviewPhotoRef } from "@/lib/types/marketplace-review"
+import { useSellerProfileViewer } from "@/components/sellers/seller-profile-viewer"
 import { cn } from "@/lib/utils"
 
 type SellerProfileReview = {
@@ -37,15 +38,9 @@ type SellerProfileViewProps = {
   reviewCount: number
   currentListingCount: number
   followerCount: number
-  followingCount: number | null
   soldCount: number
-  isFollowing: boolean
-  isOwnProfile: boolean
-  isLoggedIn: boolean
   currentListings: SellerProfileListing[]
   pastListings: SellerProfileListing[]
-  favoritedIds: string[]
-  viewerId: string | null
   tileMeta: SellerDirectoryTileMeta
   reviewsAsSeller: SellerProfileReview[]
   reviewsAsBuyer: SellerProfileReview[]
@@ -114,19 +109,16 @@ export function SellerProfileView({
   reviewCount,
   currentListingCount,
   followerCount,
-  followingCount,
   soldCount,
-  isFollowing,
-  isOwnProfile,
-  isLoggedIn,
   currentListings,
   pastListings,
-  favoritedIds,
-  viewerId,
   tileMeta,
   reviewsAsSeller,
   reviewsAsBuyer,
 }: SellerProfileViewProps) {
+  const viewer = useSellerProfileViewer()
+  const isOwnProfile = viewer.hydrated && viewer.userId === shop.id
+  const isLoggedIn = viewer.userId != null
   const [activeTab, setActiveTab] = useState<SellerProfileTab>("listings")
   const hasActiveListings = currentListings.length > 0
   const hasPastListings = pastListings.length > 0
@@ -147,10 +139,10 @@ export function SellerProfileView({
         reviewCount={reviewCount}
         currentListingCount={currentListingCount}
         followerCount={followerCount}
-        followingCount={followingCount}
-        isFollowing={isFollowing}
+        isFollowing={viewer.isFollowing}
         isOwnProfile={isOwnProfile}
         isLoggedIn={isLoggedIn}
+        viewerHydrated={viewer.hydrated}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         soldCount={soldCount}
@@ -161,8 +153,8 @@ export function SellerProfileView({
         {activeTab === "listings" ? (
           <SellerProfileListingsPanel
             listings={listingsTabListings}
-            favoritedIds={favoritedIds}
-            viewerId={viewerId}
+            favoritedIds={viewer.favoritedIds}
+            viewerId={viewer.userId}
             tileMeta={tileMeta}
             noActiveListingsNotice={showNoActiveNotice}
             onViewSoldTab={() => setActiveTab("sold")}
@@ -175,9 +167,10 @@ export function SellerProfileView({
             sellerId={shop.id}
             sellerSlug={shop.seller_slug}
             sellerCity={shop.city}
-            isFollowing={isFollowing}
+            isFollowing={viewer.isFollowing}
             isLoggedIn={isLoggedIn}
             isOwnProfile={isOwnProfile}
+            viewerHydrated={viewer.hydrated}
             showSaveShopCta={!hasActiveListings}
           />
         ) : null}
@@ -266,8 +259,8 @@ export function SellerProfileView({
         {activeTab === "sold" ? (
           <SellerProfileListingsPanel
             listings={pastListings}
-            favoritedIds={favoritedIds}
-            viewerId={viewerId}
+            favoritedIds={viewer.favoritedIds}
+            viewerId={viewer.userId}
             tileMeta={tileMeta}
             showPromoCards={false}
             emptyMessage="No sold or previous listings yet."

@@ -8,6 +8,7 @@ export { TrendingBrandsStrip, type TrendingStripBrand } from "./trending-brands-
 export { HomeHowItWorksSection, type HomeHowItWorksBuyerHighlightImages } from "./home-how-it-works-section"
 export {
   HomeViewerProvider,
+  HomeViewerListingScope,
   HomeHeroPrimaryCta,
   HomeHydratedPeerListingTile,
   HomeHydratedShopNewTile,

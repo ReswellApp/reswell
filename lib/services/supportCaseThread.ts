@@ -18,6 +18,7 @@ import {
   ensureCaseForOrderSupport,
 } from "@/lib/services/supportCaseBackfill"
 import { supportCaseReplySchema } from "@/lib/validations/supportCaseThread"
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
@@ -192,7 +193,7 @@ export async function sendSupportCaseMemberReplyService(
 
 export async function sendSupportCaseAdminReplyService(
   raw: unknown,
-): Promise<{ success: true; case_id: string } | { error: string }> {
+): Promise<{ success: true; case_id: string; klaviyoNotified: boolean } | { error: string }> {
   const parsed = supportCaseReplySchema.safeParse(raw)
   if (!parsed.success) return { error: "Write a message first." }
 
@@ -225,7 +226,7 @@ export async function sendSupportCaseAdminReplyService(
       id: row.id,
       preview: `Note: ${body}`,
     })
-    return { success: true, case_id: row.id }
+    return { success: true, case_id: row.id, klaviyoNotified: false }
   }
 
   const nextStatus =
@@ -245,20 +246,40 @@ export async function sendSupportCaseAdminReplyService(
     staffUserId: staff.userId,
   })
 
-  if (row.requester_email?.trim()) {
-    void trackKlaviyoSupportTicketResponse({
-      supportTicketId: row.id,
-      supportCaseId: row.id,
-      email: row.requester_email.trim(),
-      externalId: row.requester_user_id,
-      response: body,
-      responseType: "admin_inbox_reply",
-      ticketUrl: supportCaseResponseAbsoluteUrl(publicSiteOriginForEmail(), row.id),
-      uniqueId: `case-reply-${posted.id ?? row.id}`,
-    })
+  const requesterEmail =
+    row.requester_email?.trim() ||
+    (row.requester_user_id ? await getAuthEmailForUserId(row.requester_user_id) : null)
+
+  let klaviyoNotified = false
+  if (requesterEmail) {
+    try {
+      const klaviyo = await trackKlaviyoSupportTicketResponse({
+        supportTicketId: row.id,
+        supportCaseId: row.id,
+        email: requesterEmail,
+        externalId: row.requester_user_id,
+        response: body,
+        responseType: "admin_inbox_reply",
+        ticketUrl: supportCaseResponseAbsoluteUrl(publicSiteOriginForEmail(), row.id),
+        uniqueId: `case-reply-${posted.id ?? row.id}`,
+      })
+      klaviyoNotified = klaviyo.ok
+      if (!klaviyo.ok) {
+        console.error("[support] Support Tickets Response was not accepted", {
+          caseId: row.id,
+          status: klaviyo.status,
+          skipped: klaviyo.skipped,
+          detail: klaviyo.skipReason ?? klaviyo.detail,
+        })
+      }
+    } catch (err) {
+      console.error("[support] Support Tickets Response failed", err)
+    }
+  } else {
+    console.warn("[support] Support Tickets Response skipped — member has no email", row.id)
   }
 
-  return { success: true, case_id: row.id }
+  return { success: true, case_id: row.id, klaviyoNotified }
 }
 
 export async function postSupportCaseSystemMessage(

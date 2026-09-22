@@ -1,5 +1,6 @@
 import {
-  listingCardImageSrc,
+  asListingImageArray,
+  listingFilmImageSrcFromRow,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
@@ -53,12 +54,25 @@ function pushUnique(urls: string[], seen: Set<string>, url: string | null | unde
   urls.push(t)
 }
 
+/**
+ * One cover per listing, at the film size (~400px). Directory cells are a
+ * fraction of a marketplace card, so the 960px card file keeps the shimmer up.
+ */
+function directoryMosaicCoverSrc(
+  images: ListingImageForCard[] | ListingImageForCard | null | undefined,
+): string {
+  const list = asListingImageArray(images)
+  const primary = list.find((image) => image.is_primary) || list[0]
+  if (!primary) return ""
+  return listingFilmImageSrcFromRow(primary)
+}
+
 /** One cover per listing. The mosaic shows at most three frames. */
 function collectListingCoverUrls(listings: MosaicListingPick[], limit: number): string[] {
   const seen = new Set<string>()
   const urls: string[] = []
   for (const listing of listings) {
-    pushUnique(urls, seen, listingCardImageSrc(listing.listing_images))
+    pushUnique(urls, seen, directoryMosaicCoverSrc(listing.listing_images))
     if (urls.length >= limit) return urls
   }
   return urls

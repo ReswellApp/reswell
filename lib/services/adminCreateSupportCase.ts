@@ -15,6 +15,7 @@ import {
   toSupportCaseCustomerOrder,
   type SupportCaseCustomerOrder,
 } from "@/lib/admin/case-customer-panel"
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { sendSupportCaseAdminReplyService } from "@/lib/services/supportCaseThread"
 import {
   adminCreateSupportCaseSchema,
@@ -26,6 +27,8 @@ export type AdminCreateSupportCaseResult = {
   success: true
   caseId: string
   orderId: string | null
+  /** True when Klaviyo accepted the Support Tickets Response event. */
+  klaviyoNotified: boolean
 }
 
 type StaffServiceContext =
@@ -109,6 +112,8 @@ export async function adminCreateSupportCaseService(
   const kind: SupportCaseKind = parsed.data.kind
   const subject = parsed.data.subject.trim()
   const message = parsed.data.message.trim()
+  const requesterEmail =
+    profile.profile.email?.trim() || (await getAuthEmailForUserId(profile.profile.id))
   let requesterRole: "buyer" | "seller" | "member" = "member"
   let orderId: string | null = null
   let orderRef: string | null = null
@@ -130,7 +135,7 @@ export async function adminCreateSupportCaseService(
     subject,
     preview: message,
     requester_user_id: profile.profile.id,
-    requester_email: profile.profile.email,
+    requester_email: requesterEmail,
     requester_role: requesterRole,
     order_id: orderId,
     order_ref: orderRef,
@@ -193,5 +198,6 @@ export async function adminCreateSupportCaseService(
     success: true,
     caseId: inserted.data.id,
     orderId,
+    klaviyoNotified: sent.klaviyoNotified,
   }
 }

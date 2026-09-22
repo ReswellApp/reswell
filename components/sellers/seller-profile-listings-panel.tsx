@@ -75,6 +75,7 @@ type SellerProfileListingsPanelProps = {
   isFollowing?: boolean
   isLoggedIn?: boolean
   isOwnProfile?: boolean
+  viewerHydrated?: boolean
   showSaveShopCta?: boolean
 }
 
@@ -235,6 +236,7 @@ export function SellerProfileListingsPanel({
   isFollowing = false,
   isLoggedIn = false,
   isOwnProfile = false,
+  viewerHydrated = false,
   showSaveShopCta = false,
 }: SellerProfileListingsPanelProps) {
   const [query, setQuery] = useState("")
@@ -299,6 +301,7 @@ export function SellerProfileListingsPanel({
         isFollowing={isFollowing}
         isLoggedIn={isLoggedIn}
         isOwnProfile={isOwnProfile}
+        viewerHydrated={viewerHydrated}
       />
     )
   }
@@ -324,6 +327,7 @@ export function SellerProfileListingsPanel({
           isFollowing={isFollowing}
           isLoggedIn={isLoggedIn}
           isOwnProfile={isOwnProfile}
+          viewerHydrated={viewerHydrated}
         />
       ) : noActiveListingsNotice ? (
         <div className="rounded-xl border border-border/80 bg-muted/30 px-4 py-3.5 sm:px-5 sm:py-4">
@@ -436,6 +440,7 @@ export function SellerProfileListingsPanel({
             isFollowing={isFollowing}
             isLoggedIn={isLoggedIn}
             isOwnProfile={isOwnProfile}
+            viewerHydrated={viewerHydrated}
           />
         ) : (
           <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 py-14 text-center">
