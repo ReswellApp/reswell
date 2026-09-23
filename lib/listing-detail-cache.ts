@@ -8,6 +8,7 @@ export {
 } from "@/lib/listing-detail-cache-selects"
 
 export {
+  getCachedPublicListingDetail,
   getCachedPublicListingForMetadata,
   getCachedPublicListingForRoute,
   getCachedPublicShopListing,

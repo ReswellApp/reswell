@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -183,10 +184,121 @@ interface ListingAboutSellerSectionProps {
   reviewCount: number
   itemsSold: number
   previewReviews: (SellerReviewPreviewRow & { reviewer?: ReviewerEmbed })[]
+  /**
+   * When set, replaces the reviews accordion so the seller header can paint
+   * before review rows finish loading.
+   */
+  reviewsSlot?: ReactNode
   /** When false, omit the trust ribbon (e.g. rendered elsewhere on the PDP). */
   showTrustRibbon?: boolean
   /** Listing photos when the seller has no profile image (e.g. current PDP listing). */
   listingImageFallbacks?: ListingImageSourcePick[]
+}
+
+type SellerReviewAccordionRow = SellerReviewPreviewRow & { reviewer?: ReviewerEmbed }
+
+export function ListingSellerReviewsFallback() {
+  return (
+    <div className="mt-8 border-t border-neutral-200/90 py-4 text-[16px] font-bold text-foreground dark:border-neutral-700/70">
+      Seller reviews
+    </div>
+  )
+}
+
+export function ListingSellerReviewsAccordion({
+  avgRating,
+  reviewCount,
+  previewReviews,
+  itemsSold,
+  sellerProfileHref,
+}: {
+  avgRating: number
+  reviewCount: number
+  previewReviews: SellerReviewAccordionRow[]
+  itemsSold: number
+  sellerProfileHref: string
+}) {
+  const effectiveReviewCount = Math.max(reviewCount, previewReviews.length)
+
+  return (
+    <Accordion type="multiple" className="mt-8 w-full border-t border-neutral-200/90 dark:border-neutral-700/70">
+      <AccordionItem value="reviews" className="border-neutral-200/90 dark:border-neutral-700/70">
+        <AccordionTrigger className="items-center py-4 text-left hover:no-underline [&>svg]:shrink-0">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-4">
+            <span className="text-[16px] font-bold text-foreground">Seller reviews ({effectiveReviewCount})</span>
+            <StarRowAvg value={effectiveReviewCount > 0 ? avgRating : 0} size="md" />
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="pb-5 pt-1">
+          {effectiveReviewCount === 0 ? (
+            <p className="text-[15px] text-muted-foreground">
+              No reviews yet. After a purchase completes, buyers may leave seller feedback—check back soon.
+            </p>
+          ) : (
+            <ul className="space-y-4">
+              {previewReviews.map((rv) => {
+                const nm = reviewerDisplayName(rv.reviewer)
+                const dt = new Date(rv.created_at)
+                const dtLabel = Number.isNaN(dt.getTime())
+                  ? ""
+                  : dt.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                return (
+                  <li
+                    key={rv.id}
+                    className="rounded-lg border border-neutral-100 bg-neutral-50/80 px-3 py-3 dark:border-neutral-800 dark:bg-neutral-900/50"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                      <StarRowAvg value={rv.rating} size="sm" />
+                      {dtLabel ? (
+                        <time className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+                          {dtLabel}
+                        </time>
+                      ) : null}
+                    </div>
+                    <p className="mt-1.5 text-[15px] font-semibold text-foreground">{nm}</p>
+                    {rv.comment?.trim() ? (
+                      <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-neutral-700 dark:text-neutral-300">
+                        {rv.comment.trim()}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-[14px] text-muted-foreground">
+                        Rated {Number.isFinite(Number(rv.rating)) ? Number(rv.rating).toFixed(0) : "—"}★
+                      </p>
+                    )}
+                    <MarketplaceReviewPhotos
+                      reviewId={rv.id}
+                      photos={marketplaceReviewPhotoRefs(rv.metadata)}
+                      size="sm"
+                    />
+                  </li>
+                )
+              })}
+              <li className="pt-2 text-[15px] text-muted-foreground">
+                Items sold ·{" "}
+                <span className="font-semibold tabular-nums text-foreground/90">{itemsSold}</span>
+                {effectiveReviewCount > previewReviews.length ? (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <Link
+                      href={sellerProfileHref}
+                      className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+                    >
+                      View all feedback on seller profile
+                    </Link>
+                  </>
+                ) : null}
+              </li>
+            </ul>
+          )}
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  )
 }
 
 /** Reverb-style “About the seller” rail (profile, accordions, trust ribbon). */
@@ -202,6 +314,7 @@ export function ListingAboutSellerSection({
   reviewCount,
   itemsSold,
   previewReviews,
+  reviewsSlot,
   showTrustRibbon = true,
   listingImageFallbacks,
 }: ListingAboutSellerSectionProps) {
@@ -215,7 +328,6 @@ export function ListingAboutSellerSection({
     listingImageFallbacks,
   )
   const locationLine = profiles?.location?.trim() || null
-  const effectiveReviewCount = Math.max(reviewCount, previewReviews.length)
 
   let joinYear = ""
   if (profiles?.created_at) {
@@ -305,83 +417,15 @@ export function ListingAboutSellerSection({
         ) : null}
       </div>
 
-      <Accordion type="multiple" className="mt-8 w-full border-t border-neutral-200/90 dark:border-neutral-700/70">
-        <AccordionItem value="reviews" className="border-neutral-200/90 dark:border-neutral-700/70">
-          <AccordionTrigger className="items-center py-4 text-left hover:no-underline [&>svg]:shrink-0">
-            <span className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-4">
-              <span className="text-[16px] font-bold text-foreground">Seller reviews ({effectiveReviewCount})</span>
-              <StarRowAvg value={effectiveReviewCount > 0 ? avgRating : 0} size="md" />
-            </span>
-          </AccordionTrigger>
-          <AccordionContent className="pb-5 pt-1">
-            {effectiveReviewCount === 0 ? (
-              <p className="text-[15px] text-muted-foreground">
-                No reviews yet. After a purchase completes, buyers may leave seller feedback—check back soon.
-              </p>
-            ) : (
-              <ul className="space-y-4">
-                {previewReviews.map((rv) => {
-                  const nm = reviewerDisplayName(rv.reviewer)
-                  const dt = new Date(rv.created_at)
-                  const dtLabel = Number.isNaN(dt.getTime())
-                    ? ""
-                    : dt.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                  return (
-                    <li
-                      key={rv.id}
-                      className="rounded-lg border border-neutral-100 bg-neutral-50/80 px-3 py-3 dark:border-neutral-800 dark:bg-neutral-900/50"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                        <StarRowAvg value={rv.rating} size="sm" />
-                        {dtLabel ? (
-                          <time className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
-                            {dtLabel}
-                          </time>
-                        ) : null}
-                      </div>
-                      <p className="mt-1.5 text-[15px] font-semibold text-foreground">{nm}</p>
-                      {rv.comment?.trim() ? (
-                        <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-neutral-700 dark:text-neutral-300">
-                          {rv.comment.trim()}
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-[14px] text-muted-foreground">
-                          Rated {Number.isFinite(Number(rv.rating)) ? Number(rv.rating).toFixed(0) : "—"}★
-                        </p>
-                      )}
-                      <MarketplaceReviewPhotos
-                        reviewId={rv.id}
-                        photos={marketplaceReviewPhotoRefs(rv.metadata)}
-                        size="sm"
-                      />
-                    </li>
-                  )
-                })}
-                <li className="pt-2 text-[15px] text-muted-foreground">
-                  Items sold ·{" "}
-                  <span className="font-semibold tabular-nums text-foreground/90">{itemsSold}</span>
-                  {effectiveReviewCount > previewReviews.length ? (
-                    <>
-                      {" "}
-                      ·{" "}
-                      <Link
-                        href={sellerProfileHref}
-                        className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
-                      >
-                        View all feedback on seller profile
-                      </Link>
-                    </>
-                  ) : null}
-                </li>
-              </ul>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      {reviewsSlot ?? (
+        <ListingSellerReviewsAccordion
+          avgRating={avgRating}
+          reviewCount={reviewCount}
+          previewReviews={previewReviews}
+          itemsSold={itemsSold}
+          sellerProfileHref={sellerProfileHref}
+        />
+      )}
 
       {showTrustRibbon ? (
         <ListingProtectionTrustRibbon

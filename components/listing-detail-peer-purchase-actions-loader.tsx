@@ -36,6 +36,15 @@ const loadPeerPurchaseViewerState = cache(async (listingId: string, anonymous: b
   return { exclusivePurchaseAccess, openOfferHref }
 })
 
+export function ListingDetailPeerPurchaseActionsFallback() {
+  return (
+    <div className="flex flex-col gap-[10px]" aria-hidden>
+      <div className="min-h-[52px] w-full rounded-xl bg-muted/50" />
+      <div className="min-h-[52px] w-full rounded-xl bg-muted/40" />
+    </div>
+  )
+}
+
 export async function ListingDetailPeerPurchaseActionsLoader(
   props: ListingDetailPeerPurchaseActionsProps,
 ) {

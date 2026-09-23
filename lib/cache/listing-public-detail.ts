@@ -59,18 +59,18 @@ function getCachedPublicShopListingRow(param: string): Promise<PublicListingLook
   )()
 }
 
-/** Per-request dedupe across metadata, route shell, and detail in the same RSC tree. */
-export const getCachedPublicListingForMetadata = cache(async (param: string) => {
+/**
+ * One React `cache()` entry for metadata, the route shell, and surfboard detail.
+ * Separate wrappers do not dedupe each other, so a cold request was loading the
+ * public row twice.
+ */
+export const getCachedPublicListingDetail = cache(async (param: string) => {
   return getCachedPublicListingDetailRow(param)
 })
 
-export const getCachedPublicListingForRoute = cache(async (param: string) => {
-  return getCachedPublicListingDetailRow(param)
-})
-
-export const getCachedPublicSurfboardListing = cache(async (param: string) => {
-  return getCachedPublicListingDetailRow(param)
-})
+export const getCachedPublicListingForMetadata = getCachedPublicListingDetail
+export const getCachedPublicListingForRoute = getCachedPublicListingDetail
+export const getCachedPublicSurfboardListing = getCachedPublicListingDetail
 
 export const getCachedPublicShopListing = cache(async (param: string) => {
   return getCachedPublicShopListingRow(param)
