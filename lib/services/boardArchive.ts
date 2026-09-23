@@ -76,7 +76,7 @@ function mapArchiveRow(row: BoardArchiveDbRow): BoardArchiveRow {
     priceLabel: priceLabel(listing?.price),
     brandName: brand?.name?.trim() || "Unknown brand",
     modelName: model?.name?.trim() || "Unknown model",
-    dimensions: listing?.dimensions?.trim() || null,
+    dimensions: row.dimensions?.trim() || null,
     variantSummary: formatBoardArchiveVariantSummary(variant),
     listingImageIds,
     photoCount: listingImageIds.length,

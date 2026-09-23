@@ -8,10 +8,11 @@ const ARCHIVE_SELECT = `
   brand_id,
   brand_model_id,
   brand_model_variant_id,
+  dimensions,
   listing_image_ids,
   created_at,
   listings!board_archive_listing_id_fkey!inner (
-    id, title, slug, status, price, dimensions,
+    id, title, slug, status, price,
     listing_images ( id, url, thumbnail_url, is_primary, sort_order )
   ),
   brands!board_archive_brand_id_fkey!inner ( name ),
@@ -37,7 +38,6 @@ export type BoardArchiveDbListing = {
   slug: string | null
   status: string | null
   price: number | string | null
-  dimensions: string | null
   listing_images: BoardArchiveDbImage[] | BoardArchiveDbImage | null
 }
 
@@ -47,6 +47,7 @@ export type BoardArchiveDbRow = {
   brand_id: string
   brand_model_id: string
   brand_model_variant_id: string | null
+  dimensions: string | null
   listing_image_ids: string[] | null
   created_at: string
   listings: BoardArchiveDbListing | BoardArchiveDbListing[] | null

@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS public.board_archive (
   brand_id uuid NOT NULL REFERENCES public.brands (id) ON DELETE CASCADE,
   brand_model_id uuid NOT NULL REFERENCES public.brand_models (id) ON DELETE CASCADE,
   brand_model_variant_id uuid REFERENCES public.brand_model_variants (id) ON DELETE SET NULL,
+  dimensions text,
   listing_image_ids uuid[] NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -178,6 +179,9 @@ COMMENT ON COLUMN public.board_archive.listing_id IS
 COMMENT ON COLUMN public.board_archive.brand_model_variant_id IS
   'Catalog size when listing length/volume uniquely match one brand_model_variants row. Null when the size is unknown or ambiguous.';
 
+COMMENT ON COLUMN public.board_archive.dimensions IS
+  'Copy of listings.dimensions for this board: (length width thickness volumeL), e.g. (5''11 18 3/8 2 1/4 27L).';
+
 COMMENT ON COLUMN public.board_archive.listing_image_ids IS
   'Every listing_images id for this listing, primary first, then sort order. Files live on listing_images.';
 
@@ -204,6 +208,7 @@ BEGIN
     title,
     brand_id,
     brand_model_id,
+    dimensions,
     length_total_inches,
     volume_liters,
     fin_system,
@@ -253,6 +258,7 @@ BEGIN
     brand_id,
     brand_model_id,
     brand_model_variant_id,
+    dimensions,
     listing_image_ids
   )
   VALUES (
@@ -260,6 +266,7 @@ BEGIN
     l.brand_id,
     l.brand_model_id,
     v_variant,
+    NULLIF(btrim(COALESCE(l.dimensions, '')), ''),
     v_image_ids
   )
   ON CONFLICT (listing_id) DO UPDATE
@@ -267,11 +274,13 @@ BEGIN
     brand_id = EXCLUDED.brand_id,
     brand_model_id = EXCLUDED.brand_model_id,
     brand_model_variant_id = EXCLUDED.brand_model_variant_id,
+    dimensions = EXCLUDED.dimensions,
     listing_image_ids = EXCLUDED.listing_image_ids,
     updated_at = now()
   WHERE board_archive.brand_id IS DISTINCT FROM EXCLUDED.brand_id
     OR board_archive.brand_model_id IS DISTINCT FROM EXCLUDED.brand_model_id
     OR board_archive.brand_model_variant_id IS DISTINCT FROM EXCLUDED.brand_model_variant_id
+    OR board_archive.dimensions IS DISTINCT FROM EXCLUDED.dimensions
     OR board_archive.listing_image_ids IS DISTINCT FROM EXCLUDED.listing_image_ids;
 END;
 $$;
@@ -378,6 +387,7 @@ INSERT INTO public.board_archive (
   brand_id,
   brand_model_id,
   brand_model_variant_id,
+  dimensions,
   listing_image_ids
 )
 SELECT
@@ -391,6 +401,7 @@ SELECT
     NULLIF(btrim(COALESCE(l.fin_system, '')), ''),
     NULLIF(btrim(COALESCE(l.fins_setup, '')), '')
   ),
+  NULLIF(btrim(COALESCE(l.dimensions, '')), ''),
   img.ids
 FROM public.listings l
 JOIN public.brands b ON b.id = l.brand_id

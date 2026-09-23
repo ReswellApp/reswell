@@ -61,7 +61,7 @@ export default async function AdminBoardArchivePage({
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Boards catalog</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Actual surfboards that have been listed on Reswell. Each row is one listing tagged with a
-          directory brand and model, every listing photo, and the catalog size when the measurements
+          directory brand and model, the listing dimensions, every listing photo, and the catalog size when the measurements
           match a single variant. This is the archive image matching will use later.
         </p>
       </div>
