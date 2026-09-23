@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
-  countBoardArchiveTotals,
   findBoardArchiveSearchIds,
   listBoardArchivePage,
   type BoardArchiveDbImage,
@@ -38,17 +37,6 @@ function many<T>(value: T | T[] | null | undefined): T[] {
   return [value]
 }
 
-function priceLabel(value: number | string | null | undefined): string | null {
-  if (value == null || value === "") return null
-  const amount = typeof value === "number" ? value : Number.parseFloat(String(value))
-  if (!Number.isFinite(amount)) return null
-  return amount.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  })
-}
-
 function mapArchiveRow(row: BoardArchiveDbRow): BoardArchiveRow {
   const listing = one<BoardArchiveDbListing>(row.listings)
   const brand = one(row.brands)
@@ -64,7 +52,9 @@ function mapArchiveRow(row: BoardArchiveDbRow): BoardArchiveRow {
   })
   const listingId = listing?.id ?? row.listing_id
   const status = listing?.status?.trim() || "active"
-  const thumb = listingTitleThumbnailSrc(orderedImages)
+  const photoUrls = orderedImages
+    .map((image) => listingTitleThumbnailSrc([image]))
+    .filter((url) => url.length > 0)
 
   return {
     id: row.id,
@@ -73,14 +63,12 @@ function mapArchiveRow(row: BoardArchiveDbRow): BoardArchiveRow {
     href: listingDetailHref({ id: listingId, slug: listing?.slug }),
     status,
     statusLabel: STATUS_LABELS[status] ?? status,
-    priceLabel: priceLabel(listing?.price),
     brandName: brand?.name?.trim() || "Unknown brand",
     modelName: model?.name?.trim() || "Unknown model",
     dimensions: row.dimensions?.trim() || null,
     variantSummary: formatBoardArchiveVariantSummary(variant),
     listingImageIds,
-    photoCount: listingImageIds.length,
-    thumbnailUrl: thumb || null,
+    photoUrls,
     createdAt: row.created_at,
   }
 }
@@ -91,27 +79,19 @@ export async function getBoardArchivePage(
 ): Promise<BoardArchivePage> {
   const query = sanitizeBoardArchiveQuery(input.query)
   const page = Math.max(1, input.page ?? 1)
-  const totalsPromise = countBoardArchiveTotals(supabase)
 
   if (!query) {
-    const [totals, listed] = await Promise.all([
-      totalsPromise,
-      listBoardArchivePage(supabase, { page }),
-    ])
+    const listed = await listBoardArchivePage(supabase, { page })
     return {
       rows: listed.rows.map(mapArchiveRow),
       page,
       pageSize: BOARD_ARCHIVE_PAGE_SIZE,
       total: listed.total,
       query,
-      ...totals,
     }
   }
 
-  const [totals, ids] = await Promise.all([
-    totalsPromise,
-    findBoardArchiveSearchIds(supabase, query),
-  ])
+  const ids = await findBoardArchiveSearchIds(supabase, query)
   const listed = await listBoardArchivePage(supabase, {
     page,
     brandIds: ids.brandIds,
@@ -126,6 +106,5 @@ export async function getBoardArchivePage(
     pageSize: BOARD_ARCHIVE_PAGE_SIZE,
     total: listed.total,
     query,
-    ...totals,
   }
 }

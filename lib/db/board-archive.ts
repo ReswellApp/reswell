@@ -63,33 +63,10 @@ export type BoardArchiveListResult = {
 
 function archiveError(scope: string, message: string): Error {
   console.error(`[board-archive] ${scope}:`, message)
-  return new Error("Could not load the boards catalog")
+  return new Error("Could not load the boards archive")
 }
 
-async function countArchive(
-  supabase: SupabaseClient,
-  filter?: "variant" | "photo",
-): Promise<number> {
-  let query = supabase.from("board_archive").select("id", { count: "exact", head: true })
-  if (filter === "variant") query = query.not("brand_model_variant_id", "is", null)
-  if (filter === "photo") query = query.not("listing_image_ids", "eq", "{}")
-  const { count, error } = await query
-  if (error) throw archiveError("count", error.message)
-  return count ?? 0
-}
-
-export async function countBoardArchiveTotals(
-  supabase: SupabaseClient,
-): Promise<{ catalogTotal: number; withVariant: number; withPhoto: number }> {
-  const [catalogTotal, withVariant, withPhoto] = await Promise.all([
-    countArchive(supabase),
-    countArchive(supabase, "variant"),
-    countArchive(supabase, "photo"),
-  ])
-  return { catalogTotal, withVariant, withPhoto }
-}
-
-/** Brand, model, and listing ids whose names match a catalog search. */
+/** Brand, model, and listing ids whose names match an archive search. */
 export async function findBoardArchiveSearchIds(
   supabase: SupabaseClient,
   query: string,

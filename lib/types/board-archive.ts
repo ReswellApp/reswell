@@ -9,14 +9,12 @@ export interface BoardArchiveRow {
   href: string
   status: BoardArchiveStatus
   statusLabel: string
-  priceLabel: string | null
   brandName: string
   modelName: string
   dimensions: string | null
   variantSummary: string | null
   listingImageIds: string[]
-  photoCount: number
-  thumbnailUrl: string | null
+  photoUrls: string[]
   createdAt: string
 }
 
@@ -25,8 +23,5 @@ export interface BoardArchivePage {
   page: number
   pageSize: number
   total: number
-  catalogTotal: number
-  withVariant: number
-  withPhoto: number
   query: string
 }
