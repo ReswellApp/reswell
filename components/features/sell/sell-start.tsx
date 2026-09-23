@@ -3,14 +3,15 @@
 import * as React from "react"
 import { SellCatalogSearch } from "@/components/features/sell/sell-catalog-search"
 import { SellContinueDrafts } from "@/components/features/sell/sell-continue-drafts"
+import { SellPhotoIdentify } from "@/components/features/sell/sell-photo-identify"
 import { SellFaqSection } from "@/components/features/sell/sell-faq-section"
 import { SellMissingShipFromPrompt } from "@/components/features/sell/sell-missing-ship-from-prompt"
 import { SellWhySellSection } from "@/components/features/sell/sell-why-sell-section"
 import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
 /**
- * `/sell` hub — Reverb-like flow in Reswell style:
- * catalog search → drafts → why sell → FAQ.
+ * `/sell` hub — catalog search → drafts → why sell → FAQ.
+ * Admins also get photo identify under the search.
  */
 export function SellStart({
   isAdmin = false,
@@ -39,6 +40,11 @@ export function SellStart({
         isAdmin={isAdmin}
         surfboardSellHref={surfboardSellHref}
       />
+      {isAdmin ? (
+        <div className="mx-auto w-full max-w-2xl px-4 pb-2 sm:px-6">
+          <SellPhotoIdentify />
+        </div>
+      ) : null}
       <div className="mx-auto w-full max-w-2xl px-4 pb-4 pt-2 sm:px-6 sm:pt-0">
         <SellContinueDrafts />
       </div>
