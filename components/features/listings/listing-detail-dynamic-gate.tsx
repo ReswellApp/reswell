@@ -2,7 +2,7 @@ import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { findListingByParam } from "@/lib/listing-query"
-import { SURFBOARD_LISTING_SELECT } from "@/lib/listing-detail-cache-selects"
+import { getCachedLiveListingByParam } from "@/lib/listing-detail-request"
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { isGoogleMerchantLandingPageCrawler } from "@/lib/google-merchant/landing-page-crawler"
@@ -112,11 +112,7 @@ async function renderListingDetailDynamicGate({
   // select the full listing again. Edit → Save already revalidates the cache.
   const needsLiveLookup = !listing || listing.hidden_from_site === true
   if (needsLiveLookup) {
-    const live = await findListingByParam(supabase, listingParam, {
-      select: SURFBOARD_LISTING_SELECT,
-      section: undefined,
-      includeHiddenListings: true,
-    })
+    const live = await getCachedLiveListingByParam(listingParam)
     if (live.listing) {
       listing = live.listing as Record<string, unknown>
       redirectSlug = live.redirectSlug

@@ -7,24 +7,35 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { ListingSurfboardBreadcrumbs } from "@/components/features/listings/listing-surfboard-breadcrumbs"
+import {
+  SurfboardListingIdentity,
+  SurfboardListingIdentityFallback,
+  SurfboardListingShippedDetail,
+  SurfboardListingSoldNotice,
+  SurfboardListingSoldStatusNote,
+} from "@/components/features/listings/surfboard-listing-pdp-identity"
+import {
+  SurfboardListingCartScarcityNote,
+  SurfboardListingEngagementMetrics,
+  SurfboardListingPlatformRating,
+  SurfboardListingSellerReviews,
+} from "@/components/features/listings/surfboard-listing-pdp-social"
 import { capitalizeWords } from "@/lib/listing-labels"
 import {
   loadListingDetailPageContext,
   type ListingDetailPageSharedProps,
 } from "@/lib/listing-detail-page-load"
 import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
-import { getDb } from "@/lib/supabase/db"
+import { loadSurfboardListingViewerState } from "@/lib/services/surfboardListingViewerState"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { computeListingEnrichmentGaps } from "@/lib/sell-flow/listing-enrichment"
-import { Hourglass, Flag, Truck } from "lucide-react"
+import { Hourglass, Flag } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { orderedListingGalleryImages } from "@/lib/listing-image-display"
-import { resolveListingModelPageHref } from "@/lib/services/modelPage"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import {
@@ -34,25 +45,24 @@ import {
 
 import { TranslateableDescription } from "@/components/translateable-description"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
-import { getCachedSoldSurfboardUsedShippingFulfillment } from "@/lib/cache/marketplace-sold-feed"
 import {
   ListingAboutSellerSection,
   ListingBuyerProtectionTrustRibbon,
   ListingProtectionTrustRibbon,
+  ListingSellerReviewsFallback,
 } from "@/components/features/listings/listing-about-seller-section"
 import { ListingFulfillmentAccordionItem } from "@/components/features/listings/listing-fulfillment-accordion-item"
-import { BRANDS_BASE } from "@/lib/brands/routes"
-import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
-import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
-import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
+import {
+  ListingDetailPeerPurchaseActionsFallback,
+  ListingDetailPeerPurchaseActionsLoader,
+} from "@/components/listing-detail-peer-purchase-actions-loader"
 import { formatListingDimensionsLine } from "@/lib/listing-dimensions-display"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
-import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { listingBoardSpecRows } from "@/lib/utils/listing-board-spec-rows"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
@@ -65,14 +75,6 @@ import {
   SurfboardListingPdpCatalogStrips,
   SurfboardListingPdpCatalogStripsFallback,
 } from "@/components/features/listings/surfboard-listing-pdp-catalog-strips"
-import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
-import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
-import {
-  getCachedReswellPlatformReviewSummary,
-  getCachedSellerReviewSummary,
-} from "@/lib/cache/review-summaries"
-import { listSellerReviewPreviews } from "@/lib/db/order-reviews"
-import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswell-platform-rating-widget"
 import { MetaViewContentTracker } from "@/components/meta/meta-view-content-tracker"
 import { isMetaCatalogEligibleListing } from "@/lib/meta/catalog-product"
 import {
@@ -91,7 +93,7 @@ async function renderSurfboardListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: boardRaw, canSellerRelist } = await loadListingDetailPageContext({
+  const { user, listing: boardRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -125,76 +127,25 @@ async function renderSurfboardListingDetailPage({
     }
   }
 
-  const sellerId = board.user_id
+  const sellerId = String(board.user_id ?? "")
   const isSold = board.status === "sold"
   const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
   const listPriceNum =
     typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
-
-  // Wave 1: everything that depends only on the listing row runs in parallel.
-  let sellerReviewSummaryRes = { avgRating: 0, reviewCount: 0 }
-  let sellerReviewPreviewRes: Awaited<ReturnType<typeof listSellerReviewPreviews>> = {
-    data: [],
-    error: null,
-  }
-  let reswellPlatformReviewSummaryRes = { avgRating: 0, reviewCount: 0 }
-  let soldUsedShipping: boolean = false
-  let indexBrand: Awaited<ReturnType<typeof getBrandById>> = null
-  let cartHolderCount = 0
-  let listingWatchersCount = 0
-  try {
-    ;[
-      sellerReviewSummaryRes,
-      sellerReviewPreviewRes,
-      reswellPlatformReviewSummaryRes,
-      soldUsedShipping,
-      indexBrand,
-      [cartHolderCount, listingWatchersCount],
-    ] = await Promise.all([
-      getCachedSellerReviewSummary(sellerId),
-      listSellerReviewPreviews(getDb({ consistency: "eventual" }), sellerId),
-      getCachedReswellPlatformReviewSummary(),
-      isSold
-        ? getCachedSoldSurfboardUsedShippingFulfillment(board.id)
-        : Promise.resolve(false as const),
-      brandId ? getBrandById(getDb({ consistency: "eventual" }), brandId) : Promise.resolve(null),
-      Promise.all([
-        !isSold ? getListingCartHolderCount(supabase, board.id) : Promise.resolve(0),
-        !isSold ? getListingFavoriteCount(supabase, board.id) : Promise.resolve(0),
-      ]),
-    ])
-  } catch (error) {
-    console.error("[surfboard-pdp] hero extras failed", error)
-  }
-
-  const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
-    sellerReviewSummaryRes
-  const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
-  const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
   const isOwnListing = user?.id === board.user_id
 
-  let favoriteRowsRes: { data: { listing_id: string }[] | null } = { data: null }
-  let acceptedOffer: Awaited<ReturnType<typeof fetchAcceptedOfferForBuyerListing>> = null
-  try {
-    ;[favoriteRowsRes, acceptedOffer] = await Promise.all([
-      user
-        ? supabase
-            .from("favorites")
-            .select("listing_id")
-            .eq("user_id", user.id)
-            .eq("listing_id", board.id)
-        : Promise.resolve({ data: null }),
-      user && !isOwnListing && board.status === "active"
-        ? fetchAcceptedOfferForBuyerListing(supabase, user.id, board.id)
-        : Promise.resolve(null),
-    ])
-  } catch (error) {
-    console.error("[surfboard-pdp] viewer personalization failed", error)
+  // Anonymous HTML never enters this branch (`anonymousPublicView` leaves user null).
+  let isFavorited = false
+  let buyerAgreedPriceUsd: number | null = null
+  if (user) {
+    const viewer = await loadSurfboardListingViewerState(
+      board.id,
+      sellerId,
+      String(board.status ?? ""),
+    )
+    isFavorited = viewer.isFavorited
+    buyerAgreedPriceUsd = viewer.buyerAgreedPriceUsd
   }
-
-  const isFavorited = (favoriteRowsRes.data ?? []).some(
-    (row: { listing_id: string }) => row.listing_id === board.id,
-  )
 
   const images = orderedListingGalleryImages(board.listing_images)
 
@@ -233,14 +184,16 @@ async function renderSurfboardListingDetailPage({
   const freeBrandLabel = (board as { brand?: string | null }).brand?.trim() ?? ""
   const modelForSpecs = (board as { model?: string | null }).model?.trim() ?? ""
   const brandModelId = (board as { brand_model_id?: string | null }).brand_model_id?.trim() ?? ""
-  const boardSpecsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
-  const boardSpecsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
-  const modelPagePath = await resolveListingModelPageHref(getDb({ consistency: "eventual" }), {
-    brand: indexBrand,
-    brandModelId,
-    modelName: modelForSpecs,
-  })
   const listingTitle = capitalizeWords(board.title)
+  const identityView = {
+    freeBrandLabel,
+    modelName: modelForSpecs,
+    listingTitle,
+  }
+  const identityKey = {
+    brandId,
+    brandModelId,
+  }
   const dimensionsLine = formatListingDimensionsLine({
     dimensions: (board as { dimensions?: string | null }).dimensions,
   })
@@ -295,12 +248,6 @@ async function renderSurfboardListingDetailPage({
         }
       : undefined
 
-  let buyerAgreedPriceUsd: number | null = null
-  if (acceptedOffer && acceptedOffer.seller_id === board.user_id) {
-    const n = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
-    if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
-  }
-
   const listingLocationLine =
     board.city && board.state
       ? `${board.city}, ${board.state}`
@@ -346,21 +293,39 @@ async function renderSurfboardListingDetailPage({
   const showShareOnGalleryOverlay = isOwnListing || !favoriteNextToOffer
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
+  const sellerProfilePath = sellerProfileHref(board.profiles)
+  const itemsSold = Number(board.profiles?.sales_count ?? 0)
+  const offerToCart =
+    isOwnListing && user
+      ? { listingId: board.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
+      : null
+
   const aboutSellerSection = (
     <ListingAboutSellerSection
       profiles={board.profiles as AboutSellerProfilesProp}
       listingImageFallbacks={[{ listing_images: board.listing_images }]}
-      sellerProfileHref={sellerProfileHref(board.profiles)}
+      sellerProfileHref={sellerProfilePath}
       messageHrefAuthenticated={`/messages/new?user=${board.user_id}&listing=${board.id}`}
       messageHrefLoginRedirect={`/auth/login?redirect=${encodeURIComponent(listingDetailHref(board))}`}
       isLoggedIn={!!user}
       isOwnListing={isOwnListing}
       isSold={isSold}
-      avgRating={sellerAvgRating}
-      reviewCount={sellerReviewCount}
-      itemsSold={Number(board.profiles?.sales_count ?? 0)}
-      previewReviews={sellerReviewPreviews}
+      avgRating={0}
+      reviewCount={0}
+      itemsSold={itemsSold}
+      previewReviews={[]}
       showTrustRibbon={false}
+      reviewsSlot={
+        <Suspense fallback={<ListingSellerReviewsFallback />}>
+          <SurfboardListingSellerReviews
+            sellerId={sellerId}
+            listingId={board.id}
+            isSold={isSold}
+            itemsSold={itemsSold}
+            sellerProfileHref={sellerProfilePath}
+          />
+        </Suspense>
+      }
     />
   )
 
@@ -375,18 +340,16 @@ async function renderSurfboardListingDetailPage({
         ) : null}
         <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
           <div className="mb-3 min-w-0 max-w-full pt-0.5 max-lg:mb-4 lg:mb-8">
-            <ListingSurfboardBreadcrumbs
-              brandName={boardSpecsBrandLabel}
-              brandHref={boardSpecsBrandHref}
-              modelName={modelForSpecs || null}
-              modelHref={modelPagePath}
-              listingTitle={listingTitle}
-            />
+            <Suspense fallback={<SurfboardListingIdentityFallback variant="breadcrumbs" {...identityView} />}>
+              <SurfboardListingIdentity variant="breadcrumbs" {...identityView} {...identityKey} />
+            </Suspense>
           </div>
 
           {isSold && (
             <div className="mx-auto mb-6 w-full min-w-0 max-w-full lg:mb-8">
-              <ListingSoldDetailNotice shipped={soldUsedShipping} />
+              <Suspense fallback={<ListingSoldDetailNotice />}>
+                <SurfboardListingSoldNotice listingId={board.id} />
+              </Suspense>
             </div>
           )}
 
@@ -433,13 +396,22 @@ async function renderSurfboardListingDetailPage({
               <h1 className="mt-3 min-w-0 text-balance text-[1.375rem] font-bold leading-snug tracking-[-0.02em] text-foreground max-lg:line-clamp-2 lg:hidden">
                 {capitalizeWords(board.title)}
               </h1>
-              <ListingCatalogIdentity
-                brandName={boardSpecsBrandLabel}
-                brandHref={boardSpecsBrandHref}
-                modelName={modelForSpecs || null}
-                modelHref={modelPagePath}
-                className="mt-1.5 lg:hidden"
-              />
+              <Suspense
+                fallback={
+                  <SurfboardListingIdentityFallback
+                    variant="catalog"
+                    className="mt-1.5 lg:hidden"
+                    {...identityView}
+                  />
+                }
+              >
+                <SurfboardListingIdentity
+                  variant="catalog"
+                  className="mt-1.5 lg:hidden"
+                  {...identityView}
+                  {...identityKey}
+                />
+              </Suspense>
             </div>
 
             <div className="min-w-0 max-w-full max-lg:order-2 lg:hidden">
@@ -448,7 +420,7 @@ async function renderSurfboardListingDetailPage({
                 isLoggedIn={!!user}
                 priceUsd={isSold ? publicListPriceUsd : board.price}
                 isSold={isSold}
-                soldShipped={soldUsedShipping}
+                soldShipped={false}
                 shippingPriceCaption={shippingPriceCaption}
                 shippingOffered={shippingOffered}
                 pickupOffered={pickupOffered}
@@ -457,12 +429,44 @@ async function renderSurfboardListingDetailPage({
                 locationLine={listingLocationLine}
                 showScarcity={canPeerPurchase && board.status === "active"}
                 views={listingViews}
-                watchers={listingWatchersCount}
-                cartHolderCount={cartHolderCount}
-                offerToCart={
-                  isOwnListing && user
-                    ? { listingId: board.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
-                    : null
+                offerToCart={offerToCart}
+                engagement={
+                  isSold ? undefined : (
+                    <Suspense
+                      fallback={
+                        <ListingDetailEngagementMetrics
+                          views={listingViews}
+                          watchers={0}
+                          cartHolderCount={0}
+                          omitSocialCounts
+                          className="text-[13px]"
+                        />
+                      }
+                    >
+                      <SurfboardListingEngagementMetrics
+                        sellerId={sellerId}
+                        listingId={board.id}
+                        isSold={false}
+                        views={listingViews}
+                        offerToCart={offerToCart}
+                        className="text-[13px]"
+                      />
+                    </Suspense>
+                  )
+                }
+                scarcityNote={
+                  canPeerPurchase && board.status === "active" ? (
+                    <Suspense fallback={null}>
+                      <SurfboardListingCartScarcityNote sellerId={sellerId} listingId={board.id} />
+                    </Suspense>
+                  ) : undefined
+                }
+                soldStatusNote={
+                  isSold ? (
+                    <Suspense fallback={null}>
+                      <SurfboardListingSoldStatusNote listingId={board.id} />
+                    </Suspense>
+                  ) : undefined
                 }
                 createdAt={board.created_at}
                 showPurchaseProtection={canPeerPurchase}
@@ -475,23 +479,25 @@ async function renderSurfboardListingDetailPage({
                 }
               >
                 {canPeerPurchase ? (
-                  <ListingDetailPeerPurchaseActionsLoader
-                    listingId={board.id}
-                    checkoutListingParam={board.slug ?? board.id}
-                    section="surfboards"
-                    isLoggedIn={!!user}
-                    makeOffer={makeOfferConfig}
-                    agreedCheckoutItemUsd={buyerAgreedPriceUsd}
-                    offerRowTrailingSlot={
-                      favoriteNextToOffer ? (
-                        <ShareButton
-                          title={listingTitle}
-                          className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[#f2f3f5] shadow-none hover:bg-[#e8e9ec] dark:border-white/[0.12] dark:bg-secondary dark:hover:bg-secondary/80"
-                          iconClassName="h-[18px] w-[18px]"
-                        />
-                      ) : undefined
-                    }
-                  />
+                  <Suspense fallback={<ListingDetailPeerPurchaseActionsFallback />}>
+                    <ListingDetailPeerPurchaseActionsLoader
+                      listingId={board.id}
+                      checkoutListingParam={board.slug ?? board.id}
+                      section="surfboards"
+                      isLoggedIn={!!user}
+                      makeOffer={makeOfferConfig}
+                      agreedCheckoutItemUsd={buyerAgreedPriceUsd}
+                      offerRowTrailingSlot={
+                        favoriteNextToOffer ? (
+                          <ShareButton
+                            title={listingTitle}
+                            className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[#f2f3f5] shadow-none hover:bg-[#e8e9ec] dark:border-white/[0.12] dark:bg-secondary dark:hover:bg-secondary/80"
+                            iconClassName="h-[18px] w-[18px]"
+                          />
+                        ) : undefined
+                      }
+                    />
+                  </Suspense>
                 ) : null}
               </ListingMobileBuySummary>
               <div className="mt-5 border-t border-neutral-200/90 pt-5 dark:border-neutral-700/70 lg:hidden">
@@ -505,21 +511,18 @@ async function renderSurfboardListingDetailPage({
                 <h1 className="text-balance text-[2rem] font-bold leading-snug tracking-[-0.025em] text-foreground xl:text-[2.125rem]">
                   {capitalizeWords(board.title)}
                 </h1>
-                <ListingCatalogIdentity
-                  brandName={boardSpecsBrandLabel}
-                  brandHref={boardSpecsBrandHref}
-                  modelName={modelForSpecs || null}
-                  modelHref={modelPagePath}
-                  detail={
-                    isSold && soldUsedShipping ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        This board was shipped
-                      </span>
-                    ) : null
+                <Suspense
+                  fallback={
+                    <SurfboardListingIdentityFallback variant="catalog" className="mt-2" {...identityView} />
                   }
-                  className="mt-2"
-                />
+                >
+                  <SurfboardListingIdentity variant="catalog" className="mt-2" {...identityView} {...identityKey} />
+                </Suspense>
+                {isSold ? (
+                  <Suspense fallback={null}>
+                    <SurfboardListingShippedDetail listingId={board.id} />
+                  </Suspense>
+                ) : null}
                 {isSold ? (
                   <p className="font-headline mt-4 text-4xl font-semibold tracking-tight text-[#163060] tabular-nums xl:text-[2.5rem]">
                     Sold for ${publicListPriceUsd.toFixed(2)}
@@ -573,28 +576,30 @@ async function renderSurfboardListingDetailPage({
                 ) : null}
                 {canPeerPurchase && (
                   <div className="mt-5">
-                    <ListingDetailPeerPurchaseActionsLoader
-                      listingId={board.id}
-                      checkoutListingParam={board.slug ?? board.id}
-                      section="surfboards"
-                      isLoggedIn={!!user}
-                      makeOffer={makeOfferConfig}
-                      agreedCheckoutItemUsd={buyerAgreedPriceUsd}
-                      offerRowTrailingSlot={
-                        favoriteNextToOffer ? (
-                          <ShareButton
-                            title={listingTitle}
-                            className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[#f2f3f5] shadow-none hover:bg-[#e8e9ec] dark:border-white/[0.12] dark:bg-secondary dark:hover:bg-secondary/80"
-                            iconClassName="h-[18px] w-[18px]"
-                          />
-                        ) : undefined
-                      }
-                    />
+                    <Suspense fallback={<ListingDetailPeerPurchaseActionsFallback />}>
+                      <ListingDetailPeerPurchaseActionsLoader
+                        listingId={board.id}
+                        checkoutListingParam={board.slug ?? board.id}
+                        section="surfboards"
+                        isLoggedIn={!!user}
+                        makeOffer={makeOfferConfig}
+                        agreedCheckoutItemUsd={buyerAgreedPriceUsd}
+                        offerRowTrailingSlot={
+                          favoriteNextToOffer ? (
+                            <ShareButton
+                              title={listingTitle}
+                              className="flex size-[52px] shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[#f2f3f5] shadow-none hover:bg-[#e8e9ec] dark:border-white/[0.12] dark:bg-secondary dark:hover:bg-secondary/80"
+                              iconClassName="h-[18px] w-[18px]"
+                            />
+                          ) : undefined
+                        }
+                      />
+                    </Suspense>
                   </div>
                 )}
               </div>
 
-              {(listedRelative || !isSold || cartHolderCount > 0) && (
+              {(listedRelative || !isSold) && (
                 <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-b border-neutral-200/90 pb-4 text-[14px] text-muted-foreground dark:border-neutral-700/70">
                   {listedRelative ? (
                     <span>
@@ -602,18 +607,26 @@ async function renderSurfboardListingDetailPage({
                     </span>
                   ) : null}
                   {!isSold ? (
-                    <ListingDetailEngagementMetrics
-                      views={listingViews}
-                      watchers={listingWatchersCount}
-                      cartHolderCount={cartHolderCount}
-                      isSold={isSold}
-                      offerToCart={
-                        isOwnListing && user
-                          ? { listingId: board.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
-                          : null
+                    <Suspense
+                      fallback={
+                        <ListingDetailEngagementMetrics
+                          views={listingViews}
+                          watchers={0}
+                          cartHolderCount={0}
+                          omitSocialCounts
+                          className="max-lg:hidden"
+                        />
                       }
-                      className="max-lg:hidden"
-                    />
+                    >
+                      <SurfboardListingEngagementMetrics
+                        sellerId={sellerId}
+                        listingId={board.id}
+                        isSold={false}
+                        views={listingViews}
+                        offerToCart={offerToCart}
+                        className="max-lg:hidden"
+                      />
+                    </Suspense>
                   ) : null}
                 </div>
               )}
@@ -635,10 +648,14 @@ async function renderSurfboardListingDetailPage({
                 }
               />
 
-              <ReswellPlatformRatingWidget
-                summary={reswellPlatformReviewSummary}
-                className="mt-5"
-              />
+              <Suspense fallback={null}>
+                <SurfboardListingPlatformRating
+                  sellerId={sellerId}
+                  listingId={board.id}
+                  isSold={isSold}
+                  className="mt-5"
+                />
+              </Suspense>
 
               {!isOwnListing ? (
                 <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
@@ -664,21 +681,23 @@ async function renderSurfboardListingDetailPage({
               )}
 
               {isOwnListing ? (
-                <ListingOwnerManageActions
-                  listingId={board.id}
-                  section="surfboards"
-                  currentPriceUsd={listPriceNum}
-                  currentCompareAtPriceUsd={compareAtPriceUsd}
-                  listingStatus={String(board.status ?? "")}
-                  hiddenFromSite={board.hidden_from_site === true}
-                  enrichmentGaps={computeListingEnrichmentGaps({
-                    section: "surfboards",
-                    description: board.description,
-                    dimensions: (board as { dimensions?: string | null }).dimensions,
-                    shippingAvailable: board.shipping_available,
-                    photoCount: images.length,
-                  })}
-                />
+                <Suspense fallback={null}>
+                  <ListingOwnerManageActions
+                    listingId={board.id}
+                    section="surfboards"
+                    currentPriceUsd={listPriceNum}
+                    currentCompareAtPriceUsd={compareAtPriceUsd}
+                    listingStatus={String(board.status ?? "")}
+                    hiddenFromSite={board.hidden_from_site === true}
+                    enrichmentGaps={computeListingEnrichmentGaps({
+                      section: "surfboards",
+                      description: board.description,
+                      dimensions: (board as { dimensions?: string | null }).dimensions,
+                      shippingAvailable: board.shipping_available,
+                      photoCount: images.length,
+                    })}
+                  />
+                </Suspense>
               ) : null}
             </div>
 

@@ -20,6 +20,8 @@ interface ListingDetailEngagementMetricsProps {
   className?: string
   /** Listing owner: cart count opens the seller-offer dialog. */
   offerToCart?: ListingOfferToCartProps | null
+  /** Views are on the listing row; hide watcher and cart lines until those counts stream in. */
+  omitSocialCounts?: boolean
 }
 
 export function ListingDetailEngagementMetrics({
@@ -29,6 +31,7 @@ export function ListingDetailEngagementMetrics({
   isSold = false,
   className,
   offerToCart = null,
+  omitSocialCounts = false,
 }: ListingDetailEngagementMetricsProps) {
   if (isSold) return null
 
@@ -45,13 +48,15 @@ export function ListingDetailEngagementMetrics({
           {Number.isFinite(views) ? views : 0}
         </span>
       </span>
-      <span>
-        Watchers:{" "}
-        <span className="font-medium tabular-nums text-foreground/80">
-          {Number.isFinite(watchers) ? watchers : 0}
+      {omitSocialCounts ? null : (
+        <span>
+          Watchers:{" "}
+          <span className="font-medium tabular-nums text-foreground/80">
+            {Number.isFinite(watchers) ? watchers : 0}
+          </span>
         </span>
-      </span>
-      {cartHolderCount > 0 ? (
+      )}
+      {!omitSocialCounts && cartHolderCount > 0 ? (
         offerToCart ? (
           <SellerOfferToCartHolders
             listingId={offerToCart.listingId}
