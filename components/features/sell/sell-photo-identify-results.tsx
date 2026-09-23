@@ -29,9 +29,13 @@ export function SellPhotoIdentifyResults({
   result: SellPhotoMatchResponse
   onSelect: (row: SellCatalogSearchResultRow) => void
 }) {
-  const readBits = [result.observation.brandText, result.observation.modelText, result.observation.lengthText].filter(
-    (part): part is string => Boolean(part),
-  )
+  const readBits = [
+    result.observation.brandText,
+    result.observation.modelText,
+    result.observation.lengthText,
+    result.observation.widthText,
+    result.observation.thicknessText,
+  ].filter((part): part is string => Boolean(part))
 
   return (
     <div className="mt-2 space-y-3">
@@ -70,7 +74,7 @@ export function SellPhotoIdentifyResults({
         <p className="text-sm text-muted-foreground">
           {result.lookupQuery
             ? `Nothing in the catalog matched “${result.lookupQuery}”. Search by name above, or try a closer photo.`
-            : "No brand or model was readable. Try a closer photo of the logo."}
+            : "No brand or model was readable. Retake the top or bottom so the logo is in frame."}
         </p>
       )}
     </div>

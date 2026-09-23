@@ -2,6 +2,9 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   coerceSellPhotoObservation,
+  fillEmptyBoardDimensions,
+  missingSellPhotoMatchShots,
+  sellPhotoMatchDimensionFields,
   sellPhotoMatchLookupQuery,
   sellPhotoMatchSearchCategories,
   sniffSellPhotoMatchMime,
@@ -15,6 +18,8 @@ describe("coerceSellPhotoObservation", () => {
       modelText: "",
       visibleText: ["CI", "surfboard", "Twin Pin"],
       lengthText: "null",
+      widthText: "",
+      thicknessText: "unknown",
       confidence: "HIGH",
       summary: "Deck logo reads Channel Islands.",
     })
@@ -24,6 +29,8 @@ describe("coerceSellPhotoObservation", () => {
     assert.equal(observation.modelText, null)
     assert.deepEqual(observation.visibleText, ["CI", "Twin Pin"])
     assert.equal(observation.lengthText, null)
+    assert.equal(observation.widthText, null)
+    assert.equal(observation.thicknessText, null)
     assert.equal(observation.confidence, "high")
   })
 
@@ -46,7 +53,7 @@ describe("sellPhotoMatchLookupQuery", () => {
     })
     assert.ok(observation)
     assert.equal(sellPhotoMatchLookupQuery(observation), "FCS Performer")
-    assert.deepEqual(sellPhotoMatchSearchCategories(observation.category), ["fins"])
+    assert.deepEqual(sellPhotoMatchSearchCategories(), ["surfboards"])
   })
 
   it("falls back to readable text when brand and model are missing", () => {
@@ -61,10 +68,7 @@ describe("sellPhotoMatchLookupQuery", () => {
     })
     assert.ok(observation)
     assert.equal(sellPhotoMatchLookupQuery(observation), "Lost RNF")
-    assert.deepEqual(sellPhotoMatchSearchCategories(observation.category), [
-      "surfboards",
-      "fins",
-    ])
+    assert.deepEqual(sellPhotoMatchSearchCategories(), ["surfboards"])
   })
 
   it("returns null when nothing readable remains", () => {
@@ -79,6 +83,62 @@ describe("sellPhotoMatchLookupQuery", () => {
     })
     assert.ok(observation)
     assert.equal(sellPhotoMatchLookupQuery(observation), null)
+  })
+})
+
+describe("sellPhotoMatchDimensionFields", () => {
+  it("keeps length, width, and thickness the sell form can parse", () => {
+    const observation = coerceSellPhotoObservation({
+      category: "surfboards",
+      brandText: "Channel Islands",
+      modelText: "Twin Pin",
+      visibleText: [],
+      lengthText: "6'2\"",
+      widthText: "19 1/4\"",
+      thicknessText: "2 1/2",
+      confidence: "high",
+      summary: "Label is readable.",
+    })
+    assert.ok(observation)
+    assert.deepEqual(sellPhotoMatchDimensionFields(observation), {
+      boardLength: "6'2",
+      boardWidthInches: "19 1/4",
+      boardThicknessInches: "2 1/2",
+    })
+  })
+
+  it("drops measurements the form would reject", () => {
+    const observation = coerceSellPhotoObservation({
+      category: "surfboards",
+      brandText: null,
+      modelText: null,
+      visibleText: [],
+      lengthText: "long",
+      widthText: "wide",
+      thicknessText: null,
+      confidence: "low",
+      summary: "Label is blurry.",
+    })
+    assert.ok(observation)
+    assert.equal(sellPhotoMatchDimensionFields(observation), null)
+  })
+
+  it("fills only empty sell-form dimension fields", () => {
+    const next = fillEmptyBoardDimensions(
+      { boardLength: "5'10", boardWidthInches: "", boardThicknessInches: "2.5", extra: 1 },
+      { boardLength: "6'2", boardWidthInches: "19", boardThicknessInches: "3" },
+    )
+    assert.equal(next.boardLength, "5'10")
+    assert.equal(next.boardWidthInches, "19")
+    assert.equal(next.boardThicknessInches, "2.5")
+    assert.equal(next.extra, 1)
+  })
+})
+
+describe("missingSellPhotoMatchShots", () => {
+  it("lists the shots that were not uploaded", () => {
+    assert.deepEqual(missingSellPhotoMatchShots(["top"]), ["bottom", "dimensions"])
+    assert.deepEqual(missingSellPhotoMatchShots(["top", "bottom", "dimensions"]), [])
   })
 })
 

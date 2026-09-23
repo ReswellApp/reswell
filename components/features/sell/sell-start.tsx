@@ -3,7 +3,6 @@
 import * as React from "react"
 import { SellCatalogSearch } from "@/components/features/sell/sell-catalog-search"
 import { SellContinueDrafts } from "@/components/features/sell/sell-continue-drafts"
-import { SellPhotoIdentify } from "@/components/features/sell/sell-photo-identify"
 import { SellFaqSection } from "@/components/features/sell/sell-faq-section"
 import { SellMissingShipFromPrompt } from "@/components/features/sell/sell-missing-ship-from-prompt"
 import { SellWhySellSection } from "@/components/features/sell/sell-why-sell-section"
@@ -11,16 +10,19 @@ import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
 /**
  * `/sell` hub — catalog search → drafts → why sell → FAQ.
- * Admins also get photo identify under the search.
+ * The admin photo match is rendered by the server page, only for admins.
  */
 export function SellStart({
   isAdmin = false,
   surfboardSellHref,
   shipFromPrompt = null,
+  adminPhotoIdentify = null,
 }: {
   isAdmin?: boolean
   surfboardSellHref: string
   shipFromPrompt?: { needsFullName: boolean; needsPhone: boolean } | null
+  /** Server-rendered only for admins. Null for every other account. */
+  adminPhotoIdentify?: React.ReactNode
 }) {
   React.useEffect(() => {
     // Stamp session entry once so downstream flow_started rows join cleanly.
@@ -40,10 +42,8 @@ export function SellStart({
         isAdmin={isAdmin}
         surfboardSellHref={surfboardSellHref}
       />
-      {isAdmin ? (
-        <div className="mx-auto w-full max-w-2xl px-4 pb-2 sm:px-6">
-          <SellPhotoIdentify />
-        </div>
+      {adminPhotoIdentify ? (
+        <div className="mx-auto w-full max-w-2xl px-4 pb-2 sm:px-6">{adminPhotoIdentify}</div>
       ) : null}
       <div className="mx-auto w-full max-w-2xl px-4 pb-4 pt-2 sm:px-6 sm:pt-0">
         <SellContinueDrafts />

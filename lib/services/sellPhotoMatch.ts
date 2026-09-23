@@ -26,6 +26,8 @@ const sellPhotoObservationModelSchema = z.object({
   modelText: z.string().nullable().optional(),
   visibleText: z.array(z.string()).max(12).optional(),
   lengthText: z.string().nullable().optional(),
+  widthText: z.string().nullable().optional(),
+  thicknessText: z.string().nullable().optional(),
   confidence: z.string().optional(),
   summary: z.string().optional(),
 })
@@ -40,21 +42,22 @@ function photoMatchFeature() {
   return feature
 }
 
-const SYSTEM_PROMPT = `You identify a surfboard or surfboard fin from one seller photo for Reswell's catalog.
+const SYSTEM_PROMPT = `You identify one surfboard for Reswell's catalog from three photos of that same board:
+1. Top — the deck
+2. Bottom — the slick
+3. Dimensions — a close-up of the size label, stringer stamp, or tail block
 
-Read logos, deck graphics, printed model names, dimensions, and fin-box branding. Only report a brand or model you can actually see.
+Read logos and model names from the deck and the bottom. Read length, width, and thickness from the dimensions close-up. Only report a brand, model, or measurement you can actually see.
 
-category:
-- "surfboards": a board (shortboard, fish, longboard, log, gun, mid-length, softboard)
-- "fins": a fin, fin set, or fin packaging (FCS, Futures, glass-on, keels, side bites)
-- "unknown": you cannot tell which
-
-brandText: canonical brand when the logo or name is readable. Examples of normalization you may apply only when the mark is visible: "CI" → "Channel Islands", "JS" → "JS Industries", "FCS II" → "FCS". Use null when the brand is not readable.
-modelText: model or shape name when it is readable (Twin Pin, RNF, Performer). Use null when it is not readable.
-visibleText: short strings you can actually read (max 8). Skip the words surfboard and fin.
-lengthText: board length when printed, such as 6'2. Otherwise null.
-confidence: "high" only when brand and model are both clearly readable; "medium" when the brand or a shape family is clear; "low" otherwise.
-summary: one sentence describing what you see, including what you could not read.
+category: "surfboards" when the photos are a board. "unknown" when they are not.
+brandText: canonical brand when the logo or name is readable. You may normalize a visible mark: "CI" → "Channel Islands", "JS" → "JS Industries", "Lost" stays "Lost". Use null when the brand is not readable.
+modelText: model or shape name when it is readable (Twin Pin, RNF, Ghost). Use null when it is not readable.
+visibleText: short strings you can actually read (max 8). Skip the word surfboard.
+lengthText: length when printed, such as 6'2. Otherwise null.
+widthText: width in inches when printed, such as 19 1/4. Otherwise null.
+thicknessText: thickness in inches when printed, such as 2 1/2. Otherwise null.
+confidence: "high" only when brand and model are both clearly readable; "medium" when the brand is clear; "low" otherwise.
+summary: one sentence of what you see, including what you could not read.
 
 Do not invent a brand from the outline, color, or template of the board.`
 
@@ -86,16 +89,32 @@ async function searchCatalog(
   return rankedRows(result.results, result.similarResults)
 }
 
-export async function matchSellPhoto(input: {
-  supabase: SupabaseClient
+export type SellPhotoMatchImage = {
   bytes: Uint8Array
   mediaType: SellPhotoMatchMime
+}
+
+const SHOT_PROMPTS = {
+  top: "Photo 1 of 3 — TOP (deck). Read any logo or model name on this side.",
+  bottom: "Photo 2 of 3 — BOTTOM. Read any logo, model name, or signature on this side.",
+  dimensions:
+    "Photo 3 of 3 — DIMENSIONS close-up. Read the printed length, width, and thickness. Also read any brand or model on this label.",
+} as const
+
+export async function matchSellPhoto(input: {
+  supabase: SupabaseClient
+  shots: {
+    top: SellPhotoMatchImage
+    bottom: SellPhotoMatchImage
+    dimensions: SellPhotoMatchImage
+  }
 }): Promise<SellPhotoMatchOutcome> {
   if (!isSellPhotoMatchEnabled()) {
     return { ok: false, error: "Photo matching is not configured.", status: 503 }
   }
-  if (input.bytes.byteLength < 1) {
-    return { ok: false, error: "Choose a photo to scan.", status: 422 }
+  const shots = [input.shots.top, input.shots.bottom, input.shots.dimensions]
+  if (shots.some((shot) => shot.bytes.byteLength < 1)) {
+    return { ok: false, error: "Add the top, bottom, and dimensions photos.", status: 422 }
   }
 
   let raw: unknown
@@ -110,20 +129,29 @@ export async function matchSellPhoto(input: {
           content: [
             {
               type: "text",
-              text: "Identify the surfboard or fin in this photo. Leave brandText and modelText null unless you can read them.",
+              text: "These three photos are one surfboard. Leave brandText and modelText null unless you can read them.",
             },
+            { type: "text", text: SHOT_PROMPTS.top },
+            { type: "file", mediaType: input.shots.top.mediaType, data: input.shots.top.bytes },
+            { type: "text", text: SHOT_PROMPTS.bottom },
             {
               type: "file",
-              mediaType: input.mediaType,
-              data: input.bytes,
+              mediaType: input.shots.bottom.mediaType,
+              data: input.shots.bottom.bytes,
+            },
+            { type: "text", text: SHOT_PROMPTS.dimensions },
+            {
+              type: "file",
+              mediaType: input.shots.dimensions.mediaType,
+              data: input.shots.dimensions.bytes,
             },
           ],
         },
       ],
       temperature: 0,
-      maxOutputTokens: 500,
+      maxOutputTokens: 600,
       maxRetries: 1,
-      timeout: 45_000,
+      timeout: 50_000,
       providerOptions: {
         gateway: {
           tags: gatewayTagsForFeature("sell_photo_match"),
@@ -135,7 +163,7 @@ export async function matchSellPhoto(input: {
     console.error("[sellPhotoMatch] vision failed:", err instanceof Error ? err.message : err)
     return {
       ok: false,
-      error: "Could not read that photo. Try a closer shot of the logo or model name.",
+      error: "Could not read those photos. Try a closer shot of the logo and the dimensions label.",
       status: 422,
     }
   }
@@ -144,12 +172,12 @@ export async function matchSellPhoto(input: {
   if (!observation) {
     return {
       ok: false,
-      error: "Could not read that photo. Try a closer shot of the logo or model name.",
+      error: "Could not read those photos. Try a closer shot of the logo and the dimensions label.",
       status: 422,
     }
   }
 
-  const categories = sellPhotoMatchSearchCategories(observation.category)
+  const categories = sellPhotoMatchSearchCategories()
   const primary = sellPhotoMatchLookupQuery(observation)
   if (!primary) {
     return {

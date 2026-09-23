@@ -10,8 +10,10 @@ export const sellPhotoObservationSchema = z.object({
   modelText: z.string().trim().min(1).max(80).nullable(),
   visibleText: z.array(z.string().trim().min(1).max(80)).max(8),
   lengthText: z.string().trim().min(1).max(40).nullable(),
+  widthText: z.string().trim().min(1).max(40).nullable(),
+  thicknessText: z.string().trim().min(1).max(40).nullable(),
   confidence: z.enum(["high", "medium", "low"]),
-  summary: z.string().trim().min(1).max(240),
+  summary: z.string().trim().min(1).max(280),
 })
 
 export type SellPhotoObservation = z.infer<typeof sellPhotoObservationSchema>

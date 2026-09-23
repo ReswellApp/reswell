@@ -1,11 +1,26 @@
 import {
+  canonicalBoardLengthFilterToken,
+  normalizeBoardLengthInput,
+  parseBoardMeasurement,
+} from "../board-measurements.ts"
+import {
   sellPhotoObservationSchema,
   type SellPhotoMatchCategory,
   type SellPhotoObservation,
 } from "../validations/sellPhotoMatch.ts"
 
-/** Encoded photo cap. Stays under the Vercel request body limit. */
-export const SELL_PHOTO_MATCH_MAX_BYTES = 4_000_000
+/** One encoded shot. Three shots must stay under the platform request body limit. */
+export const SELL_PHOTO_MATCH_MAX_BYTES = 1_100_000
+export const SELL_PHOTO_MATCH_MAX_TOTAL_BYTES = 3_600_000
+
+export const SELL_PHOTO_MATCH_SHOTS = ["top", "bottom", "dimensions"] as const
+export type SellPhotoMatchShot = (typeof SELL_PHOTO_MATCH_SHOTS)[number]
+
+export const SELL_PHOTO_MATCH_SHOT_LABEL: Record<SellPhotoMatchShot, string> = {
+  top: "Top",
+  bottom: "Bottom",
+  dimensions: "Dimensions",
+}
 
 export type SellPhotoMatchMime = "image/jpeg" | "image/png" | "image/webp"
 
@@ -57,7 +72,7 @@ export function coerceSellPhotoObservation(raw: unknown): SellPhotoObservation |
         .filter((item) => !VISIBLE_TEXT_STOP.has(item.toLowerCase()))
         .slice(0, 8)
     : []
-  const summary = cleanName(row.summary, 240) ?? "Photo scanned."
+  const summary = cleanName(row.summary, 280) ?? "Photos scanned."
 
   const parsed = sellPhotoObservationSchema.safeParse({
     category,
@@ -65,17 +80,69 @@ export function coerceSellPhotoObservation(raw: unknown): SellPhotoObservation |
     modelText: cleanName(row.modelText, 80),
     visibleText,
     lengthText: cleanName(row.lengthText, 40),
+    widthText: cleanName(row.widthText, 40),
+    thicknessText: cleanName(row.thicknessText, 40),
     confidence,
     summary,
   })
   return parsed.success ? parsed.data : null
 }
 
-export function sellPhotoMatchSearchCategories(
-  category: SellPhotoObservation["category"],
-): SellPhotoMatchCategory[] {
-  if (category === "surfboards" || category === "fins") return [category]
-  return ["surfboards", "fins"]
+/** This experiment matches surfboards. The three shots are a board, not a fin. */
+export function sellPhotoMatchSearchCategories(): SellPhotoMatchCategory[] {
+  return ["surfboards"]
+}
+
+export function missingSellPhotoMatchShots(present: readonly string[]): SellPhotoMatchShot[] {
+  const have = new Set(present)
+  return SELL_PHOTO_MATCH_SHOTS.filter((shot) => !have.has(shot))
+}
+
+export type SellPhotoMatchDimensionFields = {
+  boardLength: string
+  boardWidthInches: string
+  boardThicknessInches: string
+}
+
+function measurementText(raw: string | null): string {
+  if (!raw) return ""
+  return raw
+    .trim()
+    .replace(/[″”"]/g, "")
+    .replace(/\s*(inches|inch|in)\.?$/i, "")
+    .trim()
+    .slice(0, 24)
+}
+
+/** Dimensions safe to drop into the board sell form. Unreadable text is left blank. */
+export function sellPhotoMatchDimensionFields(
+  observation: SellPhotoObservation,
+): SellPhotoMatchDimensionFields | null {
+  const lengthNormalized = normalizeBoardLengthInput(observation.lengthText ?? "").replace(/"+$/g, "")
+  const boardLength = canonicalBoardLengthFilterToken(lengthNormalized) ?? ""
+  const widthRaw = measurementText(observation.widthText)
+  const boardWidthInches = parseBoardMeasurement(widthRaw) != null ? widthRaw : ""
+  const thicknessRaw = measurementText(observation.thicknessText)
+  const boardThicknessInches = parseBoardMeasurement(thicknessRaw) != null ? thicknessRaw : ""
+  if (!boardLength && !boardWidthInches && !boardThicknessInches) return null
+  return { boardLength, boardWidthInches, boardThicknessInches }
+}
+
+export function fillEmptyBoardDimensions<T extends SellPhotoMatchDimensionFields>(
+  current: T,
+  dims: SellPhotoMatchDimensionFields | null,
+): T {
+  if (!dims) return current
+  return {
+    ...current,
+    boardLength: current.boardLength.trim() ? current.boardLength : dims.boardLength || current.boardLength,
+    boardWidthInches: current.boardWidthInches.trim()
+      ? current.boardWidthInches
+      : dims.boardWidthInches || current.boardWidthInches,
+    boardThicknessInches: current.boardThicknessInches.trim()
+      ? current.boardThicknessInches
+      : dims.boardThicknessInches || current.boardThicknessInches,
+  }
 }
 
 /** Catalog search string built only from text the model claims it could read. */
