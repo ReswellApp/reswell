@@ -7,6 +7,18 @@ export const MESSAGE_POLICY_REASON_CODES = [
   "external_link",
 ] as const
 
+/**
+ * Temporary pause: marketplace DMs may include phone numbers, and those
+ * messages are not stored as fraud. Set to true to enforce phone sharing again.
+ */
+export const PHONE_SHARING_POLICY_ENFORCED = false
+
+export function isPhoneSharingPolicyReason(
+  code: MessagePolicyReasonCode | string | null | undefined,
+): boolean {
+  return code === "phone_like" || code === "phone_fragment"
+}
+
 export type MessagePolicyReasonCode = (typeof MESSAGE_POLICY_REASON_CODES)[number]
 
 export function isMessagePolicyReasonCode(value: string): value is MessagePolicyReasonCode {
@@ -34,8 +46,12 @@ export function messagePolicyReasonLabel(code: MessagePolicyReasonCode): string 
   }
 }
 
-/** Every policy reason stops delivery, including phone sharing. */
+/** Every enforced policy reason stops delivery. Phone sharing is paused. */
 export function messagePolicyBlocksDelivery(code: MessagePolicyReasonCode): boolean {
+  if (!PHONE_SHARING_POLICY_ENFORCED && isPhoneSharingPolicyReason(code)) {
+    return false
+  }
+
   switch (code) {
     case "phone_like":
     case "phone_fragment":

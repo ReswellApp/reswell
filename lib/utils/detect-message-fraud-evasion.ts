@@ -26,14 +26,19 @@ const OFF_APP_PAY_PATTERN =
 
 const CASHAPP_HANDLE_PATTERN = /(?:^|[^\w$])\$[a-z][a-z0-9._]{2,20}\b/i
 
-export function messageLooksLikeFraudEvasion(text: string): boolean {
+export function messageLooksLikeFraudEvasion(
+  text: string,
+  options?: { ignorePhoneContact?: boolean },
+): boolean {
   const t = text.trim()
   if (!t) return false
 
-  if (CONTACT_SOLICIT_PATTERN.test(t)) return true
-  if (CONTACT_CHANNEL_PATTERN.test(t)) return true
-  if (DIGITS_PHRASE_PATTERN.test(t)) return true
-  if (SPELLED_DIGIT_RUN_PATTERN.test(t)) return true
+  if (!options?.ignorePhoneContact) {
+    if (CONTACT_SOLICIT_PATTERN.test(t)) return true
+    if (CONTACT_CHANNEL_PATTERN.test(t)) return true
+    if (DIGITS_PHRASE_PATTERN.test(t)) return true
+    if (SPELLED_DIGIT_RUN_PATTERN.test(t)) return true
+  }
   if (LEET_PAYMENT_PATTERN.test(t)) return true
   if (SPACED_PAYMENT_PATTERN.test(t)) return true
   if (OFF_APP_PAY_PATTERN.test(t)) return true

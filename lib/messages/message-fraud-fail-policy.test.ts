@@ -7,9 +7,9 @@ import {
 } from "./message-fraud-fail-policy.ts"
 
 describe("heuristicFailsClosedWhenLlmUnavailable", () => {
-  it("fails closed on phones, email, phishing, and named payment apps", () => {
-    assert.equal(heuristicFailsClosedWhenLlmUnavailable("phone_like"), true)
-    assert.equal(heuristicFailsClosedWhenLlmUnavailable("phone_fragment"), true)
+  it("fails open on phones and closed on email, phishing, and named payment apps", () => {
+    assert.equal(heuristicFailsClosedWhenLlmUnavailable("phone_like"), false)
+    assert.equal(heuristicFailsClosedWhenLlmUnavailable("phone_fragment"), false)
     assert.equal(heuristicFailsClosedWhenLlmUnavailable("email_like"), true)
     assert.equal(heuristicFailsClosedWhenLlmUnavailable("phishing_like"), true)
     assert.equal(heuristicFailsClosedWhenLlmUnavailable("off_platform_payment"), true)
@@ -61,7 +61,7 @@ describe("applyMessageFraudReviewDecision", () => {
     })
   })
 
-  it("still blocks a clear phone when the model is weakly unsure", () => {
+  it("allows a phone number even when the model is weakly unsure", () => {
     const decision = applyMessageFraudReviewDecision({
       heuristic: "phone_like",
       ambiguousCash: false,
@@ -73,22 +73,40 @@ describe("applyMessageFraudReviewDecision", () => {
       },
     })
     assert.deepEqual(decision, {
-      action: "block",
-      reasonCode: "phone_like",
-      llmReviewStatus: "pending",
+      action: "allow",
+      reasonCode: null,
+      llmReviewStatus: "dismissed",
     })
   })
 
-  it("blocks phones when the model is unavailable", () => {
+  it("allows phones when the model is unavailable", () => {
     const decision = applyMessageFraudReviewDecision({
       heuristic: "phone_like",
       ambiguousCash: false,
       review: null,
     })
     assert.deepEqual(decision, {
+      action: "allow",
+      reasonCode: null,
+      llmReviewStatus: "dismissed",
+    })
+  })
+
+  it("allows a phone label without dropping a payment-app block", () => {
+    const decision = applyMessageFraudReviewDecision({
+      heuristic: "off_platform_payment",
+      ambiguousCash: false,
+      review: {
+        decision: "block",
+        reason_code: "phone_like",
+        confidence: "high",
+        rationale: "Phone plus Venmo.",
+      },
+    })
+    assert.deepEqual(decision, {
       action: "block",
-      reasonCode: "phone_like",
-      llmReviewStatus: "pending",
+      reasonCode: "off_platform_payment",
+      llmReviewStatus: "confirmed",
     })
   })
 
@@ -105,7 +123,7 @@ describe("applyMessageFraudReviewDecision", () => {
     })
   })
 
-  it("maps evasion-only blocks onto phone_like when the model omits a reason", () => {
+  it("does not mark a spelled-out phone number as fraud when the model omits a reason", () => {
     const decision = applyMessageFraudReviewDecision({
       heuristic: "evasion_suspect",
       ambiguousCash: false,
@@ -117,9 +135,9 @@ describe("applyMessageFraudReviewDecision", () => {
       },
     })
     assert.deepEqual(decision, {
-      action: "block",
-      reasonCode: "phone_like",
-      llmReviewStatus: "confirmed",
+      action: "allow",
+      reasonCode: null,
+      llmReviewStatus: "dismissed",
     })
   })
 })
