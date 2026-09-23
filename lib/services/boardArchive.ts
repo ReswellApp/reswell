@@ -3,12 +3,13 @@ import {
   countBoardArchiveTotals,
   findBoardArchiveSearchIds,
   listBoardArchivePage,
+  type BoardArchiveDbImage,
   type BoardArchiveDbListing,
   type BoardArchiveDbRow,
   type BoardArchiveDbVariant,
 } from "@/lib/db/board-archive"
 import { listingDetailHref } from "@/lib/listing-href"
-import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import {
   formatBoardArchiveVariantSummary,
   sanitizeBoardArchiveQuery,
@@ -31,6 +32,12 @@ function one<T>(value: T | T[] | null | undefined): T | null {
   return value ?? null
 }
 
+function many<T>(value: T | T[] | null | undefined): T[] {
+  if (Array.isArray(value)) return value
+  if (value == null) return []
+  return [value]
+}
+
 function priceLabel(value: number | string | null | undefined): string | null {
   if (value == null || value === "") return null
   const amount = typeof value === "number" ? value : Number.parseFloat(String(value))
@@ -47,10 +54,17 @@ function mapArchiveRow(row: BoardArchiveDbRow): BoardArchiveRow {
   const brand = one(row.brands)
   const model = one(row.brand_models)
   const variant = one<BoardArchiveDbVariant>(row.brand_model_variants)
-  const image = one<ListingImageForCard>(row.listing_images)
+  const listingImageIds = Array.isArray(row.listing_image_ids) ? row.listing_image_ids : []
+  const imagesById = new Map(
+    many<BoardArchiveDbImage>(listing?.listing_images).map((image) => [image.id, image]),
+  )
+  const orderedImages = listingImageIds.flatMap((id) => {
+    const image = imagesById.get(id)
+    return image ? [image] : []
+  })
   const listingId = listing?.id ?? row.listing_id
   const status = listing?.status?.trim() || "active"
-  const thumb = image ? listingTitleThumbnailSrc([image]) : ""
+  const thumb = listingTitleThumbnailSrc(orderedImages)
 
   return {
     id: row.id,
@@ -64,6 +78,8 @@ function mapArchiveRow(row: BoardArchiveDbRow): BoardArchiveRow {
     modelName: model?.name?.trim() || "Unknown model",
     dimensions: listing?.dimensions?.trim() || null,
     variantSummary: formatBoardArchiveVariantSummary(variant),
+    listingImageIds,
+    photoCount: listingImageIds.length,
     thumbnailUrl: thumb || null,
     createdAt: row.created_at,
   }

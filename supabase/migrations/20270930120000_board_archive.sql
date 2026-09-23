@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS public.board_archive (
   brand_id uuid NOT NULL REFERENCES public.brands (id) ON DELETE CASCADE,
   brand_model_id uuid NOT NULL REFERENCES public.brand_models (id) ON DELETE CASCADE,
   brand_model_variant_id uuid REFERENCES public.brand_model_variants (id) ON DELETE SET NULL,
-  listing_image_id uuid REFERENCES public.listing_images (id) ON DELETE SET NULL,
+  listing_image_ids uuid[] NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -166,8 +166,11 @@ CREATE INDEX IF NOT EXISTS board_archive_brand_model_variant_id_idx
 CREATE INDEX IF NOT EXISTS board_archive_created_at_idx
   ON public.board_archive (created_at DESC);
 
+CREATE INDEX IF NOT EXISTS board_archive_listing_image_ids_idx
+  ON public.board_archive USING gin (listing_image_ids);
+
 COMMENT ON TABLE public.board_archive IS
-  'Surfboards that have circulated on Reswell: one row per published listing tagged with a directory brand and model, plus the listing photo and the catalog size when measurements identify one variant.';
+  'Surfboards that have circulated on Reswell: one row per published listing tagged with a directory brand and model, plus every listing photo id and the catalog size when measurements identify one variant.';
 
 COMMENT ON COLUMN public.board_archive.listing_id IS
   'Marketplace listing for this physical board appearance.';
@@ -175,8 +178,8 @@ COMMENT ON COLUMN public.board_archive.listing_id IS
 COMMENT ON COLUMN public.board_archive.brand_model_variant_id IS
   'Catalog size when listing length/volume uniquely match one brand_model_variants row. Null when the size is unknown or ambiguous.';
 
-COMMENT ON COLUMN public.board_archive.listing_image_id IS
-  'Primary listing photo (else the first photo). The file itself lives on listing_images.';
+COMMENT ON COLUMN public.board_archive.listing_image_ids IS
+  'Every listing_images id for this listing, primary first, then sort order. Files live on listing_images.';
 
 DROP TRIGGER IF EXISTS board_archive_set_updated_at ON public.board_archive;
 CREATE TRIGGER board_archive_set_updated_at
@@ -192,7 +195,7 @@ AS $$
 DECLARE
   l record;
   v_variant uuid;
-  v_image uuid;
+  v_image_ids uuid[];
 BEGIN
   SELECT
     id,
@@ -234,38 +237,42 @@ BEGIN
     NULLIF(btrim(COALESCE(l.fins_setup, '')), '')
   );
 
-  SELECT li.id
-  INTO v_image
+  SELECT COALESCE(
+    array_agg(
+      li.id
+      ORDER BY li.is_primary DESC NULLS LAST, li.sort_order ASC NULLS LAST, li.created_at ASC
+    ),
+    '{}'::uuid[]
+  )
+  INTO v_image_ids
   FROM public.listing_images li
-  WHERE li.listing_id = p_listing_id
-  ORDER BY li.is_primary DESC NULLS LAST, li.sort_order ASC NULLS LAST, li.created_at ASC
-  LIMIT 1;
+  WHERE li.listing_id = p_listing_id;
 
   INSERT INTO public.board_archive (
     listing_id,
     brand_id,
     brand_model_id,
     brand_model_variant_id,
-    listing_image_id
+    listing_image_ids
   )
   VALUES (
     l.id,
     l.brand_id,
     l.brand_model_id,
     v_variant,
-    v_image
+    v_image_ids
   )
   ON CONFLICT (listing_id) DO UPDATE
   SET
     brand_id = EXCLUDED.brand_id,
     brand_model_id = EXCLUDED.brand_model_id,
     brand_model_variant_id = EXCLUDED.brand_model_variant_id,
-    listing_image_id = EXCLUDED.listing_image_id,
+    listing_image_ids = EXCLUDED.listing_image_ids,
     updated_at = now()
   WHERE board_archive.brand_id IS DISTINCT FROM EXCLUDED.brand_id
     OR board_archive.brand_model_id IS DISTINCT FROM EXCLUDED.brand_model_id
     OR board_archive.brand_model_variant_id IS DISTINCT FROM EXCLUDED.brand_model_variant_id
-    OR board_archive.listing_image_id IS DISTINCT FROM EXCLUDED.listing_image_id;
+    OR board_archive.listing_image_ids IS DISTINCT FROM EXCLUDED.listing_image_ids;
 END;
 $$;
 
@@ -371,7 +378,7 @@ INSERT INTO public.board_archive (
   brand_id,
   brand_model_id,
   brand_model_variant_id,
-  listing_image_id
+  listing_image_ids
 )
 SELECT
   l.id,
@@ -384,16 +391,20 @@ SELECT
     NULLIF(btrim(COALESCE(l.fin_system, '')), ''),
     NULLIF(btrim(COALESCE(l.fins_setup, '')), '')
   ),
-  img.id
+  img.ids
 FROM public.listings l
 JOIN public.brands b ON b.id = l.brand_id
 JOIN public.brand_models bm ON bm.id = l.brand_model_id
 LEFT JOIN LATERAL (
-  SELECT li.id
+  SELECT COALESCE(
+    array_agg(
+      li.id
+      ORDER BY li.is_primary DESC NULLS LAST, li.sort_order ASC NULLS LAST, li.created_at ASC
+    ),
+    '{}'::uuid[]
+  ) AS ids
   FROM public.listing_images li
   WHERE li.listing_id = l.id
-  ORDER BY li.is_primary DESC NULLS LAST, li.sort_order ASC NULLS LAST, li.created_at ASC
-  LIMIT 1
 ) img ON true
 WHERE l.section = 'surfboards'
   AND l.status IN ('active', 'sold', 'pending', 'pending_sale')

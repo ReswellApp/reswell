@@ -61,7 +61,7 @@ export default async function AdminBoardArchivePage({
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Boards catalog</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Actual surfboards that have been listed on Reswell. Each row is one listing tagged with a
-          directory brand and model, the primary photo, and the catalog size when the measurements
+          directory brand and model, every listing photo, and the catalog size when the measurements
           match a single variant. This is the archive image matching will use later.
         </p>
       </div>
@@ -76,7 +76,7 @@ export default async function AdminBoardArchivePage({
           <dd className="mt-1 text-2xl font-semibold tabular-nums">{archive.withVariant}</dd>
         </div>
         <div className="rounded-xl border border-border px-4 py-3">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">With a photo</dt>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">With photos</dt>
           <dd className="mt-1 text-2xl font-semibold tabular-nums">{archive.withPhoto}</dd>
         </div>
       </dl>

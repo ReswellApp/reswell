@@ -67,7 +67,13 @@ export function BoardArchiveTable({ rows }: { rows: BoardArchiveRow[] }) {
                       <ArrowUpRight className="ml-1 inline h-3 w-3" />
                     </Link>
                     <p className="truncate text-xs text-muted-foreground">
-                      {[row.priceLabel, row.dimensions].filter(Boolean).join(" · ") || "No size on listing"}
+                      {[
+                        row.priceLabel,
+                        row.dimensions,
+                        row.photoCount === 1 ? "1 photo" : `${row.photoCount} photos`,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "No size on listing"}
                     </p>
                   </div>
                 </div>

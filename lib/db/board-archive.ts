@@ -8,13 +8,15 @@ const ARCHIVE_SELECT = `
   brand_id,
   brand_model_id,
   brand_model_variant_id,
-  listing_image_id,
+  listing_image_ids,
   created_at,
-  listings!board_archive_listing_id_fkey!inner ( id, title, slug, status, price, dimensions ),
+  listings!board_archive_listing_id_fkey!inner (
+    id, title, slug, status, price, dimensions,
+    listing_images ( id, url, thumbnail_url, is_primary, sort_order )
+  ),
   brands!board_archive_brand_id_fkey!inner ( name ),
   brand_models!board_archive_brand_model_id_fkey!inner ( name ),
-  brand_model_variants!board_archive_brand_model_variant_id_fkey ( length_label, width_label, thickness_label, volume_label ),
-  listing_images!board_archive_listing_image_id_fkey ( url, thumbnail_url, is_primary )
+  brand_model_variants!board_archive_brand_model_variant_id_fkey ( length_label, width_label, thickness_label, volume_label )
 `.trim()
 
 export type BoardArchiveDbVariant = {
@@ -24,6 +26,11 @@ export type BoardArchiveDbVariant = {
   volume_label: string | null
 }
 
+export type BoardArchiveDbImage = ListingImageForCard & {
+  id: string
+  sort_order?: number | null
+}
+
 export type BoardArchiveDbListing = {
   id: string
   title: string | null
@@ -31,6 +38,7 @@ export type BoardArchiveDbListing = {
   status: string | null
   price: number | string | null
   dimensions: string | null
+  listing_images: BoardArchiveDbImage[] | BoardArchiveDbImage | null
 }
 
 export type BoardArchiveDbRow = {
@@ -39,13 +47,12 @@ export type BoardArchiveDbRow = {
   brand_id: string
   brand_model_id: string
   brand_model_variant_id: string | null
-  listing_image_id: string | null
+  listing_image_ids: string[] | null
   created_at: string
   listings: BoardArchiveDbListing | BoardArchiveDbListing[] | null
   brands: { name: string | null } | { name: string | null }[] | null
   brand_models: { name: string | null } | { name: string | null }[] | null
   brand_model_variants: BoardArchiveDbVariant | BoardArchiveDbVariant[] | null
-  listing_images: ListingImageForCard | ListingImageForCard[] | null
 }
 
 export type BoardArchiveListResult = {
@@ -64,7 +71,7 @@ async function countArchive(
 ): Promise<number> {
   let query = supabase.from("board_archive").select("id", { count: "exact", head: true })
   if (filter === "variant") query = query.not("brand_model_variant_id", "is", null)
-  if (filter === "photo") query = query.not("listing_image_id", "is", null)
+  if (filter === "photo") query = query.not("listing_image_ids", "eq", "{}")
   const { count, error } = await query
   if (error) throw archiveError("count", error.message)
   return count ?? 0

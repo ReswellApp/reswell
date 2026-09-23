@@ -14,6 +14,8 @@ export interface BoardArchiveRow {
   modelName: string
   dimensions: string | null
   variantSummary: string | null
+  listingImageIds: string[]
+  photoCount: number
   thumbnailUrl: string | null
   createdAt: string
 }
