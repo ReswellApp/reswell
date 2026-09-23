@@ -56,6 +56,9 @@ function shippingStatusRow({
     if (shippingCostMode === "free") {
       return { title: "Free shipping or local pickup", detail: from }
     }
+    if (shippingCostMode === "reswell") {
+      return { title: "Shipping or local pickup", detail: from }
+    }
     if (shippingFlatRate > 0) {
       return {
         title: "Shipping or local pickup",
@@ -69,6 +72,9 @@ function shippingStatusRow({
   }
   if (!shippingOffered && pickupOffered) {
     return { title: listingPickupCaption(true, locationLine) ?? "Local pickup", detail: null }
+  }
+  if (shippingOffered && shippingCostMode === "reswell") {
+    return { title: "Shipping", detail: from }
   }
   if (shippingOffered && shippingFlatRate > 0) {
     return { title: "Shipping", detail: [`+ $${shippingFlatRate.toFixed(2)}`, from].filter(Boolean).join(" ") }

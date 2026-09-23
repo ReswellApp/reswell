@@ -24,6 +24,9 @@ function shippingAvailableDetail(
   if (shippingCostMode === "free") {
     return "available. Free shipping after checkout."
   }
+  if (shippingCostMode === "reswell") {
+    return "available. Shipping is calculated at checkout."
+  }
   if (shippingFlatRate > 0) {
     return `available. Flat $${shippingFlatRate.toFixed(2)} shipping at checkout.`
   }

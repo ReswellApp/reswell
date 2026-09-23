@@ -1,6 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser, resolveServerAuth } from "@/lib/auth/get-safe-server-user"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
 import {
   IMPERSONATION_COOKIE,
@@ -291,6 +292,14 @@ export async function PUT(
         console.error("[owned-edit] publish side effects:", error)
       })
     })
+  }
+
+  // Expire `/l` before the save response returns. The page is hourly ISR and
+  // otherwise keeps the previous shipping mode after Edit → Save → refresh.
+  try {
+    revalidateListingDetailPage(listingId, result.slug)
+  } catch (error) {
+    console.error("[owned-edit] listing detail revalidate:", error)
   }
 
   return NextResponse.json({
