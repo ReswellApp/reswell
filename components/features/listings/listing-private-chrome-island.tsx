@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { ListingDetailAdminBar } from "@/components/features/listings/listing-detail-admin-bar"
-import { ListingOwnerManageActionsView } from "@/components/features/listings/listing-owner-manage-actions-view"
 import { ListingSoldOwnerNotice } from "@/components/listing-sold-detail-notice"
 import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { loadListingPrivateChrome } from "@/lib/actions/listing-private-chrome"
@@ -18,14 +17,10 @@ function sectionLabel(section: string): string {
   return section
 }
 
-function numberField(value: unknown): number {
-  const n = typeof value === "number" ? value : Number(value)
-  return Number.isFinite(n) ? n : 0
-}
-
 /**
- * Admin bar and seller controls for a cached listing page. Absent from the
+ * Admin bar and sold-owner notice for a cached listing page. Absent from the
  * HTML until the browser session says this viewer is the owner or an admin.
+ * Seller edit/end/vacation controls stay in the listing column — not here.
  */
 export function ListingPrivateChromeIsland({
   listing,
@@ -51,9 +46,6 @@ export function ListingPrivateChromeIsland({
 
   const section = typeof listing.section === "string" ? listing.section : ""
   const status = typeof listing.status === "string" ? listing.status : ""
-  const hiddenFromSite = listing.hidden_from_site === true
-  const price = numberField(listing.price)
-  const compareAt = listing.compare_at_price == null ? null : numberField(listing.compare_at_price)
 
   return (
     <>
@@ -67,21 +59,6 @@ export function ListingPrivateChromeIsland({
             sectionLabel={sectionLabel(section)}
             listingId={listingId}
             canRelist={chrome.owner.canRelist}
-          />
-        </div>
-      ) : null}
-      {chrome.owner ? (
-        <div className="container mx-auto px-4 pt-4 sm:px-6">
-          <ListingOwnerManageActionsView
-            listingId={listingId}
-            section={section}
-            currentPriceUsd={price}
-            currentCompareAtPriceUsd={compareAt}
-            listingStatus={status}
-            hiddenFromSite={hiddenFromSite}
-            userId={chrome.owner.userId}
-            canDelete={chrome.owner.canDelete}
-            cartHolderCount={chrome.owner.cartHolderCount}
           />
         </div>
       ) : null}
