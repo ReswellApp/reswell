@@ -1,4 +1,5 @@
 import { unstable_cache, revalidateTag } from "next/cache"
+import { revalidateMarketplaceSearchPage } from "@/lib/cache/marketplace-search-page"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { listEnabledSearchSynonyms, type SearchSynonymRow } from "@/lib/db/searchCuration"
 import {
@@ -70,6 +71,7 @@ export function revalidateSearchSynonyms(): void {
   revalidateTag(SEARCH_SYNONYMS_CACHE_TAG, "max")
   // NL helper prompt includes matched expansions — drop cached intents.
   revalidateTag("marketplace-nl-search", "max")
+  revalidateMarketplaceSearchPage()
 }
 
 /** Shared synonym expansions for `/search`, nav suggest, and `/boards` keyword. */

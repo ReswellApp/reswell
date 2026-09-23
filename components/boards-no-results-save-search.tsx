@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Heart, Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { createClient } from "@/lib/supabase/client"
 import { createBoardSavedSearchAction } from "@/lib/actions/boardSavedSearch"
 import {
   boardSavedCriteriaCanSaveFromEmptyState,
@@ -51,11 +52,17 @@ function matchingNoun(section: PeerListingSection | "any" | undefined): string {
 export function BoardsNoResultsSaveSearch({
   criteria,
   isLoggedIn,
+  hydrateSession = false,
   className,
   clearHref,
 }: {
   criteria: BoardSavedSearchCriteria
   isLoggedIn: boolean
+  /**
+   * Cached search pages do not know who is logged in. On save, check the
+   * browser session before opening the sign-in gate.
+   */
+  hydrateSession?: boolean
   className?: string
   /** Optional clear-filters link (defaults from criteria.section). */
   clearHref?: string
@@ -73,7 +80,15 @@ export function BoardsNoResultsSaveSearch({
     clearHref ?? (section === "any" ? "/search/recent" : peerSectionBrowsePath(section))
 
   async function handleSave() {
-    if (!isLoggedIn) {
+    let signedIn = isLoggedIn
+    if (!signedIn && hydrateSession) {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      signedIn = Boolean(user)
+    }
+    if (!signedIn) {
       openSignIn(undefined, { skipSessionProbe: true })
       return
     }
