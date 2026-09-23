@@ -20,8 +20,11 @@ interface SearchParams {
   nq?: string
 }
 
-/** Search uses query params + auth; must not be statically prerendered. */
-export const dynamic = "force-dynamic"
+/**
+ * Shared results, same as `/search/recent`. Parser and listing lookups are
+ * cached by normalized query. Hearts hydrate in the browser.
+ */
+export const revalidate = 60
 
 export const metadata = pageSeoMetadata({
   title: "Search — Reswell",
@@ -66,6 +69,7 @@ export default async function SearchPage(props: {
         brandSlugFromUrl={brandSlugFromUrl}
         categorySlugFromUrl={categorySlugFromUrl}
         analyticsOriginHeaderNav={analyticsOriginHeaderNav}
+        skipAuthLookup
       />
     </>
   )
