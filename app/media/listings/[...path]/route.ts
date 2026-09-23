@@ -11,6 +11,8 @@ import {
 } from "@/lib/listing-media-proxy-url"
 import { cachedPublicStorageGetResponse } from "@/lib/media/cached-public-storage-get-response"
 import { getCachedPublicStorageObject, cachedPublicStorageObjectBody } from "@/lib/cache/public-storage-object"
+import { getCachedListingStoredDerivative } from "@/lib/media/listing-stored-derivative-cache"
+import { listingStoredDerivativeObject } from "@/lib/media/listing-stored-derivative"
 import {
   getCachedListingVariantBody,
   LISTING_MEDIA_CARD_VARIANT,
@@ -103,15 +105,21 @@ export async function GET(
     if (!upstreamUrl) {
       return new NextResponse("Server misconfiguration", { status: 500 })
     }
-    const stored = await getCachedPublicStorageObject("listings", path, upstreamUrl)
-    if (stored) {
+    const derivative = await getCachedListingStoredDerivative(path, upstreamUrl)
+    const variant =
+      storedDerivative === "card" ? LISTING_MEDIA_CARD_VARIANT : LISTING_MEDIA_FILM_VARIANT
+    if (derivative.state === "present") {
+      const stored = listingStoredDerivativeObject(derivative)
       return storedObjectResponse(path, cachedPublicStorageObjectBody(stored), stored.contentType)
     }
+    if (derivative.state === "oversize") {
+      const stored = await getCachedPublicStorageObject("listings", path, upstreamUrl)
+      if (stored) {
+        return storedObjectResponse(path, cachedPublicStorageObjectBody(stored), stored.contentType)
+      }
+    }
     const fullPath = listingFullObjectPathFromDerivative(path)
-    return resizedListingResponse(
-      fullPath,
-      storedDerivative === "card" ? LISTING_MEDIA_CARD_VARIANT : LISTING_MEDIA_FILM_VARIANT,
-    )
+    return resizedListingResponse(fullPath, variant)
   }
 
   const variantParam = new URL(request.url).searchParams.get("variant")

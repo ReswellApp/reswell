@@ -1,23 +1,20 @@
 import { unstable_cache } from "next/cache"
+import {
+  PUBLIC_STORAGE_DATA_CACHE_MAX_RAW_BYTES,
+  PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS,
+  publicStorageObjectCacheTag,
+  type CachedPublicStorageObject,
+  type PublicStorageBucket,
+} from "@/lib/cache/public-storage-object-meta"
 
-/** Immutable public storage objects (listing/blog filenames are content-addressed by upload time). */
-export const PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS = 60 * 60 * 24 * 365
-
-/**
- * Next.js Data Cache rejects entries over 2MB; cached values are base64 (~4/3 size).
- * Larger objects skip `unstable_cache` and rely on route `Cache-Control` + the edge CDN.
- */
-export const PUBLIC_STORAGE_DATA_CACHE_MAX_RAW_BYTES = Math.floor((2 * 1024 * 1024 * 3) / 4) - 8192
-
-export const PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX = "public-storage-object" as const
-
-export type PublicStorageBucket =
-  | "listings"
-  | "blog-images"
-  | "avatars"
-  | "brand-assets"
-  | "brand-request-logos"
-  | "seo-assets"
+export {
+  PUBLIC_STORAGE_DATA_CACHE_MAX_RAW_BYTES,
+  PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX,
+  PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS,
+  publicStorageObjectCacheTag,
+  type CachedPublicStorageObject,
+  type PublicStorageBucket,
+} from "@/lib/cache/public-storage-object-meta"
 
 /**
  * Brand logos stay cached until an admin replaces them (`revalidateBrandLogoMedia`).
@@ -26,18 +23,6 @@ export type PublicStorageBucket =
 function publicStorageObjectRevalidate(bucket: PublicStorageBucket): number | false {
   if (bucket === "brand-assets" || bucket === "brand-request-logos") return false
   return PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS
-}
-
-export type CachedPublicStorageObject = {
-  bodyBase64: string
-  contentType: string
-}
-
-export function publicStorageObjectCacheTag(
-  bucket: PublicStorageBucket,
-  objectPath: string,
-): string {
-  return `${PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX}:${bucket}:${objectPath}`
 }
 
 function publicStorageFetchNext(bucket: PublicStorageBucket, objectPath: string) {
