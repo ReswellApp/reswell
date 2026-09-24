@@ -47,6 +47,12 @@ export interface StripeConnectStatusPayload {
   verificationMessage: string | null
   requirementsChecklist: string[]
   /**
+   * Fields in `past_due` or `currently_due` — Stripe needs them to keep the
+   * account active. Empty for later volume-threshold requirements.
+   */
+  urgentRequirementsChecklist: string[]
+  urgentRequirementsMessage: string | null
+  /**
    * Identity and payout fields Stripe will require later (volume threshold or
    * deadline) while payouts are still enabled. Empty when nothing is upcoming.
    */
@@ -174,6 +180,17 @@ export function buildUpcomingRequirementsMessage(
         })}`
       : " before your payout volume reaches Stripe's limit"
   return `Stripe needs ${what}${when}. Add it here so payouts are not paused.`
+}
+
+export function buildUrgentRequirementsMessage(labels: string[]): string | null {
+  if (labels.length === 0) return null
+  const what =
+    labels.length === 1
+      ? labels[0]
+      : labels.length === 2
+        ? `${labels[0]} and ${labels[1]}`
+        : `${labels.slice(0, 3).join(", ")}`
+  return `Stripe needs ${what} to keep this payout account active.`
 }
 
 export function buildPayoutRequirementNotice(
@@ -439,6 +456,9 @@ export function deriveConnectStatusFields(input: {
         )
       : null
 
+  const urgentRequirementsChecklist = uniqueLabels([...pastDue, ...currentlyDue])
+  const urgentRequirementsMessage = buildUrgentRequirementsMessage(urgentRequirementsChecklist)
+
   const requirementsChecklist =
     setupStatus === "ready"
       ? baseChecklist
@@ -459,6 +479,8 @@ export function deriveConnectStatusFields(input: {
     verificationNeeded,
     verificationMessage,
     requirementsChecklist,
+    urgentRequirementsChecklist,
+    urgentRequirementsMessage,
     upcomingRequirementsChecklist,
     upcomingRequirementsMessage,
     collectionFields: collectionOptions.fields,

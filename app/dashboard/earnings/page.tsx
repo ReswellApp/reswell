@@ -10,6 +10,7 @@ import { EarningsLifetimeStats } from "@/components/features/earnings/earnings-l
 import { EarningsActivity } from "@/components/features/earnings/earnings-activity"
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
+import { EarningsUrgentPayoutBanner } from "@/components/features/earnings/earnings-urgent-payout-banner"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
@@ -49,6 +50,7 @@ export default function EarningsPage() {
   const [stripeHistoryFailed, setStripeHistoryFailed] = useState(false)
 
   const [sellerEarningsTotals, setSellerEarningsTotals] = useState<SellerEarningsDashboardTotals | null>(null)
+  const [verificationOpenRequest, setVerificationOpenRequest] = useState(0)
 
   const stripeCashOutWalletTrustRef = useRef<{
     balance: string
@@ -339,6 +341,13 @@ export default function EarningsPage() {
         }
       />
 
+      {stripePayoutsEnabled && !stripeStatusLoading ? (
+        <EarningsUrgentPayoutBanner
+          connectStatus={stripeConnectStatus}
+          onUpdate={() => setVerificationOpenRequest((n) => n + 1)}
+        />
+      ) : null}
+
       <div className="mt-6 space-y-8">
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-foreground">Overview</h2>
@@ -375,6 +384,7 @@ export default function EarningsPage() {
               connectStatus={stripeConnectStatus}
               transferHistory={stripeTransferHistory}
               onRefresh={fetchData}
+              verificationOpenRequest={verificationOpenRequest}
               onCashOutSettled={handleStripeBankCashOutSettled}
             />
           </section>

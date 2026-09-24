@@ -48,6 +48,7 @@ export function EarningsStripePayoutCard({
   connectStatus,
   transferHistory,
   onRefresh,
+  verificationOpenRequest,
   onCashOutSettled,
 }: {
   enabled: boolean
@@ -59,6 +60,7 @@ export function EarningsStripePayoutCard({
   connectStatus: StripeConnectStatusPayload | null
   transferHistory: StripeTransferHistoryItem[]
   onRefresh: () => void | Promise<void>
+  verificationOpenRequest?: number
   onCashOutSettled?: StripeBankPayoutSectionProps["onCashOutSettled"]
 }) {
   if (!enabled) {
@@ -98,6 +100,7 @@ export function EarningsStripePayoutCard({
         connectStatus={connectStatus}
         transferHistory={transferHistory}
         onRefresh={onRefresh}
+        verificationOpenRequest={verificationOpenRequest}
         onCashOutSettled={onCashOutSettled}
       />
     </div>

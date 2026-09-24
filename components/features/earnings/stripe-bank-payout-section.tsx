@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   instantBankPayoutFeeUsd,
   netUsdAfterInstantBankFee,
@@ -84,6 +84,8 @@ export interface StripeBankPayoutSectionProps {
   connectStatus: StripeConnectStatusPayload | null
   transferHistory: StripeTransferHistoryRow[]
   onRefresh: () => void | Promise<void>
+  /** Increments when the pinned Earnings banner asks to open verification. */
+  verificationOpenRequest?: number
   /** Called after a successful bank cash-out so the page can update balances immediately. */
   onCashOutSettled?: (detail: {
     amountUsd: number
@@ -135,6 +137,7 @@ export function StripeBankPayoutSection({
   connectStatus,
   transferHistory,
   onRefresh,
+  verificationOpenRequest = 0,
   onCashOutSettled,
 }: StripeBankPayoutSectionProps) {
   const [setupOpen, setSetupOpen] = useState(false)
@@ -322,6 +325,11 @@ export function StripeBankPayoutSection({
   const openPayoutManagement = useCallback(() => {
     openPayoutSetup(true)
   }, [openPayoutSetup])
+
+  useEffect(() => {
+    if (verificationOpenRequest < 1) return
+    openPayoutSetup(false)
+  }, [verificationOpenRequest, openPayoutSetup])
 
   const refreshConnectStatusAfterSetup = useCallback(async () => {
     let lastStatus: StripeConnectStatusPayload | null = null

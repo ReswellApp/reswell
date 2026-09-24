@@ -42,6 +42,23 @@ describe("future Stripe requirements while payouts stay enabled", () => {
     assert.match(status.upcomingRequirementsMessage ?? "", /Date of birth and Last 4 digits of your SSN/)
     assert.equal(status.collectionOptions.futureRequirements, "include")
     assert.equal(status.collectionOptions.fields, "eventually_due")
+    assert.deepEqual(status.urgentRequirementsChecklist, [])
+    assert.equal(status.urgentRequirementsMessage, null)
+  })
+
+  it("treats currently due fields as urgent even while payouts are still on", () => {
+    const status = deriveConnectStatusFields({
+      ...emptyBanks,
+      currentlyDue: ["individual.dob.day", "individual.ssn_last_4"],
+      pastDue: ["individual.address.line1"],
+    })
+
+    assert.deepEqual(status.urgentRequirementsChecklist, [
+      "Home address",
+      "Date of birth",
+      "Last 4 digits of your SSN",
+    ])
+    assert.match(status.urgentRequirementsMessage ?? "", /keep this payout account active/)
   })
 
   it("does not invent date of birth or SSN from eventually_due alone", () => {
