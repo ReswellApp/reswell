@@ -33,7 +33,7 @@
       .fluid { width: 100% !important; height: auto !important; }
       .pad-lg { padding-left: 20px !important; padding-right: 20px !important; }
       .pad-md { padding-left: 16px !important; padding-right: 16px !important; }
-      .stack { display: block !important; width: 100% !important; max-width: 100% !important; padding-right: 0 !important; }
+      .stack { display: block !important; width: 100% !important; max-width: 100% !important; }
       .headline { font-size: 30px !important; line-height: 36px !important; }
       .section-title { font-size: 28px !important; line-height: 34px !important; }
       .banner-title { font-size: 26px !important; line-height: 32px !important; }
@@ -50,8 +50,9 @@
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F4F4F4;border-collapse:collapse;">
     <tr>
       <td class="email-shell" align="center" style="padding:28px 16px 40px;">
-
-        <table role="presentation" class="email-card" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;border-collapse:collapse;background-color:#FFFFFF;border-radius:16px;">
+        <!-- max-width on a div is what Apple Mail honors; the table stays 100% of that box -->
+        <div style="max-width:600px;width:100%;margin:0 auto;">
+        <table role="presentation" class="email-card" width="100%" cellspacing="0" cellpadding="0" border="0" align="center" style="width:100%;max-width:600px;border-collapse:collapse;background-color:#FFFFFF;border-radius:16px;">
 
           <!-- Header -->
           <tr>
@@ -104,7 +105,7 @@
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;border:1px solid #E4E7EE;border-radius:12px;">
                 <tr>
                   <td align="center" style="padding:14px 18px;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:22px;font-weight:600;letter-spacing:0.02em;color:#05080D;word-break:break-word;">
-                    {{ event|lookup:'promo_code' }}
+                    {{ event|lookup:'promo_code'|default:'' }}
                   </td>
                 </tr>
               </table>
@@ -140,21 +141,25 @@
 
           <tr>
             <td class="pad-md" style="padding:24px 20px 8px;">
-              <div class="stack" style="display:inline-block;width:100%;max-width:188px;vertical-align:top;padding:0 8px 16px 0;box-sizing:border-box;">
-                <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">01</p>
-                <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">Made for surfers by surfers.</p>
-                <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">Dedicated to making the most enjoyable place for surfers to buy and sell boards, fins and more.</p>
-              </div>
-              <div class="stack" style="display:inline-block;width:100%;max-width:188px;vertical-align:top;padding:0 8px 16px 0;box-sizing:border-box;">
-                <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">02</p>
-                <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">More trust.</p>
-                <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">Discount codes used to maintain trust between buying and selling.</p>
-              </div>
-              <div class="stack" style="display:inline-block;width:100%;max-width:188px;vertical-align:top;padding:0 0 0 0;box-sizing:border-box;">
-                <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">03</p>
-                <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">Here for you.</p>
-                <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">Real surfers here when you need us</p>
-              </div>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;width:100%;">
+                <tr>
+                  <td class="stack" width="33%" valign="top" style="width:33%;padding:0 10px 0 0;">
+                    <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">01</p>
+                    <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">Made for surfers by surfers.</p>
+                    <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">Dedicated to making the most enjoyable place for surfers to buy and sell boards, fins and more.</p>
+                  </td>
+                  <td class="stack" width="33%" valign="top" style="width:33%;padding:0 8px;">
+                    <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">02</p>
+                    <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">More trust.</p>
+                    <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">Discount codes used to maintain trust between buying and selling.</p>
+                  </td>
+                  <td class="stack" width="34%" valign="top" style="width:34%;padding:0 0 0 10px;">
+                    <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">03</p>
+                    <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">Here for you.</p>
+                    <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">Real surfers here when you need us</p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -177,7 +182,9 @@
           </tr>
           <tr>
             <td class="pad-md" style="padding:18px 16px 8px;">
-              <div class="stack" style="display:inline-block;width:100%;max-width:188px;vertical-align:top;padding:0 8px 12px 0;box-sizing:border-box;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;width:100%;">
+                <tr>
+                  <td class="stack" width="33%" valign="top" style="width:33%;padding:0 6px 12px 0;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border:1px solid #E6E8EE;border-radius:12px;">
                   <tr>
                     <td style="padding:16px 14px 18px;">
@@ -187,8 +194,8 @@
                     </td>
                   </tr>
                 </table>
-              </div>
-              <div class="stack" style="display:inline-block;width:100%;max-width:188px;vertical-align:top;padding:0 8px 12px 0;box-sizing:border-box;">
+                  </td>
+                  <td class="stack" width="33%" valign="top" style="width:33%;padding:0 6px 12px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border:1px solid #E6E8EE;border-radius:12px;">
                   <tr>
                     <td style="padding:16px 14px 18px;">
@@ -198,8 +205,8 @@
                     </td>
                   </tr>
                 </table>
-              </div>
-              <div class="stack" style="display:inline-block;width:100%;max-width:188px;vertical-align:top;padding:0 0 12px 0;box-sizing:border-box;">
+                  </td>
+                  <td class="stack" width="34%" valign="top" style="width:34%;padding:0 0 12px 6px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border:1px solid #E6E8EE;border-radius:12px;">
                   <tr>
                     <td style="padding:16px 14px 18px;">
@@ -209,7 +216,9 @@
                     </td>
                   </tr>
                 </table>
-              </div>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -231,7 +240,7 @@
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;margin-top:18px;background-color:#FFFFFF;border-radius:10px;">
                       <tr>
                         <td align="center" style="padding:12px 16px;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:20px;font-weight:600;color:#05080D;word-break:break-word;">
-                          {{ event|lookup:'promo_code' }}
+                          {{ event|lookup:'promo_code'|default:'' }}
                         </td>
                       </tr>
                     </table>
@@ -269,6 +278,7 @@
           </tr>
 
         </table>
+        </div>
       </td>
     </tr>
   </table>
