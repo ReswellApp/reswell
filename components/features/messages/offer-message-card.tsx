@@ -9,6 +9,7 @@ import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import { BuyerCounterRespondButtons } from "@/components/features/messages/buyer-counter-respond-buttons"
 import { OfferWithdrawButton } from "@/components/features/offers/offer-withdraw-button"
+import { SellerOfferManageActions } from "@/components/features/offers/seller-offer-manage-actions"
 import { offerIsBinding } from "@/lib/listing-offer-authorization"
 import { resolveOfferThreadNote } from "@/lib/utils/parse-offer-negotiation-message"
 import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
@@ -193,11 +194,24 @@ export function OfferMessageCard({
             <p className={cn("text-[12px] text-muted-foreground", (shownNote || isSeller) && "mt-2")}>
               {offer.status === "COUNTERED"
                 ? sellerInitiated
-                  ? "Waiting for the buyer to respond to your offer."
+                  ? "Waiting for the buyer to respond. You can update or revoke this offer."
                   : "Waiting for the buyer to reply to your counter."
                 : "This offer is closed."}
             </p>
           )}
+
+          {isSeller && sellerInitiated && countered && offer.listing_id ? (
+            <SellerOfferManageActions
+              className="mt-3"
+              offerId={offer.id}
+              listingId={offer.listing_id}
+              buyerUserId={offer.buyer_id}
+              sellerUserId={offer.seller_id}
+              listingTitle={listingTitle}
+              listPrice={listPrice}
+              onCompleted={onThreadRefresh}
+            />
+          ) : null}
 
           {!isSeller && countered && counterExpired && (
             <p className={cn("text-[12px] text-muted-foreground", shownNote && "mt-2")}>

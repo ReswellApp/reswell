@@ -154,6 +154,39 @@ export type OpenBuyerOfferOnListing = {
   status: (typeof LISTING_BUYER_OPEN_OFFER_STATUSES)[number]
 }
 
+export type BuyerSellerOpenOfferRow = {
+  id: string
+  listing_id: string
+  status: string
+  seller_initiated: boolean | null
+  line_items: unknown
+  offer_timeline: unknown
+  fulfillment: string | null
+  updated_at: string
+}
+
+/** Open negotiations between one buyer and one seller (primary listing or bundle lines). */
+export async function listOpenOffersBetweenBuyerAndSeller(
+  supabase: SupabaseClient,
+  buyerId: string,
+  sellerId: string,
+): Promise<BuyerSellerOpenOfferRow[]> {
+  const { data, error } = await supabase
+    .from("offers")
+    .select(
+      "id, listing_id, status, seller_initiated, line_items, offer_timeline, fulfillment, updated_at",
+    )
+    .eq("buyer_id", buyerId)
+    .eq("seller_id", sellerId)
+    .in("status", ["PENDING", "COUNTERED"])
+
+  if (error || !data) {
+    if (error) console.error("[listOpenOffersBetweenBuyerAndSeller]", error)
+    return []
+  }
+  return data as BuyerSellerOpenOfferRow[]
+}
+
 export async function findPendingOfferForBuyer(
   supabase: SupabaseClient,
   listingId: string,
