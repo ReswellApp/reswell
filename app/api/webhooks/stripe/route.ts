@@ -28,7 +28,8 @@ export const runtime = "nodejs"
 /**
  * Stripe → Developers → Webhooks → Add endpoint: `https://<your-domain>/api/webhooks/stripe`
  * Events: `payment_intent.succeeded`, `refund.created`, `refund.updated`, `charge.refunded`,
- * `account.updated`, `transfer.reversed`, `payout.failed`, `payout.canceled` (Connect)
+ * `account.updated`, `transfer.reversed`, `payout.failed`, `payout.canceled` (Connect —
+ * the endpoint must listen to events on connected accounts, not only the platform)
  * Signing secret: `STRIPE_WEBHOOK_SECRET` — one value, or comma/newline-separated during rotation.
  *
  * Use the **canonical** host Vercel serves without a redirect (www vs apex). Stripe does not follow

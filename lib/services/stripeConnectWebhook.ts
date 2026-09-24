@@ -5,6 +5,10 @@ import {
   restoreWalletForReversedConnectCashout,
   syncStripeConnectAccountRow,
 } from "@/lib/services/stripeConnect"
+import {
+  buildPayoutRequirementNotice,
+  requirementSnapshotFromAccount,
+} from "@/lib/utils/stripe-connect-status"
 import { getStripe } from "@/lib/stripe-server"
 import { roundMoney } from "@/lib/utils/stripe-connect-cashout"
 
@@ -63,6 +67,61 @@ async function resolveConnectTransferReversalContext(
 }
 
 /**
+ * In-app notice when Stripe adds (or changes) fields the seller must submit.
+ * Same fingerprint is not sent again. Cleared once Stripe lists nothing due.
+ */
+async function notifySellerOfConnectRequirements(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  input: {
+    userId: string
+    stripeAccountId: string
+    notice: { fingerprint: string; message: string } | null
+  },
+): Promise<void> {
+  const { data: stored, error: readError } = await supabase
+    .from("stripe_connect_accounts")
+    .select("requirements_notice_fingerprint")
+    .eq("stripe_account_id", input.stripeAccountId)
+    .maybeSingle()
+
+  if (readError) {
+    console.error("[stripe webhook] requirements notice read failed", readError)
+    return
+  }
+
+  const previous =
+    typeof stored?.requirements_notice_fingerprint === "string"
+      ? stored.requirements_notice_fingerprint
+      : null
+  const next = input.notice?.fingerprint ?? null
+  if (previous === next) return
+
+  if (next && input.notice) {
+    const { error: insertError } = await supabase.from("notifications").insert({
+      user_id: input.userId,
+      type: "payout_info_required",
+      message: input.notice.message,
+    })
+    if (insertError) {
+      console.error("[stripe webhook] payout requirement notification failed", insertError)
+      return
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("stripe_connect_accounts")
+    .update({
+      requirements_notice_fingerprint: next,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("stripe_account_id", input.stripeAccountId)
+
+  if (updateError) {
+    console.error("[stripe webhook] requirements notice fingerprint update failed", updateError)
+  }
+}
+
+/**
  * Returns true when the event was a Connect lifecycle event we handled (so the webhook can ACK).
  */
 export async function tryHandleStripeConnectEvent(event: Stripe.Event): Promise<boolean> {
@@ -72,12 +131,20 @@ export async function tryHandleStripeConnectEvent(event: Stripe.Event): Promise<
       const supabase = createServiceRoleClient()
       const { data: row } = await supabase
         .from("stripe_connect_accounts")
-        .select("stripe_account_id")
+        .select("user_id, stripe_account_id")
         .eq("stripe_account_id", account.id)
         .maybeSingle()
       if (row) {
         try {
-          await syncStripeConnectAccountRow(supabase, account.id)
+          const synced = await syncStripeConnectAccountRow(supabase, account.id)
+          const userId = typeof row.user_id === "string" ? row.user_id : ""
+          if (userId) {
+            await notifySellerOfConnectRequirements(supabase, {
+              userId,
+              stripeAccountId: account.id,
+              notice: buildPayoutRequirementNotice(requirementSnapshotFromAccount(synced)),
+            })
+          }
         } catch (e) {
           console.error("[stripe webhook] account.updated sync failed", e)
         }

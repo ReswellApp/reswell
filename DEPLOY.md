@@ -67,7 +67,8 @@ So Stripe can confirm card checkouts, complete orders when the browser never cal
    - `payment_intent.succeeded` — create/update the marketplace order when the client or webhook completes checkout.
    - `refund.created`, `refund.updated` — buyer/seller/admin order status and seller wallet clawback when a card payment is refunded.
    - `charge.refunded` — fallback reconciliation if refund events were not added.
-   - `account.updated`, `transfer.reversed` — Stripe Connect cashout flows (see `lib/services/stripeConnectWebhook.ts`).
+   - `account.updated`, `transfer.reversed`, `payout.failed`, `payout.canceled` — Stripe Connect cashout and requirement updates (see `lib/services/stripeConnectWebhook.ts`).
+   - When adding the endpoint, choose **Listen to events on Connected accounts** (or your account and connected accounts). `account.updated` for a seller such as a date-of-birth or SSN request is a connected-account event. Reswell turns that into an Earnings prompt and an in-app notice.
 4. Copy the **Signing secret** and set it as `STRIPE_WEBHOOK_SECRET` in Vercel, then redeploy.
 
 Local dev: use the Stripe CLI (`stripe listen --forward-to localhost:3000/api/webhooks/stripe`) with test keys in `.env.local`.

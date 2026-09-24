@@ -305,17 +305,26 @@ export function EarningsPaymentsOverview({
               ) : cashOutReady ? (
                 <div className="flex gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-300 shrink-0 mt-0.5" aria-hidden />
-                  <p className="text-primary-foreground/90 leading-relaxed">
-                    <span className="font-medium">Payout details on file.</span>{" "}
-                    {connectStatus?.bankLast4 ? (
-                      <>
-                        Linked account ending in <span className="font-mono tabular-nums">{connectStatus.bankLast4}</span>
-                        . Cash out in Bank transfers below.
-                      </>
-                    ) : (
-                      <>You can cash out in Bank transfers below.</>
-                    )}
-                  </p>
+                  <div className="space-y-1.5">
+                    <p className="text-primary-foreground/90 leading-relaxed">
+                      <span className="font-medium">Payout details on file.</span>{" "}
+                      {connectStatus?.bankLast4 ? (
+                        <>
+                          Linked account ending in <span className="font-mono tabular-nums">{connectStatus.bankLast4}</span>
+                          . Cash out in Bank transfers below.
+                        </>
+                      ) : (
+                        <>You can cash out in Bank transfers below.</>
+                      )}
+                    </p>
+                    {(connectStatus?.upcomingRequirementsChecklist?.length ?? 0) > 0 ? (
+                      <p className="text-primary-foreground/90 leading-relaxed">
+                        Stripe still needs {connectStatus?.upcomingRequirementsChecklist.join(" and ")}. Use{" "}
+                        <span className="font-medium">Update info</span> in Bank transfers before payouts are
+                        restricted.
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               ) : (
                 <p className="text-primary-foreground/90 leading-relaxed">

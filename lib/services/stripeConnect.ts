@@ -257,6 +257,10 @@ export async function getStripeConnectStatusForUser(
     pendingVerification: requirements?.pending_verification ?? [],
     disabledReason: requirements?.disabled_reason ?? null,
     identityIncomplete: isStripeIdentityIncomplete(syncedAccount?.individual),
+    futurePastDue: syncedAccount?.future_requirements?.past_due ?? [],
+    futureCurrentlyDue: syncedAccount?.future_requirements?.currently_due ?? [],
+    futureEventuallyDue: syncedAccount?.future_requirements?.eventually_due ?? [],
+    futureDeadlineUnix: syncedAccount?.future_requirements?.current_deadline ?? null,
   })
 }
 
@@ -592,6 +596,7 @@ export async function createConnectHostedOnboardingLink(
       type: "account_onboarding",
       collection_options: {
         fields: "eventually_due",
+        future_requirements: "include",
       },
     })
     if (!link.url) {
