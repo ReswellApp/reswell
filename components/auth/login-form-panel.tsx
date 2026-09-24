@@ -20,6 +20,7 @@ import { ACCOUNT_BANNED_USER_MESSAGE } from "@/lib/messages/account-ban-errors"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
+import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import { cn } from "@/lib/utils"
 
@@ -82,8 +83,16 @@ export function LoginFormPanel({
       }
 
       let session = (await supabase.auth.getSession()).data.session
-      if (!session?.user) {
-        session = await waitForClientSession({ supabase, maxAttempts: 20, msBetween: 50 })
+      // Signed-out visitors have no auth cookies. Polling `getSession` and then
+      // `getUser()` only holds the form behind the spinner and contends on the
+      // Supabase auth lock with the newsletter probe.
+      if (!session?.user && hasSupabaseAuthCookiesClient()) {
+        session = await waitForClientSession({
+          supabase,
+          maxAttempts: 8,
+          msBetween: 40,
+          networkFallback: false,
+        })
       }
       if (session?.user) {
         if (variant === "modal") {
