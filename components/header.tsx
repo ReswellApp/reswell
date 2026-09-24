@@ -71,6 +71,7 @@ import {
 import { walletTotalBalanceUsd } from "@/lib/auth/header-wallet-sync"
 import { getOAuthAvatarUrl } from "@/lib/auth/profile-completion"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
+import { isAbortError } from "@/lib/utils/is-abort-error"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
@@ -669,10 +670,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     try {
       const userResult = await getAuthUserWithRetry(supabase)
       if (!userResult.ok) {
-        console.warn(
-          "[header] client refetch getUser failed; keeping current UI:",
-          userResult.error,
-        )
+        if (!isAbortError(userResult.error)) {
+          console.warn(
+            "[header] client refetch getUser failed; keeping current UI:",
+            userResult.error,
+          )
+        }
         return
       }
       const resolvedUser = userResult.user

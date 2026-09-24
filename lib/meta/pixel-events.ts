@@ -22,6 +22,12 @@ export type MetaProductEventParams = {
   eventId?: string | null
 }
 
+/** Meta rejects anything that is not an ISO 4217 code. */
+function isoCurrency(value: string | null | undefined): string {
+  const code = value?.trim().toUpperCase() ?? ""
+  return /^[A-Z]{3}$/.test(code) ? code : "USD"
+}
+
 function buildProductParams(params: MetaProductEventParams): Record<string, unknown> {
   const out: Record<string, unknown> = {
     content_type: "product",
@@ -31,7 +37,7 @@ function buildProductParams(params: MetaProductEventParams): Record<string, unkn
   const value = typeof params.value === "number" ? params.value : Number(params.value)
   if (Number.isFinite(value) && value > 0) {
     out.value = Math.round(value * 100) / 100
-    out.currency = params.currency?.trim().toUpperCase() || "USD"
+    out.currency = isoCurrency(params.currency)
   }
 
   if (params.contentName?.trim()) {
