@@ -89,6 +89,71 @@ export async function appendConversationMessageWithClient(
   return { ok: true, conversationId, inserted: true }
 }
 
+/**
+ * Rewrites every chat row tied to an offer (price update or revoke).
+ * Bumps `created_at` so the card moves to the latest point in the thread.
+ */
+export async function rewriteOfferThreadMessages(
+  supabase: SupabaseClient,
+  input: {
+    offerId: string
+    content: string
+    buyerId: string
+    sellerId: string
+    /** Drop `offer_id` so a revoked offer renders as a closed event. */
+    detachOfferId?: boolean
+  },
+): Promise<{ ok: true; updated: number; conversationId: string | null } | { ok: false }> {
+  const now = new Date().toISOString()
+  const { data: rows, error } = await supabase
+    .from("messages")
+    .select("id, conversation_id")
+    .eq("offer_id", input.offerId)
+
+  if (error) {
+    console.error("[rewriteOfferThreadMessages] select:", error)
+    return { ok: false }
+  }
+
+  if (!rows?.length) {
+    return { ok: true, updated: 0, conversationId: null }
+  }
+
+  const patch: { content: string; created_at: string; offer_id?: null } = {
+    content: input.content,
+    created_at: now,
+  }
+  if (input.detachOfferId) patch.offer_id = null
+
+  const { error: updateError } = await supabase
+    .from("messages")
+    .update(patch)
+    .eq("offer_id", input.offerId)
+
+  if (updateError) {
+    console.error("[rewriteOfferThreadMessages] update:", updateError)
+    return { ok: false }
+  }
+
+  const conversationIds = [
+    ...new Set(
+      rows
+        .map((row) => row.conversation_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ]
+  if (conversationIds.length > 0) {
+    await supabase.from("conversations").update({ last_message_at: now }).in("id", conversationIds)
+  }
+  revalidateMessagesInboxForParticipants(input.buyerId, input.sellerId)
+
+  return {
+    ok: true,
+    updated: rows.length,
+    conversationId: conversationIds[0] ?? null,
+  }
+}
+
 /** User-scoped client (RLS): new offer mirrored into Chats */
 export async function appendConversationMessage(
   supabase: SupabaseClient,

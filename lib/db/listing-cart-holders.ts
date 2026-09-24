@@ -38,6 +38,7 @@ type ListingCartHolderRpcRow = {
   avatar_url: string | null
   added_at: string
   open_offer_id: string | null
+  open_offer_seller_initiated: boolean | null
   conversation_id: string | null
 }
 
@@ -71,6 +72,7 @@ export async function getListingCartHoldersForSeller(
       avatarUrl: typeof row.avatar_url === "string" && row.avatar_url.trim() ? row.avatar_url : null,
       addedAt: typeof row.added_at === "string" ? row.added_at : new Date().toISOString(),
       openOfferId: typeof row.open_offer_id === "string" ? row.open_offer_id : null,
+      openOfferSellerInitiated: row.open_offer_seller_initiated === true,
       conversationId: typeof row.conversation_id === "string" ? row.conversation_id : null,
     })
   }

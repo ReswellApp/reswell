@@ -42,6 +42,13 @@ function parseAmountInput(raw: string): number | null {
 
 type SellerListingRow = SellerOfferListing
 
+type OpenSellerOfferPreview = {
+  id: string
+  fulfillment: "pickup" | "shipping" | null
+  message: string | null
+  lineItems: { listingId: string; amount: number }[]
+}
+
 function fallbackSellerListingRow({
   listingId,
   listingTitle,
@@ -281,6 +288,7 @@ export function SellerMakeOfferToBuyerDialog({
   const [fulfillment, setFulfillment] = useState<"pickup" | "shipping">("pickup")
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [updatingOffer, setUpdatingOffer] = useState(false)
 
   const seedFallbackListing = useCallback((): SellerListingRow | null => {
     return fallbackSellerListingRow({
@@ -294,15 +302,18 @@ export function SellerMakeOfferToBuyerDialog({
   const loadSellerListings = useCallback(async () => {
     setLoadingListings(true)
     try {
-      const listingQuery = allowAdditionalListings ? "" : "?anchorOnly=1"
-      const res = await fetch(`/api/listings/${listingId}/seller-offers${listingQuery}`, {
+      const params = new URLSearchParams()
+      if (!allowAdditionalListings) params.set("anchorOnly", "1")
+      params.set("buyerUserId", buyerUserId)
+      const res = await fetch(`/api/listings/${listingId}/seller-offers?${params.toString()}`, {
         method: "GET",
         credentials: "include",
       })
       const json: unknown = await res.json().catch(() => ({}))
       const payload =
         typeof json === "object" && json !== null && "data" in json
-          ? (json as { data?: { listings?: SellerOfferListing[] } }).data
+          ? (json as { data?: { listings?: SellerOfferListing[]; openOffer?: OpenSellerOfferPreview | null } })
+              .data
           : undefined
       const loaded = Array.isArray(payload?.listings) ? payload.listings : []
       const rows = allowAdditionalListings
@@ -330,6 +341,24 @@ export function SellerMakeOfferToBuyerDialog({
       }
 
       setListings(rows)
+
+      const openOffer = payload?.openOffer
+      if (openOffer && openOffer.lineItems.length > 0) {
+        const ids = openOffer.lineItems.map((item) => item.listingId)
+        const selected = ids.includes(listingId) ? ids : [listingId, ...ids]
+        setSelectedIds(new Set(selected))
+        setSelectedOrder(selected)
+        const amounts: Record<string, string> = {}
+        for (const item of openOffer.lineItems) {
+          amounts[item.listingId] = item.amount.toFixed(2)
+        }
+        setAmountByListingId(amounts)
+        if (openOffer.fulfillment) setFulfillment(openOffer.fulfillment)
+        setMessage(openOffer.message ?? "")
+        setUpdatingOffer(true)
+      } else {
+        setUpdatingOffer(false)
+      }
     } catch {
       const fallback = seedFallbackListing()
       if (fallback) {
@@ -341,7 +370,7 @@ export function SellerMakeOfferToBuyerDialog({
     } finally {
       setLoadingListings(false)
     }
-  }, [allowAdditionalListings, listingId, seedFallbackListing])
+  }, [allowAdditionalListings, buyerUserId, listingId, seedFallbackListing])
 
   useEffect(() => {
     if (!open) return
@@ -351,6 +380,7 @@ export function SellerMakeOfferToBuyerDialog({
     setFulfillment("pickup")
     setMessage("")
     setSubmitting(false)
+    setUpdatingOffer(false)
     void loadSellerListings()
   }, [open, listingId, loadSellerListings])
 
@@ -529,7 +559,8 @@ export function SellerMakeOfferToBuyerDialog({
 
       const data =
         typeof json === "object" && json !== null && "data" in json
-          ? (json as { data?: { offerId?: string; conversationId?: string | null } }).data
+          ? (json as { data?: { offerId?: string; conversationId?: string | null; updated?: boolean } })
+              .data
           : undefined
       const offerId = data?.offerId ?? null
       const returnedConversationId = data?.conversationId ?? null
@@ -544,7 +575,7 @@ export function SellerMakeOfferToBuyerDialog({
       }
 
       onOpenChange(false)
-      toast.success("Offer sent.")
+      toast.success(data?.updated ? "Offer updated." : "Offer sent.")
 
       if (conversationId) {
         router.refresh()
@@ -569,11 +600,15 @@ export function SellerMakeOfferToBuyerDialog({
   const form = (
     <>
         <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 px-5 pb-4 pt-5 sm:px-6">
-          <DialogTitle className="text-left text-xl font-semibold">Make them an offer</DialogTitle>
+          <DialogTitle className="text-left text-xl font-semibold">
+            {updatingOffer ? "Update your offer" : "Make them an offer"}
+          </DialogTitle>
           <p className="text-left text-[15px] leading-snug text-muted-foreground">
-            {allowAdditionalListings
-              ? "Set your price for each listing. Add more listings to bundle into one offer."
-              : "Set your price for this listing."}
+            {updatingOffer
+              ? "Change the price or terms. This replaces the offer they already have."
+              : allowAdditionalListings
+                ? "Set your price for each listing. Add more listings to bundle into one offer."
+                : "Set your price for this listing."}
           </p>
         </DialogHeader>
 
@@ -814,6 +849,8 @@ export function SellerMakeOfferToBuyerDialog({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                   Sending…
                 </>
+              ) : updatingOffer ? (
+                "Update offer"
               ) : (
                 "Send offer"
               )}

@@ -4,6 +4,8 @@ export type ListingCartHolder = {
   avatarUrl: string | null
   addedAt: string
   openOfferId: string | null
+  /** True when the open offer was sent by the seller and can be updated or revoked. */
+  openOfferSellerInitiated: boolean
   conversationId: string | null
 }
 

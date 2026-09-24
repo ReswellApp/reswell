@@ -1,9 +1,23 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { fetchListingForOffer, type ListingRowForOffer } from "@/lib/db/offers"
+import {
+  fetchListingForOffer,
+  listOpenOffersBetweenBuyerAndSeller,
+  type ListingRowForOffer,
+} from "@/lib/db/offers"
 import { offerShippingAmountForListings } from "@/lib/offer-listing-shipping"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
-import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
+import {
+  appendConversationMessageWithClient,
+  rewriteOfferThreadMessages,
+} from "@/lib/services/conversationThread"
+import { deleteOfferRecord } from "@/lib/services/offerCleanup"
+import {
+  lineItemListingIdsFromRaw,
+  planSellerOfferRevision,
+} from "@/lib/utils/seller-offer-revision"
+import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
+import { parseOfferTimeline } from "@/lib/utils/offer-timeline"
 import { formatSellerOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
 import type { OfferLineItem } from "@/lib/types/offer-line-item"
 import {
@@ -18,25 +32,8 @@ function roundMoney(n: number): number {
 }
 
 export type CreateSellerInitiatedOfferResult =
-  | { ok: true; offerId: string; conversationId: string | null }
+  | { ok: true; offerId: string; conversationId: string | null; updated: boolean }
   | { ok: false; status: number; error: string }
-
-async function findActiveNegotiationForBuyerListing(
-  supabase: SupabaseClient,
-  listingId: string,
-  buyerId: string,
-): Promise<{ id: string } | null> {
-  const { data, error } = await supabase
-    .from("offers")
-    .select("id")
-    .eq("listing_id", listingId)
-    .eq("buyer_id", buyerId)
-    .in("status", ["PENDING", "COUNTERED"])
-    .maybeSingle()
-
-  if (error || !data) return null
-  return { id: data.id as string }
-}
 
 function validateListingForSellerOffer(
   listing: ListingRowForOffer,
@@ -156,18 +153,36 @@ export async function createSellerInitiatedOffer(
     }
   }
 
-  for (const row of normalizedLineItems) {
-    const active = await findActiveNegotiationForBuyerListing(supabase, row.listingId, buyerUserId)
-    if (active) {
-      const listing = listingsById.get(row.listingId)
-      const title = (listing?.title ?? "this listing").trim() || "this listing"
-      return {
-        ok: false,
-        status: 409,
-        error: `There is already an open offer with this buyer on “${title}”. Resolve it first or continue in messages.`,
-      }
+  const openOffers = await listOpenOffersBetweenBuyerAndSeller(
+    supabase,
+    buyerUserId,
+    sellerUserId,
+  )
+  const revision = planSellerOfferRevision(
+    openOffers.map((row) => ({
+      id: row.id,
+      listingId: row.listing_id,
+      status: row.status,
+      sellerInitiated: row.seller_initiated === true,
+      lineItemListingIds: lineItemListingIdsFromRaw(row.line_items),
+      updatedAt: row.updated_at,
+    })),
+    normalizedLineItems.map((row) => row.listingId),
+  )
+  if (revision.kind === "blocked") {
+    const listing = listingsById.get(revision.listingId)
+    const title = (listing?.title ?? "this listing").trim() || "this listing"
+    return {
+      ok: false,
+      status: 409,
+      error: `There is already an open offer with this buyer on “${title}”. Resolve it first or continue in messages.`,
     }
   }
+
+  const replacingOffer =
+    revision.kind === "replace"
+      ? openOffers.find((row) => row.id === revision.keepId) ?? null
+      : null
 
   const lineItems: OfferLineItem[] = normalizedLineItems.map((row) => {
     const listing = listingsById.get(row.listingId)!
@@ -201,6 +216,12 @@ export async function createSellerInitiatedOffer(
   }
 
   const offerExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+  const updated = replacingOffer != null
+  const priorSellerCounters = replacingOffer
+    ? parseOfferTimeline(replacingOffer.offer_timeline).filter(
+        (entry) => entry.sender_role === "SELLER" && entry.action === "COUNTER",
+      ).length
+    : 0
 
   const timelineEntry = {
     id: randomUUID(),
@@ -212,32 +233,81 @@ export async function createSellerInitiatedOffer(
     created_at: new Date().toISOString(),
   }
 
-  const { data: inserted, error: offerErr } = await service
-    .from("offers")
-    .insert({
-      listing_id: primaryListingId,
-      buyer_id: buyerUserId,
-      seller_id: sellerUserId,
-      status: "COUNTERED",
-      initial_amount: itemsSubtotal,
-      current_amount: itemsSubtotal,
-      counter_count: 0,
-      seller_initiated: true,
-      expires_at: offerExpiresAt,
-      offer_timeline: [timelineEntry],
-      fulfillment,
-      shipping_amount: shippingAmount,
-      line_items: lineItems,
+  let offerId: string
+  if (replacingOffer && revision.kind === "replace") {
+    for (const dropId of revision.dropIds) {
+      const withdrawn = await rewriteOfferThreadMessages(service, {
+        offerId: dropId,
+        content: "Offer withdrawn — replaced by an updated offer.",
+        buyerId: buyerUserId,
+        sellerId: sellerUserId,
+        detachOfferId: true,
+      })
+      if (!withdrawn.ok) {
+        console.error("[createSellerInitiatedOffer] superseded thread rewrite failed", dropId)
+      }
+      await deleteOfferRecord(service, dropId)
+    }
+
+    const { error: updateErr } = await service
+      .from("offers")
+      .update({
+        listing_id: primaryListingId,
+        status: "COUNTERED",
+        current_amount: itemsSubtotal,
+        seller_initiated: true,
+        expires_at: offerExpiresAt,
+        fulfillment,
+        shipping_amount: shippingAmount,
+        line_items: lineItems,
+      })
+      .eq("id", replacingOffer.id)
+      .eq("seller_id", sellerUserId)
+      .eq("status", "COUNTERED")
+
+    if (updateErr) {
+      console.error("[createSellerInitiatedOffer] update offer:", updateErr)
+      return { ok: false, status: 500, error: "Could not update your offer. Try again in a moment." }
+    }
+
+    const appended = await appendOfferTimelineEntry(replacingOffer.id, {
+      senderId: sellerUserId,
+      senderRole: "SELLER",
+      action: "COUNTER",
+      amount: itemsSubtotal,
+      note,
     })
-    .select("id")
-    .single()
+    if (!appended) {
+      console.error("[createSellerInitiatedOffer] timeline append failed")
+    }
+    offerId = replacingOffer.id
+  } else {
+    const { data: inserted, error: offerErr } = await service
+      .from("offers")
+      .insert({
+        listing_id: primaryListingId,
+        buyer_id: buyerUserId,
+        seller_id: sellerUserId,
+        status: "COUNTERED",
+        initial_amount: itemsSubtotal,
+        current_amount: itemsSubtotal,
+        counter_count: 0,
+        seller_initiated: true,
+        expires_at: offerExpiresAt,
+        offer_timeline: [timelineEntry],
+        fulfillment,
+        shipping_amount: shippingAmount,
+        line_items: lineItems,
+      })
+      .select("id")
+      .single()
 
-  if (offerErr || !inserted?.id) {
-    console.error("[createSellerInitiatedOffer] insert offer:", offerErr)
-    return { ok: false, status: 500, error: "Could not send your offer. Try again in a moment." }
+    if (offerErr || !inserted?.id) {
+      console.error("[createSellerInitiatedOffer] insert offer:", offerErr)
+      return { ok: false, status: 500, error: "Could not send your offer. Try again in a moment." }
+    }
+    offerId = inserted.id as string
   }
-
-  const offerId = inserted.id as string
 
   const counterText = formatSellerOfferThreadContent({
     itemsSubtotal,
@@ -247,14 +317,26 @@ export async function createSellerInitiatedOffer(
     note,
   })
 
-  const threadResult = await appendConversationMessageWithClient(service, {
-    buyerId: buyerUserId,
-    sellerId: sellerUserId,
-    listingId: anchorListingId,
-    senderId: sellerUserId,
-    content: counterText,
-    offerId,
-  })
+  const rewritten = updated
+    ? await rewriteOfferThreadMessages(service, {
+        offerId,
+        content: counterText,
+        buyerId: buyerUserId,
+        sellerId: sellerUserId,
+      })
+    : null
+
+  const threadResult =
+    rewritten && rewritten.ok && rewritten.updated > 0
+      ? { ok: true as const, conversationId: rewritten.conversationId }
+      : await appendConversationMessageWithClient(service, {
+          buyerId: buyerUserId,
+          sellerId: sellerUserId,
+          listingId: anchorListingId,
+          senderId: sellerUserId,
+          content: counterText,
+          offerId,
+        })
 
   if (!threadResult.ok) {
     console.error("[createSellerInitiatedOffer] thread mirror failed")
@@ -271,9 +353,13 @@ export async function createSellerInitiatedOffer(
     type: "offer_countered",
     listing_id: primaryListingId,
     actor_id: sellerUserId,
-    message: isBundle
-      ? `${title}: the seller offered a bundle for $${notifAmount.toFixed(2)}.`
-      : `${title}: the seller offered $${notifAmount.toFixed(2)}.`,
+    message: updated
+      ? isBundle
+        ? `${title}: the seller updated their bundle offer to $${notifAmount.toFixed(2)}.`
+        : `${title}: the seller updated their offer to $${notifAmount.toFixed(2)}.`
+      : isBundle
+        ? `${title}: the seller offered a bundle for $${notifAmount.toFixed(2)}.`
+        : `${title}: the seller offered $${notifAmount.toFixed(2)}.`,
   })
 
   if (notifErr) {
@@ -282,7 +368,7 @@ export async function createSellerInitiatedOffer(
 
   void trackKlaviyoSellerMadeOfferToBuyer({
     offerId,
-    counterRound: 1,
+    counterRound: priorSellerCounters + 1,
     listingId: primaryListingId,
     listingTitle: title,
     listingSlug: primaryListing.slug?.trim() ? primaryListing.slug : null,
@@ -298,5 +384,6 @@ export async function createSellerInitiatedOffer(
     ok: true,
     offerId,
     conversationId: threadResult.ok ? threadResult.conversationId : null,
+    updated,
   }
 }

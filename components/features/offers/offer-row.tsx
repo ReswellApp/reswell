@@ -26,6 +26,7 @@ import { dashboardListingForOffer, offerIsSoldPresentation } from "@/lib/utils/o
 import { listingOfferTileCompactClass } from "@/lib/utils/dashboard-display-styles"
 import { offerMessagesHref } from "@/lib/utils/offer-messages-href"
 import { OfferWithdrawButton } from "@/components/features/offers/offer-withdraw-button"
+import { SellerOfferManageActions } from "@/components/features/offers/seller-offer-manage-actions"
 import { offerIsBinding } from "@/lib/listing-offer-authorization"
 
 function money(n: unknown): string {
@@ -359,6 +360,22 @@ export function OfferRow({
                 offerId={offer.id}
                 onCompleted={onWithdrawn}
                 className="h-7 rounded-md px-2.5 text-[11px] font-medium"
+              />
+            ) : null}
+            {role === "seller" &&
+            offer.seller_initiated &&
+            offer.status === "COUNTERED" &&
+            !isSold &&
+            onWithdrawn ? (
+              <SellerOfferManageActions
+                compact
+                offerId={offer.id}
+                listingId={offer.listing_id}
+                buyerUserId={offer.buyer_id}
+                sellerUserId={offer.seller_id}
+                listingTitle={listingTitle}
+                listPrice={listPrice}
+                onCompleted={onWithdrawn}
               />
             ) : null}
           </div>

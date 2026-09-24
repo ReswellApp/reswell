@@ -25,8 +25,18 @@ export async function GET(
   }
 
   const anchorOnly = request.nextUrl.searchParams.get("anchorOnly") === "1"
+  const buyerRaw = request.nextUrl.searchParams.get("buyerUserId")
+  let buyerUserId: string | undefined
+  if (buyerRaw) {
+    const buyerParsed = z.string().uuid().safeParse(buyerRaw)
+    if (!buyerParsed.success) {
+      return NextResponse.json({ error: "Invalid buyer." }, { status: 400 })
+    }
+    buyerUserId = buyerParsed.data
+  }
   const result = await listSellerOfferListings(supabase, user.id, idParsed.data, {
     anchorOnly,
+    buyerUserId,
   })
   if (!result.ok) {
     const failed = NextResponse.json({ error: result.error }, { status: result.status })
@@ -34,7 +44,10 @@ export async function GET(
     return failed
   }
 
-  const response = NextResponse.json({ data: { listings: result.listings } }, { status: 200 })
+  const response = NextResponse.json(
+    { data: { listings: result.listings, openOffer: result.openOffer } },
+    { status: 200 },
+  )
   response.headers.set("Cache-Control", "private, no-store")
   return response
 }
@@ -80,14 +93,16 @@ export async function POST(
   }
 
   revalidatePath("/dashboard/offers")
+  revalidatePath("/messages/offers")
 
   return NextResponse.json(
     {
       data: {
         offerId: result.offerId,
         conversationId: result.conversationId,
+        updated: result.updated,
       },
     },
-    { status: 201 },
+    { status: result.updated ? 200 : 201 },
   )
 }
