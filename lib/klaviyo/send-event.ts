@@ -57,6 +57,11 @@ export type KlaviyoProfileIds = {
   /** Written onto the Klaviyo profile so `{{ first_name }}` matches the name on file. */
   first_name?: string | null
   last_name?: string | null
+  /**
+   * Custom profile properties (`person|lookup:'…'`). Strings only so the Events API
+   * accepts them and the welcome email can render them without extra formatting.
+   */
+  properties?: Record<string, string>
 }
 
 export type SendKlaviyoServerEventInput = {
@@ -137,7 +142,7 @@ async function performSendKlaviyoServerEvent(
     }
   }
 
-  const profileAttributes: Record<string, string> = {}
+  const profileAttributes: Record<string, unknown> = {}
   if (input.profile.external_id?.trim()) {
     profileAttributes.external_id = input.profile.external_id.trim()
   }
@@ -155,6 +160,16 @@ async function performSendKlaviyoServerEvent(
   }
   if (input.profile.last_name?.trim()) {
     profileAttributes.last_name = input.profile.last_name.trim()
+  }
+  if (input.profile.properties) {
+    const properties: Record<string, string> = {}
+    for (const [key, value] of Object.entries(input.profile.properties)) {
+      const trimmed = value.trim()
+      if (key.trim() && trimmed) properties[key.trim()] = trimmed
+    }
+    if (Object.keys(properties).length > 0) {
+      profileAttributes.properties = properties
+    }
   }
 
   const attrs: Record<string, unknown> = {

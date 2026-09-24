@@ -46,7 +46,14 @@ export async function trackKlaviyoNewsletterPromoExpiring(input: {
 
   return sendKlaviyoServerEvent({
     metricName: NEWSLETTER_PROMO_EXPIRING_METRIC,
-    profile: { email },
+    profile: {
+      email,
+      properties: {
+        welcome_promo_code: input.promoCode,
+        welcome_discount_percent: String(input.discountPercent),
+        welcome_promo_expires: expiresFormatted,
+      },
+    },
     properties: {
       email,
       promo_code: input.promoCode,

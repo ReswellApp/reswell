@@ -7,9 +7,11 @@
 
   Trigger: Metric → Newsletter (signup). Each send includes that person's code.
 
-  Auto-filled from the Newsletter event (do not hardcode a code):
-  - {{ event|lookup:'promo_code' }} — the WELCOME- code checkout accepts
-  - {{ event|lookup:'discount_percent' }} and {{ event|lookup:'expires_at_formatted' }}
+  Auto-filled per person (do not hardcode a code). Profile property first, then the
+  Newsletter event, so a list-triggered welcome flow and a metric-triggered flow both work:
+  - person|lookup:'welcome_promo_code' then event.promo_code — the WELCOME- code checkout accepts
+  - welcome_discount_percent / event.discount_percent
+  - welcome_promo_expires / event.expires_at_formatted
   - {{ first_name|default:event.first_name|default:'there' }} — profile name, then the name on the account
 
   Shop buttons go to https://www.reswell.app/boards.
@@ -105,7 +107,7 @@
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;border:1px solid #E4E7EE;border-radius:12px;">
                 <tr>
                   <td align="center" style="padding:14px 18px;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:22px;font-weight:600;letter-spacing:0.02em;color:#05080D;word-break:break-word;">
-                    {{ event|lookup:'promo_code'|default:'' }}
+                    {{ person|lookup:'welcome_promo_code'|default:event.promo_code|default:'' }}
                   </td>
                 </tr>
               </table>
@@ -232,15 +234,15 @@
                       A welcome from us
                     </p>
                     <h2 class="banner-title" style="margin:14px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:34px;font-weight:500;line-height:40px;letter-spacing:-0.02em;color:#FFFFFF;">
-                      Enjoy {{ event|lookup:'discount_percent'|default:'15' }}% off your first order
+                      Enjoy {{ person|lookup:'welcome_discount_percent'|default:event.discount_percent|default:'15' }}% off your first order
                     </h2>
                     <p style="margin:14px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:21px;color:#D5DCEC;">
-                      Use your code at checkout. Valid through {{ event|lookup:'expires_at_formatted'|default:'30 days' }}.
+                      Use your code at checkout. Valid through {{ person|lookup:'welcome_promo_expires'|default:event.expires_at_formatted|default:'30 days' }}.
                     </p>
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;margin-top:18px;background-color:#FFFFFF;border-radius:10px;">
                       <tr>
                         <td align="center" style="padding:12px 16px;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:20px;font-weight:600;color:#05080D;word-break:break-word;">
-                          {{ event|lookup:'promo_code'|default:'' }}
+                          {{ person|lookup:'welcome_promo_code'|default:event.promo_code|default:'' }}
                         </td>
                       </tr>
                     </table>

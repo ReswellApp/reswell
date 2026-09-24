@@ -36,6 +36,11 @@ export async function trackKlaviyoNewsletterSignup(input: {
       email,
       first_name: input.firstName,
       last_name: input.lastName,
+      properties: {
+        welcome_promo_code: input.promoCode,
+        welcome_discount_percent: String(input.discountPercent),
+        welcome_promo_expires: expiresFormatted,
+      },
     },
     properties: {
       email,
