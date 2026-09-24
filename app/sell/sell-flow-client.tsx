@@ -210,6 +210,7 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { SellBoardDimensionsPicker } from "@/components/features/sell/sell-board-dimensions-picker"
+import { SellBoardDimensionsScan } from "@/components/features/sell/sell-board-dimensions-scan"
 import { SellBoardStockSizePicker } from "@/components/features/sell/sell-board-stock-size-picker"
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import type { SurfboardStockSizeOption } from "@/lib/types/board-stock-sizes"
@@ -4698,6 +4699,25 @@ function SellPageContentInner({
                     <Separator className="bg-border" />
 
                     <div className="space-y-5">
+                      <SellBoardDimensionsScan
+                        disabled={editLoading}
+                        onNeedSignIn={() => openSignIn()}
+                        onScanned={(dims) => {
+                          setStockSizeMode("custom")
+                          setSelectedStockSizeId(null)
+                          setFormData((fd) => ({
+                            ...fd,
+                            ...(dims.boardLength ? { boardLength: dims.boardLength } : {}),
+                            ...(dims.boardWidthInches
+                              ? { boardWidthInches: dims.boardWidthInches }
+                              : {}),
+                            ...(dims.boardThicknessInches
+                              ? { boardThicknessInches: dims.boardThicknessInches }
+                              : {}),
+                            ...(dims.boardVolumeL ? { boardVolumeL: dims.boardVolumeL } : {}),
+                          }))
+                        }}
+                      />
                       {modelStockSizes.length > 0 ? (
                         <SellBoardStockSizePicker
                           modelName={formData.boardModelName.trim() || null}

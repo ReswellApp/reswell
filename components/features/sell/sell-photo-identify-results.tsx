@@ -44,6 +44,9 @@ export function SellPhotoIdentifyResults({
         <p className="mt-1 text-xs text-muted-foreground">
           {confidenceLabel(result.observation.confidence)}
           {readBits.length > 0 ? ` · ${readBits.join(" · ")}` : ""}
+          {result.catalogBackend === "elasticsearch" ? " · Elasticsearch" : ""}
+          {result.usedEmbedding ? " · Gemini Embedding" : ""}
+          {result.catalogBackend === "supabase" ? " · Database fallback" : ""}
         </p>
       </div>
 

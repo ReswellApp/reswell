@@ -62,6 +62,11 @@ async function main(): Promise<void> {
   })
 
   console.log("Rebuilding sell catalog index…")
+  if (process.env.AI_GATEWAY_API_KEY?.trim() || process.env.VERCEL_OIDC_TOKEN?.trim()) {
+    console.log("Gemini Embedding 2 vectors will be stored on each catalog row.")
+  } else {
+    console.log("AI Gateway auth is unset. Catalog rows will not get embeddings.")
+  }
   const started = Date.now()
   const result = await reindexSellCatalogFromSupabase(supabase)
   const seconds = ((Date.now() - started) / 1000).toFixed(1)

@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SellPhotoIdentifyListing } from "@/components/features/sell/sell-photo-identify-listing"
 import { SellPhotoIdentifyResults } from "@/components/features/sell/sell-photo-identify-results"
 import { SellPhotoIdentifyShot } from "@/components/features/sell/sell-photo-identify-shot"
 import { LISTING_IMAGE_MAX_ORIGINAL_BYTES } from "@/lib/listing-image-pipeline"
@@ -157,6 +158,7 @@ export function SellPhotoIdentify({ className }: { className?: string }) {
       </p>
 
       {result ? <SellPhotoIdentifyResults result={result} onSelect={chooseMatch} /> : null}
+      <SellPhotoIdentifyListing />
     </section>
   )
 }

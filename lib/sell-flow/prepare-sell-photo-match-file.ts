@@ -1,9 +1,10 @@
 import { createImageBitmapMaxLongEdge } from "@/lib/listing-image-pipeline"
 import { SELL_PHOTO_MATCH_MAX_BYTES } from "@/lib/sell-flow/sell-photo-match"
 
-const MAX_EDGE = 1280
-const JPEG_QUALITY = 0.82
-const JPEG_QUALITY_RETRY = 0.62
+/** Long enough that a deck logo and a dimensions stamp stay readable after JPEG encode. */
+const MAX_EDGE = 2048
+const JPEG_QUALITY = 0.9
+const JPEG_QUALITY_RETRY = 0.78
 
 function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -40,6 +41,15 @@ export async function prepareSellPhotoMatchFile(file: File): Promise<File> {
     let blob = await canvasToJpeg(canvas, JPEG_QUALITY)
     if (blob.size > SELL_PHOTO_MATCH_MAX_BYTES) {
       blob = await canvasToJpeg(canvas, JPEG_QUALITY_RETRY)
+    }
+    if (blob.size > SELL_PHOTO_MATCH_MAX_BYTES) {
+      const smaller = document.createElement("canvas")
+      smaller.width = Math.max(1, Math.round(canvas.width * 0.72))
+      smaller.height = Math.max(1, Math.round(canvas.height * 0.72))
+      const smallerCtx = smaller.getContext("2d")
+      if (!smallerCtx) throw new Error("Could not prepare that photo.")
+      smallerCtx.drawImage(canvas, 0, 0, smaller.width, smaller.height)
+      blob = await canvasToJpeg(smaller, JPEG_QUALITY_RETRY)
     }
     if (blob.size > SELL_PHOTO_MATCH_MAX_BYTES) {
       throw new Error("That photo is too large. Try a closer crop.")

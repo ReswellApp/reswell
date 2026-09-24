@@ -10,6 +10,12 @@ import {
   type SellCatalogSearchCategory,
 } from "@/lib/types/sell-catalog-search"
 import { compactSearchKey } from "@/lib/utils/fin-catalog-search-rank"
+import { sellCatalogEmbeddingText } from "@/lib/elasticsearch/sell-catalog-embedding-text"
+import {
+  CATALOG_EMBED_DIMENSIONS,
+  embedCatalogDocuments,
+  isCatalogEmbedConfigured,
+} from "@/lib/services/catalogEmbed"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_SELL_CATALOG_INDEX } from "./config"
 
@@ -34,6 +40,8 @@ export type SellCatalogEsDoc = {
   name_compact: string
   /** Brand docs: every sell category the brand is tagged with. Model docs: single category. */
   categories: SellCatalogSearchCategory[]
+  /** Gemini Embedding 2 retrieval vector. Absent until the row is embedded. */
+  embedding?: number[]
 }
 
 export type SellCatalogEsHit = {
@@ -92,6 +100,13 @@ const TEXT_WITH_EDGE = {
   },
 }
 
+const EMBEDDING_PROPERTY = {
+  type: "dense_vector" as const,
+  dims: CATALOG_EMBED_DIMENSIONS,
+  index: true,
+  similarity: "cosine" as const,
+}
+
 const INDEX_MAPPINGS = {
   properties: {
     kind: { type: "keyword" as const },
@@ -105,6 +120,7 @@ const INDEX_MAPPINGS = {
     search_blob: { type: "text" as const, analyzer: "catalog_text" },
     name_compact: { type: "keyword" as const, normalizer: "lowercase" },
     categories: { type: "keyword" as const },
+    embedding: EMBEDDING_PROPERTY,
   },
 }
 
@@ -174,7 +190,10 @@ export function sellCatalogModelToEsDoc(row: {
   }
 }
 
+let sellCatalogIndexReady = false
+
 export async function ensureSellCatalogIndex(): Promise<void> {
+  if (sellCatalogIndexReady) return
   const es = getElasticsearchClient()
   if (!es) return
 
@@ -186,11 +205,25 @@ export async function ensureSellCatalogIndex(): Promise<void> {
         settings: INDEX_SETTINGS,
         mappings: INDEX_MAPPINGS,
       })
+    } else {
+      await es.indices.putMapping({
+        index: ELASTICSEARCH_SELL_CATALOG_INDEX,
+        properties: { embedding: EMBEDDING_PROPERTY },
+      })
     }
+    sellCatalogIndexReady = true
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[elasticsearch] ensureSellCatalogIndex failed:", msg, e)
   }
+}
+
+function catalogDocumentBody(doc: SellCatalogEsDoc): SellCatalogEsDoc {
+  if (!doc.embedding) {
+    const { embedding: _embedding, ...rest } = doc
+    return rest
+  }
+  return doc
 }
 
 export async function indexSellCatalogDocument(doc: SellCatalogEsDoc): Promise<void> {
@@ -201,9 +234,51 @@ export async function indexSellCatalogDocument(doc: SellCatalogEsDoc): Promise<v
   await es.index({
     index: ELASTICSEARCH_SELL_CATALOG_INDEX,
     id: sellCatalogEsDocId(doc.kind, doc.entity_id),
-    document: doc,
+    document: catalogDocumentBody(doc),
     refresh: false,
   })
+}
+
+/**
+ * Attach Gemini Embedding 2 document vectors, then index.
+ * A Cohere failure still indexes the text so lexical search keeps working.
+ */
+export async function indexSellCatalogDocuments(
+  docs: readonly SellCatalogEsDoc[],
+): Promise<{ indexed: number; errors: number }> {
+  if (docs.length === 0) return { indexed: 0, errors: 0 }
+
+  let prepared = [...docs]
+  if (isCatalogEmbedConfigured()) {
+    try {
+      const vectors = await embedCatalogDocuments(prepared.map((doc) => sellCatalogEmbeddingText(doc)))
+      prepared = prepared.map((doc, index) => {
+        const embedding = vectors[index]
+        return embedding ? { ...doc, embedding } : doc
+      })
+    } catch (err) {
+      console.error(
+        "[elasticsearch] sell catalog embed failed:",
+        err instanceof Error ? err.message : err,
+      )
+    }
+  }
+
+  let indexed = 0
+  let errors = 0
+  for (const doc of prepared) {
+    try {
+      await indexSellCatalogDocument(doc)
+      indexed++
+    } catch (err) {
+      errors++
+      console.error(
+        "[elasticsearch] indexSellCatalogDocument failed:",
+        err instanceof Error ? err.message : err,
+      )
+    }
+  }
+  return { indexed, errors }
 }
 
 export async function deleteSellCatalogDocument(
@@ -404,6 +479,62 @@ export async function searchSellCatalogHitsFromElasticsearch(
   }
 }
 
+/**
+ * Nearest catalog rows for a Gemini Embedding 2 retrieval-query vector.
+ * Documents without an embedding are skipped by Elasticsearch.
+ */
+export async function searchSellCatalogByEmbedding(
+  vector: readonly number[],
+  options: {
+    limit?: number
+    categories?: readonly SellCatalogSearchCategory[]
+  } = {},
+): Promise<SellCatalogEsHit[]> {
+  const es = getElasticsearchClient()
+  if (!es || vector.length !== CATALOG_EMBED_DIMENSIONS) return []
+
+  const limit = options.limit ?? 12
+  const filter =
+    options.categories && options.categories.length > 0
+      ? { terms: { categories: [...options.categories] } }
+      : undefined
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SELL_CATALOG_INDEX,
+      size: limit,
+      _source: ["kind", "entity_id"],
+      track_total_hits: false,
+      knn: {
+        field: "embedding",
+        query_vector: [...vector],
+        k: limit,
+        num_candidates: Math.max(limit * 8, 48),
+        ...(filter ? { filter } : {}),
+      },
+    })
+
+    const hits: SellCatalogEsHit[] = []
+    for (const hit of res.hits.hits ?? []) {
+      const source = hit._source as { kind?: string; entity_id?: string } | undefined
+      const kind = source?.kind
+      const id = source?.entity_id
+      if (kind !== "brand" && kind !== "model") continue
+      if (typeof id !== "string" || !id) continue
+      hits.push({
+        kind,
+        id,
+        score: typeof hit._score === "number" ? hit._score : 0,
+      })
+    }
+    return hits
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] searchSellCatalogByEmbedding failed:", msg, e)
+    return []
+  }
+}
+
 async function brandSellCategories(
   supabase: SupabaseClient,
   brandId: string,
@@ -436,7 +567,7 @@ export async function syncSellCatalogBrandToIndex(
     return
   }
 
-  await indexSellCatalogDocument(
+  await indexSellCatalogDocuments([
     sellCatalogBrandToEsDoc({
       id: data.id as string,
       name: data.name as string,
@@ -444,7 +575,7 @@ export async function syncSellCatalogBrandToIndex(
       short_description: data.short_description as string | null,
       categories,
     }),
-  )
+  ])
 
   const { data: modelRows } = await supabase
     .from("brand_models")
@@ -500,7 +631,7 @@ export async function syncSellCatalogModelToIndex(
     return
   }
 
-  await indexSellCatalogDocument(
+  await indexSellCatalogDocuments([
     sellCatalogModelToEsDoc({
       id: data.id as string,
       name: data.name as string,
@@ -510,7 +641,7 @@ export async function syncSellCatalogModelToIndex(
       brand_name: brand.name,
       brand_slug: brand.slug,
     }),
-  )
+  ])
 }
 
 export type ReindexSellCatalogResult = {
@@ -561,24 +692,23 @@ export async function reindexSellCatalogFromSupabase(
       rows.map((r) => r.id as string),
     )
 
+    const docs: SellCatalogEsDoc[] = []
     for (const row of rows) {
-      try {
-        const categories = sellCategoriesOf(categoryMap.get(row.id as string))
-        if (categories.length === 0) continue
-        await indexSellCatalogDocument(
-          sellCatalogBrandToEsDoc({
-            id: row.id as string,
-            name: row.name as string,
-            slug: row.slug as string,
-            short_description: row.short_description as string | null,
-            categories,
-          }),
-        )
-        result.brandsIndexed++
-      } catch {
-        result.errors++
-      }
+      const categories = sellCategoriesOf(categoryMap.get(row.id as string))
+      if (categories.length === 0) continue
+      docs.push(
+        sellCatalogBrandToEsDoc({
+          id: row.id as string,
+          name: row.name as string,
+          slug: row.slug as string,
+          short_description: row.short_description as string | null,
+          categories,
+        }),
+      )
     }
+    const written = await indexSellCatalogDocuments(docs)
+    result.brandsIndexed += written.indexed
+    result.errors += written.errors
     if (rows.length < pageSize) break
   }
 
@@ -607,32 +737,31 @@ export async function reindexSellCatalogFromSupabase(
     }
     if (!rows?.length) break
 
+    const docs: SellCatalogEsDoc[] = []
     for (const row of rows) {
-      try {
-        const category = (row.product_category_slug as string | null) ?? ""
-        if (!isSellCatalogSearchCategory(category)) continue
-        const brandJoined = row.brands as
-          | { id: string; name: string; slug: string }
-          | { id: string; name: string; slug: string }[]
-          | null
-        const brand = Array.isArray(brandJoined) ? brandJoined[0] ?? null : brandJoined
-        if (!brand?.id) continue
-        await indexSellCatalogDocument(
-          sellCatalogModelToEsDoc({
-            id: row.id as string,
-            name: row.name as string,
-            description: row.description as string | null,
-            category,
-            brand_id: brand.id,
-            brand_name: brand.name,
-            brand_slug: brand.slug,
-          }),
-        )
-        result.modelsIndexed++
-      } catch {
-        result.errors++
-      }
+      const category = (row.product_category_slug as string | null) ?? ""
+      if (!isSellCatalogSearchCategory(category)) continue
+      const brandJoined = row.brands as
+        | { id: string; name: string; slug: string }
+        | { id: string; name: string; slug: string }[]
+        | null
+      const brand = Array.isArray(brandJoined) ? brandJoined[0] ?? null : brandJoined
+      if (!brand?.id) continue
+      docs.push(
+        sellCatalogModelToEsDoc({
+          id: row.id as string,
+          name: row.name as string,
+          description: row.description as string | null,
+          category,
+          brand_id: brand.id,
+          brand_name: brand.name,
+          brand_slug: brand.slug,
+        }),
+      )
     }
+    const written = await indexSellCatalogDocuments(docs)
+    result.modelsIndexed += written.indexed
+    result.errors += written.errors
     if (rows.length < pageSize) break
   }
 

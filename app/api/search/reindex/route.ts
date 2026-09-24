@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { reindexElasticsearchFromSupabase } from "@/lib/services/elasticsearchReindex"
 
+export const maxDuration = 300
+
 /**
  * Full reindex of searchable Elasticsearch surfaces from Supabase.
  * POST /api/search/reindex

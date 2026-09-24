@@ -4,11 +4,18 @@ import {
   coerceSellPhotoObservation,
   fillEmptyBoardDimensions,
   missingSellPhotoMatchShots,
+  parseSellPhotoObservationJson,
+  rankSellPhotoCatalogRows,
+  selectVisualCatalogHits,
+  sellPhotoCatalogQueries,
+  sellPhotoEmbeddingOnlyObservation,
+  sellPhotoEmbeddingQueryText,
   sellPhotoMatchDimensionFields,
   sellPhotoMatchLookupQuery,
   sellPhotoMatchSearchCategories,
   sniffSellPhotoMatchMime,
 } from "./sell-photo-match.ts"
+import type { SellCatalogSearchResultRow } from "../types/sell-catalog-search.ts"
 
 describe("coerceSellPhotoObservation", () => {
   it("normalizes empty strings and a singular category", () => {
@@ -139,6 +146,216 @@ describe("missingSellPhotoMatchShots", () => {
   it("lists the shots that were not uploaded", () => {
     assert.deepEqual(missingSellPhotoMatchShots(["top"]), ["bottom", "dimensions"])
     assert.deepEqual(missingSellPhotoMatchShots(["top", "bottom", "dimensions"]), [])
+  })
+})
+
+describe("sell photo catalog match", () => {
+  it("normalizes logo initials before the catalog query", () => {
+    const observation = coerceSellPhotoObservation({
+      category: "surfboards",
+      brandText: "CI",
+      modelText: "Twin Pin",
+      visibleText: ["CI"],
+      lengthText: "",
+      widthText: "",
+      thicknessText: "",
+      confidence: "high",
+      summary: "Deck logo is CI.",
+    })
+    assert.ok(observation)
+    assert.equal(observation.brandText, "Channel Islands")
+    assert.equal(sellPhotoMatchLookupQuery(observation), "Channel Islands Twin Pin")
+    assert.deepEqual(sellPhotoCatalogQueries(observation), [
+      "Channel Islands Twin Pin",
+      "Twin Pin",
+      "Channel Islands",
+    ])
+  })
+
+  it("parses a fenced JSON observation", () => {
+    const raw = parseSellPhotoObservationJson(
+      '```json\n{"brandText":"Lost","modelText":"RNF","category":"surfboards"}\n```',
+    )
+    assert.deepEqual(raw, { brandText: "Lost", modelText: "RNF", category: "surfboards" })
+  })
+
+  it("keeps the model that matches brand and model and drops other boards", () => {
+    const observation = coerceSellPhotoObservation({
+      category: "surfboards",
+      brandText: "Mayhem",
+      modelText: "RNF",
+      visibleText: [],
+      lengthText: "5'11",
+      widthText: null,
+      thicknessText: null,
+      confidence: "high",
+      summary: "Mayhem RNF.",
+    })
+    assert.ok(observation)
+    assert.equal(observation.brandText, "Lost")
+
+    const twinPin: SellCatalogSearchResultRow = {
+      kind: "model",
+      id: "twin",
+      name: "Twin Pin",
+      brandId: "ci",
+      brandName: "Channel Islands",
+      brandSlug: "channel-islands",
+      brandLogoUrl: null,
+      imageUrl: null,
+      description: null,
+      category: "surfboards",
+    }
+    const rnf: SellCatalogSearchResultRow = {
+      kind: "model",
+      id: "rnf",
+      name: "RNF 96",
+      brandId: "lost",
+      brandName: "Lost Surfboards",
+      brandSlug: "lost",
+      brandLogoUrl: null,
+      imageUrl: null,
+      description: null,
+      category: "surfboards",
+    }
+    const brand: SellCatalogSearchResultRow = {
+      kind: "brand",
+      id: "lost",
+      name: "Lost Surfboards",
+      slug: "lost",
+      logoUrl: null,
+      shortDescription: null,
+      category: "surfboards",
+    }
+    const ranked = rankSellPhotoCatalogRows(observation, [
+      { row: twinPin, esScore: 80 },
+      { row: brand, esScore: 90 },
+      { row: rnf, esScore: 20 },
+    ])
+    assert.equal(ranked.matchTier, "exact")
+    assert.deepEqual(
+      ranked.rows.map((row) => row.id),
+      ["rnf"],
+    )
+  })
+
+  it("treats a one-character model misspelling as the same board", () => {
+    const observation = coerceSellPhotoObservation({
+      category: "surfboards",
+      brandText: "Channel Islands",
+      modelText: "Twn Pin",
+      visibleText: [],
+      lengthText: null,
+      widthText: null,
+      thicknessText: null,
+      confidence: "medium",
+      summary: "Logo reads CI, model is slightly blurry.",
+    })
+    assert.ok(observation)
+    const twinPin: SellCatalogSearchResultRow = {
+      kind: "model",
+      id: "twin",
+      name: "Twin Pin",
+      brandId: "ci",
+      brandName: "Channel Islands",
+      brandSlug: "channel-islands",
+      brandLogoUrl: null,
+      imageUrl: null,
+      description: null,
+      category: "surfboards",
+    }
+    const ranked = rankSellPhotoCatalogRows(observation, [{ row: twinPin, esScore: 10 }])
+    assert.equal(ranked.matchTier, "exact")
+    assert.equal(ranked.rows[0]?.id, "twin")
+  })
+})
+
+describe("selectVisualCatalogHits", () => {
+  const twinPin: SellCatalogSearchResultRow = {
+    kind: "model",
+    id: "twin",
+    name: "Twin Pin",
+    brandId: "ci",
+    brandName: "Channel Islands",
+    brandSlug: "channel-islands",
+    brandLogoUrl: null,
+    imageUrl: null,
+    description: null,
+    category: "surfboards",
+  }
+  const rnf: SellCatalogSearchResultRow = {
+    kind: "model",
+    id: "rnf",
+    name: "RNF 96",
+    brandId: "lost",
+    brandName: "Lost Surfboards",
+    brandSlug: "lost",
+    brandLogoUrl: null,
+    imageUrl: null,
+    description: null,
+    category: "surfboards",
+  }
+
+  it("drops other brands when the logo was read", () => {
+    const observation = coerceSellPhotoObservation({
+      category: "surfboards",
+      brandText: "Lost",
+      modelText: "",
+      visibleText: [],
+      lengthText: null,
+      widthText: null,
+      thicknessText: null,
+      confidence: "medium",
+      summary: "Lost logo, model not readable.",
+    })
+    assert.ok(observation)
+    const chosen = selectVisualCatalogHits(observation, [
+      { row: twinPin, cosine: 0.96 },
+      { row: rnf, cosine: 0.7 },
+    ])
+    assert.deepEqual(
+      chosen.map((hit) => hit.row.id),
+      ["rnf"],
+    )
+  })
+
+  it("returns nothing when photo neighbors are tied", () => {
+    const observation = sellPhotoEmbeddingOnlyObservation()
+    const chosen = selectVisualCatalogHits(observation, [
+      { row: twinPin, cosine: 0.9 },
+      { row: rnf, cosine: 0.89 },
+    ])
+    assert.deepEqual(chosen, [])
+  })
+
+  it("keeps one board when the photo is clearly closer", () => {
+    const observation = sellPhotoEmbeddingOnlyObservation()
+    const chosen = selectVisualCatalogHits(observation, [
+      { row: rnf, cosine: 0.91 },
+      { row: twinPin, cosine: 0.8 },
+    ])
+    assert.deepEqual(
+      chosen.map((hit) => hit.row.id),
+      ["rnf"],
+    )
+  })
+})
+
+describe("sellPhotoEmbeddingQueryText", () => {
+  it("uses the brand and model and skips a generic board word", () => {
+    const observation = coerceSellPhotoObservation({
+      category: "surfboards",
+      brandText: "Channel Islands",
+      modelText: "Twin Pin",
+      visibleText: ["surfboard"],
+      lengthText: null,
+      widthText: null,
+      thicknessText: null,
+      confidence: "high",
+      summary: "CI Twin Pin.",
+    })
+    assert.ok(observation)
+    assert.equal(sellPhotoEmbeddingQueryText(observation), "Channel Islands Twin Pin")
   })
 })
 

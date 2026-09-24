@@ -17,6 +17,7 @@ export type AppLlmFeatureId =
   | "listing_brand_model_research"
   | "message_fraud_review"
   | "sell_photo_match"
+  | "sell_board_dimensions_scan"
 
 export interface AppLlmFeatureDefinition {
   id: AppLlmFeatureId
@@ -235,16 +236,37 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "sell_photo_match",
     name: "Sell photo match",
     purpose:
-      "Admin-only on /sell. Reads three surfboard photos (top, bottom, dimensions close-up) and turns the visible brand and model into a catalog search.",
+      "Admin-only on /sell. Reads surfboard photos, including photos chosen from a live listing, with Gemini 3.1 Pro and matches them to the Elasticsearch sell catalog.",
     gatewayFeatureTag: "feature:sell-photo-match",
     transport: "vercel_ai_gateway",
-    defaultModel: "google/gemini-2.5-flash",
+    defaultModel: "google/gemini-3.1-pro-preview",
     modelEnvVar: "SELL_PHOTO_MATCH_MODEL",
     enabledEnvVar: "SELL_PHOTO_MATCH_ENABLED",
-    surfaces: ["/sell", "POST /api/sell/photo-match"],
+    surfaces: ["/sell", "POST /api/sell/photo-match", "POST /api/sell/photo-match/listing"],
     sourceFiles: [
       "lib/services/sellPhotoMatch.ts",
+      "lib/services/sellListingPhotoMatch.ts",
+      "lib/services/sellPhotoCatalogMatch.ts",
+      "lib/services/catalogEmbed.ts",
       "app/api/sell/photo-match/route.ts",
+      "app/api/sell/photo-match/listing/route.ts",
+    ],
+  },
+  {
+    id: "sell_board_dimensions_scan",
+    name: "Sell board dimensions scan",
+    purpose:
+      "On /sell/boards, reads one photo of a surfboard size stamp and fills length, width, thickness, and volume.",
+    gatewayFeatureTag: "feature:sell-board-dimensions-scan",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-flash",
+    modelEnvVar: "SELL_BOARD_DIMENSIONS_SCAN_MODEL",
+    enabledEnvVar: "SELL_BOARD_DIMENSIONS_SCAN_ENABLED",
+    surfaces: ["/sell/boards", "POST /api/sell/board-dimensions-scan"],
+    sourceFiles: [
+      "lib/services/sellBoardDimensionsScan.ts",
+      "lib/sell-flow/sell-board-dimensions-scan.ts",
+      "app/api/sell/board-dimensions-scan/route.ts",
     ],
   },
 ] as const
