@@ -6,7 +6,6 @@ import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import {
   hasSupabaseAuthCookiesClient,
 } from "@/lib/auth/has-supabase-auth-cookies"
-import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import { createClient } from "@/lib/supabase/client"
 
@@ -45,17 +44,11 @@ export function useNewsletterPromoVisitorAuth(serverUser: User | null | undefine
       if (likelyHasSession) {
         const session = await waitForClientSession({
           supabase,
-          maxAttempts: 32,
-          msBetween: 75,
+          maxAttempts: 12,
+          msBetween: 50,
+          networkFallback: false,
         })
         user = session?.user ?? null
-      }
-
-      if (!user) {
-        const result = await getAuthUserWithRetry(supabase, { attempts: 3 })
-        if (result.ok) {
-          user = result.user
-        }
       }
 
       if (cancelled) return

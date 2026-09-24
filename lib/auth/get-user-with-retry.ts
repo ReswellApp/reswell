@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
+import { isAbortError } from "@/lib/utils/is-abort-error"
 
 const BASE_DELAY_MS = 280
 
@@ -26,6 +27,9 @@ export async function getAuthUserWithRetry(
       return { ok: true, user: data.user }
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e))
+      // Navigation or a newer auth call aborted this one. Retrying re-enters
+      // the same lock and is what surfaces "signal is aborted without reason".
+      if (isAbortError(e)) break
       if (i < attempts - 1) {
         await new Promise((r) => setTimeout(r, BASE_DELAY_MS * (i + 1)))
       }

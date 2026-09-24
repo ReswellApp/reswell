@@ -23,7 +23,8 @@ export function buildMetaPurchaseInlineScript(options: {
   const value = Number(options.value)
   if (!orderId || !Number.isFinite(value) || value <= 0) return null
 
-  const currency = (options.currency?.trim().toUpperCase() || "USD").replace(/'/g, "\\'")
+  const rawCurrency = options.currency?.trim().toUpperCase() ?? ""
+  const currency = (/^[A-Z]{3}$/.test(rawCurrency) ? rawCurrency : "USD").replace(/'/g, "\\'")
   const dedupKey = metaPurchaseDedupKey(orderId).replace(/'/g, "\\'")
   const eventId = metaPurchaseEventId(orderId).replace(/'/g, "\\'")
   const contentIds = (options.contentIds ?? [])

@@ -71,6 +71,9 @@ export async function updateSession(request: NextRequest) {
   //
   // Also skip session probe / recovery routes: stale refresh-token cleanup must not
   // run first — it clears auth cookies before the handler runs and breaks post-sign-in.
+  //
+  // Sign-in and sign-up pages render without a server session. A GoTrue round trip
+  // (and its retries) here is what made those routes feel stuck before the form painted.
   if (
     pathname === "/auth/callback" ||
     pathname === "/auth/confirm" ||
@@ -79,6 +82,10 @@ export async function updateSession(request: NextRequest) {
     pathname === "/auth/update-password" ||
     pathname === "/auth/completing" ||
     pathname === "/auth/error" ||
+    pathname === "/auth/login" ||
+    pathname === "/auth/sign-up" ||
+    pathname.startsWith("/auth/sign-up/") ||
+    pathname === "/auth/forgot-password" ||
     pathname === "/api/auth/session-ready"
   ) {
     return NextResponse.next({ request })
