@@ -8,6 +8,7 @@ import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { NEWSLETTER_PROMO_DISCOUNT_PERCENT } from "@/lib/constants/newsletter-promo"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
+import { useNewsletterPromoVisitorAuth } from "@/components/features/marketing/hooks/use-newsletter-promo-visitor-auth"
 import { cn } from "@/lib/utils"
 
 const buttonClassName = cn(
@@ -20,6 +21,7 @@ export function FooterNewsletterSignup() {
   const pathname = usePathname()
   const router = useRouter()
   const authModal = useOptionalAuthModal()
+  const { authResolved, isLoggedIn } = useNewsletterPromoVisitorAuth(null)
 
   const createAccount = useCallback(() => {
     if (authModal) {
@@ -28,6 +30,8 @@ export function FooterNewsletterSignup() {
     }
     router.push(authLandingHref("/auth/sign-up", pathname))
   }, [authModal, pathname, router])
+
+  if (authResolved && isLoggedIn) return null
 
   return (
     <div className="max-w-md">
