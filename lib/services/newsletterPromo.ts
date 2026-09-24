@@ -19,8 +19,6 @@ import {
   type NewsletterPromoCodeRow,
 } from "@/lib/db/newsletterPromoCodes"
 import { clearNewsletterPromoExpirationNudgesForPromo } from "@/lib/db/newsletterPromoExpirationNudge"
-import { trackKlaviyoNewsletterSignup } from "@/lib/klaviyo/track-newsletter-signup"
-import { subscribeKlaviyoProfileEmailMarketing } from "@/lib/klaviyo/subscribe-profile-email-marketing"
 import { getStripe } from "@/lib/stripe-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { generateNewsletterPromoCode, normalizeNewsletterPromoEmail } from "@/lib/utils/newsletter-promo-code"
@@ -157,15 +155,16 @@ export async function validateNewsletterPromoForCheckout(params: {
   }
 }
 
-export type CreateNewsletterPromoSignupResult =
-  | { ok: true }
-  | { ok: false; error: string; alreadySignedUp?: boolean }
-
-const ALREADY_SIGNED_UP: CreateNewsletterPromoSignupResult = {
-  ok: false,
-  alreadySignedUp: true,
-  error: "This email already signed up. Check your inbox for your code.",
-}
+export type WelcomePromoForAccountResult =
+  | {
+      ok: true
+      promoCode: string
+      discountPercent: number
+      expiresAt: string
+      /** True when this call created or replaced the code. False when an active code already exists. */
+      isNewCode: boolean
+    }
+  | { ok: false; error: string }
 
 /**
  * Unredeemed codes may be replaced when expired, or when the stored percent is below
@@ -265,67 +264,77 @@ async function replaceWelcomePromoCode(
   return { row: null, lastError }
 }
 
+function welcomePromoFromRow(
+  row: NewsletterPromoCodeRow,
+  isNewCode: boolean,
+): WelcomePromoForAccountResult {
+  return {
+    ok: true,
+    promoCode: row.code,
+    discountPercent: row.discount_percent,
+    expiresAt: row.expires_at,
+    isNewCode,
+  }
+}
+
 /**
- * Subscribe visitor email, issue a one-time promo code, fire Klaviyo **Newsletter** metric.
- * One active code per email. Expired or below-offer unredeemed codes are replaced in place
- * (old code string removed; new 15% code saved on the same `newsletter_promo_codes` row).
+ * Issue the one-time welcome promo for an account email.
+ * Call only after the person has a Reswell account — anonymous email capture must not mint a code.
+ * One active code per email. Expired or below-offer unredeemed codes are replaced in place.
+ * Does not send Klaviyo; the new-account welcome event carries the code.
  */
-export async function createNewsletterPromoSignup(email: string): Promise<CreateNewsletterPromoSignupResult> {
+export async function issueWelcomePromoForAccount(
+  email: string,
+): Promise<WelcomePromoForAccountResult> {
   const normalizedEmail = normalizeNewsletterPromoEmail(email)
+  if (!normalizedEmail) {
+    return { ok: false, error: "Account email is required." }
+  }
 
   let supabase
   try {
     supabase = createServiceRoleClient()
   } catch {
-    return { ok: false, error: "Signup is temporarily unavailable." }
+    return { ok: false, error: "Promo codes are temporarily unavailable." }
   }
 
   const existing = await fetchNewsletterPromoForEmail(supabase, normalizedEmail)
   if (existing.error) {
     console.error("[newsletter-promo] fetch for email:", existing.error)
-    return { ok: false, error: "Could not complete signup." }
+    return { ok: false, error: "Could not issue your promo code." }
   }
 
   const expiresAt = promoExpiryIso()
-  let codeRow: NewsletterPromoCodeRow | null = null
 
   if (existing.row) {
     if (!isEligibleForWelcomePromoReplacement(existing.row)) {
-      return ALREADY_SIGNED_UP
+      return welcomePromoFromRow(existing.row, false)
     }
 
     const releasable = await releaseReservationIfAbandoned(supabase, existing.row)
     if (!releasable || !isEligibleForWelcomePromoReplacement(releasable)) {
-      return ALREADY_SIGNED_UP
+      return welcomePromoFromRow(existing.row, false)
     }
 
     const replaced = await replaceWelcomePromoCode(supabase, releasable.id, expiresAt)
     if (!replaced.row) {
       console.error("[newsletter-promo] replace previous code failed:", replaced.lastError)
-      return { ok: false, error: "Could not update your promo code. Try again." }
+      return { ok: false, error: "Could not update your promo code." }
     }
-    codeRow = replaced.row
-  } else {
-    const inserted = await insertWelcomePromoCode(supabase, normalizedEmail, expiresAt)
-    if (inserted.duplicateEmail) {
-      return ALREADY_SIGNED_UP
-    }
-    if (!inserted.row) {
-      console.error("[newsletter-promo] insert failed:", inserted.lastInsertError)
-      return { ok: false, error: "Could not generate your promo code. Try again." }
-    }
-    codeRow = inserted.row
+    return welcomePromoFromRow(replaced.row, true)
   }
 
-  await subscribeKlaviyoProfileEmailMarketing({ email: normalizedEmail })
-
-  await trackKlaviyoNewsletterSignup({
-    email: normalizedEmail,
-    promoCode: codeRow.code,
-    discountPercent: codeRow.discount_percent,
-    expiresAt: codeRow.expires_at,
-    isNewCode: true,
-  })
-
-  return { ok: true }
+  const inserted = await insertWelcomePromoCode(supabase, normalizedEmail, expiresAt)
+  if (inserted.duplicateEmail) {
+    const raced = await fetchNewsletterPromoForEmail(supabase, normalizedEmail)
+    if (raced.row && !isEligibleForWelcomePromoReplacement(raced.row)) {
+      return welcomePromoFromRow(raced.row, false)
+    }
+    return { ok: false, error: "Could not issue your promo code." }
+  }
+  if (!inserted.row) {
+    console.error("[newsletter-promo] insert failed:", inserted.lastInsertError)
+    return { ok: false, error: "Could not generate your promo code." }
+  }
+  return welcomePromoFromRow(inserted.row, true)
 }

@@ -3,8 +3,11 @@
  * Template variables: promo_code, discount_percent, expires_at, discount_label.
  */
 
+import { newsletterPromoEventProperties } from "@/lib/klaviyo/newsletter-promo-event-properties"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+
+export { newsletterPromoEventProperties } from "@/lib/klaviyo/newsletter-promo-event-properties"
 
 export async function trackKlaviyoNewsletterSignup(input: {
   email: string
@@ -16,30 +19,14 @@ export async function trackKlaviyoNewsletterSignup(input: {
   const email = input.email.trim()
   if (!email) return
 
-  const origin = publicSiteOrigin()
-  const expiresDate = new Date(input.expiresAt)
-  const expiresFormatted = Number.isFinite(expiresDate.getTime())
-    ? expiresDate.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "UTC",
-      })
-    : input.expiresAt
-
   const result = await sendKlaviyoServerEvent({
     metricName: "Newsletter",
     profile: { email },
-    properties: {
+    properties: newsletterPromoEventProperties({
+      ...input,
       email,
-      promo_code: input.promoCode,
-      discount_percent: input.discountPercent,
-      discount_label: `${input.discountPercent}% off`,
-      expires_at: input.expiresAt,
-      expires_at_formatted: expiresFormatted,
-      shop_url: `${origin}/boards`,
-      is_new_code: input.isNewCode,
-    },
+      shopOrigin: publicSiteOrigin(),
+    }),
     uniqueId: `newsletter-${email}-${input.promoCode}`,
   })
 
