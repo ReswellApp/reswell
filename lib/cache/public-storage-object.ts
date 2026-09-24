@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache"
 import {
   PUBLIC_STORAGE_DATA_CACHE_MAX_RAW_BYTES,
+  PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX,
   PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS,
   publicStorageObjectCacheTag,
   type CachedPublicStorageObject,
