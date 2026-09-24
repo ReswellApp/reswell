@@ -1,0 +1,73 @@
+{
+  "generated_for": "Beau Young Surfboards official named standup catalog",
+  "source": "https://www.beauyounghandshaped.com/shop (Squarespace shop — excludes fins, fin sets, and T-shirts)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "beau-young-surfboards",
+      "name": "Beau Young Surfboards",
+      "website_url": "https://www.beauyounghandshaped.com/",
+      "location_label": "Western Australia, Australia",
+      "founder_name": "Beau Young",
+      "lead_shaper_name": "Beau Young",
+      "short_description": "Handcrafted surfboards by Beau Young. Official homepage copy says each board is a unique work of art, and no two are exactly the same.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/beau-young-surfboards.png",
+      "models": [
+        {
+          "name": "Wombat Mark 11",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586685091645-EN9TYADUWQPO3NLFATUP/wombat-mark-5II-deck.png?format=jpg",
+          "description": "The Wombat Mk11 is the successor to Beau Young's original best-selling Wombat. Official copy says it keeps the same wave-catching ability and maneuverability, with more curve and rocker for tighter turning and vertical maneuvers, plus a narrower nose and tail so the board feels less bulky. Stock sizes 5'4\" to 8'0\". Ridden as a 2+1 or a quad. Works in 1–6 foot surf, from full and slow waves to hollow and fast.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sea Hawk",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586683227888-CB30DG2NH2XB2KEQAA3F/seahawk2.png?format=jpg",
+          "description": "The Seahawk is a modern take on a 1970s fish. Official copy calls out medium rocker, a round forgiving rail, and a subtle vee bottom, with added curve and a narrower nose than a traditional fish. Five-fin boxes cover thruster, quad, or twin-plus-stabilizer. Stock sizes 5'4\" to 7'8\". Tight, smooth turns without losing momentum in 1–8 foot surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Cheetah",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586683028871-9SRN6VCR1804HQ9RQI1G/cheetah.png?format=jpg",
+          "description": "Named for the fastest land animal, the Cheetah is Beau Young's small-wave speed board. Official copy says ride it a couple of inches shorter than a regular board: wider through the nose, tail, and wide point, with a single-to-double concave for speed and looseness. Five-fin plugs allow quad, thruster, or twin-plus-stabilizer. Available 5'2\"–6'8\". Built for poor, lacklustre conditions, not a 1970s retro remake.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Pendulum Swing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586683633127-1F840NJP62Z1QBNKL45I/pem.png?format=jpg",
+          "description": "The Pendulum is the most versatile and best-selling longboard in the official Beau Young range. Soft forgiving rails, curves, and foam distribution, with a wide nose and tail for stability through turns and noserides. Nose concave and a vee bottom for a traditional log. Stock sizes 9'0\" to 10'6\". Official copy says it performs best from six-inch slop to shoulder-high surf.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "RH - Robert Harold Nat Young",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586684089105-NX6SYKPCR2JKRBPXHW77/rh.png?format=jpg",
+          "description": "With Nat Young's blessing, the RH moulds the best aspects of Nat's boards from 1963–1966. Official copy describes a rolled bottom for smooth turns, slightly knifey 50/50 rails that keep momentum and trim, and a big 10.5\" fin with Nat Young / Bob McTavish / George Greenough inspired flex and rake. Available 9'1\" to 9'6\" (larger on request). Single-fin box, polished finish.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cloudwalker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586684612261-28YPMDWIK49UOY7C00XF/walker.png?format=jpg",
+          "description": "The Cloudwalker is the fastest longboard Beau Young says he has ever ridden, built for tiny summer slop. Official copy calls it a round-rail, fair-volume log that tapers in the nose and tail, with a flip in the last four inches of the tail and even concave under the front quarter for noserides. Available 9'1\" to 9'6\" (larger on request). Single-fin box, matt finish, old-school competition band.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Kiora",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586684893344-KJ0FV0ES6IT2PWJUFW27/kiora.png?format=jpg",
+          "description": "Kiora was the board Beau Young rode to his second world title in New Zealand. Official copy says this three-fin longboard turns in the pocket and still noserides, with a hard edge through the tail and subtle curve through the whole board. Available 9'1\" to 9'6\" (larger on request). Mid-lightweight glassing, tinted matt finish, box plus FCS II side-fin plugs. Kiora means hello in Māori.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Zen Sled",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586685332226-O3NI3A1GZFL8SNMBZQL0/zenk.png?format=jpg",
+          "description": "The Zen Sled is a funboard designed purely for getting out in the ocean. Official copy describes a simple outline and bottom, quite wide and thick, with a fantastic overall curve that makes catching waves and turning easy. Ranges from 6'6\" through 8'1\". Ridden as a single, quad, or 2+1. Best in 1–5 foot surf, slow or fast. Single-fin box plus quad plugs, matt finish.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "72 Evolution",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1586685558754-3EJBFSV44F9B0P4SKWJA/72+evolution.png?format=jpg",
+          "description": "The Nat Young 72 Evolution is a mid-length single fin (optional side fins) made with Nat's blessing after the early-to-mid 1970s boards of Nat, Ted Spencer, Bob McTavish, George Greenough, and Russell Hughes. Official copy says the wide point is forward, with a soft edge through the tail, subtle vee, and a rounded nose. Available 6'6\" to 7'8\". Turns like a small single-fin longboard. Matt finish.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
