@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { StripeConnectSetupDialog } from "@/components/features/earnings/stripe-connect-setup-dialog"
+import { PayoutRequirementsChecklist } from "@/components/features/earnings/payout-requirements-checklist"
 import type { StripeConnectStatusPayload, PayoutSetupStatus } from "@/lib/utils/stripe-connect-status"
 import { AlertCircle, Building2, CheckCircle2, Loader2, Shield, Trash2, Zap } from "lucide-react"
 import { toast } from "sonner"
@@ -181,6 +182,8 @@ export function StripeBankPayoutSection({
   const restricted = setupStatus === "restricted"
   const verificationMessage = connectStatus?.verificationMessage ?? null
   const requirementsChecklist = connectStatus?.requirementsChecklist ?? []
+  const upcomingChecklist = connectStatus?.upcomingRequirementsChecklist ?? []
+  const upcomingMessage = connectStatus?.upcomingRequirementsMessage ?? null
   const statusLine = compactPayoutStatusLine(setupStatus, requirementsChecklist, verificationMessage)
 
   const banksWithStripeIds = useMemo(
@@ -327,13 +330,17 @@ export function StripeBankPayoutSection({
         const res = await fetch("/api/stripe/connect/sync", { method: "POST", cache: "no-store" })
         if (res.ok) {
           lastStatus = (await res.json()) as StripeConnectStatusPayload
+          const upcomingLeft = (lastStatus.upcomingRequirementsChecklist?.length ?? 0) > 0
           if (
-            lastStatus.cashOutReady ||
+            (lastStatus.cashOutReady && !upcomingLeft) ||
             lastStatus.setupStatus === "pending_review" ||
             lastStatus.setupStatus === "restricted" ||
             (lastStatus.setupStatus === "action_required" &&
               (lastStatus.requirementsChecklist?.length ?? 0) === 0)
           ) {
+            break
+          }
+          if (lastStatus.cashOutReady && upcomingLeft && attempt >= 4) {
             break
           }
           // Still has collectible fields — keep polling briefly in case Stripe just cleared them.
@@ -349,7 +356,15 @@ export function StripeBankPayoutSection({
       }
     }
     await onRefresh()
-    if (lastStatus?.cashOutReady) {
+    if (
+      lastStatus?.cashOutReady &&
+      (lastStatus.upcomingRequirementsChecklist?.length ?? 0) > 0
+    ) {
+      toast.message("Stripe still needs a few details", {
+        description: `${lastStatus.upcomingRequirementsChecklist.join(", ")}. Open Update info to finish before payouts are restricted.`,
+        duration: 14_000,
+      })
+    } else if (lastStatus?.cashOutReady) {
       toast.success("Payout verification complete — you can cash out now.")
     } else if (lastStatus?.setupStatus === "pending_review") {
       toast.message("Stripe is reviewing your details", {
@@ -525,6 +540,18 @@ export function StripeBankPayoutSection({
             </Button>
           )}
 
+          {cashOutReady && upcomingChecklist.length > 0 ? (
+            <div className="space-y-3">
+              <PayoutRequirementsChecklist
+                items={upcomingChecklist}
+                title="Stripe needs this before payouts are restricted"
+              />
+              {upcomingMessage ? (
+                <p className="text-sm text-muted-foreground leading-snug">{upcomingMessage}</p>
+              ) : null}
+            </div>
+          ) : null}
+
           {!cashOutReady && statusLine ? (
             <p
               className={cn(
@@ -560,6 +587,16 @@ export function StripeBankPayoutSection({
                 >
                   Manage banks
                 </Button>
+                {upcomingChecklist.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full font-medium"
+                    onClick={() => openPayoutSetup(false)}
+                  >
+                    Update info
+                  </Button>
+                ) : null}
                 {availableBalance < 10 ? (
                   <p className="w-full text-xs text-muted-foreground">Minimum bank cash out is $10.00.</p>
                 ) : null}

@@ -46,9 +46,34 @@ export interface StripeConnectStatusPayload {
   verificationNeeded: boolean
   verificationMessage: string | null
   requirementsChecklist: string[]
+  /**
+   * Identity and payout fields Stripe will require later (volume threshold or
+   * deadline) while payouts are still enabled. Empty when nothing is upcoming.
+   */
+  upcomingRequirementsChecklist: string[]
+  upcomingRequirementsMessage: string | null
   /** @deprecated Prefer `collectionOptions`. */
   collectionFields: "currently_due" | "eventually_due"
   collectionOptions: ConnectCollectionOptionsPayload
+}
+
+/** Current + future requirement buckets from a Stripe Account. */
+export interface ConnectRequirementSnapshot {
+  pastDue: string[]
+  currentlyDue: string[]
+  eventuallyDue: string[]
+  futurePastDue: string[]
+  futureCurrentlyDue: string[]
+  futureEventuallyDue: string[]
+  /** Unix seconds from `future_requirements.current_deadline`, when Stripe set one. */
+  futureDeadlineUnix: number | null
+}
+
+interface StripeRequirementHash {
+  past_due?: string[] | null
+  currently_due?: string[] | null
+  eventually_due?: string[] | null
+  current_deadline?: number | null
 }
 
 const REQUIREMENT_LABELS: Record<string, string> = {
@@ -76,6 +101,106 @@ function uniqueLabels(fields: string[]): string[] {
     labels.add(label)
   }
   return [...labels]
+}
+
+function stringList(value: string[] | null | undefined): string[] {
+  return Array.isArray(value) ? value.filter((field) => typeof field === "string" && field.length > 0) : []
+}
+
+export function requirementSnapshotFromAccount(account: {
+  requirements?: StripeRequirementHash | null
+  future_requirements?: StripeRequirementHash | null
+}): ConnectRequirementSnapshot {
+  const current = account.requirements
+  const future = account.future_requirements
+  const deadline = future?.current_deadline
+  return {
+    pastDue: stringList(current?.past_due),
+    currentlyDue: stringList(current?.currently_due),
+    eventuallyDue: stringList(current?.eventually_due),
+    futurePastDue: stringList(future?.past_due),
+    futureCurrentlyDue: stringList(future?.currently_due),
+    futureEventuallyDue: stringList(future?.eventually_due),
+    futureDeadlineUnix: typeof deadline === "number" && deadline > 0 ? deadline : null,
+  }
+}
+
+/**
+ * Fields Stripe listed under `future_requirements` (volume threshold or a later
+ * deadline). Fields already in `past_due` / `currently_due` stay on the urgent path.
+ */
+export function upcomingRequirementFields(snapshot: ConnectRequirementSnapshot): string[] {
+  const blocking = new Set([...snapshot.pastDue, ...snapshot.currentlyDue])
+  const seen = new Set<string>()
+  const fields: string[] = []
+  for (const field of [
+    ...snapshot.futurePastDue,
+    ...snapshot.futureCurrentlyDue,
+    ...snapshot.futureEventuallyDue,
+  ]) {
+    if (blocking.has(field) || seen.has(field)) continue
+    seen.add(field)
+    fields.push(field)
+  }
+  return fields
+}
+
+/** Stable key of fields the seller still has to submit. Null when Stripe lists nothing actionable. */
+export function payoutRequirementNoticeFingerprint(snapshot: ConnectRequirementSnapshot): string | null {
+  const fields = [...snapshot.pastDue, ...snapshot.currentlyDue, ...upcomingRequirementFields(snapshot)]
+  const unique = [...new Set(fields)].sort()
+  if (unique.length === 0) return null
+  return unique.join("|")
+}
+
+export function buildUpcomingRequirementsMessage(
+  labels: string[],
+  deadlineUnix: number | null,
+): string | null {
+  if (labels.length === 0) return null
+  const what =
+    labels.length === 1
+      ? labels[0]
+      : labels.length === 2
+        ? `${labels[0]} and ${labels[1]}`
+        : `${labels.slice(0, 3).join(", ")}`
+  const when =
+    deadlineUnix != null
+      ? ` by ${new Date(deadlineUnix * 1000).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+          timeZone: "UTC",
+        })}`
+      : " before your payout volume reaches Stripe's limit"
+  return `Stripe needs ${what}${when}. Add it here so payouts are not paused.`
+}
+
+export function buildPayoutRequirementNotice(
+  snapshot: ConnectRequirementSnapshot,
+): { fingerprint: string; message: string } | null {
+  const fingerprint = payoutRequirementNoticeFingerprint(snapshot)
+  if (!fingerprint) return null
+
+  const urgent = uniqueLabels([...snapshot.pastDue, ...snapshot.currentlyDue])
+  const upcoming = uniqueLabels(upcomingRequirementFields(snapshot))
+  const labels = urgent.length > 0 ? urgent : upcoming
+  const what =
+    labels.length === 1
+      ? labels[0]
+      : labels.length === 2
+        ? `${labels[0]} and ${labels[1]}`
+        : `${labels.slice(0, 3).join(", ")}`
+
+  const upcomingMessage = buildUpcomingRequirementsMessage(upcoming, snapshot.futureDeadlineUnix)
+  const message =
+    urgent.length > 0
+      ? `Stripe needs ${what} before payouts can continue. Update this on Earnings.`
+      : upcomingMessage
+        ? upcomingMessage.replace("Add it here", "Update this on Earnings")
+        : `Stripe needs ${what}. Update this on Earnings so payouts are not paused.`
+
+  return { fingerprint, message }
 }
 
 export function isStripeIdentityIncomplete(
@@ -240,6 +365,10 @@ export function deriveConnectStatusFields(input: {
   pendingVerification?: string[]
   disabledReason?: string | null
   identityIncomplete?: boolean
+  futurePastDue?: string[]
+  futureCurrentlyDue?: string[]
+  futureEventuallyDue?: string[]
+  futureDeadlineUnix?: number | null
 }): StripeConnectStatusPayload {
   const bankLinked =
     input.bankAccounts.some((b) => Boolean(b.last4)) || Boolean(input.bankLast4?.trim())
@@ -276,7 +405,7 @@ export function deriveConnectStatusFields(input: {
     identityIncomplete,
   })
 
-  const requirementsChecklist = buildRequirementsChecklist({
+  const baseChecklist = buildRequirementsChecklist({
     payoutsEnabled: input.payoutsEnabled,
     bankLinked,
     pastDue,
@@ -291,6 +420,29 @@ export function deriveConnectStatusFields(input: {
     eventuallyDue,
     identityIncomplete,
   })
+
+  const upcomingFields = upcomingRequirementFields({
+    pastDue,
+    currentlyDue,
+    eventuallyDue,
+    futurePastDue: input.futurePastDue ?? [],
+    futureCurrentlyDue: input.futureCurrentlyDue ?? [],
+    futureEventuallyDue: input.futureEventuallyDue ?? [],
+    futureDeadlineUnix: input.futureDeadlineUnix ?? null,
+  })
+  const upcomingRequirementsChecklist = uniqueLabels(upcomingFields)
+  const upcomingRequirementsMessage =
+    setupStatus === "ready"
+      ? buildUpcomingRequirementsMessage(
+          upcomingRequirementsChecklist,
+          input.futureDeadlineUnix ?? null,
+        )
+      : null
+
+  const requirementsChecklist =
+    setupStatus === "ready"
+      ? baseChecklist
+      : [...baseChecklist, ...upcomingRequirementsChecklist.filter((label) => !baseChecklist.includes(label))]
 
   return {
     hasAccount: input.hasAccount,
@@ -307,6 +459,8 @@ export function deriveConnectStatusFields(input: {
     verificationNeeded,
     verificationMessage,
     requirementsChecklist,
+    upcomingRequirementsChecklist,
+    upcomingRequirementsMessage,
     collectionFields: collectionOptions.fields,
     collectionOptions,
   }

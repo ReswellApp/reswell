@@ -44,6 +44,9 @@ function resolveSetupMode(
   if (connectStatus?.setupStatus === "action_required" && connectStatus.bankLinked) {
     return "verification"
   }
+  if ((connectStatus?.upcomingRequirementsChecklist?.length ?? 0) > 0 && connectStatus?.bankLinked) {
+    return "verification"
+  }
   if (!connectStatus?.hasAccount || !connectStatus.bankLinked) return "first_time"
   if (connectStatus.cashOutReady) return "manage"
   return "first_time"
@@ -80,10 +83,14 @@ function setupCopy(mode: SetupMode, connectStatus: StripeConnectStatusPayload | 
   }
 
   if (mode === "verification") {
+    const upcomingOnly =
+      connectStatus?.setupStatus === "ready" &&
+      (connectStatus.upcomingRequirementsChecklist?.length ?? 0) > 0
     return {
-      title: "Finish payout verification",
+      title: upcomingOnly ? "Update payout details" : "Finish payout verification",
       description:
         detail ??
+        (upcomingOnly ? connectStatus?.upcomingRequirementsMessage : null) ??
         "Complete the missing details below in Stripe. Use the legal name on your ID. Stay on this page until the form finishes.",
     }
   }
@@ -110,7 +117,10 @@ export function StripeConnectSetupDialog({
   const sawOnboardingStepRef = useRef(false)
 
   const mode = resolveSetupMode(connectStatus, preferManagement)
-  const checklist = connectStatus?.requirementsChecklist ?? []
+  const checklist =
+    (connectStatus?.requirementsChecklist?.length ?? 0) > 0
+      ? connectStatus?.requirementsChecklist ?? []
+      : connectStatus?.upcomingRequirementsChecklist ?? []
   const copy = setupCopy(mode, connectStatus)
 
   const collectionOptions = useMemo<CollectionOptions>(() => {
