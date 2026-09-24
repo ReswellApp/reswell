@@ -159,6 +159,20 @@ export function payoutRequirementNoticeFingerprint(snapshot: ConnectRequirementS
   return unique.join("|")
 }
 
+/**
+ * True only when Stripe added fields we have not announced. Completing or
+ * shrinking the due set is not a new notice.
+ */
+export function payoutRequirementNoticeHasNewFields(
+  previousFingerprint: string | null,
+  nextFingerprint: string | null,
+): boolean {
+  if (!nextFingerprint) return false
+  if (!previousFingerprint) return true
+  const announced = new Set(previousFingerprint.split("|").filter((field) => field.length > 0))
+  return nextFingerprint.split("|").some((field) => field.length > 0 && !announced.has(field))
+}
+
 export function buildUpcomingRequirementsMessage(
   labels: string[],
   deadlineUnix: number | null,
@@ -243,10 +257,10 @@ export function buildRequirementsChecklist(params: {
   eventuallyDue: string[]
   identityIncomplete: boolean
 }): string[] {
-  if (params.payoutsEnabled) return []
-
   const urgent = [...params.pastDue, ...params.currentlyDue]
   if (urgent.length > 0) return uniqueLabels(urgent)
+
+  if (params.payoutsEnabled) return []
 
   // Trust Stripe's requirement arrays only — never invent DOB/SSN when Stripe lists nothing due.
   // Inventing fields keeps users in a verification loop after they already submitted.
@@ -303,12 +317,15 @@ export function resolvePayoutSetupStatus(input: {
   identityIncomplete: boolean
   disabledReason: string | null
 }): PayoutSetupStatus {
+  const urgent = [...input.pastDue, ...input.currentlyDue]
+  // Stripe keeps payouts_enabled true after future_requirements move into
+  // currently_due. The seller still has to submit those fields.
+  if (urgent.length > 0) return "action_required"
+
   if (input.cashOutReady) return "ready"
 
   void input.identityIncomplete
   void input.disabledReason
-
-  const urgent = [...input.pastDue, ...input.currentlyDue]
   // Only ask users to fill a form when Stripe still lists collectible fields (or no bank yet).
   const hasCollectibleFields =
     urgent.length > 0 || input.eventuallyDue.length > 0 || !input.bankLinked
@@ -447,14 +464,18 @@ export function deriveConnectStatusFields(input: {
     futureEventuallyDue: input.futureEventuallyDue ?? [],
     futureDeadlineUnix: input.futureDeadlineUnix ?? null,
   })
-  const upcomingRequirementsChecklist = uniqueLabels(upcomingFields)
-  const upcomingRequirementsMessage =
-    setupStatus === "ready"
-      ? buildUpcomingRequirementsMessage(
+  const graceWindowDue = [...pastDue, ...currentlyDue]
+  const upcomingRequirementsChecklist = uniqueLabels(
+    cashOutReady ? [...graceWindowDue, ...upcomingFields] : upcomingFields,
+  )
+  const upcomingRequirementsMessage = cashOutReady
+    ? graceWindowDue.length > 0
+      ? buildUrgentRequirementsMessage(uniqueLabels(graceWindowDue))
+      : buildUpcomingRequirementsMessage(
           upcomingRequirementsChecklist,
           input.futureDeadlineUnix ?? null,
         )
-      : null
+    : null
 
   const urgentRequirementsChecklist = uniqueLabels([...pastDue, ...currentlyDue])
   const urgentRequirementsMessage = buildUrgentRequirementsMessage(urgentRequirementsChecklist)

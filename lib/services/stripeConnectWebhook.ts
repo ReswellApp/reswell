@@ -7,6 +7,7 @@ import {
 } from "@/lib/services/stripeConnect"
 import {
   buildPayoutRequirementNotice,
+  payoutRequirementNoticeHasNewFields,
   requirementSnapshotFromAccount,
 } from "@/lib/utils/stripe-connect-status"
 import { getStripe } from "@/lib/stripe-server"
@@ -67,8 +68,9 @@ async function resolveConnectTransferReversalContext(
 }
 
 /**
- * In-app notice when Stripe adds (or changes) fields the seller must submit.
- * Same fingerprint is not sent again. Cleared once Stripe lists nothing due.
+ * In-app notice when Stripe first requests or adds fields the seller must submit.
+ * Completing or shrinking the due set is not a new notice. Cleared once Stripe
+ * lists nothing due.
  */
 async function notifySellerOfConnectRequirements(
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -96,7 +98,7 @@ async function notifySellerOfConnectRequirements(
   const next = input.notice?.fingerprint ?? null
   if (previous === next) return
 
-  if (next && input.notice) {
+  if (next && input.notice && payoutRequirementNoticeHasNewFields(previous, next)) {
     const { error: insertError } = await supabase.from("notifications").insert({
       user_id: input.userId,
       type: "payout_info_required",
