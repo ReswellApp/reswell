@@ -10,8 +10,8 @@
   - Replace [XX%] and [OFFER TERMS / EXPIRY] with the live offer (site default is 15% for 30 days).
   - {% coupon_code %} and {% web_view %} are Klaviyo tags. Leave them. Do not add {% if %} / {% for %} — those often print as raw text.
 
-  Hero photos: /images/email/welcome-flow-hero.jpg and welcome-flow-wave.jpg
-  (cropped from the welcome design). They go live on www.reswell.app after this ships.
+  Hero photos are served from jsDelivr off commit a7b95400 so they load in Klaviyo
+  before this branch is deployed to www.reswell.app.
 -->
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -65,7 +65,7 @@
           <tr>
             <td style="padding:0;font-size:0;line-height:0;">
               <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=hero" style="text-decoration:none;">
-                <img src="https://www.reswell.app/images/email/welcome-flow-hero.jpg" alt="Surfers at the beach at sunset" width="600" height="300" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
+                <img src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@a7b95400f3e8d3a2f8e9b545eff4b8e3e45d08e2/public/images/email/welcome-flow-hero.jpg" alt="Surfers at the beach at sunset" width="600" height="300" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
               </a>
             </td>
           </tr>
@@ -156,7 +156,7 @@
           <tr>
             <td style="padding:28px 0 0;font-size:0;line-height:0;">
               <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=wave" style="text-decoration:none;">
-                <img src="https://www.reswell.app/images/email/welcome-flow-wave.jpg" alt="Surfer on a wave" width="600" height="200" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
+                <img src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@a7b95400f3e8d3a2f8e9b545eff4b8e3e45d08e2/public/images/email/welcome-flow-wave.jpg" alt="Surfer on a wave" width="600" height="200" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
               </a>
             </td>
           </tr>
