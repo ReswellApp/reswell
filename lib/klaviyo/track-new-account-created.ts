@@ -1,9 +1,13 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account"
-import { userWantsMarketingEmails } from "@/lib/auth/marketing-email-consent"
+import { userMarketingOptInFromMetadata } from "@/lib/auth/marketing-email-consent"
 import { subscribeKlaviyoProfileEmailMarketing } from "@/lib/klaviyo/subscribe-profile-email-marketing"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { newsletterPromoEventProperties } from "@/lib/klaviyo/newsletter-promo-event-properties"
+import { trackKlaviyoNewsletterSignup } from "@/lib/klaviyo/track-newsletter-signup"
+import { issueWelcomePromoForAccount } from "@/lib/services/newsletterPromo"
 
 export type TrackKlaviyoNewAccountCreatedOptions = {
   /** When set, loads `profiles.display_name` for the event (session must be on this client). */
@@ -62,6 +66,9 @@ export function shouldTrackKlaviyoNewAccountForOAuthSession(user: User): boolean
 
 /**
  * Klaviyo metric **"New Account Created"** — use in a flow to send a welcome email.
+ * A new account also receives the 15% welcome code on this event (`promo_code`,
+ * `discount_percent`, `expires_at`). When the account opted into marketing email,
+ * a **Newsletter** event is sent too so that flow can deliver the same code.
  * Deduped per user via `uniqueId` if multiple hooks run for the same account.
  *
  * **30‑day inactive re‑engagement (build in Klaviyo, no extra app code required):**
@@ -88,10 +95,11 @@ export async function trackKlaviyoNewAccountCreated(
 
   let profileDisplayName: string | null = null
   let profileEmail: string | null = null
+  let profileMarketingOptOut: boolean | null = null
   if (options?.supabaseForProfile) {
     const { data } = await options.supabaseForProfile
       .from("profiles")
-      .select("display_name, email")
+      .select("display_name, email, marketing_emails_opt_out")
       .eq("id", user.id)
       .maybeSingle()
     profileDisplayName =
@@ -100,7 +108,15 @@ export async function trackKlaviyoNewAccountCreated(
       typeof data?.email === "string" && data.email.trim()
         ? data.email.trim()
         : null
+    if (typeof data?.marketing_emails_opt_out === "boolean") {
+      profileMarketingOptOut = data.marketing_emails_opt_out
+    }
   }
+
+  const explicitMarketingOptIn = userMarketingOptInFromMetadata(user)
+  const wantsMarketingEmails =
+    explicitMarketingOptIn ??
+    (profileMarketingOptOut === null ? false : !profileMarketingOptOut)
 
   /** Klaviyo profile + event: prefer `profiles.email`, same as public profile record; else Auth email. */
   const recipientEmail = profileEmail || authEmail
@@ -121,6 +137,50 @@ export async function trackKlaviyoNewAccountCreated(
     ""
 
   const time = new Date().toISOString()
+
+  if (recipientEmail && wantsMarketingEmails) {
+    const sub = await subscribeKlaviyoProfileEmailMarketing({
+      email: recipientEmail,
+      externalId: user.id,
+    })
+    if (sub.skipped && sub.skipReason) {
+      console.warn("[klaviyo] Email subscribe skipped:", sub.skipReason)
+    } else if (!sub.ok) {
+      console.warn(
+        "[klaviyo] Email subscribe failed:",
+        sub.status,
+        sub.detail.slice(0, 200),
+      )
+    }
+  }
+
+  let promoProperties: Record<string, unknown> = {}
+  let issuedPromo: {
+    promoCode: string
+    discountPercent: number
+    expiresAt: string
+    isNewCode: boolean
+  } | null = null
+  if (recipientEmail && user.id?.trim()) {
+    try {
+      const promo = await issueWelcomePromoForAccount(recipientEmail)
+      if (promo.ok) {
+        issuedPromo = promo
+        promoProperties = newsletterPromoEventProperties({
+          email: recipientEmail,
+          promoCode: promo.promoCode,
+          discountPercent: promo.discountPercent,
+          expiresAt: promo.expiresAt,
+          isNewCode: promo.isNewCode,
+          shopOrigin: publicSiteOrigin(),
+        })
+      } else {
+        console.error("[klaviyo] welcome promo not issued:", promo.error)
+      }
+    } catch (error) {
+      console.error("[klaviyo] welcome promo threw:", error)
+    }
+  }
 
   const result = await sendKlaviyoServerEvent({
     metricName: "New Account Created",
@@ -145,6 +205,7 @@ export async function trackKlaviyoNewAccountCreated(
       account_created_at: user.created_at,
       email_confirmed_at: user.email_confirmed_at ?? null,
       last_sign_in_at: user.last_sign_in_at ?? null,
+      ...promoProperties,
     },
     uniqueId: `new-account-created-${user.id}`,
   })
@@ -153,20 +214,13 @@ export async function trackKlaviyoNewAccountCreated(
     console.warn("[klaviyo] New Account Created skipped:", result.skipReason)
   }
 
-  if (recipientEmail && userWantsMarketingEmails(user)) {
-    void subscribeKlaviyoProfileEmailMarketing({
+  if (issuedPromo?.isNewCode && recipientEmail && wantsMarketingEmails) {
+    await trackKlaviyoNewsletterSignup({
       email: recipientEmail,
-      externalId: user.id,
-    }).then((sub) => {
-      if (sub.skipped && sub.skipReason) {
-        console.warn("[klaviyo] Email subscribe skipped:", sub.skipReason)
-      } else if (!sub.ok) {
-        console.warn(
-          "[klaviyo] Email subscribe failed:",
-          sub.status,
-          sub.detail.slice(0, 200),
-        )
-      }
+      promoCode: issuedPromo.promoCode,
+      discountPercent: issuedPromo.discountPercent,
+      expiresAt: issuedPromo.expiresAt,
+      isNewCode: true,
     })
   }
 }
