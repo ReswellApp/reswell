@@ -1,5 +1,19 @@
 /** Client-safe Klaviyo event log types and helpers (no server imports). */
 
+import {
+  BOARD_BUY_PAID_METRIC,
+  BOARD_BUY_QUOTE_READY_METRIC,
+  BOARD_BUY_SUBMITTED_METRIC,
+  COUNTEROFFER_DECLINED_METRIC,
+  INTELLIGENCE_REPORT_METRIC_NAME,
+  OFFER_DECLINED_METRIC,
+  OFFER_EXPIRING_METRIC,
+  PICKUP_REMINDER_METRIC,
+  SELLER_SHIP_REMINDER_METRIC,
+  SOLD_SALE_FEEDBACK_METRIC,
+  VIEWED_LISTING_METRIC,
+} from "@/lib/klaviyo/marketplace-metrics"
+
 /** Lifecycle category for a Klaviyo metric — drives grouping in the admin dashboard. */
 export type KlaviyoMetricCategory =
   | "transactional"
@@ -22,6 +36,9 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Order Shipping Update": "transactional",
   "Order Refunded": "transactional",
   Payouts: "transactional",
+  [SELLER_SHIP_REMINDER_METRIC]: "transactional",
+  [PICKUP_REMINDER_METRIC]: "transactional",
+  [BOARD_BUY_PAID_METRIC]: "transactional",
   "New Account Created": "lifecycle",
   "User Inactive 30 Days": "lifecycle",
   "Review Requested": "lifecycle",
@@ -68,7 +85,15 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Platform Error Digest": "marketing",
   "Inactive Sync Report": "marketing",
   "Review Invite Sent": "lifecycle",
+  [BOARD_BUY_SUBMITTED_METRIC]: "lifecycle",
+  [BOARD_BUY_QUOTE_READY_METRIC]: "lifecycle",
   "marked as sold": "engagement",
+  [OFFER_DECLINED_METRIC]: "engagement",
+  [COUNTEROFFER_DECLINED_METRIC]: "engagement",
+  [OFFER_EXPIRING_METRIC]: "engagement",
+  [SOLD_SALE_FEEDBACK_METRIC]: "engagement",
+  [VIEWED_LISTING_METRIC]: "marketing",
+  [INTELLIGENCE_REPORT_METRIC_NAME]: "marketing",
 }
 
 export const KNOWN_KLAVIYO_METRIC_NAMES = Object.keys(METRIC_CATEGORY)

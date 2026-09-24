@@ -1,5 +1,10 @@
 import { boardBuyQuotePath } from "@/lib/board-buy/quote-href"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import {
+  BOARD_BUY_PAID_METRIC,
+  BOARD_BUY_QUOTE_READY_METRIC,
+  BOARD_BUY_SUBMITTED_METRIC,
+} from "@/lib/klaviyo/marketplace-metrics"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import type { BoardBuySubmission } from "@/lib/types/board-buy"
@@ -17,7 +22,7 @@ export async function trackBoardBuySubmitted(submission: BoardBuySubmission): Pr
   const { email } = await sellerProfile(submission.userId)
   const origin = publicSiteOriginForEmail()
   await sendKlaviyoServerEvent({
-    metricName: "Board Buy Submitted",
+    metricName: BOARD_BUY_SUBMITTED_METRIC,
     profile: { external_id: submission.userId, email },
     properties: {
       Title: submission.title,
@@ -32,7 +37,7 @@ export async function trackBoardBuyQuoteReady(submission: BoardBuySubmission): P
   const { email } = await sellerProfile(submission.userId)
   const origin = publicSiteOriginForEmail()
   await sendKlaviyoServerEvent({
-    metricName: "Board Buy Quote Ready",
+    metricName: BOARD_BUY_QUOTE_READY_METRIC,
     profile: { external_id: submission.userId, email },
     properties: {
       Title: submission.title,
@@ -48,7 +53,7 @@ export async function trackBoardBuyPaid(submission: BoardBuySubmission): Promise
   const { email } = await sellerProfile(submission.userId)
   const origin = publicSiteOriginForEmail()
   await sendKlaviyoServerEvent({
-    metricName: "Board Buy Paid",
+    metricName: BOARD_BUY_PAID_METRIC,
     profile: { external_id: submission.userId, email },
     properties: {
       Title: submission.title,

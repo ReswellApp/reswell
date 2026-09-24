@@ -3,6 +3,7 @@
  *
  * **Metric name in Klaviyo:** `New Sale Received` — profile is the **seller**.
  * Also emits **Shipping Sale Received** or **Local Pickup Sale Received** by fulfillment type.
+ * Email the fulfillment-specific metric. A flow on **New Sale Received** as well sends two seller alerts.
  *
  * Template variables: `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.sale_url }}`,
  * `{{ event.order_amount }}`, `{{ event.seller_earnings }}`, `{{ event.fulfillment_method }}`,

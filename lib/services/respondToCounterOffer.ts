@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { trackKlaviyoCounterofferDeclined } from "@/lib/klaviyo/track-marketplace-nudge"
 import { trackKlaviyoOfferAccepted } from "@/lib/klaviyo/track-offer-accepted"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
@@ -149,6 +150,23 @@ export async function respondToCounterOfferService(
     if (deleteClient) {
       await deleteOfferRecord(deleteClient, offerId)
     }
+
+    const listPrice = roundMoney(parseFloat(String(listing.price)))
+    void trackKlaviyoCounterofferDeclined({
+      offerId,
+      buyerUserId,
+      sellerUserId: offer.seller_id as string,
+      offerAmount: current,
+      listPrice: Number.isFinite(listPrice) ? listPrice : current,
+      listing: {
+        id: offer.listing_id as string,
+        title,
+        slug: (listing.slug as string | null | undefined) ?? null,
+        section: (listing.section as string | null | undefined) ?? "surfboards",
+        price: Number.isFinite(listPrice) ? listPrice : current,
+      },
+      conversationId: conv?.id ?? null,
+    })
 
     return { ok: true, conversationId: conv?.id ?? null }
   }
