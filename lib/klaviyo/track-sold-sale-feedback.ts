@@ -5,6 +5,7 @@
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { SOLD_SALE_FEEDBACK_METRIC } from "@/lib/klaviyo/marketplace-metrics"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import {
   SOLD_OFF_PLATFORM_CHANNEL_LABELS,
@@ -47,7 +48,7 @@ export async function trackKlaviyoSoldSaleFeedback(
   const priceNum = typeof payload.price === "number" ? payload.price : Number(payload.price)
 
   await sendKlaviyoServerEvent({
-    metricName: "sold sale feedback",
+    metricName: SOLD_SALE_FEEDBACK_METRIC,
     profile: {
       external_id: payload.sellerUserId,
       email: sellerEmail,

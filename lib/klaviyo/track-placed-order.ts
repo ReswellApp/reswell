@@ -1,9 +1,9 @@
 /**
  * Server-only: Klaviyo Events API — fires when a buyer completes checkout (order placed).
  *
- * **Metric name in Klaviyo:** `Placed Order` — use as the flow trigger (Flows → Metric).
- * Standard commerce metric for order confirmation and abandoned-checkout suppression
- * (e.g. has not done **Placed Order** since **Checkout Started**).
+ * **Metric name in Klaviyo:** `Placed Order` — commerce metric for revenue and for
+ * suppressing abandoned cart / checkout. Do **not** also email this metric.
+ * Buyer receipts use **Purchase Successful** (shipping) and **Local Pickup Order Placed** (pickup).
  *
  * Profile on the event is the **buyer** (`external_id` + email when available).
  */

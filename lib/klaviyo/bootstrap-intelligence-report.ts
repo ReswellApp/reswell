@@ -10,10 +10,11 @@
  */
 
 import "@/lib/klaviyo/bootstrap-env"
+import { INTELLIGENCE_REPORT_METRIC_NAME as INTELLIGENCE_REPORT_METRIC } from "@/lib/klaviyo/marketplace-metrics"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
 /** Klaviyo metric — build a flow triggered on this name for admin digests. */
-export const INTELLIGENCE_REPORT_METRIC = "Intelligence Report"
+export { INTELLIGENCE_REPORT_METRIC }
 
 const SEED_PROFILE_EXTERNAL_ID = "reswell-metric-seed-intelligence-report"
 

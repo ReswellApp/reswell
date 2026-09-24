@@ -52,6 +52,7 @@ import {
   KlaviyoEventLogExplorer,
   type KlaviyoEventLogFilters,
 } from "@/components/features/admin/klaviyo-event-log-explorer"
+import { KlaviyoFlowAuditPanel } from "@/components/features/admin/klaviyo-flow-audit-panel"
 
 const RANGES: { value: NotificationsCenterRange; label: string }[] = [
   { value: "24h", label: "24h" },
@@ -506,12 +507,17 @@ export function NotificationsCenterClient() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="flex-wrap">
               <TabsTrigger value="flows">Email flows</TabsTrigger>
+              <TabsTrigger value="audit">Flow audit</TabsTrigger>
               <TabsTrigger value="event-log">Event log</TabsTrigger>
               <TabsTrigger value="skipped">Skipped</TabsTrigger>
               <TabsTrigger value="recipients">Recipients</TabsTrigger>
               <TabsTrigger value="internal">In-app</TabsTrigger>
               <TabsTrigger value="recent">Recent activity</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="audit">
+              <KlaviyoFlowAuditPanel />
+            </TabsContent>
 
             <TabsContent value="flows">
               <Card>

@@ -68,7 +68,7 @@ export function shouldTrackKlaviyoNewAccountForOAuthSession(user: User): boolean
  * 1. Flow trigger: Metric → **New Account Created**.
  * 2. **Time delay** 30 days.
  * 3. **Conditional split** — treat as “active” if they engaged while in the flow, e.g. they
- *    performed **at least once** any of **Viewed Site Page**, **Viewed Sell Page**,
+ *    performed **at least once** any of **Viewed Listing**, **Viewed Site Page**, **Viewed Sell Page**,
  *    **Viewed Boards Page**, or commerce metrics (**Listing**, **Added to Cart**,
  *    **Purchase Successful**, etc.), with timeframe **since starting this flow** (Klaviyo:
  *    profile activity / conditional split wording varies by UI).
