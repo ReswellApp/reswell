@@ -265,6 +265,32 @@ async function replaceWelcomePromoCode(
   return { row: null, lastError }
 }
 
+function firstToken(value: string): string {
+  return value.trim().split(/\s+/).filter(Boolean)[0] ?? ""
+}
+
+/** Name already stored on the Reswell profile for this email, if any. */
+async function welcomeNameOnFile(
+  supabase: SupabaseClient,
+  email: string,
+): Promise<{ firstName: string; lastName: string }> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("first_name, last_name, display_name")
+    .ilike("email", email.replace(/[%_]/g, "\\$&"))
+    .limit(1)
+    .maybeSingle()
+
+  if (error || !data) return { firstName: "", lastName: "" }
+
+  const displayName = typeof data.display_name === "string" ? data.display_name.trim() : ""
+  const firstName =
+    (typeof data.first_name === "string" && data.first_name.trim()) ||
+    (displayName.includes("@") ? "" : firstToken(displayName))
+  const lastName = typeof data.last_name === "string" ? data.last_name.trim() : ""
+  return { firstName, lastName }
+}
+
 /**
  * Subscribe visitor email, issue a one-time promo code, fire Klaviyo **Newsletter** metric.
  * One active code per email. Expired or below-offer unredeemed codes are replaced in place
@@ -319,12 +345,16 @@ export async function createNewsletterPromoSignup(email: string): Promise<Create
 
   await subscribeKlaviyoProfileEmailMarketing({ email: normalizedEmail })
 
+  const welcomeName = await welcomeNameOnFile(supabase, normalizedEmail)
+
   await trackKlaviyoNewsletterSignup({
     email: normalizedEmail,
     promoCode: codeRow.code,
     discountPercent: codeRow.discount_percent,
     expiresAt: codeRow.expires_at,
     isNewCode: true,
+    firstName: welcomeName.firstName,
+    lastName: welcomeName.lastName,
   })
 
   return { ok: true }

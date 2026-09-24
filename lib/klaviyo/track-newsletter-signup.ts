@@ -12,6 +12,9 @@ export async function trackKlaviyoNewsletterSignup(input: {
   discountPercent: number
   expiresAt: string
   isNewCode: boolean
+  /** From `profiles` when this email already has an account. */
+  firstName?: string | null
+  lastName?: string | null
 }): Promise<void> {
   const email = input.email.trim()
   if (!email) return
@@ -29,9 +32,15 @@ export async function trackKlaviyoNewsletterSignup(input: {
 
   const result = await sendKlaviyoServerEvent({
     metricName: "Newsletter",
-    profile: { email },
+    profile: {
+      email,
+      first_name: input.firstName,
+      last_name: input.lastName,
+    },
     properties: {
       email,
+      first_name: input.firstName?.trim() ?? "",
+      last_name: input.lastName?.trim() ?? "",
       promo_code: input.promoCode,
       discount_percent: input.discountPercent,
       discount_label: `${input.discountPercent}% off`,

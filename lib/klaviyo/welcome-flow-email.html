@@ -5,10 +5,15 @@
   Subject: A little welcome gift, just for you
   Preview: Your first-order code is inside.
 
-  Before you send:
-  - Replace COUPON_NAME with the Klaviyo coupon name (Coupons → the welcome coupon).
-  - Replace [XX%] and [OFFER TERMS / EXPIRY] with the live offer (site default is 15% for 30 days).
-  - {% coupon_code %} and {% web_view %} are Klaviyo tags. Leave them. Do not add {% if %} / {% for %} — those often print as raw text.
+  Trigger: Metric → Newsletter (signup). Each send includes that person's code.
+
+  Auto-filled from the Newsletter event (do not hardcode a code):
+  - {{ event|lookup:'promo_code' }} — the WELCOME- code checkout accepts
+  - {{ event|lookup:'discount_percent' }} and {{ event|lookup:'expires_at_formatted' }}
+  - {{ first_name|default:event.first_name|default:'there' }} — profile name, then the name on the account
+
+  Shop buttons go to https://www.reswell.app/boards.
+  {% web_view %} is a Klaviyo tag. Leave it. Do not add {% if %} / {% for %} — those often print as raw text.
 
   Hero photos are served from jsDelivr off commit a7b95400 so they load in Klaviyo
   before this branch is deployed to www.reswell.app.
@@ -82,7 +87,7 @@
                 Welcome to something better
               </p>
               <h1 class="headline" style="margin:16px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:40px;font-weight:500;line-height:46px;letter-spacing:-0.02em;color:#05080D;">
-                Hello, {{ first_name|default:'there' }}.
+                Hello, {{ first_name|default:event.first_name|default:'there' }}.
               </h1>
               <p style="margin:16px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#5C6168;">
                 We are the surfer to surfer marketplace connecting surfers nationwide to buy and sell surfboards
@@ -99,7 +104,7 @@
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;border:1px solid #E4E7EE;border-radius:12px;">
                 <tr>
                   <td align="center" style="padding:14px 18px;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:22px;font-weight:600;letter-spacing:0.02em;color:#05080D;word-break:break-word;">
-                    {% coupon_code 'COUPON_NAME' %}
+                    {{ event|lookup:'promo_code' }}
                   </td>
                 </tr>
               </table>
@@ -218,15 +223,15 @@
                       A welcome from us
                     </p>
                     <h2 class="banner-title" style="margin:14px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:34px;font-weight:500;line-height:40px;letter-spacing:-0.02em;color:#FFFFFF;">
-                      Enjoy [XX%] off your first order
+                      Enjoy {{ event|lookup:'discount_percent'|default:'15' }}% off your first order
                     </h2>
                     <p style="margin:14px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:21px;color:#D5DCEC;">
-                      Use your editable code at checkout. Valid for [OFFER TERMS / EXPIRY].
+                      Use your code at checkout. Valid through {{ event|lookup:'expires_at_formatted'|default:'30 days' }}.
                     </p>
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;margin-top:18px;background-color:#FFFFFF;border-radius:10px;">
                       <tr>
                         <td align="center" style="padding:12px 16px;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:20px;font-weight:600;color:#05080D;word-break:break-word;">
-                          {% coupon_code 'COUPON_NAME' %}
+                          {{ event|lookup:'promo_code' }}
                         </td>
                       </tr>
                     </table>

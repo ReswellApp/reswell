@@ -54,6 +54,9 @@ export type KlaviyoProfileIds = {
   phone_number?: string | null
   /** For anonymous traffic; Klaviyo accepts this as a profile identifier */
   anonymous_id?: string
+  /** Written onto the Klaviyo profile so `{{ first_name }}` matches the name on file. */
+  first_name?: string | null
+  last_name?: string | null
 }
 
 export type SendKlaviyoServerEventInput = {
@@ -146,6 +149,12 @@ async function performSendKlaviyoServerEvent(
   }
   if (input.profile.anonymous_id?.trim()) {
     profileAttributes.anonymous_id = input.profile.anonymous_id.trim()
+  }
+  if (input.profile.first_name?.trim()) {
+    profileAttributes.first_name = input.profile.first_name.trim()
+  }
+  if (input.profile.last_name?.trim()) {
+    profileAttributes.last_name = input.profile.last_name.trim()
   }
 
   const attrs: Record<string, unknown> = {

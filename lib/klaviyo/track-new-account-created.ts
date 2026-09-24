@@ -127,6 +127,8 @@ export async function trackKlaviyoNewAccountCreated(
     profile: {
       external_id: user.id,
       email: recipientEmail,
+      first_name,
+      last_name,
     },
     properties: {
       time,
