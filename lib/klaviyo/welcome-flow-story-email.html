@@ -4,7 +4,12 @@
   Send after the welcome gift email.
 
   Subject: Why we built Reswell
-  Preview: A surf marketplace, started in Santa Barbara.
+  Preview: Your welcome code is still waiting.
+
+  Profile fields, then event fallbacks:
+  - person.welcome_promo_code, else event.promo_code
+  - person.welcome_discount_percent, else event.discount_percent
+  - person.welcome_promo_expires, else event.expires_at_formatted
 
   Do not use {% if %} / {% for %} in this workspace — they often print as raw text.
 -->
@@ -33,7 +38,7 @@
 </head>
 <body style="margin:0;padding:0;width:100% !important;background-color:#F4F4F4;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#F4F4F4;">
-    A surf marketplace, started in Santa Barbara &rarr;
+    Your welcome code is still waiting &rarr;
     &#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;
   </div>
 
@@ -128,6 +133,27 @@
               <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#3A3D42;">
                 Message the other person, agree on a price, and check out on Reswell. Shipping is built in when local pickup isn&rsquo;t the right fit. We&rsquo;re not another classifieds site. For surfers who know what they want, the point is a marketplace built around trust.
               </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="pad-lg" style="padding:24px 28px 0;">
+              <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#576A94;">
+                Your code
+              </p>
+              <p style="margin:10px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:26px;line-height:32px;color:#05080D;">
+                {{ person|lookup:'welcome_discount_percent'|default:event.discount_percent|default:'15' }}% off is still yours.
+              </p>
+              <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:22px;color:#5C6168;">
+                Use it at checkout. Valid through {{ person|lookup:'welcome_promo_expires'|default:event.expires_at_formatted|default:'30 days' }}.
+              </p>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="left" style="border-collapse:separate;margin-top:14px;border:1px solid #E4E7EE;border-radius:12px;">
+                <tr>
+                  <td align="left" style="padding:14px 18px;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:22px;font-weight:600;letter-spacing:0.02em;color:#05080D;word-break:break-word;">
+                    {{ person|lookup:'welcome_promo_code'|default:event.promo_code|default:'' }}
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
