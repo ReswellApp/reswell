@@ -8,6 +8,7 @@ import {
 } from "@/lib/klaviyo/page-view-metric"
 import { sellPageViewContextFromPath } from "@/lib/klaviyo/sell-page-view-context"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { trackKlaviyoViewedProduct } from "@/lib/klaviyo/track-viewed-product"
 import { trackKlaviyoViewedSellPage } from "@/lib/klaviyo/track-viewed-sell-page"
 
 export type { KlaviyoPageViewSegment }
@@ -37,7 +38,7 @@ export type TrackKlaviyoPageViewInput = {
  * **Metrics (create in Klaviyo under Flows → Metric):**
  * - **Viewed Sell Page** — signed-in `/sell` only; see `track-viewed-sell-page.ts` for abandoned-listing flow
  * - **Viewed Site Page** — browsing everywhere else (`/boards`, `/fins`, search, home, …)
- * - Listing product pages (`/l` and `/l/...`) send no page-view metric
+ * - **Viewed Product** — `/l/{slug-or-id}`; see `track-viewed-product.ts`
  *
  * All events include `Path` (pathname + query), `Pathname`, `Page segment` for reporting.
  */
@@ -60,6 +61,26 @@ export async function trackKlaviyoPageView(
     typeof input.loggedInUserId === "string"
       ? input.loggedInUserId.trim() || null
       : null
+
+  if (segment === "product") {
+    if (userId && !email) {
+      email = await getAuthEmailForUserId(userId)
+    }
+    const anon =
+      typeof input.anonymousId === "string"
+        ? input.anonymousId.trim() || null
+        : null
+    await trackKlaviyoViewedProduct({
+      pathname,
+      path,
+      search,
+      userId,
+      email,
+      anonymousId: anon,
+      supabase: input.supabase,
+    })
+    return
+  }
 
   if (segment === "sell") {
     if (!userId) return

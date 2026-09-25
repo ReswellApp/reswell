@@ -17,7 +17,7 @@
  * Deduped to **one event per profile per UTC day** (`unique_id`) so query-param churn on `/sell`
  * does not spawn multiple concurrent flows.
  *
- * @see lib/klaviyo/page-view-metric.ts — browse paths use **Viewed Site Page**; `/l` sends none
+ * @see lib/klaviyo/page-view-metric.ts — browse paths use **Viewed Site Page**; `/l/{slug}` uses **Viewed Product**
  */
 
 import { publicSiteOrigin } from "@/lib/public-site-origin"

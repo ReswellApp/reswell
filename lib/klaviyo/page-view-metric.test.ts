@@ -4,6 +4,7 @@ import { describe, it } from "node:test"
 import {
   isListingProductPathname,
   klaviyoPageViewMetricForPathname,
+  listingParamFromProductPathname,
 } from "./page-view-metric.ts"
 
 describe("isListingProductPathname", () => {
@@ -40,9 +41,26 @@ describe("klaviyoPageViewMetricForPathname", () => {
     }
   })
 
-  it("skips actual product pages", () => {
+  it("counts a listing page as Viewed Product", () => {
+    assert.deepEqual(klaviyoPageViewMetricForPathname("/l/lost-round-nose"), {
+      metricName: "Viewed Product",
+      segment: "product",
+    })
+    assert.equal(
+      listingParamFromProductPathname("/l/lost-round-nose"),
+      "lost-round-nose",
+    )
+    assert.equal(
+      listingParamFromProductPathname("/l/channel%20islands/"),
+      "channel islands",
+    )
+  })
+
+  it("does not treat a bare /l path as a product view", () => {
     assert.equal(klaviyoPageViewMetricForPathname("/l"), null)
-    assert.equal(klaviyoPageViewMetricForPathname("/l/lost-round-nose"), null)
+    assert.equal(klaviyoPageViewMetricForPathname("/l/"), null)
+    assert.equal(listingParamFromProductPathname("/l"), null)
+    assert.equal(listingParamFromProductPathname("/boards"), null)
   })
 
   it("keeps the sell funnel on Viewed Sell Page", () => {

@@ -3,11 +3,11 @@
  *
  * **Viewed Site Page** is browsing: home, category roots (`/boards`, `/fins`, …),
  * search, brand pages, and the rest of the storefront.
- * Listing product pages (`/l` and `/l/...`) do not emit it.
+ * **Viewed Product** is a listing page (`/l/{slug-or-id}`).
  * **Viewed Sell Page** stays on `/sell` for the seller funnel.
  */
 
-export type KlaviyoPageViewSegment = "sell" | "site"
+export type KlaviyoPageViewSegment = "sell" | "site" | "product"
 
 export type KlaviyoPageViewMetric = {
   metricName: string
@@ -20,11 +20,27 @@ export function isListingProductPathname(pathname: string): boolean {
   return p === "/l" || p.startsWith("/l/")
 }
 
+/** Slug or id from `/l/{slug-or-id}`. Bare `/l` has no product. */
+export function listingParamFromProductPathname(pathname: string): string | null {
+  const p = pathname.trim()
+  if (!p.startsWith("/l/")) return null
+  const rest = p.slice("/l/".length).replace(/\/+$/, "")
+  if (!rest || rest.includes("/")) return null
+  try {
+    return decodeURIComponent(rest)
+  } catch {
+    return rest
+  }
+}
+
 export function klaviyoPageViewMetricForPathname(
   pathname: string,
 ): KlaviyoPageViewMetric | null {
   const p = pathname.trim()
-  if (isListingProductPathname(p)) return null
+  if (isListingProductPathname(p)) {
+    if (!listingParamFromProductPathname(p)) return null
+    return { metricName: "Viewed Product", segment: "product" }
+  }
   if (p === "/sell" || p.startsWith("/sell/")) {
     return { metricName: "Viewed Sell Page", segment: "sell" }
   }

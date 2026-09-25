@@ -76,7 +76,7 @@ export function shouldTrackKlaviyoNewAccountForOAuthSession(user: User): boolean
  * 2. **Time delay** 30 days.
  * 3. **Conditional split** — treat as “active” if they engaged while in the flow, e.g. they
  *    performed **at least once** any of **Viewed Site Page** (browse, including
- *    `/boards` and `/fins`; product pages at `/l` do not count), **Viewed Sell Page**,
+ *    `/boards` and `/fins`), **Viewed Product** (`/l/{slug}`), **Viewed Sell Page**,
  *    or commerce metrics (**Listing**, **Added to Cart**,
  *    **Purchase Successful**, etc.), with timeframe **since starting this flow** (Klaviyo:
  *    profile activity / conditional split wording varies by UI).
