@@ -115,6 +115,13 @@ function renderBlock(block: EmailBlock): string {
   }
 }
 
+/** Downloaded and pushed HTML. Custom code wins over the block layout. */
+export function resolveEmailStudioHtml(input: EmailStudioRenderInput): string {
+  const custom = input.document.htmlOverride
+  if (custom && custom.trim()) return custom
+  return renderEmailStudioHtml(input)
+}
+
 export function renderEmailStudioHtml(input: EmailStudioRenderInput): string {
   const preview = textToHtml(input.previewText)
   const blocks = input.document.blocks.map(renderBlock).join("\n")

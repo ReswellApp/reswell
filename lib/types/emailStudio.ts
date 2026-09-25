@@ -115,6 +115,8 @@ export type EmailBlock =
 
 export interface EmailStudioDocument {
   blocks: EmailBlock[]
+  /** Hand-edited HTML. When set, download and Klaviyo push use this instead of the blocks. */
+  htmlOverride?: string | null
 }
 
 export interface EmailStudioRecord {

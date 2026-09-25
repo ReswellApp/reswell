@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { cloneEmailDocument, starterById } from "./document.ts"
-import { renderEmailStudioHtml, safeEmailHref } from "./render-html.ts"
+import { renderEmailStudioHtml, resolveEmailStudioHtml, safeEmailHref } from "./render-html.ts"
 
 describe("email studio html", () => {
   it("drops unsafe links and keeps Klaviyo tags", () => {
@@ -30,5 +30,14 @@ describe("email studio html", () => {
     assert.match(html, /event\|lookup:'order_num'/)
     assert.doesNotMatch(html, /<script/i)
     assert.match(html, /Trigger metric: Purchase Successful/)
+    const custom = resolveEmailStudioHtml({
+      name: "Buyer order",
+      subject: starter.subject,
+      previewText: starter.previewText,
+      flowName: "Purchase Successful",
+      triggerMetric: starter.triggerMetric,
+      document: { ...cloneEmailDocument(starter.document), htmlOverride: "<p>Custom</p>" },
+    })
+    assert.equal(custom, "<p>Custom</p>")
   })
 })

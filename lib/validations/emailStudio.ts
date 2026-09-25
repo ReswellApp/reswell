@@ -86,6 +86,7 @@ const blockSchema = z.discriminatedUnion("type", [
 
 export const emailStudioDocumentSchema = z.object({
   blocks: z.array(blockSchema).max(40),
+  htmlOverride: z.string().max(500_000).nullable().optional(),
 })
 
 const metaSchema = z.object({

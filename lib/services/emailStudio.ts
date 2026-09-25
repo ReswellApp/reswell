@@ -5,7 +5,7 @@ import {
   starterById,
   blankEmailDocument,
 } from "@/lib/email-studio/document"
-import { renderEmailStudioHtml, renderEmailStudioText } from "@/lib/email-studio/render-html"
+import { renderEmailStudioText, resolveEmailStudioHtml } from "@/lib/email-studio/render-html"
 import {
   deleteEmailStudioDocument,
   getEmailStudioDocument,
@@ -293,7 +293,7 @@ export async function pushEmailStudioToKlaviyoService(
       triggerMetric: existing.triggerMetric,
       document: existing.document,
     }
-    const html = renderEmailStudioHtml(renderInput)
+    const html = resolveEmailStudioHtml(renderInput)
     const text = renderEmailStudioText(renderInput)
     const attributes = {
       name: `Reswell · ${existing.name}`.slice(0, 255),

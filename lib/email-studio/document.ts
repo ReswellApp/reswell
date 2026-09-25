@@ -217,6 +217,7 @@ export function starterById(id: string): EmailStudioStarter | null {
 
 export function cloneEmailDocument(document: EmailStudioDocument): EmailStudioDocument {
   return {
+    htmlOverride: document.htmlOverride ?? null,
     blocks: document.blocks.map((block) => {
       if (block.type === "details") {
         return {
