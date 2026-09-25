@@ -13,6 +13,8 @@ import {
  *
  * When `KLAVIYO_CATALOG_FEED_SECRET` is set, pass it as `?token=` or `Authorization: Bearer`.
  * Includes active peer listings (surfboards, fins, magazines, wetsuits, and other marketplace sections).
+ * Hayden Garfield’s active surfboards also get the category `Hayden Garfields Shop` so a Klaviyo
+ * product feed can filter to that shop. Resync the custom catalog after this ships.
  * Contact Klaviyo support to link metrics (Added to Cart, Checkout Started, Placed Order) with ProductID → catalog $id.
  */
 export async function GET(request: Request) {

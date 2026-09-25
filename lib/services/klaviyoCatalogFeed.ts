@@ -1,9 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { z } from "zod"
 import { fetchKlaviyoCatalogFeedPage } from "@/lib/db/klaviyoCatalogFeed"
 import {
+  KLAVIYO_HAYDEN_SHOP_SELLER_EMAIL,
   listingToKlaviyoCatalogFeedItem,
   type KlaviyoCatalogFeedItem,
 } from "@/lib/klaviyo/catalog-product"
+import { findUserIdByEmail } from "@/lib/services/resolveUserIdByEmail"
 
 const DEFAULT_MAX_ITEMS = 10_000
 
@@ -15,10 +18,40 @@ function catalogFeedMaxItems(): number {
   return Math.min(parsed, 50_000)
 }
 
+/**
+ * Hayden Garfield’s seller id for the `Hayden Garfields Shop` catalog category.
+ * Prefer `KLAVIYO_CATALOG_HAYDEN_SHOP_USER_ID`, else email
+ * (`KLAVIYO_CATALOG_HAYDEN_SHOP_SELLER_EMAIL` or haydensbsb@gmail.com).
+ */
+export async function resolveKlaviyoHaydenShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  const byIdRaw = process.env.KLAVIYO_CATALOG_HAYDEN_SHOP_USER_ID?.trim()
+  if (byIdRaw) {
+    const parsed = z.string().uuid().safeParse(byIdRaw)
+    if (parsed.success) return parsed.data
+    console.warn(
+      "[klaviyo] KLAVIYO_CATALOG_HAYDEN_SHOP_USER_ID is not a valid UUID; falling back to email lookup",
+    )
+  }
+
+  const email =
+    process.env.KLAVIYO_CATALOG_HAYDEN_SHOP_SELLER_EMAIL?.trim() ||
+    KLAVIYO_HAYDEN_SHOP_SELLER_EMAIL
+  return findUserIdByEmail(supabase, email)
+}
+
 export async function buildKlaviyoCatalogFeed(
   supabase: SupabaseClient,
 ): Promise<KlaviyoCatalogFeedItem[]> {
   const maxItems = catalogFeedMaxItems()
+  let haydenShopUserId: string | null = null
+  try {
+    haydenShopUserId = await resolveKlaviyoHaydenShopUserId(supabase)
+  } catch (error) {
+    console.error("[klaviyo] catalog feed: Hayden shop lookup failed", error)
+  }
+
   const items: KlaviyoCatalogFeedItem[] = []
   let offset = 0
 
@@ -29,7 +62,7 @@ export async function buildKlaviyoCatalogFeed(
     for (const row of page.rows) {
       if (items.length >= maxItems) break
       if (!row.id?.trim()) continue
-      items.push(listingToKlaviyoCatalogFeedItem(row))
+      items.push(listingToKlaviyoCatalogFeedItem(row, { haydenShopUserId }))
     }
 
     if (page.nextOffset == null) break
