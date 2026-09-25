@@ -50,6 +50,7 @@ import {
 import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { flatShippingUsdForPublicListing } from "@/lib/listing-fulfillment"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import {
@@ -255,7 +256,10 @@ async function renderMagazinesListingDetailPage({
     listPriceNum,
   )
 
-  const shippingFlatRate = Math.max(0, Number.parseFloat(String(magazine.shipping_price ?? 0)) || 0)
+  const shippingFlatRate = flatShippingUsdForPublicListing(
+    magazine.shipping_price,
+    (magazine.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
+  )
 
   const listingLocationLine =
     magazine.city && magazine.state
@@ -269,10 +273,10 @@ async function renderMagazinesListingDetailPage({
   if (!isSold && shippingOffered) {
     if (boardShippingCostMode === "free") {
       shippingPriceCaption = "Free shipping included"
-    } else if (shippingFlatRate > 0) {
-      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
     } else if (boardShippingCostMode === "reswell") {
       shippingPriceCaption = "Shipping rate calculated at checkout"
+    } else if (shippingFlatRate > 0) {
+      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
     } else if (boardShippingCostMode === "flat") {
       shippingPriceCaption =
         shippingFlatRate > 0
@@ -626,9 +630,11 @@ async function renderMagazinesListingDetailPage({
                         <span>
                           {boardShippingCostMode === "free"
                             ? "Free shipping"
-                            : shippingFlatRate > 0
-                              ? `Flat $${shippingFlatRate.toFixed(2)} shipping`
-                              : "Shipping calculated at checkout"}
+                            : boardShippingCostMode === "reswell"
+                              ? "Shipping calculated at checkout"
+                              : shippingFlatRate > 0
+                                ? `Flat $${shippingFlatRate.toFixed(2)} shipping`
+                                : "Shipping calculated at checkout"}
                         </span>
                       </p>
                     ) : null}

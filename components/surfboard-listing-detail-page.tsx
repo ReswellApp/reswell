@@ -45,6 +45,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { flatShippingUsdForPublicListing } from "@/lib/listing-fulfillment"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
@@ -288,7 +289,10 @@ async function renderSurfboardListingDetailPage({
           primaryImageUrl,
           canPick: pickupOffered,
           canShip: shippingOffered,
-          shippingFlatRate: Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0),
+          shippingFlatRate: flatShippingUsdForPublicListing(
+            board.shipping_price,
+            (board.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
+          ),
           shippingCostMode:
             (board.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
           hideMinimumUntilViolated: hasFixedMinimumAmount,
@@ -309,7 +313,10 @@ async function renderSurfboardListingDetailPage({
   const boardShippingCostMode =
     (board as { board_shipping_cost_mode?: "reswell" | "flat" | "free" | null })
       .board_shipping_cost_mode ?? null
-  const shippingFlatRate = Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0)
+  const shippingFlatRate = flatShippingUsdForPublicListing(
+    board.shipping_price,
+    boardShippingCostMode,
+  )
 
   let shippingPriceCaption: string | null = null
   if (!isSold) {
@@ -317,10 +324,10 @@ async function renderSurfboardListingDetailPage({
       shippingPriceCaption = "Local pickup · shipping not offered"
     } else if (shippingOffered && boardShippingCostMode === "free") {
       shippingPriceCaption = "Free shipping included"
-    } else if (shippingOffered && shippingFlatRate > 0) {
-      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
     } else if (shippingOffered && boardShippingCostMode === "reswell") {
       shippingPriceCaption = "Shipping rate calculated at checkout"
+    } else if (shippingOffered && shippingFlatRate > 0) {
+      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
     } else if (shippingOffered && boardShippingCostMode === "flat") {
       shippingPriceCaption =
         shippingFlatRate > 0

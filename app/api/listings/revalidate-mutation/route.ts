@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
     typeof sellerProfile?.seller_slug === "string" ? sellerProfile.seller_slug.trim() : ""
 
   after(() => {
-    revalidateListingDetailPage(listingId, slug ?? null)
     revalidateBoardsBrowseCatalog()
     revalidateNavSuggestedSurfboards()
     if (sellerSlug) {
@@ -59,6 +58,8 @@ export async function POST(request: NextRequest) {
     if (navSearch === true) {
       revalidateNavSearchSuggest()
     }
+    // Last: catalog SWR must not leave this listing's PDP serving the previous row.
+    revalidateListingDetailPage(listingId, slug ?? null)
   })
 
   return NextResponse.json({ data: { ok: true } }, { status: 200 })
