@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { useDraggable, useDroppable } from "@dnd-kit/core"
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Copy, GripVertical, Trash2 } from "lucide-react"
-import { uploadBlogMediaFile } from "@/lib/blog/upload-blog-media"
+import { EmailImageFrame } from "@/components/features/admin/email-studio/email-studio-image-frame"
 import {
   KLAVIYO_EMAIL_BORDER,
   KLAVIYO_EMAIL_COLORS,
@@ -76,14 +76,6 @@ function CanvasBlock({
   onDuplicate: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id })
-  const [uploading, setUploading] = useState(false)
-
-  async function onFile(file: File, apply: (url: string) => void) {
-    setUploading(true)
-    const uploaded = await uploadBlogMediaFile(file)
-    setUploading(false)
-    if (uploaded?.url) apply(uploaded.url)
-  }
 
   return (
     <div
@@ -109,21 +101,19 @@ function CanvasBlock({
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
-      <BlockBody block={block} uploading={uploading} onChange={onChange} onFile={onFile} />
+      <BlockBody block={block} selected={selected} onChange={onChange} />
     </div>
   )
 }
 
 function BlockBody({
   block,
-  uploading,
+  selected,
   onChange,
-  onFile,
 }: {
   block: EmailBlock
-  uploading: boolean
+  selected: boolean
   onChange: (block: EmailBlock) => void
-  onFile: (file: File, apply: (url: string) => void) => void
 }) {
   if (block.type === "logo") {
     return (
@@ -181,38 +171,34 @@ function BlockBody({
     )
   }
   if (block.type === "image" || block.type === "split") {
-    const src = block.type === "image" ? block.src : block.imageSrc
-    const apply = (url: string) => {
-      if (block.type === "image") onChange({ ...block, src: url })
-      else onChange({ ...block, imageSrc: url })
-    }
     const frame = (
-      <label
-        className="flex min-h-28 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed text-center text-xs"
-        style={{ borderColor: KLAVIYO_EMAIL_BORDER, color: KLAVIYO_EMAIL_MUTED }}
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          event.preventDefault()
-          const file = event.dataTransfer.files[0]
-          if (file) void onFile(file, apply)
+      <EmailImageFrame
+        src={block.type === "image" ? block.src : block.imageSrc}
+        alt={block.type === "image" ? block.alt : block.imageAlt}
+        width={block.type === "image" ? block.width ?? 560 : block.imageWidth ?? 240}
+        height={block.type === "image" ? block.height ?? null : block.imageHeight ?? null}
+        maxWidth={block.type === "image" ? 560 : 280}
+        selected={selected}
+        onChange={(patch) => {
+          if (block.type === "image") {
+            onChange({
+              ...block,
+              src: patch.src ?? block.src,
+              alt: patch.alt ?? block.alt,
+              width: patch.width ?? block.width,
+              height: patch.height === undefined ? block.height : patch.height,
+            })
+          } else {
+            onChange({
+              ...block,
+              imageSrc: patch.src ?? block.imageSrc,
+              imageAlt: patch.alt ?? block.imageAlt,
+              imageWidth: patch.width ?? block.imageWidth,
+              imageHeight: patch.height === undefined ? block.imageHeight : patch.height,
+            })
+          }
         }}
-      >
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt="" className="h-auto w-full" />
-        ) : (
-          <span>{uploading ? "Uploading…" : "Drop an image"}</span>
-        )}
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          className="sr-only"
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) void onFile(file, apply)
-          }}
-        />
-      </label>
+      />
     )
     if (block.type === "image") return frame
     return (

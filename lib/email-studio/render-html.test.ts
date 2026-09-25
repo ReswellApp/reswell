@@ -40,4 +40,32 @@ describe("email studio html", () => {
     })
     assert.equal(custom, "<p>Custom</p>")
   })
+
+  it("writes blog storage images as absolute /media urls and honors crop size", () => {
+    const html = renderEmailStudioHtml({
+      name: "Image",
+      subject: "",
+      previewText: "",
+      flowName: "",
+      triggerMetric: "",
+      document: {
+        blocks: [
+          {
+            id: "00000000-0000-4000-8000-000000000001",
+            type: "image",
+            src: "https://abc.supabase.co/storage/v1/object/public/blog-images/cms/photo.jpg?t=1",
+            alt: "Board",
+            href: "",
+            width: 200,
+            height: 120,
+          },
+        ],
+      },
+    })
+    assert.match(html, /https:\/\/www\.reswell\.app\/media\/blog\/cms\/photo\.jpg/)
+    assert.doesNotMatch(html, /supabase\.co/)
+    assert.match(html, /width:200px/)
+    assert.match(html, /height:120px/)
+    assert.match(html, /object-fit:cover/)
+  })
 })

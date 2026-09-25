@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { uploadBlogMediaFile } from "@/lib/blog/upload-blog-media"
+import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import { EMAIL_MERGE_TOKENS } from "@/lib/email-studio/tokens"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -123,7 +124,7 @@ export function EmailStudioInspector({
             href={block.href}
             uploading={uploading}
             onChange={(patch) => onChange({ ...block, ...patch })}
-            onFile={(file) => void upload(file, (src) => onChange({ ...block, src }))}
+            onFile={(file) => void upload(file, (src) => onChange({ ...block, src: emailImageSrc(src) }))}
           />
         </>
       ) : null}
@@ -156,7 +157,7 @@ export function EmailStudioInspector({
                 imageHref: patch.href ?? block.imageHref,
               })
             }
-            onFile={(file) => void upload(file, (imageSrc) => onChange({ ...block, imageSrc }))}
+            onFile={(file) => void upload(file, (imageSrc) => onChange({ ...block, imageSrc: emailImageSrc(imageSrc) }))}
           />
           <div className={fieldClass}>
             <Label>Title</Label>
@@ -233,7 +234,12 @@ function ImageFields({
     <>
       <div className={fieldClass}>
         <Label>Image</Label>
-        <Input value={src} placeholder="https:// or drop a file" onChange={(event) => onChange({ src: event.target.value })} />
+        <Input
+          value={src}
+          placeholder="https:// or a saved /media image"
+          onChange={(event) => onChange({ src: event.target.value })}
+          onBlur={(event) => onChange({ src: emailImageSrc(event.target.value) })}
+        />
       </div>
       <label
         className="flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground hover:bg-muted/50"

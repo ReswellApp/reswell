@@ -5,6 +5,7 @@ import {
   createEmailStudioService,
   deleteEmailStudioService,
   duplicateEmailStudioService,
+  listEmailLibraryImagesService,
   pushEmailStudioToKlaviyoService,
   saveEmailStudioTemplateService,
   updateEmailStudioService,
@@ -72,6 +73,10 @@ export async function saveEmailStudioTemplateAction(raw: unknown) {
   if ("error" in result) return result
   revalidateStudio()
   return result
+}
+
+export async function listEmailLibraryImagesAction() {
+  return listEmailLibraryImagesService()
 }
 
 export async function pushEmailStudioToKlaviyoAction(raw: unknown) {

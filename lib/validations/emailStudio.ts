@@ -45,6 +45,8 @@ const blockSchema = z.discriminatedUnion("type", [
     src: hrefText,
     alt: shortText,
     href: hrefText,
+    width: z.number().int().min(40).max(560).optional(),
+    height: z.number().int().min(40).max(800).nullable().optional(),
   }),
   z.object({
     id: idSchema,
@@ -59,6 +61,8 @@ const blockSchema = z.discriminatedUnion("type", [
     imageSrc: hrefText,
     imageAlt: shortText,
     imageHref: hrefText,
+    imageWidth: z.number().int().min(40).max(280).optional(),
+    imageHeight: z.number().int().min(40).max(800).nullable().optional(),
     title: shortText,
     text: bodyText,
     buttonLabel: shortText,

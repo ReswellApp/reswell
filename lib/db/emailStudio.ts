@@ -154,6 +154,51 @@ export async function updateEmailStudioDocument(
   return toRecord(data as Row)
 }
 
+export type EmailLibraryImageRow = {
+  id: string
+  label: string
+  src: string
+  group: "Blog" | "Listing"
+}
+
+export async function listEmailLibraryImageRows(
+  supabase: SupabaseClient,
+): Promise<EmailLibraryImageRow[]> {
+  const [blog, listings] = await Promise.all([
+    supabase
+      .from("blog_posts")
+      .select("id, title, cover_image_url")
+      .not("cover_image_url", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(40),
+    supabase
+      .from("listings")
+      .select("id, title, primary_image_url")
+      .not("primary_image_url", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(40),
+  ])
+
+  if (blog.error) throw new Error(blog.error.message)
+  if (listings.error) throw new Error(listings.error.message)
+
+  const blogRows = (blog.data ?? []) as { id: string; title: string | null; cover_image_url: string | null }[]
+  const listingRows = (listings.data ?? []) as { id: string; title: string | null; primary_image_url: string | null }[]
+
+  return [
+    ...blogRows.flatMap((row) => {
+      const src = row.cover_image_url?.trim()
+      if (!src) return []
+      return [{ id: `blog:${row.id}`, label: row.title?.trim() || "Blog image", src, group: "Blog" as const }]
+    }),
+    ...listingRows.flatMap((row) => {
+      const src = row.primary_image_url?.trim()
+      if (!src) return []
+      return [{ id: `listing:${row.id}`, label: row.title?.trim() || "Listing photo", src, group: "Listing" as const }]
+    }),
+  ]
+}
+
 export async function deleteEmailStudioDocument(
   supabase: SupabaseClient,
   id: string,

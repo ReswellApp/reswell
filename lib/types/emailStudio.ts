@@ -59,6 +59,10 @@ export interface EmailImageBlock extends EmailBlockBase {
   src: string
   alt: string
   href: string
+  /** Display width in pixels. Omitted images use the full email column. */
+  width?: number
+  /** Set with width to crop. Empty keeps the photo's natural height. */
+  height?: number | null
 }
 
 export interface EmailButtonBlock extends EmailBlockBase {
@@ -73,6 +77,8 @@ export interface EmailSplitBlock extends EmailBlockBase {
   imageSrc: string
   imageAlt: string
   imageHref: string
+  imageWidth?: number
+  imageHeight?: number | null
   title: string
   text: string
   buttonLabel: string

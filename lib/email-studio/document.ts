@@ -46,7 +46,7 @@ export function createEmailBlock(type: EmailBlockType): EmailBlock {
         align: "left",
       }
     case "image":
-      return { id, type, src: "", alt: "", href: "" }
+      return { id, type, src: "", alt: "", href: "", width: 560, height: null }
     case "button":
       return {
         id,
@@ -62,6 +62,8 @@ export function createEmailBlock(type: EmailBlockType): EmailBlock {
         imageSrc: "",
         imageAlt: "",
         imageHref: "",
+        imageWidth: 240,
+        imageHeight: null,
         title: "Listing title",
         text: "Price, condition, and a short reason to open it.",
         buttonLabel: "View listing",
