@@ -5,6 +5,7 @@ import {
   coerceAssistantBlocks,
   coerceAssistantEmail,
   coerceAssistantFlow,
+  coerceAssistantStudio,
   extractJsonObject,
 } from "./assistant-draft"
 
@@ -58,5 +59,51 @@ describe("email studio assistant drafts", () => {
     assert.ok(flow)
     assert.equal(flow.steps[0]?.type, "delay")
     assert.equal(flow.steps[1]?.type, "email")
+  })
+
+  it("nests yes and no steps under a split and keeps the next main step", () => {
+    const flow = coerceAssistantFlow({
+      name: "Branch",
+      steps: [
+        { type: "split", splitMode: "email-subscribed", branch: "main" },
+        { type: "email", branch: "yes", subject: "Yes", heading: "In", body: "Yes" },
+        { type: "sms", branch: "no", smsBody: "No" },
+        { type: "delay", branch: "main", unit: "days", value: 2 },
+      ],
+    })
+    assert.ok(flow)
+    assert.equal(flow.steps[0]?.type, "split")
+    const split = flow.steps[0]
+    assert.equal(split?.type, "split")
+    if (split?.type === "split") {
+      assert.equal(split.yes[0]?.type, "email")
+      assert.equal(split.no[0]?.type, "sms")
+    }
+    assert.equal(flow.steps[1]?.type, "delay")
+  })
+
+  it("applies an email and a flow from one object, and skips a side marked no", () => {
+    const both = coerceAssistantStudio({
+      reply: "Both.",
+      applyEmail: "yes",
+      applyFlow: "yes",
+      subject: "Hello",
+      blocks: [{ type: "heading", text: "Hi" }],
+      flowName: "Welcome",
+      steps: [{ type: "email", subject: "Welcome", heading: "In", body: "Start" }],
+    })
+    assert.ok(both?.email)
+    assert.equal(both.email.subject, "Hello")
+    assert.equal(both.flow?.name, "Welcome")
+    assert.equal(both.flow?.steps[0]?.type, "email")
+
+    const emailOnly = coerceAssistantStudio({
+      applyEmail: "yes",
+      applyFlow: "no",
+      blocks: [{ type: "text", text: "Hi" }],
+      steps: [{ type: "delay", value: 1, unit: "days" }],
+    })
+    assert.ok(emailOnly?.email)
+    assert.equal(emailOnly.flow, null)
   })
 })

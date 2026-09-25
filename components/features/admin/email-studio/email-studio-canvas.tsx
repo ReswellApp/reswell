@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, type CSSProperties } from "react"
 import { useDraggable, useDroppable } from "@dnd-kit/core"
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
@@ -9,6 +9,7 @@ import { EmailImageFrame } from "@/components/features/admin/email-studio/email-
 import {
   KLAVIYO_EMAIL_BORDER,
   KLAVIYO_EMAIL_COLORS,
+  KLAVIYO_EMAIL_FONT_HEADLINE,
   KLAVIYO_EMAIL_FONT_SANS,
   KLAVIYO_EMAIL_MUTED,
   KLAVIYO_EMAIL_RADIUS,
@@ -18,17 +19,20 @@ import type { EmailBlock, EmailBlockType } from "@/lib/types/emailStudio"
 import { emailBlockLabel } from "@/components/features/admin/email-studio/email-studio-outline"
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
+const HEADLINE = KLAVIYO_EMAIL_FONT_HEADLINE
 
 function InlineText({
   value,
   onChange,
   className,
   label,
+  style,
 }: {
   value: string
   onChange: (value: string) => void
   className?: string
   label: string
+  style?: CSSProperties
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const editing = useRef(false)
@@ -47,6 +51,7 @@ function InlineText({
       contentEditable
       suppressContentEditableWarning
       className={cn("outline-none", className)}
+      style={style}
       onMouseDown={(event) => event.stopPropagation()}
       onFocus={() => {
         editing.current = true
@@ -144,7 +149,8 @@ function BlockBody({
         label="Headline"
         value={block.text}
         onChange={(text) => onChange({ ...block, text })}
-        className={cn("text-[26px] font-bold leading-tight tracking-tight", block.align === "center" && "text-center")}
+        className={cn("text-[26px] font-bold", block.align === "center" && "text-center")}
+        style={{ fontFamily: HEADLINE, letterSpacing: "-0.05em", lineHeight: 1.05 }}
       />
     )
   }
@@ -205,7 +211,7 @@ function BlockBody({
       <div className="grid gap-3 sm:grid-cols-2">
         {frame}
         <div className="space-y-2">
-          <InlineText label="Title" value={block.title} onChange={(title) => onChange({ ...block, title })} className="text-lg font-bold" />
+          <InlineText label="Title" value={block.title} onChange={(title) => onChange({ ...block, title })} className="text-lg font-bold" style={{ fontFamily: HEADLINE, letterSpacing: "-0.05em", lineHeight: 1.05 }} />
           <InlineText label="Text" value={block.text} onChange={(text) => onChange({ ...block, text })} className="whitespace-pre-wrap text-[15px] leading-relaxed" />
           <InlineText label="Button" value={block.buttonLabel} onChange={(buttonLabel) => onChange({ ...block, buttonLabel })} className="inline-block rounded-lg bg-[#5574AD] px-4 py-2 text-sm font-semibold text-white" />
         </div>

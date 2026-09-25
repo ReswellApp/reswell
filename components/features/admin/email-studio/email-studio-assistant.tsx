@@ -47,11 +47,13 @@ export function EmailStudioAssistant({
       ...current,
       { id: crypto.randomUUID(), role: "assistant", content: result.reply, createdAt: new Date().toISOString() },
     ])
-    if (result.email && onEmail) {
-      onEmail(result.email)
+    const appliedEmail = Boolean(result.email && onEmail)
+    if (result.email && onEmail) onEmail(result.email)
+    if (result.flowId && result.flowId !== scopeId && appliedEmail) {
+      toast.success("Email draft applied. Save it, then open Flows for the new flow.")
+    } else if (appliedEmail) {
       toast.success("Draft applied. Save when it looks right.")
-    }
-    if (result.flowId && result.flowId !== scopeId) {
+    } else if (result.flowId && result.flowId !== scopeId) {
       toast.success("Flow draft is ready.")
       router.push(`/admin/email-studio/flows/${result.flowId}`)
     } else if (result.flowId) {
@@ -66,7 +68,7 @@ export function EmailStudioAssistant({
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
         {messages.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Ask for a subject, a rewrite, or a whole flow with delays and a trigger. Nothing sends until you push it.
+            Describe the email or flow in plain language. Nothing sends until you push it.
           </p>
         ) : null}
         {messages.map((message) => (
@@ -78,7 +80,7 @@ export function EmailStudioAssistant({
       <textarea
         value={text}
         aria-label="Message the assistant"
-        placeholder={enabled ? "Rewrite the headline, or build a 2-email flow" : "Assistant is off until the AI gateway key is set"}
+        placeholder={enabled ? "Describe the email or flow you want" : "Assistant is off until the AI gateway key is set"}
         disabled={!enabled || pending}
         className="min-h-20 w-full rounded-md border border-input bg-background p-2 text-sm"
         onChange={(event) => setText(event.target.value)}

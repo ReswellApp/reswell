@@ -46,12 +46,32 @@ export const assistantEmailModelSchema = z.object({
   blocks: z.array(blockModelSchema).min(1).max(16),
 })
 
-const stepTypes = ["delay", "email", "sms", "webhook", "update-profile", "list-update"] as const
+const stepTypes = ["delay", "email", "sms", "webhook", "update-profile", "list-update", "split"] as const
 
-export const assistantFlowModelSchema = z.object({
-  reply: z.string().max(2000),
+const flowStepModelSchema = z.object({
+  type: z.enum(stepTypes),
+  branch: z.enum(["main", "yes", "no"]),
+  unit: z.enum(["minutes", "hours", "days"]),
+  value: z.number(),
   name: z.string().max(120),
-  notes: z.string().max(2000),
+  subject: z.string().max(200),
+  previewText: z.string().max(300),
+  heading: z.string().max(500),
+  body: z.string().max(8000),
+  buttonLabel: z.string().max(500),
+  buttonHref: z.string().max(2000),
+  smsBody: z.string().max(1600),
+  url: z.string().max(2000),
+  property: z.string().max(120),
+  propertyValue: z.string().max(500),
+  listId: z.string().max(80),
+  add: z.boolean(),
+  splitMode: z.enum(["profile-property", "email-subscribed", "event-property"]),
+  operator: z.enum(["equals", "contains", "not-equals"]),
+  splitValue: z.string().max(500),
+})
+
+const flowFields = {
   triggerType: z.enum(["metric", "list", "segment", "profile-date"]),
   triggerId: z.string().max(80),
   triggerName: z.string().max(200),
@@ -62,24 +82,30 @@ export const assistantFlowModelSchema = z.object({
   filterType: z.enum(["none", "email-subscribed", "property-equals"]),
   filterProperty: z.string().max(120),
   filterValue: z.string().max(500),
-  steps: z.array(z.object({
-    type: z.enum(stepTypes),
-    unit: z.enum(["minutes", "hours", "days"]),
-    value: z.number(),
-    name: z.string().max(120),
-    subject: z.string().max(200),
-    previewText: z.string().max(300),
-    heading: z.string().max(500),
-    body: z.string().max(8000),
-    buttonLabel: z.string().max(500),
-    buttonHref: z.string().max(2000),
-    smsBody: z.string().max(1600),
-    url: z.string().max(2000),
-    property: z.string().max(120),
-    propertyValue: z.string().max(500),
-    listId: z.string().max(80),
-    add: z.boolean(),
-  })).min(1).max(8),
+}
+
+export const assistantFlowModelSchema = z.object({
+  reply: z.string().max(2000),
+  name: z.string().max(120),
+  notes: z.string().max(2000),
+  ...flowFields,
+  steps: z.array(flowStepModelSchema).min(1).max(12),
+})
+
+/** One draft for an email, a flow, or both. Empty lists mean that side is unchanged. */
+export const assistantStudioModelSchema = z.object({
+  reply: z.string().max(2000),
+  applyEmail: z.enum(["yes", "no"]),
+  applyFlow: z.enum(["yes", "no"]),
+  name: z.string().max(120),
+  subject: z.string().max(200),
+  previewText: z.string().max(300),
+  notes: z.string().max(2000),
+  blocks: z.array(blockModelSchema).max(16),
+  flowName: z.string().max(120),
+  flowNotes: z.string().max(2000),
+  ...flowFields,
+  steps: z.array(flowStepModelSchema).max(12),
 })
 
 export type AssistantEmailModel = z.infer<typeof assistantEmailModelSchema>
@@ -249,6 +275,15 @@ export type AssistantFlowStep =
   | { type: "webhook"; url: string; body: string }
   | { type: "update-profile"; property: string; value: string }
   | { type: "list-update"; listId: string; add: boolean }
+  | {
+      type: "split"
+      mode: "profile-property" | "email-subscribed" | "event-property"
+      property: string
+      operator: "equals" | "contains" | "not-equals"
+      value: string
+      yes: AssistantFlowStep[]
+      no: AssistantFlowStep[]
+    }
 
 export type AssistantFlowDraft = {
   reply: string
@@ -267,35 +302,75 @@ export type AssistantFlowDraft = {
   steps: AssistantFlowStep[]
 }
 
+function nestFlowBranches(
+  tagged: { branch: "main" | "yes" | "no"; step: AssistantFlowStep }[],
+): AssistantFlowStep[] {
+  const steps: AssistantFlowStep[] = []
+  for (let index = 0; index < tagged.length; index += 1) {
+    const current = tagged[index]
+    if (!current || current.branch !== "main") continue
+    if (current.step.type !== "split") {
+      steps.push(current.step)
+      continue
+    }
+    const yes: AssistantFlowStep[] = []
+    const no: AssistantFlowStep[] = []
+    let next = index + 1
+    while (next < tagged.length && tagged[next]?.branch !== "main") {
+      const branched = tagged[next]
+      if (branched?.branch === "no") no.push(branched.step)
+      else if (branched) yes.push(branched.step)
+      next += 1
+    }
+    index = next - 1
+    steps.push({ ...current.step, yes, no })
+  }
+  return steps
+}
+
 export function coerceAssistantFlow(raw: unknown): AssistantFlowDraft | null {
   if (!raw || typeof raw !== "object") return null
   const row = raw as Record<string, unknown>
   if (!Array.isArray(row.steps)) return null
-  const steps: AssistantFlowStep[] = []
-  for (const item of row.steps.slice(0, 8)) {
+  const tagged: { branch: "main" | "yes" | "no"; step: AssistantFlowStep }[] = []
+  for (const item of row.steps.slice(0, 12)) {
     if (!item || typeof item !== "object") continue
     const step = item as Record<string, unknown>
     const typeName = textOf(step.type, 40).toLowerCase()
     const type = typeName === "wait" || typeName === "time-delay"
       ? "delay"
-      : enumOf(step.type, stepTypes, "email")
+      : typeName === "branch" || typeName === "conditional"
+        ? "split"
+        : enumOf(step.type, stepTypes, "email")
+    const branch = enumOf(step.branch, ["main", "yes", "no"] as const, "main")
+    let built: AssistantFlowStep
     if (type === "delay") {
       const value = Math.round(Number(step.value))
-      steps.push({
+      built = {
         type: "delay",
         unit: enumOf(step.unit, ["minutes", "hours", "days"] as const, "hours"),
         value: Number.isFinite(value) ? Math.min(365, Math.max(1, value)) : 1,
-      })
+      }
     } else if (type === "sms") {
-      steps.push({ type: "sms", body: textOf(step.smsBody, 1600) || textOf(step.body, 1600) })
+      built = { type: "sms", body: textOf(step.smsBody, 1600) || textOf(step.body, 1600) }
     } else if (type === "webhook") {
-      steps.push({ type: "webhook", url: textOf(step.url, 2000), body: textOf(step.body, 8000) })
+      built = { type: "webhook", url: textOf(step.url, 2000), body: textOf(step.body, 8000) }
     } else if (type === "update-profile") {
-      steps.push({ type: "update-profile", property: textOf(step.property, 120), value: textOf(step.propertyValue, 500) })
+      built = { type: "update-profile", property: textOf(step.property, 120), value: textOf(step.propertyValue, 500) }
     } else if (type === "list-update") {
-      steps.push({ type: "list-update", listId: textOf(step.listId, 80), add: step.add !== false })
+      built = { type: "list-update", listId: textOf(step.listId, 80), add: step.add !== false }
+    } else if (type === "split") {
+      built = {
+        type: "split",
+        mode: enumOf(step.splitMode ?? step.mode, ["profile-property", "email-subscribed", "event-property"] as const, "email-subscribed"),
+        property: textOf(step.property, 120),
+        operator: enumOf(step.operator, ["equals", "contains", "not-equals"] as const, "equals"),
+        value: textOf(step.splitValue, 500) || textOf(step.propertyValue, 500),
+        yes: [],
+        no: [],
+      }
     } else {
-      steps.push({
+      built = {
         type: "email",
         name: textOf(step.name, 120) || "Flow email",
         subject: textOf(step.subject, 200),
@@ -304,9 +379,11 @@ export function coerceAssistantFlow(raw: unknown): AssistantFlowDraft | null {
         body: textOf(step.body, 8000),
         buttonLabel: textOf(step.buttonLabel, 500) || "Open Reswell",
         buttonHref: textOf(step.buttonHref, 2000) || RESWELL_EMAIL_HOME,
-      })
+      }
     }
+    tagged.push({ branch, step: built })
   }
+  const steps = nestFlowBranches(tagged)
   if (steps.length === 0) return null
   const before = Math.round(Number(row.dateBeforeValue))
   return {
@@ -324,6 +401,53 @@ export function coerceAssistantFlow(raw: unknown): AssistantFlowDraft | null {
     filterProperty: textOf(row.filterProperty, 120),
     filterValue: textOf(row.filterValue, 500),
     steps,
+  }
+}
+
+export function coerceAssistantStudio(raw: unknown): {
+  reply: string
+  email: AssistantEmailDraft | null
+  flow: AssistantFlowDraft | null
+} | null {
+  if (!raw || typeof raw !== "object") return null
+  const row = raw as Record<string, unknown>
+  const emailFlag = textOf(row.applyEmail, 3).toLowerCase()
+  const flowFlag = textOf(row.applyFlow, 3).toLowerCase()
+  const hasBlocks = Array.isArray(row.blocks) && row.blocks.length > 0
+  const hasSteps = Array.isArray(row.steps) && row.steps.length > 0
+  const email = hasBlocks && emailFlag !== "no"
+    ? coerceAssistantEmail({
+        reply: row.reply,
+        name: row.name,
+        subject: row.subject,
+        previewText: row.previewText,
+        notes: row.notes,
+        blocks: row.blocks,
+      })
+    : null
+  const flow = hasSteps && flowFlag !== "no"
+    ? coerceAssistantFlow({
+        reply: row.reply,
+        name: textOf(row.flowName, 120) || textOf(row.name, 120),
+        notes: textOf(row.flowNotes, 2000) || textOf(row.notes, 2000),
+        triggerType: row.triggerType,
+        triggerId: row.triggerId,
+        triggerName: row.triggerName,
+        dateProperty: row.dateProperty,
+        dateBeforeUnit: row.dateBeforeUnit,
+        dateBeforeValue: row.dateBeforeValue,
+        recurrence: row.recurrence,
+        filterType: row.filterType,
+        filterProperty: row.filterProperty,
+        filterValue: row.filterValue,
+        steps: row.steps,
+      })
+    : null
+  if (!email && !flow) return null
+  return {
+    reply: textOf(row.reply, 2000) || email?.reply || flow?.reply || "Updated the draft.",
+    email: email?.draft ?? null,
+    flow,
   }
 }
 

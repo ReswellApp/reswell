@@ -3,14 +3,19 @@ import {
   KLAVIYO_EMAIL_BUTTON_FONT_SIZE,
   KLAVIYO_EMAIL_BUTTON_RADIUS,
   KLAVIYO_EMAIL_COLORS,
+  KLAVIYO_EMAIL_FONT_HEADLINE,
   KLAVIYO_EMAIL_FONT_SANS,
   KLAVIYO_EMAIL_MUTED,
   KLAVIYO_EMAIL_RADIUS,
+  klaviyoEmailFontFaceCss,
 } from "@/lib/klaviyo/email-brand-styles"
+import { sanitizeEmailHtml } from "@/lib/email-studio/brand-html"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
+import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import type { EmailBlock, EmailStudioDocument } from "@/lib/types/emailStudio"
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
+const HEADLINE = KLAVIYO_EMAIL_FONT_HEADLINE
 const INK = KLAVIYO_EMAIL_COLORS.foreground
 const LINK = KLAVIYO_EMAIL_COLORS.link
 const BUTTON = KLAVIYO_EMAIL_COLORS.buttonBg
@@ -67,7 +72,7 @@ function imageHtml(
 ): string {
   const safeSrc = safeEmailHref(emailImageSrc(src))
   if (!safeSrc) {
-    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:#F4F6F8;border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};"><tr><td align="center" style="padding:36px 16px;font-family:${FONT};font-size:13px;color:${KLAVIYO_EMAIL_MUTED};">Image</td></tr></table>`
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:${KLAVIYO_EMAIL_COLORS.canvas};border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};"><tr><td align="center" style="padding:36px 16px;font-family:${FONT};font-size:13px;color:${KLAVIYO_EMAIL_MUTED};">Image</td></tr></table>`
   }
   const w = Math.min(560, Math.max(40, width || 560))
   const cropped = height != null && height >= 40
@@ -90,7 +95,7 @@ function renderBlock(block: EmailBlock): string {
     case "eyebrow":
       return `<tr><td align="${align(block.align)}" style="padding:0 0 8px 0;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${KLAVIYO_EMAIL_MUTED};">${textToHtml(block.text)}</td></tr>`
     case "heading":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 16px 0;font-family:${FONT};font-size:26px;font-weight:700;line-height:1.2;letter-spacing:-0.03em;color:${INK};">${textToHtml(block.text)}</td></tr>`
+      return `<tr><td align="${align(block.align)}" style="padding:0 0 16px 0;font-family:${HEADLINE};font-size:26px;font-weight:700;line-height:1.05;letter-spacing:-0.05em;color:${INK};">${textToHtml(block.text)}</td></tr>`
     case "text":
       return `<tr><td align="${align(block.align)}" style="padding:0 0 20px 0;font-family:${FONT};font-size:16px;line-height:1.55;color:${INK};">${textToHtml(block.text)}</td></tr>`
     case "image":
@@ -114,7 +119,7 @@ function renderBlock(block: EmailBlock): string {
       return `<tr><td style="padding:0 0 24px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};"><tr><td style="padding:20px 24px 8px 24px;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${KLAVIYO_EMAIL_COLORS.price};">${textToHtml(block.title || "Details")}</td></tr><tr><td style="padding:0 24px 12px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${rows}</table></td></tr></table></td></tr>`
     }
     case "split": {
-      const copy = `<p style="margin:0 0 8px 0;font-family:${FONT};font-size:18px;font-weight:700;line-height:1.3;color:${INK};">${textToHtml(block.title)}</p><p style="margin:0 0 16px 0;font-family:${FONT};font-size:15px;line-height:1.5;color:${INK};">${textToHtml(block.text)}</p>${block.buttonLabel.trim() ? buttonHtml(block.buttonLabel, block.buttonHref) : ""}`
+      const copy = `<p style="margin:0 0 8px 0;font-family:${HEADLINE};font-size:18px;font-weight:700;line-height:1.05;letter-spacing:-0.05em;color:${INK};">${textToHtml(block.title)}</p><p style="margin:0 0 16px 0;font-family:${FONT};font-size:15px;line-height:1.3;color:${INK};">${textToHtml(block.text)}</p>${block.buttonLabel.trim() ? buttonHtml(block.buttonLabel, block.buttonHref) : ""}`
       return `<tr><td style="padding:0 0 24px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td class="stack" valign="top" width="48%" style="padding:0 12px 12px 0;">${imageHtml(block.imageSrc, block.imageAlt, block.imageHref, block.imageWidth ?? 240, block.imageHeight ?? null)}</td><td class="stack" valign="top" width="52%" style="padding:0 0 12px 12px;">${copy}</td></tr></table></td></tr>`
     }
     case "footer": {
@@ -129,7 +134,7 @@ function renderBlock(block: EmailBlock): string {
 /** Downloaded and pushed HTML. Custom code wins over the block layout. */
 export function resolveEmailStudioHtml(input: EmailStudioRenderInput): string {
   const custom = input.document.htmlOverride
-  if (custom && custom.trim()) return custom
+  if (custom && custom.trim()) return sanitizeEmailHtml(custom)
   return renderEmailStudioHtml(input)
 }
 
@@ -156,6 +161,7 @@ export function renderEmailStudioHtml(input: EmailStudioRenderInput): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="x-apple-disable-message-reformatting" />
   <title>${escapeText(input.subject || input.name || "Reswell")}</title>
+  <style>${klaviyoEmailFontFaceCss(publicSiteOriginForEmail())}</style>
 </head>
 <body style="margin:0;padding:0;background:${KLAVIYO_EMAIL_COLORS.background};">
 <!--

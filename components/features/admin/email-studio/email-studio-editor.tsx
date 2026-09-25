@@ -324,7 +324,7 @@ export function EmailStudioEditor({
           <p className="text-xs text-muted-foreground">Drag a block onto the page, or click it to add it. Click any text on the page to rewrite it.</p>
         </aside>
 
-        <section className="flex min-h-[420px] min-w-0 flex-col bg-[#F4F6F8]">
+        <section className="flex min-h-[420px] min-w-0 flex-col bg-[#F9F9F2]">
           <div className="flex items-center gap-2 border-b border-border bg-background px-3 py-2">
             <div className="inline-flex rounded-md border border-border p-0.5">
               <button type="button" className={`rounded px-3 py-1 text-sm ${mode === "display" ? "bg-foreground text-background" : ""}`} onClick={() => setMode("display")}>Display</button>
@@ -336,7 +336,7 @@ export function EmailStudioEditor({
                 <button type="button" className={`rounded px-2 py-1 text-xs ${frameWidth === 375 ? "bg-muted" : ""}`} onClick={() => setFrameWidth(375)}>Phone</button>
               </div>
             ) : (
-              <span className="text-xs text-muted-foreground">Edits here are what download and Klaviyo use.</span>
+              <span className="text-xs text-muted-foreground">Preview, download, and Klaviyo use this HTML in Reswell colors and Stack Sans.</span>
             )}
           </div>
           {mode === "display" && customHtml ? (

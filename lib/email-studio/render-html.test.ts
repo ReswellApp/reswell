@@ -30,6 +30,9 @@ describe("email studio html", () => {
     assert.match(html, /event\|lookup:'order_num'/)
     assert.doesNotMatch(html, /<script/i)
     assert.match(html, /Trigger metric: Purchase Successful/)
+    assert.match(html, /Stack Sans Headline/)
+    assert.match(html, /stack-sans-text-latin\.woff2/)
+    assert.match(html, /stack-sans-headline-latin\.woff2/)
     const custom = resolveEmailStudioHtml({
       name: "Buyer order",
       subject: starter.subject,
@@ -67,5 +70,24 @@ describe("email studio html", () => {
     assert.match(html, /width:200px/)
     assert.match(html, /height:120px/)
     assert.match(html, /object-fit:cover/)
+  })
+
+  it("maps custom html onto the palette and Stack Sans", () => {
+    const html = resolveEmailStudioHtml({
+      name: "Custom",
+      subject: "",
+      previewText: "",
+      flowName: "",
+      triggerMetric: "",
+      document: {
+        blocks: [],
+        htmlOverride: '<p style="color:#FF0000;font-family:Comic Sans MS, cursive">Hi</p><p style="font-family:Stack Sans Headline, serif">Title</p>',
+      },
+    })
+    assert.match(html, /font-family:"Stack Sans Text", Arial/)
+    assert.match(html, /font-family:"Stack Sans Headline"/)
+    assert.doesNotMatch(html, /Comic Sans/)
+    assert.doesNotMatch(html, /#FF0000/i)
+    assert.match(html, /#334155/)
   })
 })
