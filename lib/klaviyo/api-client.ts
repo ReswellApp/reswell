@@ -12,6 +12,8 @@ export type KlaviyoGetResult<T> =
   | { ok: true; status: number; data: T }
   | { ok: false; status: number; detail: string; missingKey?: boolean }
 
+export type KlaviyoWriteResult<T> = KlaviyoGetResult<T>
+
 export function getKlaviyoApiKey(): string | null {
   const key = process.env.KLAVIYO_API_KEY?.trim()
   return key && key.length > 0 ? key : null
@@ -84,6 +86,50 @@ export async function klaviyoGet<T>(
     }
 
     return { ok: true, status: res.status, data }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { ok: false, status: 0, detail: msg }
+  }
+}
+
+/**
+ * POST, PATCH, or DELETE a Klaviyo JSON:API path.
+ */
+export async function klaviyoWrite<T>(
+  method: "POST" | "PATCH" | "DELETE",
+  path: string,
+  body?: unknown,
+): Promise<KlaviyoWriteResult<T>> {
+  const apiKey = getKlaviyoApiKey()
+  if (!apiKey) {
+    return { ok: false, status: 0, detail: "KLAVIYO_API_KEY not set", missingKey: true }
+  }
+  let url: URL
+  try {
+    url = new URL(path.startsWith("/") ? path : `/${path}`, KLAVIYO_API_BASE)
+  } catch {
+    return { ok: false, status: 0, detail: `Invalid Klaviyo URL: ${path}` }
+  }
+  try {
+    const res = await fetch(url.toString(), {
+      method,
+      headers: {
+        ...klaviyoHeaders(apiKey),
+        ...(body != null ? { "Content-Type": "application/vnd.api+json" } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+    })
+    const text = await res.text().catch(() => "")
+    if (!res.ok) {
+      return { ok: false, status: res.status, detail: text.slice(0, 800) || res.statusText }
+    }
+    if (!text) return { ok: true, status: res.status, data: {} as T }
+    try {
+      return { ok: true, status: res.status, data: JSON.parse(text) as T }
+    } catch {
+      return { ok: false, status: res.status, detail: "Invalid JSON from Klaviyo" }
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     return { ok: false, status: 0, detail: msg }

@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { listEmailStudioService } from "@/lib/services/emailStudio"
 import { EmailStudioLibrary } from "@/components/features/admin/email-studio/email-studio-library"
@@ -19,9 +20,12 @@ export default async function AdminEmailStudioPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Email studio</h1>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Email studio</h1>
+          <Link href="/admin/email-studio/flows" className="text-sm font-medium text-[#355185] hover:underline">Flows</Link>
+        </div>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Build Reswell emails, link them to a Klaviyo metric and flow, then download the HTML or push a code template into Klaviyo. Display and code stay in sync.
+          Build Reswell emails, then assemble them into a Klaviyo flow with delays, triggers, and splits. The assistant can draft both. Nothing sends until a flow is set live.
         </p>
       </div>
       {"error" in projects ? <p className="text-sm text-destructive">{projects.error}</p> : null}

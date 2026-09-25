@@ -26,6 +26,8 @@ import { createEmailBlock, emailBlockId } from "@/lib/email-studio/document"
 import { renderEmailStudioHtml, resolveEmailStudioHtml } from "@/lib/email-studio/render-html"
 import { KNOWN_KLAVIYO_METRIC_NAMES } from "@/lib/klaviyo/event-log-shared"
 import type { EmailBlockType, EmailStudioFlowOption, EmailStudioRecord } from "@/lib/types/emailStudio"
+import type { EmailStudioMessage } from "@/lib/types/emailStudioFlow"
+import { EmailStudioAssistant } from "@/components/features/admin/email-studio/email-studio-assistant"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { EmailStudioCanvas, EmailStudioPaletteChip } from "@/components/features/admin/email-studio/email-studio-canvas"
@@ -50,10 +52,14 @@ export function EmailStudioEditor({
   project,
   flows,
   klaviyoConnected,
+  assistantEnabled,
+  messages,
 }: {
   project: EmailStudioRecord
   flows: EmailStudioFlowOption[]
   klaviyoConnected: boolean
+  assistantEnabled: boolean
+  messages: EmailStudioMessage[]
 }) {
   const router = useRouter()
   const [draft, setDraft] = useState(project)
@@ -63,6 +69,7 @@ export function EmailStudioEditor({
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [templateName, setTemplateName] = useState("")
+  const [assistantOpen, setAssistantOpen] = useState(false)
   const [draggingLabel, setDraggingLabel] = useState<string | null>(null)
   const suppressPaletteClick = useRef(false)
   const sensors = useSensors(
@@ -235,6 +242,12 @@ export function EmailStudioEditor({
           >
             Copy HTML
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setAssistantOpen((open) => !open)}>
+            {assistantOpen ? "Hide assistant" : "Assistant"}
+          </Button>
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/admin/email-studio/flows">Flows</Link>
+          </Button>
           <Button size="sm" variant="outline" disabled={!klaviyoConnected || saving} onClick={() => void pushKlaviyo()}>
             {klaviyoConnected ? "Push to Klaviyo" : "Klaviyo key missing"}
           </Button>
@@ -289,7 +302,7 @@ export function EmailStudioEditor({
         onDragEnd={onDragEnd}
         onDragCancel={() => setDraggingLabel(null)}
       >
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[200px_minmax(0,1fr)_300px]">
+      <div className={`grid min-h-0 flex-1 ${assistantOpen ? "lg:grid-cols-[200px_minmax(0,1fr)_280px_300px]" : "lg:grid-cols-[200px_minmax(0,1fr)_300px]"}`}>
         <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-b border-border p-3 lg:border-b-0 lg:border-r">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Drag onto the email</p>
           <div className="flex flex-wrap gap-1">
@@ -420,6 +433,30 @@ export function EmailStudioEditor({
             ) : null}
           </div>
         </aside>
+        {assistantOpen ? (
+          <aside className="min-h-[280px] border-t border-border p-3 lg:border-l lg:border-t-0">
+            <EmailStudioAssistant
+              scope="email"
+              scopeId={draft.id}
+              enabled={assistantEnabled}
+              initialMessages={messages}
+              snapshot={JSON.stringify({
+                name: draft.name,
+                subject: draft.subject,
+                previewText: draft.previewText,
+                triggerMetric: draft.triggerMetric,
+                notes: draft.notes,
+                blocks: draft.document.blocks,
+              })}
+              onEmail={(email) => patch({
+                subject: email.subject,
+                previewText: email.previewText,
+                notes: email.notes,
+                document: email.document,
+              })}
+            />
+          </aside>
+        ) : null}
       </div>
       <DragOverlay>
         {draggingLabel ? (
