@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { cloneEmailDocument, starterById } from "./document.ts"
-import { renderEmailStudioHtml, safeEmailHref } from "./render-html.ts"
+import { renderEmailStudioHtml, resolveEmailStudioHtml, safeEmailHref } from "./render-html.ts"
 
 describe("email studio html", () => {
   it("drops unsafe links and keeps Klaviyo tags", () => {
@@ -30,5 +30,42 @@ describe("email studio html", () => {
     assert.match(html, /event\|lookup:'order_num'/)
     assert.doesNotMatch(html, /<script/i)
     assert.match(html, /Trigger metric: Purchase Successful/)
+    const custom = resolveEmailStudioHtml({
+      name: "Buyer order",
+      subject: starter.subject,
+      previewText: starter.previewText,
+      flowName: "Purchase Successful",
+      triggerMetric: starter.triggerMetric,
+      document: { ...cloneEmailDocument(starter.document), htmlOverride: "<p>Custom</p>" },
+    })
+    assert.equal(custom, "<p>Custom</p>")
+  })
+
+  it("writes blog storage images as absolute /media urls and honors crop size", () => {
+    const html = renderEmailStudioHtml({
+      name: "Image",
+      subject: "",
+      previewText: "",
+      flowName: "",
+      triggerMetric: "",
+      document: {
+        blocks: [
+          {
+            id: "00000000-0000-4000-8000-000000000001",
+            type: "image",
+            src: "https://abc.supabase.co/storage/v1/object/public/blog-images/cms/photo.jpg?t=1",
+            alt: "Board",
+            href: "",
+            width: 200,
+            height: 120,
+          },
+        ],
+      },
+    })
+    assert.match(html, /https:\/\/www\.reswell\.app\/media\/blog\/cms\/photo\.jpg/)
+    assert.doesNotMatch(html, /supabase\.co/)
+    assert.match(html, /width:200px/)
+    assert.match(html, /height:120px/)
+    assert.match(html, /object-fit:cover/)
   })
 })

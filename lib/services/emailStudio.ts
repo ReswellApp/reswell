@@ -5,14 +5,16 @@ import {
   starterById,
   blankEmailDocument,
 } from "@/lib/email-studio/document"
-import { renderEmailStudioHtml, renderEmailStudioText } from "@/lib/email-studio/render-html"
+import { renderEmailStudioText, resolveEmailStudioHtml } from "@/lib/email-studio/render-html"
 import {
   deleteEmailStudioDocument,
   getEmailStudioDocument,
   insertEmailStudioDocument,
+  listEmailLibraryImageRows,
   listEmailStudioDocuments,
   updateEmailStudioDocument,
 } from "@/lib/db/emailStudio"
+import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import type { EmailStudioDocument, EmailStudioFlowOption, EmailStudioKind, EmailStudioRecord } from "@/lib/types/emailStudio"
 import type { CreateEmailStudioInput, UpdateEmailStudioInput } from "@/lib/validations/emailStudio"
@@ -293,7 +295,7 @@ export async function pushEmailStudioToKlaviyoService(
       triggerMetric: existing.triggerMetric,
       document: existing.document,
     }
-    const html = renderEmailStudioHtml(renderInput)
+    const html = resolveEmailStudioHtml(renderInput)
     const text = renderEmailStudioText(renderInput)
     const attributes = {
       name: `Reswell · ${existing.name}`.slice(0, 255),
@@ -353,4 +355,23 @@ export async function listEmailStudioFlowsService(): Promise<{
     }))
     .sort((a, b) => a.name.localeCompare(b.name))
   return { connected: true, flows }
+}
+
+export async function listEmailLibraryImagesService(): Promise<
+  { success: true; data: { id: string; label: string; src: string; group: "Blog" | "Listing" }[] } | ServiceError
+> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+  try {
+    const rows = await listEmailLibraryImageRows(dbClient(staff.supabase))
+    const data = rows.flatMap((row) => {
+      const src = emailImageSrc(row.src)
+      if (!src.startsWith("https://")) return []
+      return [{ ...row, src }]
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error("[email_studio] image library failed", error)
+    return { error: "Could not load saved images" }
+  }
 }

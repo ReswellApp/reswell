@@ -7,6 +7,7 @@ import {
   KLAVIYO_EMAIL_MUTED,
   KLAVIYO_EMAIL_RADIUS,
 } from "@/lib/klaviyo/email-brand-styles"
+import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import type { EmailBlock, EmailStudioDocument } from "@/lib/types/emailStudio"
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
@@ -57,12 +58,22 @@ function buttonHtml(label: string, href: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td align="center" bgcolor="${BUTTON}" style="border-radius:${KLAVIYO_EMAIL_BUTTON_RADIUS};">${link}</td></tr></table>`
 }
 
-function imageHtml(src: string, alt: string, href: string): string {
-  const safeSrc = safeEmailHref(src)
+function imageHtml(
+  src: string,
+  alt: string,
+  href: string,
+  width: number,
+  height: number | null,
+): string {
+  const safeSrc = safeEmailHref(emailImageSrc(src))
   if (!safeSrc) {
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:#F4F6F8;border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};"><tr><td align="center" style="padding:36px 16px;font-family:${FONT};font-size:13px;color:${KLAVIYO_EMAIL_MUTED};">Image</td></tr></table>`
   }
-  const img = `<img src="${safeSrc}" alt="${escapeText(alt)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:${KLAVIYO_EMAIL_RADIUS};" />`
+  const w = Math.min(560, Math.max(40, width || 560))
+  const cropped = height != null && height >= 40
+  const img = cropped
+    ? `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" height="${height}" style="display:block;width:${w}px;max-width:100%;height:${height}px;object-fit:cover;object-position:center;border:0;border-radius:${KLAVIYO_EMAIL_RADIUS};" />`
+    : `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" style="display:block;width:${w}px;max-width:100%;height:auto;border:0;border-radius:${KLAVIYO_EMAIL_RADIUS};" />`
   const safeHref = safeEmailHref(href)
   return safeHref ? `<a href="${safeHref}" style="text-decoration:none;">${img}</a>` : img
 }
@@ -71,7 +82,7 @@ function renderBlock(block: EmailBlock): string {
   switch (block.type) {
     case "logo": {
       const width = Math.min(220, Math.max(80, block.width || 140))
-      const img = `<img src="${safeEmailHref(block.src) || safeEmailHref("https://www.reswell.app/images/reswell-logo.png")}" alt="${escapeText(block.alt || "Reswell")}" width="${width}" style="display:block;width:${width}px;max-width:100%;height:auto;border:0;" />`
+      const img = `<img src="${safeEmailHref(emailImageSrc(block.src)) || safeEmailHref("https://www.reswell.app/images/reswell-logo.png")}" alt="${escapeText(block.alt || "Reswell")}" width="${width}" style="display:block;width:${width}px;max-width:100%;height:auto;border:0;" />`
       const href = safeEmailHref(block.href)
       const inner = href ? `<a href="${href}" style="text-decoration:none;">${img}</a>` : img
       return `<tr><td align="center" style="padding:0 0 28px 0;">${inner}</td></tr>`
@@ -83,7 +94,7 @@ function renderBlock(block: EmailBlock): string {
     case "text":
       return `<tr><td align="${align(block.align)}" style="padding:0 0 20px 0;font-family:${FONT};font-size:16px;line-height:1.55;color:${INK};">${textToHtml(block.text)}</td></tr>`
     case "image":
-      return `<tr><td align="center" style="padding:0 0 20px 0;">${imageHtml(block.src, block.alt, block.href)}</td></tr>`
+      return `<tr><td align="center" style="padding:0 0 20px 0;">${imageHtml(block.src, block.alt, block.href, block.width ?? 560, block.height ?? null)}</td></tr>`
     case "button":
       return `<tr><td align="${align(block.align)}" style="padding:4px 0 24px 0;">${buttonHtml(block.label, block.href)}</td></tr>`
     case "divider":
@@ -104,7 +115,7 @@ function renderBlock(block: EmailBlock): string {
     }
     case "split": {
       const copy = `<p style="margin:0 0 8px 0;font-family:${FONT};font-size:18px;font-weight:700;line-height:1.3;color:${INK};">${textToHtml(block.title)}</p><p style="margin:0 0 16px 0;font-family:${FONT};font-size:15px;line-height:1.5;color:${INK};">${textToHtml(block.text)}</p>${block.buttonLabel.trim() ? buttonHtml(block.buttonLabel, block.buttonHref) : ""}`
-      return `<tr><td style="padding:0 0 24px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td class="stack" valign="top" width="48%" style="padding:0 12px 12px 0;">${imageHtml(block.imageSrc, block.imageAlt, block.imageHref)}</td><td class="stack" valign="top" width="52%" style="padding:0 0 12px 12px;">${copy}</td></tr></table></td></tr>`
+      return `<tr><td style="padding:0 0 24px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td class="stack" valign="top" width="48%" style="padding:0 12px 12px 0;">${imageHtml(block.imageSrc, block.imageAlt, block.imageHref, block.imageWidth ?? 240, block.imageHeight ?? null)}</td><td class="stack" valign="top" width="52%" style="padding:0 0 12px 12px;">${copy}</td></tr></table></td></tr>`
     }
     case "footer": {
       const unsub = block.showUnsubscribe
@@ -113,6 +124,13 @@ function renderBlock(block: EmailBlock): string {
       return `<tr><td align="center" style="padding:12px 0 0 0;font-family:${FONT};font-size:13px;line-height:1.5;color:${KLAVIYO_EMAIL_MUTED};">${textToHtml(block.text)}${unsub}<br>{{ organization.name|default:'Reswell' }} · {{ organization.full_address|default:'' }}</td></tr>`
     }
   }
+}
+
+/** Downloaded and pushed HTML. Custom code wins over the block layout. */
+export function resolveEmailStudioHtml(input: EmailStudioRenderInput): string {
+  const custom = input.document.htmlOverride
+  if (custom && custom.trim()) return custom
+  return renderEmailStudioHtml(input)
 }
 
 export function renderEmailStudioHtml(input: EmailStudioRenderInput): string {
