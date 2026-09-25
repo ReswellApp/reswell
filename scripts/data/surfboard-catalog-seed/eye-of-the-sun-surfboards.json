@@ -1,0 +1,43 @@
+{
+  "generated_for": "Eye of the Sun Surfboards official named standup catalog",
+  "source": "https://eyeofthesunsurfboards.com/pages/surfboard-models (official model lineup — excludes clothing, custom deposits, stock one-offs, and multi-board group photos)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "eye-of-the-sun-surfboards",
+      "name": "Eye of the Sun Surfboards",
+      "website_url": "https://eyeofthesunsurfboards.com",
+      "location_label": "Long Branch, New Jersey",
+      "founder_name": "Tommy George",
+      "lead_shaper_name": "Tommy George",
+      "short_description": "Hand-shaped surfboards by Tommy George in Long Branch, New Jersey — twin fins, fishes, and logs built one at a time for East Coast beach breaks.",
+      "logo_url": "https://eyeofthesunsurfboards.com/cdn/shop/files/IMG_2672_Large_832d3220-3526-4606-9b0d-a0a7f177fa0b.jpg?v=1775600511&format=jpg",
+      "models": [
+        {
+          "name": "Remedy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0778/2314/8319/files/D389D9C1-847E-41A9-BCDC-52A15AED81E4.jpg?v=1691633371&format=jpg",
+          "description": "A pulled-in twin-fin fish with curves in all the right places. Built to handle anything from waist-high to overhead, it’s fast down the line and equally at home drawing long, flowing lines or hitting top-to-bottom maneuvers. The Remedy is the perfect fix for shortboard frustration—responsive, playful, and made to keep you moving in every kind of wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Nug",
+          "image_url": "https://cdn.shopify.com/s/files/1/0778/2314/8319/files/40BCA39D-2B26-4172-BAD6-F75D1C5DC15D.jpg?v=1691632988&format=jpg",
+          "description": "Round nose twin fin for maximizing smaller days. Provides a super fast and loos approach to small waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Positive Reality",
+          "image_url": "https://cdn.shopify.com/s/files/1/0778/2314/8319/files/001C152A-3FF9-402D-B472-684061DBB943.jpg?v=1691633146&format=jpg",
+          "description": "A winged swallow-tail twin fin built for small days but ready to push into overhead, rippable surf. The pulled-in nose and tail give it drive down the line while still letting you surf top to bottom with confidence. A true performance twin, it also takes a trailer fin for extra control when the surf demands it.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Caravan",
+          "image_url": "https://cdn.shopify.com/s/files/1/0778/2314/8319/files/DE0F9D2D-D424-441D-AF10-23C4FF0D52F0.jpg?v=1691633863&format=jpg",
+          "description": "Nose rider with a wider nose than the Crystal Ship. This allows for a super stable log that will maximize the super small days and provide ease of walking in all conditions.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
