@@ -38,7 +38,7 @@ export type TrackKlaviyoPageViewInput = {
  * **Metrics (create in Klaviyo under Flows → Metric):**
  * - **Viewed Sell Page** — signed-in `/sell` only; see `track-viewed-sell-page.ts` for abandoned-listing flow
  * - **Viewed Site Page** — browsing everywhere else (`/boards`, `/fins`, search, home, …)
- * - **Viewed Product** — `/l/{slug-or-id}`; see `track-viewed-product.ts`
+ * - **Viewed Product** — signed-in `/l/{slug-or-id}` only; see `track-viewed-product.ts`
  *
  * All events include `Path` (pathname + query), `Pathname`, `Page segment` for reporting.
  */
@@ -63,20 +63,16 @@ export async function trackKlaviyoPageView(
       : null
 
   if (segment === "product") {
-    if (userId && !email) {
+    if (!userId) return
+    if (!email) {
       email = await getAuthEmailForUserId(userId)
     }
-    const anon =
-      typeof input.anonymousId === "string"
-        ? input.anonymousId.trim() || null
-        : null
     await trackKlaviyoViewedProduct({
       pathname,
       path,
       search,
       userId,
       email,
-      anonymousId: anon,
       supabase: input.supabase,
     })
     return
