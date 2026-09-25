@@ -6,6 +6,7 @@ export const KLAVIYO_CATALOG_FEED_PAGE_SIZE = 500
 
 const CATALOG_LISTING_SELECT = `
   id,
+  user_id,
   slug,
   title,
   description,
