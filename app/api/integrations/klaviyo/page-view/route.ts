@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server"
 
 /**
  * Client-side navigation + first-load page views → Klaviyo Events API.
- * `/admin` requests are skipped (no metric). Metrics: **Viewed Sell Page**, **Viewed Boards Page**, **Viewed Site Page** (see `trackKlaviyoPageView`).
+ * `/admin` and listing product pages (`/l`, `/l/...`) send no Klaviyo metric.
+ * Metrics: **Viewed Sell Page**, **Viewed Site Page** (browse, including `/boards` and `/fins`).
  */
 export async function POST(request: NextRequest) {
   let raw: unknown
