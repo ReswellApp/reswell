@@ -17,6 +17,10 @@ function isSupportInboxPath(pathname: string): boolean {
   return pathname === '/admin/contact-messages'
 }
 
+function isEmailStudioEditor(pathname: string): boolean {
+  return /^\/admin\/email-studio\/[^/]+$/.test(pathname)
+}
+
 function isFullBleedAdminPath(pathname: string): boolean {
   return (
     pathname === '/admin/home' ||
@@ -45,7 +49,7 @@ export function AdminAppShell({
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const fullBleed = isFullBleedAdminPath(pathname)
-  const workspace = isSupportInboxPath(pathname)
+  const workspace = isSupportInboxPath(pathname) || isEmailStudioEditor(pathname)
   const pageTitle = getAdminPageTitle(pathname, groups)
 
   useEffect(() => {
