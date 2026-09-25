@@ -44,7 +44,12 @@ export type KlaviyoCatalogFeedItem = {
   price: number
   categories: string[]
   inventory_quantity: number
-  inventory_policy: 1
+  /**
+   * Klaviyo `$inventory_policy`. `2` keeps the item in product feeds and blocks.
+   * `1` hides it whenever Klaviyo reads stock as 0, which leaves the row in
+   * Products but unpublished.
+   */
+  inventory_policy: 2
 }
 
 /** Klaviyo commerce event line item (Items array / product block lookup). */
@@ -71,6 +76,14 @@ export type KlaviyoCheckoutEventItem = {
 
 const FALLBACK_IMAGE_PATH = "/opengraph-image.jpg"
 const MAX_DESCRIPTION_LENGTH = 5000
+
+/**
+ * Live catalog rows are one in-stock unit. Policy 2 is Klaviyo's "show this
+ * item even if stock is read as zero" setting. Policy 1 is what marks a custom
+ * catalog row unpublished when the variant quantity never lands above 0.
+ */
+export const KLAVIYO_CATALOG_LIVE_INVENTORY_QUANTITY = 1
+export const KLAVIYO_CATALOG_LIVE_INVENTORY_POLICY = 2 as const
 
 export function parseKlaviyoListingPrice(
   price: string | number | null | undefined,
@@ -231,8 +244,8 @@ export function listingToKlaviyoCatalogFeedItem(
     image_link: absoluteKlaviyoListingImageUrl(listing),
     price,
     categories: catalogCategories(listing),
-    inventory_quantity: 1,
-    inventory_policy: 1,
+    inventory_quantity: KLAVIYO_CATALOG_LIVE_INVENTORY_QUANTITY,
+    inventory_policy: KLAVIYO_CATALOG_LIVE_INVENTORY_POLICY,
   }
 }
 

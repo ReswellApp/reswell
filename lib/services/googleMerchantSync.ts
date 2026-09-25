@@ -20,6 +20,7 @@ import {
   insertGoogleMerchantProductInput,
   listAllGoogleMerchantProducts,
 } from "@/lib/services/googleMerchantSetup"
+import { syncListingToKlaviyoCatalogBestEffort } from "@/lib/services/klaviyoCatalogSync"
 import { findUserIdByEmail } from "@/lib/services/resolveUserIdByEmail"
 
 /**
@@ -64,6 +65,8 @@ export function syncListingToGoogleMerchantBestEffort(
   supabase: SupabaseClient,
   listingId: string,
 ): void {
+  // Publish, price, hide, and sold paths land here. Klaviyo needs the same change.
+  syncListingToKlaviyoCatalogBestEffort(listingId)
   const run = async () => {
     try {
       const result = await syncListingToGoogleMerchant(supabase, listingId)
@@ -96,6 +99,7 @@ export function syncListingToGoogleMerchantBestEffort(
 export async function removeListingFromGoogleMerchantFeed(
   listingId: string,
 ): Promise<GoogleMerchantSyncListingResult> {
+  syncListingToKlaviyoCatalogBestEffort(listingId)
   if (!isGoogleMerchantConfigured()) {
     return { action: "skipped", offerId: listingId }
   }
