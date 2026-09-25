@@ -17,6 +17,7 @@ export type AppLlmFeatureId =
   | "listing_brand_model_research"
   | "message_fraud_review"
   | "sell_photo_match"
+  | "email_studio"
 
 export interface AppLlmFeatureDefinition {
   id: AppLlmFeatureId
@@ -246,6 +247,19 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/sellPhotoMatch.ts",
       "app/api/sell/photo-match/route.ts",
     ],
+  },
+  {
+    id: "email_studio",
+    name: "Email studio assistant",
+    purpose:
+      "Drafts and revises Klaviyo email blocks and full flows (triggers, delays, emails, SMS, splits) inside /admin/email-studio. Flows are saved as drafts until staff push them.",
+    gatewayFeatureTag: "feature:email-studio",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-flash",
+    modelEnvVar: "EMAIL_STUDIO_ASSISTANT_MODEL",
+    enabledEnvVar: "EMAIL_STUDIO_ASSISTANT_ENABLED",
+    surfaces: ["/admin/email-studio", "/admin/email-studio/flows"],
+    sourceFiles: ["lib/services/emailStudioAssistant.ts"],
   },
 ] as const
 
