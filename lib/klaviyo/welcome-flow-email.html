@@ -8,8 +8,10 @@
   Subject: A little welcome gift, just for you
   Preview: A little welcome gift, just for you
 
-  Event variables (from newsletter-promo-event-properties.ts / New Account Created):
-  - promo_code, discount_percent, expires_at_formatted
+  Profile fields, then event fallbacks:
+  - person.welcome_promo_code, else event.promo_code
+  - person.welcome_discount_percent, else event.discount_percent
+  - person.welcome_promo_expires, else event.expires_at_formatted
   - first_name (profile) or event.first_name
 
   Do not use {% if %} / {% for %} in this workspace — they often print as raw text.
@@ -29,14 +31,14 @@
       .fluid { width: 100% !important; height: auto !important; }
       .pad-lg { padding-left: 20px !important; padding-right: 20px !important; }
       .pad-md { padding-left: 16px !important; padding-right: 16px !important; }
-      .stack { display: block !important; width: 100% !important; max-width: 100% !important; }
+      .stack { display: block !important; width: 100% !important; max-width: 100% !important; padding: 0 0 18px 0 !important; }
       .headline { font-size: 30px !important; line-height: 36px !important; }
       .section-title { font-size: 28px !important; line-height: 34px !important; }
       .banner-title { font-size: 26px !important; line-height: 32px !important; }
-      .btn a { display: block !important; padding-left: 16px !important; padding-right: 16px !important; }
+      .btn { width: 100% !important; }
+      .btn td { width: 100% !important; }
+      .btn a { display: block !important; padding: 14px 16px !important; text-align: center !important; }
       .review-col { display: block !important; width: 100% !important; max-width: 100% !important; padding: 0 0 12px 0 !important; }
-      .review-pad { padding: 20px 18px 18px !important; }
-      .review-stars { font-size: 16px !important; letter-spacing: 0.18em !important; }
       .review-quote { font-size: 16px !important; line-height: 24px !important; }
       .review-meta { font-size: 12px !important; line-height: 16px !important; }
     }
@@ -101,7 +103,7 @@
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;border:1px solid #E4E7EE;border-radius:12px;">
                 <tr>
                   <td align="center" style="padding:14px 18px;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:22px;font-weight:600;letter-spacing:0.02em;color:#05080D;word-break:break-word;">
-                    {{ event|lookup:'promo_code'|default:'' }}
+                    {{ person|lookup:'welcome_promo_code'|default:event.promo_code|default:'' }}
                   </td>
                 </tr>
               </table>
@@ -113,8 +115,8 @@
               <table role="presentation" class="btn" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;">
                 <tr>
                   <td align="center" bgcolor="#12234F" style="border-radius:999px;background-color:#12234F;">
-                    <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=discover" style="display:inline-block;padding:14px 28px;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;color:#FFFFFF;text-decoration:none;">
-                      DISCOVER THE COLLECTION
+                    <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=shop" style="display:inline-block;padding:14px 32px;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;color:#FFFFFF;text-decoration:none;white-space:nowrap;">
+                      SHOP SURFBOARDS
                     </a>
                   </td>
                 </tr>
@@ -180,7 +182,7 @@
                     <table role="presentation" width="100%" height="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border:1px solid #E4E7EE;border-radius:16px;background-color:#FFFFFF;height:100%;">
                       <tr>
                         <td class="review-pad" valign="top" style="padding:16px 14px 8px;">
-                          <p class="review-stars" style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:13px;line-height:16px;letter-spacing:0.12em;color:#6E80A4;">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                          <img src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@b5c0ebf750001e4a6dc58f271e8ed0fcc1c02044/public/images/email/welcome-flow-stars.png" alt="5 stars" width="88" height="16" style="display:block;width:88px;max-width:100%;height:auto;border:0;">
                           <p class="review-quote" style="margin:10px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:13px;line-height:18px;color:#2C3138;">&ldquo;Fantastic seller, fast shipping, beyond high quality packaging, and great communication. Could not recommend more!&rdquo;</p>
                         </td>
                       </tr>
@@ -195,7 +197,8 @@
                     <table role="presentation" width="100%" height="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border:1px solid #E4E7EE;border-radius:16px;background-color:#FFFFFF;height:100%;">
                       <tr>
                         <td class="review-pad" valign="top" style="padding:16px 14px 8px;">
-                          <p class="review-quote" style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:12px;line-height:17px;color:#2C3138;">&ldquo;GREAT BUYER RESWELL IS A GREAT PLATFORM. I SENT IT OUT FROM NJ TO CALI WAS VERY SMOOTH AND EASY TRANSACTION BETTER THEN DEALING WITH FACEBOOK MARKET PLACE FLAKY PEOPLE&rdquo;</p>
+                          <img src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@b5c0ebf750001e4a6dc58f271e8ed0fcc1c02044/public/images/email/welcome-flow-stars.png" alt="5 stars" width="88" height="16" style="display:block;width:88px;max-width:100%;height:auto;border:0;">
+                          <p class="review-quote" style="margin:10px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:12px;line-height:17px;color:#2C3138;">&ldquo;GREAT BUYER RESWELL IS A GREAT PLATFORM. I SENT IT OUT FROM NJ TO CALI WAS VERY SMOOTH AND EASY TRANSACTION BETTER THEN DEALING WITH FACEBOOK MARKET PLACE FLAKY PEOPLE&rdquo;</p>
                         </td>
                       </tr>
                       <tr>
@@ -209,7 +212,7 @@
                     <table role="presentation" width="100%" height="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;border:1px solid #E4E7EE;border-radius:16px;background-color:#FFFFFF;height:100%;">
                       <tr>
                         <td class="review-pad" valign="top" style="padding:16px 14px 8px;">
-                          <p class="review-stars" style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:13px;line-height:16px;letter-spacing:0.12em;color:#6E80A4;">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                          <img src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@b5c0ebf750001e4a6dc58f271e8ed0fcc1c02044/public/images/email/welcome-flow-stars.png" alt="5 stars" width="88" height="16" style="display:block;width:88px;max-width:100%;height:auto;border:0;">
                           <p class="review-quote" style="margin:10px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:13px;line-height:18px;color:#2C3138;">&ldquo;Excellent dudes! Fins were in perfect condition, shipping was quick and superb communication. I would definitely recommend Reswell! &#128077;&rdquo;</p>
                         </td>
                       </tr>
@@ -234,22 +237,22 @@
                       A welcome from us
                     </p>
                     <h2 class="banner-title" style="margin:14px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:34px;font-weight:500;line-height:40px;letter-spacing:-0.02em;color:#FFFFFF;">
-                      Enjoy {{ event|lookup:'discount_percent'|default:'15' }}% off your first order
+                      Enjoy {{ person|lookup:'welcome_discount_percent'|default:event.discount_percent|default:'15' }}% off your first order
                     </h2>
                     <p style="margin:14px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:21px;color:#D5DCEC;">
-                      Use your code at checkout. Valid through {{ event|lookup:'expires_at_formatted'|default:'30 days' }}.
+                      Use your code at checkout. Valid through {{ person|lookup:'welcome_promo_expires'|default:event.expires_at_formatted|default:'30 days' }}.
                     </p>
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;margin-top:18px;background-color:#FFFFFF;border-radius:10px;">
                       <tr>
                         <td align="center" style="padding:12px 16px;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:20px;font-weight:600;color:#05080D;word-break:break-word;">
-                          {{ event|lookup:'promo_code'|default:'' }}
+                          {{ person|lookup:'welcome_promo_code'|default:event.promo_code|default:'' }}
                         </td>
                       </tr>
                     </table>
                     <table role="presentation" class="btn" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;margin-top:18px;">
                       <tr>
                         <td align="center" bgcolor="#12234F" style="border-radius:999px;background-color:#12234F;">
-                          <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=shop" style="display:inline-block;padding:14px 32px;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;color:#FFFFFF;text-decoration:none;">
+                          <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=shop_banner" style="display:inline-block;padding:14px 32px;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;color:#FFFFFF;text-decoration:none;white-space:nowrap;">
                             SHOP SURFBOARDS
                           </a>
                         </td>
