@@ -23,10 +23,8 @@
       .fluid { width: 100% !important; height: auto !important; }
       .pad-lg { padding-left: 20px !important; padding-right: 20px !important; }
       .pad-md { padding-left: 16px !important; padding-right: 16px !important; }
-      .stack { display: block !important; width: 100% !important; max-width: 100% !important; padding: 0 0 18px 0 !important; }
-      .headline { font-size: 30px !important; line-height: 36px !important; }
-      .section-title { font-size: 28px !important; line-height: 34px !important; }
-      .banner-title { font-size: 26px !important; line-height: 32px !important; }
+      .stack { display: block !important; width: 100% !important; max-width: 100% !important; padding: 0 0 16px 0 !important; }
+      .headline { font-size: 32px !important; line-height: 38px !important; }
       .btn { width: 100% !important; }
       .btn td { width: 100% !important; }
       .btn a { display: block !important; padding: 14px 16px !important; text-align: center !important; }
@@ -46,7 +44,7 @@
         <table role="presentation" class="email-card" width="100%" cellspacing="0" cellpadding="0" border="0" align="center" style="width:100%;max-width:600px;border-collapse:collapse;background-color:#FFFFFF;">
 
           <tr>
-            <td class="pad-md" style="padding:22px 20px 18px;">
+            <td class="pad-md" style="padding:22px 24px 18px;">
               <a href="https://www.reswell.app?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=story_logo" style="text-decoration:none;">
                 <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="120" height="26" style="display:block;width:120px;max-width:100%;height:auto;border:0;">
               </a>
@@ -56,33 +54,34 @@
           <tr>
             <td style="padding:0;font-size:0;line-height:0;">
               <a href="https://www.reswell.app/about?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=story_hero" style="text-decoration:none;">
-                <img class="fluid" src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@a7b95400f3e8d3a2f8e9b545eff4b8e3e45d08e2/public/images/email/welcome-flow-hero.jpg" alt="Surfers at the beach at sunset" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
+                <img class="fluid" src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@bba761ae/public/images/email/welcome-story-beach.jpg" alt="Surfers walking the shoreline at sunset in Santa Barbara" width="600" height="400" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
               </a>
             </td>
           </tr>
 
           <tr>
-            <td class="pad-lg" align="center" style="padding:32px 24px 0;">
+            <td class="pad-lg" style="padding:32px 28px 0;">
               <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#8A8D93;">
                 A little more about us
               </p>
-              <h1 class="headline" style="margin:16px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:40px;font-weight:500;line-height:46px;letter-spacing:-0.02em;color:#05080D;">
-                Hello, {{ first_name|default:event.first_name|default:'there' }}.
+              <h1 class="headline" style="margin:14px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:38px;font-weight:500;line-height:44px;letter-spacing:-0.02em;color:#05080D;">
+                The board you want is not always in your town.
               </h1>
               <p style="margin:16px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#5C6168;">
-                Reswell is the surfer-to-surfer marketplace for buying and selling surfboards. Here is why it exists, and where it comes from.
+                Hello, {{ first_name|default:event.first_name|default:'there' }}. Reswell is a surfer-to-surfer marketplace for buying and selling surfboards, started in Santa Barbara.
               </p>
             </td>
           </tr>
 
           <tr>
-            <td class="pad-lg" style="padding:20px 24px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#3A3D42;">
-              <p style="margin:0;">
-                Some boards move fine on Facebook Marketplace or Craigslist. Others sit for months. Someone out there might be looking for that same board, and they just aren&rsquo;t in your town.
-              </p>
-              <p style="margin:16px 0 0;">
-                Reswell started from a simple idea: buying and selling surfboards doesn&rsquo;t have to stop at local pickup. We wanted one dedicated place for boards and surf gear, where finding what you want is straightforward and sellers can reach buyers who are actually looking.
-              </p>
+            <td class="pad-lg" style="padding:22px 28px 0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
+                <tr>
+                  <td style="border-left:3px solid #576A94;padding:2px 0 2px 16px;font-family:Georgia, 'Times New Roman', Times, serif;font-size:20px;line-height:28px;color:#05080D;">
+                    Buying and selling surfboards doesn&rsquo;t have to stop at local pickup.
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -90,20 +89,25 @@
             <td class="pad-md" style="padding:28px 20px 8px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;width:100%;">
                 <tr>
-                  <td class="stack" width="33%" valign="top" style="width:33%;padding:0 10px 0 0;">
-                    <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">01</p>
-                    <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">What it is</p>
-                    <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">A nationwide marketplace where surfers message, agree on a price, and check out on Reswell. Shipping is built in when pickup isn&rsquo;t the right fit.</p>
+                  <td class="stack" width="58%" valign="top" style="width:58%;padding:0 18px 0 8px;">
+                    <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#576A94;">How it started</p>
+                    <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:23px;color:#3A3D42;">
+                      Some boards move fine on Facebook Marketplace or Craigslist. Others sit for months. Someone out there might be looking for that same board, and they just aren&rsquo;t in your town.
+                    </p>
+                    <p style="margin:14px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:23px;color:#3A3D42;">
+                      Cofounders Hayden Garfield and David Kalt wanted one dedicated place for boards and surf gear. Finding what you want should be straightforward, and sellers should reach buyers who are actually looking.
+                    </p>
                   </td>
-                  <td class="stack" width="33%" valign="top" style="width:33%;padding:0 8px;">
-                    <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">02</p>
-                    <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">How it started</p>
-                    <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">Cofounders Hayden Garfield and David Kalt built the marketplace they thought should exist: focused on boards, not another general classifieds site.</p>
-                  </td>
-                  <td class="stack" width="34%" valign="top" style="width:34%;padding:0 0 0 10px;">
-                    <p style="margin:0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:26px;color:#576A94;">03</p>
-                    <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;line-height:20px;color:#05080D;">Where we&rsquo;re based</p>
-                    <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#6B7076;">Santa Barbara, California. Even here, the board you want isn&rsquo;t always around the corner. Reswell is for surfers nationwide.</p>
+                  <td class="stack" width="42%" valign="top" style="width:42%;padding:0 8px 0 0;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;background-color:#F7F8FB;border-radius:14px;">
+                      <tr>
+                        <td style="padding:18px 16px 16px;">
+                          <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#576A94;">Based in</p>
+                          <p style="margin:8px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:22px;line-height:28px;color:#05080D;">Santa Barbara, California</p>
+                          <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:21px;color:#5C6168;">Even here, the board you want isn&rsquo;t always around the corner. Reswell is for surfers nationwide.</p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
@@ -111,52 +115,39 @@
           </tr>
 
           <tr>
-            <td style="padding:28px 0 0;font-size:0;line-height:0;">
+            <td style="padding:24px 0 0;font-size:0;line-height:0;">
               <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=story_wave" style="text-decoration:none;">
-                <img class="fluid" src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@a7b95400f3e8d3a2f8e9b545eff4b8e3e45d08e2/public/images/email/welcome-flow-wave.jpg" alt="Surfer on a wave" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
+                <img class="fluid" src="https://cdn.jsdelivr.net/gh/ReswellApp/reswell@bba761ae/public/images/email/welcome-story-wave.jpg" alt="A surfer riding a green wave" width="600" height="400" style="display:block;width:100%;max-width:600px;height:auto;border:0;">
               </a>
             </td>
           </tr>
 
           <tr>
-            <td class="pad-lg" style="padding:28px 24px 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#3A3D42;">
-              <p style="margin:0;">
-                We&rsquo;re not another Facebook Marketplace. Those places are useful, and they&rsquo;ll keep existing. For surfers who know what they want, and for people who buy and sell boards often, we wanted something more focused: ship the board, skip the meetup logistics, and build the exchange around trust.
+            <td class="pad-lg" style="padding:28px 28px 0;">
+              <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#576A94;">What it is</p>
+              <p style="margin:10px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#3A3D42;">
+                Message the other person, agree on a price, and check out on Reswell. Shipping is built in when local pickup isn&rsquo;t the right fit. We&rsquo;re not another classifieds site. For surfers who know what they want, the point is a marketplace built around trust.
               </p>
             </td>
           </tr>
 
           <tr>
-            <td class="pad-lg" align="center" style="padding:24px 24px 8px;">
-              <table role="presentation" class="btn" cellspacing="0" cellpadding="0" border="0" align="center" style="border-collapse:separate;">
+            <td class="pad-lg" style="padding:22px 28px 32px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
                 <tr>
-                  <td align="center" bgcolor="#12234F" style="border-radius:999px;background-color:#12234F;">
-                    <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=story_shop" style="display:inline-block;padding:14px 32px;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;color:#FFFFFF;text-decoration:none;white-space:nowrap;">
-                      SHOP SURFBOARDS
-                    </a>
+                  <td class="stack" valign="middle" style="padding:0 16px 0 0;">
+                    <table role="presentation" class="btn" cellspacing="0" cellpadding="0" border="0" align="left" style="border-collapse:separate;">
+                      <tr>
+                        <td align="center" bgcolor="#12234F" style="border-radius:999px;background-color:#12234F;">
+                          <a href="https://www.reswell.app/boards?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=story_shop" style="display:inline-block;padding:14px 28px;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.12em;color:#FFFFFF;text-decoration:none;white-space:nowrap;">
+                            SHOP SURFBOARDS
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
-                </tr>
-              </table>
-              <p style="margin:16px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:20px;">
-                <a href="https://www.reswell.app/sell/boards?new=1&amp;utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=story_list" style="color:#576A94;text-decoration:underline;">List a board</a>
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td class="pad-md" style="padding:24px 16px 8px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:separate;background-color:#293F73;border-radius:16px;">
-                <tr>
-                  <td class="pad-lg" align="center" style="padding:32px 20px 28px;">
-                    <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#C5D0E6;">
-                      From Santa Barbara
-                    </p>
-                    <h2 class="banner-title" style="margin:14px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:34px;font-weight:500;line-height:40px;letter-spacing:-0.02em;color:#FFFFFF;">
-                      Find the board. Sell it farther.
-                    </h2>
-                    <p style="margin:14px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:21px;color:#D5DCEC;">
-                      Nationwide, with shipping built in, and a community grounded in trust.
-                    </p>
+                  <td class="stack" valign="middle" style="font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:20px;">
+                    <a href="https://www.reswell.app/sell/boards?new=1&amp;utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=story_list" style="color:#576A94;text-decoration:underline;">List a board</a>
                   </td>
                 </tr>
               </table>
@@ -164,9 +155,9 @@
           </tr>
 
           <tr>
-            <td class="pad-lg" align="center" style="padding:24px 20px 28px;">
+            <td class="pad-lg" align="center" style="padding:8px 20px 28px;border-top:1px solid #E6E8EE;">
               <a href="https://www.reswell.app?utm_source=klaviyo&amp;utm_medium=email&amp;utm_campaign=welcome_flow&amp;utm_content=story_footer_logo" style="text-decoration:none;">
-                <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="120" height="26" style="display:block;margin:0 auto;width:120px;max-width:120px;height:auto;border:0;">
+                <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="120" height="26" style="display:block;margin:16px auto 0;width:120px;max-width:120px;height:auto;border:0;">
               </a>
               <p style="margin:14px 0 0;">
                 <a href="https://www.instagram.com/reswellll/" style="font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:18px;color:#6B7076;text-decoration:none;">Instagram</a>
