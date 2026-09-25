@@ -98,7 +98,7 @@ export function NewsletterPromoPopup({ serverUser = null }: { serverUser?: User 
             {NEWSLETTER_PROMO_DISCOUNT_PERCENT}% off — first order
           </p>
           <p className="mt-2 text-[14px] leading-relaxed text-black/65">
-            Create an account and we&apos;ll email your code. Works on any board or fin — 30 days to use it.
+            Create an account and we&apos;ll email your code. Works on any board or fin — 5 days to use it.
           </p>
 
           <div className="mt-6 space-y-3">
