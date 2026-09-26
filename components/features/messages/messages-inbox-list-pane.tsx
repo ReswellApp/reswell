@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { MessageSmsNotificationsToggle } from "@/components/features/messages/message-sms-notifications-toggle"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
+import { MessagesInboxFilter, type MessageFilterType } from "@/components/features/messages/messages-inbox-filter"
 import { useMessagesInbox } from "@/components/features/messages/messages-inbox-context"
 import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inbox"
 import {
@@ -31,6 +32,7 @@ export function MessagesInboxListPane({
   const flatMobileInbox = useFlatMobileMessagesInbox()
   const { currentUserId, conversations, messageSmsOptIn, smsPhone } = useMessagesInbox()
   const [searchQuery, setSearchQuery] = useState("")
+  const [filterType, setFilterType] = useState<MessageFilterType>("recent")
 
   const searchLower = searchQuery.trim().toLowerCase()
   const groupedChats = groupConversationsByCounterparty(conversations, currentUserId)
@@ -47,6 +49,25 @@ export function MessagesInboxListPane({
       listingTitles.includes(searchLower) ||
       preview.includes(searchLower)
     )
+  })
+
+  // Apply sorting based on filter type
+  const sortedGroups = [...filteredGroups].sort((a, b) => {
+    if (filterType === "oldest") {
+      return a.latestActivityMs - b.latestActivityMs
+    }
+    if (filterType === "unresponded") {
+      const aLastMessage = a.latestMessage
+      const bLastMessage = b.latestMessage
+      const aIsUnresponded = aLastMessage && aLastMessage.sender_id !== currentUserId
+      const bIsUnresponded = bLastMessage && bLastMessage.sender_id !== currentUserId
+      
+      if (aIsUnresponded && !bIsUnresponded) return -1
+      if (!aIsUnresponded && bIsUnresponded) return 1
+      return b.latestActivityMs - a.latestActivityMs
+    }
+    // Default: most recent
+    return b.latestActivityMs - a.latestActivityMs
   })
 
   const isActiveGroup = (group: (typeof groupedChats)[number]) => {
@@ -84,6 +105,12 @@ export function MessagesInboxListPane({
         />
       </div>
 
+      <MessagesInboxFilter 
+        value={filterType} 
+        onChange={setFilterType}
+        className={flatMobileInbox ? "px-0" : "px-3"}
+      />
+
       <p
         className={cn(
           "shrink-0 border-b border-border/40 py-2 text-[12px] leading-snug text-muted-foreground lg:hidden",
@@ -104,7 +131,7 @@ export function MessagesInboxListPane({
       />
 
       <div className={cn(flatMobileInbox ? "flex-none" : "min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [scrollbar-width:thin]")}>
-        {filteredGroups.length === 0 ? (
+        {sortedGroups.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-12 text-center">
             {searchLower && groupedChats.length > 0 ? (
               <>
@@ -135,7 +162,7 @@ export function MessagesInboxListPane({
           </div>
         ) : (
           <ul className="divide-y divide-border/40">
-            {filteredGroups.map((group) => {
+            {sortedGroups.map((group) => {
               const otherUser = group.otherUser
               const unreadCount = group.totalUnread
               const href = counterpartyInboxHref(group)
