@@ -10,11 +10,8 @@ import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enfo
 import { captureBlockedFraudMessage } from "@/lib/services/captureBlockedFraudMessage"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
-import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
-import {
-  messagePolicyBlocksDelivery,
-  type MessagePolicyReasonCode,
-} from "@/lib/messages/fraud-reason-codes"
+import { sendResultAfterBlockedFraudCapture } from "@/lib/messages/message-ban-protocol"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import type { MessageFraudLlmReviewStatus } from "@/lib/validations/message-fraud-review"
 import type { MessageSendRestrictionActionResult } from "@/lib/messages/send-restriction-errors"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
@@ -190,41 +187,7 @@ async function ensureMarketplaceConversationOnSend(
   return { id: created.id as string }
 }
 
-async function capturePolicyBlockedDmContent(row: {
-  conversationId: string
-  senderId: string
-  recipientId: string
-  listingId: string | null
-  content: string
-  reasonCode: MessagePolicyReasonCode
-  llmReviewStatus?: MessageFraudLlmReviewStatus
-  llmReviewReasonCode?: MessagePolicyReasonCode | null
-  llmReviewRationale?: string | null
-}) {
-  try {
-    const service = createServiceRoleClient()
-    await captureBlockedFraudMessage(service, {
-      conversationId: row.conversationId,
-      senderId: row.senderId,
-      recipientId: row.recipientId,
-      listingId: row.listingId,
-      content: row.content,
-      reasonCode: row.reasonCode,
-      llmReviewStatus: row.llmReviewStatus,
-      llmReviewReasonCode: row.llmReviewReasonCode,
-      llmReviewRationale: row.llmReviewRationale,
-      llmReviewSource: "send",
-    })
-  } catch (e) {
-    console.error("[messages] Could not persist fraud_messages row:", e)
-  }
-}
-
-function policyBlockedSendResult(reasonCode: MessagePolicyReasonCode) {
-  return { error: MESSAGE_BLOCKED_POLICY_ERROR, policyReason: reasonCode } as const
-}
-
-/** Persist a fraud_messages row. Returns a blocked send result only for reasons that still stop delivery. */
+/** Persist a fraud_messages row. Returns a ban restriction or policy block. */
 async function captureAndMaybeBlockPolicyViolation(row: {
   conversationId: string
   senderId: string
@@ -236,11 +199,29 @@ async function captureAndMaybeBlockPolicyViolation(row: {
   llmReviewReasonCode?: MessagePolicyReasonCode | null
   llmReviewRationale?: string | null
 }) {
-  await capturePolicyBlockedDmContent(row)
-  if (!messagePolicyBlocksDelivery(row.reasonCode)) {
-    return null
+  let banned = false
+  try {
+    const service = createServiceRoleClient()
+    const captured = await captureBlockedFraudMessage(service, {
+      conversationId: row.conversationId,
+      senderId: row.senderId,
+      recipientId: row.recipientId,
+      listingId: row.listingId,
+      content: row.content,
+      reasonCode: row.reasonCode,
+      llmReviewStatus: row.llmReviewStatus,
+      llmReviewReasonCode: row.llmReviewReasonCode,
+      llmReviewRationale: row.llmReviewRationale,
+      llmReviewSource: "send",
+    })
+    banned = captured.banned
+  } catch (e) {
+    console.error("[messages] Could not persist fraud_messages row:", e)
   }
-  return policyBlockedSendResult(row.reasonCode)
+  return sendResultAfterBlockedFraudCapture({
+    reasonCode: row.reasonCode,
+    banned,
+  })
 }
 
 function sendRestrictionBlockedResult(
@@ -757,6 +738,13 @@ export async function sendConversationMediaReply(input: unknown) {
   })
 
   if (!result.ok) {
+    if (result.restrictionCode && result.restrictedUntil) {
+      return {
+        error: result.error,
+        restrictionCode: result.restrictionCode,
+        restrictedUntil: result.restrictedUntil,
+      }
+    }
     if (result.policyReason) {
       return { error: result.error, policyReason: result.policyReason }
     }

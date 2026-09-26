@@ -9,7 +9,11 @@ import {
   listPendingFraudMessagesForReview,
   updateFraudMessageLlmReview,
 } from "@/lib/db/fraudMessages"
-import { isMessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import {
+  isMessagePolicyReasonCode,
+  messagePolicyCountsTowardPhishingBan,
+} from "@/lib/messages/fraud-reason-codes"
+import { maybeBanNewAccountAfterFraudMessage } from "@/lib/services/newAccountFraudBan"
 import {
   applyMessageFraudReviewDecision,
   fallbackReasonForHeuristic,
@@ -110,15 +114,28 @@ export async function reviewPendingFraudMessagesBatch(
         continue
       }
 
+      const confirmedReason = decided.reasonCode ?? fallbackReasonForHeuristic(heuristic)
       const updated = await updateFraudMessageLlmReview(supabase, row.id, {
         status: decided.llmReviewStatus === "pending" ? "confirmed" : decided.llmReviewStatus,
-        reasonCode: decided.reasonCode ?? fallbackReasonForHeuristic(heuristic),
+        reasonCode: confirmedReason,
         rationale: review.rationale,
         source: "batch",
       })
       if (!updated.ok) summary.errors += 1
       else if (decided.llmReviewStatus === "dismissed") summary.dismissed += 1
       else summary.confirmed += 1
+
+      if (
+        updated.ok &&
+        decided.action === "block" &&
+        messagePolicyCountsTowardPhishingBan(confirmedReason)
+      ) {
+        try {
+          await maybeBanNewAccountAfterFraudMessage(supabase, row.sender_id, confirmedReason)
+        } catch (banError) {
+          console.error("[reviewFraudMessagesBatch] new-account ban:", banError)
+        }
+      }
     } catch (err) {
       console.error("[reviewFraudMessagesBatch] row failed:", err)
       summary.errors += 1
