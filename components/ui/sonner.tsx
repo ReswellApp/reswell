@@ -1,17 +1,20 @@
 'use client'
 
 import { AlertCircle, Check, Info, Loader2, XCircle } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import { Toaster as Sonner } from 'sonner'
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ style, ...props }: ToasterProps) => {
-  const { theme = 'system' } = useTheme()
-
   return (
     <Sonner
-      theme={theme as ToasterProps['theme']}
+      /*
+       * ThemeProvider is not mounted, so next-themes reports no theme and this
+       * used to fall through to "system". On a dark OS Sonner sets --normal-bg
+       * to #000 while text-foreground stays #04070E, so the pill is unreadable.
+       * The app chrome is light; keep the toast on that same surface.
+       */
+      theme="light"
       className="toaster group"
       /* System-style pill: mostly errors; neutral chrome; no celebratory success treatment. */
       position="top-center"
@@ -27,20 +30,25 @@ const Toaster = ({ style, ...props }: ToasterProps) => {
         {
           '--width': 'min(288px, calc(100vw - 1.25rem))',
           ...style,
+          '--normal-bg': '#ffffff',
+          '--normal-text': '#04070e',
+          '--normal-border': '#e2e8f0',
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
           toast:
             'group toast group-[.toaster]:flex group-[.toaster]:items-center group-[.toaster]:gap-2 ' +
+            /* 92 is not on Tailwind's opacity scale, so bg-background/92 never shipped. */
             'group-[.toaster]:rounded-full group-[.toaster]:border group-[.toaster]:border-border/35 ' +
-            'group-[.toaster]:bg-background/92 group-[.toaster]:text-foreground ' +
+            'group-[.toaster]:bg-background/[0.92] group-[.toaster]:text-foreground ' +
             'group-[.toaster]:shadow-[0_2px_16px_-2px_rgba(0,0,0,0.08)] ' +
             'dark:group-[.toaster]:shadow-[0_2px_20px_-4px_rgba(0,0,0,0.45)] ' +
             'group-[.toaster]:backdrop-blur-2xl group-[.toaster]:backdrop-saturate-150 ' +
             'group-[.toaster]:px-4 group-[.toaster]:py-2 ' +
             'group-[.toaster]:text-[13px] group-[.toaster]:font-normal group-[.toaster]:leading-snug ' +
             'group-[.toaster]:ring-1 group-[.toaster]:ring-black/[0.03] dark:group-[.toaster]:ring-white/[0.05]',
+          title: 'text-foreground',
           description:
             'group-[.toast]:text-muted-foreground group-[.toast]:text-[12px] group-[.toast]:font-normal group-[.toast]:leading-relaxed',
           actionButton:
