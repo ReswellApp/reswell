@@ -5,6 +5,9 @@ import {
   isKlaviyoCatalogFeedAuthorized,
 } from "@/lib/services/klaviyoCatalogFeed"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 /**
  * Public JSON catalog for Klaviyo custom catalog sync (Content → Products → Manage Custom Catalog Sources).
  *
@@ -13,6 +16,8 @@ import {
  *
  * When `KLAVIYO_CATALOG_FEED_SECRET` is set, pass it as `?token=` or `Authorization: Bearer`.
  * Includes active peer listings (surfboards, fins, magazines, wetsuits, and other marketplace sections).
+ * Each row is in stock (`inventory_quantity` 1, `inventory_policy` 2) so Klaviyo marks it published.
+ * Response is uncached so Klaviyo's pull reads the current live catalog.
  * Hayden Garfield’s active surfboards also get the category `Hayden Garfields Shop` so a Klaviyo
  * product feed can filter to that shop. Resync the custom catalog after this ships.
  * Contact Klaviyo support to link metrics (Added to Cart, Checkout Started, Placed Order) with ProductID → catalog $id.
@@ -36,7 +41,9 @@ export async function GET(request: Request) {
     const items = await buildKlaviyoCatalogFeed(supabase)
     return NextResponse.json(items, {
       headers: {
-        "Cache-Control": "public, max-age=300, s-maxage=300",
+        "Cache-Control": "private, no-store, max-age=0",
+        "CDN-Cache-Control": "no-store",
+        "Vercel-CDN-Cache-Control": "no-store",
       },
     })
   } catch (e) {
