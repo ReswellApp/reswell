@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { reconcileKlaviyoCatalogPublishedState } from "@/lib/services/klaviyoCatalogSync"
 
+export const maxDuration = 300
+
 /**
  * Republish Klaviyo catalog items that are still unpublished, and push listings
  * updated in the last 6 hours. Listing mutations also sync immediately.
