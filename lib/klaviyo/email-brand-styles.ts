@@ -9,16 +9,38 @@
 import {
   BRAND_CTA_BLUE,
   BRAND_CTA_BLUE_HOVER,
+  BRAND_DARK_BLUE,
   BRAND_DEEP_BLUE,
+  BRAND_LIGHT_BLUE,
+  BRAND_NAVY,
   BRAND_NEAR_BLACK,
+  BRAND_OFF_WHITE,
   BRAND_WHITE,
 } from "@/lib/brand-colors"
 
-/** Body / UI — Stack Sans Text fallback stack. */
-export const KLAVIYO_EMAIL_FONT_SANS = "Arial, Helvetica, sans-serif"
+/** Body — Stack Sans Text, then the same Arial fallback the site uses. */
+export const KLAVIYO_EMAIL_FONT_SANS = '"Stack Sans Text", Arial, Helvetica, sans-serif'
 
-/** Listing titles — Stack Sans Headline fallback stack. */
-export const KLAVIYO_EMAIL_FONT_HEADLINE = KLAVIYO_EMAIL_FONT_SANS
+/** Headings — Stack Sans Headline, then Stack Sans Text. */
+export const KLAVIYO_EMAIL_FONT_HEADLINE = '"Stack Sans Headline", "Stack Sans Text", Arial, Helvetica, sans-serif'
+
+/** Colors an email may use. Matches the site palette and the slate neutrals in tailwind.config.ts. */
+export const KLAVIYO_EMAIL_PALETTE = [
+  BRAND_NEAR_BLACK,
+  BRAND_NAVY,
+  BRAND_DEEP_BLUE,
+  BRAND_DARK_BLUE,
+  BRAND_CTA_BLUE,
+  BRAND_CTA_BLUE_HOVER,
+  BRAND_LIGHT_BLUE,
+  BRAND_WHITE,
+  BRAND_OFF_WHITE,
+  "#64748B",
+  "#E2E8F0",
+  "#F8FAFC",
+  "#334155",
+  "#94A3B8",
+] as const
 
 /** Tailwind `midgray` / `muted.foreground`. */
 export const KLAVIYO_EMAIL_MUTED = "#64748B"
@@ -52,4 +74,10 @@ export const KLAVIYO_EMAIL_COLORS = {
   muted: KLAVIYO_EMAIL_MUTED,
   border: KLAVIYO_EMAIL_BORDER,
   background: BRAND_WHITE,
+  canvas: BRAND_OFF_WHITE,
 } as const
+
+export function klaviyoEmailFontFaceCss(origin: string): string {
+  const base = origin.replace(/\/$/, "")
+  return `@font-face{font-family:"Stack Sans Text";src:url("${base}/fonts/stack-sans-text-latin.woff2") format("woff2");font-weight:200 700;font-style:normal;font-display:swap;}@font-face{font-family:"Stack Sans Headline";src:url("${base}/fonts/stack-sans-headline-latin.woff2") format("woff2");font-weight:200 700;font-style:normal;font-display:swap;}`
+}

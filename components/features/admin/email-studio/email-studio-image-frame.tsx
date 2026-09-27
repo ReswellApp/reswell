@@ -92,7 +92,7 @@ export function EmailImageFrame({
     <div className="space-y-2" onClick={(event) => event.stopPropagation()}>
       <div className="relative inline-block max-w-full" style={{ width }}>
         <label
-          className="block cursor-pointer overflow-hidden rounded-lg border border-dashed border-[#E2E8F0] bg-[#F4F6F8]"
+          className="block cursor-pointer overflow-hidden rounded-lg border border-dashed border-[#E2E8F0] bg-[#F9F9F2]"
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
             event.preventDefault()
