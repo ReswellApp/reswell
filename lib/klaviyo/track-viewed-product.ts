@@ -1,5 +1,7 @@
 /**
- * Server-only: Klaviyo **Viewed Product** — a visitor opened `/l/{slug-or-id}`.
+ * Server-only: Klaviyo **Viewed Product** — a signed-in user opened `/l/{slug-or-id}`.
+ *
+ * Logged-out views are not sent. The profile is the session user (`external_id` = Supabase user id).
  *
  * **Flow trigger:** Flows → Create flow → Metric → **Viewed Product**.
  * Product blocks use `ProductID` + `Items` (catalog `$id` is the listing UUID).
@@ -21,15 +23,18 @@ export type TrackKlaviyoViewedProductInput = {
   pathname: string
   path: string
   search?: string
+  /** Signed-in Supabase user id. Empty or missing skips the event. */
   userId: string | null
   email: string | null
-  anonymousId: string | null
   supabase?: SupabaseClient
 }
 
 export async function trackKlaviyoViewedProduct(
   input: TrackKlaviyoViewedProductInput,
 ): Promise<void> {
+  const userId = input.userId?.trim() ?? ""
+  if (!userId) return
+
   const listingParam = listingParamFromProductPathname(input.pathname)
   const listing =
     listingParam && input.supabase
@@ -37,10 +42,7 @@ export async function trackKlaviyoViewedProduct(
       : null
 
   const search = input.search?.trim()
-  const profile =
-    input.userId != null
-      ? { external_id: input.userId, email: input.email }
-      : { anonymous_id: input.anonymousId ?? undefined }
+  const profile = { external_id: userId, email: input.email }
 
   const price = listing ? parseKlaviyoListingPrice(listing.price) : null
   const commerceItem = listing ? listingToKlaviyoEventCommerceItem(listing) : null
