@@ -21,13 +21,15 @@ import {
   tryHandleStripeRefundEvent,
 } from "@/lib/services/stripeRefundWebhook"
 import { isAdminTerminalPaymentIntent } from "@/lib/services/adminTerminalSale"
+import { revertBindingOfferIfLatestChargeDeclined } from "@/lib/services/listingOfferAuthorization"
 import type Stripe from "stripe"
 
 export const runtime = "nodejs"
 
 /**
  * Stripe → Developers → Webhooks → Add endpoint: `https://<your-domain>/api/webhooks/stripe`
- * Events: `payment_intent.succeeded`, `refund.created`, `refund.updated`, `charge.refunded`,
+ * Events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.failed`,
+ * `refund.created`, `refund.updated`, `charge.refunded`,
  * `account.updated`, `transfer.reversed`, `payout.failed`, `payout.canceled` (Connect —
  * the endpoint must listen to events on connected accounts, not only the platform)
  * Signing secret: `STRIPE_WEBHOOK_SECRET` — one value, or comma/newline-separated during rotation.
@@ -75,6 +77,21 @@ export async function POST(request: Request) {
 
   const chargeRefundedHandled = await tryHandleStripeChargeRefundedEvent(event)
   if (chargeRefundedHandled) {
+    return NextResponse.json({ received: true })
+  }
+
+  if (event.type === "payment_intent.payment_failed" || event.type === "charge.failed") {
+    const failedPaymentIntentId =
+      event.type === "payment_intent.payment_failed"
+        ? (event.data.object as Stripe.PaymentIntent).id
+        : (() => {
+            const charge = event.data.object as Stripe.Charge
+            if (typeof charge.payment_intent === "string") return charge.payment_intent
+            return charge.payment_intent?.id ?? null
+          })()
+    if (failedPaymentIntentId) {
+      await revertBindingOfferIfLatestChargeDeclined(failedPaymentIntentId)
+    }
     return NextResponse.json({ received: true })
   }
 
