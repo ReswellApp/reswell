@@ -8,11 +8,15 @@ import {
   OFFER_AUTHORIZATION_MIN_CENTS,
   OFFER_BINDING_METADATA_KEY,
   OFFER_BINDING_METADATA_VALUE,
+  OFFER_CARD_DECLINED_ERROR,
   canCaptureOfferAuthorization,
   canReleaseOfferAuthorization,
   isBindingOfferPaymentIntent,
   isOfferAuthorizationCaptured,
   offerAuthorizationAmountMatches,
+  offerChargeDeclineReason,
+  offerChargeSnapshotFromPaymentIntent,
+  offerDeclineMessageFromStripeError,
   shouldCleanupOrphanOfferBinding,
 } from "@/lib/listing-offer-authorization"
 import { encodeListingQuantitiesMeta } from "@/lib/mixed-checkout"
@@ -37,6 +41,7 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { fetchListingForOffer } from "@/lib/db/offers"
 import type { CreateListingOfferPaymentIntentBody } from "@/lib/validations/listing-offer-authorization"
 
@@ -519,6 +524,39 @@ export type CaptureOfferAuthorizationResult =
   | { ok: true; paymentIntent: Stripe.PaymentIntent }
   | { ok: false; error: string }
 
+async function paymentIntentWithExpandedCharge(
+  paymentIntentId: string,
+  current?: Stripe.PaymentIntent,
+): Promise<Stripe.PaymentIntent> {
+  if (current?.latest_charge && typeof current.latest_charge !== "string") return current
+  return getStripe().paymentIntents.retrieve(paymentIntentId, { expand: ["latest_charge"] })
+}
+
+function refusedOfferCapture(
+  paymentIntent: Stripe.PaymentIntent,
+): CaptureOfferAuthorizationResult | null {
+  const reason = offerChargeDeclineReason(offerChargeSnapshotFromPaymentIntent(paymentIntent))
+  if (!reason) return null
+  console.error("[captureOfferAuthorization] charge not captured", {
+    paymentIntentId: paymentIntent.id,
+    status: paymentIntent.status,
+  })
+  if (reason === OFFER_CARD_DECLINED_ERROR || paymentIntent.status === "requires_payment_method") {
+    return { ok: false, error: OFFER_CARD_DECLINED_ERROR }
+  }
+  if (
+    paymentIntent.status === "canceled" ||
+    paymentIntent.status === "requires_action" ||
+    paymentIntent.status === "requires_confirmation"
+  ) {
+    return {
+      ok: false,
+      error: "The buyer’s reserved payment is no longer available. Ask them to send a new offer.",
+    }
+  }
+  return { ok: false, error: reason }
+}
+
 export async function captureOfferAuthorization(
   paymentIntentId: string,
 ): Promise<CaptureOfferAuthorizationResult> {
@@ -529,27 +567,100 @@ export async function captureOfferAuthorization(
 
   try {
     const stripe = getStripe()
-    const pi = await stripe.paymentIntents.retrieve(id)
-    if (!isBindingOfferPaymentIntent(pi.metadata)) {
+    let paymentIntent = await paymentIntentWithExpandedCharge(id)
+    if (!isBindingOfferPaymentIntent(paymentIntent.metadata)) {
       return { ok: false, error: "This offer has no reserved payment." }
     }
-    if (isOfferAuthorizationCaptured(pi.status)) {
-      return { ok: true, paymentIntent: pi }
-    }
-    if (!canCaptureOfferAuthorization(pi.status)) {
-      return {
-        ok: false,
-        error: "The buyer’s reserved payment is no longer available. Ask them to send a new offer.",
+    if (!isOfferAuthorizationCaptured(paymentIntent.status)) {
+      if (!canCaptureOfferAuthorization(paymentIntent.status)) {
+        return (
+          refusedOfferCapture(paymentIntent) ?? {
+            ok: false,
+            error: "The buyer’s reserved payment is no longer available. Ask them to send a new offer.",
+          }
+        )
       }
+      paymentIntent = await stripe.paymentIntents.capture(paymentIntent.id, {
+        expand: ["latest_charge"],
+      })
+      paymentIntent = await paymentIntentWithExpandedCharge(paymentIntent.id, paymentIntent)
+    } else {
+      paymentIntent = await paymentIntentWithExpandedCharge(paymentIntent.id, paymentIntent)
     }
-    const captured = await stripe.paymentIntents.capture(pi.id)
-    return { ok: true, paymentIntent: captured }
+
+    const refused = refusedOfferCapture(paymentIntent)
+    if (refused) return refused
+    return { ok: true, paymentIntent }
   } catch (e) {
     console.error("[captureOfferAuthorization]", e)
     return {
       ok: false,
-      error: "Could not complete the reserved payment. Ask the buyer to send a new offer.",
+      error:
+        offerDeclineMessageFromStripeError(e) ??
+        "Could not complete the reserved payment. Ask the buyer to send a new offer.",
     }
+  }
+}
+
+/**
+ * A later Stripe decline must not leave a binding offer accepted when no order
+ * was created. If the latest charge is actually captured, an earlier failed
+ * attempt on the same PaymentIntent is ignored.
+ */
+export async function revertBindingOfferIfLatestChargeDeclined(
+  paymentIntentId: string,
+): Promise<void> {
+  const id = paymentIntentId.trim()
+  if (!id) return
+
+  try {
+    const paymentIntent = await paymentIntentWithExpandedCharge(id)
+    if (!isBindingOfferPaymentIntent(paymentIntent.metadata)) return
+    const reason = offerChargeDeclineReason(offerChargeSnapshotFromPaymentIntent(paymentIntent))
+    if (!reason) return
+    if (
+      paymentIntent.status === "requires_capture" ||
+      paymentIntent.status === "processing" ||
+      paymentIntent.status === "requires_action" ||
+      paymentIntent.status === "requires_confirmation"
+    ) {
+      return
+    }
+
+    const service = createServiceRoleClient()
+    const { data: order } = await service
+      .from("orders")
+      .select("id")
+      .eq("stripe_checkout_session_id", id)
+      .maybeSingle()
+
+    if (order?.id) {
+      console.error("[binding-offer] card declined after order was created", {
+        paymentIntentId: id,
+        orderId: order.id,
+      })
+      return
+    }
+
+    const { error } = await service
+      .from("offers")
+      .update({
+        status: "PENDING",
+        completed_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("payment_intent_id", id)
+      .eq("status", "ACCEPTED")
+
+    if (error) {
+      console.error("[binding-offer] revert declined accept", error)
+    }
+
+    if (reason === OFFER_CARD_DECLINED_ERROR && paymentIntent.status === "requires_payment_method") {
+      await releaseOfferAuthorization(id)
+    }
+  } catch (e) {
+    console.error("[revertBindingOfferIfLatestChargeDeclined]", e)
   }
 }
 

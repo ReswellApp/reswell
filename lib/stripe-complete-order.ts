@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
+import {
+  isBindingOfferPaymentIntent,
+  offerChargeDeclineReason,
+  offerChargeSnapshotFromPaymentIntent,
+} from "@/lib/listing-offer-authorization"
 import type Stripe from "stripe"
 import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
 import {
@@ -325,7 +330,8 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
 /**
  * Creates the marketplace order and side effects for a succeeded PaymentIntent.
  * Idempotent: safe to call from the client finalize route and from Stripe webhooks.
- * Caller must only invoke when `pi.status === "succeeded"` and metadata is trusted (Stripe-signed webhook or session matches buyer_id).
+ * Refuses a new order unless `pi.status === "succeeded"`. Binding offers also require
+ * the expanded charge to be paid and captured, so a decline cannot create an order.
  */
 export async function completeMarketplaceOrderFromPaymentIntent(
   pi: Stripe.PaymentIntent,
@@ -392,6 +398,29 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
     void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
+  }
+
+  if (pi.status !== "succeeded") {
+    return { ok: false, error: "Payment is not complete yet", status: 400 }
+  }
+
+  if (isBindingOfferPaymentIntent(pi.metadata)) {
+    try {
+      if (typeof pi.latest_charge !== "object" || pi.latest_charge == null) {
+        pi = await getStripe().paymentIntents.retrieve(pi.id, { expand: ["latest_charge"] })
+      }
+    } catch (e) {
+      console.error("[stripe-complete-order] expand offer charge", e)
+      return { ok: false, error: "Could not verify payment", status: 502 }
+    }
+    const declineReason = offerChargeDeclineReason(offerChargeSnapshotFromPaymentIntent(pi))
+    if (declineReason) {
+      console.error("[stripe-complete-order] binding offer charge refused", {
+        paymentIntentId: pi.id,
+        status: pi.status,
+      })
+      return { ok: false, error: declineReason, status: 402 }
+    }
   }
 
   const buyerId = pi.metadata.buyer_id?.trim() || null

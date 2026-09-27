@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type Stripe from "stripe"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoOfferAccepted } from "@/lib/klaviyo/track-offer-accepted"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
@@ -9,6 +10,7 @@ import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import {
   captureOfferAuthorization,
   releaseOfferAuthorization,
+  revertBindingOfferIfLatestChargeDeclined,
 } from "@/lib/services/listingOfferAuthorization"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
@@ -187,6 +189,18 @@ export async function respondToOfferService(
       return { ok: false, error: "This listing is no longer available." }
     }
 
+    let capturedPayment: Stripe.PaymentIntent | null = null
+    if (paymentIntentId) {
+      const captured = await captureOfferAuthorization(paymentIntentId)
+      if (!captured.ok) {
+        if (offer.status === "ACCEPTED") {
+          await revertBindingOfferIfLatestChargeDeclined(paymentIntentId)
+        }
+        return { ok: false, error: captured.error }
+      }
+      capturedPayment = captured.paymentIntent
+    }
+
     if (offer.status === "PENDING") {
       const { error: upErr } = await supabase
         .from("offers")
@@ -217,7 +231,25 @@ export async function respondToOfferService(
       if (!appended) {
         console.error("[respondToOffer] accept offer_timeline append failed")
       }
+    }
 
+    let orderId: string | null = null
+    let createdOrder = false
+    if (capturedPayment) {
+      const finalized = await completeMarketplaceOrderFromPaymentIntent(capturedPayment)
+      if (!finalized.ok) {
+        console.error("[respondToOffer] binding finalize:", finalized.error)
+        return {
+          ok: false,
+          error:
+            "Payment went through but the order could not be finished. We’ll retry automatically — refresh in a moment.",
+        }
+      }
+      orderId = finalized.orderId
+      createdOrder = !finalized.alreadyProcessed
+    }
+
+    if (offer.status === "PENDING" || createdOrder) {
       await appendNegotiationLine(
         supabase,
         offer,
@@ -238,36 +270,6 @@ export async function respondToOfferService(
             : `${title}: your offer of $${current.toFixed(2)} was accepted.`,
         })
       }
-    }
-
-    let orderId: string | null = null
-    if (paymentIntentId) {
-      const captured = await captureOfferAuthorization(paymentIntentId)
-      if (!captured.ok) {
-        if (offer.status === "PENDING") {
-          await supabase
-            .from("offers")
-            .update({
-              status: "PENDING",
-              completed_at: null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", offerId)
-            .eq("status", "ACCEPTED")
-        }
-        return { ok: false, error: captured.error }
-      }
-
-      const finalized = await completeMarketplaceOrderFromPaymentIntent(captured.paymentIntent)
-      if (!finalized.ok) {
-        console.error("[respondToOffer] binding finalize:", finalized.error)
-        return {
-          ok: false,
-          error:
-            "Payment went through but the order could not be finished. We’ll retry automatically — refresh in a moment.",
-        }
-      }
-      orderId = finalized.orderId
     }
 
     void trackKlaviyoOfferAccepted({

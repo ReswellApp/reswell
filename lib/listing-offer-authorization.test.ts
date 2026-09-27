@@ -1,11 +1,16 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  OFFER_CARD_DECLINED_ERROR,
+  OFFER_CARD_NOT_CHARGED_ERROR,
   canCaptureOfferAuthorization,
   canReleaseOfferAuthorization,
   isBindingOfferPaymentIntent,
   isOfferAuthorizationCaptured,
   offerAuthorizationAmountMatches,
+  offerChargeDeclineReason,
+  offerChargeSnapshotFromPaymentIntent,
+  offerDeclineMessageFromStripeError,
   offerIsBinding,
   shouldCleanupOrphanOfferBinding,
 } from "./listing-offer-authorization.ts"
@@ -87,6 +92,142 @@ describe("shouldCleanupOrphanOfferBinding", () => {
       }),
       false,
     )
+  })
+})
+
+function capturedOfferPayment(overrides: Record<string, unknown> = {}) {
+  return offerChargeSnapshotFromPaymentIntent({
+    status: "succeeded",
+    amount: 45585,
+    amount_received: 45585,
+    last_payment_error: null,
+    latest_charge: {
+      status: "succeeded",
+      paid: true,
+      captured: true,
+      amount_captured: 45585,
+      failure_code: null,
+      outcome: { type: "authorized" },
+    },
+    ...overrides,
+  })
+}
+
+describe("offerChargeDeclineReason", () => {
+  it("accepts a fully captured charge", () => {
+    assert.equal(offerChargeDeclineReason(capturedOfferPayment()), null)
+  })
+
+  it("rejects a declined charge even when the PaymentIntent says succeeded", () => {
+    const reason = offerChargeDeclineReason(
+      capturedOfferPayment({
+        latest_charge: {
+          status: "failed",
+          paid: false,
+          captured: false,
+          amount_captured: 0,
+          failure_code: "card_declined",
+          outcome: { type: "issuer_declined" },
+        },
+      }),
+    )
+    assert.equal(reason, OFFER_CARD_DECLINED_ERROR)
+  })
+
+  it("rejects issuer declines and blocked outcomes", () => {
+    assert.equal(
+      offerChargeDeclineReason(
+        capturedOfferPayment({
+          latest_charge: {
+            status: "failed",
+            paid: false,
+            captured: false,
+            amount_captured: 0,
+            failure_code: null,
+            outcome: { type: "blocked" },
+          },
+        }),
+      ),
+      OFFER_CARD_DECLINED_ERROR,
+    )
+  })
+
+  it("does not treat a stale decline on a captured charge as a failure", () => {
+    assert.equal(
+      offerChargeDeclineReason(
+        capturedOfferPayment({
+          last_payment_error: { code: "card_declined", decline_code: "insufficient_funds" },
+        }),
+      ),
+      null,
+    )
+  })
+
+  it("rejects an unexpanded charge and an uncaptured authorization", () => {
+    assert.equal(
+      offerChargeDeclineReason(
+        offerChargeSnapshotFromPaymentIntent({
+          status: "succeeded",
+          amount: 45585,
+          amount_received: 45585,
+          latest_charge: "ch_123",
+        }),
+      ),
+      OFFER_CARD_NOT_CHARGED_ERROR,
+    )
+    assert.equal(
+      offerChargeDeclineReason(
+        offerChargeSnapshotFromPaymentIntent({
+          status: "requires_capture",
+          amount: 45585,
+          amount_received: 0,
+          latest_charge: {
+            status: "succeeded",
+            paid: true,
+            captured: false,
+            amount_captured: 0,
+            outcome: { type: "authorized" },
+          },
+        }),
+      ),
+      OFFER_CARD_NOT_CHARGED_ERROR,
+    )
+  })
+
+  it("rejects a requires_payment_method decline", () => {
+    assert.equal(
+      offerChargeDeclineReason(
+        offerChargeSnapshotFromPaymentIntent({
+          status: "requires_payment_method",
+          amount: 45585,
+          amount_received: 0,
+          last_payment_error: { code: "card_declined", decline_code: "generic_decline" },
+          latest_charge: null,
+        }),
+      ),
+      OFFER_CARD_DECLINED_ERROR,
+    )
+  })
+})
+
+describe("offerDeclineMessageFromStripeError", () => {
+  it("reads card declines from the thrown Stripe error", () => {
+    assert.equal(
+      offerDeclineMessageFromStripeError({
+        code: "card_declined",
+        decline_code: "insufficient_funds",
+      }),
+      OFFER_CARD_DECLINED_ERROR,
+    )
+    assert.equal(
+      offerDeclineMessageFromStripeError({
+        payment_intent: {
+          last_payment_error: { code: "card_declined", decline_code: "do_not_honor" },
+        },
+      }),
+      OFFER_CARD_DECLINED_ERROR,
+    )
+    assert.equal(offerDeclineMessageFromStripeError(new Error("network")), null)
   })
 })
 
