@@ -27,6 +27,7 @@ import {
   isAppLlmFeatureEnabled,
   resolveConfiguredModel,
 } from "@/lib/llm/app-models"
+import { KNOWN_KLAVIYO_METRIC_NAMES } from "@/lib/klaviyo/event-log-shared"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import type { EmailStudioDocument } from "@/lib/types/emailStudio"
 import type { EmailStudioFlowDefinition, EmailStudioFlowStep, KlaviyoCatalogOption } from "@/lib/types/emailStudioFlow"
@@ -41,7 +42,7 @@ applyEmail is yes when the request creates or changes the open email. applyFlow 
 
 For an email, return the full block list, not only the block that changed. Block type is one of logo, eyebrow, heading, text, image, button, split, details, divider, spacer, footer. Put a logo first and a footer last with showUnsubscribe true. align is left or center.
 
-For a flow, return steps in order. type is delay, email, sms, webhook, update-profile, list-update, or split. branch is main, yes, or no. A split is a main step. The yes and no steps that follow it belong to that split until the next main step. splitMode is profile-property, email-subscribed, or event-property. Each email step includes subject, heading, and body. Use a trigger id from the catalog when you have one. A step after the split on the main branch runs after both branches.
+For a flow, return steps in order. type is delay, email, sms, webhook, update-profile, list-update, or split. branch is main, yes, or no. A split is a main step. The yes and no steps that follow it belong to that split until the next main step. splitMode is profile-property, email-subscribed, or event-property. Each email step includes subject, heading, and body. Use a trigger id from the catalog when you have one. If you only know a metric name, put it in triggerName and leave triggerId empty. A step after the split on the main branch runs after both branches. Flows are saved as drafts. Never tell the user the flow is live.
 
 Fill every string. Use an empty string when a field does not apply, and 0 for an unused number. reply is two sentences about what you drafted. Do not refuse, apologize, or discuss policy.`
 
@@ -208,8 +209,8 @@ function definitionFromProposal(proposal: AssistantFlowDraft, built: {
 }
 
 function catalogLines(label: string, options: KlaviyoCatalogOption[]): string {
-  const lines = options.slice(0, 25).map((option) => `${option.id} | ${option.name}`)
-  return lines.length ? `${label}:\n${lines.join("\n")}` : ""
+  const lines = options.slice(0, 60).map((option) => `${option.id} | ${option.name}`)
+  return lines.length ? `${label}:\n${lines.join("\n")}` : `${label}: none loaded`
 }
 
 function providerOptions() {
@@ -356,11 +357,12 @@ export async function askEmailStudioAssistantService(input: {
       history: history.slice(-6).map((item) => ({ role: item.role, content: item.content })),
       prompt: [
         `Scope: ${input.scope}`,
+        `Known metrics: ${KNOWN_KLAVIYO_METRIC_NAMES.join(", ")}`,
         catalogLines("Metrics", catalog.metrics),
         catalogLines("Lists", catalog.lists),
         catalogLines("Segments", catalog.segments),
         "Current draft:",
-        input.snapshot.slice(0, 8000),
+        input.snapshot.slice(0, 12000),
         `Request: ${input.message}`,
       ].filter(Boolean).join("\n\n"),
     })

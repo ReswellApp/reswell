@@ -11,6 +11,9 @@ import {
   PEER_LISTING_SECTION_LABELS,
 } from "@/lib/peer-listing-sections"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
+import { klaviyoHaydenShopCategoryForListing } from "@/lib/klaviyo/hayden-shop-catalog"
+
+export { KLAVIYO_HAYDEN_SHOP_CATEGORY, KLAVIYO_HAYDEN_SHOP_SELLER_EMAIL } from "@/lib/klaviyo/hayden-shop-catalog"
 
 export type KlaviyoListingImage = {
   url?: string | null
@@ -21,6 +24,7 @@ export type KlaviyoListingImage = {
 
 export type KlaviyoListingProductSource = {
   id: string
+  user_id?: string | null
   slug?: string | null
   title?: string | null
   description?: string | null
@@ -32,6 +36,10 @@ export type KlaviyoListingProductSource = {
   brand?: string | null
   condition?: string | null
   listing_images?: KlaviyoListingImage[] | null
+}
+
+export type KlaviyoCatalogFeedContext = {
+  haydenShopUserId: string | null
 }
 
 /** Klaviyo custom catalog feed item (JSON source). */
@@ -200,7 +208,10 @@ function catalogSectionCategory(section: string): string {
     : section
 }
 
-function catalogCategories(listing: KlaviyoListingProductSource): string[] {
+function catalogCategories(
+  listing: KlaviyoListingProductSource,
+  context?: KlaviyoCatalogFeedContext,
+): string[] {
   const categories = new Set<string>()
   const section = typeof listing.section === "string" ? listing.section.trim() : ""
   if (section) {
@@ -215,12 +226,18 @@ function catalogCategories(listing: KlaviyoListingProductSource): string[] {
   const condition =
     typeof listing.condition === "string" ? listing.condition.trim() : ""
   if (condition) categories.add(condition)
+  const haydenShopCategory = klaviyoHaydenShopCategoryForListing(
+    listing,
+    context?.haydenShopUserId,
+  )
+  if (haydenShopCategory) categories.add(haydenShopCategory)
   if (categories.size === 0) categories.add("surfboards")
   return [...categories]
 }
 
 export function listingToKlaviyoCatalogFeedItem(
   listing: KlaviyoListingProductSource,
+  context?: KlaviyoCatalogFeedContext,
 ): KlaviyoCatalogFeedItem {
   const price = parseKlaviyoListingPrice(listing.price) ?? 0
   return {
@@ -230,7 +247,7 @@ export function listingToKlaviyoCatalogFeedItem(
     description: catalogDescription(listing),
     image_link: absoluteKlaviyoListingImageUrl(listing),
     price,
-    categories: catalogCategories(listing),
+    categories: catalogCategories(listing, context),
     inventory_quantity: 1,
     inventory_policy: 1,
   }

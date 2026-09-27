@@ -64,6 +64,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Career Application Submitted": "lifecycle",
   "Viewed Boards Page": "marketing",
   "Viewed Site Page": "marketing",
+  "Viewed Product": "marketing",
   "Search Insights Digest": "marketing",
   "Platform Error Digest": "marketing",
   "Inactive Sync Report": "marketing",
