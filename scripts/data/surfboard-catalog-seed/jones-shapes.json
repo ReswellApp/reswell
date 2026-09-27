@@ -1,0 +1,109 @@
+{
+  "generated_for": "Jones Shapes official named standup catalog",
+  "source": "https://www.jonesshapes.com/models and /board-models/* (official Squarespace model pages — excludes la résistance, board-color, custom-order posts, Jackie Baxter blog, and Bruce Jones / Arroyo family labels)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jones-shapes",
+      "name": "Jones Shapes",
+      "website_url": "https://www.jonesshapes.com",
+      "location_label": "Long Beach, California",
+      "founder_name": "Brock Jones",
+      "lead_shaper_name": "Brock Jones",
+      "short_description": "Second-generation Long Beach surfboards by Brock Jones — logs, gliders, fishes, and shortboards shaped as an homage to Bruce Jones craft heritage.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/4add72f3-a521-4fc1-987e-c914e113d73c/Jones_Shapes_Surfboards_black_logo.png",
+      "models": [
+        {
+          "name": "Savoy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/fd9d6b32-879b-4d88-8efc-099f588e5848/boardCarousel_SAVOY_Jones_Shapes_Surfboards.jpg",
+          "description": "The Savoy is a log that I started working on in 2015. The design mixes the templates of a Yater Spoon and the Jackie Baxter Model to make a pintail with plenty of hold but with a wider nose than the Vardeman Baxter template. Nose convcave is optional. The dimensions in the photo below are 10'0\" x 17.5\" x 22.5\" x 14.5\" x 3\" taken from a modified US Blanks 10-2B Green. I am currently tweaking the template to incorporate a wider 18\" nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ondine",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/8ecf89b2-1634-494e-ac49-5a76e8083328/boardCarousel_ONDINEii_Jones_Shapes_Surfboards.jpg",
+          "description": "The Ondine is a slimmed down approach to a California squaretail noserider and a change from conventional noserider design to something that combines a bit more glide with a traditional longboard feel. The outline is strongly based on my father's glider template: a wide point forward pintail which I've redrawn into a sleek squaretail without the hips. Stock bottom contours are flat. Rails are tucked 3.5\" for a soft feeling throughout.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Natural Mystic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/778ff4a7-1821-4ed4-b436-70ce83b541f6/boardCarousel_NATURALMYSTIC_Jones_Shapes_Surfboards.jpg",
+          "description": "The Natural Mystic is an all-around squash-tail log. This design is a collaboration between myself, Kevin Dickson & Keiichiro which took shape in Winter 2022 and is quickly becoming a favorite. The concept behind this model is to have a blunter nose answer to my Calafia model. One that preserves extra width up to 4\" back from the nose to accentuate nose riding. Bottom contours can also be varied to either my subtle tri-plane or a belly with rails turned up toward the deck (depending on your preferences). Stock bottom contours offer a 36\" blended concave. My templates allow for variable nose widths from 17 1/4\" to 18\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sunriser",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/36424cf4-adc5-4c5d-935f-54cb9603df1a/boardCarousel_SUNRISER_Jones_Shapes_Surfboards.jpg",
+          "description": "The Sunriser is a mix of the Jackie Baxter Model tail half and more of a Nuuhiwa front half to create a noserider with the rail-to-rail ease of the Baxter. The design is intended to take the Baxter fin but I'm currently playing with other templates and placements for those who would like their fin further back. Bottom contours feature an extended, blended nose concave to a flat bottom with a 3.5\" rail tuck. A soft rail throughout gives the design a classic feel.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Calafia",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/887c4760-4200-4c3f-ac52-99bb6fa090b0/boardCarousel_CALAFIA_Jones_Shapes_Surfboards.jpg",
+          "description": "The Calafia's outline is inspired by the Yater Spoon. I've given it a proven noserider rocker and flat bottom contours with optional nose concave or stepdeck. The template's nose width can vary depending on the customer's preference. The Calafia's wide point is at center. My personal dimensions are 9'6\" x 23\" x 3 1/8\" and I prefer an 18\" nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ancient Future",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/6effdf0d-80a8-433c-b940-756799f36875/boardCarousel_ANCIENTFUTURE_Jones_Shapes_Surfboards.jpg",
+          "description": "I started designing the Ancient Future for small, steep, short-period surf. The result was a high-tail-rocker, squaretail log that can work in a variety of situations and conditions. The design features a straighter outline. Bottom contours are flat with a 3.5\" rail tuck and a 36\" blended nose concave. The board's soft rails are apexed at 1\" so that they're turned slightly down towards the bottom for a classic but slightly zippier feel. Rail apex and bottom contours can be altered depending on customer needs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Moon",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/25cb1832-1f00-43f1-8e63-f82aa4c29a86/boardCarousel_MOONiii_Jones_Shapes_Surfboards.jpg",
+          "description": "Obviously, a market for wide-tail, all-around noseriders exists as seen by the creations of shapers like Dane Perlee and Michael Takayama. The Moon is my answer to the concept. The design is intended for smaller range surf where the wide tail will assist in early entry and a counterbalance to the nose. Bottom contours are flat with a 36\" blended concave in the nose and a 3.5\" tucked rail. Standard Bruce Jones noserider rocker used as stock but customizable depending on surfer's needs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Orion",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/1065cab5-e701-4f01-b1cd-bab4af8ac813/boardCarousel_ORION_Jones_Shapes_Surfboards.jpg",
+          "description": "The Orion is still in its infancy but is already proving to be a success. So far, two have been made and tested by rider, Joey Wangsness. The Orion is intended as a competition, single-fin longboard which can be customized with a variety of dimensions and rockers to make for a great, all-around longboard. The latest model features the Bruce Jones rocker for the Modern Longboard with an extra ¼\" added to the overall tail-rocker. Bottom contours are a blended concave to flat to panel vee out the tail. Single-fin box marked at 4\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Diamond-T",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/8d4f7e6f-046a-4b71-a9a4-fd82cd83acc9/boardCarousel_DIAMONDTii_Jones_Shapes_Surfboards.jpg",
+          "description": "The Jones Shapes Diamond-T is designed to be a user friendly, all-around longboard. It is available for custom order with 2 rocker templates depending on the rider's needs: a flatter, noserider rocker or a slightly more rockered template. Bottom contours can also be customized to either a concave nose blended into a subtle tri-plane with soft rails or a nose concave into flat to vee contours. The template is available from 7'0\" to 11'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "BXTR",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/b1a44206-899d-47cd-9a38-0b16902e6d1a/boardCarousel_BXTRii_Jones_Shapes_Surfboards.jpg",
+          "description": "The original idea for the BXTR was to have a soft-railed, very pulled in single-fin log for steeper surf. Something very close to the original Jackie Baxter Model from which the BXTR takes its name. However, I've been observing a developing interest in mini-gliders at some of my local breaks and I think the Baxter template and proportions are perfectly suitable to a type of pintail that can be ridden in a wider variety of surf by a broader range of surfer. Perhaps even a design that can provide people with an easier entry into riding logs. Therefore, I've updated the concept of the BXTR to have a down rail, flat to vee bottom contours and a more contemporary, user-friendly rocker.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Treponti Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/8f780e6d-a269-4e1c-8af0-9c87d59101f2/boardCarousel_TREPONTI_Jones_Shapes_Surfboards.jpg",
+          "description": "I designed the Treponti Glider after spending extensive time surfing the reefs of Tuscany. One of these reefs perfectly lends itself to glider design, where the initial takeoff requires paddle power while the rest of the wave (depending on your placement on the reef) lines up for a long, peeling right-hander. The board's slender outline features a round-tail for paddle assist while allowing for some bite and sinkage and a modern rocker for user-friendliness. Bottom contours are flat to vee. A downrail terminates at the tail with a defined but rounded off edge to provide bite without too much tracking.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bumpfish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/f301194f-0cc1-410e-8649-4799b80e231b/boardCarousel_BUMPFISH_Jones_Shapes_Surfboards.jpg",
+          "description": "The Bumpfish by Jones Shapes Surfboards is still in it's prototyping and testing phase along with a couple other fish inspired designs. The Bumpfish is highly influenced by the San Diego take on the fish genre of surfboards. The Jones Shapes Bumpfish borrows similar outline, rail and bottom-contour characteristics while narrowing the last few inches of tail width a bit for a looser feel. Bottom contours feature eev entry to flat to a double-concaved vee out the back.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Parlé Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/fc737360-8ebd-404f-8a73-783f439774d2/boardCarousel_PARLEii_Jones_Shapes_Surfboards.jpg",
+          "description": "The Parlé Fish is my approach to a scalable, traditional fish outline. Bottom contours are panel vee. The design is intended for a moderate aspect ration quad setup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mandorla",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/8a531b92-47a3-4ffa-9b74-1f1198dc2177/boardCarousel_MANDORLA_Jones_Shapes_Surfboards.jpg",
+          "description": "My distaste for the conventional, contemporary, ubiquitous shortboard design should be observable in the Mandorla: an all-around shortboard. This design combines a truly elliptical outline with a softened, rounded swallow/fish tail. It is intended for a non-canard type quad setup. I've kept the nose round for the sake of a little extra volume and safety. Bottom contours can be adapted for customer needs, dimensions, etc. I am currently riding a 6'2\"x20\"x2.5\" with a single to double concave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cove Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55b5c4d1e4b02c87e852da8b/0096779a-fcc8-49f6-9b34-12d2ca4b99c1/boardCarousel_COVEFISH_Jones_Shapes_Surfboards.jpg",
+          "description": "I'm enamored by the mega-fish scene, but it's not exactly \"mine\" and I want to go down a road that is a little more Jones in nature before I explore the genre further. My idea was to blend a comfortable quad fish (something we're all familiar with) with the hybrids my dad was shaping throughout the 90s and first decade of the 2000s. Those hybrids were straight-forward, gently curved middle length boards creating a step between longboards and thrusters. The Jones Shapes Covefish takes the same gentle Bruce Jones Hybrid curve and combines it with a double bump swallow with a quad setup. The design is intended for wave sizes from waist to head-high. Stock bottom contours feature vee entry to a spiral vee out the tail. Panel vee option also available.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
