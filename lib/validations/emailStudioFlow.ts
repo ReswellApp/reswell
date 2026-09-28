@@ -136,4 +136,9 @@ export const pushEmailStudioFlowSchema = z.object({
   replace: z.boolean().optional(),
 })
 
+export const publishEmailStudioFlowSchema = z.object({
+  id: z.string().uuid(),
+  confirmLive: z.literal(true),
+})
+
 export type UpdateEmailStudioFlowInput = z.infer<typeof updateEmailStudioFlowSchema>

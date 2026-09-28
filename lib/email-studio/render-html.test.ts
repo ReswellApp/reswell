@@ -1,7 +1,12 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { cloneEmailDocument, starterById } from "./document"
-import { renderEmailStudioHtml, resolveEmailStudioHtml, safeEmailHref } from "./render-html"
+import {
+  renderEmailStudioHtml,
+  resolveEmailStudioHtml,
+  safeEmailHref,
+  withEmailPreviewData,
+} from "./render-html"
 
 describe("email studio html", () => {
   it("drops unsafe links and keeps Klaviyo tags", () => {
@@ -11,6 +16,33 @@ describe("email studio html", () => {
       safeEmailHref("{{ event|lookup:'order_url' }}"),
       "{{ event|lookup:'order_url' }}",
     )
+  })
+
+  it("previews real profile and event values without changing pushed HTML", () => {
+    const source = [
+      "Hi {{ first_name|default:'there' }} {{ last_name|default:'' }}",
+      "{{ email }}",
+      "{{ event|lookup:'order_num' }}",
+      "{{ event|lookup:'missing'|default:'Fallback' }}",
+      "{{ event|lookup:'unsafe' }}",
+    ].join(" | ")
+    const preview = withEmailPreviewData(source, {
+      profile: {
+        firstName: "Kai",
+        lastName: "Lenny",
+        email: "kai@example.com",
+      },
+      event: {
+        order_num: "RW-4200",
+        unsafe: "<script>alert(1)</script>",
+      },
+    })
+    assert.match(preview, /Hi Kai Lenny/)
+    assert.match(preview, /kai@example\.com/)
+    assert.match(preview, /RW-4200/)
+    assert.match(preview, /Fallback/)
+    assert.doesNotMatch(preview, /<script>/)
+    assert.match(source, /\{\{ first_name/)
   })
 
   it("renders a buyer order starter as a table email", () => {

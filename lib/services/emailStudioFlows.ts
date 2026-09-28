@@ -1,7 +1,12 @@
 import "server-only"
 
 import { createHash } from "node:crypto"
-import { getKlaviyoApiKey, klaviyoGetAllPages, klaviyoWrite } from "@/lib/klaviyo/api-client"
+import {
+  getKlaviyoApiKey,
+  klaviyoGet,
+  klaviyoGetAllPages,
+  klaviyoWrite,
+} from "@/lib/klaviyo/api-client"
 import { compileKlaviyoFlow } from "@/lib/email-studio/compile-klaviyo-flow"
 import { blankFlowDefinition, walkFlowSteps } from "@/lib/email-studio/flow-definition"
 import { planFlowReplacement } from "@/lib/email-studio/flow-replacement"
@@ -474,11 +479,61 @@ export async function pushEmailStudioFlowService(
   }
 }
 
+export async function publishEmailStudioFlowService(
+  id: string,
+  confirmLive: boolean,
+): Promise<{
+  success: true
+  klaviyoFlowId: string
+  syncedRevision: number | null
+  checksum: string | null
+  syncedAt: string | null
+  warning: string | null
+} | ServiceError> {
+  if (!confirmLive) return { error: "Confirm before publishing this flow." }
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+  try {
+    const flow = await getEmailStudioFlow(dbClient(staff.supabase), id)
+    if (!flow) return { error: "Flow not found" }
+    const replace = Boolean(
+      flow.klaviyoFlowId && flow.klaviyoSyncedRevision !== flow.revision,
+    )
+    const pushed = await pushEmailStudioFlowService(id, replace)
+    if ("error" in pushed) return pushed
+    if (pushed.warning) {
+      return {
+        error: `The Klaviyo draft was created, but it was not published because verification failed: ${pushed.warning}`,
+      }
+    }
+    const activated = await setEmailStudioFlowStatusService(id, "live", true)
+    if ("error" in activated) return activated
+    if (activated.status !== "live") {
+      return { error: `Klaviyo kept the flow in ${activated.status} instead of publishing it.` }
+    }
+    return {
+      success: true,
+      klaviyoFlowId: pushed.klaviyoFlowId,
+      syncedRevision: pushed.syncedRevision,
+      checksum: pushed.checksum,
+      syncedAt: pushed.syncedAt,
+      warning: activated.warning,
+    }
+  } catch (error) {
+    console.error("[email_studio] publish flow failed", error)
+    return { error: "Could not publish this flow." }
+  }
+}
+
 export async function setEmailStudioFlowStatusService(
   id: string,
   status: "draft" | "manual" | "live",
   confirmLive = false,
-): Promise<{ success: true } | ServiceError> {
+): Promise<{
+  success: true
+  status: "draft" | "manual" | "live"
+  warning: string | null
+} | ServiceError> {
   const staff = await requireStaff()
   if (!staff.ok) return { error: staff.error }
   if (status === "live" && !confirmLive) {
@@ -573,10 +628,46 @@ export async function setEmailStudioFlowStatusService(
       }
       return { error: updated.detail || "Klaviyo rejected the status change" }
     }
+    const verified = await klaviyoGet<{
+      data?: { attributes?: { status?: string } }
+    }>(`/api/flows/${flow.klaviyoFlowId}/`, {
+      "fields[flow]": "status",
+    })
+    const readStatus = verified.ok ? verified.data.data?.attributes?.status : null
+    const verifiedStatus =
+      readStatus === "draft" || readStatus === "manual" || readStatus === "live"
+        ? readStatus
+        : status
+    const warning = !verified.ok
+      ? `Klaviyo accepted ${status}, but status verification failed: ${verified.detail}`
+      : verifiedStatus !== status
+        ? `Klaviyo reported ${verifiedStatus} after ${status} was requested.`
+        : null
+    if (
+      status === "live"
+      && verified.ok
+      && verifiedStatus !== "live"
+      && previousDisabled
+      && flow.klaviyoReplacedFlowId
+      && previousStatus
+    ) {
+      await klaviyoWrite(
+        "PATCH",
+        `/api/flows/${flow.klaviyoReplacedFlowId}/`,
+        {
+          data: {
+            type: "flow",
+            id: flow.klaviyoReplacedFlowId,
+            attributes: { status: previousStatus },
+          },
+        },
+      )
+      previousDisabled = false
+    }
     await updateEmailStudioFlowKlaviyoSync(client, {
       id: flow.id,
       flowId: flow.klaviyoFlowId,
-      status,
+      status: verifiedStatus,
       syncedRevision: flow.klaviyoSyncedRevision,
       contentChecksum: flow.klaviyoContentChecksum,
       syncedAt: flow.klaviyoSyncedAt,
@@ -584,7 +675,7 @@ export async function setEmailStudioFlowStatusService(
       replacedFlowStatus: previousDisabled ? null : flow.klaviyoReplacedFlowStatus,
       userId: staff.userId,
     })
-    return { success: true }
+    return { success: true, status: verifiedStatus, warning }
   } catch (error) {
     console.error("[email_studio] flow status failed", error)
     return { error: "Could not update the flow status" }
