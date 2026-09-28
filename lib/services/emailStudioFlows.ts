@@ -155,7 +155,7 @@ export async function getEmailStudioWorkspaceService(): Promise<{
             ? localTrigger.listName
             : localTrigger?.type === "segment"
               ? localTrigger.segmentName
-              : localTrigger?.type === "date"
+              : localTrigger?.type === "profile-date"
                 ? localTrigger.property
                 : remoteTriggerType === "metric"
                   ? "Metric event"
