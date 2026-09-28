@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import {
   createEmailStudioFlowService,
   deleteEmailStudioFlowService,
+  openKlaviyoFlowInStudioService,
   publishEmailStudioFlowService,
   pushEmailStudioFlowService,
   setEmailStudioFlowStatusService,
@@ -15,6 +16,7 @@ import {
 import {
   createEmailStudioFlowSchema,
   emailStudioFlowIdSchema,
+  openKlaviyoFlowSchema,
   publishEmailStudioFlowSchema,
   pushEmailStudioFlowSchema,
   setEmailStudioFlowStatusSchema,
@@ -42,6 +44,15 @@ export async function createEmailStudioFlowAction(raw: unknown) {
   const result = await createEmailStudioFlowService(parsed.data.name)
   if ("error" in result) return result
   revalidateFlow(result.data.id)
+  return result
+}
+
+export async function openKlaviyoFlowAction(raw: unknown) {
+  const parsed = openKlaviyoFlowSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  const result = await openKlaviyoFlowInStudioService(parsed.data.klaviyoFlowId)
+  if ("error" in result) return result
+  revalidateFlow(result.flowId)
   return result
 }
 

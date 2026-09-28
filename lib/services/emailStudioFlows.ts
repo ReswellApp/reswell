@@ -9,18 +9,26 @@ import {
 } from "@/lib/klaviyo/api-client"
 import { compileKlaviyoFlow } from "@/lib/email-studio/compile-klaviyo-flow"
 import { blankFlowDefinition, walkFlowSteps } from "@/lib/email-studio/flow-definition"
+import {
+  importKlaviyoFlowDefinition,
+  supportedKlaviyoActionType,
+  type KlaviyoRemoteAction,
+} from "@/lib/email-studio/import-klaviyo-flow"
 import { planFlowReplacement } from "@/lib/email-studio/flow-replacement"
 import {
   deleteEmailStudioFlow,
   getEmailStudioFlow,
+  getEmailStudioFlowByKlaviyoId,
   insertEmailStudioFlow,
   listEmailStudioFlows,
   updateEmailStudioFlow,
   updateEmailStudioFlowKlaviyoSync,
 } from "@/lib/db/emailStudioFlows"
 import {
+  deleteEmailStudioDocument,
   getEmailStudioDocument,
   getEmailStudioDocumentsByIds,
+  insertEmailStudioDocument,
 } from "@/lib/db/emailStudio"
 import { pushEmailStudioToKlaviyoService } from "@/lib/services/emailStudio"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
@@ -28,6 +36,8 @@ import type {
   EmailStudioFlowRecord,
   EmailStudioFlowStep,
   KlaviyoCatalogOption,
+  KlaviyoFlowWorkspaceItem,
+  KlaviyoMetricWorkspaceItem,
 } from "@/lib/types/emailStudioFlow"
 import type { UpdateEmailStudioFlowInput } from "@/lib/validations/emailStudioFlow"
 
@@ -74,6 +84,141 @@ export async function listEmailStudioFlowsService(): Promise<
   }
 }
 
+type KlaviyoFlowResource = {
+  id: string
+  attributes?: {
+    name?: string
+    status?: string
+    archived?: boolean
+    updated?: string
+    definition?: Record<string, unknown>
+  }
+}
+
+function object(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null
+}
+
+function objectList(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => object(item) !== null)
+    : []
+}
+
+function actionType(value: unknown): string {
+  const action = object(value)
+  const raw = typeof action?.type === "string" ? action.type : ""
+  return raw.toLowerCase().replaceAll("_", "-")
+}
+
+function triggerSummary(
+  definition: Record<string, unknown> | null,
+  names: {
+    metrics: Map<string, string>
+    lists: Map<string, string>
+    segments: Map<string, string>
+  },
+): { name: string; type: string; id: string } {
+  const trigger = objectList(definition?.triggers)[0]
+  const type = typeof trigger?.type === "string" ? trigger.type : "unknown"
+  const id = typeof trigger?.id === "string" ? trigger.id : ""
+  const name = type === "metric"
+    ? names.metrics.get(id)
+    : type === "list"
+      ? names.lists.get(id)
+      : type === "segment"
+        ? names.segments.get(id)
+        : type === "date"
+          ? String(trigger?.date_profile_property ?? "Profile date")
+          : null
+  return { name: name || id || "Unknown trigger", type, id }
+}
+
+export async function getEmailStudioWorkspaceService(): Promise<{
+  connected: boolean
+  flows: KlaviyoFlowWorkspaceItem[]
+  metrics: KlaviyoMetricWorkspaceItem[]
+  error: string | null
+}> {
+  const staff = await requireStaff()
+  if (!staff.ok || !getKlaviyoApiKey()) {
+    return { connected: false, flows: [], metrics: [], error: staff.ok ? "Klaviyo is not connected." : staff.error }
+  }
+  try {
+    const [remoteFlows, catalogData, localFlows] = await Promise.all([
+      klaviyoGetAllPages<KlaviyoFlowResource>(
+        "/api/flows/",
+        {
+          "additional-fields[flow]": "definition",
+          "page[size]": "50",
+        },
+        { maxPages: 20 },
+      ),
+      listKlaviyoFlowCatalogService(),
+      listEmailStudioFlows(dbClient(staff.supabase)),
+    ])
+    if (!remoteFlows.ok) {
+      return {
+        connected: true,
+        flows: [],
+        metrics: [],
+        error: `Could not load Klaviyo flows: ${remoteFlows.detail}`,
+      }
+    }
+    const metricNames = new Map(catalogData.metrics.map((item) => [item.id, item.name]))
+    const listNames = new Map(catalogData.lists.map((item) => [item.id, item.name]))
+    const segmentNames = new Map(catalogData.segments.map((item) => [item.id, item.name]))
+    const localByRemoteId = new Map(
+      localFlows.flatMap((flow) => flow.klaviyoFlowId ? [[flow.klaviyoFlowId, flow.id] as const] : []),
+    )
+    const metricCounts = new Map<string, number>()
+    const flows = remoteFlows.data
+      .filter((flow) => flow.attributes?.archived !== true)
+      .map((flow): KlaviyoFlowWorkspaceItem => {
+        const definition = object(flow.attributes?.definition)
+        const actions = objectList(definition?.actions)
+        const trigger = triggerSummary(definition, {
+          metrics: metricNames,
+          lists: listNames,
+          segments: segmentNames,
+        })
+        if (trigger.type === "metric" && trigger.id) {
+          metricCounts.set(trigger.id, (metricCounts.get(trigger.id) ?? 0) + 1)
+        }
+        const types = actions.map(actionType)
+        return {
+          id: flow.id,
+          name: flow.attributes?.name?.trim() || "Untitled flow",
+          status: flow.attributes?.status?.trim() || "unknown",
+          triggerName: trigger.name,
+          triggerType: trigger.type,
+          actionCount: actions.length,
+          emailCount: types.filter((type) => type === "send-email").length,
+          updatedAt: flow.attributes?.updated ?? null,
+          localFlowId: localByRemoteId.get(flow.id) ?? null,
+          unsupportedActions: [...new Set(types.filter((type) => !supportedKlaviyoActionType(type)))],
+        }
+      })
+      .sort((a, b) => (
+        (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")
+        || a.name.localeCompare(b.name)
+      ))
+    return {
+      connected: true,
+      flows,
+      metrics: catalogData.metrics
+        .map((metric) => ({ ...metric, flowCount: metricCounts.get(metric.id) ?? 0 }))
+        .sort((a, b) => b.flowCount - a.flowCount || a.name.localeCompare(b.name)),
+      error: null,
+    }
+  } catch (error) {
+    console.error("[email_studio] workspace failed", error)
+    return { connected: true, flows: [], metrics: [], error: "Could not load the Klaviyo workspace." }
+  }
+}
+
 export async function getEmailStudioFlowService(
   id: string,
 ): Promise<{
@@ -115,6 +260,165 @@ export async function createEmailStudioFlowService(
   } catch (error) {
     console.error("[email_studio] create flow failed", error)
     return { error: "Could not create this flow" }
+  }
+}
+
+type KlaviyoTemplateResource = {
+  data?: {
+    id?: string
+    attributes?: {
+      name?: string
+      html?: string
+      text?: string
+    }
+  }
+}
+
+export async function openKlaviyoFlowInStudioService(
+  klaviyoFlowId: string,
+): Promise<{ success: true; flowId: string; imported: boolean } | ServiceError> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+  const client = dbClient(staff.supabase)
+  const createdProjectIds: string[] = []
+  try {
+    const existing = await getEmailStudioFlowByKlaviyoId(client, klaviyoFlowId)
+    if (existing) return { success: true, flowId: existing.id, imported: false }
+
+    const [remoteFlow, remoteActions, catalogData] = await Promise.all([
+      klaviyoGet<{ data?: KlaviyoFlowResource }>(
+        `/api/flows/${klaviyoFlowId}/`,
+        { "additional-fields[flow]": "definition" },
+      ),
+      klaviyoGetAllPages<KlaviyoFlowActionResource>(
+        `/api/flows/${klaviyoFlowId}/flow-actions/`,
+        {
+          "fields[flow-action]": "action_type,definition",
+          "page[size]": "50",
+        },
+        { maxPages: 4 },
+      ),
+      listKlaviyoFlowCatalogService(),
+    ])
+    if (!remoteFlow.ok) return { error: `Could not load this Klaviyo flow: ${remoteFlow.detail}` }
+    if (!remoteActions.ok) return { error: `Could not load this flow's actions: ${remoteActions.detail}` }
+    const flowResource = remoteFlow.data.data
+    if (!flowResource) return { error: "Klaviyo returned an empty flow." }
+    const remoteDefinition = object(flowResource.attributes?.definition)
+    if (!remoteDefinition) return { error: "Klaviyo did not return an editable flow definition." }
+
+    const imported = importKlaviyoFlowDefinition({
+      definition: remoteDefinition,
+      actions: remoteActions.data.map((action): KlaviyoRemoteAction => ({
+        id: action.id,
+        actionType: action.attributes?.action_type,
+        definition: action.attributes?.definition,
+      })),
+      metricNames: new Map(catalogData.metrics.map((item) => [item.id, item.name])),
+      listNames: new Map(catalogData.lists.map((item) => [item.id, item.name])),
+      segmentNames: new Map(catalogData.segments.map((item) => [item.id, item.name])),
+    })
+    if (imported.unsupportedActions.length > 0) {
+      return {
+        error: `This flow uses actions the studio cannot safely edit yet: ${imported.unsupportedActions.join(", ")}.`,
+      }
+    }
+    walkFlowSteps(imported.definition)
+
+    const templates = await Promise.all(imported.emails.map(async (email) => {
+      const result = await klaviyoGet<KlaviyoTemplateResource>(
+        `/api/templates/${email.templateId}/`,
+        { "fields[template]": "name,html,text" },
+      )
+      if (!result.ok || !result.data.data?.attributes?.html) {
+        throw new Error(`Could not import the template for ${email.name}.`)
+      }
+      return { email, resource: result.data.data }
+    }))
+    const syncedAt = new Date().toISOString()
+    const triggerMetric = imported.definition.trigger.type === "metric"
+      ? imported.definition.trigger.metricName
+      : ""
+    for (const { email, resource } of templates) {
+      const attributes = resource.attributes ?? {}
+      const html = attributes.html ?? ""
+      const checksum = createHash("sha256")
+        .update(JSON.stringify({
+          name: attributes.name ?? email.name,
+          html,
+          text: attributes.text ?? "",
+        }))
+        .digest("hex")
+      await insertEmailStudioDocument(client, {
+        id: email.projectId,
+        kind: "project",
+        name: email.name,
+        subject: email.subject,
+        previewText: email.previewText,
+        flowName: flowResource.attributes?.name ?? "Klaviyo flow",
+        flowId: klaviyoFlowId,
+        triggerMetric,
+        notes: "Imported from Klaviyo.",
+        document: { blocks: [], htmlOverride: html },
+        userId: staff.userId,
+        source: "system",
+        summary: "Imported from Klaviyo",
+        klaviyoTemplateId: email.templateId,
+        klaviyoSyncedRevision: 1,
+        klaviyoContentChecksum: checksum,
+        klaviyoSyncedAt: syncedAt,
+      })
+      createdProjectIds.push(email.projectId)
+    }
+
+    const status = flowResource.attributes?.status === "live"
+      || flowResource.attributes?.status === "manual"
+      ? flowResource.attributes.status
+      : "draft"
+    const created = await insertEmailStudioFlow(client, {
+      name: flowResource.attributes?.name?.trim() || "Imported Klaviyo flow",
+      definition: imported.definition,
+      userId: staff.userId,
+      source: "system",
+      summary: "Imported from Klaviyo",
+      klaviyoFlowId,
+      klaviyoStatus: status,
+    })
+    const templateIds = new Map(imported.emails.map((email) => [email.projectId, email.templateId]))
+    const subjects = new Map(imported.emails.map((email) => [
+      email.projectId,
+      { subject: email.subject, preview: email.previewText, name: email.name },
+    ]))
+    const compiled = compileKlaviyoFlow({
+      name: created.name,
+      definition: imported.definition,
+      templateIds,
+      subjects,
+    })
+    const checksum = createHash("sha256")
+      .update(JSON.stringify({ name: created.name, definition: compiled.definition }))
+      .digest("hex")
+    await updateEmailStudioFlowKlaviyoSync(client, {
+      id: created.id,
+      flowId: klaviyoFlowId,
+      status,
+      syncedRevision: created.revision,
+      contentChecksum: checksum,
+      syncedAt,
+      userId: staff.userId,
+    })
+    return { success: true, flowId: created.id, imported: true }
+  } catch (error) {
+    await Promise.all(createdProjectIds.map(async (id) => {
+      try {
+        await deleteEmailStudioDocument(client, id)
+      } catch {
+        // Preserve the original import error.
+      }
+    }))
+    const message = error instanceof Error ? error.message : "Could not import this flow"
+    console.error("[email_studio] import Klaviyo flow failed", error)
+    return { error: message }
   }
 }
 

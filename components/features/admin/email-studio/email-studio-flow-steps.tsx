@@ -106,6 +106,18 @@ export function EmailStudioFlowStepInspector({
             Open email
           </Link>
         ) : null}
+        <select
+          className={selectClass}
+          aria-label="Email action status"
+          value={step.status ?? "live"}
+          onChange={(event) => onChange({
+            ...step,
+            status: event.target.value as "draft" | "live",
+          })}
+        >
+          <option value="live">Ready to send</option>
+          <option value="draft">Draft — do not send</option>
+        </select>
         <Input value={step.fromLabel} aria-label="From name" onChange={(event) => onChange({ ...step, fromLabel: event.target.value })} />
         <Input value={step.fromEmail} aria-label="From email" onChange={(event) => onChange({ ...step, fromEmail: event.target.value })} />
         <label className="flex items-center gap-2 text-sm">

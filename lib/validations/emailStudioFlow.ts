@@ -60,6 +60,7 @@ export const emailStudioFlowStepSchema = z.discriminatedUnion("type", [
     fromLabel: z.string().trim().min(1).max(80),
     smartSending: z.boolean(),
     transactional: z.boolean(),
+    status: z.enum(["draft", "live"]).optional(),
     next: nextSchema,
   }),
   z.object({
@@ -122,6 +123,10 @@ export const updateEmailStudioFlowSchema = z.object({
 
 export const emailStudioFlowIdSchema = z.object({
   id: z.string().uuid(),
+})
+
+export const openKlaviyoFlowSchema = z.object({
+  klaviyoFlowId: z.string().trim().min(1).max(100),
 })
 
 export const setEmailStudioFlowStatusSchema = z.object({

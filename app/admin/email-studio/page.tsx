@@ -1,8 +1,8 @@
-import Link from "next/link"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { listEmailStudioService } from "@/lib/services/emailStudio"
 import { isEmailStudioAssistantEnabled } from "@/lib/services/emailStudioAssistant"
-import { EmailStudioLibrary } from "@/components/features/admin/email-studio/email-studio-library"
+import { getEmailStudioWorkspaceService } from "@/lib/services/emailStudioFlows"
+import { EmailStudioWorkspace } from "@/components/features/admin/email-studio/email-studio-workspace"
 
 export const dynamic = "force-dynamic"
 
@@ -13,28 +13,30 @@ export const metadata = privatePageMetadata({
 })
 
 export default async function AdminEmailStudioPage() {
-  const [projects, templates] = await Promise.all([
+  const [projects, templates, workspace] = await Promise.all([
     listEmailStudioService("project"),
     listEmailStudioService("template"),
+    getEmailStudioWorkspaceService(),
   ])
 
   return (
     <div className="space-y-4">
       <div>
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Email studio</h1>
-          <Link href="/admin/email-studio/flows" className="text-sm font-medium text-[#355185] hover:underline">Flows</Link>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Email studio</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Describe an email and the assistant designs it on the artboard, or start from a frame. Flows get a designed email for every send. Nothing sends until a flow is set live.
+          Manage Klaviyo flows, emails, and trigger metrics without leaving the admin dashboard.
         </p>
       </div>
       {"error" in projects ? <p className="text-sm text-destructive">{projects.error}</p> : null}
       {"error" in templates ? <p className="text-sm text-destructive">{templates.error}</p> : null}
-      <EmailStudioLibrary
+      <EmailStudioWorkspace
         projects={"success" in projects ? projects.data : []}
         templates={"success" in templates ? templates.data : []}
         assistantEnabled={isEmailStudioAssistantEnabled()}
+        connected={workspace.connected}
+        flows={workspace.flows}
+        metrics={workspace.metrics}
+        error={workspace.error}
       />
     </div>
   )
