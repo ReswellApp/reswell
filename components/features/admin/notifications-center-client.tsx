@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { format, formatDistanceToNow, parseISO } from "date-fns"
 import {
   Area,
@@ -29,25 +29,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import type {
   KlaviyoMetricCategoryFilter,
-  KlaviyoMetricCategory,
   NotificationsCenterAnalytics,
   NotificationsCenterRange,
 } from "@/lib/klaviyo/event-log-shared"
 import {
+  formatCountDelta,
   KLAVIYO_METRIC_CATEGORY_FILTERS,
   mergeKlaviyoMetricRows,
-  metricMatchesKlaviyoCategoryFilter,
 } from "@/lib/klaviyo/event-log-shared"
 import type {
-  KlaviyoFlowCoverageFilter,
   KlaviyoFlowCoverageMetricRow,
   KlaviyoFlowCoverageResult,
-  KlaviyoFlowCoverageStatus,
 } from "@/lib/klaviyo/flow-coverage-shared"
-import {
-  KLAVIYO_FLOW_COVERAGE_FILTERS,
-  metricMatchesFlowCoverageFilter,
-} from "@/lib/klaviyo/flow-coverage-shared"
+import type { KlaviyoFlowPerformance } from "@/lib/klaviyo/flow-stats-shared"
+import { FlowsTab } from "@/components/features/admin/notifications-center/flows-tab"
+import { MetricsTab } from "@/components/features/admin/notifications-center/metrics-tab"
 import {
   KlaviyoEventLogExplorer,
   type KlaviyoEventLogFilters,
@@ -60,72 +56,15 @@ const RANGES: { value: NotificationsCenterRange; label: string }[] = [
   { value: "90d", label: "90d" },
 ]
 
-const CATEGORY_STYLES: Record<KlaviyoMetricCategory, string> = {
-  transactional: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
-  lifecycle: "bg-sky-100 text-sky-700 hover:bg-sky-100",
-  engagement: "bg-violet-100 text-violet-700 hover:bg-violet-100",
-  marketing: "bg-amber-100 text-amber-700 hover:bg-amber-100",
-  other: "bg-neutral-100 text-neutral-600 hover:bg-neutral-100",
-}
-
 const STATUS_STYLES: Record<string, string> = {
   sent: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
   skipped: "bg-amber-100 text-amber-700 hover:bg-amber-100",
   failed: "bg-rose-100 text-rose-700 hover:bg-rose-100",
 }
 
-const COVERAGE_STYLES: Record<KlaviyoFlowCoverageStatus, string> = {
-  covered: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
-  live_no_email: "bg-sky-100 text-sky-700 hover:bg-sky-100",
-  draft_or_manual: "bg-amber-100 text-amber-700 hover:bg-amber-100",
-  no_flow: "bg-rose-100 text-rose-700 hover:bg-rose-100",
-  metric_missing: "bg-neutral-100 text-neutral-600 hover:bg-neutral-100",
-}
-
-const COVERAGE_LABELS: Record<KlaviyoFlowCoverageStatus, string> = {
-  covered: "Covered",
-  live_no_email: "Live · no email",
-  draft_or_manual: "Draft / manual",
-  no_flow: "No flow",
-  metric_missing: "Missing metric",
-}
-
-function coverageFlowHint(row: KlaviyoFlowCoverageMetricRow | undefined): string | null {
-  if (!row || row.flows.length === 0) return null
-  return row.flows.map((f) => `${f.name} (${f.status})`).join(" · ")
-}
-
 function pct(part: number, whole: number): string {
   if (whole <= 0) return "0%"
   return `${Math.round((part / whole) * 1000) / 10}%`
-}
-
-function filterKlaviyoAnalyticsByCategory(
-  klaviyo: NotificationsCenterAnalytics["klaviyo"],
-  category: KlaviyoMetricCategoryFilter,
-): NotificationsCenterAnalytics["klaviyo"] {
-  if (category === "all") return klaviyo
-
-  const byMetric = klaviyo.byMetric.filter((m) => m.category === category)
-  const recent = klaviyo.recent.filter((e) => metricMatchesKlaviyoCategoryFilter(e.metric, category))
-
-  const totals = byMetric.reduce(
-    (acc, m) => ({
-      total: acc.total + m.total,
-      sent: acc.sent + m.sent,
-      skipped: acc.skipped + m.skipped,
-      failed: acc.failed + m.failed,
-      uniqueRecipients: 0,
-    }),
-    { total: 0, sent: 0, skipped: 0, failed: 0, uniqueRecipients: 0 },
-  )
-
-  return {
-    ...klaviyo,
-    totals,
-    byMetric,
-    recent,
-  }
 }
 
 function safeFormat(value: string, pattern: string): string {
@@ -165,13 +104,17 @@ export function NotificationsCenterClient() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("flows")
+  const [activeTab, setActiveTab] = useState("metrics")
   const [categoryFilter, setCategoryFilter] = useState<KlaviyoMetricCategoryFilter>("all")
-  const [coverageFilter, setCoverageFilter] = useState<KlaviyoFlowCoverageFilter>("all")
   const [coverage, setCoverage] = useState<KlaviyoFlowCoverageResult | null>(null)
   const [coverageLoading, setCoverageLoading] = useState(true)
   const [coverageRefreshing, setCoverageRefreshing] = useState(false)
   const [coverageError, setCoverageError] = useState<string | null>(null)
+  const [stats, setStats] = useState<KlaviyoFlowPerformance | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsRefreshing, setStatsRefreshing] = useState(false)
+  const [statsError, setStatsError] = useState<string | null>(null)
+  const [flowMetricFocus, setFlowMetricFocus] = useState<string | null>(null)
   const [eventLogFilters, setEventLogFilters] = useState<KlaviyoEventLogFilters>({
     metric: null,
     recipient: null,
@@ -180,6 +123,8 @@ export function NotificationsCenterClient() {
   })
   const firstLoadRef = useRef(false)
   const coverageFirstLoadRef = useRef(false)
+  const statsFirstLoadRef = useRef(false)
+  const analyticsRequestRef = useRef(0)
   const chartId = useId().replace(/:/g, "")
 
   const openEventLog = useCallback(
@@ -196,24 +141,34 @@ export function NotificationsCenterClient() {
   }, [])
 
   const load = useCallback(
-    async (nextRange: NotificationsCenterRange, opts?: { silent?: boolean }) => {
+    async (
+      nextRange: NotificationsCenterRange,
+      nextCategory: KlaviyoMetricCategoryFilter,
+      opts?: { silent?: boolean },
+    ) => {
       setError(null)
+      const requestId = analyticsRequestRef.current + 1
+      analyticsRequestRef.current = requestId
       const firstEver = !firstLoadRef.current
       if (firstEver) setLoading(true)
       else if (!opts?.silent) setRefreshing(true)
       try {
-        const res = await fetch(`/api/admin/notifications-center?range=${nextRange}`, {
-          credentials: "include",
-        })
+        const res = await fetch(
+          `/api/admin/notifications-center?range=${nextRange}&category=${nextCategory}`,
+          { credentials: "include" },
+        )
         const body = await res.json().catch(() => ({}))
+        if (requestId !== analyticsRequestRef.current) return
         if (!res.ok) {
           setError(typeof body.error === "string" ? body.error : "Could not load analytics")
           return
         }
         setData(body as NotificationsCenterAnalytics)
       } catch {
+        if (requestId !== analyticsRequestRef.current) return
         setError("Could not load analytics")
       } finally {
+        if (requestId !== analyticsRequestRef.current) return
         if (firstEver) {
           setLoading(false)
           firstLoadRef.current = true
@@ -255,37 +210,63 @@ export function NotificationsCenterClient() {
     }
   }, [])
 
+  const loadStats = useCallback(async (nextRange: NotificationsCenterRange, opts?: { refresh?: boolean }) => {
+    setStatsError(null)
+    const firstEver = !statsFirstLoadRef.current
+    if (firstEver) setStatsLoading(true)
+    else setStatsRefreshing(true)
+    try {
+      const qs = opts?.refresh ? "&refresh=1" : ""
+      const res = await fetch(`/api/admin/klaviyo/flow-stats?range=${nextRange}${qs}`, {
+        credentials: "include",
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setStatsError(typeof body.error === "string" ? body.error : "Could not load flow performance")
+        return
+      }
+      setStats(body as KlaviyoFlowPerformance)
+    } catch {
+      setStatsError("Could not load flow performance")
+    } finally {
+      if (firstEver) {
+        setStatsLoading(false)
+        statsFirstLoadRef.current = true
+      } else {
+        setStatsRefreshing(false)
+      }
+    }
+  }, [])
+
   useEffect(() => {
-    void load(range)
-  }, [range, load])
+    void load(range, categoryFilter)
+  }, [range, categoryFilter, load])
 
   useEffect(() => {
     void loadCoverage()
   }, [loadCoverage])
 
-  const k = useMemo(
-    () => (data?.klaviyo ? filterKlaviyoAnalyticsByCategory(data.klaviyo, categoryFilter) : undefined),
-    [data?.klaviyo, categoryFilter],
-  )
+  useEffect(() => {
+    void loadStats(range)
+  }, [range, loadStats])
+
+  const k = data?.klaviyo
   const internal = data?.internal
-  const deliveryRate = k ? pct(k.totals.sent, k.totals.total) : "—"
+  const acceptRate = k ? pct(k.totals.sent, k.totals.total) : "—"
   const coverageByMetric = useMemo(() => {
     const map = new Map<string, KlaviyoFlowCoverageMetricRow>()
     for (const row of coverage?.byMetric ?? []) map.set(row.metric, row)
     return map
   }, [coverage?.byMetric])
+  const klaviyoCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const row of stats?.byMetric ?? []) map.set(row.metric, row.count)
+    return map
+  }, [stats?.byMetric])
   const mergedMetrics = useMemo(
     () => mergeKlaviyoMetricRows(data?.klaviyo.byMetric ?? [], categoryFilter),
     [data?.klaviyo.byMetric, categoryFilter],
   )
-  const displayMetrics = useMemo(() => {
-    if (coverageFilter === "all" || !coverage) return mergedMetrics
-    return mergedMetrics.filter((m) => {
-      const row = coverageByMetric.get(m.metric)
-      if (!row) return coverageFilter === "gaps"
-      return metricMatchesFlowCoverageFilter(row, coverageFilter)
-    })
-  }, [mergedMetrics, coverageFilter, coverage, coverageByMetric])
   const categoryLabel =
     KLAVIYO_METRIC_CATEGORY_FILTERS.find((c) => c.value === categoryFilter)?.label ?? "All"
 
@@ -307,8 +288,8 @@ export function NotificationsCenterClient() {
             Notifications center
           </h1>
           <p className="text-muted-foreground mt-1">
-            Klaviyo email flow analytics and in-app notification delivery. Every Klaviyo event we
-            fire — sent, skipped, or failed — is logged here.
+            Metrics are events we send to Klaviyo. Flows are the automations in Klaviyo, with
+            delivery pulled from a daily snapshot. In-app notifications stay in their own tab.
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:items-end">
@@ -333,7 +314,7 @@ export function NotificationsCenterClient() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => void load(range, { silent: false })}
+              onClick={() => void load(range, categoryFilter, { silent: false })}
               disabled={refreshing}
             >
               {refreshing ? (
@@ -377,6 +358,23 @@ export function NotificationsCenterClient() {
         </div>
       ) : (
         <>
+          {data && data.alerts.length > 0 ? (
+            <div className="space-y-2">
+              {data.alerts.map((alert) => (
+                <p
+                  key={alert.id}
+                  role="status"
+                  className={
+                    alert.severity === "critical"
+                      ? "rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800"
+                      : "rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                  }
+                >
+                  {alert.message}
+                </p>
+              ))}
+            </div>
+          ) : null}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard
               title="Klaviyo events"
@@ -389,9 +387,16 @@ export function NotificationsCenterClient() {
               icon={<Mail className="h-4 w-4" />}
             />
             <KpiCard
-              title="Sent"
+              title="Accepted by Klaviyo"
               value={k?.totals.sent ?? 0}
-              hint={`${deliveryRate} delivery rate`}
+              hint={
+                [
+                  `${acceptRate} accept rate`,
+                  k ? formatCountDelta(k.totals.sent, k.previousTotals.sent) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              }
               icon={<CheckCircle2 className="h-4 w-4" />}
               accent="text-emerald-600"
             />
@@ -416,19 +421,12 @@ export function NotificationsCenterClient() {
               <CardTitle className="text-lg">Event volume</CardTitle>
               <p className="text-xs text-muted-foreground font-normal">
                 {categoryFilter === "all"
-                  ? "Sent vs skipped vs failed over the selected window."
-                  : `${categoryLabel} emails only — switch to All for full volume across categories.`}
+                  ? "Accepted vs skipped vs failed over the selected window."
+                  : `${categoryLabel} events only.`}
               </p>
             </CardHeader>
             <CardContent>
-              {categoryFilter !== "all" ? (
-                <div className="flex h-[240px] items-center justify-center rounded-lg border border-dashed border-border px-6 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Volume chart shows all categories together. KPIs and tables below reflect{" "}
-                    <span className="font-medium text-foreground">{categoryLabel}</span> only.
-                  </p>
-                </div>
-              ) : timeline.length === 0 ? (
+              {timeline.length === 0 ? (
                 <div className="flex h-[240px] items-center justify-center rounded-lg border border-dashed border-border">
                   <p className="text-sm text-muted-foreground">No events in this window yet.</p>
                 </div>
@@ -505,7 +503,8 @@ export function NotificationsCenterClient() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="flex-wrap">
-              <TabsTrigger value="flows">Email flows</TabsTrigger>
+              <TabsTrigger value="metrics">Metrics</TabsTrigger>
+              <TabsTrigger value="flows">Flows</TabsTrigger>
               <TabsTrigger value="event-log">Event log</TabsTrigger>
               <TabsTrigger value="skipped">Skipped</TabsTrigger>
               <TabsTrigger value="recipients">Recipients</TabsTrigger>
@@ -513,192 +512,38 @@ export function NotificationsCenterClient() {
               <TabsTrigger value="recent">Recent activity</TabsTrigger>
             </TabsList>
 
+            <TabsContent value="metrics">
+              <MetricsTab
+                metrics={mergedMetrics}
+                coverageByMetric={coverageByMetric}
+                coverageLoading={coverageLoading}
+                skipByMetric={k?.bySkipReasonByMetric ?? []}
+                klaviyoCounts={klaviyoCounts}
+                categoryLabel={categoryLabel}
+                onOpenEventLog={(metric) => openEventLog({ metric })}
+                onOpenFlows={(metric) => {
+                  setFlowMetricFocus(metric)
+                  setActiveTab("flows")
+                }}
+              />
+            </TabsContent>
+
             <TabsContent value="flows">
-              <Card>
-                <CardHeader className="space-y-3">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <CardTitle className="text-lg">Flows by metric</CardTitle>
-                      <p className="text-xs text-muted-foreground font-normal mt-1">
-                        Event <span className="font-medium text-foreground">Sent</span> means we
-                        posted the metric to Klaviyo — not that an email went out.{" "}
-                        <span className="font-medium text-foreground">Live / Email / Coverage</span>{" "}
-                        come from the Klaviyo Flows API (cached ~10 min).
-                        {categoryFilter !== "all" ? ` Showing ${categoryLabel} only.` : null}
-                      </p>
-                      {coverage?.fetchedAt ? (
-                        <p className="text-xs text-muted-foreground font-normal mt-1">
-                          Flow coverage as of{" "}
-                          {formatDistanceToNow(parseISO(coverage.fetchedAt), { addSuffix: true })}
-                          {coverage.totals
-                            ? ` · ${coverage.totals.covered} covered · ${
-                                coverage.totals.total - coverage.totals.covered
-                              } gaps`
-                            : null}
-                        </p>
-                      ) : null}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void loadCoverage({ refresh: true })}
-                      disabled={coverageRefreshing || coverageLoading}
-                    >
-                      {coverageRefreshing || coverageLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4" />
-                      )}
-                      <span className="ml-2">Refresh flows</span>
-                    </Button>
-                  </div>
-                  <div className="inline-flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5">
-                    {KLAVIYO_FLOW_COVERAGE_FILTERS.map((c) => (
-                      <button
-                        key={c.value}
-                        type="button"
-                        onClick={() => setCoverageFilter(c.value)}
-                        className={cn(
-                          "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                          coverageFilter === c.value
-                            ? "bg-card text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {c.label}
-                      </button>
-                    ))}
-                  </div>
-                  {coverageError ? (
-                    <p className="text-xs text-destructive" role="alert">
-                      {coverageError}
-                    </p>
-                  ) : null}
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  {displayMetrics.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground">
-                      {coverageFilter !== "all"
-                        ? "No metrics match this coverage filter."
-                        : "No metrics yet."}
-                    </p>
-                  ) : (
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b text-left text-muted-foreground">
-                          <th className="pb-2 pr-4 font-medium">Metric / flow</th>
-                          <th className="pb-2 pr-4 font-medium">Category</th>
-                          <th className="pb-2 pr-4 font-medium">Live</th>
-                          <th className="pb-2 pr-4 font-medium">Email</th>
-                          <th className="pb-2 pr-4 font-medium">Coverage</th>
-                          <th className="pb-2 pr-4 text-right font-medium">Recipients</th>
-                          <th className="pb-2 pr-4 text-right font-medium">Sent</th>
-                          <th className="pb-2 pr-4 text-right font-medium">Skipped</th>
-                          <th className="pb-2 pr-4 text-right font-medium">Failed</th>
-                          <th className="pb-2 text-right font-medium">Sent %</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {displayMetrics.map((m) => {
-                          const cov = coverageByMetric.get(m.metric)
-                          const flowHint = coverageFlowHint(cov)
-                          return (
-                            <tr key={m.metric} className="border-b border-border/60 last:border-0">
-                              <td className="py-2 pr-4">
-                                <button
-                                  type="button"
-                                  className="font-medium text-left hover:underline"
-                                  onClick={() => openEventLog({ metric: m.metric })}
-                                >
-                                  {m.metric}
-                                </button>
-                                {flowHint ? (
-                                  <p
-                                    className="text-xs text-muted-foreground mt-0.5 max-w-xs truncate"
-                                    title={flowHint}
-                                  >
-                                    {flowHint}
-                                  </p>
-                                ) : null}
-                              </td>
-                              <td className="py-2 pr-4">
-                                <Badge
-                                  variant="secondary"
-                                  className={cn("capitalize", CATEGORY_STYLES[m.category])}
-                                >
-                                  {m.category}
-                                </Badge>
-                              </td>
-                              <td className="py-2 pr-4">
-                                {coverageLoading && !coverage ? (
-                                  <span className="text-muted-foreground">…</span>
-                                ) : cov ? (
-                                  <span
-                                    className={cn(
-                                      "tabular-nums text-xs font-medium",
-                                      cov.hasLiveFlow ? "text-emerald-600" : "text-muted-foreground",
-                                    )}
-                                  >
-                                    {cov.hasLiveFlow ? "Yes" : "No"}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground text-xs">—</span>
-                                )}
-                              </td>
-                              <td className="py-2 pr-4">
-                                {coverageLoading && !coverage ? (
-                                  <span className="text-muted-foreground">…</span>
-                                ) : cov ? (
-                                  <span
-                                    className={cn(
-                                      "tabular-nums text-xs font-medium",
-                                      cov.hasLiveEmail ? "text-emerald-600" : "text-muted-foreground",
-                                    )}
-                                  >
-                                    {cov.hasLiveEmail ? "Yes" : "No"}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground text-xs">—</span>
-                                )}
-                              </td>
-                              <td className="py-2 pr-4">
-                                {coverageLoading && !coverage ? (
-                                  <span className="text-muted-foreground">…</span>
-                                ) : cov ? (
-                                  <Badge
-                                    variant="secondary"
-                                    className={cn(COVERAGE_STYLES[cov.coverage])}
-                                  >
-                                    {COVERAGE_LABELS[cov.coverage]}
-                                  </Badge>
-                                ) : (
-                                  <span className="text-muted-foreground text-xs">—</span>
-                                )}
-                              </td>
-                              <td className="py-2 pr-4 text-right tabular-nums">
-                                {m.uniqueRecipients}
-                              </td>
-                              <td className="py-2 pr-4 text-right tabular-nums text-emerald-600">
-                                {m.sent}
-                              </td>
-                              <td className="py-2 pr-4 text-right tabular-nums text-amber-600">
-                                {m.skipped}
-                              </td>
-                              <td className="py-2 pr-4 text-right tabular-nums text-rose-600">
-                                {m.failed}
-                              </td>
-                              <td className="py-2 text-right tabular-nums">
-                                {pct(m.sent, m.total)}
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  )}
-                </CardContent>
-              </Card>
+              <FlowsTab
+                coverage={coverage}
+                coverageLoading={coverageLoading}
+                coverageRefreshing={coverageRefreshing}
+                coverageError={coverageError}
+                onRefreshCoverage={() => void loadCoverage({ refresh: true })}
+                stats={stats}
+                statsLoading={statsLoading}
+                statsRefreshing={statsRefreshing}
+                statsError={statsError}
+                onRefreshStats={() => void loadStats(range, { refresh: true })}
+                metricFocus={flowMetricFocus}
+                onClearMetricFocus={() => setFlowMetricFocus(null)}
+                onOpenEventLog={(metric) => openEventLog({ metric })}
+              />
             </TabsContent>
 
             <TabsContent value="event-log">
@@ -711,6 +556,7 @@ export function NotificationsCenterClient() {
             </TabsContent>
 
             <TabsContent value="skipped">
+              <div className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Why emails were skipped</CardTitle>
@@ -744,6 +590,49 @@ export function NotificationsCenterClient() {
                   )}
                 </CardContent>
               </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Skipped by metric</CardTitle>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  {(k?.bySkipReasonByMetric.length ?? 0) === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      Nothing skipped in this window.
+                    </p>
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-muted-foreground">
+                          <th className="pb-2 pr-4 font-medium">Metric</th>
+                          <th className="pb-2 pr-4 font-medium">Reason</th>
+                          <th className="pb-2 text-right font-medium">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {k!.bySkipReasonByMetric.map((row) => (
+                          <tr
+                            key={`${row.metric}:${row.reason}`}
+                            className="border-b border-border/60 last:border-0"
+                          >
+                            <td className="py-2 pr-4">
+                              <button
+                                type="button"
+                                className="text-left hover:underline"
+                                onClick={() => openEventLog({ metric: row.metric, status: "skipped" })}
+                              >
+                                {row.metric}
+                              </button>
+                            </td>
+                            <td className="py-2 pr-4">{row.reason}</td>
+                            <td className="py-2 text-right tabular-nums">{row.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </CardContent>
+              </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="recipients">
@@ -751,7 +640,7 @@ export function NotificationsCenterClient() {
                 <CardHeader>
                   <CardTitle className="text-lg">Top recipients</CardTitle>
                   <p className="text-xs text-muted-foreground font-normal">
-                    Who we are sending to most, and across how many distinct flows.
+                    Who we are sending to most, and across how many distinct metrics.
                   </p>
                 </CardHeader>
                 <CardContent className="overflow-x-auto">
@@ -764,7 +653,7 @@ export function NotificationsCenterClient() {
                           <th className="pb-2 pr-4 font-medium">Recipient</th>
                           <th className="pb-2 pr-4 text-right font-medium">Events</th>
                           <th className="pb-2 pr-4 text-right font-medium">Sent</th>
-                          <th className="pb-2 text-right font-medium">Flows</th>
+                          <th className="pb-2 text-right font-medium">Metrics</th>
                         </tr>
                       </thead>
                       <tbody>
