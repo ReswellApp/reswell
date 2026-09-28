@@ -141,8 +141,8 @@ export interface KlaviyoFlowWorkspaceItem {
   status: string
   triggerName: string
   triggerType: string
-  actionCount: number
-  emailCount: number
+  actionCount: number | null
+  emailCount: number | null
   updatedAt: string | null
   localFlowId: string | null
   unsupportedActions: string[]

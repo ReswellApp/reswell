@@ -11,7 +11,6 @@ import { compileKlaviyoFlow } from "@/lib/email-studio/compile-klaviyo-flow"
 import { blankFlowDefinition, walkFlowSteps } from "@/lib/email-studio/flow-definition"
 import {
   importKlaviyoFlowDefinition,
-  supportedKlaviyoActionType,
   type KlaviyoRemoteAction,
 } from "@/lib/email-studio/import-klaviyo-flow"
 import { planFlowReplacement } from "@/lib/email-studio/flow-replacement"
@@ -91,6 +90,7 @@ type KlaviyoFlowResource = {
     status?: string
     archived?: boolean
     updated?: string
+    trigger_type?: string
     definition?: Record<string, unknown>
   }
 }
@@ -99,41 +99,6 @@ function object(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>
     : null
-}
-
-function objectList(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => object(item) !== null)
-    : []
-}
-
-function actionType(value: unknown): string {
-  const action = object(value)
-  const raw = typeof action?.type === "string" ? action.type : ""
-  return raw.toLowerCase().replaceAll("_", "-")
-}
-
-function triggerSummary(
-  definition: Record<string, unknown> | null,
-  names: {
-    metrics: Map<string, string>
-    lists: Map<string, string>
-    segments: Map<string, string>
-  },
-): { name: string; type: string; id: string } {
-  const trigger = objectList(definition?.triggers)[0]
-  const type = typeof trigger?.type === "string" ? trigger.type : "unknown"
-  const id = typeof trigger?.id === "string" ? trigger.id : ""
-  const name = type === "metric"
-    ? names.metrics.get(id)
-    : type === "list"
-      ? names.lists.get(id)
-      : type === "segment"
-        ? names.segments.get(id)
-        : type === "date"
-          ? String(trigger?.date_profile_property ?? "Profile date")
-          : null
-  return { name: name || id || "Unknown trigger", type, id }
 }
 
 export async function getEmailStudioWorkspaceService(): Promise<{
@@ -151,7 +116,7 @@ export async function getEmailStudioWorkspaceService(): Promise<{
       klaviyoGetAllPages<KlaviyoFlowResource>(
         "/api/flows/",
         {
-          "additional-fields[flow]": "definition",
+          "fields[flow]": "name,status,archived,updated,trigger_type",
           "page[size]": "50",
         },
         { maxPages: 20 },
@@ -167,38 +132,51 @@ export async function getEmailStudioWorkspaceService(): Promise<{
         error: `Could not load Klaviyo flows: ${remoteFlows.detail}`,
       }
     }
-    const metricNames = new Map(catalogData.metrics.map((item) => [item.id, item.name]))
-    const listNames = new Map(catalogData.lists.map((item) => [item.id, item.name]))
-    const segmentNames = new Map(catalogData.segments.map((item) => [item.id, item.name]))
     const localByRemoteId = new Map(
-      localFlows.flatMap((flow) => flow.klaviyoFlowId ? [[flow.klaviyoFlowId, flow.id] as const] : []),
+      localFlows.flatMap((flow) => flow.klaviyoFlowId ? [[flow.klaviyoFlowId, flow] as const] : []),
     )
     const metricCounts = new Map<string, number>()
+    for (const flow of localFlows) {
+      const trigger = flow.definition.trigger
+      if (trigger.type === "metric" && trigger.metricId) {
+        metricCounts.set(trigger.metricId, (metricCounts.get(trigger.metricId) ?? 0) + 1)
+      }
+    }
     const remoteItems = remoteFlows.data
       .filter((flow) => flow.attributes?.archived !== true)
       .map((flow): KlaviyoFlowWorkspaceItem => {
-        const definition = object(flow.attributes?.definition)
-        const actions = objectList(definition?.actions)
-        const trigger = triggerSummary(definition, {
-          metrics: metricNames,
-          lists: listNames,
-          segments: segmentNames,
-        })
-        if (trigger.type === "metric" && trigger.id) {
-          metricCounts.set(trigger.id, (metricCounts.get(trigger.id) ?? 0) + 1)
-        }
-        const types = actions.map(actionType)
+        const local = localByRemoteId.get(flow.id)
+        const localSteps = local ? walkFlowSteps(local.definition) : null
+        const localTrigger = local?.definition.trigger
+        const remoteTriggerType = flow.attributes?.trigger_type?.trim().toLowerCase() || "unknown"
+        const triggerName = localTrigger?.type === "metric"
+          ? localTrigger.metricName
+          : localTrigger?.type === "list"
+            ? localTrigger.listName
+            : localTrigger?.type === "segment"
+              ? localTrigger.segmentName
+              : localTrigger?.type === "date"
+                ? localTrigger.property
+                : remoteTriggerType === "metric"
+                  ? "Metric event"
+                  : remoteTriggerType === "list"
+                    ? "List"
+                    : remoteTriggerType === "segment"
+                      ? "Segment"
+                      : remoteTriggerType === "date"
+                        ? "Profile date"
+                        : "Klaviyo trigger"
         return {
           id: flow.id,
           name: flow.attributes?.name?.trim() || "Untitled flow",
           status: flow.attributes?.status?.trim() || "unknown",
-          triggerName: trigger.name,
-          triggerType: trigger.type,
-          actionCount: actions.length,
-          emailCount: types.filter((type) => type === "send-email").length,
+          triggerName: triggerName || "Klaviyo trigger",
+          triggerType: localTrigger?.type ?? remoteTriggerType,
+          actionCount: localSteps?.length ?? null,
+          emailCount: localSteps?.filter((step) => step.type === "email").length ?? null,
           updatedAt: flow.attributes?.updated ?? null,
-          localFlowId: localByRemoteId.get(flow.id) ?? null,
-          unsupportedActions: [...new Set(types.filter((type) => !supportedKlaviyoActionType(type)))],
+          localFlowId: local?.id ?? null,
+          unsupportedActions: [],
         }
       })
     const localOnlyItems = localFlows
