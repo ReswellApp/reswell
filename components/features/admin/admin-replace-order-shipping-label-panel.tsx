@@ -22,7 +22,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
+import type { AddressFields } from "@/app/admin/shipping/address-fields"
+import { AddressForm } from "@/app/admin/shipping/shipping-address-form"
 import { normalizeBoardLengthInput } from "@/lib/board-measurements"
+import { adminUserShippingLabelShipToSchema } from "@/lib/validations/adminUserShippingLabel"
 import {
   parseReswellPackedWeightToTotalOz,
   parseReswellParcelLengthRawToCarrierInches,
@@ -53,13 +56,52 @@ type Overview = {
     trackingCarrier: string | null
   }
   buyerAddressSummary: string | null
+  shipTo: AddressFields | null
+  warnings: string[]
   shipFromSource: "seller" | "admin"
   shipFromAddresses: Array<{
     id: string
     label: string
     oneLine: string
     isDefault: boolean
+    fields: AddressFields
   }>
+}
+
+const EMPTY_ADDRESS: AddressFields = {
+  name: "",
+  phone: "",
+  company_name: "",
+  address_line1: "",
+  address_line2: "",
+  city_locality: "",
+  state_province: "",
+  postal_code: "",
+  country_code: "US",
+  residential: "yes",
+}
+
+const ADDRESS_FIELD_LABEL: Record<string, string> = {
+  name: "name",
+  address_line1: "street address",
+  city_locality: "city",
+  state_province: "state",
+  postal_code: "postal code",
+  country_code: "country",
+}
+
+function firstAddressError(fields: AddressFields, label: string): string | null {
+  const parsed = adminUserShippingLabelShipToSchema.safeParse(fields)
+  if (parsed.success) return null
+  const key = parsed.error.issues[0]?.path[0]
+  const field = typeof key === "string" ? (ADDRESS_FIELD_LABEL[key] ?? "address") : "address"
+  return `${label}: enter a valid ${field}.`
+}
+
+function addressOneLine(fields: AddressFields): string {
+  return [fields.address_line1, [fields.city_locality, fields.state_province, fields.postal_code].filter(Boolean).join(", ")]
+    .filter(Boolean)
+    .join(" · ")
 }
 
 function money(amount: number, currency: string): string {
@@ -127,6 +169,8 @@ export function AdminReplaceOrderShippingLabelPanel({
   const [weightLb, setWeightLb] = useState("")
   const [weightOz, setWeightOz] = useState("")
   const [shipFromAddressId, setShipFromAddressId] = useState<string>("")
+  const [shipFrom, setShipFrom] = useState<AddressFields>(EMPTY_ADDRESS)
+  const [shipTo, setShipTo] = useState<AddressFields>(EMPTY_ADDRESS)
   const [rates, setRates] = useState<RateOption[] | null>(null)
   const [selectedRateId, setSelectedRateId] = useState("")
   const [ratesBusy, setRatesBusy] = useState(false)
@@ -157,6 +201,13 @@ export function AdminReplaceOrderShippingLabelPanel({
         body.data.shipFromAddresses[0]?.id ??
         ""
       setShipFromAddressId(preferred)
+      setShipFrom(
+        body.data.shipFromAddresses.find((a) => a.id === preferred)?.fields ?? EMPTY_ADDRESS,
+      )
+      setShipTo(body.data.shipTo ?? EMPTY_ADDRESS)
+      setRates(null)
+      setSelectedRateId("")
+      setQuoteMeta(null)
     } catch {
       setLoadError("Could not load label replace tool")
       setOverview(null)
@@ -173,11 +224,27 @@ export function AdminReplaceOrderShippingLabelPanel({
     () => parseExactParcel({ lengthIn, widthIn, heightIn, weightLb, weightOz }),
     [lengthIn, widthIn, heightIn, weightLb, weightOz],
   )
+  const shipFromError = useMemo(() => firstAddressError(shipFrom, "Ship from"), [shipFrom])
+  const shipToError = useMemo(() => firstAddressError(shipTo, "Ship to"), [shipTo])
+
+  function clearQuotedRates() {
+    setRates(null)
+    setSelectedRateId("")
+    setQuoteMeta(null)
+  }
 
   async function getRates() {
     if (!overview) return
     if (!parcelParse.ok) {
       toast.error(parcelParse.error)
+      return
+    }
+    if (shipFromError) {
+      toast.error(shipFromError)
+      return
+    }
+    if (shipToError) {
+      toast.error(shipToError)
       return
     }
     setRatesBusy(true)
@@ -195,6 +262,8 @@ export function AdminReplaceOrderShippingLabelPanel({
             action: "rates",
             parcel: parcelParse.parcel,
             ship_from_address_id: shipFromAddressId || undefined,
+            ship_from: shipFrom,
+            ship_to: shipTo,
           }),
         },
       )
@@ -232,10 +301,16 @@ export function AdminReplaceOrderShippingLabelPanel({
       toast.error(parcelParse.error)
       return
     }
+    if (shipFromError || shipToError) {
+      toast.error(shipFromError ?? shipToError ?? "Enter both addresses.")
+      return
+    }
     const selected = rates?.find((r) => r.rate_id === selectedRateId)
+    const destination = addressOneLine(shipTo)
+    const price = selected ? money(selected.amount, selected.currency) : "the selected rate"
     const confirmMsg = overview.hasExistingLabel
-      ? `Void the current label (refund when carrier approves) and buy a new UPS label for ${selected ? money(selected.amount, selected.currency) : "the selected rate"}? Reswell pays for the new label.`
-      : `Buy a new UPS label for ${selected ? money(selected.amount, selected.currency) : "the selected rate"}? Reswell pays for this label.`
+      ? `Void the current label (refund when carrier approves) and buy a new UPS label to ${destination} for ${price}? The order shipping address updates to this ship-to. Reswell pays for the new label.`
+      : `Buy a new UPS label to ${destination} for ${price}? The order shipping address updates to this ship-to. Reswell pays for this label.`
     if (!window.confirm(confirmMsg)) return
 
     setPurchaseBusy(true)
@@ -251,6 +326,8 @@ export function AdminReplaceOrderShippingLabelPanel({
             parcel: parcelParse.parcel,
             rate_id: selectedRateId,
             ship_from_address_id: shipFromAddressId || undefined,
+            ship_from: shipFrom,
+            ship_to: shipTo,
           }),
         },
       )
@@ -267,10 +344,11 @@ export function AdminReplaceOrderShippingLabelPanel({
             message: string | null
             error: string | null
           }
+          shippingAddressSaved?: boolean
         }
         error?: string
       }
-      if (!res.ok || !body.data) {
+    if (!res.ok || !body.data) {
         toast.error(body.error ?? "Could not buy replacement label")
         return
       }
@@ -287,6 +365,11 @@ export function AdminReplaceOrderShippingLabelPanel({
       } else {
         toast.success(
           `UPS label purchased — tracking ${body.data.trackingNumber} (${body.data.carrierLabel} ${body.data.serviceName}).`,
+        )
+      }
+      if (body.data.shippingAddressSaved === false) {
+        toast.warning(
+          "The new label was purchased, but the order shipping address was not saved. Refresh and confirm the ship-to before buying another label.",
         )
       }
       setRates(null)
@@ -331,9 +414,9 @@ export function AdminReplaceOrderShippingLabelPanel({
             Exact box — replace UPS label
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Enter measured outer L×W×H and weight, get live UPS rates for this order&apos;s
-            addresses, void the old label, and buy a new one. Reswell pays for the replacement;
-            the order tracking and label download update to the new label.
+            Edit the ship-from or ship-to address, or the measured box size. Get live UPS rates,
+            void the old label, and buy a new one. The order&apos;s shipping address updates to the
+            ship-to you enter. Reswell pays for the replacement.
           </p>
         </div>
       </div>
@@ -365,29 +448,44 @@ export function AdminReplaceOrderShippingLabelPanel({
         </p>
       ) : null}
 
-      {overview.buyerAddressSummary ? (
-        <p className="text-xs text-muted-foreground">
-          Ship to: <span className="text-foreground">{overview.buyerAddressSummary}</span>
-        </p>
+      {(overview.warnings ?? []).length > 0 ? (
+        <Alert>
+          <AlertTitle>Check the addresses</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-1 list-disc pl-4 space-y-0.5">
+              {(overview.warnings ?? []).map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       ) : null}
 
-      {overview.shipFromSource === "admin" ? (
+      {overview.shipFromSource === "admin" && overview.shipFromAddresses.length > 0 ? (
         <Alert>
           <AlertTitle>Using admin ship-from</AlertTitle>
           <AlertDescription>
-            This seller has no ship-from address on file, so rates and the new label use your admin
-            profile address.
+            This seller has no ship-from address on file. The form starts from your admin profile
+            address. Edit it before you get rates if the origin should be different.
           </AlertDescription>
         </Alert>
       ) : null}
 
       {overview.shipFromAddresses.length > 1 ? (
         <div className="space-y-2">
-          <Label htmlFor="replace-label-ship-from" className="text-sm font-medium">
-            {overview.shipFromSource === "admin" ? "Admin ship from" : "Seller ship from"}
+          <Label htmlFor="replace-label-ship-from-saved" className="text-sm font-medium">
+            {overview.shipFromSource === "admin" ? "Saved admin ship from" : "Saved seller ship from"}
           </Label>
-          <Select value={shipFromAddressId} onValueChange={setShipFromAddressId}>
-            <SelectTrigger id="replace-label-ship-from" className="w-full">
+          <Select
+            value={shipFromAddressId}
+            onValueChange={(id) => {
+              setShipFromAddressId(id)
+              const match = overview.shipFromAddresses.find((a) => a.id === id)
+              if (match) setShipFrom(match.fields)
+              clearQuotedRates()
+            }}
+          >
+            <SelectTrigger id="replace-label-ship-from-saved" className="w-full">
               <SelectValue placeholder="Ship-from address" />
             </SelectTrigger>
             <SelectContent>
@@ -400,12 +498,50 @@ export function AdminReplaceOrderShippingLabelPanel({
             </SelectContent>
           </Select>
         </div>
-      ) : overview.shipFromAddresses[0] ? (
-        <p className="text-xs text-muted-foreground">
-          {overview.shipFromSource === "admin" ? "Admin ship from" : "Seller ship from"}:{" "}
-          <span className="text-foreground">{overview.shipFromAddresses[0].oneLine}</span>
-        </p>
       ) : null}
+
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">Ship from</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Printed as the label origin. Editing this does not change the seller&apos;s saved address.
+          </p>
+        </div>
+        <AddressForm
+          value={shipFrom}
+          onChange={(next) => {
+            setShipFrom(next)
+            clearQuotedRates()
+          }}
+          inputClassName="h-10"
+          selectTriggerClassName="h-10"
+          formId="replace-label-ship-from"
+        />
+        {shipFromError ? <p className="text-xs text-destructive">{shipFromError}</p> : null}
+      </div>
+
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">Ship to</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Saved on this order when the new label is purchased.
+            {overview.buyerAddressSummary
+              ? ` Current order address: ${overview.buyerAddressSummary}.`
+              : ""}
+          </p>
+        </div>
+        <AddressForm
+          value={shipTo}
+          onChange={(next) => {
+            setShipTo(next)
+            clearQuotedRates()
+          }}
+          inputClassName="h-10"
+          selectTriggerClassName="h-10"
+          formId="replace-label-ship-to"
+        />
+        {shipToError ? <p className="text-xs text-destructive">{shipToError}</p> : null}
+      </div>
 
       <ReswellPackageDimensionsCard
         exactCartonMode
@@ -429,7 +565,13 @@ export function AdminReplaceOrderShippingLabelPanel({
           size="sm"
           variant="secondary"
           className="gap-2"
-          disabled={!overview.eligible || ratesBusy || purchaseBusy || !parcelParse.ok}
+          disabled={
+            !overview.eligible ||
+            ratesBusy ||
+            purchaseBusy ||
+            !parcelParse.ok ||
+            Boolean(shipFromError || shipToError)
+          }
           onClick={() => void getRates()}
         >
           {ratesBusy ? (

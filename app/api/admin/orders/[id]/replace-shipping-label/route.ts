@@ -8,6 +8,23 @@ import {
   quoteAdminExactParcelUpsRatesForOrder,
 } from "@/lib/services/adminReplaceOrderShippingLabel"
 import { adminReplaceOrderShippingLabelPostBodySchema } from "@/lib/validations/admin-replace-order-shipping-label"
+import type { RateQuoteAddressFields } from "@/lib/shipping/rate-address"
+import type { AdminUserShippingLabelShipTo } from "@/lib/validations/adminUserShippingLabel"
+
+function toRateAddress(address: AdminUserShippingLabelShipTo): RateQuoteAddressFields {
+  return {
+    name: address.name,
+    phone: address.phone,
+    company_name: address.company_name,
+    address_line1: address.address_line1,
+    address_line2: address.address_line2,
+    city_locality: address.city_locality,
+    state_province: address.state_province,
+    postal_code: address.postal_code,
+    country_code: address.country_code,
+    residential: address.residential,
+  }
+}
 
 export const dynamic = "force-dynamic"
 
@@ -91,6 +108,8 @@ export async function POST(
         weightLb: body.parcel.weight_lb,
       },
       shipFromAddressId: body.ship_from_address_id,
+      shipFrom: body.ship_from ? toRateAddress(body.ship_from) : null,
+      shipTo: body.ship_to ? toRateAddress(body.ship_to) : null,
     })
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status })
@@ -110,6 +129,8 @@ export async function POST(
     },
     rateId: body.rate_id,
     shipFromAddressId: body.ship_from_address_id,
+    shipFrom: body.ship_from ? toRateAddress(body.ship_from) : null,
+    shipTo: body.ship_to ? toRateAddress(body.ship_to) : null,
   })
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status })

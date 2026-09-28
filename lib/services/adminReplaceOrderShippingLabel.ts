@@ -9,14 +9,16 @@ import {
   type ShipEngineRateOption,
 } from "@/lib/shipengine/surfboard-label"
 import { attachAdminShippingLabelToOrder } from "@/lib/services/adminOrderShippingLabelNotify"
-import {
-  fetchRatesForSurfboardOrder,
-  resolveAddressesForLabel,
-} from "@/lib/services/orderShippingLabel"
+import { fetchRatesForSurfboardOrder } from "@/lib/services/orderShippingLabel"
 import { purchaseShipEngineLabelForOrderOnce } from "@/lib/services/purchaseShipEngineLabelForOrderOnce"
 import { voidShipEngineLabelForOrder } from "@/lib/services/voidShipEngineLabelForOrder"
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
-import { orderShippingJsonToRateQuoteAddress } from "@/lib/shipping/rate-address"
+import { applyRateQuoteAddressToOrderShippingJson } from "@/lib/shipping/order-shipping-json"
+import {
+  orderShippingJsonToRateQuoteAddress,
+  profileRowToRateQuoteAddress,
+  type RateQuoteAddressFields,
+} from "@/lib/shipping/rate-address"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
 import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
@@ -128,8 +130,11 @@ function toShipFromOption(ar: ProfileAddressRow) {
     label: ar.label?.trim() || "Address",
     oneLine: addressOneLine(ar),
     isDefault: ar.is_default,
+    fields: profileRowToRateQuoteAddress(ar),
   }
 }
+
+export type AdminReplaceLabelAddress = RateQuoteAddressFields
 
 async function loadProfileAddresses(
   supabase: SupabaseClient,
@@ -213,6 +218,10 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
           trackingCarrier: string | null
         }
         buyerAddressSummary: string | null
+        /** Current order destination, when it is complete enough to prefill the form. */
+        shipTo: AdminReplaceLabelAddress | null
+        /** Notes that do not block quoting — the admin can type a corrected address. */
+        warnings: string[]
         /** Active ship-from list: seller addresses, or admin when seller has none. */
         shipFromSource: AdminReplaceShipFromSource
         shipFromAddresses: Array<{
@@ -220,6 +229,7 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
           label: string
           oneLine: string
           isDefault: boolean
+          fields: AdminReplaceLabelAddress
         }>
       }
     }
@@ -230,11 +240,9 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
 
   const { order, listing } = loaded
   const reasons: string[] = []
+  const warnings: string[] = []
   if (!isShipEngineConfigured()) {
     reasons.push("ShipEngine is not configured.")
-  }
-  if (!orderShippingJsonToRateQuoteAddress(order.shipping_address)) {
-    reasons.push("Buyer shipping address on this order is incomplete.")
   }
 
   const sellerRows = await loadProfileAddresses(params.supabase, order.seller_id)
@@ -253,12 +261,13 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
   )
 
   if (shipFromAddresses.length === 0) {
-    reasons.push(
-      "No ship-from address available. Add one on the seller’s profile, or save a ship-from address on your admin profile.",
-    )
+    warnings.push("No saved ship-from address. Enter the origin below before getting rates.")
   }
 
   const shipTo = orderShippingJsonToRateQuoteAddress(order.shipping_address)
+  if (!shipTo) {
+    warnings.push("Buyer shipping address on this order is incomplete. Enter the ship-to below.")
+  }
   const buyerAddressSummary = shipTo
     ? [shipTo.address_line1, [shipTo.city_locality, shipTo.state_province, shipTo.postal_code].filter(Boolean).join(", ")]
         .filter(Boolean)
@@ -286,10 +295,100 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
         trackingCarrier: order.tracking_carrier,
       },
       buyerAddressSummary,
+      shipTo,
+      warnings,
       shipFromSource,
       shipFromAddresses,
     },
   }
+}
+
+async function resolveAdminReplaceLane(params: {
+  supabase: SupabaseClient
+  order: OrderRowForReplace
+  adminUserId: string
+  shipFromAddressId?: string | null
+  shipFrom?: AdminReplaceLabelAddress | null
+  shipTo?: AdminReplaceLabelAddress | null
+}): Promise<
+  | {
+      ok: true
+      from: RateQuoteAddressFields
+      to: RateQuoteAddressFields
+      shipFromSource: AdminReplaceShipFromSource
+    }
+  | { ok: false; error: string; status: number }
+> {
+  let from: RateQuoteAddressFields
+  let shipFromSource: AdminReplaceShipFromSource = "seller"
+
+  if (params.shipFrom) {
+    from = params.shipFrom
+    if (params.shipFromAddressId?.trim()) {
+      const labeled = await resolveShipFromAddressForAdminReplace({
+        supabase: params.supabase,
+        sellerId: params.order.seller_id,
+        adminUserId: params.adminUserId,
+        shipFromAddressId: params.shipFromAddressId,
+      })
+      if (labeled.ok) shipFromSource = labeled.source
+    }
+  } else {
+    const shipFromRes = await resolveShipFromAddressForAdminReplace({
+      supabase: params.supabase,
+      sellerId: params.order.seller_id,
+      adminUserId: params.adminUserId,
+      shipFromAddressId: params.shipFromAddressId,
+    })
+    if (!shipFromRes.ok) return shipFromRes
+    from = profileRowToRateQuoteAddress(shipFromRes.address)
+    shipFromSource = shipFromRes.source
+  }
+
+  const to = params.shipTo ?? orderShippingJsonToRateQuoteAddress(params.order.shipping_address)
+  if (!to) {
+    return {
+      ok: false,
+      error: "Enter a complete ship-to address (name, street, city, state, and postal code).",
+      status: 400,
+    }
+  }
+  if (
+    !from.name.trim() ||
+    !from.address_line1.trim() ||
+    !from.city_locality.trim() ||
+    !from.state_province.trim() ||
+    !from.postal_code.trim()
+  ) {
+    return {
+      ok: false,
+      error: "Enter a complete ship-from address (name, street, city, state, and postal code).",
+      status: 400,
+    }
+  }
+
+  return { ok: true, from, to, shipFromSource }
+}
+
+async function saveOrderShipToAddress(
+  supabase: SupabaseClient,
+  orderId: string,
+  existing: unknown,
+  shipTo: AdminReplaceLabelAddress,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const shippingAddress = applyRateQuoteAddressToOrderShippingJson(existing, shipTo)
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      shipping_address: shippingAddress,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+  if (error) {
+    console.error("[adminReplaceOrderShippingLabel] save ship-to:", error.message)
+    return { ok: false, error: "Could not save the updated shipping address." }
+  }
+  return { ok: true }
 }
 
 export async function quoteAdminExactParcelUpsRatesForOrder(params: {
@@ -298,6 +397,8 @@ export async function quoteAdminExactParcelUpsRatesForOrder(params: {
   adminUserId: string
   parcel: AdminExactParcel
   shipFromAddressId?: string | null
+  shipFrom?: AdminReplaceLabelAddress | null
+  shipTo?: AdminReplaceLabelAddress | null
 }): Promise<
   | {
       ok: true
@@ -317,21 +418,15 @@ export async function quoteAdminExactParcelUpsRatesForOrder(params: {
     return { ok: false, error: "ShipEngine is not configured.", status: 503 }
   }
 
-  const shipFromRes = await resolveShipFromAddressForAdminReplace({
+  const resolved = await resolveAdminReplaceLane({
     supabase: params.supabase,
-    sellerId: loaded.order.seller_id,
+    order: loaded.order,
     adminUserId: params.adminUserId,
     shipFromAddressId: params.shipFromAddressId,
+    shipFrom: params.shipFrom,
+    shipTo: params.shipTo,
   })
-  if (!shipFromRes.ok) return shipFromRes
-
-  const resolved = resolveAddressesForLabel({
-    sellerAddress: shipFromRes.address,
-    orderShippingJson: loaded.order.shipping_address,
-  })
-  if (!resolved.ok) {
-    return { ok: false, error: resolved.error, status: 400 }
-  }
+  if (!resolved.ok) return resolved
 
   const ratesResult = await fetchRatesForSurfboardOrder({
     shipFrom: resolved.from,
@@ -351,14 +446,14 @@ export async function quoteAdminExactParcelUpsRatesForOrder(params: {
     return {
       ok: false,
       error:
-        "No UPS rates returned for this exact box size and lane. Check dimensions/weight against UPS limits and try again.",
+        "No UPS rates returned for this box size and address. Check dimensions, weight, and the ship-from and ship-to, then try again.",
       status: 422,
     }
   }
 
   const from = resolved.from
   const to = resolved.to
-  const sourceLabel = shipFromRes.source === "admin" ? "Admin ship-from" : "Seller ship-from"
+  const sourceLabel = resolved.shipFromSource === "admin" ? "Admin ship-from" : "Seller ship-from"
   return {
     ok: true,
     data: {
@@ -370,7 +465,7 @@ export async function quoteAdminExactParcelUpsRatesForOrder(params: {
       shipToSummary: [to.address_line1, [to.city_locality, to.state_province, to.postal_code].filter(Boolean).join(", ")]
         .filter(Boolean)
         .join(" · "),
-      shipFromSource: shipFromRes.source,
+      shipFromSource: resolved.shipFromSource,
     },
   }
 }
@@ -403,6 +498,8 @@ export async function purchaseAdminExactParcelReplacementLabelForOrder(params: {
   parcel: AdminExactParcel
   rateId: string
   shipFromAddressId?: string | null
+  shipFrom?: AdminReplaceLabelAddress | null
+  shipTo?: AdminReplaceLabelAddress | null
 }): Promise<
   | {
       ok: true
@@ -420,6 +517,7 @@ export async function purchaseAdminExactParcelReplacementLabelForOrder(params: {
           message: string | null
           error: string | null
         }
+        shippingAddressSaved: boolean
       }
     }
   | { ok: false; error: string; status: number }
@@ -448,21 +546,16 @@ export async function purchaseAdminExactParcelReplacementLabelForOrder(params: {
     return { ok: false, error: parcelCheck.error, status: 400 }
   }
 
-  // Confirm ship-from / ship-to still resolve (parcel dims are baked into rate_id).
-  const shipFromRes = await resolveShipFromAddressForAdminReplace({
+  // Confirm the lane still resolves. Parcel and addresses are baked into rate_id.
+  const resolved = await resolveAdminReplaceLane({
     supabase: params.supabase,
-    sellerId: loaded.order.seller_id,
+    order: loaded.order,
     adminUserId: params.adminUserId,
     shipFromAddressId: params.shipFromAddressId,
+    shipFrom: params.shipFrom,
+    shipTo: params.shipTo,
   })
-  if (!shipFromRes.ok) return shipFromRes
-  const resolved = resolveAddressesForLabel({
-    sellerAddress: shipFromRes.address,
-    orderShippingJson: loaded.order.shipping_address,
-  })
-  if (!resolved.ok) {
-    return { ok: false, error: resolved.error, status: 400 }
-  }
+  if (!resolved.ok) return resolved
 
   const hadTracking = Boolean(loaded.order.tracking_number?.trim())
   let voidResult: {
@@ -526,6 +619,25 @@ export async function purchaseAdminExactParcelReplacementLabelForOrder(params: {
     }
   }
 
+  let shippingAddressSaved = true
+  if (params.shipTo) {
+    const saved = await saveOrderShipToAddress(
+      params.supabase,
+      loaded.order.id,
+      loaded.order.shipping_address,
+      params.shipTo,
+    )
+    shippingAddressSaved = saved.ok
+    if (!saved.ok) {
+      console.error(
+        "[adminReplaceOrderShippingLabel] label purchased but ship-to was not saved",
+        loaded.order.id,
+        purchased.result.trackingNumber,
+        saved.error,
+      )
+    }
+  }
+
   const listingTitle =
     typeof loaded.listing.title === "string" && loaded.listing.title.trim()
       ? loaded.listing.title.trim()
@@ -570,6 +682,7 @@ export async function purchaseAdminExactParcelReplacementLabelForOrder(params: {
       carrierLabel: rateLookup.rate.carrierLabel,
       serviceName: rateLookup.rate.serviceName,
       voidResult,
+      shippingAddressSaved,
     },
   }
 }

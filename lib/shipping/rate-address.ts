@@ -56,12 +56,13 @@ export function orderShippingJsonToRateQuoteAddress(ship: unknown): RateQuoteAdd
   const countryRaw = typeof a.country === "string" ? a.country.trim() : ""
   const nm = typeof s.name === "string" ? s.name.trim() : ""
   const ph = typeof s.phone === "string" ? s.phone.trim() : ""
+  const company = typeof s.company_name === "string" ? s.company_name.trim() : ""
   const line2 = typeof a.line2 === "string" ? a.line2.trim() : ""
   const st = typeof a.state === "string" ? a.state.trim() : ""
   return {
     name: nm || "Recipient",
     phone: ph,
-    company_name: "",
+    company_name: company,
     address_line1: line1,
     address_line2: line2,
     city_locality: city,
