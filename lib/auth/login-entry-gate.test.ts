@@ -79,6 +79,7 @@ describe("server session probe status", () => {
   it("maps the session-ready responses", () => {
     assert.equal(serverSessionProbeFromStatus(204), "ready")
     assert.equal(serverSessionProbeFromStatus(401), "anonymous")
+    assert.equal(serverSessionProbeFromStatus(503), "unknown")
     assert.equal(serverSessionProbeFromStatus(500), "unknown")
     assert.equal(serverSessionProbeFromStatus(0), "unknown")
   })

@@ -2,7 +2,9 @@ import { getSafeRouteUser } from "@/lib/auth/get-safe-server-user"
 import { NextResponse, type NextRequest } from "next/server"
 
 /**
- * Lightweight probe: returns 204 when middleware/RSC would see a valid session.
+ * Lightweight probe: returns 204 when middleware/RSC would see a valid session,
+ * 401 when the session is confirmed missing or dead, and 503 when the lookup
+ * failed transiently (do not treat that as signed-out).
  * Client-side sign-in can finish in the browser before HTTP auth cookies are visible
  * on the next document request — poll this before navigating to protected routes.
  */
@@ -10,9 +12,14 @@ export async function GET(request: NextRequest) {
   const response = new NextResponse(null, { status: 401 })
   response.headers.set("Cache-Control", "private, no-store")
 
-  const { user } = await getSafeRouteUser(request, response)
+  const { user, lookupFailed } = await getSafeRouteUser(request, response)
 
   if (!user) {
+    if (lookupFailed) {
+      const unavailable = new NextResponse(null, { status: 503 })
+      unavailable.headers.set("Cache-Control", "private, no-store")
+      return unavailable
+    }
     return response
   }
 
