@@ -263,7 +263,9 @@ export function EmailStudioWorkspace({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {flow.actionCount} actions · {flow.emailCount} emails
+                      {flow.actionCount === null || flow.emailCount === null
+                        ? "Details load when opened"
+                        : `${flow.actionCount} actions · ${flow.emailCount} emails`}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {updatedLabel(flow.updatedAt)}
