@@ -4,6 +4,7 @@ import {
   fetchNotificationsCenterAnalytics,
   isNotificationsCenterRange,
 } from "@/lib/db/klaviyoEventLog"
+import { isKlaviyoMetricCategoryFilter } from "@/lib/klaviyo/event-log-shared"
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -27,9 +28,11 @@ export async function GET(req: NextRequest) {
 
   const rangeParam = req.nextUrl.searchParams.get("range")
   const range = isNotificationsCenterRange(rangeParam) ? rangeParam : "7d"
+  const categoryParam = req.nextUrl.searchParams.get("category")
+  const category = isKlaviyoMetricCategoryFilter(categoryParam) ? categoryParam : "all"
 
   try {
-    const data = await fetchNotificationsCenterAnalytics(supabase, range)
+    const data = await fetchNotificationsCenterAnalytics(supabase, range, category)
     return NextResponse.json(data, { status: 200 })
   } catch {
     return NextResponse.json({ error: "Failed to load notifications analytics" }, { status: 500 })

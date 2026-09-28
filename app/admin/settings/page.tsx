@@ -109,6 +109,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/search-analytics', label: 'Search analytics', description: 'What buyers search for — source boards we may not have', icon: LineChart },
       { href: '/admin/search-daily-report', label: 'Search reports', description: 'Daily, monthly, and all-time search demand briefings', icon: FileText },
       { href: '/admin/ad-sales', label: 'Ad sales', description: 'Listings sold from Google & Meta ads', icon: Megaphone },
+      { href: '/admin/ads', label: 'Ads manager', description: 'Create, pause, and edit Google and Meta ads', icon: Megaphone },
       { href: '/admin/pickup-only-boards', label: 'Pickup-only boards', description: 'Map local-pickup surfboards for geo ads', icon: MapPin },
       { href: '/admin/giveaways', label: 'Giveaways', description: 'Raffle clicks, brand picks, and listing tickets', icon: Sparkles },
       { href: '/admin/reswell-goals', label: 'Reswell goals', description: 'Track platform goals', icon: Target },

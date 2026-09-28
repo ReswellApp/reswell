@@ -9,14 +9,12 @@ export type DbConsistency = "strong" | "eventual"
 export type DbPurpose = "catalog" | "analytics"
 
 /**
- * Query-class router.
+ * Query-class router. Every mode uses the primary project.
  *
- * - `strong` + `catalog` — primary anon (listing-row cache fills after publish)
- * - `eventual` + `catalog` — replica anon (home, boards, sold, nav, similar)
- * - `strong` + `analytics` — primary service role (writes, read-your-writes)
- * - `eventual` + `analytics` — replica service role (pulse, badges, BI reads)
+ * - `catalog` — anon (home, boards, sold, nav, similar, listing-row cache)
+ * - `analytics` — service role (pulse, badges, BI, writes, read-your-writes)
  *
- * Session/auth stays on `createClient()` — never route JWTs at the replica.
+ * `consistency` does not select a host. Session/auth stays on `createClient()`.
  */
 export function getDb(options: {
   consistency: DbConsistency

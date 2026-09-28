@@ -51,6 +51,10 @@
       "schedule": "0 10 * * 1"
     },
     {
+      "path": "/api/cron/klaviyo-flow-stats",
+      "schedule": "15 9 * * *"
+    },
+    {
       "path": "/api/cron/purge-stale-offers",
       "schedule": "5 * * * *"
     },

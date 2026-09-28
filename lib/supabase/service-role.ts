@@ -1,5 +1,5 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-import { supabasePrimaryRestUrl, supabaseReadRestUrl } from "@/lib/supabase/rest-url"
+import { supabasePrimaryRestUrl } from "@/lib/supabase/rest-url"
 
 function requireServiceRoleKey(): string {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -15,9 +15,9 @@ export function createServiceRoleClient() {
 }
 
 /**
- * Service role against the replica when `SUPABASE_READ_REPLICA_URL` is set.
- * Admin aggregates and other eventual-consistency analytics.
+ * Service role for analytics reads (`getDb({ consistency: "eventual", purpose: "analytics" })`).
+ * Always the primary project.
  */
 export function createServiceRoleReadClient() {
-  return createSupabaseClient(supabaseReadRestUrl(), requireServiceRoleKey())
+  return createServiceRoleClient()
 }

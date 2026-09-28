@@ -193,6 +193,83 @@ export interface KlaviyoSkipReasonRow {
   count: number
 }
 
+export interface KlaviyoSkipReasonByMetricRow {
+  metric: string
+  reason: string
+  count: number
+}
+
+export interface KlaviyoEventTotals {
+  total: number
+  sent: number
+  skipped: number
+  failed: number
+  uniqueRecipients: number
+}
+
+export interface NotificationsCenterAlert {
+  id: string
+  severity: "warning" | "critical"
+  message: string
+}
+
+const RANGE_PERIOD_LABEL: Record<NotificationsCenterRange, string> = {
+  "24h": "24 hours",
+  "7d": "7 days",
+  "30d": "30 days",
+  "90d": "90 days",
+}
+
+export function formatCountDelta(current: number, previous: number): string | null {
+  if (previous <= 0 && current <= 0) return null
+  if (previous <= 0) return "New vs prior period"
+  const pct = Math.round(((current - previous) / previous) * 1000) / 10
+  const sign = pct > 0 ? "+" : ""
+  return `${sign}${pct}% vs prior period`
+}
+
+/**
+ * Transactional failures in the last day, and sharp accept drops versus the prior window.
+ * Engagement and marketing volume swings are left out so the banner stays actionable.
+ */
+export function buildNotificationsCenterAlerts(input: {
+  range: NotificationsCenterRange
+  currentByMetric: readonly KlaviyoMetricRow[]
+  previousByMetric: readonly KlaviyoMetricRow[]
+  failedLast24h: readonly KlaviyoMetricRow[]
+}): NotificationsCenterAlert[] {
+  const alerts: NotificationsCenterAlert[] = []
+  const period = RANGE_PERIOD_LABEL[input.range]
+
+  for (const row of input.failedLast24h) {
+    if (row.category !== "transactional" || row.failed <= 0) continue
+    alerts.push({
+      id: `fail:${row.metric}`,
+      severity: "critical",
+      message: `${row.metric} failed ${row.failed} time${row.failed === 1 ? "" : "s"} in the last 24 hours.`,
+    })
+  }
+
+  const previousByName = new Map(input.previousByMetric.map((row) => [row.metric, row]))
+  for (const row of input.currentByMetric) {
+    if (row.category !== "transactional") continue
+    const previous = previousByName.get(row.metric)
+    const previousSent = previous?.sent ?? 0
+    if (previousSent < 10) continue
+    if (row.sent > previousSent * 0.5) continue
+    alerts.push({
+      id: `drop:${row.metric}`,
+      severity: "warning",
+      message: `${row.metric} accepts dropped from ${previousSent} to ${row.sent} versus the prior ${period}.`,
+    })
+  }
+
+  return alerts.sort((a, b) => {
+    if (a.severity !== b.severity) return a.severity === "critical" ? -1 : 1
+    return a.message.localeCompare(b.message)
+  })
+}
+
 export interface KlaviyoTopRecipientRow {
   identifier: string
   email: string | null
@@ -227,12 +304,16 @@ export interface InternalNotificationTypeRow {
 
 export interface NotificationsCenterAnalytics {
   range: NotificationsCenterRange
+  category: KlaviyoMetricCategoryFilter
   since: string
   fetchedAt: string
+  alerts: NotificationsCenterAlert[]
   klaviyo: {
-    totals: { total: number; sent: number; skipped: number; failed: number; uniqueRecipients: number }
+    totals: KlaviyoEventTotals
+    previousTotals: KlaviyoEventTotals
     byMetric: KlaviyoMetricRow[]
     bySkipReason: KlaviyoSkipReasonRow[]
+    bySkipReasonByMetric: KlaviyoSkipReasonByMetricRow[]
     timeline: TimelinePoint[]
     topRecipients: KlaviyoTopRecipientRow[]
     recent: KlaviyoRecentEvent[]

@@ -296,7 +296,7 @@ export async function openKlaviyoFlowInStudioService(
       klaviyoGetAllPages<KlaviyoFlowActionResource>(
         `/api/flows/${klaviyoFlowId}/flow-actions/`,
         {
-          "fields[flow-action]": "action_type,definition",
+          "fields[flow-action]": "definition",
           "page[size]": "50",
         },
         { maxPages: 4 },
@@ -509,7 +509,7 @@ async function syncExistingFlowEmailActions(input: {
   const fetched = await klaviyoGetAllPages<KlaviyoFlowActionResource>(
     `/api/flows/${input.flowId}/flow-actions/`,
     {
-      "fields[flow-action]": "action_type,definition",
+      "fields[flow-action]": "definition",
       "page[size]": "50",
     },
     { maxPages: 2 },
