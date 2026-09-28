@@ -22,7 +22,7 @@ import {
   loadExistingSynonymSummaries,
   type CatalogHint,
 } from "@/lib/services/searchDailyReportSynonyms"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 
 export const SEARCH_REPORT_DAILY_CORPUS = {
   topQuerySize: 120,
@@ -122,7 +122,7 @@ export async function collectSearchReportCorpus(
     byQuery: [] as RankedDemandCapture[],
   }
   try {
-    const service = createServiceRoleClient()
+    const service = getDb({ consistency: "eventual", purpose: "analytics" })
     const raw = await aggregateDemandCaptureByQuery(
       service,
       fromIso,

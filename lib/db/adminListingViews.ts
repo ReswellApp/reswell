@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import type {
   AdminListingViewRow,
   AdminListingViewsDashboard,
@@ -5,7 +6,7 @@ import type {
   AdminListingViewsSummary,
 } from "@/lib/types/adminListingViews"
 import type { AdminListingViewsQuery } from "@/lib/validations/adminListingViews"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 
 function periodSinceIso(period: AdminListingViewsPeriod): string | null {
   if (period === "all") return null
@@ -27,7 +28,7 @@ function asInt(value: unknown): number {
 }
 
 async function fetchSummary(
-  supabase: ReturnType<typeof createServiceRoleClient>,
+  supabase: SupabaseClient,
   period: AdminListingViewsPeriod,
   userId?: string,
   listingId?: string,
@@ -70,7 +71,7 @@ export async function fetchAdminListingViewsDashboard(
   query: AdminListingViewsQuery,
 ): Promise<{ ok: true; data: AdminListingViewsDashboard } | { ok: false; error: string }> {
   try {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     const period = query.period
     const page = query.page
     const pageSize = query.pageSize

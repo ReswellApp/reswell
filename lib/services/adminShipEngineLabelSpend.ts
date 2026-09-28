@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import {
   dbListLabelAdjustmentsInRange,
   dbMatchTrackingToOrders,
@@ -85,9 +85,9 @@ export async function getAdminShipEngineLabelSpend(input: {
     return { ok: false, message: resolved.message, status: 400 }
   }
 
-  let supabase: ReturnType<typeof createServiceRoleClient>
+  let supabase: ReturnType<typeof getDb>
   try {
-    supabase = createServiceRoleClient()
+    supabase = getDb({ consistency: "eventual", purpose: "analytics" })
   } catch {
     return { ok: false, message: "Server misconfigured", status: 500 }
   }

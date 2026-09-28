@@ -1,5 +1,5 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-import { supabasePrimaryRestUrl } from "@/lib/supabase/rest-url"
+import { supabasePrimaryRestUrl, supabaseReadRestUrl } from "@/lib/supabase/rest-url"
 
 function requireAnonKey(): string {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -13,16 +13,16 @@ function requireAnonKey(): string {
 
 /**
  * Anonymous client against the primary API.
- * Catalog cache fills, including eventual reads, use this same project.
+ * Listing-row cache fills stay here so replica lag cannot store a miss.
  */
 export function createAnonSupabaseClient() {
   return createSupabaseClient(supabasePrimaryRestUrl(), requireAnonKey())
 }
 
 /**
- * Anonymous client for catalog reads (`getDb({ consistency: "eventual" })`).
- * Always the primary project.
+ * Anonymous client for lag-tolerant catalog reads.
+ * Uses `SUPABASE_READ_REPLICA_URL` when it is an HTTPS API URL; otherwise the primary.
  */
 export function createAnonReadClient() {
-  return createAnonSupabaseClient()
+  return createSupabaseClient(supabaseReadRestUrl(), requireAnonKey())
 }
