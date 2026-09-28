@@ -7,6 +7,12 @@ import type {
 } from "@/lib/types/emailStudio"
 import { emailStudioDocumentSchema } from "@/lib/validations/emailStudio"
 import { RESWELL_EMAIL_HOME, RESWELL_EMAIL_LOGO } from "@/lib/email-studio/document"
+import {
+  composeDesignedEmail,
+  EMAIL_DESIGN_LAYOUTS,
+  inferEmailDesignLayout,
+  type EmailDesignLayout,
+} from "@/lib/email-studio/frames"
 
 const BLOCK_TYPES = [
   "section",
@@ -53,6 +59,7 @@ const blockModelSchema = z.object({
     imageAlt: z.string().max(500),
     buttonLabel: z.string().max(500),
     buttonHref: z.string().max(2000),
+    eyebrow: z.string().max(200),
   })).max(3),
 })
 
@@ -79,6 +86,8 @@ const flowStepModelSchema = z.object({
   body: z.string().max(8000),
   buttonLabel: z.string().max(500),
   buttonHref: z.string().max(2000),
+  layout: z.enum(EMAIL_DESIGN_LAYOUTS),
+  eyebrow: z.string().max(120),
   smsBody: z.string().max(1600),
   url: z.string().max(2000),
   property: z.string().max(120),
@@ -189,9 +198,11 @@ function blockFromRow(row: Record<string, unknown>): EmailBlock | null {
       const column = item as Record<string, unknown>
       const blocks: EmailContentBlock[] = []
       const imageSrc = textOf(column.imageSrc, 2000)
+      const eyebrow = textOf(column.eyebrow, 200)
       const heading = textOf(column.heading, 500)
       const body = textOf(column.text, 8000)
       const buttonLabel = textOf(column.buttonLabel, 500)
+      if (eyebrow) blocks.push({ id: crypto.randomUUID(), type: "eyebrow", text: eyebrow, align })
       if (imageSrc) {
         blocks.push({
           id: crypto.randomUUID(),
@@ -351,7 +362,18 @@ function enumOf<T extends string>(value: unknown, allowed: readonly T[], fallbac
 
 export type AssistantFlowStep =
   | { type: "delay"; unit: "minutes" | "hours" | "days"; value: number }
-  | { type: "email"; name: string; subject: string; previewText: string; heading: string; body: string; buttonLabel: string; buttonHref: string }
+  | {
+      type: "email"
+      name: string
+      subject: string
+      previewText: string
+      heading: string
+      body: string
+      buttonLabel: string
+      buttonHref: string
+      layout: EmailDesignLayout
+      eyebrow: string
+    }
   | { type: "sms"; body: string }
   | { type: "webhook"; url: string; body: string }
   | { type: "update-profile"; property: string; value: string }
@@ -451,15 +473,19 @@ export function coerceAssistantFlow(raw: unknown): AssistantFlowDraft | null {
         no: [],
       }
     } else {
+      const heading = textOf(step.heading, 500) || "Hello"
+      const body = textOf(step.body, 8000)
       built = {
         type: "email",
         name: textOf(step.name, 120) || "Flow email",
         subject: textOf(step.subject, 200),
         previewText: textOf(step.previewText, 300),
-        heading: textOf(step.heading, 500) || "Hello",
-        body: textOf(step.body, 8000),
+        heading,
+        body,
         buttonLabel: textOf(step.buttonLabel, 500) || "Open Reswell",
         buttonHref: textOf(step.buttonHref, 2000) || RESWELL_EMAIL_HOME,
+        layout: enumOf(step.layout, EMAIL_DESIGN_LAYOUTS, inferEmailDesignLayout(`${heading} ${body}`)),
+        eyebrow: textOf(step.eyebrow, 120),
       }
     }
     tagged.push({ branch, step: built })
@@ -551,16 +577,19 @@ export function documentForFlowEmail(step: {
   body: string
   buttonLabel: string
   buttonHref: string
+  layout?: EmailDesignLayout
+  eyebrow?: string
 }): EmailStudioDocument {
-  const coerced = coerceAssistantEmail({
-    blocks: [
-      { type: "logo" },
-      { type: "heading", text: step.heading, align: "left" },
-      { type: "text", text: step.body, align: "left" },
-      { type: "button", label: step.buttonLabel, href: step.buttonHref, align: "center" },
-      { type: "footer", text: "Reswell — the marketplace for used surf gear.", showUnsubscribe: true },
-    ],
+  const layout = step.layout ?? inferEmailDesignLayout(`${step.heading} ${step.body}`)
+  const designed = composeDesignedEmail({
+    layout,
+    eyebrow: step.eyebrow,
+    heading: step.heading,
+    body: step.body,
+    buttonLabel: step.buttonLabel,
+    buttonHref: step.buttonHref,
   })
-  if (!coerced) throw new Error("The draft email did not fit the studio.")
-  return coerced.draft.document
+  const parsed = emailStudioDocumentSchema.safeParse(designed)
+  if (!parsed.success) throw new Error("The draft email did not fit the studio.")
+  return parsed.data
 }

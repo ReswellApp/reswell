@@ -12,13 +12,16 @@ import { EMAIL_STUDIO_STARTERS } from "@/lib/email-studio/document"
 import type { EmailStudioRecord } from "@/lib/types/emailStudio"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { EmailStudioGenerate } from "@/components/features/admin/email-studio/email-studio-generate"
 
 export function EmailStudioLibrary({
   projects,
   templates,
+  assistantEnabled,
 }: {
   projects: EmailStudioRecord[]
   templates: EmailStudioRecord[]
+  assistantEnabled: boolean
 }) {
   const router = useRouter()
   const [name, setName] = useState("")
@@ -49,6 +52,7 @@ export function EmailStudioLibrary({
 
   return (
     <div className="space-y-8">
+      <EmailStudioGenerate target="email" enabled={assistantEnabled} />
       <section className="space-y-3 rounded-lg border border-border p-4">
         <h2 className="text-sm font-medium">New project</h2>
         <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_220px_220px_auto]">

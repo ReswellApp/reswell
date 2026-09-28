@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Redo2, Undo2 } from "lucide-react"
 import { toast } from "sonner"
+import { generateEmailStudioAction } from "@/lib/actions/emailStudio"
 import {
   pushEmailStudioFlowAction,
   setEmailStudioFlowStatusAction,
@@ -318,7 +319,7 @@ export function EmailStudioFlowEditor({
           </Button>
         </div>
       </div>
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_320px_300px]">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_320px_360px]">
         <div className="flex min-h-0 flex-col">
           <fieldset disabled={Boolean(proposalPreview)} className="grid gap-2 border-b border-border p-3 md:grid-cols-2">
             <select className={selectClass} aria-label="Trigger" value={trigger.type} onChange={(event) => {
@@ -416,6 +417,28 @@ export function EmailStudioFlowEditor({
                 projects={projects}
                 lists={lists}
                 steps={displayDraft.definition.steps}
+                canGenerate={assistantEnabled}
+                onGenerateEmail={async (stepId, brief) => {
+                  const result = await generateEmailStudioAction({
+                    brief: `Design one email in the flow "${draft.name}". Trigger: ${triggerSummary(draft.definition.trigger)}. ${brief}`.slice(0, 2000),
+                    name: `${draft.name} email`.slice(0, 120),
+                    target: "email",
+                  })
+                  if ("error" in result) {
+                    toast.error(result.error)
+                    return
+                  }
+                  patchDefinition({
+                    ...getCurrent().definition,
+                    steps: getCurrent().definition.steps.map((item) => (
+                      item.id === stepId && item.type === "email" ? { ...item, projectId: result.id } : item
+                    )),
+                  })
+                  const saved = await save({ flush: true })
+                  if (!saved) return
+                  toast.success("Designed email is linked. Open it on the artboard.")
+                  router.refresh()
+                }}
                 onChange={(step) => patchDefinition({
                   ...draft.definition,
                   steps: draft.definition.steps.map((item) => item.id === step.id ? step : item),
@@ -483,6 +506,13 @@ export function EmailStudioFlowEditor({
       </div>
     </div>
   )
+}
+
+function triggerSummary(trigger: EmailStudioFlowRecord["definition"]["trigger"]): string {
+  if (trigger.type === "metric") return trigger.metricName || trigger.metricId || "metric"
+  if (trigger.type === "list") return trigger.listName || trigger.listId || "list"
+  if (trigger.type === "segment") return trigger.segmentName || trigger.segmentId || "segment"
+  return trigger.property || "profile date"
 }
 
 function TriggerFields({

@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import type { MouseEvent as ReactMouseEvent } from "react"
 import Link from "next/link"
 import type { EmailStudioFlowStep } from "@/lib/types/emailStudioFlow"
 import { flowStepLabel } from "@/lib/email-studio/flow-definition"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 const selectClass = "h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -55,6 +57,8 @@ export function EmailStudioFlowStepInspector({
   steps,
   onChange,
   onNavigate,
+  canGenerate = false,
+  onGenerateEmail,
 }: {
   step: EmailStudioFlowStep
   projects: { id: string; name: string }[]
@@ -62,6 +66,8 @@ export function EmailStudioFlowStepInspector({
   steps: EmailStudioFlowStep[]
   onChange: (step: EmailStudioFlowStep) => void
   onNavigate?: (event: ReactMouseEvent<HTMLAnchorElement>, href: string) => void
+  canGenerate?: boolean
+  onGenerateEmail?: (stepId: string, brief: string) => Promise<void>
 }) {
   const nextOptions = steps.filter((item) => item.id !== step.id)
   if (step.type === "delay") {
@@ -79,8 +85,16 @@ export function EmailStudioFlowStepInspector({
   if (step.type === "email") {
     return (
       <div className="space-y-2">
+        <EmailStepGenerate
+          stepId={step.id}
+          canGenerate={canGenerate}
+          onGenerateEmail={onGenerateEmail}
+        />
         <select className={selectClass} aria-label="Email project" value={step.projectId} onChange={(event) => onChange({ ...step, projectId: event.target.value })}>
           <option value="">Choose an email</option>
+          {step.projectId && !projects.some((project) => project.id === step.projectId) ? (
+            <option value={step.projectId}>Designed email</option>
+          ) : null}
           {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
         </select>
         {step.projectId ? (
@@ -158,6 +172,43 @@ export function EmailStudioFlowStepInspector({
       ) : null}
       <BranchSelect label="Yes path" value={step.yes} options={nextOptions} onChange={(yes) => onChange({ ...step, yes })} />
       <BranchSelect label="No path" value={step.no} options={nextOptions} onChange={(no) => onChange({ ...step, no })} />
+    </div>
+  )
+}
+
+function EmailStepGenerate({
+  stepId,
+  canGenerate,
+  onGenerateEmail,
+}: {
+  stepId: string
+  canGenerate: boolean
+  onGenerateEmail?: (stepId: string, brief: string) => Promise<void>
+}) {
+  const [brief, setBrief] = useState("")
+  const [pending, setPending] = useState(false)
+  if (!canGenerate || !onGenerateEmail) return null
+  return (
+    <div className="space-y-2 rounded-md border border-border bg-[#F9F9F2] p-2">
+      <p className="text-xs font-medium">Design this email</p>
+      <textarea
+        value={brief}
+        aria-label="Email brief"
+        placeholder="Shipped note with the order number and a tracking button."
+        maxLength={1500}
+        className="min-h-20 w-full rounded-md border border-input bg-background p-2 text-sm"
+        onChange={(event) => setBrief(event.target.value)}
+      />
+      <Button
+        size="sm"
+        disabled={pending || brief.trim().length < 8}
+        onClick={() => {
+          setPending(true)
+          void onGenerateEmail(stepId, brief.trim()).finally(() => setPending(false))
+        }}
+      >
+        {pending ? "Designing…" : "Generate email"}
+      </Button>
     </div>
   )
 }

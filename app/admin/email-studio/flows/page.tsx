@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { listEmailStudioFlowsService } from "@/lib/services/emailStudioFlows"
+import { isEmailStudioAssistantEnabled } from "@/lib/services/emailStudioAssistant"
 import { EmailStudioFlowLibrary } from "@/components/features/admin/email-studio/email-studio-flow-library"
 
 export const dynamic = "force-dynamic"
@@ -19,10 +20,12 @@ export default async function AdminEmailStudioFlowsPage() {
         <p className="text-sm text-muted-foreground"><Link href="/admin/email-studio" className="hover:underline">Email studio</Link></p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Flows</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Build a metric, list, segment, or profile-date trigger, then delays, emails, SMS, splits, profile updates, list updates, and webhooks. Push stores a draft in Klaviyo. It does not send until you set it live. Price-drop, A/B tests, push, and WhatsApp stay in Klaviyo.
+          Describe a sequence and the assistant designs each email, or build the trigger yourself. Push stores a draft in Klaviyo. It does not send until you set it live.
         </p>
       </div>
-      {"error" in flows ? <p className="text-sm text-destructive">{flows.error}</p> : <EmailStudioFlowLibrary flows={flows.data} />}
+      {"error" in flows ? <p className="text-sm text-destructive">{flows.error}</p> : (
+        <EmailStudioFlowLibrary flows={flows.data} assistantEnabled={isEmailStudioAssistantEnabled()} />
+      )}
     </div>
   )
 }

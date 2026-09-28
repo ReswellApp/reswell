@@ -8,8 +8,15 @@ import { createEmailStudioFlowAction, deleteEmailStudioFlowAction } from "@/lib/
 import type { EmailStudioFlowRecord } from "@/lib/types/emailStudioFlow"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { EmailStudioGenerate } from "@/components/features/admin/email-studio/email-studio-generate"
 
-export function EmailStudioFlowLibrary({ flows }: { flows: EmailStudioFlowRecord[] }) {
+export function EmailStudioFlowLibrary({
+  flows,
+  assistantEnabled,
+}: {
+  flows: EmailStudioFlowRecord[]
+  assistantEnabled: boolean
+}) {
   const router = useRouter()
   const [name, setName] = useState("")
   const [creating, setCreating] = useState(false)
@@ -32,6 +39,7 @@ export function EmailStudioFlowLibrary({ flows }: { flows: EmailStudioFlowRecord
 
   return (
     <div className="space-y-6">
+      <EmailStudioGenerate target="flow" enabled={assistantEnabled} />
       <section className="flex flex-wrap gap-2">
         <Input value={name} placeholder="Abandoned checkout" aria-label="Flow name" className="max-w-sm" onChange={(event) => setName(event.target.value)} />
         <Button disabled={creating} onClick={() => void create()}>{creating ? "Creating" : "New flow"}</Button>
