@@ -22,7 +22,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
-import { Redo2, Undo2 } from "lucide-react"
+import { ArrowLeft, Bot, Monitor, Redo2, Settings2, SlidersHorizontal, Smartphone, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   pushEmailStudioToKlaviyoAction,
@@ -45,6 +45,7 @@ import type {
 } from "@/lib/types/emailStudio"
 import type { EmailStudioAssistantProposalPreview } from "@/lib/types/emailStudioCommands"
 import type { EmailStudioMessage } from "@/lib/types/emailStudioFlow"
+import { cn } from "@/lib/utils"
 import { EmailStudioAssistant } from "@/components/features/admin/email-studio/email-studio-assistant"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -115,7 +116,8 @@ export function EmailStudioEditor({
   const [templateName, setTemplateName] = useState("")
   const [testRecipient, setTestRecipient] = useState("")
   const [testSending, setTestSending] = useState(false)
-  const [assistantOpen, setAssistantOpen] = useState(true)
+  const [leftPanel, setLeftPanel] = useState<"content" | "layers">("content")
+  const [rightPanel, setRightPanel] = useState<"edit" | "settings" | "assistant">("edit")
   const [proposalPreview, setProposalPreview] = useState<{
     subject: string
     previewText: string
@@ -317,15 +319,17 @@ export function EmailStudioEditor({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/email-studio" onClick={(event) => navigateAfterSave(event, "/admin/email-studio")}>Projects</Link>
+      <div className="flex min-h-14 flex-wrap items-center gap-2 border-b border-border bg-white px-3 py-2">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/admin/email-studio" aria-label="Back to Email Studio" onClick={(event) => navigateAfterSave(event, "/admin/email-studio")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
         </Button>
         <Input
           value={draft.name}
           aria-label="Project name"
           disabled={Boolean(proposalPreview)}
-          className="h-9 max-w-xs"
+          className="h-9 max-w-64 border-transparent bg-transparent px-2 text-sm font-medium shadow-none hover:border-input focus:border-input"
           onChange={(event) => patch({ name: event.target.value }, "meta:name")}
         />
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -371,8 +375,9 @@ export function EmailStudioEditor({
           >
             Copy HTML
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setAssistantOpen((open) => !open)}>
-            {assistantOpen ? "Hide assistant" : "Assistant"}
+          <Button size="sm" variant={rightPanel === "assistant" ? "default" : "outline"} onClick={() => setRightPanel("assistant")}>
+            <Bot className="h-3.5 w-3.5" />
+            AI assistant
           </Button>
           <Button size="sm" variant="outline" asChild>
             <Link href="/admin/email-studio/flows" onClick={(event) => navigateAfterSave(event, "/admin/email-studio/flows")}>Flows</Link>
@@ -392,44 +397,6 @@ export function EmailStudioEditor({
         </div>
       </div>
 
-      <div className="grid gap-2 border-b border-border px-3 py-2 md:grid-cols-4">
-        <Input value={displayDraft.subject} disabled={Boolean(proposalPreview)} placeholder="Subject" aria-label="Subject" onChange={(event) => patch({ subject: event.target.value }, "meta:subject")} />
-        <Input value={displayDraft.previewText} disabled={Boolean(proposalPreview)} placeholder="Preview text" aria-label="Preview text" onChange={(event) => patch({ previewText: event.target.value }, "meta:preview")} />
-        <select
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-          aria-label="Trigger metric"
-          disabled={Boolean(proposalPreview)}
-          value={draft.triggerMetric}
-          onChange={(event) => patch({ triggerMetric: event.target.value }, "meta:trigger")}
-        >
-          <option value="">Trigger metric</option>
-          {KNOWN_KLAVIYO_METRIC_NAMES.map((metric) => (
-            <option key={metric} value={metric}>{metric}</option>
-          ))}
-          {draft.triggerMetric && !KNOWN_KLAVIYO_METRIC_NAMES.includes(draft.triggerMetric) ? (
-            <option value={draft.triggerMetric}>{draft.triggerMetric}</option>
-          ) : null}
-        </select>
-        <select
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-          aria-label="Klaviyo flow"
-          disabled={Boolean(proposalPreview)}
-          value={draft.flowId}
-          onChange={(event) => {
-            const flow = flows.find((item) => item.id === event.target.value)
-            patch({ flowId: event.target.value, flowName: flow?.name ?? draft.flowName }, "meta:flow")
-          }}
-        >
-          <option value="">{flows.length ? "Link a Klaviyo flow" : "No flows loaded"}</option>
-          {draft.flowId && !flows.some((flow) => flow.id === draft.flowId) ? (
-            <option value={draft.flowId}>{draft.flowName || draft.flowId}</option>
-          ) : null}
-          {flows.map((flow) => (
-            <option key={flow.id} value={flow.id}>{flow.name} · {flow.status}</option>
-          ))}
-        </select>
-      </div>
-
       <DndContext
         sensors={sensors}
         collisionDetection={collision}
@@ -446,12 +413,19 @@ export function EmailStudioEditor({
         onDragEnd={onDragEnd}
         onDragCancel={() => setDraggingLabel(null)}
       >
-      <div className={`grid min-h-0 flex-1 ${assistantOpen ? "lg:grid-cols-[240px_minmax(0,1fr)_280px_360px]" : "lg:grid-cols-[240px_minmax(0,1fr)_300px]"}`}>
-        <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-b border-border p-3 lg:border-b-0 lg:border-r">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Layers</p>
-            <span className="text-[11px] text-muted-foreground">{draft.document.blocks.length}</span>
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[224px_minmax(0,1fr)_320px]">
+        <aside className="flex min-h-0 flex-col overflow-y-auto border-b border-border bg-white lg:border-b-0 lg:border-r">
+          <div className="grid grid-cols-2 border-b border-border p-2">
+            <button type="button" className={cn("rounded-md px-3 py-2 text-xs font-medium", leftPanel === "content" ? "bg-muted text-foreground" : "text-muted-foreground")} onClick={() => setLeftPanel("content")}>Add content</button>
+            <button type="button" className={cn("rounded-md px-3 py-2 text-xs font-medium", leftPanel === "layers" ? "bg-muted text-foreground" : "text-muted-foreground")} onClick={() => setLeftPanel("layers")}>Layers</button>
           </div>
+          <div className="space-y-4 p-3">
+          {leftPanel === "layers" ? (
+            <>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Layers</p>
+                <span className="text-[11px] text-muted-foreground">{draft.document.blocks.length}</span>
+              </div>
           <SortableContext
             items={draft.document.blocks.map((block) => `outline:${block.id}`)}
             strategy={verticalListSortingStrategy}
@@ -499,8 +473,30 @@ export function EmailStudioEditor({
               ))}
             </div>
           </SortableContext>
-          <div className="border-t border-border pt-3">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Frames</p>
+            </>
+          ) : (
+            <>
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Basic blocks</p>
+            <div className="grid grid-cols-2 gap-2">
+              {ADDABLE.map((type) => (
+                <span
+                  key={type}
+                  onClick={() => {
+                    if (suppressPaletteClick.current) {
+                      suppressPaletteClick.current = false
+                      return
+                    }
+                    addBlock(type)
+                  }}
+                >
+                  <EmailStudioPaletteChip type={type} />
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="border-t border-border pt-4">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Layouts</p>
             <div className="grid grid-cols-2 gap-1.5">
               {EMAIL_STUDIO_FRAMES.map((frame) => (
                 <span
@@ -517,28 +513,11 @@ export function EmailStudioEditor({
                 </span>
               ))}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Drop a frame on the artboard, then edit the type in place.</p>
+            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">Drag a block or layout onto the email canvas.</p>
           </div>
-          <div className="border-t border-border pt-3">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Blocks</p>
+            </>
+          )}
           </div>
-          <div className="flex flex-wrap gap-1">
-            {ADDABLE.map((type) => (
-              <span
-                key={type}
-                onClick={() => {
-                  if (suppressPaletteClick.current) {
-                    suppressPaletteClick.current = false
-                    return
-                  }
-                  addBlock(type)
-                }}
-              >
-                <EmailStudioPaletteChip type={type} />
-              </span>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">Drag a block onto the artboard. Select a layer to edit it.</p>
         </aside>
 
         <section className="flex min-h-[420px] min-w-0 flex-col bg-[#F9F9F2]">
@@ -550,8 +529,8 @@ export function EmailStudioEditor({
             </div>
             {mode !== "code" ? (
               <div className="inline-flex rounded-md border border-border p-0.5">
-                <button type="button" className={`rounded px-2 py-1 text-xs ${frameWidth === 600 ? "bg-muted" : ""}`} onClick={() => setFrameWidth(600)}>Desktop</button>
-                <button type="button" className={`rounded px-2 py-1 text-xs ${frameWidth === 375 ? "bg-muted" : ""}`} onClick={() => setFrameWidth(375)}>Phone</button>
+                <button type="button" aria-label="Desktop canvas" className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${frameWidth === 600 ? "bg-muted" : ""}`} onClick={() => setFrameWidth(600)}><Monitor className="h-3.5 w-3.5" />Desktop</button>
+                <button type="button" aria-label="Mobile canvas" className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${frameWidth === 375 ? "bg-muted" : ""}`} onClick={() => setFrameWidth(375)}><Smartphone className="h-3.5 w-3.5" />Mobile</button>
               </div>
             ) : (
               <span className="text-xs text-muted-foreground">Preview, download, and Klaviyo use this HTML in Reswell colors and Stack Sans.</span>
@@ -632,75 +611,101 @@ export function EmailStudioEditor({
           ) : null}
         </section>
 
-        <aside className="min-h-0 overflow-y-auto border-t border-border p-3 lg:border-l lg:border-t-0">
-          {proposalPreview ? (
-            <p className="text-sm text-muted-foreground">Resolve the assistant proposal before editing properties.</p>
-          ) : (
-            <EmailStudioInspector
-              block={selected}
-              onChange={(block) => {
-                if (proposalPreview) return
-                patch({ document: replaceEmailBlock(draft.document, block) }, "blocks")
-              }}
-            />
-          )}
-          <div className="mt-6 space-y-2 border-t border-border pt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Save as template</p>
-            <Input
-              value={templateName}
-              placeholder="Template name"
-              disabled={Boolean(proposalPreview)}
-              onChange={(event) => setTemplateName(event.target.value)}
-            />
-            <Button size="sm" variant="outline" disabled={Boolean(proposalPreview)} onClick={() => void saveTemplate()}>Save template</Button>
-            <p className="text-xs text-muted-foreground">
-              Push stores a code template in Klaviyo. It does not turn a flow on. Download HTML if the key is unavailable.
-            </p>
-            {draft.klaviyoTemplateId ? (
-              <p className="break-all text-xs text-muted-foreground">
-                Klaviyo template {draft.klaviyoTemplateId}
-                {klaviyoStale ? " · Local changes not pushed" : " · Up to date"}
-              </p>
-            ) : null}
-            <div className="space-y-2 border-t border-border pt-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Test send</p>
-              <Input
-                type="email"
-                value={testRecipient}
-                placeholder="you@reswell.app"
-                disabled={!klaviyoConnected || testSending}
-                onChange={(event) => setTestRecipient(event.target.value)}
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!klaviyoConnected || !testRecipient.trim() || testSending || Boolean(proposalPreview)}
-                onClick={() => void sendTest()}
+        <aside className="flex min-h-[280px] min-w-0 flex-col border-t border-border bg-white lg:border-l lg:border-t-0">
+          <div className="grid grid-cols-3 border-b border-border p-2">
+            {([
+              ["edit", "Edit", SlidersHorizontal],
+              ["settings", "Settings", Settings2],
+              ["assistant", "AI", Bot],
+            ] as const).map(([value, label, Icon]) => (
+              <button
+                key={value}
+                type="button"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium",
+                  rightPanel === value ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setRightPanel(value)}
               >
-                {testSending ? "Sending…" : "Send test"}
-              </Button>
-            </div>
-            <label className="block text-xs text-muted-foreground">
-              Notes
-              <textarea
-                value={draft.notes}
-                disabled={Boolean(proposalPreview)}
-                className="mt-1 min-h-20 w-full rounded-md border border-input bg-background p-2 text-sm text-foreground"
-                onChange={(event) => patch({ notes: event.target.value }, "meta:notes")}
-              />
-            </label>
-            {!draft.flowId ? (
-              <Input
-                value={draft.flowName}
-                disabled={Boolean(proposalPreview)}
-                placeholder="Flow name if it is not in the list"
-                onChange={(event) => patch({ flowName: event.target.value }, "meta:flow-name")}
-              />
-            ) : null}
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
           </div>
-        </aside>
-        {assistantOpen ? (
-          <aside className="min-h-[280px] border-t border-border p-3 lg:border-l lg:border-t-0">
+          <div className={cn("min-h-0 flex-1", rightPanel === "assistant" ? "overflow-hidden p-3" : "overflow-y-auto p-4")}>
+          {rightPanel === "edit" ? (
+            proposalPreview ? (
+              <p className="text-sm text-muted-foreground">Resolve the assistant proposal before editing properties.</p>
+            ) : (
+              <EmailStudioInspector
+                block={selected}
+                onChange={(block) => {
+                  if (proposalPreview) return
+                  patch({ document: replaceEmailBlock(draft.document, block) }, "blocks")
+                }}
+              />
+            )
+          ) : null}
+          {rightPanel === "settings" ? (
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Email details</p>
+                <label className="block space-y-1.5 text-xs font-medium">
+                  Subject
+                  <Input value={displayDraft.subject} disabled={Boolean(proposalPreview)} placeholder="Email subject" onChange={(event) => patch({ subject: event.target.value }, "meta:subject")} />
+                </label>
+                <label className="block space-y-1.5 text-xs font-medium">
+                  Preview text
+                  <Input value={displayDraft.previewText} disabled={Boolean(proposalPreview)} placeholder="Inbox preview" onChange={(event) => patch({ previewText: event.target.value }, "meta:preview")} />
+                </label>
+                <label className="block space-y-1.5 text-xs font-medium">
+                  Trigger metric
+                  <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-normal" disabled={Boolean(proposalPreview)} value={draft.triggerMetric} onChange={(event) => patch({ triggerMetric: event.target.value }, "meta:trigger")}>
+                    <option value="">Choose a metric</option>
+                    {KNOWN_KLAVIYO_METRIC_NAMES.map((metric) => <option key={metric} value={metric}>{metric}</option>)}
+                    {draft.triggerMetric && !KNOWN_KLAVIYO_METRIC_NAMES.includes(draft.triggerMetric) ? <option value={draft.triggerMetric}>{draft.triggerMetric}</option> : null}
+                  </select>
+                </label>
+                <label className="block space-y-1.5 text-xs font-medium">
+                  Klaviyo flow
+                  <select
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-normal"
+                    disabled={Boolean(proposalPreview)}
+                    value={draft.flowId}
+                    onChange={(event) => {
+                      const flow = flows.find((item) => item.id === event.target.value)
+                      patch({ flowId: event.target.value, flowName: flow?.name ?? draft.flowName }, "meta:flow")
+                    }}
+                  >
+                    <option value="">{flows.length ? "Link a flow" : "No flows loaded"}</option>
+                    {draft.flowId && !flows.some((flow) => flow.id === draft.flowId) ? <option value={draft.flowId}>{draft.flowName || draft.flowId}</option> : null}
+                    {flows.map((flow) => <option key={flow.id} value={flow.id}>{flow.name} · {flow.status}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Save as template</p>
+                <Input value={templateName} placeholder="Template name" disabled={Boolean(proposalPreview)} onChange={(event) => setTemplateName(event.target.value)} />
+                <Button size="sm" variant="outline" disabled={Boolean(proposalPreview)} onClick={() => void saveTemplate()}>Save template</Button>
+                {draft.klaviyoTemplateId ? (
+                  <p className="break-all text-xs text-muted-foreground">Klaviyo template {draft.klaviyoTemplateId}{klaviyoStale ? " · Local changes not pushed" : " · Up to date"}</p>
+                ) : null}
+              </div>
+              <div className="space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Test send</p>
+                <Input type="email" value={testRecipient} placeholder="you@reswell.app" disabled={!klaviyoConnected || testSending} onChange={(event) => setTestRecipient(event.target.value)} />
+                <Button size="sm" variant="outline" disabled={!klaviyoConnected || !testRecipient.trim() || testSending || Boolean(proposalPreview)} onClick={() => void sendTest()}>
+                  {testSending ? "Sending…" : "Send test"}
+                </Button>
+              </div>
+              <label className="block text-xs font-medium">
+                Notes
+                <textarea value={draft.notes} disabled={Boolean(proposalPreview)} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background p-2 text-sm font-normal text-foreground" onChange={(event) => patch({ notes: event.target.value }, "meta:notes")} />
+              </label>
+              {!draft.flowId ? <Input value={draft.flowName} disabled={Boolean(proposalPreview)} placeholder="Flow name" onChange={(event) => patch({ flowName: event.target.value }, "meta:flow-name")} /> : null}
+            </div>
+          ) : null}
+          {rightPanel === "assistant" ? (
             <EmailStudioAssistant
               scope="email"
               scopeId={draft.id}
@@ -749,8 +754,9 @@ export function EmailStudioEditor({
                 setSelectedId(record.document.blocks[0]?.id ?? null)
               }}
             />
-          </aside>
-        ) : null}
+          ) : null}
+          </div>
+        </aside>
       </div>
       <DragOverlay>
         {draggingLabel ? (
