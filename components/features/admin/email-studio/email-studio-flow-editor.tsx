@@ -319,7 +319,7 @@ export function EmailStudioFlowEditor({
           </Button>
         </div>
       </div>
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_320px_300px]">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_320px_360px]">
         <div className="flex min-h-0 flex-col">
           <fieldset disabled={Boolean(proposalPreview)} className="grid gap-2 border-b border-border p-3 md:grid-cols-2">
             <select className={selectClass} aria-label="Trigger" value={trigger.type} onChange={(event) => {

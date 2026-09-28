@@ -447,7 +447,7 @@ export function EmailStudioEditor({
         onDragEnd={onDragEnd}
         onDragCancel={() => setDraggingLabel(null)}
       >
-      <div className={`grid min-h-0 flex-1 ${assistantOpen ? "lg:grid-cols-[240px_minmax(0,1fr)_280px_300px]" : "lg:grid-cols-[240px_minmax(0,1fr)_300px]"}`}>
+      <div className={`grid min-h-0 flex-1 ${assistantOpen ? "lg:grid-cols-[240px_minmax(0,1fr)_280px_360px]" : "lg:grid-cols-[240px_minmax(0,1fr)_300px]"}`}>
         <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-b border-border p-3 lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Layers</p>
