@@ -3,7 +3,7 @@ import { NotificationsCenterClient } from "@/components/features/admin/notificat
 
 export const metadata = privatePageMetadata({
   title: "Notifications center — Reswell admin",
-  description: "Klaviyo email flow analytics and in-app notification delivery.",
+  description: "Klaviyo metric accepts, flow delivery, and in-app notification analytics.",
   path: "/admin/notifications",
 })
 

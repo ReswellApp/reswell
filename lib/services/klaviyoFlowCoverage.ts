@@ -10,23 +10,27 @@
 import { unstable_cache } from "next/cache"
 
 import {
-  klaviyoGetWithRetry,
+  klaviyoGetAllPages,
   klaviyoGetAllPagesWithIncluded,
   mapWithConcurrency,
 } from "@/lib/klaviyo/api-client"
 import { KNOWN_KLAVIYO_METRIC_NAMES } from "@/lib/klaviyo/event-log-shared"
-import type {
-  KlaviyoFlowCoverageFlowRow,
-  KlaviyoFlowCoverageMetricRow,
-  KlaviyoFlowCoverageResult,
-  KlaviyoFlowCoverageStatus,
-  KlaviyoFlowCoverageTotals,
+import {
+  klaviyoFlowTriggerKind,
+  klaviyoFlowTriggerLabel,
+  summarizeFlowDirectory,
+  type KlaviyoFlowCoverageFlowRow,
+  type KlaviyoFlowCoverageMetricRow,
+  type KlaviyoFlowCoverageResult,
+  type KlaviyoFlowCoverageStatus,
+  type KlaviyoFlowCoverageTotals,
+  type KlaviyoFlowDirectoryRow,
 } from "@/lib/klaviyo/flow-coverage-shared"
 
 const CACHE_SECONDS = 60 * 10
 const CACHE_TAG = "klaviyo-flow-coverage"
-/** Flow-actions burst is tight — serial + retries avoids 429 → false “no email”. */
-const FLOW_EMAIL_CHECK_CONCURRENCY = 1
+/** Flow-actions burst is tight. Low concurrency avoids 429s turning into false gaps. */
+const FLOW_CHANNEL_CHECK_CONCURRENCY = 2
 
 type KlaviyoMetricResource = {
   type: string
@@ -50,8 +54,19 @@ type KlaviyoFlowResource = {
   }
 }
 
-type FlowActionsCollection = {
-  data?: unknown[]
+type FlowActionResource = {
+  attributes?: { action_type?: string }
+}
+
+type ListedFlowResource = {
+  id: string
+  attributes?: {
+    name?: string
+    status?: string
+    archived?: boolean
+    trigger_type?: string
+    updated?: string
+  }
 }
 
 export class KlaviyoFlowCoverageError extends Error {
@@ -160,20 +175,30 @@ function throwFromKlaviyoFailure(
   )
 }
 
-async function flowHasSendEmailAction(flowId: string): Promise<boolean | null> {
-  const res = await klaviyoGetWithRetry<FlowActionsCollection>(
+async function fetchFlowChannels(
+  flowId: string,
+): Promise<{ email: boolean | null; sms: boolean | null }> {
+  const res = await klaviyoGetAllPages<FlowActionResource>(
     `/api/flows/${flowId}/flow-actions/`,
-    { filter: 'equals(action_type,"SEND_EMAIL")' },
+    { "fields[flow-action]": "action_type" },
+    { maxPages: 5 },
   )
   if (!res.ok) {
     console.warn(
-      `[klaviyo] flow-actions SEND_EMAIL check failed for ${flowId}:`,
+      `[klaviyo] flow-actions check failed for ${flowId}:`,
       res.status,
       res.detail.slice(0, 200),
     )
-    return null
+    return { email: null, sms: null }
   }
-  return Array.isArray(res.data.data) && res.data.data.length > 0
+  let email = false
+  let sms = false
+  for (const action of res.data) {
+    const type = (action.attributes?.action_type ?? "").toUpperCase()
+    if (type === "SEND_EMAIL") email = true
+    if (type === "SEND_SMS") sms = true
+  }
+  return { email, sms }
 }
 
 async function fetchFlowCoverageUncached(): Promise<KlaviyoFlowCoverageResult> {
@@ -194,71 +219,80 @@ async function fetchFlowCoverageUncached(): Promise<KlaviyoFlowCoverageResult> {
     if (flow.type === "flow") flowById.set(flow.id, flow)
   }
 
-  const knownNameSet = new Set(KNOWN_KLAVIYO_METRIC_NAMES)
-
-  const flowIdsByMetricName = new Map<string, string[]>()
-  const flowIdsNeeded = new Set<string>()
+  const metricsByFlowId = new Map<string, string[]>()
 
   for (const metric of metricsPage.data.items) {
     const name = metric.attributes?.name?.trim()
     if (!name) continue
     metricNamesInAccount.add(name)
 
-    if (!knownNameSet.has(name)) continue
-
     const rel = metric.relationships?.["flow-triggers"]?.data ?? []
-    const ids: string[] = []
     for (const ref of rel) {
       if (!ref?.id) continue
       const flow = flowById.get(ref.id)
       if (flow?.attributes?.archived) continue
-      ids.push(ref.id)
-      flowIdsNeeded.add(ref.id)
+      const existing = metricsByFlowId.get(ref.id) ?? []
+      if (!existing.includes(name)) existing.push(name)
+      metricsByFlowId.set(ref.id, existing)
     }
-    if (ids.length > 0) flowIdsByMetricName.set(name, ids)
   }
 
-  // Same email check for every linked flow (not just a subset).
-  const emailByFlowId = new Map<string, boolean>()
-  const flowIds = [...flowIdsNeeded]
+  const flowsPage = await klaviyoGetAllPages<ListedFlowResource>(
+    "/api/flows/",
+    {
+      "fields[flow]": "name,status,archived,trigger_type,updated",
+      "page[size]": "50",
+    },
+    { maxPages: 20 },
+  )
+  if (!flowsPage.ok) throwFromKlaviyoFailure("flows", flowsPage)
 
-  const emailResults = await mapWithConcurrency(
-    flowIds,
-    FLOW_EMAIL_CHECK_CONCURRENCY,
+  const activeFlowIds = flowsPage.data
+    .filter((flow) => flow.attributes?.archived !== true)
+    .map((flow) => flow.id)
+
+  const channelResults = await mapWithConcurrency(
+    activeFlowIds,
+    FLOW_CHANNEL_CHECK_CONCURRENCY,
     async (flowId) => {
-      const hasEmail = await flowHasSendEmailAction(flowId)
-      return { flowId, hasEmail }
+      const channels = await fetchFlowChannels(flowId)
+      return { flowId, channels }
     },
   )
+  const channelsByFlowId = new Map(channelResults.map((row) => [row.flowId, row.channels]))
 
-  for (const { flowId, hasEmail } of emailResults) {
-    // null (exhausted retries) → false; prefer under-claim covered over false positives
-    emailByFlowId.set(flowId, hasEmail === true)
-  }
-
-  const flowsByMetricName = new Map<string, KlaviyoFlowCoverageFlowRow[]>()
-
-  for (const [metricName, flowIdsForMetric] of flowIdsByMetricName) {
-    const rows: KlaviyoFlowCoverageFlowRow[] = []
-    for (const flowId of flowIdsForMetric) {
-      const flow = flowById.get(flowId)
-      if (!flow || flow.attributes?.archived) continue
-      rows.push({
-        id: flowId,
-        name: flow.attributes?.name?.trim() || flowId,
+  const directory: KlaviyoFlowDirectoryRow[] = flowsPage.data
+    .map((flow) => {
+      const triggerMetrics = metricsByFlowId.get(flow.id) ?? []
+      const triggerType = flow.attributes?.trigger_type
+      const triggerKind = klaviyoFlowTriggerKind(triggerType)
+      const channels = channelsByFlowId.get(flow.id)
+      return {
+        id: flow.id,
+        name: flow.attributes?.name?.trim() || flow.id,
         status: normalizeFlowStatus(flow.attributes?.status),
-        hasEmailAction: emailByFlowId.get(flowId) === true,
-      })
-    }
-    if (rows.length > 0) flowsByMetricName.set(metricName, rows)
-  }
+        archived: flow.attributes?.archived === true,
+        triggerKind,
+        triggerLabel: klaviyoFlowTriggerLabel(triggerKind, triggerMetrics, triggerType),
+        triggerMetrics,
+        hasEmail: channels?.email ?? null,
+        hasSms: channels?.sms ?? null,
+        updatedAt: flow.attributes?.updated?.trim() || null,
+      }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name))
 
-  const metricNames = new Set<string>(KNOWN_KLAVIYO_METRIC_NAMES)
-
-  const byMetric: KlaviyoFlowCoverageMetricRow[] = [...metricNames]
+  const byMetric: KlaviyoFlowCoverageMetricRow[] = [...KNOWN_KLAVIYO_METRIC_NAMES]
     .sort((a, b) => a.localeCompare(b))
     .map((metric) => {
-      const flows = flowsByMetricName.get(metric) ?? []
+      const flows: KlaviyoFlowCoverageFlowRow[] = directory
+        .filter((flow) => !flow.archived && flow.triggerMetrics.includes(metric))
+        .map((flow) => ({
+          id: flow.id,
+          name: flow.name,
+          status: flow.status,
+          hasEmailAction: flow.hasEmail === true,
+        }))
       const exists = metricNamesInAccount.has(metric)
       const { coverage, hasLiveFlow, hasLiveEmail } = classifyCoverage(flows, exists)
       return { metric, coverage, hasLiveFlow, hasLiveEmail, flows }
@@ -268,12 +302,14 @@ async function fetchFlowCoverageUncached(): Promise<KlaviyoFlowCoverageResult> {
     fetchedAt: new Date().toISOString(),
     byMetric,
     totals: tallyTotals(byMetric),
+    flows: directory,
+    flowTotals: summarizeFlowDirectory(directory, KNOWN_KLAVIYO_METRIC_NAMES),
   }
 }
 
 const getCachedFlowCoverage = unstable_cache(
   async () => fetchFlowCoverageUncached(),
-  ["klaviyo-flow-coverage-v4"],
+  ["klaviyo-flow-coverage-v5"],
   { revalidate: CACHE_SECONDS, tags: [CACHE_TAG] },
 )
 

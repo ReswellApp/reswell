@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 
-export const maxDuration = 60
-
+import { fetchKlaviyoFlowPerformance } from "@/lib/db/klaviyoFlowStats"
+import { isNotificationsCenterRange } from "@/lib/klaviyo/event-log-shared"
+import { KlaviyoFlowStatsError, syncKlaviyoFlowPerformance } from "@/lib/services/klaviyoFlowStats"
 import { createClient } from "@/lib/supabase/server"
-import {
-  getKlaviyoFlowCoverage,
-  KlaviyoFlowCoverageError,
-} from "@/lib/services/klaviyoFlowCoverage"
+
+export const maxDuration = 60
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -28,15 +27,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
+  const rangeParam = req.nextUrl.searchParams.get("range")
+  const range = isNotificationsCenterRange(rangeParam) ? rangeParam : "7d"
   const refresh =
     req.nextUrl.searchParams.get("refresh") === "1" ||
     req.nextUrl.searchParams.get("refresh") === "true"
 
   try {
-    const data = await getKlaviyoFlowCoverage({ refresh })
+    if (refresh) {
+      await syncKlaviyoFlowPerformance()
+    }
+    const data = await fetchKlaviyoFlowPerformance(supabase, range)
     return NextResponse.json(data, { status: 200 })
   } catch (e) {
-    if (e instanceof KlaviyoFlowCoverageError) {
+    if (e instanceof KlaviyoFlowStatsError) {
       const status =
         e.missingKey ? 503 : e.status === 401 || e.status === 403 ? 502 : e.status >= 400 ? 502 : 500
       return NextResponse.json(
@@ -48,7 +52,7 @@ export async function GET(req: NextRequest) {
         { status },
       )
     }
-    console.error("[admin/klaviyo/flow-coverage]", e)
-    return NextResponse.json({ error: "Failed to load Klaviyo flow coverage" }, { status: 500 })
+    console.error("[admin/klaviyo/flow-stats]", e)
+    return NextResponse.json({ error: "Failed to load Klaviyo flow performance" }, { status: 500 })
   }
 }
