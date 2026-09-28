@@ -23,7 +23,7 @@ async function loadPublicListingByParam(
   select: string,
   section?: string,
 ): Promise<PublicListingLookupResult> {
-  // Strong/primary: replica lag must not cache a 404 after publish.
+  // Primary read so a just-published listing is visible to this cache fill.
   const supabase = getDb({ consistency: "strong" })
   return findListingByParam(supabase, param, {
     select,
