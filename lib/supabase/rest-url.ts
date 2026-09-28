@@ -1,6 +1,6 @@
 /**
- * REST (PostgREST) hosts. A Supabase dashboard replica is often Postgres-only;
- * `SUPABASE_READ_REPLICA_URL` must be an HTTPS API URL, not postgres://.
+ * REST (PostgREST) host for the primary project.
+ * Catalog and analytics reads use this same URL as writes and auth.
  */
 
 export function isSupabaseRestUrl(value: string): boolean {
@@ -28,21 +28,4 @@ export function supabasePrimaryRestUrl(): string {
     )
   }
   return url
-}
-
-export function supabaseReplicaRestUrl(): string | null {
-  const url = process.env.SUPABASE_READ_REPLICA_URL?.trim()
-  if (!url) return null
-  if (!isSupabaseRestUrl(url)) {
-    console.warn(
-      "[supabase] SUPABASE_READ_REPLICA_URL is not an HTTP(S) PostgREST URL; using primary. Use https://<ref>.supabase.co, not a postgres:// connection string.",
-    )
-    return null
-  }
-  return url
-}
-
-/** Replica REST URL when configured and valid; otherwise primary. */
-export function supabaseReadRestUrl(): string {
-  return supabaseReplicaRestUrl() ?? supabasePrimaryRestUrl()
 }
