@@ -120,11 +120,13 @@ async function renderFinsListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: finRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: FINS_SECTION,
   })
   const fin = finRaw as Record<string, any> | null

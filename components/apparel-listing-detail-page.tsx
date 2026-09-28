@@ -114,11 +114,13 @@ async function renderApparelListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: apparelRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: APPAREL_SECTION,
   })
   const apparel = apparelRaw as Record<string, any> | null
