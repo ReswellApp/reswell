@@ -25,6 +25,7 @@ import { CheckCircle2, Film, Loader2, Plus, RefreshCw, RotateCw, Upload, X } fro
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { LISTING_VIDEO_ACCEPT } from "@/lib/listing-video-pipeline"
+import { LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-file"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import {
@@ -549,7 +550,7 @@ function SellListingPhotoAddTile({
         <input
           id={fileInputId}
           type="file"
-          accept="image/*"
+          accept={LISTING_PHOTO_ACCEPT}
           multiple
           onChange={onImageInputChange}
           aria-label="Add listing photos"
@@ -577,7 +578,7 @@ function SellListingPhotoAddTile({
         <input
           id={fileInputId}
           type="file"
-          accept="image/*"
+          accept={LISTING_PHOTO_ACCEPT}
           multiple
           onChange={onImageInputChange}
           aria-label="Upload photo"
@@ -621,7 +622,7 @@ function SellListingPhotoAddTile({
         <input
           id={`${fileInputId}-desktop`}
           type="file"
-          accept="image/*"
+          accept={LISTING_PHOTO_ACCEPT}
           multiple
           onChange={onImageInputChange}
           aria-label="Add listing photos"
@@ -668,7 +669,10 @@ export function SellListingPhotoGrid({
   )
   const photoDragSensors = externalSensors ?? internalSensors
   const isEmpty = images.length === 0
-  const photosReady = images.length >= minPhotos
+  const photoFailed = images.some(
+    (image) => image.optimizePhase === "error" || image.uploadPhase === "error",
+  )
+  const photosReady = images.length >= minPhotos && !photoFailed
   const photoCountLabel =
     images.length === 1 ? "1 photo" : `${images.length} photos`
   const videoEnabled = Boolean(
@@ -708,6 +712,10 @@ export function SellListingPhotoGrid({
               <span className={SELL_COMPLETE_BADGE_CLASS}>
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                 {photoCountLabel} · Ready
+              </span>
+            ) : photoFailed ? (
+              <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive ring-1 ring-inset ring-destructive/20">
+                Retry failed photos
               </span>
             ) : (
               <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">

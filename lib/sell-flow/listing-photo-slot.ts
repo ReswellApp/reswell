@@ -1,5 +1,8 @@
 import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
 import type { PreparedListingImagePair } from "@/lib/listing-image-pipeline"
+import { isListingPhotoFile } from "@/lib/sell-flow/listing-photo-file"
+
+export { isListingPhotoFile, LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-file"
 
 export type ListingPhotoSlot = {
   clientId: string
@@ -27,14 +30,6 @@ export type ListingPhotoSlot = {
 }
 
 export const LISTING_PHOTO_MAX_DEFAULT = 12
-
-const LISTING_PHOTO_FILE_EXT_RE = /\.(heic|heif|jpe?g|png|webp|gif|avif|tif?f)$/i
-
-export function isListingPhotoFile(file: File): boolean {
-  const mime = (file.type || "").toLowerCase()
-  if (mime.startsWith("image/")) return true
-  return LISTING_PHOTO_FILE_EXT_RE.test(file.name)
-}
 
 export function filesFromDataTransfer(dt: DataTransfer): File[] {
   const fromList = Array.from(dt.files ?? []).filter(isListingPhotoFile)

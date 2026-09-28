@@ -9,6 +9,7 @@ export type SimpleSellPhotoSlot = {
   thumbnailUrl?: string
   phase: "optimizing" | "uploading" | "done" | "error"
   progress: number
+  errorMessage?: string
   /** True = apply 180° after automatic landscape→portrait (toggle). */
   userRotate180?: boolean
 }

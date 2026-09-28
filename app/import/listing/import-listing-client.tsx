@@ -22,10 +22,10 @@ import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { createClient } from "@/lib/supabase/client"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import {
-  assertListingOriginalSize,
-  prepareListingImagePairFromFile,
-} from "@/lib/listing-image-pipeline"
+import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
+import { prepareDecodableListingPhoto } from "@/lib/client-image-decode"
+import { isListingPhotoFile, LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-slot"
+import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import type { FbMarketplaceImportPreview } from "@/lib/validations/fb-marketplace-import"
@@ -188,11 +188,17 @@ export default function ImportListingClient({
         return
       }
 
+      const imageFiles = Array.from(files).filter(isListingPhotoFile)
+      if (!imageFiles.length) {
+        toast.error("Choose a photo (JPEG, PNG, HEIC, or another image).")
+        return
+      }
+
       const added: UploadedImage[] = []
-      for (const file of Array.from(files)) {
+      for (const file of imageFiles) {
         try {
           assertListingOriginalSize(file)
-          const prepared = await prepareListingImagePairFromFile(file)
+          const prepared = await prepareDecodableListingPhoto(file)
           const uploaded = await uploadListingImagePairToSupabase({
             supabase,
             userId: session.user.id,
@@ -201,7 +207,7 @@ export default function ImportListingClient({
           })
           added.push({ url: uploaded.fullUrl, thumbnail_url: uploaded.thumbUrl })
         } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Photo upload failed.")
+          toast.error(friendlyListingPhotoErrorMessage(err, "add"))
         }
       }
 
@@ -484,7 +490,7 @@ export default function ImportListingClient({
                   <input
                     id={fileInputId}
                     type="file"
-                    accept="image/*"
+                    accept={LISTING_PHOTO_ACCEPT}
                     multiple
                     className="sr-only"
                     onChange={(e) => {

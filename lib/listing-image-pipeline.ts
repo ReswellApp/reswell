@@ -70,7 +70,7 @@ export async function browserCanDecodeImage(file: File): Promise<boolean> {
 }
 
 /** Transient, memory-pressure failures (mobile Safari aborts decode under load) — safe to retry. */
-function isRetryableImageError(err: unknown): boolean {
+export function isRetryableImageError(err: unknown): boolean {
   if (isAbortError(err)) return true
   const message = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase()
   return (
