@@ -9,7 +9,7 @@ import {
 const idSchema = z.string().uuid()
 const nextSchema = idSchema.nullable()
 
-const triggerSchema = z.discriminatedUnion("type", [
+export const emailStudioFlowTriggerSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("metric"),
     metricId: z.string().max(80),
@@ -34,7 +34,7 @@ const triggerSchema = z.discriminatedUnion("type", [
   }),
 ])
 
-const filterSchema = z.discriminatedUnion("type", [
+export const emailStudioFlowFilterSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("none") }),
   z.object({ type: z.literal("email-subscribed") }),
   z.object({
@@ -44,7 +44,7 @@ const filterSchema = z.discriminatedUnion("type", [
   }),
 ])
 
-const stepSchema = z.discriminatedUnion("type", [
+export const emailStudioFlowStepSchema = z.discriminatedUnion("type", [
   z.object({
     id: idSchema,
     type: z.literal("delay"),
@@ -103,10 +103,10 @@ const stepSchema = z.discriminatedUnion("type", [
 ])
 
 export const emailStudioFlowDefinitionSchema = z.object({
-  trigger: triggerSchema,
-  profileFilter: filterSchema,
+  trigger: emailStudioFlowTriggerSchema,
+  profileFilter: emailStudioFlowFilterSchema,
   entryStepId: nextSchema,
-  steps: z.array(stepSchema).max(40),
+  steps: z.array(emailStudioFlowStepSchema).max(40),
 })
 
 export const createEmailStudioFlowSchema = z.object({

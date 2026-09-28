@@ -86,6 +86,8 @@ export async function setEmailStudioFlowStatusAction(raw: unknown) {
 const askSchema = z.object({
   scope: z.enum(["email", "flow"]),
   scopeId: z.string().uuid(),
+  baseRevision: z.number().int().positive(),
+  selectedBlockId: z.string().uuid().optional(),
   message: z.string().trim().min(1).max(4000),
   snapshot: z.string().max(20000),
 })

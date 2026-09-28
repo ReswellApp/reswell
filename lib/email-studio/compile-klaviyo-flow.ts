@@ -144,7 +144,7 @@ function actionPayload(
           add_tracking_params: false,
           custom_tracking_params: null,
           additional_filters: null,
-          name: (copy?.name || "Email").slice(0, 255),
+          name: `${copy?.name || "Email"} · RS ${step.id}`.slice(0, 255),
         },
       },
     }

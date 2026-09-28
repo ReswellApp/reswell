@@ -25,6 +25,32 @@ export function emailBlockId(): string {
 export function createEmailBlock(type: EmailBlockType): EmailBlock {
   const id = emailBlockId()
   switch (type) {
+    case "section":
+      return {
+        id,
+        type,
+        surface: "muted",
+        padding: "comfortable",
+        gap: "comfortable",
+        stackOnMobile: true,
+        columns: [
+          {
+            id: emailBlockId(),
+            width: 1,
+            blocks: [
+              { id: emailBlockId(), type: "heading", text: "Section headline", align: "left" },
+              { id: emailBlockId(), type: "text", text: "Add focused copy for this section.", align: "left" },
+              {
+                id: emailBlockId(),
+                type: "button",
+                label: "Open Reswell",
+                href: RESWELL_EMAIL_HOME,
+                align: "left",
+              },
+            ],
+          },
+        ],
+      }
     case "logo":
       return {
         id,
@@ -217,19 +243,32 @@ export function starterById(id: string): EmailStudioStarter | null {
   return EMAIL_STUDIO_STARTERS.find((item) => item.id === id) ?? null
 }
 
+export function cloneEmailBlock(block: EmailBlock): EmailBlock {
+  if (block.type === "section") {
+    return {
+      ...block,
+      id: emailBlockId(),
+      columns: block.columns.map((column) => ({
+        ...column,
+        id: emailBlockId(),
+        blocks: column.blocks.map((child) => cloneEmailBlock(child) as typeof child),
+      })),
+    }
+  }
+  if (block.type === "details") {
+    return {
+      ...block,
+      id: emailBlockId(),
+      rows: block.rows.map((row) => ({ ...row, id: emailBlockId() })),
+    }
+  }
+  return { ...block, id: emailBlockId() }
+}
+
 export function cloneEmailDocument(document: EmailStudioDocument): EmailStudioDocument {
   return {
     htmlOverride: document.htmlOverride ?? null,
-    blocks: document.blocks.map((block) => {
-      if (block.type === "details") {
-        return {
-          ...block,
-          id: emailBlockId(),
-          rows: block.rows.map((row) => ({ ...row, id: emailBlockId() })),
-        }
-      }
-      return { ...block, id: emailBlockId() }
-    }),
+    blocks: document.blocks.map(cloneEmailBlock),
   }
 }
 

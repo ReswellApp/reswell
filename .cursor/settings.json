@@ -2,6 +2,9 @@
   "plugins": {
     "elastic": {
       "enabled": true
+    },
+    "adspirer": {
+      "enabled": true
     }
   }
 }

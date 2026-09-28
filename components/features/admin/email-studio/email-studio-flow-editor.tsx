@@ -1,19 +1,28 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import type { MouseEvent as ReactMouseEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Redo2, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   pushEmailStudioFlowAction,
   setEmailStudioFlowStatusAction,
-  updateEmailStudioFlowAction,
 } from "@/lib/actions/emailStudioFlows"
 import { klaviyoFromEmail, klaviyoFromLabel } from "@/lib/email-studio/flow-definition"
+import type {
+  EmailStudioAssistantProposalPreview,
+  EmailStudioFlowSnapshot,
+} from "@/lib/types/emailStudioCommands"
 import type { EmailStudioFlowRecord, EmailStudioFlowStep, EmailStudioMessage, KlaviyoCatalogOption } from "@/lib/types/emailStudioFlow"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { EmailStudioAssistant } from "@/components/features/admin/email-studio/email-studio-assistant"
-import { EmailStudioFlowSteps } from "@/components/features/admin/email-studio/email-studio-flow-steps"
+import { EmailStudioFlowCanvas } from "@/components/features/admin/email-studio/email-studio-flow-canvas"
+import { EmailStudioFlowStepInspector } from "@/components/features/admin/email-studio/email-studio-flow-steps"
+import { EmailStudioVersionHistory } from "@/components/features/admin/email-studio/email-studio-version-history"
+import { useEmailStudioFlow } from "@/components/features/admin/email-studio/hooks/use-email-studio-flow"
 
 const selectClass = "h-10 rounded-md border border-input bg-background px-3 text-sm"
 
@@ -33,98 +42,285 @@ function newStep(type: EmailStudioFlowStep["type"]): EmailStudioFlowStep {
 export function EmailStudioFlowEditor({
   flow,
   projects,
+  hasStaleLinkedEmails,
   metrics,
   lists,
   segments,
   klaviyoConnected,
   assistantEnabled,
   messages,
+  pendingProposal,
 }: {
   flow: EmailStudioFlowRecord
   projects: { id: string; name: string }[]
+  hasStaleLinkedEmails: boolean
   metrics: KlaviyoCatalogOption[]
   lists: KlaviyoCatalogOption[]
   segments: KlaviyoCatalogOption[]
   klaviyoConnected: boolean
   assistantEnabled: boolean
   messages: EmailStudioMessage[]
+  pendingProposal: Extract<EmailStudioAssistantProposalPreview, { scope: "flow" }> | null
 }) {
-  const [draft, setDraft] = useState(flow)
-  const [selectedId, setSelectedId] = useState(flow.definition.steps[0]?.id ?? null)
-  const [saving, setSaving] = useState(false)
+  const router = useRouter()
+  const {
+    draft,
+    change,
+    patchDefinition: commitDefinition,
+    save,
+    dirty,
+    saving,
+    saveError,
+    conflict,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    getCurrent,
+    mergeServerFields,
+    reset,
+  } = useEmailStudioFlow(flow)
+  const [selectedId, setSelectedId] = useState<string | null>(
+    pendingProposal?.flow.definition.steps[0]?.id ?? flow.definition.steps[0]?.id ?? null,
+  )
   const [confirmLive, setConfirmLive] = useState(false)
+  const [proposalPreview, setProposalPreview] = useState<EmailStudioFlowSnapshot | null>(
+    pendingProposal?.flow ?? null,
+  )
+  const displayDraft = proposalPreview ? { ...draft, ...proposalPreview } : draft
   const snapshot = useMemo(() => JSON.stringify({ name: draft.name, definition: draft.definition }), [draft])
 
-  function patchDefinition(definition: EmailStudioFlowRecord["definition"]) {
-    setDraft((current) => ({ ...current, definition }))
+  function patchDefinition(definition: EmailStudioFlowRecord["definition"]): void {
+    if (proposalPreview) return
+    commitDefinition(definition)
   }
 
   function add(type: EmailStudioFlowStep["type"]) {
+    if (proposalPreview) return
     const step = newStep(type)
     const steps = [...draft.definition.steps]
     const entry = draft.definition.entryStepId
     if (!entry) {
       patchDefinition({ ...draft.definition, entryStepId: step.id, steps: [...steps, step] })
     } else {
-      const linked = steps.map((item) => {
-        if (item.id !== selectedId || item.type === "split" || item.next) return item
-        return { ...item, next: step.id }
-      })
-      const attached = linked.some((item, index) => item !== steps[index])
-      patchDefinition({
-        ...draft.definition,
-        entryStepId: attached || entry ? entry : step.id,
-        steps: [...linked, step],
-      })
+      const selected = steps.find((item) => item.id === selectedId)
+      if (!selected) {
+        toast.error("Select the action this should follow.")
+        return
+      }
+      if (selected.type === "split") {
+        if (!selected.yes) {
+          patchDefinition({
+            ...draft.definition,
+            steps: [...steps.map((item) => item.id === selected.id ? { ...selected, yes: step.id } : item), step],
+          })
+        } else if (!selected.no) {
+          patchDefinition({
+            ...draft.definition,
+            steps: [...steps.map((item) => item.id === selected.id ? { ...selected, no: step.id } : item), step],
+          })
+        } else {
+          toast.error("Select the last action on the branch where this should go.")
+          return
+        }
+      } else {
+        const inserted = { ...step, next: selected.next } as EmailStudioFlowStep
+        patchDefinition({
+          ...draft.definition,
+          steps: [
+            ...steps.map((item) => item.id === selected.id ? { ...selected, next: step.id } : item),
+            inserted,
+          ],
+        })
+      }
     }
     setSelectedId(step.id)
   }
 
-  async function save() {
-    setSaving(true)
-    const result = await updateEmailStudioFlowAction({
-      id: draft.id,
-      name: draft.name,
-      notes: draft.notes,
-      definition: draft.definition,
-    })
-    setSaving(false)
-    if ("error" in result) {
-      toast.error(result.error)
-      return false
+  function removeSelected(): void {
+    if (!selectedId || proposalPreview) return
+    const selected = draft.definition.steps.find((step) => step.id === selectedId)
+    if (!selected) return
+    if (selected.type === "split" && (selected.yes || selected.no)) {
+      toast.error("Disconnect both split paths before removing this split.")
+      return
     }
-    toast.success("Saved")
-    return true
+    const continuation = selected.type === "split" ? null : selected.next
+    const steps = draft.definition.steps
+      .filter((step) => step.id !== selected.id)
+      .map((step) => {
+        if (step.type === "split") {
+          return {
+            ...step,
+            yes: step.yes === selected.id ? continuation : step.yes,
+            no: step.no === selected.id ? continuation : step.no,
+          }
+        }
+        return { ...step, next: step.next === selected.id ? continuation : step.next }
+      })
+    patchDefinition({
+      ...draft.definition,
+      entryStepId: draft.definition.entryStepId === selected.id
+        ? continuation
+        : draft.definition.entryStepId,
+      steps,
+    })
+    setSelectedId(continuation ?? steps[0]?.id ?? null)
   }
 
   async function push(replace: boolean) {
-    const ok = await save()
+    const ok = await save({ flush: true })
     if (!ok) return
     const result = await pushEmailStudioFlowAction({ id: draft.id, replace })
     if ("error" in result) {
       toast.error(result.error)
       return
     }
-    setDraft((current) => ({ ...current, klaviyoFlowId: result.klaviyoFlowId, klaviyoStatus: "draft" }))
-    toast.success(result.replacedId ? "New Klaviyo draft created. The previous flow is still in Klaviyo." : "Draft flow is in Klaviyo. It is not sending.")
+    mergeServerFields({
+      klaviyoFlowId: result.klaviyoFlowId,
+      klaviyoStatus: "draft",
+      klaviyoSyncedRevision: result.syncedRevision,
+      klaviyoContentChecksum: result.checksum,
+      klaviyoSyncedAt: result.syncedAt,
+      klaviyoReplacedFlowId: result.replacedId
+        ? draft.klaviyoReplacedFlowId ?? result.replacedId
+        : draft.klaviyoReplacedFlowId,
+      klaviyoReplacedFlowStatus: result.replacedId
+        ? draft.klaviyoReplacedFlowStatus ?? draft.klaviyoStatus
+        : draft.klaviyoReplacedFlowStatus,
+    })
+    if (result.warning) toast.warning(result.warning)
+    else toast.success(result.replacedId ? "New Klaviyo draft created. The previous flow is still in Klaviyo." : "Draft flow is verified in Klaviyo. It is not sending.")
+    router.refresh()
   }
 
-  const trigger = draft.definition.trigger
+  useEffect(() => {
+    function onKey(event: KeyboardEvent): void {
+      const mod = event.metaKey || event.ctrlKey
+      if (mod && event.key.toLowerCase() === "s") {
+        event.preventDefault()
+        void save({ announce: true, flush: true })
+        return
+      }
+      const target = event.target as HTMLElement | null
+      if (!mod || target?.matches("input, textarea, [contenteditable='true']")) return
+      if (event.key.toLowerCase() === "z" && !event.shiftKey) {
+        event.preventDefault()
+        undo()
+      } else if (event.key.toLowerCase() === "y" || (event.key.toLowerCase() === "z" && event.shiftKey)) {
+        event.preventDefault()
+        redo()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  })
+
+  const trigger = displayDraft.definition.trigger
+  const selected = displayDraft.definition.steps.find((step) => step.id === selectedId) ?? null
+  const flowStructureStale = Boolean(
+    draft.klaviyoFlowId
+    && (dirty || draft.klaviyoSyncedRevision !== draft.revision),
+  )
+  const klaviyoStale = flowStructureStale || hasStaleLinkedEmails
+
+  async function setStatus(status: "draft" | "manual" | "live"): Promise<void> {
+    const result = await setEmailStudioFlowStatusAction({
+      id: draft.id,
+      status,
+      confirmLive: status === "live",
+    })
+    if ("error" in result) {
+      toast.error(result.error)
+      return
+    }
+    mergeServerFields({
+      klaviyoStatus: status,
+      klaviyoReplacedFlowId: status === "live" ? null : draft.klaviyoReplacedFlowId,
+      klaviyoReplacedFlowStatus: status === "live" ? null : draft.klaviyoReplacedFlowStatus,
+    })
+    toast.success(status === "live" ? "Flow is live" : `Set to ${status}`)
+  }
+
+  function navigateAfterSave(event: ReactMouseEvent<HTMLAnchorElement>, href: string): void {
+    if (!dirty) return
+    event.preventDefault()
+    void save({ flush: true }).then((saved) => {
+      if (saved) router.push(href)
+    })
+  }
+
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <Button variant="ghost" size="sm" asChild><Link href="/admin/email-studio/flows">Flows</Link></Button>
-        <Input value={draft.name} aria-label="Flow name" className="h-9 max-w-xs" onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" disabled={!klaviyoConnected || saving} onClick={() => void push(Boolean(draft.klaviyoFlowId))}>
-            {draft.klaviyoFlowId ? "Push new Klaviyo draft" : "Push draft to Klaviyo"}
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin/email-studio/flows" onClick={(event) => navigateAfterSave(event, "/admin/email-studio/flows")}>Flows</Link>
+        </Button>
+        <Input
+          value={displayDraft.name}
+          aria-label="Flow name"
+          disabled={Boolean(proposalPreview)}
+          className="h-9 max-w-xs"
+          onChange={(event) => change({ name: event.target.value })}
+        />
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span
+            className={conflict || saveError ? "text-xs text-destructive" : "text-xs text-muted-foreground"}
+            title={saveError ?? undefined}
+          >
+            {conflict
+              ? "Save conflict"
+              : saving
+                ? "Saving…"
+                : saveError
+                  ? "Autosave paused"
+                  : dirty
+                    ? "Autosave pending"
+                    : `Saved · v${draft.revision}`}
+          </span>
+          {conflict ? (
+            <Button size="sm" variant="outline" onClick={() => window.location.reload()}>Reload</Button>
+          ) : null}
+          <Button size="icon" variant="ghost" aria-label="Undo" disabled={!canUndo} onClick={undo}>
+            <Undo2 className="h-4 w-4" />
           </Button>
-          <Button size="sm" disabled={saving} onClick={() => void save()}>{saving ? "Saving" : "Save"}</Button>
+          <Button size="icon" variant="ghost" aria-label="Redo" disabled={!canRedo} onClick={redo}>
+            <Redo2 className="h-4 w-4" />
+          </Button>
+          <EmailStudioVersionHistory
+            scope="flow"
+            scopeId={draft.id}
+            currentRevision={draft.revision}
+            onRestored={(record) => {
+              reset(record)
+              setSelectedId(record.definition.steps[0]?.id ?? null)
+            }}
+          />
+          <Button size="sm" variant="outline" disabled={!klaviyoConnected || saving || Boolean(proposalPreview)} onClick={() => void push(Boolean(draft.klaviyoFlowId && flowStructureStale))}>
+            {draft.klaviyoFlowId
+              ? flowStructureStale
+                ? "Push updated draft"
+                : "Sync linked emails"
+              : "Push draft to Klaviyo"}
+          </Button>
+          {draft.klaviyoFlowId && !flowStructureStale ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!klaviyoConnected || saving || Boolean(proposalPreview)}
+              onClick={() => void push(true)}
+            >
+              Create replacement
+            </Button>
+          ) : null}
+          <Button size="sm" disabled={saving || conflict || Boolean(proposalPreview)} onClick={() => void save({ announce: true, flush: true })}>
+            {saving ? "Saving" : "Save now"}
+          </Button>
         </div>
       </div>
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="min-h-0 space-y-4 overflow-y-auto p-4">
-          <div className="grid gap-2 md:grid-cols-2">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_320px_300px]">
+        <div className="flex min-h-0 flex-col">
+          <fieldset disabled={Boolean(proposalPreview)} className="grid gap-2 border-b border-border p-3 md:grid-cols-2">
             <select className={selectClass} aria-label="Trigger" value={trigger.type} onChange={(event) => {
               const type = event.target.value
               const next = type === "list"
@@ -148,7 +344,7 @@ export function EmailStudioFlowEditor({
               segments={segments}
               onChange={(next) => patchDefinition({ ...draft.definition, trigger: next })}
             />
-            <select className={selectClass} aria-label="Who can enter" value={draft.definition.profileFilter.type} onChange={(event) => {
+            <select className={selectClass} aria-label="Who can enter" value={displayDraft.definition.profileFilter.type} onChange={(event) => {
               const type = event.target.value
               const profileFilter = type === "property-equals"
                 ? { type: "property-equals" as const, property: "", value: "" }
@@ -161,47 +357,128 @@ export function EmailStudioFlowEditor({
               <option value="none">Everyone the trigger matches</option>
               <option value="property-equals">Profile property equals</option>
             </select>
-            {draft.definition.profileFilter.type === "property-equals" ? (
+            {displayDraft.definition.profileFilter.type === "property-equals" ? (
               <>
-                <Input value={draft.definition.profileFilter.property} aria-label="Filter property" placeholder="Property" onChange={(event) => patchDefinition({ ...draft.definition, profileFilter: { type: "property-equals", property: event.target.value, value: draft.definition.profileFilter.type === "property-equals" ? draft.definition.profileFilter.value : "" } })} />
-                <Input value={draft.definition.profileFilter.value} aria-label="Filter value" placeholder="Value" onChange={(event) => patchDefinition({ ...draft.definition, profileFilter: { type: "property-equals", property: draft.definition.profileFilter.type === "property-equals" ? draft.definition.profileFilter.property : "", value: event.target.value } })} />
+                <Input value={displayDraft.definition.profileFilter.property} aria-label="Filter property" placeholder="Property" onChange={(event) => patchDefinition({ ...draft.definition, profileFilter: { type: "property-equals", property: event.target.value, value: draft.definition.profileFilter.type === "property-equals" ? draft.definition.profileFilter.value : "" } })} />
+                <Input value={displayDraft.definition.profileFilter.value} aria-label="Filter value" placeholder="Value" onChange={(event) => patchDefinition({ ...draft.definition, profileFilter: { type: "property-equals", property: draft.definition.profileFilter.type === "property-equals" ? draft.definition.profileFilter.property : "", value: event.target.value } })} />
               </>
             ) : null}
-          </div>
-          <div className="flex flex-wrap gap-1">
+          </fieldset>
+          {proposalPreview ? (
+            <div className="border-b border-[#5574AD]/30 bg-[#5574AD]/5 px-3 py-2 text-xs text-[#355185]">
+              Assistant preview · Accept or reject it in the assistant panel.
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 py-2">
+            <span className="mr-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Add after selection</span>
             {(["delay", "email", "sms", "split", "update-profile", "list-update", "webhook"] as const).map((type) => (
-              <Button key={type} size="sm" variant="outline" onClick={() => add(type)}>{type}</Button>
+              <Button key={type} size="sm" variant="outline" disabled={Boolean(proposalPreview)} onClick={() => add(type)}>{type}</Button>
             ))}
           </div>
-          <EmailStudioFlowSteps
-            steps={draft.definition.steps}
+          <EmailStudioFlowCanvas
+            definition={displayDraft.definition}
             selectedId={selectedId}
             projects={projects}
-            lists={lists}
-            onSelect={setSelectedId}
-            onChange={(step) => patchDefinition({
-              ...draft.definition,
-              steps: draft.definition.steps.map((item) => (item.id === step.id ? step : item)),
-            })}
+            onSelect={(id) => setSelectedId(id)}
           />
-          <div className="space-y-2 border-t border-border pt-4">
+          <div className="space-y-2 border-t border-border px-3 py-2">
             <p className="text-xs text-muted-foreground">
               Push creates a draft. Messages are marked ready, and the flow stays off until you set it live.
-              {draft.klaviyoFlowId ? ` Klaviyo ${draft.klaviyoFlowId} · ${draft.klaviyoStatus || "draft"}.` : ""}
+              {draft.klaviyoFlowId
+                ? ` Klaviyo ${draft.klaviyoFlowId} · ${draft.klaviyoStatus || "draft"}${klaviyoStale ? " · local changes not pushed" : " · up to date"}.`
+                : ""}
             </p>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={confirmLive} onChange={(event) => setConfirmLive(event.target.checked)} />
               I want this flow to start sending
             </label>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={!draft.klaviyoFlowId} onClick={() => void setEmailStudioFlowStatusAction({ id: draft.id, status: "draft" }).then((result) => "error" in result ? toast.error(result.error) : toast.success("Set to draft"))}>Draft</Button>
-              <Button size="sm" variant="outline" disabled={!draft.klaviyoFlowId} onClick={() => void setEmailStudioFlowStatusAction({ id: draft.id, status: "manual" }).then((result) => "error" in result ? toast.error(result.error) : toast.success("Set to manual"))}>Manual</Button>
-              <Button size="sm" disabled={!draft.klaviyoFlowId || !confirmLive} onClick={() => void setEmailStudioFlowStatusAction({ id: draft.id, status: "live", confirmLive: true }).then((result) => "error" in result ? toast.error(result.error) : toast.success("Flow is live"))}>Set live</Button>
+              <Button size="sm" variant="outline" disabled={!draft.klaviyoFlowId || Boolean(proposalPreview)} onClick={() => void setStatus("draft")}>Draft</Button>
+              <Button size="sm" variant="outline" disabled={!draft.klaviyoFlowId || klaviyoStale || Boolean(proposalPreview)} onClick={() => void setStatus("manual")}>Manual</Button>
+              <Button size="sm" disabled={!draft.klaviyoFlowId || klaviyoStale || !confirmLive || Boolean(proposalPreview)} onClick={() => void setStatus("live")}>Set live</Button>
             </div>
+            {draft.klaviyoReplacedFlowId && draft.klaviyoReplacedFlowStatus !== "draft" ? (
+              <p className="text-xs text-amber-700">
+                Setting this replacement live will first disable the previous {draft.klaviyoReplacedFlowStatus} flow.
+              </p>
+            ) : null}
           </div>
         </div>
+        <aside className="min-h-0 space-y-4 overflow-y-auto border-t border-border p-3 lg:border-l lg:border-t-0">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Properties</p>
+            <p className="mt-1 text-sm font-medium">{selected ? selected.type : "Trigger"}</p>
+          </div>
+          {selected ? (
+            <fieldset disabled={Boolean(proposalPreview)}>
+              <EmailStudioFlowStepInspector
+                step={selected}
+                projects={projects}
+                lists={lists}
+                steps={displayDraft.definition.steps}
+                onChange={(step) => patchDefinition({
+                  ...draft.definition,
+                  steps: draft.definition.steps.map((item) => item.id === step.id ? step : item),
+                })}
+                onNavigate={navigateAfterSave}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-4 text-destructive"
+                onClick={removeSelected}
+              >
+                Remove action
+              </Button>
+            </fieldset>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Trigger and entry rules are edited above the canvas.
+            </p>
+          )}
+          <label className="block text-xs text-muted-foreground">
+            Notes
+            <textarea
+              value={displayDraft.notes}
+              disabled={Boolean(proposalPreview)}
+              className="mt-1 min-h-24 w-full rounded-md border border-input bg-background p-2 text-sm text-foreground"
+              onChange={(event) => change({ notes: event.target.value })}
+            />
+          </label>
+        </aside>
         <aside className="min-h-0 border-t border-border p-3 lg:border-l lg:border-t-0">
-          <EmailStudioAssistant scope="flow" scopeId={draft.id} enabled={assistantEnabled} initialMessages={messages} snapshot={snapshot} />
+          <EmailStudioAssistant
+            scope="flow"
+            scopeId={draft.id}
+            baseRevision={draft.revision}
+            enabled={assistantEnabled}
+            initialMessages={messages}
+            initialProposal={pendingProposal}
+            snapshot={snapshot}
+            prepare={async () => {
+              const saved = await save({ flush: true })
+              if (!saved) return null
+              const current = getCurrent()
+              return {
+                baseRevision: current.revision,
+                snapshot: JSON.stringify({ name: current.name, definition: current.definition }),
+              }
+            }}
+            onFlowPreview={(next) => {
+              setProposalPreview(next)
+              if (next && !next.definition.steps.some((step) => step.id === selectedId)) {
+                setSelectedId(next.definition.steps[0]?.id ?? null)
+              }
+              if (!next && !draft.definition.steps.some((step) => step.id === selectedId)) {
+                setSelectedId(draft.definition.steps[0]?.id ?? null)
+              }
+            }}
+            onFlowAccepted={(record) => {
+              setProposalPreview(null)
+              reset(record)
+              setSelectedId(record.definition.steps[0]?.id ?? null)
+            }}
+          />
         </aside>
       </div>
     </div>

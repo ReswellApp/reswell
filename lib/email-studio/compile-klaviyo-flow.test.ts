@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { compileKlaviyoFlow } from "./compile-klaviyo-flow.ts"
-import { walkFlowSteps } from "./flow-definition.ts"
+import { compileKlaviyoFlow } from "./compile-klaviyo-flow"
+import { walkFlowSteps } from "./flow-definition"
 import type { EmailStudioFlowDefinition } from "@/lib/types/emailStudioFlow"
 
 const PROJECT = "11111111-1111-4111-8111-111111111111"

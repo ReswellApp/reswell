@@ -67,27 +67,28 @@ function InlineText({
 
 function CanvasBlock({
   block,
-  selected,
+  selectedId,
   onSelect,
   onChange,
   onRemove,
   onDuplicate,
 }: {
   block: EmailBlock
-  selected: boolean
-  onSelect: () => void
+  selectedId: string | null
+  onSelect: (id: string) => void
   onChange: (block: EmailBlock) => void
   onRemove: () => void
   onDuplicate: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id })
+  const selected = block.id === selectedId
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : undefined }}
       className={cn("group relative rounded-md", selected && "ring-2 ring-[#5574AD]")}
-      onClick={onSelect}
+      onClick={() => onSelect(block.id)}
     >
       <div className="absolute -left-9 top-0 flex flex-col gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
         <button
@@ -106,20 +107,93 @@ function CanvasBlock({
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
-      <BlockBody block={block} selected={selected} onChange={onChange} />
+      <BlockBody
+        block={block}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        onChange={onChange}
+      />
     </div>
   )
 }
 
 function BlockBody({
   block,
-  selected,
+  selectedId,
+  onSelect,
   onChange,
 }: {
   block: EmailBlock
-  selected: boolean
+  selectedId: string | null
+  onSelect: (id: string) => void
   onChange: (block: EmailBlock) => void
 }) {
+  const selected = block.id === selectedId
+  if (block.type === "section") {
+    const surface = block.surface === "white"
+      ? "bg-white"
+      : block.surface === "muted"
+        ? "bg-[#F9F9F2]"
+        : block.surface === "brand"
+          ? "bg-[#5574AD] text-white"
+          : "bg-[#0F172A] text-white"
+    const padding = block.padding === "none"
+      ? "p-0"
+      : block.padding === "compact"
+        ? "p-4"
+        : block.padding === "spacious"
+          ? "p-8"
+          : "p-6"
+    const gap = block.gap === "compact" ? "gap-3" : block.gap === "spacious" ? "gap-8" : "gap-5"
+    return (
+      <div className={cn("rounded-lg", surface, padding)}>
+        <div
+          className={cn(block.stackOnMobile ? "flex flex-col sm:grid" : "grid", gap)}
+          style={{ gridTemplateColumns: block.columns.map((column) => `${column.width}fr`).join(" ") }}
+        >
+          {block.columns.map((column) => (
+            <div key={column.id} className="min-w-0 space-y-3">
+              {column.blocks.map((child) => (
+                <div
+                  key={child.id}
+                  className={cn(
+                    "rounded-md",
+                    child.id === selectedId && "ring-2 ring-white/80 ring-offset-2 ring-offset-transparent",
+                  )}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onSelect(child.id)
+                  }}
+                >
+                  <BlockBody
+                    block={child}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    onChange={(replacement) => {
+                      if (replacement.type === "section") return
+                      onChange({
+                        ...block,
+                        columns: block.columns.map((item) => (
+                          item.id === column.id
+                            ? {
+                                ...item,
+                                blocks: item.blocks.map((current) => (
+                                  current.id === replacement.id ? replacement : current
+                                )),
+                              }
+                            : item
+                        )),
+                      })
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
   if (block.type === "logo") {
     return (
       <div className="flex justify-center py-2">
@@ -300,8 +374,8 @@ export function EmailStudioCanvas({
             <CanvasBlock
               key={block.id}
               block={block}
-              selected={block.id === selectedId}
-              onSelect={() => onSelect(block.id)}
+              selectedId={selectedId}
+              onSelect={onSelect}
               onChange={onChange}
               onRemove={() => onRemove(block.id)}
               onDuplicate={() => onDuplicate(block.id)}

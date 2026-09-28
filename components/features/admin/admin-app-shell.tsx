@@ -18,7 +18,7 @@ function isSupportInboxPath(pathname: string): boolean {
 }
 
 function isEmailStudioEditor(pathname: string): boolean {
-  return /^\/admin\/email-studio\/[^/]+$/.test(pathname)
+  return /^\/admin\/email-studio\/(?:[^/]+|flows\/[^/]+)$/.test(pathname)
 }
 
 function isFullBleedAdminPath(pathname: string): boolean {

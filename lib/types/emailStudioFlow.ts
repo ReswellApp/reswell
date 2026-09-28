@@ -105,11 +105,18 @@ export interface EmailStudioFlowDefinition {
 
 export interface EmailStudioFlowRecord {
   id: string
+  schemaVersion: number
+  revision: number
   name: string
   notes: string
   definition: EmailStudioFlowDefinition
   klaviyoFlowId: string | null
   klaviyoStatus: string
+  klaviyoSyncedRevision: number | null
+  klaviyoContentChecksum: string | null
+  klaviyoSyncedAt: string | null
+  klaviyoReplacedFlowId: string | null
+  klaviyoReplacedFlowStatus: string | null
   createdAt: string
   updatedAt: string
 }

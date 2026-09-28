@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import type { EmailBlock, EmailBlockType } from "@/lib/types/emailStudio"
 
 const LABELS: Record<EmailBlockType, string> = {
+  section: "Section",
   logo: "Logo",
   eyebrow: "Eyebrow",
   heading: "Headline",
@@ -25,6 +26,10 @@ export function emailBlockLabel(type: EmailBlockType): string {
 }
 
 export function emailBlockSummary(block: EmailBlock): string {
+  if (block.type === "section") {
+    const count = block.columns.reduce((total, column) => total + column.blocks.length, 0)
+    return `${block.columns.length} column${block.columns.length === 1 ? "" : "s"} · ${count} layers`
+  }
   if (block.type === "heading" || block.type === "eyebrow" || block.type === "text") {
     return block.text.replace(/\s+/g, " ").trim().slice(0, 42)
   }
@@ -41,15 +46,17 @@ export function EmailStudioOutlineRow({
   onSelect,
   onRemove,
   onMove,
+  sortableId,
 }: {
   block: EmailBlock
   active: boolean
   onSelect: () => void
   onRemove: () => void
   onMove: (direction: -1 | 1) => void
+  sortableId?: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: block.id,
+    id: sortableId ?? block.id,
   })
   const summary = emailBlockSummary(block)
 

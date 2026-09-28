@@ -5,6 +5,7 @@ import {
   isEmailStudioAssistantEnabled,
   listEmailStudioAssistantMessagesService,
 } from "@/lib/services/emailStudioAssistant"
+import { getPendingEmailStudioProposalService } from "@/lib/services/emailStudioCommands"
 import { EmailStudioEditor } from "@/components/features/admin/email-studio/email-studio-editor"
 
 export const dynamic = "force-dynamic"
@@ -21,10 +22,11 @@ export default async function AdminEmailStudioEditorPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [project, flows, messages] = await Promise.all([
+  const [project, flows, messages, proposal] = await Promise.all([
     getEmailStudioService(id),
     listEmailStudioFlowsService(),
     listEmailStudioAssistantMessagesService("email", id),
+    getPendingEmailStudioProposalService("email", id),
   ])
   if ("error" in project) {
     if (project.error === "Project not found") notFound()
@@ -38,6 +40,7 @@ export default async function AdminEmailStudioEditorPage({
       klaviyoConnected={flows.connected}
       assistantEnabled={isEmailStudioAssistantEnabled()}
       messages={"success" in messages ? messages.data ?? [] : []}
+      pendingProposal={"success" in proposal && proposal.data?.scope === "email" ? proposal.data : null}
     />
   )
 }

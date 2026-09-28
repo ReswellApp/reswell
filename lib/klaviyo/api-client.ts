@@ -19,12 +19,32 @@ export function getKlaviyoApiKey(): string | null {
   return key && key.length > 0 ? key : null
 }
 
-function klaviyoHeaders(apiKey: string): HeadersInit {
+function klaviyoHeaders(apiKey: string, revision = KLAVIYO_API_REVISION): HeadersInit {
   return {
     Authorization: `Klaviyo-API-Key ${apiKey}`,
-    revision: KLAVIYO_API_REVISION,
+    revision,
     Accept: "application/vnd.api+json",
   }
+}
+
+function errorDetail(text: string, fallback: string): string {
+  try {
+    const parsed = JSON.parse(text) as {
+      errors?: { detail?: string; title?: string; code?: string }[]
+    }
+    const error = parsed.errors?.[0]
+    return error?.detail || error?.title || error?.code || text.slice(0, 800) || fallback
+  } catch {
+    return text.slice(0, 800) || fallback
+  }
+}
+
+function retryDelay(response: Response, attempt: number): number {
+  const retryAfter = Number(response.headers.get("retry-after"))
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return Math.min(retryAfter * 1_000, 10_000)
+  }
+  return Math.min(500 * 2 ** (attempt - 1), 4_000)
 }
 
 /**
@@ -70,7 +90,7 @@ export async function klaviyoGet<T>(
       return {
         ok: false,
         status: res.status,
-        detail: text.slice(0, 800) || res.statusText,
+        detail: errorDetail(text, res.statusText),
       }
     }
 
@@ -99,6 +119,7 @@ export async function klaviyoWrite<T>(
   method: "POST" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
+  opts?: { revision?: string; maxAttempts?: number },
 ): Promise<KlaviyoWriteResult<T>> {
   const apiKey = getKlaviyoApiKey()
   if (!apiKey) {
@@ -110,30 +131,42 @@ export async function klaviyoWrite<T>(
   } catch {
     return { ok: false, status: 0, detail: `Invalid Klaviyo URL: ${path}` }
   }
-  try {
-    const res = await fetch(url.toString(), {
-      method,
-      headers: {
-        ...klaviyoHeaders(apiKey),
-        ...(body != null ? { "Content-Type": "application/vnd.api+json" } : {}),
-      },
-      body: body != null ? JSON.stringify(body) : undefined,
-      cache: "no-store",
-    })
-    const text = await res.text().catch(() => "")
-    if (!res.ok) {
-      return { ok: false, status: res.status, detail: text.slice(0, 800) || res.statusText }
-    }
-    if (!text) return { ok: true, status: res.status, data: {} as T }
+  const maxAttempts = Math.max(1, opts?.maxAttempts ?? 4)
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      return { ok: true, status: res.status, data: JSON.parse(text) as T }
-    } catch {
-      return { ok: false, status: res.status, detail: "Invalid JSON from Klaviyo" }
+      const res = await fetch(url.toString(), {
+        method,
+        headers: {
+          ...klaviyoHeaders(apiKey, opts?.revision),
+          ...(body != null ? { "Content-Type": "application/vnd.api+json" } : {}),
+        },
+        body: body != null ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+      })
+      const text = await res.text().catch(() => "")
+      if (!res.ok) {
+        const result: KlaviyoWriteResult<T> = {
+          ok: false,
+          status: res.status,
+          detail: errorDetail(text, res.statusText),
+        }
+        const retriable = res.status === 429 || (method !== "POST" && res.status >= 500)
+        if (!retriable || attempt === maxAttempts) return result
+        await sleep(retryDelay(res, attempt))
+        continue
+      }
+      if (!text) return { ok: true, status: res.status, data: {} as T }
+      try {
+        return { ok: true, status: res.status, data: JSON.parse(text) as T }
+      } catch {
+        return { ok: false, status: res.status, detail: "Invalid JSON from Klaviyo" }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      return { ok: false, status: 0, detail: msg }
     }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    return { ok: false, status: 0, detail: msg }
   }
+  return { ok: false, status: 0, detail: "Klaviyo request failed" }
 }
 
 function sleep(ms: number): Promise<void> {
@@ -199,7 +232,7 @@ export async function klaviyoGetAllPagesWithIncluded<TItem, TIncluded>(
   let next: string | null = null
   let page = 0
 
-  const first = await klaviyoGet<KlaviyoCollectionPage<TItem, TIncluded>>(path, searchParams)
+  const first = await klaviyoGetWithRetry<KlaviyoCollectionPage<TItem, TIncluded>>(path, searchParams)
   if (!first.ok) return first
 
   items.push(...(first.data.data ?? []))
@@ -208,7 +241,7 @@ export async function klaviyoGetAllPagesWithIncluded<TItem, TIncluded>(
   page += 1
 
   while (next && page < maxPages) {
-    const pageResult = await klaviyoGet<KlaviyoCollectionPage<TItem, TIncluded>>(next)
+    const pageResult = await klaviyoGetWithRetry<KlaviyoCollectionPage<TItem, TIncluded>>(next)
     if (!pageResult.ok) return pageResult
     items.push(...(pageResult.data.data ?? []))
     if (pageResult.data.included?.length) included.push(...pageResult.data.included)

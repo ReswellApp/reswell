@@ -9,7 +9,7 @@ import { existsSync } from "node:fs"
 import { join } from "node:path"
 
 const KLAVIYO_EVENTS_URL = "https://a.klaviyo.com/api/events"
-export const KLAVIYO_API_REVISION = "2026-01-15"
+export const KLAVIYO_API_REVISION = "2026-07-15"
 
 let klaviyoEnvDebugLogged = false
 let klaviyoMissingKeyWarned = false

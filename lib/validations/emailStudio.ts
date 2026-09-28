@@ -12,7 +12,7 @@ const detailRowSchema = z.object({
   value: z.string().max(2000),
 })
 
-const blockSchema = z.discriminatedUnion("type", [
+export const emailContentBlockSchema = z.discriminatedUnion("type", [
   z.object({
     id: idSchema,
     type: z.literal("logo"),
@@ -88,8 +88,29 @@ const blockSchema = z.discriminatedUnion("type", [
   }),
 ])
 
+const emailSectionColumnSchema = z.object({
+  id: idSchema,
+  width: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  blocks: z.array(emailContentBlockSchema).max(20),
+})
+
+export const emailSectionBlockSchema = z.object({
+  id: idSchema,
+  type: z.literal("section"),
+  surface: z.enum(["white", "muted", "brand", "dark"]),
+  padding: z.enum(["none", "compact", "comfortable", "spacious"]),
+  gap: z.enum(["compact", "comfortable", "spacious"]),
+  stackOnMobile: z.boolean(),
+  columns: z.array(emailSectionColumnSchema).min(1).max(3),
+})
+
+export const emailBlockSchema = z.union([
+  emailContentBlockSchema,
+  emailSectionBlockSchema,
+])
+
 export const emailStudioDocumentSchema = z.object({
-  blocks: z.array(blockSchema).max(40),
+  blocks: z.array(emailBlockSchema).max(40),
   htmlOverride: z.string().max(500_000).nullable().optional(),
 })
 
@@ -122,6 +143,11 @@ export const emailStudioIdSchema = z.object({
 export const saveEmailStudioTemplateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(1).max(120),
+})
+
+export const sendEmailStudioTestSchema = z.object({
+  id: z.string().uuid(),
+  recipient: z.string().trim().email().max(320),
 })
 
 export type CreateEmailStudioInput = z.infer<typeof createEmailStudioSchema>

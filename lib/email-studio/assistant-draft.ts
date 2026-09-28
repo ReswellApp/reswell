@@ -1,9 +1,15 @@
 import { z } from "zod"
-import type { EmailAlign, EmailBlock, EmailStudioDocument } from "@/lib/types/emailStudio"
+import type {
+  EmailAlign,
+  EmailBlock,
+  EmailContentBlock,
+  EmailStudioDocument,
+} from "@/lib/types/emailStudio"
 import { emailStudioDocumentSchema } from "@/lib/validations/emailStudio"
 import { RESWELL_EMAIL_HOME, RESWELL_EMAIL_LOGO } from "@/lib/email-studio/document"
 
 const BLOCK_TYPES = [
+  "section",
   "logo",
   "eyebrow",
   "heading",
@@ -35,6 +41,19 @@ const blockModelSchema = z.object({
   showUnsubscribe: z.boolean(),
   height: z.number(),
   rows: z.array(z.object({ label: z.string().max(200), value: z.string().max(500) })).max(8),
+  surface: z.enum(["white", "muted", "brand", "dark"]),
+  padding: z.enum(["none", "compact", "comfortable", "spacious"]),
+  gap: z.enum(["compact", "comfortable", "spacious"]),
+  stackOnMobile: z.boolean(),
+  columns: z.array(z.object({
+    width: z.number(),
+    heading: z.string().max(500),
+    text: z.string().max(8000),
+    imageSrc: z.string().max(2000),
+    imageAlt: z.string().max(500),
+    buttonLabel: z.string().max(500),
+    buttonHref: z.string().max(2000),
+  })).max(3),
 })
 
 export const assistantEmailModelSchema = z.object({
@@ -97,6 +116,8 @@ export const assistantStudioModelSchema = z.object({
   reply: z.string().max(2000),
   applyEmail: z.enum(["yes", "no"]),
   applyFlow: z.enum(["yes", "no"]),
+  operation: z.enum(["replace-document", "replace-selection", "insert-after-selection", "metadata-only"]),
+  metadataFields: z.array(z.enum(["subject", "previewText", "notes"])).max(3),
   name: z.string().max(120),
   subject: z.string().max(200),
   previewText: z.string().max(300),
@@ -161,6 +182,66 @@ function blockFromRow(row: Record<string, unknown>): EmailBlock | null {
   const id = crypto.randomUUID()
   const text = textOf(row.text, 8000)
   const align = alignOf(row.align)
+  if (type === "section") {
+    const rawColumns = Array.isArray(row.columns) ? row.columns.slice(0, 3) : []
+    const columns = rawColumns.flatMap((item) => {
+      if (!item || typeof item !== "object") return []
+      const column = item as Record<string, unknown>
+      const blocks: EmailContentBlock[] = []
+      const imageSrc = textOf(column.imageSrc, 2000)
+      const heading = textOf(column.heading, 500)
+      const body = textOf(column.text, 8000)
+      const buttonLabel = textOf(column.buttonLabel, 500)
+      if (imageSrc) {
+        blocks.push({
+          id: crypto.randomUUID(),
+          type: "image",
+          src: imageSrc,
+          alt: textOf(column.imageAlt, 500),
+          href: "",
+          width: 560,
+          height: null,
+        })
+      }
+      if (heading) blocks.push({ id: crypto.randomUUID(), type: "heading", text: heading, align })
+      if (body) blocks.push({ id: crypto.randomUUID(), type: "text", text: body, align })
+      if (buttonLabel) {
+        blocks.push({
+          id: crypto.randomUUID(),
+          type: "button",
+          label: buttonLabel,
+          href: textOf(column.buttonHref, 2000) || RESWELL_EMAIL_HOME,
+          align,
+        })
+      }
+      const width = Math.round(Number(column.width))
+      const normalizedWidth: 1 | 2 | 3 = width === 2 ? 2 : width === 3 ? 3 : 1
+      return [{
+        id: crypto.randomUUID(),
+        width: normalizedWidth,
+        blocks,
+      }]
+    })
+    if (columns.length === 0) {
+      columns.push({
+        id: crypto.randomUUID(),
+        width: 1,
+        blocks: [
+          { id: crypto.randomUUID(), type: "heading", text: textOf(row.title, 500) || "Section", align },
+          { id: crypto.randomUUID(), type: "text", text: text || "Add focused copy.", align },
+        ],
+      })
+    }
+    return {
+      id,
+      type,
+      surface: enumOf(row.surface, ["white", "muted", "brand", "dark"] as const, "muted"),
+      padding: enumOf(row.padding, ["none", "compact", "comfortable", "spacious"] as const, "comfortable"),
+      gap: enumOf(row.gap, ["compact", "comfortable", "spacious"] as const, "comfortable"),
+      stackOnMobile: row.stackOnMobile !== false,
+      columns,
+    }
+  }
   if (type === "logo") {
     return {
       id,
@@ -406,6 +487,8 @@ export function coerceAssistantFlow(raw: unknown): AssistantFlowDraft | null {
 
 export function coerceAssistantStudio(raw: unknown): {
   reply: string
+  operation: "replace-document" | "replace-selection" | "insert-after-selection" | "metadata-only"
+  metadataFields: ("subject" | "previewText" | "notes")[]
   email: AssistantEmailDraft | null
   flow: AssistantFlowDraft | null
 } | null {
@@ -413,9 +496,19 @@ export function coerceAssistantStudio(raw: unknown): {
   const row = raw as Record<string, unknown>
   const emailFlag = textOf(row.applyEmail, 3).toLowerCase()
   const flowFlag = textOf(row.applyFlow, 3).toLowerCase()
+  const operation = enumOf(
+    row.operation,
+    ["replace-document", "replace-selection", "insert-after-selection", "metadata-only"] as const,
+    "replace-document",
+  )
   const hasBlocks = Array.isArray(row.blocks) && row.blocks.length > 0
   const hasSteps = Array.isArray(row.steps) && row.steps.length > 0
-  const email = hasBlocks && emailFlag !== "no"
+  const metadataFields = Array.isArray(row.metadataFields)
+    ? row.metadataFields.flatMap((field) => (
+        field === "subject" || field === "previewText" || field === "notes" ? [field] : []
+      ))
+    : []
+  const email = (hasBlocks || operation === "metadata-only") && emailFlag !== "no"
     ? coerceAssistantEmail({
         reply: row.reply,
         name: row.name,
@@ -446,6 +539,8 @@ export function coerceAssistantStudio(raw: unknown): {
   if (!email && !flow) return null
   return {
     reply: textOf(row.reply, 2000) || email?.reply || flow?.reply || "Updated the draft.",
+    operation,
+    metadataFields,
     email: email?.draft ?? null,
     flow,
   }

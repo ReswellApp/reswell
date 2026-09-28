@@ -106,4 +106,67 @@ describe("email studio assistant drafts", () => {
     assert.ok(emailOnly?.email)
     assert.equal(emailOnly.flow, null)
   })
+
+  it("keeps selection and metadata operations for command proposals", () => {
+    const selected = coerceAssistantStudio({
+      applyEmail: "yes",
+      applyFlow: "no",
+      operation: "replace-selection",
+      blocks: [{ type: "heading", text: "A sharper headline" }],
+    })
+    assert.equal(selected?.operation, "replace-selection")
+
+    const metadata = coerceAssistantStudio({
+      applyEmail: "yes",
+      applyFlow: "no",
+      operation: "metadata-only",
+      metadataFields: ["subject", "previewText"],
+      subject: "A better subject",
+      previewText: "",
+      blocks: [],
+    })
+    assert.equal(metadata?.operation, "metadata-only")
+    assert.deepEqual(metadata?.metadataFields, ["subject", "previewText"])
+    assert.equal(metadata?.email?.subject, "A better subject")
+  })
+
+  it("coerces a styled section with email-safe columns", () => {
+    const blocks = coerceAssistantBlocks([
+      {
+        type: "section",
+        surface: "dark",
+        padding: "spacious",
+        gap: "comfortable",
+        stackOnMobile: true,
+        columns: [
+          {
+            width: 2,
+            heading: "A considered headline",
+            text: "Short editorial copy.",
+            imageSrc: "",
+            imageAlt: "",
+            buttonLabel: "Explore",
+            buttonHref: "https://www.reswell.app",
+          },
+          {
+            width: 1,
+            heading: "",
+            text: "",
+            imageSrc: "https://www.reswell.app/media/board.jpg",
+            imageAlt: "Surfboard",
+            buttonLabel: "",
+            buttonHref: "",
+          },
+        ],
+      },
+    ])
+    const section = blocks.find((block) => block.type === "section")
+    assert.equal(section?.type, "section")
+    if (section?.type === "section") {
+      assert.equal(section.surface, "dark")
+      assert.equal(section.columns.length, 2)
+      assert.equal(section.columns[0]?.blocks[0]?.type, "heading")
+      assert.equal(section.columns[1]?.blocks[0]?.type, "image")
+    }
+  })
 })

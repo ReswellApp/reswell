@@ -1,13 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { EmailStudioRevisionConflictError } from "@/lib/email-studio/revision-conflict"
 import { emailStudioDocumentSchema } from "@/lib/validations/emailStudio"
-import type { EmailStudioDocument, EmailStudioKind, EmailStudioRecord } from "@/lib/types/emailStudio"
+import {
+  EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION,
+  type EmailStudioDocument,
+  type EmailStudioKind,
+  type EmailStudioRecord,
+} from "@/lib/types/emailStudio"
+import type { EmailStudioChangeSource, EmailStudioCommand } from "@/lib/types/emailStudioCommands"
 
 const SELECT =
-  "id, kind, name, subject, preview_text, flow_name, flow_id, trigger_metric, notes, document, klaviyo_template_id, created_at, updated_at"
+  "id, kind, schema_version, revision, name, subject, preview_text, flow_name, flow_id, trigger_metric, notes, document, klaviyo_template_id, klaviyo_synced_revision, klaviyo_content_checksum, klaviyo_synced_at, created_at, updated_at"
 
 type Row = {
   id: string
   kind: string
+  schema_version: number
+  revision: number
   name: string
   subject: string
   preview_text: string
@@ -17,6 +26,9 @@ type Row = {
   notes: string
   document: unknown
   klaviyo_template_id: string | null
+  klaviyo_synced_revision: number | null
+  klaviyo_content_checksum: string | null
+  klaviyo_synced_at: string | null
   created_at: string
   updated_at: string
 }
@@ -31,6 +43,8 @@ function toRecord(row: Row): EmailStudioRecord {
   return {
     id: row.id,
     kind,
+    schemaVersion: row.schema_version,
+    revision: row.revision,
     name: row.name,
     subject: row.subject,
     previewText: row.preview_text,
@@ -40,6 +54,9 @@ function toRecord(row: Row): EmailStudioRecord {
     notes: row.notes,
     document: parsed.success ? parsed.data : emptyDocument(),
     klaviyoTemplateId: row.klaviyo_template_id,
+    klaviyoSyncedRevision: row.klaviyo_synced_revision,
+    klaviyoContentChecksum: row.klaviyo_content_checksum,
+    klaviyoSyncedAt: row.klaviyo_synced_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -74,9 +91,24 @@ export async function getEmailStudioDocument(
   return data ? toRecord(data as Row) : null
 }
 
+export async function getEmailStudioDocumentsByIds(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<EmailStudioRecord[]> {
+  const uniqueIds = [...new Set(ids)]
+  if (uniqueIds.length === 0) return []
+  const { data, error } = await supabase
+    .from("email_studio_documents")
+    .select(SELECT)
+    .in("id", uniqueIds)
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as Row[]).map(toRecord)
+}
+
 export async function insertEmailStudioDocument(
   supabase: SupabaseClient,
   args: {
+    id?: string
     kind: EmailStudioKind
     name: string
     subject: string
@@ -87,11 +119,16 @@ export async function insertEmailStudioDocument(
     notes: string
     document: EmailStudioDocument
     userId: string
+    schemaVersion?: number
+    source?: EmailStudioChangeSource
+    summary?: string
+    commands?: EmailStudioCommand[]
   },
 ): Promise<EmailStudioRecord> {
   const { data, error } = await supabase
     .from("email_studio_documents")
     .insert({
+      ...(args.id ? { id: args.id } : {}),
       kind: args.kind,
       name: args.name,
       subject: args.subject,
@@ -103,6 +140,10 @@ export async function insertEmailStudioDocument(
       document: args.document,
       created_by: args.userId,
       updated_by: args.userId,
+      change_source: args.source ?? "human",
+      change_summary: args.summary ?? "Created email",
+      change_commands: args.commands ?? [],
+      schema_version: args.schemaVersion ?? EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION,
     })
     .select(SELECT)
     .single()
@@ -125,6 +166,14 @@ export async function updateEmailStudioDocument(
     document: EmailStudioDocument
     userId: string
     klaviyoTemplateId?: string | null
+    klaviyoSyncedRevision?: number | null
+    klaviyoContentChecksum?: string | null
+    klaviyoSyncedAt?: string | null
+    expectedRevision?: number
+    schemaVersion?: number
+    source?: EmailStudioChangeSource
+    summary?: string
+    commands?: EmailStudioCommand[]
   },
 ): Promise<EmailStudioRecord> {
   const patch: Record<string, unknown> = {
@@ -138,19 +187,66 @@ export async function updateEmailStudioDocument(
     document: args.document,
     updated_by: args.userId,
     updated_at: new Date().toISOString(),
+    change_source: args.source ?? "human",
+    change_summary: args.summary ?? "Updated email",
+    change_commands: args.commands ?? [],
   }
+  if (args.schemaVersion !== undefined) patch.schema_version = args.schemaVersion
   if (args.klaviyoTemplateId !== undefined) {
     patch.klaviyo_template_id = args.klaviyoTemplateId
   }
+  if (args.klaviyoSyncedRevision !== undefined) {
+    patch.klaviyo_synced_revision = args.klaviyoSyncedRevision
+  }
+  if (args.klaviyoContentChecksum !== undefined) {
+    patch.klaviyo_content_checksum = args.klaviyoContentChecksum
+  }
+  if (args.klaviyoSyncedAt !== undefined) {
+    patch.klaviyo_synced_at = args.klaviyoSyncedAt
+  }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("email_studio_documents")
     .update(patch)
     .eq("id", args.id)
+  if (args.expectedRevision !== undefined) {
+    query = query.eq("revision", args.expectedRevision)
+  }
+  const { data, error } = await query
+    .select(SELECT)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  if (!data && args.expectedRevision !== undefined) throw new EmailStudioRevisionConflictError()
+  if (!data) throw new Error("Could not save email")
+  return toRecord(data as Row)
+}
+
+export async function updateEmailStudioKlaviyoSync(
+  supabase: SupabaseClient,
+  args: {
+    id: string
+    templateId: string
+    syncedRevision: number | null
+    contentChecksum: string | null
+    syncedAt: string | null
+    userId: string
+  },
+): Promise<EmailStudioRecord> {
+  const { data, error } = await supabase
+    .from("email_studio_documents")
+    .update({
+      klaviyo_template_id: args.templateId,
+      klaviyo_synced_revision: args.syncedRevision,
+      klaviyo_content_checksum: args.contentChecksum,
+      klaviyo_synced_at: args.syncedAt,
+      updated_by: args.userId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", args.id)
     .select(SELECT)
     .single()
-
-  if (error || !data) throw new Error(error?.message ?? "Could not save email")
+  if (error || !data) throw new Error(error?.message ?? "Could not save Klaviyo sync state")
   return toRecord(data as Row)
 }
 

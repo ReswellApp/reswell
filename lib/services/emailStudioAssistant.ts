@@ -12,8 +12,15 @@ import {
   type AssistantFlowDraft,
   type AssistantFlowStep,
 } from "@/lib/email-studio/assistant-draft"
+import {
+  applyEmailStudioEmailCommands,
+  applyEmailStudioFlowCommands,
+  emailStudioEmailSnapshot,
+  emailStudioFlowSnapshot,
+} from "@/lib/email-studio/commands"
+import { findEmailBlock } from "@/lib/email-studio/document-tree"
 import { klaviyoFromEmail, klaviyoFromLabel } from "@/lib/email-studio/flow-definition"
-import { insertEmailStudioDocument } from "@/lib/db/emailStudio"
+import { getEmailStudioDocument, insertEmailStudioDocument } from "@/lib/db/emailStudio"
 import {
   getEmailStudioFlow,
   insertEmailStudioFlow,
@@ -21,6 +28,7 @@ import {
   listEmailStudioMessages,
   updateEmailStudioFlow,
 } from "@/lib/db/emailStudioFlows"
+import { insertEmailStudioProposal } from "@/lib/db/emailStudioRevisions"
 import {
   APP_LLM_FEATURES,
   gatewayTagsForFeature,
@@ -29,7 +37,16 @@ import {
 } from "@/lib/llm/app-models"
 import { KNOWN_KLAVIYO_METRIC_NAMES } from "@/lib/klaviyo/event-log-shared"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
-import type { EmailStudioDocument } from "@/lib/types/emailStudio"
+import type {
+  EmailBlock,
+  EmailStudioDocument,
+  EmailStudioRecord,
+} from "@/lib/types/emailStudio"
+import type {
+  EmailStudioEmailCommand,
+  EmailStudioFlowCommand,
+  EmailStudioFlowSnapshot,
+} from "@/lib/types/emailStudioCommands"
 import type { EmailStudioFlowDefinition, EmailStudioFlowStep, KlaviyoCatalogOption } from "@/lib/types/emailStudioFlow"
 import { listKlaviyoFlowCatalogService } from "@/lib/services/emailStudioFlows"
 import { emailStudioFlowDefinitionSchema } from "@/lib/validations/emailStudioFlow"
@@ -40,11 +57,11 @@ Write short, plain Reswell copy. Keep Klaviyo tags as typed, for example {{ firs
 
 applyEmail is yes when the request creates or changes the open email. applyFlow is yes when the request creates or changes a flow. Set the other to no and leave its list empty.
 
-For an email, return the full block list, not only the block that changed. Block type is one of logo, eyebrow, heading, text, image, button, split, details, divider, spacer, footer. Put a logo first and a footer last with showUnsubscribe true. align is left or center.
+For an email, choose operation deliberately. Use replace-selection when the request refers to the selected block and return that replacement block first. Use insert-after-selection when asked to add content near the selection. Use metadata-only for subject, preview, or notes changes, and list exactly those requested keys in metadataFields; this permits an intentional empty value such as removing preview text. Use an empty metadataFields list for other operations. Use replace-document only for a new email or a whole-email redesign. Block type is one of section, logo, eyebrow, heading, text, image, button, split, details, divider, spacer, footer. A section is an email-safe visual container with 1–3 columns; choose its surface, padding, gap, mobile stacking, and column content. Use sections to create hierarchy, image-led compositions, and editorial layouts instead of returning the same vertical stack every time. A replace-document email needs a logo first and a footer last with showUnsubscribe true. align is left or center.
 
 For a flow, return steps in order. type is delay, email, sms, webhook, update-profile, list-update, or split. branch is main, yes, or no. A split is a main step. The yes and no steps that follow it belong to that split until the next main step. splitMode is profile-property, email-subscribed, or event-property. Each email step includes subject, heading, and body. Use a trigger id from the catalog when you have one. If you only know a metric name, put it in triggerName and leave triggerId empty. A step after the split on the main branch runs after both branches. Flows are saved as drafts. Never tell the user the flow is live.
 
-Fill every string. Use an empty string when a field does not apply, and 0 for an unused number. reply is two sentences about what you drafted. Do not refuse, apologize, or discuss policy.`
+Fill every string. Use an empty string when a field does not apply, 0 for an unused number, and an empty columns list outside section blocks. reply is two sentences about what you drafted. Do not refuse, apologize, or discuss policy.`
 
 const SAFETY = [
   "HARM_CATEGORY_HARASSMENT",
@@ -88,13 +105,22 @@ function attachFlowContinuation(
   walk(branch.entry)
 }
 
-async function linkProposalSteps(
+interface ProposedFlowEmailProject {
+  id: string
+  name: string
+  subject: string
+  previewText: string
+  triggerMetric: string
+  notes: string
+  document: EmailStudioDocument
+}
+
+function linkProposalSteps(
   proposalSteps: AssistantFlowStep[],
-  userId: string,
-  client: Awaited<ReturnType<typeof createClient>>,
   flowName: string,
   triggerMetric: string,
-): Promise<{ entry: string | null; steps: EmailStudioFlowStep[] }> {
+  emailProjects: ProposedFlowEmailProject[],
+): { entry: string | null; steps: EmailStudioFlowStep[] } {
   const steps: EmailStudioFlowStep[] = []
   let entry: string | null = null
   let previous: EmailStudioFlowStep | null = null
@@ -103,9 +129,9 @@ async function linkProposalSteps(
     if (!proposal) continue
     const id = crypto.randomUUID()
     if (proposal.type === "split") {
-      const rest = await linkProposalSteps(proposalSteps.slice(index + 1), userId, client, flowName, triggerMetric)
-      const yes = await linkProposalSteps(proposal.yes, userId, client, flowName, triggerMetric)
-      const no = await linkProposalSteps(proposal.no, userId, client, flowName, triggerMetric)
+      const rest = linkProposalSteps(proposalSteps.slice(index + 1), flowName, triggerMetric, emailProjects)
+      const yes = linkProposalSteps(proposal.yes, flowName, triggerMetric, emailProjects)
+      const no = linkProposalSteps(proposal.no, flowName, triggerMetric, emailProjects)
       attachFlowContinuation(yes, rest.entry)
       attachFlowContinuation(no, rest.entry)
       const step: EmailStudioFlowStep = {
@@ -125,22 +151,20 @@ async function linkProposalSteps(
     }
     let step: EmailStudioFlowStep
     if (proposal.type === "email") {
-      const created = await insertEmailStudioDocument(client, {
-        kind: "project",
+      const projectId = crypto.randomUUID()
+      emailProjects.push({
+        id: projectId,
         name: proposal.name || "Flow email",
         subject: proposal.subject,
         previewText: proposal.previewText,
-        flowName,
-        flowId: "",
         triggerMetric,
         notes: "",
         document: documentForFlowEmail(proposal),
-        userId,
       })
       step = {
         id,
         type: "email",
-        projectId: created.id,
+        projectId,
         fromEmail: klaviyoFromEmail(),
         fromLabel: klaviyoFromLabel(),
         smartSending: true,
@@ -168,12 +192,18 @@ async function linkProposalSteps(
 
 function chainSteps(
   proposalSteps: AssistantFlowStep[],
-  userId: string,
-  client: Awaited<ReturnType<typeof createClient>>,
   flowName: string,
   triggerMetric: string,
-): Promise<{ entry: string | null; steps: EmailStudioFlowStep[] }> {
-  return linkProposalSteps(proposalSteps, userId, client, flowName, triggerMetric)
+): {
+  entry: string | null
+  steps: EmailStudioFlowStep[]
+  emailProjects: ProposedFlowEmailProject[]
+} {
+  const emailProjects: ProposedFlowEmailProject[] = []
+  return {
+    ...linkProposalSteps(proposalSteps, flowName, triggerMetric, emailProjects),
+    emailProjects,
+  }
 }
 
 function definitionFromProposal(proposal: AssistantFlowDraft, built: {
@@ -220,10 +250,102 @@ function providerOptions() {
   }
 }
 
+function isGatewayAuthenticationError(error: unknown): boolean {
+  return error instanceof Error
+    && (
+      error.name === "GatewayAuthenticationError"
+      || error.message.includes("Unauthenticated request to AI Gateway")
+    )
+}
+
+type AssistantOperation =
+  | "replace-document"
+  | "replace-selection"
+  | "insert-after-selection"
+  | "metadata-only"
+
+function emailProposalCommands(
+  existing: EmailStudioRecord,
+  draft: AssistantEmailDraft,
+  operation: AssistantOperation,
+  metadataFields: ("subject" | "previewText" | "notes")[],
+  selectedBlockId?: string,
+): EmailStudioEmailCommand[] {
+  if (operation === "replace-selection" && selectedBlockId) {
+    const selected = findEmailBlock(existing.document, selectedBlockId)?.block
+    if (selected) {
+      const candidate = draft.document.blocks.find((block) => block.type === selected.type)
+        ?? draft.document.blocks.find((block) => block.type !== "logo" && block.type !== "footer")
+      if (candidate) {
+        return [{
+          type: "email.block.replace",
+          block: { ...candidate, id: selected.id } as EmailBlock,
+        }]
+      }
+    }
+    throw new Error("The assistant could not produce a valid replacement for the selected block.")
+  }
+
+  if (operation === "insert-after-selection") {
+    const generated = draft.document.blocks.filter(
+      (block) => block.type !== "logo" && block.type !== "footer",
+    )
+    if (generated.length > 0) {
+      const selectedIndex = existing.document.blocks.findIndex((block) => block.id === selectedBlockId)
+      const insertAt = selectedIndex >= 0 ? selectedIndex + 1 : existing.document.blocks.length
+      return generated.map((block, index) => ({
+        type: "email.block.insert" as const,
+        block,
+        index: insertAt + index,
+      }))
+    }
+    throw new Error("The assistant did not produce any blocks to insert.")
+  }
+
+  if (operation === "metadata-only") {
+    const patch: {
+      subject?: string
+      previewText?: string
+      notes?: string
+    } = {}
+    if (metadataFields.includes("subject") && draft.subject !== existing.subject) {
+      patch.subject = draft.subject
+    }
+    if (metadataFields.includes("previewText") && draft.previewText !== existing.previewText) {
+      patch.previewText = draft.previewText
+    }
+    if (metadataFields.includes("notes") && draft.notes !== existing.notes) {
+      patch.notes = draft.notes
+    }
+    if (Object.keys(patch).length > 0) {
+      return [{ type: "email.meta.patch", patch }]
+    }
+    throw new Error("The assistant did not return a metadata change.")
+  }
+
+  return [
+    {
+      type: "email.meta.patch",
+      patch: {
+        subject: draft.subject,
+        previewText: draft.previewText,
+        notes: draft.notes,
+      },
+    },
+    { type: "email.document.replace", document: draft.document },
+  ]
+}
+
 async function draftFromModel(input: {
   prompt: string
   history: { role: "user" | "assistant"; content: string }[]
-}): Promise<{ reply: string; email: AssistantEmailDraft | null; flow: AssistantFlowDraft | null }> {
+}): Promise<{
+  reply: string
+  operation: "replace-document" | "replace-selection" | "insert-after-selection" | "metadata-only"
+  metadataFields: ("subject" | "previewText" | "notes")[]
+  email: AssistantEmailDraft | null
+  flow: AssistantFlowDraft | null
+}> {
   const model = resolveConfiguredModel(feature())
   const messages = [
     ...input.history.slice(-6),
@@ -245,6 +367,11 @@ async function draftFromModel(input: {
     if (!draft) throw new Error("empty draft")
     return draft
   } catch (error) {
+    if (isGatewayAuthenticationError(error)) {
+      throw new Error(
+        "AI Gateway is not authenticated. Set AI_GATEWAY_API_KEY or refresh local Vercel OIDC credentials, then restart the dev server.",
+      )
+    }
     console.error("[email_studio] structured draft failed", error)
   }
 
@@ -266,6 +393,8 @@ async function draftFromModel(input: {
   if (email || flow) {
     return {
       reply: email?.reply || flow?.reply || "Updated the draft.",
+      operation: "replace-document",
+      metadataFields: [],
       email: email?.draft ?? null,
       flow,
     }
@@ -308,6 +437,8 @@ export async function listEmailStudioAssistantMessagesService(
 export async function askEmailStudioAssistantService(input: {
   scope: "email" | "flow"
   scopeId: string
+  baseRevision: number
+  selectedBlockId?: string
   message: string
   snapshot: string
 }): Promise<
@@ -315,11 +446,19 @@ export async function askEmailStudioAssistantService(input: {
       success: true
       reply: string
       email: { subject: string; previewText: string; notes: string; document: EmailStudioDocument } | null
+      flow: EmailStudioFlowSnapshot | null
       flowId: string | null
+      proposalId: string | null
+      proposalScope: "email" | "flow" | null
+      baseRevision: number
     }
   | { error: string }
 > {
-  if (!isEmailStudioAssistantEnabled()) return { error: "The email assistant is not configured." }
+  if (!isEmailStudioAssistantEnabled()) {
+    return {
+      error: "The email assistant needs AI Gateway authentication. Set AI_GATEWAY_API_KEY or pull Vercel OIDC credentials, then restart the dev server.",
+    }
+  }
   const supabase = await createClient()
   const {
     data: { user },
@@ -351,12 +490,19 @@ export async function askEmailStudioAssistantService(input: {
     userId: user.id,
   })
 
-  let output: { reply: string; email: AssistantEmailDraft | null; flow: AssistantFlowDraft | null }
+  let output: {
+    reply: string
+    operation: "replace-document" | "replace-selection" | "insert-after-selection" | "metadata-only"
+    metadataFields: ("subject" | "previewText" | "notes")[]
+    email: AssistantEmailDraft | null
+    flow: AssistantFlowDraft | null
+  }
   try {
     output = await draftFromModel({
       history: history.slice(-6).map((item) => ({ role: item.role, content: item.content })),
       prompt: [
         `Scope: ${input.scope}`,
+        input.selectedBlockId ? `Selected block id: ${input.selectedBlockId}` : "No block is selected.",
         `Known metrics: ${KNOWN_KLAVIYO_METRIC_NAMES.join(", ")}`,
         catalogLines("Metrics", catalog.metrics),
         catalogLines("Lists", catalog.lists),
@@ -368,36 +514,109 @@ export async function askEmailStudioAssistantService(input: {
     })
   } catch (error) {
     console.error("[email_studio] assistant failed", error)
+    if (error instanceof Error && error.message.startsWith("AI Gateway is not authenticated")) {
+      return { error: error.message }
+    }
     return { error: "The assistant could not draft that. Say what the email or flow should do and try again." }
   }
 
   let email: { subject: string; previewText: string; notes: string; document: EmailStudioDocument } | null = null
+  let flow: EmailStudioFlowSnapshot | null = null
   let flowId: string | null = null
+  let proposalId: string | null = null
+  let proposalScope: "email" | "flow" | null = null
   try {
     if (output.email && input.scope === "email") {
+      const existing = await getEmailStudioDocument(client, input.scopeId)
+      if (!existing) return { error: "Email not found" }
+      if (existing.revision !== input.baseRevision) {
+        return { error: "This email changed while the assistant was drafting. Review the latest version and try again." }
+      }
+      const commands = emailProposalCommands(
+        existing,
+        output.email,
+        output.operation,
+        output.metadataFields,
+        input.selectedBlockId,
+      )
+      const preview = applyEmailStudioEmailCommands(emailStudioEmailSnapshot(existing), commands)
+      const proposal = await insertEmailStudioProposal(client, {
+        scope: "email",
+        scopeId: existing.id,
+        baseRevision: existing.revision,
+        summary: output.reply.slice(0, 500),
+        assistantMessage: output.reply,
+        commands,
+        userId: user.id,
+      })
+      proposalId = proposal.id
+      proposalScope = "email"
       email = {
-        subject: output.email.subject,
-        previewText: output.email.previewText,
-        notes: output.email.notes,
-        document: output.email.document,
+        subject: preview.subject,
+        previewText: preview.previewText,
+        notes: preview.notes,
+        document: preview.document,
       }
     }
     if (output.flow) {
       const triggerMetric = output.flow.triggerType === "metric" ? output.flow.triggerName : ""
-      const built = await chainSteps(output.flow.steps, user.id, client, output.flow.name, triggerMetric)
+      const built = chainSteps(output.flow.steps, output.flow.name, triggerMetric)
       const definition = definitionFromProposal(output.flow, built)
       if (input.scope === "flow") {
         const existing = await getEmailStudioFlow(client, input.scopeId)
         if (!existing) return { error: "Flow not found" }
-        await updateEmailStudioFlow(client, {
-          id: existing.id,
-          name: output.flow.name || existing.name,
-          notes: output.flow.notes,
-          definition,
+        if (existing.revision !== input.baseRevision) {
+          return { error: "This flow changed while the assistant was drafting. Review the latest version and try again." }
+        }
+        const commands: EmailStudioFlowCommand[] = [
+          ...built.emailProjects.map((project) => ({
+            type: "flow.email.create" as const,
+            projectId: project.id,
+            name: project.name,
+            subject: project.subject,
+            previewText: project.previewText,
+            triggerMetric: project.triggerMetric,
+            notes: project.notes,
+            document: project.document,
+          })),
+          {
+            type: "flow.meta.patch",
+            patch: { name: output.flow.name || existing.name, notes: output.flow.notes },
+          },
+          { type: "flow.definition.replace", definition },
+        ]
+        const preview = applyEmailStudioFlowCommands(emailStudioFlowSnapshot(existing), commands)
+        const proposal = await insertEmailStudioProposal(client, {
+          scope: "flow",
+          scopeId: existing.id,
+          baseRevision: existing.revision,
+          summary: output.reply.slice(0, 500),
+          assistantMessage: output.reply,
+          commands,
           userId: user.id,
         })
+        proposalId = proposal.id
+        proposalScope = "flow"
+        flow = preview
         flowId = existing.id
       } else {
+        for (const project of built.emailProjects) {
+          await insertEmailStudioDocument(client, {
+            id: project.id,
+            kind: "project",
+            name: project.name,
+            subject: project.subject,
+            previewText: project.previewText,
+            flowName: output.flow.name,
+            flowId: "",
+            triggerMetric: project.triggerMetric,
+            notes: project.notes,
+            document: project.document,
+            userId: user.id,
+            source: "assistant",
+            summary: `Created for ${output.flow.name}`,
+          })
+        }
         const created = await insertEmailStudioFlow(client, {
           name: output.flow.name || "Untitled flow",
           definition,
@@ -429,5 +648,14 @@ export async function askEmailStudioAssistantService(input: {
     content: output.reply,
     userId: null,
   })
-  return { success: true, reply: output.reply, email, flowId }
+  return {
+    success: true,
+    reply: output.reply,
+    email,
+    flow,
+    flowId,
+    proposalId,
+    proposalScope,
+    baseRevision: input.baseRevision,
+  }
 }

@@ -83,8 +83,40 @@ function imageHtml(
   return safeHref ? `<a href="${safeHref}" style="text-decoration:none;">${img}</a>` : img
 }
 
-function renderBlock(block: EmailBlock): string {
+function renderBlock(
+  block: EmailBlock,
+  colors: { ink: string; muted: string } = { ink: INK, muted: KLAVIYO_EMAIL_MUTED },
+): string {
   switch (block.type) {
+    case "section": {
+      const background = block.surface === "white"
+        ? KLAVIYO_EMAIL_COLORS.background
+        : block.surface === "muted"
+          ? KLAVIYO_EMAIL_COLORS.canvas
+          : block.surface === "brand"
+            ? BUTTON
+            : INK
+      const childColors = block.surface === "brand" || block.surface === "dark"
+        ? { ink: BUTTON_TEXT, muted: KLAVIYO_EMAIL_BORDER }
+        : colors
+      const padding = block.padding === "none"
+        ? 0
+        : block.padding === "compact"
+          ? 16
+          : block.padding === "spacious"
+            ? 32
+            : 24
+      const gap = block.gap === "compact" ? 6 : block.gap === "spacious" ? 16 : 10
+      const totalWidth = block.columns.reduce((sum, column) => sum + column.width, 0)
+      const columns = block.columns.map((column, index) => {
+        const width = Math.round((column.width / totalWidth) * 100)
+        const content = column.blocks.map((child) => renderBlock(child, childColors)).join("\n")
+        const left = index === 0 ? 0 : gap
+        const right = index === block.columns.length - 1 ? 0 : gap
+        return `<td${block.stackOnMobile ? ' class="stack"' : ""} valign="top" width="${width}%" style="width:${width}%;padding:0 ${right}px 0 ${left}px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${content}</table></td>`
+      }).join("")
+      return `<tr><td bgcolor="${background}" style="padding:${padding}px;border-radius:${KLAVIYO_EMAIL_RADIUS};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${columns}</tr></table></td></tr><tr><td style="height:20px;line-height:20px;font-size:0;">&nbsp;</td></tr>`
+    }
     case "logo": {
       const width = Math.min(220, Math.max(80, block.width || 140))
       const img = `<img src="${safeEmailHref(emailImageSrc(block.src)) || safeEmailHref("https://www.reswell.app/images/reswell-logo.png")}" alt="${escapeText(block.alt || "Reswell")}" width="${width}" style="display:block;width:${width}px;max-width:100%;height:auto;border:0;" />`
@@ -93,11 +125,11 @@ function renderBlock(block: EmailBlock): string {
       return `<tr><td align="center" style="padding:0 0 28px 0;">${inner}</td></tr>`
     }
     case "eyebrow":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 8px 0;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${KLAVIYO_EMAIL_MUTED};">${textToHtml(block.text)}</td></tr>`
+      return `<tr><td align="${align(block.align)}" style="padding:0 0 8px 0;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${colors.muted};">${textToHtml(block.text)}</td></tr>`
     case "heading":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 16px 0;font-family:${HEADLINE};font-size:26px;font-weight:700;line-height:1.05;letter-spacing:-0.05em;color:${INK};">${textToHtml(block.text)}</td></tr>`
+      return `<tr><td align="${align(block.align)}" style="padding:0 0 16px 0;font-family:${HEADLINE};font-size:26px;font-weight:700;line-height:1.05;letter-spacing:-0.05em;color:${colors.ink};">${textToHtml(block.text)}</td></tr>`
     case "text":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 20px 0;font-family:${FONT};font-size:16px;line-height:1.55;color:${INK};">${textToHtml(block.text)}</td></tr>`
+      return `<tr><td align="${align(block.align)}" style="padding:0 0 20px 0;font-family:${FONT};font-size:16px;line-height:1.55;color:${colors.ink};">${textToHtml(block.text)}</td></tr>`
     case "image":
       return `<tr><td align="center" style="padding:0 0 20px 0;">${imageHtml(block.src, block.alt, block.href, block.width ?? 560, block.height ?? null)}</td></tr>`
     case "button":
@@ -113,20 +145,20 @@ function renderBlock(block: EmailBlock): string {
         .filter((row) => row.label.trim() || row.value.trim())
         .map(
           (row, index, all) =>
-            `<tr><td style="padding:12px 0;${index < all.length - 1 ? `border-bottom:1px solid ${KLAVIYO_EMAIL_BORDER};` : ""}font-family:${FONT};font-size:15px;color:${KLAVIYO_EMAIL_MUTED};width:40%;">${textToHtml(row.label)}</td><td align="right" style="padding:12px 0;${index < all.length - 1 ? `border-bottom:1px solid ${KLAVIYO_EMAIL_BORDER};` : ""}font-family:${FONT};font-size:15px;font-weight:700;color:${INK};">${textToHtml(row.value)}</td></tr>`,
+            `<tr><td style="padding:12px 0;${index < all.length - 1 ? `border-bottom:1px solid ${KLAVIYO_EMAIL_BORDER};` : ""}font-family:${FONT};font-size:15px;color:${colors.muted};width:40%;">${textToHtml(row.label)}</td><td align="right" style="padding:12px 0;${index < all.length - 1 ? `border-bottom:1px solid ${KLAVIYO_EMAIL_BORDER};` : ""}font-family:${FONT};font-size:15px;font-weight:700;color:${colors.ink};">${textToHtml(row.value)}</td></tr>`,
         )
         .join("")
       return `<tr><td style="padding:0 0 24px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};"><tr><td style="padding:20px 24px 8px 24px;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${KLAVIYO_EMAIL_COLORS.price};">${textToHtml(block.title || "Details")}</td></tr><tr><td style="padding:0 24px 12px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${rows}</table></td></tr></table></td></tr>`
     }
     case "split": {
-      const copy = `<p style="margin:0 0 8px 0;font-family:${HEADLINE};font-size:18px;font-weight:700;line-height:1.05;letter-spacing:-0.05em;color:${INK};">${textToHtml(block.title)}</p><p style="margin:0 0 16px 0;font-family:${FONT};font-size:15px;line-height:1.3;color:${INK};">${textToHtml(block.text)}</p>${block.buttonLabel.trim() ? buttonHtml(block.buttonLabel, block.buttonHref) : ""}`
+      const copy = `<p style="margin:0 0 8px 0;font-family:${HEADLINE};font-size:18px;font-weight:700;line-height:1.05;letter-spacing:-0.05em;color:${colors.ink};">${textToHtml(block.title)}</p><p style="margin:0 0 16px 0;font-family:${FONT};font-size:15px;line-height:1.3;color:${colors.ink};">${textToHtml(block.text)}</p>${block.buttonLabel.trim() ? buttonHtml(block.buttonLabel, block.buttonHref) : ""}`
       return `<tr><td style="padding:0 0 24px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td class="stack" valign="top" width="48%" style="padding:0 12px 12px 0;">${imageHtml(block.imageSrc, block.imageAlt, block.imageHref, block.imageWidth ?? 240, block.imageHeight ?? null)}</td><td class="stack" valign="top" width="52%" style="padding:0 0 12px 12px;">${copy}</td></tr></table></td></tr>`
     }
     case "footer": {
       const unsub = block.showUnsubscribe
         ? `<br><br>{% unsubscribe 'Unsubscribe' %}`
         : ""
-      return `<tr><td align="center" style="padding:12px 0 0 0;font-family:${FONT};font-size:13px;line-height:1.5;color:${KLAVIYO_EMAIL_MUTED};">${textToHtml(block.text)}${unsub}<br>{{ organization.name|default:'Reswell' }} · {{ organization.full_address|default:'' }}</td></tr>`
+      return `<tr><td align="center" style="padding:12px 0 0 0;font-family:${FONT};font-size:13px;line-height:1.5;color:${colors.muted};">${textToHtml(block.text)}${unsub}<br>{{ organization.name|default:'Reswell' }} · {{ organization.full_address|default:'' }}</td></tr>`
     }
   }
 }
@@ -140,7 +172,7 @@ export function resolveEmailStudioHtml(input: EmailStudioRenderInput): string {
 
 export function renderEmailStudioHtml(input: EmailStudioRenderInput): string {
   const preview = textToHtml(input.previewText)
-  const blocks = input.document.blocks.map(renderBlock).join("\n")
+  const blocks = input.document.blocks.map((block) => renderBlock(block)).join("\n")
   const comment = [
     "Reswell Email Studio",
     input.name ? `Project: ${input.name}` : "",
@@ -161,7 +193,7 @@ export function renderEmailStudioHtml(input: EmailStudioRenderInput): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="x-apple-disable-message-reformatting" />
   <title>${escapeText(input.subject || input.name || "Reswell")}</title>
-  <style>${klaviyoEmailFontFaceCss(publicSiteOriginForEmail())}</style>
+  <style>${klaviyoEmailFontFaceCss(publicSiteOriginForEmail())}@media only screen and (max-width:600px){.stack{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;padding-bottom:16px!important;}}</style>
 </head>
 <body style="margin:0;padding:0;background:${KLAVIYO_EMAIL_COLORS.background};">
 <!--
@@ -200,7 +232,13 @@ export function withEmailPreviewSamples(html: string): string {
 export function renderEmailStudioText(input: EmailStudioRenderInput): string {
   const lines: string[] = []
   if (input.previewText.trim()) lines.push(input.previewText.trim(), "")
-  for (const block of input.document.blocks) {
+  function appendBlock(block: EmailBlock): void {
+    if (block.type === "section") {
+      for (const column of block.columns) {
+        for (const child of column.blocks) appendBlock(child)
+      }
+      return
+    }
     if (block.type === "eyebrow" || block.type === "heading" || block.type === "text" || block.type === "footer") {
       if (block.text.trim()) lines.push(block.text.trim(), "")
     } else if (block.type === "button" && block.label.trim()) {
@@ -213,7 +251,16 @@ export function renderEmailStudioText(input: EmailStudioRenderInput): string {
       lines.push(block.title.trim(), block.text.trim(), "")
     }
   }
-  if (input.document.blocks.some((block) => block.type === "footer" && block.showUnsubscribe)) {
+  for (const block of input.document.blocks) appendBlock(block)
+  if (input.document.blocks.some((block) => (
+    block.type === "footer"
+      ? block.showUnsubscribe
+      : block.type === "section"
+        ? block.columns.some((column) => column.blocks.some(
+            (child) => child.type === "footer" && child.showUnsubscribe,
+          ))
+        : false
+  ))) {
     lines.push("Unsubscribe: {% unsubscribe_link %}")
   }
   return lines.join("\n").trim()

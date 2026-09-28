@@ -8,12 +8,14 @@ import {
   listEmailLibraryImagesService,
   pushEmailStudioToKlaviyoService,
   saveEmailStudioTemplateService,
+  sendEmailStudioTestService,
   updateEmailStudioService,
 } from "@/lib/services/emailStudio"
 import {
   createEmailStudioSchema,
   emailStudioIdSchema,
   saveEmailStudioTemplateSchema,
+  sendEmailStudioTestSchema,
   updateEmailStudioSchema,
 } from "@/lib/validations/emailStudio"
 
@@ -83,6 +85,15 @@ export async function pushEmailStudioToKlaviyoAction(raw: unknown) {
   const parsed = emailStudioIdSchema.safeParse(raw)
   if (!parsed.success) return { error: flattenZod(parsed.error) }
   const result = await pushEmailStudioToKlaviyoService(parsed.data.id)
+  if ("error" in result) return result
+  revalidateStudio(parsed.data.id)
+  return result
+}
+
+export async function sendEmailStudioTestAction(raw: unknown) {
+  const parsed = sendEmailStudioTestSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  const result = await sendEmailStudioTestService(parsed.data.id, parsed.data.recipient)
   if ("error" in result) return result
   revalidateStudio(parsed.data.id)
   return result

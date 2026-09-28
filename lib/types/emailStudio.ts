@@ -1,4 +1,5 @@
 export const EMAIL_BLOCK_TYPES = [
+  "section",
   "logo",
   "eyebrow",
   "heading",
@@ -12,11 +13,15 @@ export const EMAIL_BLOCK_TYPES = [
   "footer",
 ] as const
 
+export const EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION = 2
+
 export type EmailBlockType = (typeof EMAIL_BLOCK_TYPES)[number]
 
 export type EmailAlign = "left" | "center"
 
 export type EmailStudioKind = "project" | "template"
+export type EmailSectionSurface = "white" | "muted" | "brand" | "dark"
+export type EmailSectionPadding = "none" | "compact" | "comfortable" | "spacious"
 
 export interface EmailDetailRow {
   id: string
@@ -106,7 +111,7 @@ export interface EmailFooterBlock extends EmailBlockBase {
   showUnsubscribe: boolean
 }
 
-export type EmailBlock =
+export type EmailContentBlock =
   | EmailLogoBlock
   | EmailEyebrowBlock
   | EmailHeadingBlock
@@ -119,6 +124,23 @@ export type EmailBlock =
   | EmailSpacerBlock
   | EmailFooterBlock
 
+export interface EmailSectionColumn {
+  id: string
+  width: 1 | 2 | 3
+  blocks: EmailContentBlock[]
+}
+
+export interface EmailSectionBlock extends EmailBlockBase {
+  type: "section"
+  surface: EmailSectionSurface
+  padding: EmailSectionPadding
+  gap: "compact" | "comfortable" | "spacious"
+  stackOnMobile: boolean
+  columns: EmailSectionColumn[]
+}
+
+export type EmailBlock = EmailContentBlock | EmailSectionBlock
+
 export interface EmailStudioDocument {
   blocks: EmailBlock[]
   /** Hand-edited HTML. When set, download and Klaviyo push use this instead of the blocks. */
@@ -128,6 +150,8 @@ export interface EmailStudioDocument {
 export interface EmailStudioRecord {
   id: string
   kind: EmailStudioKind
+  schemaVersion: number
+  revision: number
   name: string
   subject: string
   previewText: string
@@ -137,6 +161,9 @@ export interface EmailStudioRecord {
   notes: string
   document: EmailStudioDocument
   klaviyoTemplateId: string | null
+  klaviyoSyncedRevision: number | null
+  klaviyoContentChecksum: string | null
+  klaviyoSyncedAt: string | null
   createdAt: string
   updatedAt: string
 }

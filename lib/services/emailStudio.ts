@@ -1,4 +1,10 @@
-import { getKlaviyoApiKey, klaviyoGet } from "@/lib/klaviyo/api-client"
+import { createHash } from "node:crypto"
+import {
+  getKlaviyoApiKey,
+  klaviyoGet,
+  klaviyoGetAllPages,
+  klaviyoWrite,
+} from "@/lib/klaviyo/api-client"
 import { KLAVIYO_API_REVISION } from "@/lib/klaviyo/send-event"
 import {
   cloneEmailDocument,
@@ -13,6 +19,7 @@ import {
   listEmailLibraryImageRows,
   listEmailStudioDocuments,
   updateEmailStudioDocument,
+  updateEmailStudioKlaviyoSync,
 } from "@/lib/db/emailStudio"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
@@ -238,49 +245,22 @@ export async function saveEmailStudioTemplateService(
 }
 
 type KlaviyoTemplateResponse = {
-  data?: { id?: string }
-  errors?: { detail?: string }[]
-}
-
-async function klaviyoWrite(
-  method: "POST" | "PATCH",
-  path: string,
-  body: unknown,
-): Promise<{ ok: true; id: string } | { ok: false; detail: string; status: number }> {
-  const apiKey = getKlaviyoApiKey()
-  if (!apiKey) return { ok: false, status: 0, detail: "KLAVIYO_API_KEY is not set" }
-  const res = await fetch(`https://a.klaviyo.com${path}`, {
-    method,
-    headers: {
-      Authorization: `Klaviyo-API-Key ${apiKey}`,
-      revision: KLAVIYO_API_REVISION,
-      Accept: "application/vnd.api+json",
-      "Content-Type": "application/vnd.api+json",
-    },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  })
-  const text = await res.text()
-  let parsed: KlaviyoTemplateResponse = {}
-  try {
-    parsed = JSON.parse(text) as KlaviyoTemplateResponse
-  } catch {
-    parsed = {}
+  data?: {
+    id?: string
+    attributes?: { name?: string; html?: string; text?: string }
   }
-  const id = parsed.data?.id
-  if (!res.ok || !id) {
-    return {
-      ok: false,
-      status: res.status,
-      detail: parsed.errors?.[0]?.detail || text.slice(0, 300) || res.statusText,
-    }
-  }
-  return { ok: true, id }
 }
 
 export async function pushEmailStudioToKlaviyoService(
   id: string,
-): Promise<{ success: true; templateId: string } | ServiceError> {
+): Promise<{
+  success: true
+  templateId: string
+  syncedRevision: number | null
+  checksum: string | null
+  syncedAt: string | null
+  warning: string | null
+} | ServiceError> {
   const staff = await requireStaff()
   if (!staff.ok) return { error: staff.error }
   try {
@@ -302,37 +282,113 @@ export async function pushEmailStudioToKlaviyoService(
       html,
       text,
     }
+    const checksum = createHash("sha256")
+      .update(JSON.stringify(attributes))
+      .digest("hex")
     const created = existing.klaviyoTemplateId
-      ? await klaviyoWrite("PATCH", `/api/templates/${existing.klaviyoTemplateId}/`, {
+      ? await klaviyoWrite<KlaviyoTemplateResponse>("PATCH", `/api/templates/${existing.klaviyoTemplateId}/`, {
           data: { type: "template", id: existing.klaviyoTemplateId, attributes },
         })
-      : await klaviyoWrite("POST", "/api/templates/", {
+      : await klaviyoWrite<KlaviyoTemplateResponse>("POST", "/api/templates/", {
           data: { type: "template", attributes: { ...attributes, editor_type: "CODE" } },
         })
     const result =
       !created.ok && existing.klaviyoTemplateId && created.status === 404
-        ? await klaviyoWrite("POST", "/api/templates/", {
+        ? await klaviyoWrite<KlaviyoTemplateResponse>("POST", "/api/templates/", {
             data: { type: "template", attributes: { ...attributes, editor_type: "CODE" } },
           })
         : created
     if (!result.ok) return { error: result.detail || "Klaviyo rejected the template" }
-    await updateEmailStudioDocument(client, {
+    const templateId = result.data.data?.id
+    if (!templateId) return { error: "Klaviyo saved the template without an id" }
+    const verified = await klaviyoGet<KlaviyoTemplateResponse>(
+      `/api/templates/${templateId}/`,
+      { "fields[template]": "name,html,text" },
+    )
+    const warning = !verified.ok
+      ? `Template saved, but verification failed: ${verified.detail}`
+      : verified.data.data?.id !== templateId
+        ? "Template saved, but Klaviyo returned a different id during verification."
+        : null
+    const syncedAt = new Date().toISOString()
+    await updateEmailStudioKlaviyoSync(client, {
       id: existing.id,
-      name: existing.name,
-      subject: existing.subject,
-      previewText: existing.previewText,
-      flowName: existing.flowName,
-      flowId: existing.flowId,
-      triggerMetric: existing.triggerMetric,
-      notes: existing.notes,
-      document: existing.document,
+      templateId,
+      syncedRevision: warning ? null : existing.revision,
+      contentChecksum: warning ? null : checksum,
+      syncedAt: warning ? null : syncedAt,
       userId: staff.userId,
-      klaviyoTemplateId: result.id,
     })
-    return { success: true, templateId: result.id }
+    return {
+      success: true,
+      templateId,
+      syncedRevision: warning ? null : existing.revision,
+      checksum: warning ? null : checksum,
+      syncedAt: warning ? null : syncedAt,
+      warning,
+    }
   } catch (error) {
     console.error("[email_studio] klaviyo push failed", error)
     return { error: "Could not push this template to Klaviyo" }
+  }
+}
+
+export async function sendEmailStudioTestService(
+  id: string,
+  recipient: string,
+): Promise<{ success: true; jobId: string } | ServiceError> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+  try {
+    const client = dbClient(staff.supabase)
+    let existing = await getEmailStudioDocument(client, id)
+    if (!existing) return { error: "Project not found" }
+    if (
+      !existing.klaviyoTemplateId
+      || existing.klaviyoSyncedRevision !== existing.revision
+    ) {
+      const pushed = await pushEmailStudioToKlaviyoService(id)
+      if ("error" in pushed) return pushed
+      existing = await getEmailStudioDocument(client, id)
+      if (!existing) return { error: "Project not found after Klaviyo sync" }
+    }
+    const templateId = existing.klaviyoTemplateId
+    if (!templateId) return { error: "Push the template to Klaviyo before sending a test." }
+    const sent = await klaviyoWrite<{ data?: { id?: string } }>(
+      "POST",
+      "/api/template-preview-send-jobs",
+      {
+        data: {
+          type: "template-preview-send-job",
+          attributes: {
+            recipients: [recipient],
+            context: {
+              first_name: "Alex",
+              event: {
+                order_num: "RW-1042",
+                Title: "6'2 Reswell Test Board",
+                "$value": "$640",
+                order_url: "https://www.reswell.app",
+                listing_url: "https://www.reswell.app",
+              },
+            },
+          },
+          relationships: {
+            template: {
+              data: { type: "template", id: templateId },
+            },
+          },
+        },
+      },
+      { revision: `${KLAVIYO_API_REVISION}.pre`, maxAttempts: 2 },
+    )
+    if (!sent.ok) return { error: sent.detail || "Klaviyo rejected the test send" }
+    const jobId = sent.data.data?.id
+    if (!jobId) return { error: "Klaviyo accepted the test without a job id" }
+    return { success: true, jobId }
+  } catch (error) {
+    console.error("[email_studio] test send failed", error)
+    return { error: "Could not send this test email" }
   }
 }
 
@@ -342,11 +398,12 @@ export async function listEmailStudioFlowsService(): Promise<{
 }> {
   const staff = await requireStaff()
   if (!staff.ok || !getKlaviyoApiKey()) return { connected: false, flows: [] }
-  const result = await klaviyoGet<{
-    data?: { id: string; attributes?: { name?: string; status?: string; archived?: boolean } }[]
-  }>("/api/flows/", { "fields[flow]": "name,status,archived", "page[size]": "50" })
+  const result = await klaviyoGetAllPages<{
+    id: string
+    attributes?: { name?: string; status?: string; archived?: boolean }
+  }>("/api/flows/", { "fields[flow]": "name,status,archived", "page[size]": "50" }, { maxPages: 20 })
   if (!result.ok) return { connected: false, flows: [] }
-  const flows = (result.data.data ?? [])
+  const flows = result.data
     .filter((flow) => flow.attributes?.archived !== true)
     .map((flow) => ({
       id: flow.id,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { cloneEmailDocument, starterById } from "./document.ts"
-import { renderEmailStudioHtml, resolveEmailStudioHtml, safeEmailHref } from "./render-html.ts"
+import { cloneEmailDocument, starterById } from "./document"
+import { renderEmailStudioHtml, resolveEmailStudioHtml, safeEmailHref } from "./render-html"
 
 describe("email studio html", () => {
   it("drops unsafe links and keeps Klaviyo tags", () => {
@@ -89,5 +89,58 @@ describe("email studio html", () => {
     assert.doesNotMatch(html, /Comic Sans/)
     assert.doesNotMatch(html, /#FF0000/i)
     assert.match(html, /#334155/)
+  })
+
+  it("renders email-safe responsive sections and columns", () => {
+    const html = renderEmailStudioHtml({
+      name: "Editorial",
+      subject: "New boards",
+      previewText: "",
+      flowName: "",
+      triggerMetric: "",
+      document: {
+        blocks: [
+          {
+            id: "00000000-0000-4000-8000-000000000010",
+            type: "section",
+            surface: "brand",
+            padding: "spacious",
+            gap: "comfortable",
+            stackOnMobile: true,
+            columns: [
+              {
+                id: "00000000-0000-4000-8000-000000000011",
+                width: 2,
+                blocks: [
+                  {
+                    id: "00000000-0000-4000-8000-000000000012",
+                    type: "heading",
+                    text: "Fresh finds",
+                    align: "left",
+                  },
+                ],
+              },
+              {
+                id: "00000000-0000-4000-8000-000000000013",
+                width: 1,
+                blocks: [
+                  {
+                    id: "00000000-0000-4000-8000-000000000014",
+                    type: "text",
+                    text: "Built for your next session.",
+                    align: "left",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    })
+    assert.match(html, /class="stack"/)
+    assert.match(html, /width:67%/)
+    assert.match(html, /padding:32px/)
+    assert.match(html, /max-width:600px/)
+    assert.match(html, /color:#FFFFFF/i)
   })
 })

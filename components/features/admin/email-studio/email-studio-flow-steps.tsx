@@ -1,5 +1,6 @@
 "use client"
 
+import type { MouseEvent as ReactMouseEvent } from "react"
 import Link from "next/link"
 import type { EmailStudioFlowStep } from "@/lib/types/emailStudioFlow"
 import { flowStepLabel } from "@/lib/email-studio/flow-definition"
@@ -39,7 +40,7 @@ export function EmailStudioFlowSteps({
         ))}
       </ul>
       {selected ? (
-        <StepFields step={selected} projects={projects} lists={lists} steps={steps} onChange={onChange} />
+        <EmailStudioFlowStepInspector step={selected} projects={projects} lists={lists} steps={steps} onChange={onChange} />
       ) : (
         <p className="text-sm text-muted-foreground">Add an action, then edit it here.</p>
       )}
@@ -47,18 +48,20 @@ export function EmailStudioFlowSteps({
   )
 }
 
-function StepFields({
+export function EmailStudioFlowStepInspector({
   step,
   projects,
   lists,
   steps,
   onChange,
+  onNavigate,
 }: {
   step: EmailStudioFlowStep
   projects: { id: string; name: string }[]
   lists: { id: string; name: string }[]
   steps: EmailStudioFlowStep[]
   onChange: (step: EmailStudioFlowStep) => void
+  onNavigate?: (event: ReactMouseEvent<HTMLAnchorElement>, href: string) => void
 }) {
   const nextOptions = steps.filter((item) => item.id !== step.id)
   if (step.type === "delay") {
@@ -80,7 +83,15 @@ function StepFields({
           <option value="">Choose an email</option>
           {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
         </select>
-        {step.projectId ? <Link className="text-xs text-[#355185] hover:underline" href={`/admin/email-studio/${step.projectId}`}>Open email</Link> : null}
+        {step.projectId ? (
+          <Link
+            className="text-xs text-[#355185] hover:underline"
+            href={`/admin/email-studio/${step.projectId}`}
+            onClick={(event) => onNavigate?.(event, `/admin/email-studio/${step.projectId}`)}
+          >
+            Open email
+          </Link>
+        ) : null}
         <Input value={step.fromLabel} aria-label="From name" onChange={(event) => onChange({ ...step, fromLabel: event.target.value })} />
         <Input value={step.fromEmail} aria-label="From email" onChange={(event) => onChange({ ...step, fromEmail: event.target.value })} />
         <label className="flex items-center gap-2 text-sm">

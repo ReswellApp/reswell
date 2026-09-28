@@ -282,14 +282,13 @@ function gatewayAuthConfigured(): boolean {
  * Anthropic feature is enabled when ANTHROPIC_API_KEY is present.
  */
 export function isAppLlmFeatureEnabled(feature: AppLlmFeatureDefinition): boolean {
-  if (feature.transport === "anthropic_direct") {
-    return Boolean(process.env.ANTHROPIC_API_KEY?.trim())
-  }
-
   if (feature.enabledEnvVar) {
     const flag = process.env[feature.enabledEnvVar]
     if (flag === "false") return false
-    if (flag === "true") return true
+  }
+
+  if (feature.transport === "anthropic_direct") {
+    return Boolean(process.env.ANTHROPIC_API_KEY?.trim())
   }
 
   return gatewayAuthConfigured()
