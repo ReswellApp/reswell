@@ -48,14 +48,15 @@ import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
-import {
-  assertListingOriginalSize,
-  prepareListingImagePairFromFile,
-} from "@/lib/listing-image-pipeline"
-import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
+import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
+import { prepareDecodableListingPhoto } from "@/lib/client-image-decode"
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
-import { isListingPhotoFile, type ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import {
+  isListingPhotoFile,
+  LISTING_PHOTO_ACCEPT,
+  type ListingPhotoSlot,
+} from "@/lib/sell-flow/listing-photo-slot"
 import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
 import {
   APPAREL_LISTING_MAX_PHOTOS,
@@ -122,6 +123,7 @@ type PhotoSlot = {
   thumbnailUrl?: string
   phase: PhotoPhase
   progress: number
+  errorMessage?: string
   userRotate180?: boolean
 }
 
@@ -469,9 +471,9 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
   const uploadSlot = useCallback(
     async (slot: PhotoSlot) => {
       if (!slot.file) return
+      let failureContext: "add" | "upload" = "add"
       try {
-        const decodable = await ensureBrowserDecodableImageFile(slot.file)
-        const prepared = await prepareListingImagePairFromFile(decodable, {
+        const prepared = await prepareDecodableListingPhoto(slot.file, {
           rotate180: Boolean(slot.userRotate180),
         })
         const nextPreviewUrl = listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
@@ -481,11 +483,15 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         const session = await resolveClientSessionForMutation(supabase)
         const user = session?.user
         if (!session?.access_token || !user) {
-          updateSlot(slot.clientId, { phase: "error" })
+          updateSlot(slot.clientId, {
+            phase: "error",
+            errorMessage: "Sign in to upload this photo.",
+          })
           signIn("/sell/apparel")
           return
         }
 
+        failureContext = "upload"
         const { fullUrl, thumbUrl } = await uploadListingImagePairToSupabase({
           supabase,
           userId: user.id,
@@ -505,13 +511,14 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         })
       } catch (err) {
         console.error("apparel photo upload failed", err)
+        const message = friendlyListingPhotoErrorMessage(err, failureContext)
         logSellFunnelEvent({
           listingType: "apparel",
           event: "upload_failed",
-          message: friendlyListingPhotoErrorMessage(err, "upload"),
+          message,
         })
-        updateSlot(slot.clientId, { phase: "error" })
-        toast.error(friendlyListingPhotoErrorMessage(err, "upload"))
+        updateSlot(slot.clientId, { phase: "error", errorMessage: message })
+        toast.error(message)
       }
     },
     [signIn, updateSlot],
@@ -1064,7 +1071,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                           <input
                             id={fileInputId}
                             type="file"
-                            accept="image/*"
+                            accept={LISTING_PHOTO_ACCEPT}
                             multiple
                             className="sr-only"
                             onChange={(e) => {

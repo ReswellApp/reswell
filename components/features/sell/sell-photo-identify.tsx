@@ -12,6 +12,7 @@ import {
   writeSellCatalogHandoff,
 } from "@/lib/sell-flow/catalog-handoff"
 import { prepareSellPhotoMatchFile } from "@/lib/sell-flow/prepare-sell-photo-match-file"
+import { isListingPhotoFile } from "@/lib/sell-flow/listing-photo-file"
 import { writeSellPhotoMatchDimensions } from "@/lib/sell-flow/sell-photo-match-dimensions"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import {
@@ -29,7 +30,7 @@ import { cn } from "@/lib/utils"
 type ShotFile = { file: File; url: string }
 
 function isImageFile(file: File): boolean {
-  return file.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)
+  return isListingPhotoFile(file)
 }
 
 export function SellPhotoIdentify({ className }: { className?: string }) {

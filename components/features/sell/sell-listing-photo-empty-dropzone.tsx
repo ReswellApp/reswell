@@ -1,4 +1,5 @@
 import { Upload } from "lucide-react"
+import { LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-file"
 import { cn } from "@/lib/utils"
 
 type SellListingPhotoEmptyDropzoneProps = {
@@ -43,7 +44,7 @@ export function SellListingPhotoEmptyDropzone({
       <input
         id={fileInputId}
         type="file"
-        accept="image/*"
+        accept={LISTING_PHOTO_ACCEPT}
         multiple
         className="sr-only"
         onChange={(e) => {

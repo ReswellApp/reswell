@@ -38,7 +38,9 @@ export const SellSimplePhotoTile = memo(function SellSimplePhotoTile({
       {photo.phase !== "done" ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/70 text-xs text-muted-foreground">
           {photo.phase === "error" ? (
-            <span className="text-destructive">Failed</span>
+            <span className="px-2 text-center text-[11px] leading-snug text-destructive">
+              {photo.errorMessage || "Couldn't add this photo. Try again."}
+            </span>
           ) : (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />

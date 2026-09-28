@@ -1,7 +1,18 @@
 "use client"
 
-import { browserCanDecodeImage } from "@/lib/listing-image-pipeline"
+import {
+  browserCanDecodeImage,
+  isRetryableImageError,
+  prepareListingImagePairFromFile,
+  type PreparedListingImagePair,
+  type PrepareListingImagePairOptions,
+} from "@/lib/listing-image-pipeline"
 import { runImageCpuTask } from "@/lib/client-image-cpu-queue"
+import {
+  canonicalDeclaredMime,
+  normalizeListingImageFile,
+  sniffImageMime,
+} from "@/lib/sell-flow/listing-photo-file"
 import { SERVER_IMAGE_CONVERT_MAX_BYTES } from "@/lib/utils/server-image-convert"
 import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
@@ -30,11 +41,11 @@ function isAppleMobileSafari(): boolean {
  * decode and was a primary trigger for iOS Safari's "operation was aborted" OOM errors.
  */
 function isLikelyBrowserDecodableWithoutProbe(file: File): boolean {
-  const mime = (file.type || "").toLowerCase()
+  const mime = canonicalDeclaredMime(file.type)
   if (mime && DECODABLE_IMAGE_MIMES.has(mime)) return true
 
   const lowerName = file.name.toLowerCase()
-  if (/\.(jpe?g|png|webp|gif|avif)$/i.test(lowerName)) return true
+  if (/\.(jpe?g|jfif|png|webp|gif|avif|bmp)$/i.test(lowerName)) return true
 
   if (isAppleMobileSafari()) {
     if (
@@ -52,8 +63,6 @@ function isLikelyBrowserDecodableWithoutProbe(file: File): boolean {
   return false
 }
 
-const HEIC_BRAND_RE = /^(heic|heix|hevc|hevx|mif1|msf1|heim|heis|hevm|hevs)$/i
-
 function conversionErrorMessage(err: unknown): string {
   if (err instanceof Error && err.message.trim()) return err.message.trim()
   if (typeof err === "object" && err !== null && "message" in err) {
@@ -64,19 +73,9 @@ function conversionErrorMessage(err: unknown): string {
   return "conversion failed"
 }
 
-function bufferLooksLikeHeif(bytes: Uint8Array): boolean {
-  if (bytes.length < 12) return false
-  const ftyp = String.fromCharCode(bytes[4]!, bytes[5]!, bytes[6]!, bytes[7]!)
-  if (ftyp !== "ftyp") return false
-  const brand = String.fromCharCode(bytes[8]!, bytes[9]!, bytes[10]!, bytes[11]!)
-    .replace(/\0/g, "")
-    .trim()
-  return HEIC_BRAND_RE.test(brand)
-}
-
 async function fileLooksLikeHeic(file: File): Promise<boolean> {
   const lowerName = file.name.toLowerCase()
-  const mimeLower = (file.type || "").toLowerCase()
+  const mimeLower = canonicalDeclaredMime(file.type)
   if (
     lowerName.endsWith(".heic") ||
     lowerName.endsWith(".heif") ||
@@ -87,9 +86,10 @@ async function fileLooksLikeHeic(file: File): Promise<boolean> {
   }
 
   try {
-    const head = await file.slice(0, 12).arrayBuffer()
-    return bufferLooksLikeHeif(new Uint8Array(head))
-  } catch {
+    const head = new Uint8Array(await file.slice(0, 32).arrayBuffer())
+    return sniffImageMime(head) === "image/heic"
+  } catch (err) {
+    if (isStaleFileNotFoundError(err)) throw err
     return false
   }
 }
@@ -197,38 +197,107 @@ async function convertViaServer(file: File): Promise<File> {
  * Other browsers: HEIC is converted client-side (heic-to / heic2any). Server convert is only a
  * last resort under Vercel's ~4.5MB body limit — large iPhone HEIC must succeed on-device.
  */
-export async function ensureBrowserDecodableImageFile(file: File): Promise<File> {
-  // iOS Safari + common JPEG/PNG: skip probes and HEIC WASM. Native decode handles full megapixel HEIC.
-  if (isLikelyBrowserDecodableWithoutProbe(file)) return file
-
-  if (await browserCanDecodeImage(file)) return file
-
-  const heicish = await fileLooksLikeHeic(file)
-  if (heicish) {
-    try {
-      // Desktop Chrome/Firefox HEIC: wasm convert, serialized so batch picks don't freeze the UI.
-      return await runImageCpuTask(() => convertHeicClientSide(file))
-    } catch (err) {
-      if (isStaleFileNotFoundError(err)) throw err
-      if (file.size <= SERVER_IMAGE_CONVERT_MAX_BYTES) {
-        try {
-          return await convertViaServer(file)
-        } catch {
-          /* fall through */
-        }
+async function convertHeicOrThrow(file: File): Promise<File> {
+  try {
+    // Desktop Chrome/Firefox/Edge HEIC: wasm convert, serialized so batch picks don't freeze the UI.
+    return await runImageCpuTask(() => convertHeicClientSide(file))
+  } catch (err) {
+    if (isStaleFileNotFoundError(err)) throw err
+    if (file.size <= SERVER_IMAGE_CONVERT_MAX_BYTES) {
+      try {
+        return await convertViaServer(file)
+      } catch (serverErr) {
+        if (isAuthConvertError(serverErr)) throw serverErr
       }
-      const hint = conversionErrorMessage(err)
-      throw new Error(
-        `Could not read this HEIC photo (${hint}). On iPhone, try again; on desktop, export as JPEG from Photos.`,
-      )
     }
+    const hint = conversionErrorMessage(err)
+    throw new Error(
+      `Could not read this HEIC photo (${hint}). On iPhone, try again; on desktop, export as JPEG from Photos.`,
+    )
+  }
+}
+
+function isAuthConvertError(err: unknown): boolean {
+  return /unauthorized|sign in/i.test(conversionErrorMessage(err))
+}
+
+function isBrowserDecodeFailure(err: unknown): boolean {
+  const message = conversionErrorMessage(err).toLowerCase()
+  return (
+    message.includes("could not decode") ||
+    message.includes("could not read image") ||
+    message.includes("source image could not be decoded") ||
+    message.includes("invalidstateerror") ||
+    message.includes("encodingerror") ||
+    message.includes("notsupportederror") ||
+    message.includes("failed to load")
+  )
+}
+
+/**
+ * Last resort after canvas decode fails: HEIC wasm, then Sharp on the server (CMYK JPEG,
+ * TIFF, BMP, and other files Chrome on Windows cannot paint).
+ */
+export async function recoverUndecodableListingImage(file: File): Promise<File | null> {
+  if (await fileLooksLikeHeic(file)) {
+    if (isAppleMobileSafari()) return null
+    return convertHeicOrThrow(file)
   }
 
-  if (file.size > SERVER_IMAGE_CONVERT_MAX_BYTES) {
+  if (file.size > SERVER_IMAGE_CONVERT_MAX_BYTES) return null
+
+  try {
+    return await convertViaServer(file)
+  } catch (err) {
+    if (isStaleFileNotFoundError(err) || isAuthConvertError(err)) throw err
+    return null
+  }
+}
+
+export async function ensureBrowserDecodableImageFile(file: File): Promise<File> {
+  const normalized = await normalizeListingImageFile(file)
+
+  // Sniff before the fast path. A `.jpg` label on Windows is often HEIC bytes from an iPhone.
+  if (await fileLooksLikeHeic(normalized)) {
+    // iOS Safari decodes HEIC natively. WASM here doubles peak memory and trips OOM aborts.
+    if (isAppleMobileSafari()) return normalized
+    return convertHeicOrThrow(normalized)
+  }
+
+  // iOS Safari + common JPEG/PNG: skip probes and HEIC WASM. Native decode handles full megapixel HEIC.
+  if (isLikelyBrowserDecodableWithoutProbe(normalized)) return normalized
+
+  if (await browserCanDecodeImage(normalized)) return normalized
+
+  if (normalized.size > SERVER_IMAGE_CONVERT_MAX_BYTES) {
     throw new Error(
-      `This photo format isn't supported in your browser and the file is too large to convert online (${(file.size / (1024 * 1024)).toFixed(1)}MB). Export as JPEG or PNG and try again.`,
+      `This photo format isn't supported in your browser and the file is too large to convert online (${(normalized.size / (1024 * 1024)).toFixed(1)}MB). Export as JPEG or PNG and try again.`,
     )
   }
 
-  return convertViaServer(file)
+  return convertViaServer(normalized)
+}
+
+/**
+ * Normalize Windows MIME / HEIC-in-JPEG files, then build the listing derivatives.
+ * If the browser still cannot decode (CMYK JPEG, TIFF), convert once and retry.
+ */
+export async function prepareDecodableListingPhoto(
+  file: File,
+  options?: PrepareListingImagePairOptions,
+): Promise<PreparedListingImagePair> {
+  const decodable = await ensureBrowserDecodableImageFile(file)
+  try {
+    return await prepareListingImagePairFromFile(decodable, options)
+  } catch (err) {
+    if (isRetryableImageError(err) || isStaleFileNotFoundError(err)) throw err
+    if (!isBrowserDecodeFailure(err)) throw err
+    const recovered = await recoverUndecodableListingImage(decodable)
+    if (!recovered) {
+      throw new Error(
+        "This photo format isn't supported in your browser. Export it as a standard JPEG or PNG and try again.",
+      )
+    }
+    return prepareListingImagePairFromFile(recovered, options)
+  }
 }

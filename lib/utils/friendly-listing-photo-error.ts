@@ -33,6 +33,18 @@ function isUnsupportedFormatMessage(message: string): boolean {
   )
 }
 
+function isAuthMessage(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes("sign in again") ||
+    lower.includes("sign in to upload") ||
+    lower.includes("jwt") ||
+    lower.includes("not authorized") ||
+    lower.includes("unauthorized") ||
+    lower.includes("row-level security")
+  )
+}
+
 function looksTechnical(message: string): boolean {
   const lower = message.toLowerCase()
   return (
@@ -65,6 +77,10 @@ export function friendlyListingPhotoErrorMessage(
     return "This photo is no longer available. Choose it again."
   }
 
+  if (raw && isAuthMessage(raw)) {
+    return "Sign in again to upload this photo."
+  }
+
   if (context === "rotate") {
     if (!raw || looksTechnical(raw)) {
       return "We couldn't rotate this photo. Try again."
@@ -75,16 +91,6 @@ export function friendlyListingPhotoErrorMessage(
   if (context === "upload") {
     if (!raw) {
       return "This photo didn't upload. Try again."
-    }
-    const lower = raw.toLowerCase()
-    if (
-      lower.includes("sign in again") ||
-      lower.includes("jwt") ||
-      lower.includes("not authorized") ||
-      lower.includes("unauthorized") ||
-      lower.includes("row-level security")
-    ) {
-      return "Sign in again to upload this photo."
     }
     if (isFileTooLargeMessage(raw)) {
       return "That photo is too large after processing. Try a smaller original."

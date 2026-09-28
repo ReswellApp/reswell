@@ -19,12 +19,9 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core"
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
-import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
+import { prepareDecodableListingPhoto } from "@/lib/client-image-decode"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
-import {
-  assertListingOriginalSize,
-  prepareListingImagePairFromFile,
-} from "@/lib/listing-image-pipeline"
+import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
@@ -105,6 +102,8 @@ export function useListingPhotoUpload({
   const photosFileDragDepthRef = useRef(0)
   const imagesRef = useRef<ListingPhotoSlot[]>([])
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
+  /** Same prepare generation already running — auth refresh must not start a second copy. */
+  const listingPhotoInFlightSeqRef = useRef<Map<string, number>>(new Map())
   const photoUploadSignInPromptedRef = useRef(false)
   const idbRestoreOptimizeQueueRef = useRef<ListingPhotoSlot[] | null>(null)
   const persistBeforeSignInRef = useRef(persistBeforeSignIn)
@@ -132,6 +131,8 @@ export function useListingPhotoUpload({
       const clientId = slot.clientId
       const previewUrl = slot.previewUrl
       const prepareSeq = slot.prepareSeq ?? 0
+      if (listingPhotoInFlightSeqRef.current.get(clientId) === prepareSeq) return
+      listingPhotoInFlightSeqRef.current.set(clientId, prepareSeq)
       latestListingPhotoPrepareSeqRef.current.set(clientId, prepareSeq)
       let prepared = slot.prepared
 
@@ -139,8 +140,7 @@ export function useListingPhotoUpload({
         if (!prepared) {
           const src = slot.sourceFile
           if (!src) return
-          const file = await ensureBrowserDecodableImageFile(src)
-          prepared = await prepareListingImagePairFromFile(file, {
+          prepared = await prepareDecodableListingPhoto(src, {
             rotate180: Boolean(slot.userRotate180),
           })
           if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
@@ -156,7 +156,9 @@ export function useListingPhotoUpload({
                     ...s,
                     previewUrl: nextPreviewUrl,
                     optimizePhase: "done",
+                    uploadPhase: s.uploadPhase === "error" ? "idle" : s.uploadPhase,
                     prepared,
+                    errorMessage: undefined,
                   }
                 : s,
             ),
@@ -215,6 +217,7 @@ export function useListingPhotoUpload({
             s.clientId === clientId
               ? {
                   ...s,
+                  optimizePhase: "done",
                   uploadPhase: "uploading",
                   progressFull: 0,
                   progressThumb: 0,
@@ -238,12 +241,14 @@ export function useListingPhotoUpload({
             s.clientId === clientId
               ? {
                   ...s,
+                  optimizePhase: "done",
                   uploadPhase: "done",
                   url: fullUrl,
                   thumbnailUrl: thumbUrl,
                   progressFull: 100,
                   progressThumb: 100,
                   prepared: undefined,
+                  errorMessage: undefined,
                   ...(s.dropSourceFileAfterUpload ? { sourceFile: undefined } : {}),
                 }
               : s,
@@ -263,8 +268,14 @@ export function useListingPhotoUpload({
         setImages((prev) =>
           prev.map((s) => {
             if (s.clientId !== clientId) return s
-            if (s.prepared) {
-              return { ...s, uploadPhase: "error", errorMessage: msg }
+            if (prepared || s.prepared) {
+              return {
+                ...s,
+                prepared: prepared ?? s.prepared,
+                optimizePhase: "done",
+                uploadPhase: "error",
+                errorMessage: msg,
+              }
             }
             return {
               ...s,
@@ -275,6 +286,10 @@ export function useListingPhotoUpload({
           }),
         )
         toast.error(msg)
+      } finally {
+        if (listingPhotoInFlightSeqRef.current.get(clientId) === prepareSeq) {
+          listingPhotoInFlightSeqRef.current.delete(clientId)
+        }
       }
     },
     [listingPhotoPrepareSeqInSync, openSignIn, signInReturnPath, funnelListingType],
@@ -311,10 +326,14 @@ export function useListingPhotoUpload({
       if (!live) return
       const nextSeq = (live.prepareSeq ?? 0) + 1
       latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+      const reprocess = live.optimizePhase === "error" || !live.prepared
       const next: ListingPhotoSlot = {
         ...live,
         prepareSeq: nextSeq,
         errorMessage: undefined,
+        optimizePhase: "running",
+        uploadPhase: "idle",
+        prepared: reprocess ? undefined : live.prepared,
       }
       setImages((prev) => prev.map((s) => (s.clientId === clientId ? next : s)))
       void optimizeAndUploadSlot(next)

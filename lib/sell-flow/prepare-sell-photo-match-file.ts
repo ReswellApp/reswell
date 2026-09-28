@@ -1,3 +1,4 @@
+import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import { createImageBitmapMaxLongEdge } from "@/lib/listing-image-pipeline"
 import { SELL_PHOTO_MATCH_MAX_BYTES } from "@/lib/sell-flow/sell-photo-match"
 
@@ -23,9 +24,10 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob>
 
 /** Downscale a camera or library photo to a JPEG the photo-match route will accept. */
 export async function prepareSellPhotoMatchFile(file: File): Promise<File> {
+  const decodable = await ensureBrowserDecodableImageFile(file)
   let bitmap: ImageBitmap
   try {
-    bitmap = await createImageBitmapMaxLongEdge(file, MAX_EDGE)
+    bitmap = await createImageBitmapMaxLongEdge(decodable, MAX_EDGE)
   } catch {
     throw new Error("This photo format couldn’t be read. Take the photo here, or upload a JPEG or PNG.")
   }

@@ -4,6 +4,7 @@ import * as React from "react"
 import Image from "next/image"
 import { Camera, ImagePlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-file"
 import {
   SELL_PHOTO_MATCH_SHOT_LABEL,
   type SellPhotoMatchShot,
@@ -96,7 +97,7 @@ export function SellPhotoIdentifyShot({
       <input
         ref={libraryRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        accept={LISTING_PHOTO_ACCEPT}
         className="sr-only"
         onChange={onPick}
       />

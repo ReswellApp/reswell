@@ -14,6 +14,7 @@ import {
   LISTING_WEBP_QUALITY_FULL,
   LISTING_WEBP_QUALITY_THUMB,
 } from "@/lib/listing-image-pipeline"
+import { mimeForImageDecode } from "@/lib/sell-flow/listing-photo-file"
 
 /**
  * OffscreenCanvas worker that decodes, orients, resizes and encodes a listing photo entirely off
@@ -293,7 +294,7 @@ export async function prepareListingImagePairInWorker(
       {
         id,
         buffer,
-        type: file.type || "image/jpeg",
+        type: mimeForImageDecode(file.type, file.name),
         rotate180: Boolean(options?.rotate180),
         skipLandscapeToPortrait: Boolean(options?.skipLandscapeToPortrait),
         rotateClockwiseQuarterTurns: Number(options?.rotateClockwiseQuarterTurns) || 0,

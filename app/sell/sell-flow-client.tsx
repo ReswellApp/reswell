@@ -97,10 +97,9 @@ import type { IndexBoardModelSelection } from "@/components/index-board-model-co
 import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import {
   assertListingOriginalSize,
-  prepareListingImagePairFromFile,
   type PreparedListingImagePair,
 } from "@/lib/listing-image-pipeline"
-import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
+import { prepareDecodableListingPhoto } from "@/lib/client-image-decode"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import { persistableListingThumbnailUrl, proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
@@ -164,7 +163,12 @@ import {
   type SellSavedListingLocation,
 } from "@/lib/utils/sell-saved-listing-locations"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
-import { listingPhotoSlotsForDraftPersist } from "@/lib/sell-flow/listing-photo-slot"
+import {
+  filesFromDataTransfer,
+  isListingPhotoFile,
+  isOsFileDragEvent,
+  listingPhotoSlotsForDraftPersist,
+} from "@/lib/sell-flow/listing-photo-slot"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
@@ -487,36 +491,6 @@ function listingImagesForPublishPreview(images: ListingPhotoSlot[]): ListingImag
       is_primary: index === 0,
     }))
 }
-
-const LISTING_PHOTO_FILE_EXT_RE = /\.(heic|heif|jpe?g|png|webp|gif|avif|tif?f)$/i
-
-function isListingPhotoFile(file: File): boolean {
-  const mime = (file.type || "").toLowerCase()
-  if (mime.startsWith("image/")) return true
-  return LISTING_PHOTO_FILE_EXT_RE.test(file.name)
-}
-
-function filesFromDataTransfer(dt: DataTransfer): File[] {
-  const fromList = Array.from(dt.files ?? []).filter(isListingPhotoFile)
-  if (fromList.length) return fromList
-  const out: File[] = []
-  for (const item of Array.from(dt.items ?? [])) {
-    if (item.kind !== "file") continue
-    const file = item.getAsFile()
-    if (file && isListingPhotoFile(file)) out.push(file)
-  }
-  return out
-}
-
-function isOsFileDragEvent(e: React.DragEvent): boolean {
-  const types = Array.from(e.dataTransfer.types ?? [])
-  return (
-    types.includes("Files") ||
-    types.includes("public.file-url") ||
-    types.includes("application/x-moz-file")
-  )
-}
-
 
 function shippingPriceToFormValue(v: unknown): string {
   if (v == null || v === "") return ""
@@ -926,6 +900,8 @@ function SellPageContentInner({
   const imagesRef = useRef<ListingPhotoSlot[]>([])
   /** Authoritative prepare generation per slot — `imagesRef` can lag behind `setState` during re-runs. */
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
+  /** Same prepare generation already running — auth refresh must not start a second copy. */
+  const listingPhotoInFlightSeqRef = useRef<Map<string, number>>(new Map())
   useEffect(() => {
     imagesRef.current = images
   }, [images])
@@ -2609,6 +2585,8 @@ function SellPageContentInner({
     const clientId = slot.clientId
     const previewUrl = slot.previewUrl
     const prepareSeq = slot.prepareSeq ?? 0
+    if (listingPhotoInFlightSeqRef.current.get(clientId) === prepareSeq) return
+    listingPhotoInFlightSeqRef.current.set(clientId, prepareSeq)
     latestListingPhotoPrepareSeqRef.current.set(clientId, prepareSeq)
     let prepared = slot.prepared
 
@@ -2616,8 +2594,7 @@ function SellPageContentInner({
       if (!prepared) {
         const src = slot.sourceFile
         if (!src) return
-        const file = await ensureBrowserDecodableImageFile(src)
-        prepared = await prepareListingImagePairFromFile(file, {
+        prepared = await prepareDecodableListingPhoto(src, {
           rotate180: Boolean(slot.userRotate180),
         })
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
@@ -2633,7 +2610,9 @@ function SellPageContentInner({
                   ...s,
                   previewUrl: nextPreviewUrl,
                   optimizePhase: "done",
+                  uploadPhase: s.uploadPhase === "error" ? "idle" : s.uploadPhase,
                   prepared,
+                  errorMessage: undefined,
                 }
               : s,
           ),
@@ -2688,6 +2667,7 @@ function SellPageContentInner({
           s.clientId === clientId
             ? {
                 ...s,
+                optimizePhase: "done",
                 uploadPhase: "uploading",
                 progressFull: 0,
                 progressThumb: 0,
@@ -2713,12 +2693,14 @@ function SellPageContentInner({
           s.clientId === clientId
             ? {
                 ...s,
+                optimizePhase: "done",
                 uploadPhase: "done",
                 url: fullUrl,
                 thumbnailUrl: thumbUrl,
                 progressFull: 100,
                 progressThumb: 100,
                 prepared: undefined,
+                errorMessage: undefined,
                 ...(s.dropSourceFileAfterUpload ? { sourceFile: undefined } : {}),
               }
             : s,
@@ -2736,8 +2718,14 @@ function SellPageContentInner({
       setImages((prev) =>
         prev.map((s) => {
           if (s.clientId !== clientId) return s
-          if (s.prepared) {
-            return { ...s, uploadPhase: "error", errorMessage: msg }
+          if (prepared || s.prepared) {
+            return {
+              ...s,
+              prepared: prepared ?? s.prepared,
+              optimizePhase: "done",
+              uploadPhase: "error",
+              errorMessage: msg,
+            }
           }
           return {
             ...s,
@@ -2748,6 +2736,10 @@ function SellPageContentInner({
         }),
       )
       toast.error(msg)
+    } finally {
+      if (listingPhotoInFlightSeqRef.current.get(clientId) === prepareSeq) {
+        listingPhotoInFlightSeqRef.current.delete(clientId)
+      }
     }
   }
 
@@ -2771,10 +2763,14 @@ function SellPageContentInner({
     if (!live) return
     const nextSeq = (live.prepareSeq ?? 0) + 1
     latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+    const reprocess = live.optimizePhase === "error" || !live.prepared
     const next: ListingPhotoSlot = {
       ...live,
       prepareSeq: nextSeq,
       errorMessage: undefined,
+      optimizePhase: "running",
+      uploadPhase: "idle",
+      prepared: reprocess ? undefined : live.prepared,
     }
     setImages((prev) =>
       prev.map((s) => (s.clientId === clientId ? next : s)),
