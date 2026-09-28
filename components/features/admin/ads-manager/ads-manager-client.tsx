@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateAdsEntityAction, type AdsActionResult } from "@/lib/actions/adsManager"
+import { AdsAssetPanel } from "@/components/features/admin/ads-manager/ads-asset-panel"
+import { AdsAudiencePanel } from "@/components/features/admin/ads-manager/ads-audience-panel"
 import { AdsConnectionCards } from "@/components/features/admin/ads-manager/ads-connection-cards"
 import { AdsCreateDialog } from "@/components/features/admin/ads-manager/ads-create-dialog"
 import { AdsEditDialog } from "@/components/features/admin/ads-manager/ads-edit-dialog"
@@ -15,7 +17,7 @@ import { AdsKeywordDialog } from "@/components/features/admin/ads-manager/ads-ke
 import { AdsKpiRow } from "@/components/features/admin/ads-manager/ads-kpi-row"
 import type { AdVerdict, AdsManagerDashboard, AdsPlatform } from "@/lib/types/adsManager"
 
-type TabId = "campaigns" | "ad_groups" | "ads" | "keywords"
+type TabId = "campaigns" | "ad_groups" | "ads" | "keywords" | "assets" | "audiences"
 type PlatformFilter = "all" | AdsPlatform
 type VerdictFilter = "all" | AdVerdict
 
@@ -100,6 +102,8 @@ export function AdsManagerClient({ initialData }: { initialData: AdsManagerDashb
             <TabsTrigger value="ad_groups">Ad groups</TabsTrigger>
             <TabsTrigger value="ads">Ads</TabsTrigger>
             <TabsTrigger value="keywords">Keywords</TabsTrigger>
+            <TabsTrigger value="assets">Assets</TabsTrigger>
+            <TabsTrigger value="audiences">Audiences</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="flex flex-wrap gap-2">
@@ -135,7 +139,15 @@ export function AdsManagerClient({ initialData }: { initialData: AdsManagerDashb
         </Link>
         .
       </p>
-      <AdsEntityTable rows={rows} busyKey={busyKey} onEdit={setEditRow} onToggle={(row) => void toggle(row)} />
+      {tab === "assets" ? (
+        <AdsAssetPanel assets={data.assets} adGroups={data.adGroups} query={query} onDone={handleResult} />
+      ) : null}
+      {tab === "audiences" ? (
+        <AdsAudiencePanel audiences={data.audiences} adGroups={data.adGroups} query={query} onDone={handleResult} />
+      ) : null}
+      {tab === "assets" || tab === "audiences" ? null : (
+        <AdsEntityTable rows={rows} busyKey={busyKey} onEdit={setEditRow} onToggle={(row) => void toggle(row)} />
+      )}
       <AdsCreateDialog open={creating} onOpenChange={setCreating} onDone={handleResult} />
       <AdsKeywordDialog open={addingKeyword} onOpenChange={setAddingKeyword} onDone={handleResult} />
       <AdsEditDialog row={editRow} ad={editAd} onOpenChange={(open) => { if (!open) setEditRow(null) }} onDone={handleResult} />

@@ -20,8 +20,8 @@ export default async function AdminAdsManagerPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Ads manager</h1>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
           Live Google Ads and Meta campaigns, with spend, conversions, and a read on what is working.
-          New campaigns are created paused, so they do not spend until you enable them. Listing sales
-          from ad clicks stay on Ad sales.
+          Create paused Search or Performance Max campaigns, edit asset groups, apply audiences, and
+          upload images or video from this computer. Listing sales from ad clicks stay on Ad sales.
         </p>
       </div>
       <AdsManagerClient initialData={initialData} />

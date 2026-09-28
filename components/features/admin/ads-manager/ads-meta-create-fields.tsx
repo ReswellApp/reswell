@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { AdsFileField } from "@/components/features/admin/ads-manager/ads-file-field"
 import { AdsField } from "@/components/features/admin/ads-manager/ads-manager-ui"
 
 export interface MetaDraft {
@@ -12,6 +13,8 @@ export interface MetaDraft {
   headline: string
   description: string
   imageUrl: string
+  imageHash: string
+  videoId: string
 }
 
 export const EMPTY_META_DRAFT: MetaDraft = {
@@ -24,6 +27,8 @@ export const EMPTY_META_DRAFT: MetaDraft = {
   headline: "",
   description: "",
   imageUrl: "",
+  imageHash: "",
+  videoId: "",
 }
 
 export function AdsMetaCreateFields({
@@ -71,9 +76,23 @@ export function AdsMetaCreateFields({
           <Input value={draft.description} onChange={(event) => set({ description: event.target.value })} />
         </AdsField>
       </div>
-      <AdsField label="Image URL" hint="https image Meta can fetch.">
+      <AdsFileField
+        label="Image file"
+        hint="JPEG, PNG, GIF, or WebP. 4 MB max. A video still needs this as the thumbnail."
+        role="meta_image"
+        value={draft.imageHash}
+        onChange={(imageHash) => set({ imageHash })}
+      />
+      <AdsField label="Image URL" hint="Optional if you uploaded a file. Meta fetches an https image.">
         <Input value={draft.imageUrl} onChange={(event) => set({ imageUrl: event.target.value })} />
       </AdsField>
+      <AdsFileField
+        label="Video"
+        hint="Optional MP4 or QuickTime, 100 MB max."
+        role="meta_video"
+        value={draft.videoId}
+        onChange={(videoId) => set({ videoId })}
+      />
     </div>
   )
 }

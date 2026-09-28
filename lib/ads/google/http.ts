@@ -58,6 +58,31 @@ export interface GoogleAdsRow {
     resourceName?: string
     finalUrls?: string[]
   }
+  assetGroupAsset?: {
+    resourceName?: string
+    fieldType?: string
+    status?: string
+  }
+  asset?: {
+    id?: string
+    name?: string
+    type?: string
+    textAsset?: { text?: string }
+    imageAsset?: { fullSize?: { url?: string } }
+    youtubeVideoAsset?: { youtubeVideoId?: string }
+  }
+  userList?: {
+    id?: string
+    name?: string
+    sizeForDisplay?: string
+    membershipStatus?: string
+  }
+  audience?: {
+    id?: string
+    name?: string
+    description?: string
+    status?: string
+  }
   metrics?: {
     impressions?: string
     clicks?: string
@@ -101,6 +126,7 @@ export async function mutateGoogleAds(
   customerId: string,
   collection: string,
   operations: Record<string, unknown>[],
+  timeoutMs = 20_000,
 ): Promise<string> {
   const payload = await googleAdsRequest<GoogleMutateResponse>(
     `customers/${customerId}/${collection}:mutate`,
@@ -108,6 +134,7 @@ export async function mutateGoogleAds(
       method: "POST",
       body: JSON.stringify({ operations }),
     },
+    timeoutMs,
   )
   const resourceName = payload.results?.[0]?.resourceName
   if (!resourceName) {
@@ -116,7 +143,7 @@ export async function mutateGoogleAds(
   return resourceName
 }
 
-async function googleAdsRequest<T>(path: string, init: RequestInit): Promise<T> {
+async function googleAdsRequest<T>(path: string, init: RequestInit, timeoutMs = 20_000): Promise<T> {
   const config = assertGoogleAdsConfigured()
   const token = await getGoogleAdsAccessToken()
   const headers = new Headers(init.headers)
@@ -127,7 +154,7 @@ async function googleAdsRequest<T>(path: string, init: RequestInit): Promise<T> 
 
   const response = await fetch(
     `https://googleads.googleapis.com/${getGoogleAdsApiVersion()}/${path}`,
-    { ...init, headers, signal: AbortSignal.timeout(20_000) },
+    { ...init, headers, signal: AbortSignal.timeout(timeoutMs) },
   )
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) {

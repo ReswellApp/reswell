@@ -12,7 +12,9 @@ import type {
 import { assertGoogleAdsConfigured } from "@/lib/ads/google/config"
 import { mutateGoogleAds, searchGoogleAds, type GoogleAdsRow } from "@/lib/ads/google/http"
 
-export async function createGoogleSearchCampaign(input: Extract<CreateAdsCampaignInput, { platform: "google" }>): Promise<string> {
+export async function createGoogleSearchCampaign(
+  input: Extract<CreateAdsCampaignInput, { kind: "google_search" }>,
+): Promise<string> {
   const { customerId } = assertGoogleAdsConfigured()
   const budgetResource = await mutateGoogleAds(customerId, "campaignBudgets", [
     {

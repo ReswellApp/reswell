@@ -8,6 +8,7 @@ import {
   getMetaAdsPageId,
   metaAdsCreateMissingConfig,
 } from "@/lib/ads/meta/config"
+import { readMetaImageHash } from "@/lib/ads/meta/media"
 import { metaDelete, metaGet, metaPost, metaPostForm } from "@/lib/ads/meta/http"
 import type { CreateAdsCampaignInput, RemoveAdsEntityInput, UpdateAdsEntityInput } from "@/lib/validations/adsManager"
 
@@ -22,11 +23,19 @@ interface MetaCreativeSpec {
       image_hash?: string
       call_to_action?: { type?: string; value?: { link?: string } }
     }
+    video_data?: {
+      video_id?: string
+      image_hash?: string
+      message?: string
+      title?: string
+      link_description?: string
+      call_to_action?: { type?: string; value?: { link?: string } }
+    }
   }
 }
 
 export async function createMetaLinkCampaign(
-  input: Extract<CreateAdsCampaignInput, { platform: "meta" }>,
+  input: Extract<CreateAdsCampaignInput, { kind: "meta_link" }>,
 ): Promise<string> {
   const missing = metaAdsCreateMissingConfig()
   if (missing.length > 0) {
@@ -82,17 +91,28 @@ export async function createMetaLinkCampaign(
   }
 
   try {
-    const hash = await uploadImage(accountId, input.imageUrl)
+    const hash = input.imageHash ?? (input.imageUrl ? await uploadImage(accountId, input.imageUrl) : null)
+    if (!hash) throw new AdsPlatformError("Add an image URL or upload an image", "meta")
     const creative = await metaPost(`act_${accountId}/adcreatives`, {
       name: `${input.name} creative`,
-      object_story_spec: linkStory({
-        pageId,
-        link: input.finalUrl,
-        message: input.primaryText,
-        name: input.headline,
-        description: input.description,
-        imageHash: hash,
-      }),
+      object_story_spec: input.videoId
+        ? videoStory({
+            pageId,
+            link: input.finalUrl,
+            message: input.primaryText,
+            name: input.headline,
+            description: input.description,
+            imageHash: hash,
+            videoId: input.videoId,
+          })
+        : linkStory({
+            pageId,
+            link: input.finalUrl,
+            message: input.primaryText,
+            name: input.headline,
+            description: input.description,
+            imageHash: hash,
+          }),
     })
     if (!creative.id) throw new AdsPlatformError("Meta did not return a creative id", "meta")
     await metaPost(`act_${accountId}/ads`, {
@@ -180,8 +200,7 @@ async function replaceAdCreative(accountId: string, input: UpdateAdsEntityInput)
 
 async function uploadImage(accountId: string, imageUrl: string): Promise<string> {
   const uploaded = await metaPostForm(`act_${accountId}/adimages`, { url: imageUrl })
-  const images = (uploaded as { images?: Record<string, { hash?: string }> }).images
-  const hash = images ? Object.values(images).find((image) => image.hash)?.hash : undefined
+  const hash = readMetaImageHash(uploaded)
   if (!hash) throw new AdsPlatformError("Meta did not accept the image URL", "meta")
   return hash
 }
@@ -189,6 +208,28 @@ async function uploadImage(accountId: string, imageUrl: string): Promise<string>
 async function accountCurrency(accountId: string): Promise<string> {
   const account = await metaGet<{ currency?: string }>(`act_${accountId}`, { fields: "currency" })
   return account.currency?.trim() || "USD"
+}
+
+function videoStory(input: {
+  pageId: string
+  link: string
+  message: string
+  name: string
+  description: string
+  imageHash: string
+  videoId: string
+}): MetaCreativeSpec["object_story_spec"] {
+  return {
+    page_id: input.pageId,
+    video_data: {
+      video_id: input.videoId,
+      image_hash: input.imageHash,
+      message: input.message,
+      title: input.name,
+      link_description: input.description || undefined,
+      call_to_action: { type: "SHOP_NOW", value: { link: input.link } },
+    },
+  }
 }
 
 function linkStory(input: {

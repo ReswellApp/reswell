@@ -23,6 +23,7 @@ type MetricsModule = typeof import("./metrics.ts")
 type ScoreModule = typeof import("./score.ts")
 type DatesModule = typeof import("./dates.ts")
 type ErrorsModule = typeof import("./errors.ts")
+type ValidationModule = typeof import("@/lib/validations/adsManager.ts")
 
 let majorToMetaMinor: MoneyModule["majorToMetaMinor"]
 let majorToMicros: MoneyModule["majorToMicros"]
@@ -33,6 +34,9 @@ let benchmarksFromMetrics: ScoreModule["benchmarksFromMetrics"]
 let scoreDelivery: ScoreModule["scoreDelivery"]
 let rangeDates: DatesModule["rangeDates"]
 let publicAdsError: ErrorsModule["publicAdsError"]
+let createAdsCampaignSchema: ValidationModule["createAdsCampaignSchema"]
+let createMetaSavedAudienceSchema: ValidationModule["createMetaSavedAudienceSchema"]
+let removePmaxAssetSchema: ValidationModule["removePmaxAssetSchema"]
 
 before(async () => {
   const money = await import("./money.ts")
@@ -40,6 +44,7 @@ before(async () => {
   const score = await import("./score.ts")
   const dates = await import("./dates.ts")
   const errors = await import("./errors.ts")
+  const validations = await import("@/lib/validations/adsManager.ts")
   majorToMetaMinor = money.majorToMetaMinor
   majorToMicros = money.majorToMicros
   metaMinorToMajor = money.metaMinorToMajor
@@ -49,6 +54,9 @@ before(async () => {
   scoreDelivery = score.scoreDelivery
   rangeDates = dates.rangeDates
   publicAdsError = errors.publicAdsError
+  createAdsCampaignSchema = validations.createAdsCampaignSchema
+  createMetaSavedAudienceSchema = validations.createMetaSavedAudienceSchema
+  removePmaxAssetSchema = validations.removePmaxAssetSchema
 })
 
 describe("ads manager money", () => {
@@ -177,6 +185,70 @@ describe("ads manager dates and errors", () => {
     const range = rangeDates(7, new Date("2026-09-28T18:00:00.000Z"))
     assert.equal(range.until, "2026-09-28")
     assert.equal(range.since, "2026-09-22")
+  })
+
+  it("accepts a paused Performance Max payload and a Meta upload hash", () => {
+    const pmax = createAdsCampaignSchema.safeParse({
+      kind: "google_pmax",
+      name: "Catalog",
+      dailyBudget: 40,
+      finalUrl: "https://www.reswell.app",
+      headlines: ["One", "Two", "Three"],
+      longHeadlines: ["Longer headline"],
+      descriptions: ["First description", "Second description"],
+      businessName: "Reswell",
+      marketingImage: "customers/1234567890/assets/1",
+      squareImage: "customers/1234567890/assets/2",
+      logo: "customers/1234567890/assets/3",
+    })
+    assert.equal(pmax.success, true)
+
+    const meta = createAdsCampaignSchema.safeParse({
+      kind: "meta_link",
+      name: "Retargeting",
+      objective: "traffic",
+      dailyBudget: 25,
+      finalUrl: "https://www.reswell.app",
+      primaryText: "Boards for smaller waves",
+      headline: "Shop boards",
+      imageHash: "abc123def456",
+      videoId: "123456789",
+    })
+    assert.equal(meta.success, true)
+
+    const missingImage = createAdsCampaignSchema.safeParse({
+      kind: "meta_link",
+      name: "Retargeting",
+      objective: "traffic",
+      dailyBudget: 25,
+      finalUrl: "https://www.reswell.app",
+      primaryText: "Boards for smaller waves",
+      headline: "Shop boards",
+    })
+    assert.equal(missingImage.success, false)
+  })
+
+  it("rejects a Meta saved audience whose maximum age is below the minimum", () => {
+    const parsed = createMetaSavedAudienceSchema.safeParse({
+      name: "US adults",
+      countries: ["US"],
+      ageMin: 35,
+      ageMax: 18,
+    })
+    assert.equal(parsed.success, false)
+  })
+
+  it("requires a real asset-group link before removing a Performance Max asset", () => {
+    const parsed = removePmaxAssetSchema.safeParse({
+      linkResource: "customers/1234567890/assetGroupAssets/9~4~HEADLINE",
+      confirm: true,
+    })
+    assert.equal(parsed.success, true)
+    const rejected = removePmaxAssetSchema.safeParse({
+      linkResource: "customers/1234567890/campaigns/9",
+      confirm: true,
+    })
+    assert.equal(rejected.success, false)
   })
 
   it("strips access tokens from platform errors", () => {

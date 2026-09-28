@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { createAdsCampaignAction, type AdsActionResult } from "@/lib/actions/adsManager"
+import { parseYoutubeId } from "@/lib/ads/manager/media"
 import {
   AdsGoogleCreateFields,
   EMPTY_GOOGLE_DRAFT,
@@ -38,8 +39,13 @@ export function AdsCreateDialog({
   const [pending, setPending] = useState(false)
 
   async function submit() {
+    const payload = platform === "google" ? googlePayload(google) : { ok: true as const, body: metaPayload(meta) }
+    if (!payload.ok) {
+      onDone({ error: payload.error })
+      return
+    }
     setPending(true)
-    const result = await createAdsCampaignAction(platform === "google" ? googlePayload(google) : metaPayload(meta))
+    const result = await createAdsCampaignAction(payload.body)
     setPending(false)
     onDone(result)
     if ("success" in result) onOpenChange(false)
@@ -51,7 +57,8 @@ export function AdsCreateDialog({
         <DialogHeader>
           <DialogTitle>New paused campaign</DialogTitle>
           <DialogDescription>
-            Google creates a Search campaign. Meta creates a link ad. Neither spends until you enable it.
+            Google creates a paused Search or Performance Max campaign. Meta creates a paused link ad, with an
+            uploaded image or an https URL. A video also needs a thumbnail. Nothing spends until you enable it.
           </DialogDescription>
         </DialogHeader>
         <div className="flex gap-2">
@@ -77,22 +84,47 @@ export function AdsCreateDialog({
   )
 }
 
-function googlePayload(draft: GoogleDraft) {
+function googlePayload(draft: GoogleDraft): { ok: true; body: Record<string, unknown> } | { ok: false; error: string } {
+  if (draft.campaignKind === "pmax") {
+    const youtube = draft.youtube.trim()
+    const youtubeVideoId = youtube ? parseYoutubeId(youtube) : null
+    if (youtube && !youtubeVideoId) return { ok: false, error: "Use a YouTube link or 11-character id" }
+    return {
+      ok: true,
+      body: {
+        kind: "google_pmax",
+        name: draft.name,
+        dailyBudget: Number(draft.dailyBudget),
+        finalUrl: draft.finalUrl,
+        headlines: lines(draft.headlines),
+        longHeadlines: lines(draft.longHeadlines),
+        descriptions: lines(draft.descriptions),
+        businessName: draft.businessName,
+        marketingImage: draft.marketingImage,
+        squareImage: draft.squareImage,
+        logo: draft.logo,
+        ...(youtubeVideoId ? { youtubeVideoId } : {}),
+      },
+    }
+  }
   return {
-    platform: "google" as const,
-    name: draft.name,
-    dailyBudget: Number(draft.dailyBudget),
-    maxCpc: Number(draft.maxCpc),
-    finalUrl: draft.finalUrl,
-    headlines: lines(draft.headlines),
-    descriptions: lines(draft.descriptions),
-    keywords: lines(draft.keywords),
+    ok: true,
+    body: {
+      kind: "google_search",
+      name: draft.name,
+      dailyBudget: Number(draft.dailyBudget),
+      maxCpc: Number(draft.maxCpc),
+      finalUrl: draft.finalUrl,
+      headlines: lines(draft.headlines),
+      descriptions: lines(draft.descriptions),
+      keywords: lines(draft.keywords),
+    },
   }
 }
 
 function metaPayload(draft: MetaDraft) {
   return {
-    platform: "meta" as const,
+    kind: "meta_link" as const,
     name: draft.name,
     objective: draft.objective,
     dailyBudget: Number(draft.dailyBudget),
@@ -101,6 +133,8 @@ function metaPayload(draft: MetaDraft) {
     primaryText: draft.primaryText,
     headline: draft.headline,
     description: draft.description,
-    imageUrl: draft.imageUrl,
+    ...(draft.imageUrl.trim() ? { imageUrl: draft.imageUrl.trim() } : {}),
+    ...(draft.imageHash.trim() ? { imageHash: draft.imageHash.trim() } : {}),
+    ...(draft.videoId.trim() ? { videoId: draft.videoId.trim() } : {}),
   }
 }

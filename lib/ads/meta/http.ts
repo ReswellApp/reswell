@@ -63,16 +63,43 @@ export async function metaDelete(path: string): Promise<void> {
   await metaFetch<unknown>(url, accessToken, { method: "DELETE" })
 }
 
-async function metaFetch<T>(url: string, accessToken: string, init?: RequestInit): Promise<T> {
+export async function metaPostMultipart(
+  path: string,
+  form: FormData,
+  options?: { video?: boolean; timeoutMs?: number },
+): Promise<unknown> {
+  const { accessToken } = assertMetaAdsConfigured()
+  const host = options?.video ? "https://graph-video.facebook.com" : "https://graph.facebook.com"
+  const url = `${host}/${getMetaGraphVersion()}/${path}`
+  return metaFetch<unknown>(url, accessToken, { method: "POST", body: form }, options?.timeoutMs ?? 45_000)
+}
+
+export async function metaPostVideoForm(path: string, body: Record<string, string>): Promise<unknown> {
+  const { accessToken } = assertMetaAdsConfigured()
+  const url = `https://graph-video.facebook.com/${getMetaGraphVersion()}/${path}`
+  return metaFetch<unknown>(
+    url,
+    accessToken,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(body),
+    },
+    45_000,
+  )
+}
+
+async function metaFetch<T>(url: string, accessToken: string, init?: RequestInit, timeoutMs = 20_000): Promise<T> {
   const parsed = new URL(url)
   parsed.searchParams.delete("access_token")
   const headers = new Headers(init?.headers)
   headers.set("Authorization", `Bearer ${accessToken}`)
-  if (init?.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json")
+  const isForm = typeof FormData !== "undefined" && init?.body instanceof FormData
+  if (init?.body && !isForm && !headers.has("Content-Type")) headers.set("Content-Type", "application/json")
   const response = await fetch(parsed, {
     ...init,
     headers,
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(timeoutMs),
   })
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) {

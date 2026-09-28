@@ -81,6 +81,44 @@ export interface ManagedKeyword {
   verdict: AdVerdict
 }
 
+export type CreativeFieldType =
+  | "headline"
+  | "long_headline"
+  | "description"
+  | "marketing_image"
+  | "square_image"
+  | "logo"
+  | "youtube_video"
+  | "business_name"
+  | "other"
+
+export interface ManagedCreativeAsset {
+  platform: "google"
+  id: string
+  assetGroupId: string
+  campaignId: string
+  fieldType: CreativeFieldType
+  fieldLabel: string
+  text: string | null
+  previewUrl: string | null
+  youtubeId: string | null
+  linkResource: string
+  status: DeliveryStatus
+}
+
+export type AdsMediaRole = "marketing_image" | "square_image" | "logo" | "meta_image" | "meta_video"
+
+export type AudienceKind = "user_list" | "google_audience" | "saved" | "custom"
+
+export interface ManagedAudience {
+  platform: AdsPlatform
+  id: string
+  name: string
+  kind: AudienceKind
+  kindLabel: string
+  size: number | null
+}
+
 export interface AdsAccountSnapshot {
   platform: AdsPlatform
   configured: boolean
@@ -107,6 +145,8 @@ export interface AdsManagerDashboard {
   adGroups: ManagedAdGroup[]
   ads: ManagedAd[]
   keywords: ManagedKeyword[]
+  assets: ManagedCreativeAsset[]
+  audiences: ManagedAudience[]
 }
 
 export type Unscored<T extends { verdict: AdVerdict }> = Omit<T, "verdict">

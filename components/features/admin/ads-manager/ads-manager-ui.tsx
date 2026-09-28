@@ -39,3 +39,27 @@ export function AdsField({
 export function platformLabel(platform: "google" | "meta"): string {
   return platform === "google" ? "Google Ads" : "Meta Ads"
 }
+
+export function AdsSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string
+  onChange: (value: string) => void
+  options: { value: string; label: string }[]
+}) {
+  return (
+    <select
+      className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  )
+}

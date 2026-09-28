@@ -5,8 +5,12 @@ import { revalidatePath } from "next/cache"
 import { AdsManagerInputError, AdsPlatformError, publicAdsError } from "@/lib/ads/manager/errors"
 import {
   addGoogleKeywordService,
+  addPmaxAssetService,
+  applyAdsAudienceService,
   createAdsCampaignService,
+  createMetaSavedAudienceService,
   removeAdsEntityService,
+  removePmaxAssetService,
   updateAdsEntityService,
 } from "@/lib/services/adsManager"
 
@@ -28,6 +32,22 @@ export async function removeAdsEntityAction(raw: unknown): Promise<AdsActionResu
 
 export async function addGoogleKeywordAction(raw: unknown): Promise<AdsActionResult> {
   return runAdsAction("add-keyword", () => addGoogleKeywordService(raw))
+}
+
+export async function addPmaxAssetAction(raw: unknown): Promise<AdsActionResult> {
+  return runAdsAction("add-asset", () => addPmaxAssetService(raw))
+}
+
+export async function removePmaxAssetAction(raw: unknown): Promise<AdsActionResult> {
+  return runAdsAction("remove-asset", () => removePmaxAssetService(raw))
+}
+
+export async function applyAdsAudienceAction(raw: unknown): Promise<AdsActionResult> {
+  return runAdsAction("apply-audience", () => applyAdsAudienceService(raw))
+}
+
+export async function createMetaSavedAudienceAction(raw: unknown): Promise<AdsActionResult> {
+  return runAdsAction("create-audience", () => createMetaSavedAudienceService(raw))
 }
 
 async function runAdsAction(op: string, run: () => Promise<string>): Promise<AdsActionResult> {
