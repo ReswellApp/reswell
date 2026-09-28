@@ -123,6 +123,10 @@ export async function insertEmailStudioDocument(
     source?: EmailStudioChangeSource
     summary?: string
     commands?: EmailStudioCommand[]
+    klaviyoTemplateId?: string
+    klaviyoSyncedRevision?: number
+    klaviyoContentChecksum?: string
+    klaviyoSyncedAt?: string
   },
 ): Promise<EmailStudioRecord> {
   const { data, error } = await supabase
@@ -138,6 +142,10 @@ export async function insertEmailStudioDocument(
       trigger_metric: args.triggerMetric,
       notes: args.notes,
       document: args.document,
+      klaviyo_template_id: args.klaviyoTemplateId ?? null,
+      klaviyo_synced_revision: args.klaviyoSyncedRevision ?? null,
+      klaviyo_content_checksum: args.klaviyoContentChecksum ?? null,
+      klaviyo_synced_at: args.klaviyoSyncedAt ?? null,
       created_by: args.userId,
       updated_by: args.userId,
       change_source: args.source ?? "human",

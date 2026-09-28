@@ -35,7 +35,6 @@ import { findEmailBlock, replaceEmailBlock } from "@/lib/email-studio/document-t
 import {
   renderEmailStudioHtml,
   resolveEmailStudioHtml,
-  withEmailPreviewSamples,
 } from "@/lib/email-studio/render-html"
 import { KNOWN_KLAVIYO_METRIC_NAMES } from "@/lib/klaviyo/event-log-shared"
 import type {
@@ -58,6 +57,7 @@ import {
   emailBlockSummary,
 } from "@/components/features/admin/email-studio/email-studio-outline"
 import { EmailStudioVersionHistory } from "@/components/features/admin/email-studio/email-studio-version-history"
+import { EmailStudioLivePreview } from "@/components/features/admin/email-studio/email-studio-live-preview"
 import { useEmailStudioDocument } from "@/components/features/admin/email-studio/hooks/use-email-studio-document"
 
 const ADDABLE: EmailBlockType[] = [
@@ -143,7 +143,6 @@ export function EmailStudioEditor({
   )
   const generatedHtml = useMemo(() => renderEmailStudioHtml(renderInput), [renderInput])
   const html = useMemo(() => resolveEmailStudioHtml(renderInput), [renderInput])
-  const previewHtml = useMemo(() => withEmailPreviewSamples(html), [html])
   const customHtml = Boolean(displayDraft.document.htmlOverride?.trim())
   const selected = findEmailBlock(displayDraft.document, selectedId)?.block ?? null
   const klaviyoStale = Boolean(
@@ -606,15 +605,12 @@ export function EmailStudioEditor({
             />
           ) : null}
           {mode === "preview" ? (
-            <div className="min-h-0 flex-1 overflow-auto p-4">
-              <iframe
-                title="Rendered email preview"
-                sandbox=""
-                srcDoc={previewHtml}
-                style={{ width: frameWidth }}
-                className="mx-auto block h-[720px] max-w-full rounded-md border border-border bg-white"
-              />
-            </div>
+            <EmailStudioLivePreview
+              projectId={draft.id}
+              metricName={draft.triggerMetric}
+              html={html}
+              width={frameWidth}
+            />
           ) : null}
           {mode === "code" ? (
             <textarea

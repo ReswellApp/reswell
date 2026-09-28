@@ -70,6 +70,19 @@ export async function getEmailStudioFlow(
   return data ? toRecord(data as Row) : null
 }
 
+export async function getEmailStudioFlowByKlaviyoId(
+  supabase: SupabaseClient,
+  klaviyoFlowId: string,
+): Promise<EmailStudioFlowRecord | null> {
+  const { data, error } = await supabase
+    .from("email_studio_flows")
+    .select(SELECT)
+    .eq("klaviyo_flow_id", klaviyoFlowId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return data ? toRecord(data as Row) : null
+}
+
 export async function insertEmailStudioFlow(
   supabase: SupabaseClient,
   args: {
@@ -79,6 +92,8 @@ export async function insertEmailStudioFlow(
     source?: EmailStudioChangeSource
     summary?: string
     commands?: EmailStudioCommand[]
+    klaviyoFlowId?: string
+    klaviyoStatus?: string
   },
 ): Promise<EmailStudioFlowRecord> {
   const { data, error } = await supabase
@@ -87,6 +102,8 @@ export async function insertEmailStudioFlow(
       name: args.name,
       notes: "",
       definition: args.definition,
+      klaviyo_flow_id: args.klaviyoFlowId ?? null,
+      klaviyo_status: args.klaviyoStatus ?? "",
       created_by: args.userId,
       updated_by: args.userId,
       change_source: args.source ?? "human",

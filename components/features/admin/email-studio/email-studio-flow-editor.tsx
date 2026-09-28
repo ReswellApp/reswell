@@ -8,6 +8,7 @@ import { Redo2, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 import { generateEmailStudioAction } from "@/lib/actions/emailStudio"
 import {
+  publishEmailStudioFlowAction,
   pushEmailStudioFlowAction,
   setEmailStudioFlowStatusAction,
 } from "@/lib/actions/emailStudioFlows"
@@ -85,6 +86,7 @@ export function EmailStudioFlowEditor({
     pendingProposal?.flow.definition.steps[0]?.id ?? flow.definition.steps[0]?.id ?? null,
   )
   const [confirmLive, setConfirmLive] = useState(false)
+  const [publishing, setPublishing] = useState(false)
   const [proposalPreview, setProposalPreview] = useState<EmailStudioFlowSnapshot | null>(
     pendingProposal?.flow ?? null,
   )
@@ -236,11 +238,44 @@ export function EmailStudioFlowEditor({
       return
     }
     mergeServerFields({
-      klaviyoStatus: status,
-      klaviyoReplacedFlowId: status === "live" ? null : draft.klaviyoReplacedFlowId,
-      klaviyoReplacedFlowStatus: status === "live" ? null : draft.klaviyoReplacedFlowStatus,
+      klaviyoStatus: result.status,
+      klaviyoReplacedFlowId: result.status === "live" ? null : draft.klaviyoReplacedFlowId,
+      klaviyoReplacedFlowStatus: result.status === "live" ? null : draft.klaviyoReplacedFlowStatus,
     })
-    toast.success(status === "live" ? "Flow is live" : `Set to ${status}`)
+    if (result.warning) toast.warning(result.warning)
+    else toast.success(result.status === "live" ? "Flow is live" : `Set to ${result.status}`)
+  }
+
+  async function publishLive(): Promise<void> {
+    setPublishing(true)
+    const saved = await save({ flush: true })
+    if (!saved) {
+      setPublishing(false)
+      return
+    }
+    const result = await publishEmailStudioFlowAction({
+      id: draft.id,
+      confirmLive: true,
+    })
+    setPublishing(false)
+    if ("error" in result) {
+      toast.error(result.error)
+      router.refresh()
+      return
+    }
+    mergeServerFields({
+      klaviyoFlowId: result.klaviyoFlowId,
+      klaviyoStatus: "live",
+      klaviyoSyncedRevision: result.syncedRevision,
+      klaviyoContentChecksum: result.checksum,
+      klaviyoSyncedAt: result.syncedAt,
+      klaviyoReplacedFlowId: null,
+      klaviyoReplacedFlowStatus: null,
+    })
+    setConfirmLive(false)
+    if (result.warning) toast.warning(result.warning)
+    else toast.success("Flow published and verified live in Klaviyo.")
+    router.refresh()
   }
 
   function navigateAfterSave(event: ReactMouseEvent<HTMLAnchorElement>, href: string): void {
@@ -314,6 +349,13 @@ export function EmailStudioFlowEditor({
               Create replacement
             </Button>
           ) : null}
+          <Button
+            size="sm"
+            disabled={!klaviyoConnected || saving || publishing || Boolean(proposalPreview)}
+            onClick={() => setConfirmLive(true)}
+          >
+            {publishing ? "Publishing…" : draft.klaviyoStatus === "live" ? "Republish live" : "Publish live"}
+          </Button>
           <Button size="sm" disabled={saving || conflict || Boolean(proposalPreview)} onClick={() => void save({ announce: true, flush: true })}>
             {saving ? "Saving" : "Save now"}
           </Button>
@@ -382,22 +424,61 @@ export function EmailStudioFlowEditor({
             projects={projects}
             onSelect={(id) => setSelectedId(id)}
           />
-          <div className="space-y-2 border-t border-border px-3 py-2">
-            <p className="text-xs text-muted-foreground">
-              Push creates a draft. Messages are marked ready, and the flow stays off until you set it live.
-              {draft.klaviyoFlowId
-                ? ` Klaviyo ${draft.klaviyoFlowId} · ${draft.klaviyoStatus || "draft"}${klaviyoStale ? " · local changes not pushed" : " · up to date"}.`
-                : ""}
-            </p>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={confirmLive} onChange={(event) => setConfirmLive(event.target.checked)} />
-              I want this flow to start sending
-            </label>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={!draft.klaviyoFlowId || Boolean(proposalPreview)} onClick={() => void setStatus("draft")}>Draft</Button>
-              <Button size="sm" variant="outline" disabled={!draft.klaviyoFlowId || klaviyoStale || Boolean(proposalPreview)} onClick={() => void setStatus("manual")}>Manual</Button>
-              <Button size="sm" disabled={!draft.klaviyoFlowId || klaviyoStale || !confirmLive || Boolean(proposalPreview)} onClick={() => void setStatus("live")}>Set live</Button>
+          <div className="space-y-3 border-t border-border px-3 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium">Klaviyo publishing</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {draft.klaviyoFlowId
+                    ? `${draft.klaviyoStatus || "draft"} · ${klaviyoStale ? "changes waiting to publish" : "verified up to date"}`
+                    : "Not published yet"}
+                </p>
+              </div>
+              <span className={`rounded-full px-2 py-1 text-[10px] font-medium ${
+                draft.klaviyoStatus === "live"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : draft.klaviyoStatus === "manual"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-slate-100 text-slate-600"
+              }`}>
+                {draft.klaviyoStatus || "local draft"}
+              </span>
             </div>
+            <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+              <div className="rounded-md border border-border bg-background p-2">
+                <span className={draft.klaviyoFlowId ? "text-emerald-600" : "text-muted-foreground"}>1. Sync</span>
+              </div>
+              <div className="rounded-md border border-border bg-background p-2">
+                <span className={draft.klaviyoFlowId && !klaviyoStale ? "text-emerald-600" : "text-muted-foreground"}>2. Verify</span>
+              </div>
+              <div className="rounded-md border border-border bg-background p-2">
+                <span className={draft.klaviyoStatus === "live" ? "text-emerald-600" : "text-muted-foreground"}>3. Live</span>
+              </div>
+            </div>
+            {confirmLive ? (
+              <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
+                <p className="text-xs font-medium text-amber-900">Publish this flow live?</p>
+                <p className="text-[11px] leading-relaxed text-amber-800">
+                  The latest flow and every linked email will be synced first. Once Klaviyo verifies them, eligible profiles can start receiving messages.
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" disabled={publishing} onClick={() => void publishLive()}>
+                    {publishing ? "Publishing…" : "Sync, verify, and publish"}
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={publishing} onClick={() => setConfirmLive(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => setConfirmLive(true)} disabled={!klaviyoConnected || Boolean(proposalPreview)}>
+                  {draft.klaviyoStatus === "live" ? "Publish latest changes" : "Publish live"}
+                </Button>
+                <Button size="sm" variant="outline" disabled={!draft.klaviyoFlowId || Boolean(proposalPreview)} onClick={() => void setStatus("draft")}>Pause to draft</Button>
+                <Button size="sm" variant="outline" disabled={!draft.klaviyoFlowId || klaviyoStale || Boolean(proposalPreview)} onClick={() => void setStatus("manual")}>Manual</Button>
+              </div>
+            )}
             {draft.klaviyoReplacedFlowId && draft.klaviyoReplacedFlowStatus !== "draft" ? (
               <p className="text-xs text-amber-700">
                 Setting this replacement live will first disable the previous {draft.klaviyoReplacedFlowStatus} flow.

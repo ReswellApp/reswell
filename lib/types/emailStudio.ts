@@ -173,3 +173,18 @@ export interface EmailStudioFlowOption {
   name: string
   status: string
 }
+
+export interface EmailStudioPreviewProfile {
+  id: string
+  email: string | null
+  firstName: string | null
+  lastName: string | null
+}
+
+export interface EmailStudioPreviewEvent {
+  id: string
+  metricName: string
+  occurredAt: string
+  properties: Record<string, unknown>
+  profile: EmailStudioPreviewProfile | null
+}

@@ -23,7 +23,13 @@ import {
 } from "@/lib/db/emailStudio"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
-import type { EmailStudioDocument, EmailStudioFlowOption, EmailStudioKind, EmailStudioRecord } from "@/lib/types/emailStudio"
+import type {
+  EmailStudioDocument,
+  EmailStudioFlowOption,
+  EmailStudioKind,
+  EmailStudioPreviewEvent,
+  EmailStudioRecord,
+} from "@/lib/types/emailStudio"
 import type { CreateEmailStudioInput, UpdateEmailStudioInput } from "@/lib/validations/emailStudio"
 
 type ServiceError = { error: string }
@@ -412,6 +418,125 @@ export async function listEmailStudioFlowsService(): Promise<{
     }))
     .sort((a, b) => a.name.localeCompare(b.name))
   return { connected: true, flows }
+}
+
+type KlaviyoMetricResource = {
+  id: string
+  attributes?: { name?: string }
+}
+
+type KlaviyoEventResource = {
+  id: string
+  attributes?: {
+    datetime?: string
+    timestamp?: number
+    event_properties?: unknown
+    value?: number | null
+    value_currency?: string | null
+  }
+  relationships?: {
+    profile?: { data?: { id?: string } | null }
+  }
+}
+
+type KlaviyoProfileResource = {
+  id: string
+  type?: string
+  attributes?: {
+    email?: string | null
+    first_name?: string | null
+    last_name?: string | null
+  }
+}
+
+function objectProperties(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function eventDate(attributes: KlaviyoEventResource["attributes"]): string {
+  if (attributes?.datetime) return attributes.datetime
+  if (typeof attributes?.timestamp === "number") {
+    return new Date(attributes.timestamp * 1_000).toISOString()
+  }
+  return new Date(0).toISOString()
+}
+
+export async function listEmailStudioPreviewEventsService(
+  projectId: string,
+): Promise<
+  | { success: true; metricName: string; events: EmailStudioPreviewEvent[] }
+  | ServiceError
+> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+  if (!getKlaviyoApiKey()) return { error: "Klaviyo is not connected." }
+  try {
+    const project = await getEmailStudioDocument(dbClient(staff.supabase), projectId)
+    if (!project) return { error: "Email not found" }
+    const metricName = project.triggerMetric.trim()
+    if (!metricName) return { error: "Choose a trigger metric to load live preview data." }
+
+    const metrics = await klaviyoGetAllPages<KlaviyoMetricResource>(
+      "/api/metrics/",
+      { "fields[metric]": "name", "page[size]": "100" },
+      { maxPages: 20 },
+    )
+    if (!metrics.ok) return { error: `Could not load Klaviyo metrics: ${metrics.detail}` }
+    const metric = metrics.data.find(
+      (item) => item.attributes?.name?.trim().toLowerCase() === metricName.toLowerCase(),
+    )
+    if (!metric) return { error: `The ${metricName} metric was not found in Klaviyo.` }
+
+    const result = await klaviyoGet<{
+      data?: KlaviyoEventResource[]
+      included?: KlaviyoProfileResource[]
+    }>("/api/events/", {
+      filter: `equals(metric_id,"${metric.id}")`,
+      include: "profile",
+      sort: "-datetime",
+      "fields[event]": "datetime,timestamp,event_properties,value,value_currency",
+      "fields[profile]": "email,first_name,last_name",
+      "page[size]": "25",
+    })
+    if (!result.ok) return { error: `Could not load live Klaviyo events: ${result.detail}` }
+
+    const profiles = new Map(
+      (result.data.included ?? [])
+        .filter((profile) => !profile.type || profile.type === "profile")
+        .map((profile) => [profile.id, profile]),
+    )
+    const events = (result.data.data ?? []).map((event): EmailStudioPreviewEvent => {
+      const profileId = event.relationships?.profile?.data?.id ?? null
+      const profile = profileId ? profiles.get(profileId) : null
+      const properties = objectProperties(event.attributes?.event_properties)
+      if (event.attributes?.value !== null && event.attributes?.value !== undefined) {
+        properties.$value = event.attributes.value
+      }
+      if (event.attributes?.value_currency) {
+        properties.value_currency = event.attributes.value_currency
+      }
+      return {
+        id: event.id,
+        metricName,
+        occurredAt: eventDate(event.attributes),
+        properties,
+        profile: profileId
+          ? {
+              id: profileId,
+              email: profile?.attributes?.email ?? null,
+              firstName: profile?.attributes?.first_name ?? null,
+              lastName: profile?.attributes?.last_name ?? null,
+            }
+          : null,
+      }
+    })
+    return { success: true, metricName, events }
+  } catch (error) {
+    console.error("[email_studio] live preview events failed", error)
+    return { error: "Could not load live Klaviyo preview data." }
+  }
 }
 
 export async function listEmailLibraryImagesService(): Promise<

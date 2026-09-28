@@ -60,6 +60,7 @@ export const emailStudioFlowStepSchema = z.discriminatedUnion("type", [
     fromLabel: z.string().trim().min(1).max(80),
     smartSending: z.boolean(),
     transactional: z.boolean(),
+    status: z.enum(["draft", "live"]).optional(),
     next: nextSchema,
   }),
   z.object({
@@ -124,6 +125,10 @@ export const emailStudioFlowIdSchema = z.object({
   id: z.string().uuid(),
 })
 
+export const openKlaviyoFlowSchema = z.object({
+  klaviyoFlowId: z.string().trim().min(1).max(100),
+})
+
 export const setEmailStudioFlowStatusSchema = z.object({
   id: z.string().uuid(),
   status: z.enum(["draft", "manual", "live"]),
@@ -134,6 +139,11 @@ export const pushEmailStudioFlowSchema = z.object({
   id: z.string().uuid(),
   /** When the flow was already pushed, create a new Klaviyo draft instead of refusing. */
   replace: z.boolean().optional(),
+})
+
+export const publishEmailStudioFlowSchema = z.object({
+  id: z.string().uuid(),
+  confirmLive: z.literal(true),
 })
 
 export type UpdateEmailStudioFlowInput = z.infer<typeof updateEmailStudioFlowSchema>

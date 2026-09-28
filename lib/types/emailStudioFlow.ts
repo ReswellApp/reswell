@@ -45,6 +45,8 @@ export interface FlowEmailStep extends FlowStepBase {
   fromLabel: string
   smartSending: boolean
   transactional: boolean
+  /** Klaviyo message readiness inside the flow. Defaults to live for older drafts. */
+  status?: "draft" | "live"
   next: string | null
 }
 
@@ -131,4 +133,21 @@ export interface EmailStudioMessage {
 export interface KlaviyoCatalogOption {
   id: string
   name: string
+}
+
+export interface KlaviyoFlowWorkspaceItem {
+  id: string
+  name: string
+  status: string
+  triggerName: string
+  triggerType: string
+  actionCount: number
+  emailCount: number
+  updatedAt: string | null
+  localFlowId: string | null
+  unsupportedActions: string[]
+}
+
+export interface KlaviyoMetricWorkspaceItem extends KlaviyoCatalogOption {
+  flowCount: number
 }

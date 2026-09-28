@@ -213,20 +213,71 @@ ${blocks}
 </html>`
 }
 
-/** Sample values for the display pane. Downloaded and pushed HTML stays untouched. */
+function previewString(value: unknown): string {
+  if (typeof value === "string") return value
+  if (typeof value === "number" || typeof value === "boolean") return String(value)
+  if (value === null || value === undefined) return ""
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return ""
+  }
+}
+
+function escapePreviewValue(value: unknown): string {
+  return previewString(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
+export interface EmailPreviewData {
+  profile: {
+    email?: string | null
+    firstName?: string | null
+    lastName?: string | null
+  }
+  event: Record<string, unknown>
+}
+
+/** Replaces Klaviyo tags for the preview pane only. Pushed HTML stays untouched. */
+export function withEmailPreviewData(html: string, data: EmailPreviewData): string {
+  const profileValues: Record<string, unknown> = {
+    email: data.profile.email,
+    first_name: data.profile.firstName,
+    last_name: data.profile.lastName,
+  }
+  let preview = html.replace(
+    /\{\{\s*(email|first_name|last_name)(?:\|default:'([^']*)')?\s*\}\}/g,
+    (_match, key: string, fallback: string | undefined) => (
+      escapePreviewValue(profileValues[key] || fallback || "")
+    ),
+  )
+  preview = preview.replace(
+    /\{\{\s*event\|lookup:'([^']+)'(?:\|default:'([^']*)')?\s*\}\}/g,
+    (_match, key: string, fallback: string | undefined) => (
+      escapePreviewValue(data.event[key] ?? fallback ?? "")
+    ),
+  )
+  return preview
+    .replaceAll("{% unsubscribe 'Unsubscribe' %}", "Unsubscribe")
+    .replaceAll("{{ organization.name|default:'Reswell' }}", "Reswell")
+    .replaceAll("{{ organization.full_address|default:'' }}", "Los Angeles, CA")
+}
+
+/** Stable fallback when no live Klaviyo event has reached this metric yet. */
 export function withEmailPreviewSamples(html: string): string {
-  const samples: [string, string][] = [
-    ["{{ first_name|default:'there' }}", "Alex"],
-    ["{{ event|lookup:'order_num' }}", "RW-1042"],
-    ["{{ event|lookup:'Title' }}", "6'2 Pyzel Ghost"],
-    ["{{ event|lookup:'$value' }}", "$640"],
-    ["{{ event|lookup:'order_url'|default:'https://www.reswell.app' }}", "https://www.reswell.app"],
-    ["{{ event|lookup:'listing_url'|default:'https://www.reswell.app' }}", "https://www.reswell.app"],
-    ["{% unsubscribe 'Unsubscribe' %}", "Unsubscribe"],
-    ["{{ organization.name|default:'Reswell' }}", "Reswell"],
-    ["{{ organization.full_address|default:'' }}", "Los Angeles, CA"],
-  ]
-  return samples.reduce((next, [token, sample]) => next.replaceAll(token, sample), html)
+  return withEmailPreviewData(html, {
+    profile: { email: "alex@example.com", firstName: "Alex", lastName: "Surfer" },
+    event: {
+      order_num: "RW-1042",
+      Title: "6'2 Pyzel Ghost",
+      "$value": "$640",
+      order_url: "https://www.reswell.app",
+      listing_url: "https://www.reswell.app",
+    },
+  })
 }
 
 export function renderEmailStudioText(input: EmailStudioRenderInput): string {

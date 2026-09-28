@@ -129,7 +129,7 @@ function actionPayload(
       type: "send-email",
       links: { next: step.next },
       data: {
-        status: "live",
+        status: step.status ?? "live",
         message: {
           from_email: step.fromEmail,
           from_label: step.fromLabel,

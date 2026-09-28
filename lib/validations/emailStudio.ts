@@ -140,6 +140,10 @@ export const emailStudioIdSchema = z.object({
   id: z.string().uuid(),
 })
 
+export const emailStudioPreviewQuerySchema = z.object({
+  projectId: z.string().uuid(),
+})
+
 export const saveEmailStudioTemplateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(1).max(120),
