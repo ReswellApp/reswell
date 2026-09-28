@@ -30,6 +30,7 @@ import {
   sendEmailStudioTestAction,
 } from "@/lib/actions/emailStudio"
 import { cloneEmailBlock, createEmailBlock } from "@/lib/email-studio/document"
+import { createEmailFrame, EMAIL_STUDIO_FRAMES, isEmailStudioFrameId, type EmailStudioFrameId } from "@/lib/email-studio/frames"
 import { findEmailBlock, replaceEmailBlock } from "@/lib/email-studio/document-tree"
 import {
   renderEmailStudioHtml,
@@ -49,6 +50,7 @@ import { EmailStudioAssistant } from "@/components/features/admin/email-studio/e
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { EmailStudioCanvas, EmailStudioPaletteChip } from "@/components/features/admin/email-studio/email-studio-canvas"
+import { EmailStudioFrameChip } from "@/components/features/admin/email-studio/email-studio-frame-library"
 import { EmailStudioInspector } from "@/components/features/admin/email-studio/email-studio-inspector"
 import {
   EmailStudioOutlineRow,
@@ -113,7 +115,7 @@ export function EmailStudioEditor({
   const [templateName, setTemplateName] = useState("")
   const [testRecipient, setTestRecipient] = useState("")
   const [testSending, setTestSending] = useState(false)
-  const [assistantOpen, setAssistantOpen] = useState(false)
+  const [assistantOpen, setAssistantOpen] = useState(true)
   const [proposalPreview, setProposalPreview] = useState<{
     subject: string
     previewText: string
@@ -194,6 +196,17 @@ export function EmailStudioEditor({
     const rawOverId = String(over.id)
     const activeId = rawActiveId.startsWith("outline:") ? rawActiveId.slice("outline:".length) : rawActiveId
     const overId = rawOverId.startsWith("outline:") ? rawOverId.slice("outline:".length) : rawOverId
+    if (activeId.startsWith("frame:")) {
+      const frameId = activeId.slice("frame:".length)
+      if (!isEmailStudioFrameId(frameId)) return
+      const block = createEmailFrame(frameId)
+      const blocks = [...draft.document.blocks]
+      const index = blocks.findIndex((item) => item.id === overId)
+      blocks.splice(overId === "canvas-end" || index < 0 ? blocks.length : index, 0, block)
+      updateBlocks(blocks)
+      setSelectedId(block.id)
+      return
+    }
     if (activeId.startsWith("palette:")) {
       const type = activeId.slice("palette:".length) as EmailBlockType
       const block = createEmailBlock(type)
@@ -210,6 +223,16 @@ export function EmailStudioEditor({
     const to = overId === "canvas-end" ? ids.length - 1 : ids.indexOf(overId)
     if (from < 0 || to < 0) return
     updateBlocks(arrayMove(draft.document.blocks, from, to))
+  }
+
+  function insertFrame(frameId: EmailStudioFrameId) {
+    if (proposalPreview) return
+    const block = createEmailFrame(frameId)
+    const blocks = [...draft.document.blocks]
+    const index = blocks.findIndex((item) => item.id === selectedId)
+    blocks.splice(index >= 0 ? index + 1 : blocks.length, 0, block)
+    updateBlocks(blocks)
+    setSelectedId(block.id)
   }
 
   function addBlock(type: EmailBlockType) {
@@ -414,6 +437,11 @@ export function EmailStudioEditor({
         onDragStart={(event) => {
           suppressPaletteClick.current = true
           const id = String(event.active.id)
+          if (id.startsWith("frame:")) {
+            const frame = EMAIL_STUDIO_FRAMES.find((item) => item.id === id.slice("frame:".length))
+            setDraggingLabel(frame?.name ?? "Frame")
+            return
+          }
           setDraggingLabel(id.startsWith("palette:") ? emailBlockLabel(id.slice("palette:".length) as EmailBlockType) : "Block")
         }}
         onDragEnd={onDragEnd}
@@ -473,7 +501,27 @@ export function EmailStudioEditor({
             </div>
           </SortableContext>
           <div className="border-t border-border pt-3">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Components</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Frames</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {EMAIL_STUDIO_FRAMES.map((frame) => (
+                <span
+                  key={frame.id}
+                  onClick={() => {
+                    if (suppressPaletteClick.current) {
+                      suppressPaletteClick.current = false
+                      return
+                    }
+                    insertFrame(frame.id)
+                  }}
+                >
+                  <EmailStudioFrameChip id={frame.id} />
+                </span>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Drop a frame on the artboard, then edit the type in place.</p>
+          </div>
+          <div className="border-t border-border pt-3">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Blocks</p>
           </div>
           <div className="flex flex-wrap gap-1">
             {ADDABLE.map((type) => (
@@ -491,7 +539,7 @@ export function EmailStudioEditor({
               </span>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">Drag a component into the canvas. Select a layer to edit its properties.</p>
+          <p className="text-xs text-muted-foreground">Drag a block onto the artboard. Select a layer to edit it.</p>
         </aside>
 
         <section className="flex min-h-[420px] min-w-0 flex-col bg-[#F9F9F2]">

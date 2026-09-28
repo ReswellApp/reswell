@@ -1,17 +1,12 @@
 import type {
-  EmailAlign,
   EmailBlock,
   EmailBlockType,
-  EmailButtonBlock,
-  EmailDetailsBlock,
-  EmailEyebrowBlock,
-  EmailHeadingBlock,
   EmailStudioDocument,
-  EmailTextBlock,
 } from "@/lib/types/emailStudio"
 import {
   KLAVIYO_EMAIL_COLORS,
 } from "@/lib/klaviyo/email-brand-styles"
+import { createEmailFrame } from "@/lib/email-studio/frames"
 
 export const RESWELL_EMAIL_LOGO =
   "https://www.reswell.app/images/reswell-logo.png"
@@ -141,26 +136,6 @@ export interface EmailStudioStarter {
   document: EmailStudioDocument
 }
 
-function eyebrow(text: string): EmailEyebrowBlock {
-  return { id: emailBlockId(), type: "eyebrow", text, align: "left" }
-}
-
-function heading(text: string, align: EmailAlign = "left"): EmailHeadingBlock {
-  return { id: emailBlockId(), type: "heading", text, align }
-}
-
-function paragraph(text: string, align: EmailAlign = "left"): EmailTextBlock {
-  return { id: emailBlockId(), type: "text", text, align }
-}
-
-function button(label: string, href: string): EmailButtonBlock {
-  return { id: emailBlockId(), type: "button", label, href, align: "center" }
-}
-
-function details(title: string, rows: EmailDetailsBlock["rows"]): EmailDetailsBlock {
-  return { id: emailBlockId(), type: "details", title, rows }
-}
-
 function starter(partial: Omit<EmailStudioStarter, "document"> & { blocks: EmailBlock[] }): EmailStudioStarter {
   return {
     id: partial.id,
@@ -186,54 +161,78 @@ export const EMAIL_STUDIO_STARTERS: EmailStudioStarter[] = [
   starter({
     id: "buyer-order",
     name: "Buyer order",
-    description: "Order confirmation layout with a details card.",
+    description: "Muted hero, an order receipt, and a closer.",
     subject: "Your Reswell order is confirmed",
     previewText: "We sent the seller your order details.",
     triggerMetric: "Purchase Successful",
     blocks: [
       createEmailBlock("logo"),
-      eyebrow("Order confirmed"),
-      heading("You're all set"),
-      paragraph(
-        "Hey {{ first_name|default:'there' }} — we received your order. The seller has what they need to get it to you.",
-      ),
-      details("Your order", [
-        { id: emailBlockId(), label: "Order", value: "{{ event|lookup:'order_num' }}" },
-        { id: emailBlockId(), label: "Board", value: "{{ event|lookup:'Title' }}" },
-        { id: emailBlockId(), label: "Total", value: "{{ event|lookup:'$value' }}" },
-      ]),
-      button("View order", "{{ event|lookup:'order_url'|default:'https://www.reswell.app' }}"),
+      createEmailFrame("hero", {
+        surface: "muted",
+        align: "left",
+        eyebrow: "Order confirmed",
+        heading: "You're all set",
+        text: "Hey {{ first_name|default:'there' }} — we received your order. The seller has what they need to get it to you.",
+        buttonLabel: "",
+      }),
+      createEmailFrame("receipt", {
+        title: "Your order",
+        rows: [
+          { label: "Order", value: "{{ event|lookup:'order_num' }}" },
+          { label: "Board", value: "{{ event|lookup:'Title' }}" },
+          { label: "Total", value: "{{ event|lookup:'$value' }}" },
+        ],
+      }),
+      createEmailFrame("closer", {
+        heading: "View the order",
+        text: "Messages and tracking stay on Reswell.",
+        buttonLabel: "View order",
+        buttonHref: "{{ event|lookup:'order_url'|default:'https://www.reswell.app' }}",
+      }),
       createEmailBlock("footer"),
     ],
   }),
   starter({
     id: "listing-spotlight",
     name: "Listing spotlight",
-    description: "Image beside copy for a saved board or price drop.",
+    description: "Listing spotlight with a photo, the price line, and one button.",
     subject: "A board you saved just changed",
     previewText: "Open the listing before it's gone.",
     triggerMetric: "Favorite Price Drop",
     blocks: [
       createEmailBlock("logo"),
-      heading("Still on your list"),
-      paragraph("Hey {{ first_name|default:'there' }} — this one moved. Take another look."),
-      createEmailBlock("split"),
+      createEmailFrame("spotlight", {
+        title: "Still on your list",
+        text: "Hey {{ first_name|default:'there' }} — this one moved. Take another look.",
+        buttonLabel: "View listing",
+        buttonHref: "{{ event|lookup:'listing_url'|default:'https://www.reswell.app' }}",
+      }),
+      createEmailFrame("quote", { quote: "Open it before someone else does." }),
       createEmailBlock("footer"),
     ],
   }),
   starter({
     id: "promo",
     name: "Campaign",
-    description: "Full-width image, headline, and one button.",
+    description: "Dark hero, three points, and a closer.",
     subject: "",
     previewText: "",
     triggerMetric: "Newsletter",
     blocks: [
       createEmailBlock("logo"),
-      createEmailBlock("image"),
-      heading("Campaign headline", "center"),
-      paragraph("One idea, one link. Keep the copy short enough to read on a phone.", "center"),
-      createEmailBlock("button"),
+      createEmailFrame("hero", {
+        surface: "dark",
+        align: "center",
+        eyebrow: "Reswell",
+        heading: "Campaign headline",
+        text: "One idea, short enough to read on a phone.",
+        buttonLabel: "",
+      }),
+      createEmailFrame("features"),
+      createEmailFrame("closer", {
+        buttonLabel: "Open Reswell",
+        buttonHref: "https://www.reswell.app",
+      }),
       createEmailBlock("footer"),
     ],
   }),

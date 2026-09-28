@@ -12,6 +12,7 @@ import {
   type AssistantFlowDraft,
   type AssistantFlowStep,
 } from "@/lib/email-studio/assistant-draft"
+import { designFlatEmailDocument } from "@/lib/email-studio/frames"
 import {
   applyEmailStudioEmailCommands,
   applyEmailStudioFlowCommands,
@@ -57,9 +58,11 @@ Write short, plain Reswell copy. Keep Klaviyo tags as typed, for example {{ firs
 
 applyEmail is yes when the request creates or changes the open email. applyFlow is yes when the request creates or changes a flow. Set the other to no and leave its list empty.
 
-For an email, choose operation deliberately. Use replace-selection when the request refers to the selected block and return that replacement block first. Use insert-after-selection when asked to add content near the selection. Use metadata-only for subject, preview, or notes changes, and list exactly those requested keys in metadataFields; this permits an intentional empty value such as removing preview text. Use an empty metadataFields list for other operations. Use replace-document only for a new email or a whole-email redesign. Block type is one of section, logo, eyebrow, heading, text, image, button, split, details, divider, spacer, footer. A section is an email-safe visual container with 1–3 columns; choose its surface, padding, gap, mobile stacking, and column content. Use sections to create hierarchy, image-led compositions, and editorial layouts instead of returning the same vertical stack every time. A replace-document email needs a logo first and a footer last with showUnsubscribe true. align is left or center.
+For an email, choose operation deliberately. Use replace-selection when the request refers to the selected block and return that replacement block first. Use insert-after-selection when asked to add content near the selection. Use metadata-only for subject, preview, or notes changes, and list exactly those requested keys in metadataFields; this permits an intentional empty value such as removing preview text. Use an empty metadataFields list for other operations. Use replace-document only for a new email or a whole-email redesign. Block type is one of section, logo, eyebrow, heading, text, image, button, split, details, divider, spacer, footer. A section is an email-safe visual container with 1–3 columns; choose its surface, padding, gap, mobile stacking, and column content. A column may include eyebrow, imageSrc, heading, text, buttonLabel, and buttonHref. align is left or center.
 
-For a flow, return steps in order. type is delay, email, sms, webhook, update-profile, list-update, or split. branch is main, yes, or no. A split is a main step. The yes and no steps that follow it belong to that split until the next main step. splitMode is profile-property, email-subscribed, or event-property. Each email step includes subject, heading, and body. Use a trigger id from the catalog when you have one. If you only know a metric name, put it in triggerName and leave triggerId empty. A step after the split on the main branch runs after both branches. Flows are saved as drafts. Never tell the user the flow is live.
+Design a replace-document email the way a layout tool would. Return logo, then at least two section blocks that use different surfaces, then a footer with showUnsubscribe true. Open with a dark or muted hero, follow with a content section (one column, an editorial two-column split, or a three-up), and end with a dark closer that holds the button. Do not return a loose stack of heading, text, and button for a new email or a redesign. Put buttons on white, muted, or dark surfaces so they stay visible. Leave image src empty when you do not have a real https image.
+
+For a flow, return steps in order. type is delay, email, sms, webhook, update-profile, list-update, or split. branch is main, yes, or no. A split is a main step. The yes and no steps that follow it belong to that split until the next main step. splitMode is profile-property, email-subscribed, or event-property. Each email step includes subject, previewText, layout, eyebrow, heading, body, buttonLabel, and buttonHref. layout is announcement, editorial, transactional, or product. The studio turns that step into a designed email with a hero, sections, and a closer. Use transactional for orders and shipping, product for a listing, editorial for a story, and announcement for a campaign. Use a trigger id from the catalog when you have one. If you only know a metric name, put it in triggerName and leave triggerId empty. A step after the split on the main branch runs after both branches. Flows are saved as drafts. Never tell the user the flow is live.
 
 Fill every string. Use an empty string when a field does not apply, 0 for an unused number, and an empty columns list outside section blocks. reply is two sentences about what you drafted. Do not refuse, apologize, or discuss policy.`
 
@@ -336,6 +339,23 @@ function emailProposalCommands(
   ]
 }
 
+function presentStudioDraft(draft: {
+  reply: string
+  operation: AssistantOperation
+  metadataFields: ("subject" | "previewText" | "notes")[]
+  email: AssistantEmailDraft | null
+  flow: AssistantFlowDraft | null
+}) {
+  if (!draft.email || draft.operation !== "replace-document") return draft
+  return {
+    ...draft,
+    email: {
+      ...draft.email,
+      document: designFlatEmailDocument(draft.email.document, { subject: draft.email.subject }),
+    },
+  }
+}
+
 async function draftFromModel(input: {
   prompt: string
   history: { role: "user" | "assistant"; content: string }[]
@@ -363,9 +383,9 @@ async function draftFromModel(input: {
       timeout: 45_000,
       providerOptions: providerOptions(),
     })
-    const draft = coerceAssistantStudio(result.output)
-    if (!draft) throw new Error("empty draft")
-    return draft
+    const coerced = coerceAssistantStudio(result.output)
+    if (!coerced) throw new Error("empty draft")
+    return presentStudioDraft(coerced)
   } catch (error) {
     if (isGatewayAuthenticationError(error)) {
       throw new Error(
@@ -386,18 +406,18 @@ async function draftFromModel(input: {
     providerOptions: providerOptions(),
   })
   const json = extractJsonObject(fallback.text)
-  const draft = coerceAssistantStudio(json)
-  if (draft) return draft
+  const coerced = coerceAssistantStudio(json)
+  if (coerced) return presentStudioDraft(coerced)
   const email = coerceAssistantEmail(json)
   const flow = coerceAssistantFlow(json)
   if (email || flow) {
-    return {
+    return presentStudioDraft({
       reply: email?.reply || flow?.reply || "Updated the draft.",
       operation: "replace-document",
       metadataFields: [],
       email: email?.draft ?? null,
       flow,
-    }
+    })
   }
   throw new Error("The assistant could not draft that.")
 }
@@ -657,5 +677,163 @@ export async function askEmailStudioAssistantService(input: {
     proposalId,
     proposalScope,
     baseRevision: input.baseRevision,
+  }
+}
+
+export async function generateEmailStudioFromBriefService(input: {
+  brief: string
+  name?: string
+  target: "email" | "flow"
+}): Promise<
+  | { success: true; target: "email" | "flow"; id: string; name: string }
+  | { error: string }
+> {
+  if (!isEmailStudioAssistantEnabled()) {
+    return {
+      error: "The email assistant needs AI Gateway authentication. Set AI_GATEWAY_API_KEY or pull Vercel OIDC credentials, then restart the dev server.",
+    }
+  }
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "Unauthorized" }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin, is_employee")
+    .eq("id", user.id)
+    .maybeSingle()
+  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+    return { error: "Forbidden" }
+  }
+  const client = (() => {
+    try {
+      return createServiceRoleClient()
+    } catch {
+      return supabase
+    }
+  })()
+  const catalog = await listKlaviyoFlowCatalogService()
+  const preferredName = input.name?.trim() ?? ""
+  let output: {
+    reply: string
+    operation: AssistantOperation
+    metadataFields: ("subject" | "previewText" | "notes")[]
+    email: AssistantEmailDraft | null
+    flow: AssistantFlowDraft | null
+  }
+  try {
+    output = await draftFromModel({
+      history: [],
+      prompt: [
+        input.target === "flow"
+          ? "Build a complete draft flow. applyFlow is yes. applyEmail is no. Every email step needs layout, eyebrow, heading, body, buttonLabel, and buttonHref. Vary layouts across the sequence so each send looks designed."
+          : "Build one designed email. applyEmail is yes. applyFlow is no. operation is replace-document. Use logo, at least two sections with different surfaces, and a footer.",
+        `Known metrics: ${KNOWN_KLAVIYO_METRIC_NAMES.join(", ")}`,
+        catalogLines("Metrics", catalog.metrics),
+        catalogLines("Lists", catalog.lists),
+        catalogLines("Segments", catalog.segments),
+        preferredName ? `Preferred name: ${preferredName}` : "",
+        `Request: ${input.brief}`,
+      ].filter(Boolean).join("\n\n"),
+    })
+  } catch (error) {
+    console.error("[email_studio] generate failed", error)
+    if (error instanceof Error && error.message.startsWith("AI Gateway is not authenticated")) {
+      return { error: error.message }
+    }
+    return { error: "The assistant could not design that. Describe the email or flow in a sentence and try again." }
+  }
+
+  try {
+    if (input.target === "email") {
+      if (!output.email) return { error: "The assistant did not return an email. Describe the message and try again." }
+      const name = (preferredName || output.email.name || "Untitled email").slice(0, 120)
+      const created = await insertEmailStudioDocument(client, {
+        kind: "project",
+        name,
+        subject: output.email.subject,
+        previewText: output.email.previewText,
+        flowName: "",
+        flowId: "",
+        triggerMetric: "",
+        notes: output.email.notes,
+        document: output.email.document,
+        userId: user.id,
+        source: "assistant",
+        summary: "Generated from a brief",
+      })
+      await insertEmailStudioMessage(client, {
+        scope: "email",
+        scopeId: created.id,
+        role: "user",
+        content: input.brief,
+        userId: user.id,
+      })
+      await insertEmailStudioMessage(client, {
+        scope: "email",
+        scopeId: created.id,
+        role: "assistant",
+        content: output.reply,
+        userId: null,
+      })
+      return { success: true, target: "email", id: created.id, name: created.name }
+    }
+
+    if (!output.flow) return { error: "The assistant did not return a flow. Describe the sequence and try again." }
+    const triggerMetric = output.flow.triggerType === "metric" ? output.flow.triggerName : ""
+    const built = chainSteps(output.flow.steps, output.flow.name, triggerMetric)
+    const definition = definitionFromProposal(output.flow, built)
+    for (const project of built.emailProjects) {
+      await insertEmailStudioDocument(client, {
+        id: project.id,
+        kind: "project",
+        name: project.name,
+        subject: project.subject,
+        previewText: project.previewText,
+        flowName: output.flow.name,
+        flowId: "",
+        triggerMetric: project.triggerMetric,
+        notes: project.notes,
+        document: project.document,
+        userId: user.id,
+        source: "assistant",
+        summary: `Generated for ${output.flow.name}`,
+      })
+    }
+    const created = await insertEmailStudioFlow(client, {
+      name: (preferredName || output.flow.name || "Untitled flow").slice(0, 120),
+      definition,
+      userId: user.id,
+    })
+    if (output.flow.notes) {
+      await updateEmailStudioFlow(client, {
+        id: created.id,
+        name: created.name,
+        notes: output.flow.notes,
+        definition,
+        userId: user.id,
+      })
+    }
+    await insertEmailStudioMessage(client, {
+      scope: "flow",
+      scopeId: created.id,
+      role: "user",
+      content: input.brief,
+      userId: user.id,
+    })
+    await insertEmailStudioMessage(client, {
+      scope: "flow",
+      scopeId: created.id,
+      role: "assistant",
+      content: output.reply,
+      userId: null,
+    })
+    return { success: true, target: "flow", id: created.id, name: created.name }
+  } catch (error) {
+    console.error("[email_studio] save generated draft failed", error)
+    const message = error instanceof Error ? error.message : ""
+    if (message.startsWith("The draft")) return { error: message }
+    return { error: "Could not save that design." }
   }
 }

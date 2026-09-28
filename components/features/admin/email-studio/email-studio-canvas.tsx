@@ -87,10 +87,18 @@ function CanvasBlock({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : undefined }}
-      className={cn("group relative rounded-md", selected && "ring-2 ring-[#5574AD]")}
+      className={cn("group relative rounded-md", selected && "ring-2 ring-[#5574AD] ring-offset-2")}
       onClick={() => onSelect(block.id)}
     >
-      <div className="absolute -left-9 top-0 flex flex-col gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
+      {selected ? (
+        <span className="absolute left-2 top-2 z-10 rounded bg-[#5574AD] px-1.5 py-0.5 text-[10px] font-medium text-white">
+          {emailBlockLabel(block.type)}
+        </span>
+      ) : null}
+      <div className={cn(
+        "absolute right-1 top-1 z-10 flex gap-1",
+        selected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+      )}>
         <button
           type="button"
           className="rounded border border-border bg-white p-1 text-muted-foreground shadow-sm"
@@ -122,11 +130,13 @@ function BlockBody({
   selectedId,
   onSelect,
   onChange,
+  tone = "ink",
 }: {
   block: EmailBlock
   selectedId: string | null
   onSelect: (id: string) => void
   onChange: (block: EmailBlock) => void
+  tone?: "ink" | "light"
 }) {
   const selected = block.id === selectedId
   if (block.type === "section") {
@@ -145,6 +155,7 @@ function BlockBody({
           ? "p-8"
           : "p-6"
     const gap = block.gap === "compact" ? "gap-3" : block.gap === "spacious" ? "gap-8" : "gap-5"
+    const childTone = block.surface === "brand" || block.surface === "dark" ? "light" : "ink"
     return (
       <div className={cn("rounded-lg", surface, padding)}>
         <div
@@ -167,6 +178,7 @@ function BlockBody({
                 >
                   <BlockBody
                     block={child}
+                    tone={childTone}
                     selectedId={selectedId}
                     onSelect={onSelect}
                     onChange={(replacement) => {
@@ -213,7 +225,11 @@ function BlockBody({
         label="Eyebrow"
         value={block.text}
         onChange={(text) => onChange({ ...block, text })}
-        className={cn("text-xs font-bold uppercase tracking-[0.1em] text-[#64748B]", block.align === "center" && "text-center")}
+        className={cn(
+          "text-xs font-bold uppercase tracking-[0.1em]",
+          tone === "light" ? "text-white/70" : "text-[#64748B]",
+          block.align === "center" && "text-center",
+        )}
       />
     )
   }
@@ -357,9 +373,9 @@ export function EmailStudioCanvas({
   const { setNodeRef, isOver } = useDroppable({ id: "canvas-end" })
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto p-6">
+    <div className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle,#E2E8F0_1px,transparent_1px)] bg-[length:16px_16px] p-6">
       <div
-        className="mx-auto bg-white px-6 py-8 shadow-sm"
+        className="mx-auto bg-white px-6 py-8 shadow-md ring-1 ring-black/5"
         style={{
           width,
           maxWidth: "100%",
@@ -368,6 +384,9 @@ export function EmailStudioCanvas({
           borderRadius: KLAVIYO_EMAIL_RADIUS,
         }}
       >
+        <p className="-mt-4 mb-4 text-center text-[11px] uppercase tracking-wide text-[#94A3B8]">
+          Artboard · {width}px
+        </p>
         <SortableContext items={blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-3">
           {blocks.map((block) => (
@@ -390,7 +409,7 @@ export function EmailStudioCanvas({
             isOver && "border-[#5574AD] bg-[#5574AD]/5",
           )}
         >
-          Drop a block here
+          Drop a frame or block here
         </div>
       </div>
     </div>

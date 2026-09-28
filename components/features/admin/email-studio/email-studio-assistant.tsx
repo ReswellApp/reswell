@@ -18,15 +18,15 @@ import { Button } from "@/components/ui/button"
 import { EmailStudioAssistantProposal } from "@/components/features/admin/email-studio/email-studio-assistant-proposal"
 
 const EMAIL_SUGGESTIONS = [
-  "Redesign this email with a stronger visual hierarchy",
-  "Make the selected block clearer and more concise",
-  "Improve the subject and preview text",
+  "Redesign this as a dark hero, a three-up section, and a closer",
+  "Rewrite the selected block so it is shorter and more specific",
+  "Write a subject and preview, then rebuild the layout",
 ]
 
 const FLOW_SUGGESTIONS = [
-  "Build a three-email lifecycle flow",
-  "Add a delay and consent split",
-  "Audit this flow for missing branches",
+  "Design a three-email welcome flow with a one-day delay",
+  "Add a consent split, then a transactional email and a product email",
+  "Rebuild this flow so every email has its own layout",
 ]
 
 export function EmailStudioAssistant({
@@ -185,7 +185,7 @@ export function EmailStudioAssistant({
         {messages.length === 0 ? (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">
-              Describe the email or flow in plain language. Nothing sends until you approve and push it.
+              Describe a layout or a flow. The assistant designs sections on the artboard. Nothing sends until you approve it and push.
             </p>
             <div className="flex flex-wrap gap-1">
               {(scope === "email" ? EMAIL_SUGGESTIONS : FLOW_SUGGESTIONS).map((suggestion) => (

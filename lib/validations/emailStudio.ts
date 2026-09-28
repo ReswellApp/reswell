@@ -150,5 +150,11 @@ export const sendEmailStudioTestSchema = z.object({
   recipient: z.string().trim().email().max(320),
 })
 
+export const generateEmailStudioSchema = z.object({
+  brief: z.string().trim().min(8, "Describe it in a sentence").max(2000),
+  name: z.string().trim().max(120).optional(),
+  target: z.enum(["email", "flow"]),
+})
+
 export type CreateEmailStudioInput = z.infer<typeof createEmailStudioSchema>
 export type UpdateEmailStudioInput = z.infer<typeof updateEmailStudioSchema>

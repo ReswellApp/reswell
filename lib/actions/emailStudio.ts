@@ -11,9 +11,11 @@ import {
   sendEmailStudioTestService,
   updateEmailStudioService,
 } from "@/lib/services/emailStudio"
+import { generateEmailStudioFromBriefService } from "@/lib/services/emailStudioAssistant"
 import {
   createEmailStudioSchema,
   emailStudioIdSchema,
+  generateEmailStudioSchema,
   saveEmailStudioTemplateSchema,
   sendEmailStudioTestSchema,
   updateEmailStudioSchema,
@@ -29,7 +31,11 @@ function flattenZod(error: {
 
 function revalidateStudio(id?: string) {
   revalidatePath("/admin/email-studio")
-  if (id) revalidatePath(`/admin/email-studio/${id}`)
+  revalidatePath("/admin/email-studio/flows")
+  if (id) {
+    revalidatePath(`/admin/email-studio/${id}`)
+    revalidatePath(`/admin/email-studio/flows/${id}`)
+  }
 }
 
 export async function createEmailStudioAction(raw: unknown) {
@@ -87,6 +93,15 @@ export async function pushEmailStudioToKlaviyoAction(raw: unknown) {
   const result = await pushEmailStudioToKlaviyoService(parsed.data.id)
   if ("error" in result) return result
   revalidateStudio(parsed.data.id)
+  return result
+}
+
+export async function generateEmailStudioAction(raw: unknown) {
+  const parsed = generateEmailStudioSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  const result = await generateEmailStudioFromBriefService(parsed.data)
+  if ("error" in result) return result
+  revalidateStudio(result.id)
   return result
 }
 
