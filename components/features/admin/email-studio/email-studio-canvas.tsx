@@ -4,7 +4,23 @@ import { useEffect, useRef, type CSSProperties } from "react"
 import { useDraggable, useDroppable } from "@dnd-kit/core"
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { Copy, GripVertical, Trash2 } from "lucide-react"
+import {
+  Columns3,
+  Copy,
+  GripVertical,
+  Heading1,
+  ImageIcon,
+  LayoutPanelTop,
+  List,
+  Minus,
+  MousePointerClick,
+  MoveVertical,
+  PanelBottom,
+  Pilcrow,
+  RectangleHorizontal,
+  Trash2,
+  Type,
+} from "lucide-react"
 import { EmailImageFrame } from "@/components/features/admin/email-studio/email-studio-image-frame"
 import {
   KLAVIYO_EMAIL_BORDER,
@@ -20,6 +36,20 @@ import { emailBlockLabel } from "@/components/features/admin/email-studio/email-
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
 const HEADLINE = KLAVIYO_EMAIL_FONT_HEADLINE
+const PALETTE_ICONS: Record<EmailBlockType, typeof Type> = {
+  section: LayoutPanelTop,
+  logo: RectangleHorizontal,
+  eyebrow: Type,
+  heading: Heading1,
+  text: Pilcrow,
+  image: ImageIcon,
+  button: MousePointerClick,
+  split: Columns3,
+  details: List,
+  divider: Minus,
+  spacer: MoveVertical,
+  footer: PanelBottom,
+}
 
 function InlineText({
   value,
@@ -337,17 +367,19 @@ function BlockBody({
 
 export function EmailStudioPaletteChip({ type }: { type: EmailBlockType }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `palette:${type}` })
+  const Icon = PALETTE_ICONS[type]
   return (
     <button
       ref={setNodeRef}
       type="button"
       className={cn(
-        "cursor-grab rounded-md border border-border bg-background px-2 py-1.5 text-left text-xs hover:bg-muted active:cursor-grabbing",
+        "flex h-16 w-full cursor-grab flex-col items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2 text-xs font-medium shadow-sm transition hover:border-[#5574AD]/40 hover:bg-muted/50 active:cursor-grabbing",
         isDragging && "opacity-50",
       )}
       {...attributes}
       {...listeners}
     >
+      <Icon className="h-4 w-4 text-muted-foreground" />
       {emailBlockLabel(type)}
     </button>
   )
@@ -373,9 +405,9 @@ export function EmailStudioCanvas({
   const { setNodeRef, isOver } = useDroppable({ id: "canvas-end" })
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle,#E2E8F0_1px,transparent_1px)] bg-[length:16px_16px] p-6">
+    <div className="min-h-0 flex-1 overflow-auto bg-[#F4F5F7] p-8">
       <div
-        className="mx-auto bg-white px-6 py-8 shadow-md ring-1 ring-black/5"
+        className="mx-auto bg-white px-6 py-8 shadow-sm ring-1 ring-black/5"
         style={{
           width,
           maxWidth: "100%",
@@ -384,9 +416,6 @@ export function EmailStudioCanvas({
           borderRadius: KLAVIYO_EMAIL_RADIUS,
         }}
       >
-        <p className="-mt-4 mb-4 text-center text-[11px] uppercase tracking-wide text-[#94A3B8]">
-          Artboard · {width}px
-        </p>
         <SortableContext items={blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-3">
           {blocks.map((block) => (
