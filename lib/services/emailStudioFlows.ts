@@ -174,7 +174,7 @@ export async function getEmailStudioWorkspaceService(): Promise<{
       localFlows.flatMap((flow) => flow.klaviyoFlowId ? [[flow.klaviyoFlowId, flow.id] as const] : []),
     )
     const metricCounts = new Map<string, number>()
-    const flows = remoteFlows.data
+    const remoteItems = remoteFlows.data
       .filter((flow) => flow.attributes?.archived !== true)
       .map((flow): KlaviyoFlowWorkspaceItem => {
         const definition = object(flow.attributes?.definition)
@@ -201,6 +201,31 @@ export async function getEmailStudioWorkspaceService(): Promise<{
           unsupportedActions: [...new Set(types.filter((type) => !supportedKlaviyoActionType(type)))],
         }
       })
+    const localOnlyItems = localFlows
+      .filter((flow) => !flow.klaviyoFlowId)
+      .map((flow): KlaviyoFlowWorkspaceItem => {
+        const trigger = flow.definition.trigger
+        const triggerName = trigger.type === "metric"
+          ? trigger.metricName
+          : trigger.type === "list"
+            ? trigger.listName
+            : trigger.type === "segment"
+              ? trigger.segmentName
+              : trigger.property
+        return {
+          id: `local:${flow.id}`,
+          name: flow.name,
+          status: "draft",
+          triggerName: triggerName || "Choose a trigger",
+          triggerType: trigger.type,
+          actionCount: flow.definition.steps.length,
+          emailCount: flow.definition.steps.filter((step) => step.type === "email").length,
+          updatedAt: flow.updatedAt,
+          localFlowId: flow.id,
+          unsupportedActions: [],
+        }
+      })
+    const flows = [...remoteItems, ...localOnlyItems]
       .sort((a, b) => (
         (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")
         || a.name.localeCompare(b.name)
