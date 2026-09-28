@@ -1,14 +1,14 @@
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellFunnelAnalyticsDashboard } from "@/lib/types/sellFunnelAnalytics"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 
 export async function fetchAdminSellFunnelDashboard(input: {
   days: number
   listingType?: PeerListingSection
 }): Promise<{ ok: true; data: SellFunnelAnalyticsDashboard } | { ok: false; error: string }> {
   try {
-    const supabase = createServiceRoleClient()
+    const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
     const { data, error } = await supabase.rpc("admin_sell_funnel_dashboard", {
       p_days: input.days,
       p_listing_type: input.listingType ?? null,

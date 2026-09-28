@@ -23,7 +23,7 @@ async function loadPublicListingByParam(
   select: string,
   section?: string,
 ): Promise<PublicListingLookupResult> {
-  // Primary read so a just-published listing is visible to this cache fill.
+  // Primary read: replica lag must not cache a miss after publish.
   const supabase = getDb({ consistency: "strong" })
   return findListingByParam(supabase, param, {
     select,

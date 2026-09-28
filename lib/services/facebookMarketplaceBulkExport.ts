@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import { FACEBOOK_MARKETPLACE_BULK_UPLOAD_MAX } from "@/lib/facebook-marketplace/categories"
 import { buildFacebookMarketplaceBulkUploadXlsx } from "@/lib/facebook-marketplace/build-bulk-upload-xlsx"
 import {
@@ -41,7 +41,7 @@ export type FacebookMarketplaceBulkListingPreview = {
 
 function serviceClient() {
   try {
-    return createServiceRoleClient()
+    return getDb({ consistency: "eventual", purpose: "analytics" })
   } catch (error) {
     console.error("facebookMarketplaceBulkExport: missing service role", error)
     return null

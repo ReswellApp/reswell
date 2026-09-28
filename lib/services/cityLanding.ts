@@ -6,7 +6,7 @@ import {
 } from "@/lib/city-landing-path"
 import { listCityLandingListings } from "@/lib/db/city-landing-listings"
 import { listCityTopSellers } from "@/lib/services/cityTopSellers"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 import type { CityLandingPageData } from "@/lib/types/city-landing"
 
 function offersLocalPickup(listing: { local_pickup?: boolean | null }): boolean {
@@ -18,7 +18,7 @@ export async function getCityLandingPage(slug: string): Promise<CityLandingPageD
   const city = findCityByLandingSlug(directory.cities, slug)
   if (!city) return null
 
-  const supabase = createServiceRoleClient()
+  const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
   const [listings, topSellers] = await Promise.all([
     listCityLandingListings(supabase, city.label, CITY_LANDING_LISTING_CAP),
     listCityTopSellers(supabase, city.label, city.city),

@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getDb } from "@/lib/supabase/db"
 
 const IN_CHUNK = 150
 const UUID_RE =
@@ -56,7 +56,7 @@ export async function fetchListingsForAdSales(
   const map = new Map<string, AdSalesListingLookup>()
   if (ids.length === 0) return map
 
-  const supabase = createServiceRoleClient()
+  const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
   for (const group of chunk(ids, IN_CHUNK)) {
     const { data, error } = await supabase
       .from("listings")
@@ -89,7 +89,7 @@ export async function fetchOrdersForAdSales(
   const map = new Map<string, AdSalesOrderLookup>()
   if (ids.length === 0) return map
 
-  const supabase = createServiceRoleClient()
+  const supabase = getDb({ consistency: "eventual", purpose: "analytics" })
   for (const group of chunk(ids, IN_CHUNK)) {
     const { data, error } = await supabase
       .from("orders")
