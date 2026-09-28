@@ -14,6 +14,7 @@ export const helpCenterAdditionalResources = [
   { title: "Seller Resources", href: "/seller-resources" },
   { title: "Safety tips", href: "/safety" },
   { title: "FAQs", href: "/faq" },
+  { title: "Feature requests", href: "/feature-requests" },
   { title: "Terms & Policies", href: "/terms" },
   { title: "Contact", href: "/contact" },
 ] as const

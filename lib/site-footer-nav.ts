@@ -25,6 +25,7 @@ export const siteFooterNavLinks: {
   help: [
     { name: "Help Center", href: "/help" },
     { name: "FAQs", href: "/faq" },
+    { name: "Feature requests", href: "/feature-requests" },
     { name: "Reswell Protection", href: "/protection-policy" },
     { name: "Get help", href: "/support" },
     { name: "Contact", href: "/contact" },

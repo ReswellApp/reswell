@@ -380,6 +380,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Get help with a purchase, sale, payment, or your account. Answer a few questions, then message the Reswell team.",
     path: "/support",
   }),
+  page("feature-requests", "content", "Feature requests", {
+    title: "Feature requests — Reswell",
+    description:
+      "Vote on ideas and report bugs for the Reswell surf marketplace. Reswell uses this board to decide what to build next.",
+    path: "/feature-requests",
+    keywords: ["feature requests", "reswell bugs", "surf marketplace feedback"],
+  }),
+  page("feature-requests-changelog", "content", "Feature request changelog", {
+    title: "Changelog — Feature requests — Reswell",
+    description: "What Reswell has shipped from the feature request and bug board.",
+    path: "/feature-requests/changelog",
+  }),
 
   // ---- Trust & legal ----
   page("protection-policy", "trust", "Purchase Protection", {

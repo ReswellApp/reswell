@@ -158,6 +158,8 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/help`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
+    { url: `${BASE}/feature-requests`, lastModified: now, changeFrequency: "daily", priority: 0.45 },
+    { url: `${BASE}/feature-requests/changelog`, lastModified: now, changeFrequency: "weekly", priority: 0.35 },
     ...helpTopicIndexes.map((topic) => ({
       url: `${BASE}${helpTopicPath(topic.id)}`,
       lastModified: now,
