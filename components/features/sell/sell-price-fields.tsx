@@ -19,13 +19,18 @@ import {
   parseOptionalUsdAmount,
   resolveCompareAtPriceOnUpdate,
 } from "@/lib/listing-compare-at-price"
+import {
+  LISTING_PRICE_ABS_MIN_USD,
+  LISTING_PRICE_MAX_USD,
+  SURFBOARD_MIN_SALE_PRICE_USD,
+} from "@/lib/listing-price-bounds"
 
 /** Mirrors the listing-price rule in `pricePublishFieldsComplete` (sell-section-completion). */
-function listingPriceComplete(raw: string): boolean {
+function listingPriceComplete(raw: string, minimumPriceUsd: number): boolean {
   const t = raw.trim().replace(/,/g, "")
   if (!t) return false
   const n = Number.parseFloat(t)
-  return Number.isFinite(n) && n >= 0.01 && n <= 999_999.99
+  return Number.isFinite(n) && n >= minimumPriceUsd && n <= LISTING_PRICE_MAX_USD
 }
 
 export interface SellPriceFieldsProps {
@@ -42,6 +47,8 @@ export interface SellPriceFieldsProps {
   existingCompareAtPriceUsd?: number | null
   showPriceMarkdown?: boolean
   onShowPriceMarkdownChange?: (value: boolean) => void
+  /** Surfboard sell flow passes $50. Other peer products keep the generic minimum. */
+  minimumPriceUsd?: number
 }
 
 export function SellPriceFields({
@@ -57,6 +64,7 @@ export function SellPriceFields({
   existingCompareAtPriceUsd = null,
   showPriceMarkdown = false,
   onShowPriceMarkdownChange,
+  minimumPriceUsd = LISTING_PRICE_ABS_MIN_USD,
 }: SellPriceFieldsProps) {
   const nextPrice = parseOptionalUsdAmount(listingPrice)
   const canOfferMarkdown =
@@ -84,7 +92,7 @@ export function SellPriceFields({
       <div className="space-y-2">
         <Label htmlFor="sell-listing-price" className="text-sm font-semibold text-foreground">
           Listing price{" "}
-          <SellRequiredMark complete={listingPriceComplete(listingPrice)} />
+          <SellRequiredMark complete={listingPriceComplete(listingPrice, minimumPriceUsd)} />
         </Label>
         <div className="relative">
           <span
@@ -105,6 +113,9 @@ export function SellPriceFields({
             aria-required="true"
           />
         </div>
+        {minimumPriceUsd >= SURFBOARD_MIN_SALE_PRICE_USD ? (
+          <p className="text-xs text-muted-foreground">Minimum ${minimumPriceUsd}.</p>
+        ) : null}
         {canOfferMarkdown ? (
           <ListingPriceMarkdownToggle
             id="sell-show-price-markdown"

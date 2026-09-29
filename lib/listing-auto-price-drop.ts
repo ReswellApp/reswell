@@ -42,12 +42,19 @@ export function planListingAutoPriceDrop(input: {
   floorUsd: unknown
   scheduledFor: string | null
   referenceTime: Date
+  /** When set, a floor under this amount is cleared instead of applied. */
+  minPriceUsd?: number
 }): ListingAutoPriceDropPlan {
   if (!listingAutoPriceDropDue(input)) return { action: "skip" }
 
   const current = parseOptionalUsdAmount(input.priceUsd)
   const floor = parseAutoPriceDropFloor(input.floorUsd)
-  if (current == null || floor == null || floor >= current) {
+  if (
+    current == null ||
+    floor == null ||
+    floor >= current ||
+    (input.minPriceUsd != null && floor < input.minPriceUsd)
+  ) {
     return { action: "clear" }
   }
 

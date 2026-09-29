@@ -55,6 +55,7 @@ import { ListingBoardSpecTable } from "@/components/features/listings/listing-bo
 import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { listingBoardSpecRows } from "@/lib/utils/listing-board-spec-rows"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
+import { effectiveMinimumOfferAmount } from "@/lib/utils/offers-minimum-amount"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import {
   publicListingCompareAtPriceUsd,
@@ -265,11 +266,16 @@ async function renderSurfboardListingDetailPage({
     board as { minimum_offer_pct?: number | null },
   )
   
-  const hasFixedMinimumAmount = !!(board as { minimum_offer_amount?: string | number | null }).minimum_offer_amount
-  const minOfferAmount = hasFixedMinimumAmount
-    ? Math.round(parseFloat(String((board as { minimum_offer_amount?: string | number | null }).minimum_offer_amount ?? 0)) * 100) / 100
-    : Math.round(listPriceNum * (offerPct / 100) * 100) / 100
-  const acceptOffers = buyerOffersOn
+  const minOfferAmount = effectiveMinimumOfferAmount(
+    {
+      minimum_offer_amount: (board as { minimum_offer_amount?: string | number | null })
+        .minimum_offer_amount,
+      minimum_offer_pct: offerPct,
+      section: "surfboards",
+    },
+    listPriceNum,
+  )
+  const acceptOffers = buyerOffersOn && minOfferAmount <= listPriceNum
 
   const primaryImageRaw =
     (images[0] as { thumbnail_url?: string | null; url?: string | null } | undefined)

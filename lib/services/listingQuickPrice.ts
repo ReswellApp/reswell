@@ -10,6 +10,7 @@ import {
   parseOptionalUsdAmount,
   resolveCompareAtPriceOnUpdate,
 } from "@/lib/listing-compare-at-price"
+import { liveSurfboardPriceWriteError } from "@/lib/listing-price-bounds"
 
 const QUICK_PRICE_ALLOWED_STATUSES = ["active", "pending_sale", "pending", "draft"] as const
 
@@ -86,6 +87,17 @@ export async function updateSellerListingQuickPrice(
 
   if (!Number.isFinite(currentUsd)) {
     return { ok: false, status: 400, error: "Current listing price is invalid." }
+  }
+
+  if (nextUsd !== currentUsd) {
+    const surfboardPriceError = liveSurfboardPriceWriteError({
+      section: row.section,
+      status: row.status,
+      price: nextUsd,
+    })
+    if (surfboardPriceError) {
+      return { ok: false, status: 400, error: surfboardPriceError }
+    }
   }
 
   const existingCompareAt = parseOptionalUsdAmount(row.compare_at_price)

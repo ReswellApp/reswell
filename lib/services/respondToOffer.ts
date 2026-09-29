@@ -14,6 +14,14 @@ import {
 } from "@/lib/services/listingOfferAuthorization"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
+import { effectiveMinimumOfferAmount } from "@/lib/utils/offers-minimum-amount"
+import { parseOfferLineItems } from "@/lib/types/offer-line-item"
+import {
+  isSurfboardListingSection,
+  SURFBOARD_MIN_SALE_PRICE_USD,
+  SURFBOARD_OFFER_MIN_MESSAGE,
+} from "@/lib/listing-price-bounds"
+import { surfboardNegotiatedPriceError } from "@/lib/services/surfboardOfferPriceGuard"
 import type { RespondToOfferInput } from "@/lib/validations/respond-to-offer"
 import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
 
@@ -53,7 +61,7 @@ export async function respondToOfferService(
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
     .select(
-      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount, payment_intent_id",
+      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount, payment_intent_id, line_items",
     )
     .eq("id", offerId)
     .maybeSingle()
@@ -86,7 +94,7 @@ export async function respondToOfferService(
   const { data: listing, error: listErr } = await supabase
     .from("listings")
     .select(
-      "id, price, title, user_id, slug, section, status, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
+      "id, price, title, user_id, slug, section, status, minimum_offer_pct, minimum_offer_amount, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
     )
     .eq("id", offer.listing_id)
     .maybeSingle()
@@ -101,7 +109,14 @@ export async function respondToOfferService(
   }
 
   const minPct = effectiveMinimumOfferPct(listing as { minimum_offer_pct?: number | null })
-  const minOffer = roundMoney(listPrice * (minPct / 100))
+  const minOffer = effectiveMinimumOfferAmount(
+    listing as {
+      minimum_offer_pct?: number | null
+      minimum_offer_amount?: string | number | null
+      section?: string | null
+    },
+    listPrice,
+  )
 
   const current = roundMoney(parseFloat(String(offer.current_amount)))
 
@@ -166,6 +181,15 @@ export async function respondToOfferService(
   }
 
   if (action === "accept") {
+    const negotiatedPriceError = await surfboardNegotiatedPriceError(supabase, {
+      section: listing.section as string | null,
+      amount: current,
+      lineItems: parseOfferLineItems((offer as { line_items?: unknown }).line_items),
+    })
+    if (negotiatedPriceError) {
+      return { ok: false, error: negotiatedPriceError }
+    }
+
     const reconciled = reconcileOfferFulfillmentWithListing(
       (offer as { fulfillment?: string | null }).fulfillment,
       listing,
@@ -306,6 +330,13 @@ export async function respondToOfferService(
   const amt = roundMoney(raw)
   if (!Number.isFinite(amt) || amt <= 0) {
     return { ok: false, error: "Enter a valid counter amount." }
+  }
+
+  if (
+    isSurfboardListingSection(listing.section as string | null) &&
+    amt < SURFBOARD_MIN_SALE_PRICE_USD
+  ) {
+    return { ok: false, error: SURFBOARD_OFFER_MIN_MESSAGE }
   }
 
   if (amt < minOffer) {

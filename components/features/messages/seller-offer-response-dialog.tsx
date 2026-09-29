@@ -150,8 +150,10 @@ export function SellerOfferResponseDialog({
               ${current.toFixed(2)}
             </p>
             <p className="mt-2 text-[13px] text-muted-foreground">
-              List ${listPrice.toFixed(2)} · Minimum offer ${minOfferAmount.toFixed(2)} (
-              {minOfferPct}%)
+              List ${listPrice.toFixed(2)} · Minimum offer ${minOfferAmount.toFixed(2)}
+              {Math.abs(minOfferAmount - listPrice * (minOfferPct / 100)) < 0.5
+                ? ` (${minOfferPct}%)`
+                : ""}
             </p>
             {fulfillmentLabel ? (
               <p className="mt-1.5 text-[13px] font-medium text-foreground/85">{fulfillmentLabel}</p>

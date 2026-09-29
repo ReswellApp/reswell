@@ -19,6 +19,7 @@ import {
 } from "@/lib/services/sync-listing-videos"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { listingFieldsForPeerUpdate } from "@/lib/utils/listing-update-actor"
+import { liveSurfboardPriceWriteError } from "@/lib/listing-price-bounds"
 
 export { listingFieldsForPeerUpdate } from "@/lib/utils/listing-update-actor"
 
@@ -97,14 +98,35 @@ export async function persistPeerListingUpdate(input: {
   )
   const publishingFromDraft =
     input.existingListing.status === "draft" && input.publishFromDraft
+  const nextStatus = publishingFromDraft ? "active" : input.existingListing.status
+  const nextSection =
+    typeof listingFields.section === "string"
+      ? listingFields.section
+      : input.existingListing.section
+  const nextPrice =
+    typeof listingFields.price === "number" ? listingFields.price : input.existingListing.price
+  const nextFloor =
+    typeof listingFields.auto_price_drop_floor === "number"
+      ? listingFields.auto_price_drop_floor
+      : listingFields.auto_price_drop_floor === null
+        ? null
+        : undefined
+  const surfboardPriceError = liveSurfboardPriceWriteError({
+    section: nextSection,
+    status: nextStatus,
+    price: nextPrice,
+    autoPriceDropFloor: nextFloor,
+  })
+  if (surfboardPriceError) {
+    return { ok: false, status: 400, error: surfboardPriceError }
+  }
 
   if (publishingFromDraft) {
     const validationError = validateListingDraftPublishable({
       status: "draft",
-      price:
-        typeof listingFields.price === "number"
-          ? listingFields.price
-          : input.existingListing.price,
+      price: nextPrice,
+      section: nextSection,
+      autoPriceDropFloor: nextFloor,
       description:
         typeof listingFields.description === "string"
           ? listingFields.description

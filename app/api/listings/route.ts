@@ -13,6 +13,7 @@ import { notifyFollowersNewListingKlaviyo } from '@/lib/services/notifyFollowers
 import { evaluateSellerCanSell } from '@/lib/services/sellerBan'
 import { qualifyPublishedListingForGiveaways } from '@/lib/services/giveawayEntry'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
+import { liveSurfboardPriceWriteError } from '@/lib/listing-price-bounds'
 import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
@@ -93,6 +94,17 @@ export async function POST(request: NextRequest) {
       { error: `Title must be ${LISTING_TITLE_MAX_LENGTH} characters or fewer.` },
       { status: 400 },
     )
+  }
+
+  const surfboardPriceError = liveSurfboardPriceWriteError({
+    section: typeof section === 'string' ? section : null,
+    status: 'active',
+    price: typeof price === 'number' ? price : Number.parseFloat(String(price ?? '')),
+    autoPriceDropFloor:
+      typeof body.auto_price_drop_floor === 'number' ? body.auto_price_drop_floor : null,
+  })
+  if (surfboardPriceError) {
+    return NextResponse.json({ error: surfboardPriceError }, { status: 400 })
   }
 
   // Generate unique slug

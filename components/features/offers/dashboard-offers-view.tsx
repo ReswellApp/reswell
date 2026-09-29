@@ -20,6 +20,7 @@ import { OffersEmptyState } from "@/components/features/offers/offers-empty-stat
 import { SellerCartOfferProspects } from "@/components/features/offers/seller-cart-offer-prospects"
 import type { ListingCartOfferProspect } from "@/lib/types/listing-cart-holders"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { effectiveMinimumOfferAmount } from "@/lib/utils/offers-minimum-amount"
 import { cn } from "@/lib/utils"
 import {
   dashboardFilterSelectClass,
@@ -202,7 +203,10 @@ export function DashboardOffersView({
     : 0
   const minPct = dialogOffer ? minPctByListingId[dialogOffer.listing_id] ?? 70 : 70
   const minOfferAmount = Number.isFinite(listPriceNum)
-    ? Math.round(listPriceNum * (minPct / 100) * 100) / 100
+    ? effectiveMinimumOfferAmount(
+        { minimum_offer_pct: minPct, section: listingForDialog?.section },
+        listPriceNum,
+      )
     : 0
 
   const offerRowLite: OfferRowLite | null = dialogOffer

@@ -48,4 +48,13 @@ describe("effectiveMinimumOfferAmount", () => {
     assert.equal(effectiveMinimumOfferAmount({ minimum_offer_amount: 650 }, 900), 650)
     assert.equal(effectiveMinimumOfferAmount({}, 900), 630)
   })
+
+  it("never lets a surfboard offer fall under $50", () => {
+    assert.equal(effectiveMinimumOfferAmount({ section: "surfboards" }, 60), 50)
+    assert.equal(
+      effectiveMinimumOfferAmount({ section: "surfboards", minimum_offer_amount: 80 }, 100),
+      80,
+    )
+    assert.equal(effectiveMinimumOfferAmount({ section: "fins" }, 60), 42)
+  })
 })

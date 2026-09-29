@@ -7,12 +7,15 @@ import { ListingPriceWithMarkdown } from "@/components/features/listings/listing
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { parseOptionalUsdAmount } from "@/lib/listing-compare-at-price"
 import { AUTO_PRICE_DROP_DELAY_DAYS } from "@/lib/listing-auto-price-drop"
+import {
+  SURFBOARD_MIN_SALE_PRICE_USD,
+  surfboardPriceDropFloorError,
+} from "@/lib/listing-price-bounds"
 
 function priceDropFloorComplete(floorRaw: string, priceRaw: string): boolean {
   const floor = Number.parseFloat(floorRaw.trim().replace(/,/g, ""))
-  if (!Number.isFinite(floor) || floor < 0.01 || floor > 999_999.99) return false
   const price = Number.parseFloat(priceRaw.trim().replace(/,/g, ""))
-  return Number.isFinite(price) ? floor < price : true
+  return surfboardPriceDropFloorError(floor, Number.isFinite(price) ? price : undefined) == null
 }
 
 function formatScheduledDropDate(iso: string): string | null {
@@ -86,16 +89,16 @@ export function SellAutoPriceDropFields({
             id="sell-auto-price-drop-floor"
             type="number"
             inputMode="decimal"
-            min="0.01"
+            min="50"
             step="0.01"
-            placeholder="0.00"
+            placeholder="50.00"
             value={floor}
             onChange={(e) => onFloorChange(e.target.value)}
             className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
           />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Must be less than your list price. After two weeks we&apos;ll drop to this amount
-            and show the previous price as markdown.
+            At least ${SURFBOARD_MIN_SALE_PRICE_USD}, and less than your list price. After two
+            weeks we&apos;ll drop to this amount and show the previous price as markdown.
           </p>
           {showMarkdownPreview && listPriceUsd != null && floorUsd != null ? (
             <div className="rounded-md border bg-muted/40 px-3 py-2">

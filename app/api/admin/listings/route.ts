@@ -23,6 +23,7 @@ import {
 } from '@/lib/listing-dimensions-storage'
 import { getAdminListingsList } from '@/lib/services/adminListingsList'
 import { adminListingsListQuerySchema } from '@/lib/validations/admin-listings-list'
+import { liveSurfboardPriceWriteError } from '@/lib/listing-price-bounds'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -144,6 +145,17 @@ export async function POST(request: NextRequest) {
       { error: 'City and state are required for surfboard listings' },
       { status: 400 },
     )
+  }
+
+  const surfboardPriceError = liveSurfboardPriceWriteError({
+    section: typeof section === 'string' ? section : null,
+    status: 'active',
+    price: typeof price === 'number' ? price : Number.parseFloat(String(price ?? '')),
+    autoPriceDropFloor:
+      typeof body.auto_price_drop_floor === 'number' ? body.auto_price_drop_floor : null,
+  })
+  if (surfboardPriceError) {
+    return NextResponse.json({ error: surfboardPriceError }, { status: 400 })
   }
 
   const baseSlug = slugify(title)
