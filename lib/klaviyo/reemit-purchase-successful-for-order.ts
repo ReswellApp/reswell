@@ -29,7 +29,7 @@ export async function reemitPurchaseSuccessfulForOrder(
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, order_num, buyer_id, seller_id, listing_id, amount, shipping_amount, promo_discount_usd, promo_code_id, admin_promo_code_id, fulfillment_method, payment_method, pickup_code, shipping_address",
+      "id, order_num, buyer_id, seller_id, listing_id, amount, shipping_amount, platform_fee, seller_earnings, promo_discount_usd, promo_code_id, admin_promo_code_id, fulfillment_method, payment_method, pickup_code, shipping_address",
     )
     .eq("id", trimmedId)
     .maybeSingle()
@@ -166,6 +166,8 @@ export async function reemitPurchaseSuccessfulForOrder(
     promoCode,
     promoKind,
     amount: Number.isFinite(orderAmount) ? orderAmount : 0,
+    platformFeeUsd: parseFloat(String(order.platform_fee ?? 0)) || 0,
+    sellerEarningsUsd: parseFloat(String(order.seller_earnings ?? 0)) || 0,
     fulfillmentMethod,
     pickupCode: (order as { pickup_code?: string | null }).pickup_code ?? null,
     paymentMethod,

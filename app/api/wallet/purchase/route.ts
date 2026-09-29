@@ -339,6 +339,8 @@ export async function POST(request: NextRequest) {
       itemSubtotalUsd: itemPriceUsd,
       shippingAmountUsd: shippingUsd,
       amount: price,
+      platformFeeUsd: platformFee,
+      sellerEarningsUsd: sellerEarnings,
       fulfillmentMethod: isPickup ? "pickup" : "shipping",
       pickupCode,
       paymentMethod: "reswell_bucks",
