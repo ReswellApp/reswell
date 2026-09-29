@@ -8,7 +8,8 @@
  *
  * Template variables: structured ship-to (`ship_to_name`, `ship_to_line1`, …, `ship_to_formatted`).
  * Buyer phone and email are omitted — those stay admin-only.
- * `label_workflow` (`reswell` | `seller_own`), `label_workflow_instructions`,
+ * `label_workflow` (`reswell` | `seller_own` | `santa_barbara_dropoff`),
+ * `label_workflow_instructions`,
  * `sale_url`, `shipping_tools_url`, plus order/listing fields from **New Sale Received**.
  *
  * **Klaviyo email:** paste HTML from `lib/klaviyo/seller-shipping-sale-received-email-liquid.ts`

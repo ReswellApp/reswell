@@ -42,6 +42,7 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   dropoff_location_id,
   dropoff_locations (
     id,
+    slug,
     name,
     address_line1,
     address_line2,

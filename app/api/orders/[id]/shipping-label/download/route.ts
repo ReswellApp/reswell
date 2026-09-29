@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { loadShippingLabelPdfBytes } from "@/lib/services/resolveOrderShippingLabelPdf"
 import { listOrderShippingLabelsForOrder } from "@/lib/db/orderShippingLabels"
+import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -39,13 +40,38 @@ export async function GET(
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select("id, order_num, seller_id, tracking_number")
+    .select(
+      `
+      id,
+      order_num,
+      seller_id,
+      tracking_number,
+      listings ( dropoff_location_id, dropoff_locations ( slug ) ),
+      order_items ( listings ( dropoff_location_id, dropoff_locations ( slug ) ) )
+    `,
+    )
     .eq("id", orderId)
     .eq("seller_id", user.id)
     .maybeSingle()
 
   if (orderErr || !order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  }
+
+  const orderListings = [
+    Array.isArray(order.listings) ? order.listings[0] : order.listings,
+    ...(order.order_items ?? []).map((item) =>
+      Array.isArray(item.listings) ? item.listings[0] : item.listings,
+    ),
+  ]
+  if (listingsUseSantaBarbaraDropoff(orderListings)) {
+    return NextResponse.json(
+      {
+        error:
+          "No seller label is available for Santa Barbara drop-off. Reswell packs and ships the board after drop-off.",
+      },
+      { status: 403 },
+    )
   }
 
   const serviceSupabase = createServiceRoleClient()

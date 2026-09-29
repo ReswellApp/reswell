@@ -334,20 +334,20 @@ export default async function ShippingGuidePage(props: {
       <div className="container mx-auto max-w-3xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">
-            {labelFlow ? "Print shipping label" : "Shipping Guide"}
+            {labelFlow ? "Order fulfillment" : "Shipping Guide"}
           </h1>
           <p className="text-muted-foreground mt-1">
             {labelFlow
-              ? "Buy a carrier label and add tracking to this order."
+              ? "Follow the shipping or drop-off steps for this order."
               : "How to ship and receive gear safely on Reswell"}
           </p>
         </div>
 
         {labelFlow && !user && (
           <Alert className="mb-8">
-            <AlertTitle>Sign in to print a label</AlertTitle>
+            <AlertTitle>Sign in to manage this order</AlertTitle>
             <AlertDescription className="flex flex-wrap items-center gap-3">
-              <span>Seller tools for this order require your account.</span>
+              <span>Fulfillment details for this order require your account.</span>
               <Button type="button" size="sm" asChild>
                 <Link href={loginHref}>Sign in</Link>
               </Button>

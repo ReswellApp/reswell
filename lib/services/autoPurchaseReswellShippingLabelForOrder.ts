@@ -43,6 +43,7 @@ import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
   resolveShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
+import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
 
 async function orderAlreadyHasPreparedLabel(
   supabase: SupabaseClient,
@@ -338,21 +339,16 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     const listingSection = (listing as { section?: string } | null)?.section
     if (!listing || !isPeerListingSection(listingSection)) return
 
-    const shipments = await ensureShipmentsExist(supabase, o.id, o.shipping_packaging_mode)
-    if (shipments.length === 0) {
-      // Fallback: legacy single-label path when order_items/shipments missing.
-      if (await orderAlreadyHasPreparedLabel(supabase, orderId)) {
-        await resolveOpenOrderShippingLabelFailures(supabase, orderId)
-        await ensureReswellShippingLabelReadyThreadNotification(supabase, orderId)
-      }
-      return
-    }
-
     const listingById = new Map<string, PeerListingForShippingQuote>()
-    const { data: itemListingRows } = await supabase
+    const { data: itemListingRows, error: itemListingErr } = await supabase
       .from("order_items")
       .select(`listing_id, listings ( ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT} )`)
       .eq("order_id", o.id)
+
+    if (itemListingErr) {
+      console.error(`${tag} item listing load:`, itemListingErr.message)
+      return
+    }
 
     for (const raw of itemListingRows ?? []) {
       const row = raw as { listing_id?: string; listings?: unknown }
@@ -366,6 +362,21 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     }
 
     const allListings = [...listingById.values()]
+    if (listingsUseSantaBarbaraDropoff(allListings)) {
+      console.info(`${tag} skipped: seller selected Santa Barbara drop-off.`)
+      return
+    }
+
+    const shipments = await ensureShipmentsExist(supabase, o.id, o.shipping_packaging_mode)
+    if (shipments.length === 0) {
+      // Fallback: legacy single-label path when order_items/shipments missing.
+      if (await orderAlreadyHasPreparedLabel(supabase, orderId)) {
+        await resolveOpenOrderShippingLabelFailures(supabase, orderId)
+        await ensureReswellShippingLabelReadyThreadNotification(supabase, orderId)
+      }
+      return
+    }
+
     if (!allListings.some((l) => effectiveBoardShippingMode(l) === "reswell")) return
 
     const pendingShipments: OrderShipmentWithItems[] = []

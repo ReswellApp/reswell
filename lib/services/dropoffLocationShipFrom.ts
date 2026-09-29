@@ -13,6 +13,7 @@ export type DropoffShipFromSource = {
 
 export type DropoffLocationEmbed = {
   id?: string
+  slug?: string | null
   name?: string | null
   address_line1?: string | null
   address_line2?: string | null
@@ -26,6 +27,7 @@ export type DropoffLocationEmbed = {
 export function embedFromDropoffLocation(row: DropoffLocationRow): DropoffLocationEmbed {
   return {
     id: row.id,
+    slug: row.slug,
     name: row.name,
     address_line1: row.address_line1,
     address_line2: row.address_line2,

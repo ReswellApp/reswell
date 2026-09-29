@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { saleHasPrintableOpenLabel } from "@/lib/sale-fulfillment-filters"
 import { loadShippingLabelPdfBytes } from "@/lib/services/resolveOrderShippingLabelPdf"
 import { SELLER_PRINT_SHIPPING_LABELS_MAX } from "@/lib/validations/seller-print-shipping-labels"
+import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
 
 type SellerPrintLabelOrderRow = {
   id: string
@@ -12,6 +13,28 @@ type SellerPrintLabelOrderRow = {
   fulfillment_method: string | null
   tracking_number: string | null
   shipping_address: { address?: unknown } | null
+  listings:
+    | {
+        dropoff_location_id?: string | null
+        dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+      }
+    | Array<{
+        dropoff_location_id?: string | null
+        dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+      }>
+    | null
+  order_items?: Array<{
+    listings:
+      | {
+          dropoff_location_id?: string | null
+          dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+        }
+      | Array<{
+          dropoff_location_id?: string | null
+          dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+        }>
+      | null
+  }> | null
 }
 
 export type SellerPrintShippingLabelsResult =
@@ -61,7 +84,19 @@ export async function buildSellerPrintableShippingLabelsPdf(params: {
 
   const { data: orders, error } = await params.supabase
     .from("orders")
-    .select("id, seller_id, status, delivery_status, fulfillment_method, tracking_number, shipping_address")
+    .select(
+      `
+      id,
+      seller_id,
+      status,
+      delivery_status,
+      fulfillment_method,
+      tracking_number,
+      shipping_address,
+      listings ( dropoff_location_id, dropoff_locations ( slug ) ),
+      order_items ( listings ( dropoff_location_id, dropoff_locations ( slug ) ) )
+    `,
+    )
     .eq("seller_id", params.sellerId)
     .in("id", uniqueIds)
 
@@ -73,6 +108,25 @@ export async function buildSellerPrintableShippingLabelsPdf(params: {
   const rows = (orders ?? []) as SellerPrintLabelOrderRow[]
   if (rows.length !== uniqueIds.length) {
     return { ok: false, error: "One or more sales were not found", status: 404 }
+  }
+
+  if (
+    rows.some((row) => {
+      const orderListings = [
+        Array.isArray(row.listings) ? row.listings[0] : row.listings,
+        ...(row.order_items ?? []).map((item) =>
+          Array.isArray(item.listings) ? item.listings[0] : item.listings,
+        ),
+      ]
+      return listingsUseSantaBarbaraDropoff(orderListings)
+    })
+  ) {
+    return {
+      ok: false,
+      error:
+        "Santa Barbara drop-off orders do not have seller-printable labels. Reswell handles the label after drop-off.",
+      status: 403,
+    }
   }
 
   const printable = rows.filter((row) =>

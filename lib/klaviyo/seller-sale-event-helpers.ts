@@ -9,6 +9,10 @@ import {
   effectiveBoardShippingMode,
   type PeerListingForShippingQuote,
 } from "@/lib/services/peerListingShippingQuote"
+import {
+  listingsUseSantaBarbaraDropoff,
+  SANTA_BARBARA_DROPOFF_PHONE_DISPLAY,
+} from "@/lib/dropoff-santa-barbara"
 
 export type KlaviyoShipToAddress = {
   name: string
@@ -22,7 +26,10 @@ export type KlaviyoShipToAddress = {
   formatted: string
 }
 
-export type SellerShippingLabelWorkflow = "reswell" | "seller_own"
+export type SellerShippingLabelWorkflow =
+  | "reswell"
+  | "seller_own"
+  | "santa_barbara_dropoff"
 
 function displayNameFromProfileRow(data: {
   display_name?: string | null
@@ -116,6 +123,9 @@ export function parseOrderShippingAddressForKlaviyo(
 export function resolveSellerShippingLabelWorkflow(
   listings: PeerListingForShippingQuote[],
 ): SellerShippingLabelWorkflow {
+  if (listingsUseSantaBarbaraDropoff(listings)) {
+    return "santa_barbara_dropoff"
+  }
   if (listings.some((l) => effectiveBoardShippingMode(l) === "reswell")) {
     return "reswell"
   }
@@ -125,6 +135,15 @@ export function resolveSellerShippingLabelWorkflow(
 export function sellerShippingLabelWorkflowInstructions(
   workflow: SellerShippingLabelWorkflow,
 ): string {
+  if (workflow === "santa_barbara_dropoff") {
+    return [
+      "Do not buy or print a shipping label for this sale.",
+      "Contact the Santa Barbara drop-off before you go, then bring the sold board to Reswell at 915 De La Vina, Santa Barbara, CA 93101.",
+      `Call or text ${SANTA_BARBARA_DROPOFF_PHONE_DISPLAY} to coordinate your drop-off.`,
+      "Reswell will pack the board, create the carrier label, and ship it to the buyer after drop-off.",
+    ].join(" ")
+  }
+
   if (workflow === "reswell") {
     return [
       "Reswell is preparing your shipping label for this order.",

@@ -76,6 +76,13 @@ import { ReviewBuyerControls } from "@/components/review-buyer-controls"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
+import {
+  listingUsesSantaBarbaraDropoff,
+  SANTA_BARBARA_DROPOFF_PHONE_DISPLAY,
+  SANTA_BARBARA_DROPOFF_PHONE_E164,
+} from "@/lib/dropoff-santa-barbara"
+import { SantaBarbaraDropoffInstructionsCard } from "@/components/features/sales/santa-barbara-dropoff-instructions-card"
+import { RESWELL_WAREHOUSE_ADDRESS } from "@/lib/reswell-warehouse-address"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -112,6 +119,8 @@ type OrderListingRow = {
   section: string
   board_shipping_cost_mode?: string | null
   shipping_price?: string | number | null
+  dropoff_location_id?: string | null
+  dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
   listing_images: Array<{
     url: string
     thumbnail_url?: string | null
@@ -231,6 +240,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         section,
         board_shipping_cost_mode,
         shipping_price,
+        dropoff_location_id,
+        dropoff_locations ( slug ),
         listing_images ( url, thumbnail_url, is_primary )
       ),
       order_items (
@@ -244,6 +255,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           section,
           board_shipping_cost_mode,
           shipping_price,
+          dropoff_location_id,
+          dropoff_locations ( slug ),
           listing_images ( url, thumbnail_url, is_primary )
         )
       )
@@ -287,6 +300,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     linesFromPack.length > 0 ? linesFromPack : fallbackListing ? [fallbackListing] : []
   const primaryListing =
     displayListings.find((l) => l.id === sale.listing_id) ?? displayListings[0] ?? fallbackListing
+  const isSantaBarbaraDropoffOrder = displayListings.some(listingUsesSantaBarbaraDropoff)
   const isReswellShippingOrder =
     sale.fulfillment_method === "shipping" &&
     isPeerListingSection(primaryListing?.section) &&
@@ -357,6 +371,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       .map((l) => [l.shipment_id as string, l] as const),
   )
   const reswellLabelStillPreparing =
+    !isSantaBarbaraDropoffOrder &&
     isReswellShippingOrder &&
     sale.delivery_status === "pending" &&
     !hasAccessibleShippingLabelPdf &&
@@ -662,7 +677,19 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             </CardContent>
           </Card>
 
-          {sale.fulfillment_method === "shipping" &&
+          {isSantaBarbaraDropoffOrder && sale.fulfillment_method === "shipping" ? (
+            <SantaBarbaraDropoffInstructionsCard
+              addressLine1={RESWELL_WAREHOUSE_ADDRESS.address_line1}
+              city={RESWELL_WAREHOUSE_ADDRESS.city_locality}
+              state={RESWELL_WAREHOUSE_ADDRESS.state_province}
+              postalCode={RESWELL_WAREHOUSE_ADDRESS.postal_code}
+              phoneDisplay={SANTA_BARBARA_DROPOFF_PHONE_DISPLAY}
+              phoneE164={SANTA_BARBARA_DROPOFF_PHONE_E164}
+            />
+          ) : null}
+
+          {!isSantaBarbaraDropoffOrder &&
+          sale.fulfillment_method === "shipping" &&
           (hasAccessibleShippingLabelPdf ||
             marketplaceLabels.length > 0 ||
             (isReswellShippingOrder && hasShippingTracking)) ? (
@@ -754,7 +781,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                   </CardContent>
                 </Card>
               ) : null}
-              {!isReswellShippingOrder ? (
+              {!isSantaBarbaraDropoffOrder && !isReswellShippingOrder ? (
                 <SellerTrackingForm
                   key={`${sale.tracking_number ?? ""}:${sale.tracking_carrier ?? ""}:${sale.delivery_status}`}
                   orderId={sale.id}
@@ -772,7 +799,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             displayListings.some((l) => isPeerListingSection(l.section)) &&
             sale.delivery_status === "pending" &&
             !hasPreparedShippingLabel &&
-            !isReswellShippingOrder && (
+            !isReswellShippingOrder &&
+            !isSantaBarbaraDropoffOrder && (
               <Card>
                 <CardContent className="flex items-center justify-between gap-4 p-5">
                   <div className="flex items-center gap-3">

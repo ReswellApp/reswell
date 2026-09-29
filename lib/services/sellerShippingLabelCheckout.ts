@@ -33,6 +33,7 @@ import {
   computeSellerLabelPrepaidAllowanceBreakdown,
   type SellerLabelPaymentBreakdown,
 } from "@/lib/shipping/seller-label-payment-breakdown"
+import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
 
 export const SELLER_SHIPPING_LABEL_PI_PURPOSE = "seller_shipping_label"
 export const SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE = "seller_shipping_label"
@@ -160,7 +161,17 @@ export async function listSellerLabelPurchasableOrders(
       order_num,
       status,
       created_at,
-      listings ( section, title, board_shipping_cost_mode, shipping_price )
+      listings (
+        section,
+        title,
+        board_shipping_cost_mode,
+        shipping_price,
+        dropoff_location_id,
+        dropoff_locations ( slug )
+      ),
+      order_items (
+        listings ( dropoff_location_id, dropoff_locations ( slug ) )
+      )
     `,
     )
     .eq("seller_id", sellerId)
@@ -184,20 +195,43 @@ export async function listSellerLabelPurchasableOrders(
           title: string | null
           board_shipping_cost_mode?: string | null
           shipping_price?: string | number | null
+          dropoff_location_id?: string | null
+          dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
         }
       | {
           section: string
           title: string | null
           board_shipping_cost_mode?: string | null
           shipping_price?: string | number | null
+          dropoff_location_id?: string | null
+          dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
         }[]
       | null
+    order_items?: Array<{
+      listings:
+        | {
+            dropoff_location_id?: string | null
+            dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+          }
+        | Array<{
+            dropoff_location_id?: string | null
+            dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+          }>
+        | null
+    }> | null
   }
 
   const candidates: SellerLabelPurchasableOrder[] = []
   for (const row of data as Row[]) {
     const listing = Array.isArray(row.listings) ? row.listings[0] : row.listings
     if (!listing || !isPeerListingSection(listing.section)) continue
+    const orderListings = [
+      listing,
+      ...(row.order_items ?? []).map((item) =>
+        Array.isArray(item.listings) ? item.listings[0] : item.listings,
+      ),
+    ]
+    if (listingsUseSantaBarbaraDropoff(orderListings)) continue
     const mode = effectiveBoardShippingMode(listing)
     if (mode === "reswell") continue
     candidates.push({
@@ -269,13 +303,29 @@ type SellerLabelOrderRow = {
         section: string
         board_shipping_cost_mode?: string | null
         shipping_price?: string | number | null
+        dropoff_location_id?: string | null
+        dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
       }
     | {
         section: string
         board_shipping_cost_mode?: string | null
         shipping_price?: string | number | null
+        dropoff_location_id?: string | null
+        dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
       }[]
     | null
+  order_items?: Array<{
+    listings:
+      | {
+          dropoff_location_id?: string | null
+          dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+        }
+      | Array<{
+          dropoff_location_id?: string | null
+          dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+        }>
+      | null
+  }> | null
 }
 
 export type SellerShippingLabelOrderContext =
@@ -312,7 +362,16 @@ export async function loadSellerShippingLabelOrderContext(
       delivery_status,
       shipping_address,
       shipping_amount,
-      listings ( section, board_shipping_cost_mode, shipping_price )
+      listings (
+        section,
+        board_shipping_cost_mode,
+        shipping_price,
+        dropoff_location_id,
+        dropoff_locations ( slug )
+      ),
+      order_items (
+        listings ( dropoff_location_id, dropoff_locations ( slug ) )
+      )
     `,
     )
     .eq("id", orderId)
@@ -341,6 +400,21 @@ export async function loadSellerShippingLabelOrderContext(
 
   if (o.delivery_status !== "pending") {
     return { ok: false, error: "This order already has tracking.", status: 409 }
+  }
+
+  const orderListings = [
+    listing,
+    ...(o.order_items ?? []).map((item) =>
+      Array.isArray(item.listings) ? item.listings[0] : item.listings,
+    ),
+  ]
+  if (listingsUseSantaBarbaraDropoff(orderListings)) {
+    return {
+      ok: false,
+      error:
+        "This sale uses Santa Barbara drop-off. Do not buy or print a shipping label; Reswell will pack and ship the board after you drop it off.",
+      status: 400,
+    }
   }
 
   const shippingMode = effectiveBoardShippingMode(listing)

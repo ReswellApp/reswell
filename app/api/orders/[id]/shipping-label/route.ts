@@ -19,6 +19,12 @@ import type { ProfileAddressRow } from "@/lib/profile-address"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { resolveSellerOrDropoffShipFrom } from "@/lib/services/dropoffLocationShipFrom"
 import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
+import {
+  listingsUseSantaBarbaraDropoff,
+  SANTA_BARBARA_DROPOFF_PHONE_DISPLAY,
+  SANTA_BARBARA_DROPOFF_PHONE_E164,
+} from "@/lib/dropoff-santa-barbara"
+import { RESWELL_WAREHOUSE_ADDRESS } from "@/lib/reswell-warehouse-address"
 
 export const dynamic = "force-dynamic"
 
@@ -53,7 +59,8 @@ export async function GET(
       delivery_status,
       shipping_address,
       shipping_amount,
-      listings ( section, title )
+      listings ( section, title ),
+      order_items ( listings ( dropoff_location_id, dropoff_locations ( slug ) ) )
     `,
     )
     .eq("id", orderId)
@@ -76,6 +83,18 @@ export async function GET(
       | { section: string; title: string | null }
       | { section: string; title: string | null }[]
       | null
+    order_items?: Array<{
+      listings:
+        | {
+            dropoff_location_id?: string | null
+            dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+          }
+        | Array<{
+            dropoff_location_id?: string | null
+            dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+          }>
+        | null
+    }> | null
   }
 
   const listing = Array.isArray(row.listings) ? row.listings[0] : row.listings
@@ -87,6 +106,12 @@ export async function GET(
     .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
     .eq("id", row.listing_id)
     .maybeSingle()
+  const santaBarbaraDropoff = listingsUseSantaBarbaraDropoff([
+    listingForParcel as PeerListingForShippingQuote | null,
+    ...(row.order_items ?? []).map((item) =>
+      Array.isArray(item.listings) ? item.listings[0] : item.listings,
+    ),
+  ])
 
   /**
    * Flat/free seller labels never auto-quote from listing volume heuristics.
@@ -158,6 +183,16 @@ export async function GET(
     data: {
       eligible,
       ineligibleReasons: reasons,
+      santaBarbaraDropoffDetails: santaBarbaraDropoff
+        ? {
+            addressLine1: RESWELL_WAREHOUSE_ADDRESS.address_line1,
+            city: RESWELL_WAREHOUSE_ADDRESS.city_locality,
+            state: RESWELL_WAREHOUSE_ADDRESS.state_province,
+            postalCode: RESWELL_WAREHOUSE_ADDRESS.postal_code,
+            phoneDisplay: SANTA_BARBARA_DROPOFF_PHONE_DISPLAY,
+            phoneE164: SANTA_BARBARA_DROPOFF_PHONE_E164,
+          }
+        : null,
       shipEngineConfigured: isShipEngineConfigured(),
       walletSpendableUsd: walletSummary.spendableBucks,
       buyerPrepaidShippingUsd,
@@ -265,7 +300,7 @@ export async function POST(
     const shipFrom = await resolveSellerOrDropoffShipFrom(
       supabase,
       user.id,
-      [listingForShipFrom],
+      [listingForShipFrom as PeerListingForShippingQuote | null],
       body.seller_address_id?.trim() || null,
     )
     if (!shipFrom.ok) {

@@ -51,6 +51,7 @@ import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
+import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
 
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
@@ -95,6 +96,8 @@ type SaleRow = {
         title: string
         slug?: string | null
         section: string
+        dropoff_location_id?: string | null
+        dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
         listing_images: Array<{
           url: string
           thumbnail_url?: string | null
@@ -106,6 +109,8 @@ type SaleRow = {
         title: string
         slug?: string | null
         section: string
+        dropoff_location_id?: string | null
+        dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
         listing_images: Array<{
           url: string
           thumbnail_url?: string | null
@@ -113,6 +118,18 @@ type SaleRow = {
         }> | null
       }[]
     | null
+  order_items?: Array<{
+    listings:
+      | {
+          dropoff_location_id?: string | null
+          dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+        }
+      | Array<{
+          dropoff_location_id?: string | null
+          dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+        }>
+      | null
+  }> | null
 }
 
 function primaryImage(
@@ -141,6 +158,16 @@ function fulfillmentLabel(method: string | null, hasShipAddr: boolean): string {
   if (method === "shipping" || hasShipAddr) return "Ship to buyer"
   if (method === "pickup") return "Local pickup"
   return hasShipAddr ? "Ship to buyer" : "Local pickup"
+}
+
+function saleUsesSantaBarbaraDropoff(sale: SaleRow): boolean {
+  const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
+  return listingsUseSantaBarbaraDropoff([
+    listing,
+    ...(sale.order_items ?? []).map((item) =>
+      Array.isArray(item.listings) ? item.listings[0] : item.listings,
+    ),
+  ])
 }
 
 export default async function SalesPage({
@@ -183,7 +210,12 @@ export default async function SalesPage({
         title,
         slug,
         section,
+        dropoff_location_id,
+        dropoff_locations ( slug ),
         listing_images ( url, thumbnail_url, is_primary )
+      ),
+      order_items (
+        listings ( dropoff_location_id, dropoff_locations ( slug ) )
       )
     `
     )
@@ -204,6 +236,9 @@ export default async function SalesPage({
   }
 
   const list = (sales ?? []) as unknown as SaleRow[]
+  const santaBarbaraDropoffOrderIds = new Set(
+    list.filter(saleUsesSantaBarbaraDropoff).map((sale) => sale.id),
+  )
 
   const orderIds = list.map((s) => s.id)
   const [preparedLabelOrderIds, printablePdfOrderIds] = await Promise.all([
@@ -251,7 +286,8 @@ export default async function SalesPage({
       deliveryStatus: sale.delivery_status ?? "pending",
       orderStatus: sale.status,
       hasShippingAddress: Boolean(ship?.address && formatAddress(ship.address)),
-      hasPreparedShippingLabel: preparedLabelOrderIds.has(sale.id),
+      hasPreparedShippingLabel:
+        !santaBarbaraDropoffOrderIds.has(sale.id) && preparedLabelOrderIds.has(sale.id),
     }
   }
 
@@ -267,7 +303,11 @@ export default async function SalesPage({
     )
 
   const printableLabelSales: PrintableShippingLabelSale[] = list
-    .filter((sale) => saleIsPendingShipment(saleFilterInput(sale)))
+    .filter(
+      (sale) =>
+        saleIsPendingShipment(saleFilterInput(sale)) &&
+        !santaBarbaraDropoffOrderIds.has(sale.id),
+    )
     .map((sale) => {
       const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
       const buyerDisplay = sale.buyer_id ? buyerNameById.get(sale.buyer_id)?.trim() : ""
@@ -312,7 +352,7 @@ export default async function SalesPage({
         description="Card and wallet purchases of your listings. Shipping addresses appear here when the buyer paid with a card and chose delivery."
       />
 
-      {!error && list.length > 0 && (printableLabelSales.length > 0 || pendingShipmentCount > 0) ? (
+      {!error && printableLabelSales.length > 0 ? (
         <PrintShippingLabelsModule sales={printableLabelSales} />
       ) : null}
 
@@ -386,6 +426,7 @@ export default async function SalesPage({
             shippingAddress: ship,
           })
           const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
+          const santaBarbaraDropoff = santaBarbaraDropoffOrderIds.has(sale.id)
           const filterInput = saleFilterInput(sale)
           const needsFulfillment = saleNeedsFulfillment(filterInput)
           const prevSale = index > 0 ? visibleList[index - 1] : undefined
@@ -456,6 +497,12 @@ export default async function SalesPage({
                       )}
                       {fulfill}
                     </Badge>
+                    {santaBarbaraDropoff ? (
+                      <Badge variant="outline" className="gap-1 font-normal">
+                        <MapPin className="h-3.5 w-3.5" />
+                        Santa Barbara drop-off
+                      </Badge>
+                    ) : null}
                   </div>
 
                   <div className="flex gap-3">
@@ -472,7 +519,9 @@ export default async function SalesPage({
                       <p className="line-clamp-2 text-[15px] font-semibold text-foreground">{title}</p>
                       <p className="mt-0.5 text-[13px] text-muted-foreground">Buyer: {buyerName}</p>
                       <p className="mt-2 text-[11px] text-muted-foreground">
-                        Tap for sale details, shipping address, and messages
+                        {santaBarbaraDropoff
+                          ? "Tap for the drop-off address and call or text instructions"
+                          : "Tap for sale details, shipping address, and messages"}
                       </p>
                     </div>
                   </div>
@@ -535,6 +584,16 @@ export default async function SalesPage({
                       </p>
                     </div>
                   )}
+
+                  {santaBarbaraDropoff ? (
+                    <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3 text-sm">
+                      <p className="font-medium text-foreground">Drop off with Reswell</p>
+                      <p className="mt-1 text-muted-foreground">
+                        No seller label is needed. Open this sale for the Santa Barbara address and
+                        contact buttons.
+                      </p>
+                    </div>
+                  ) : null}
 
                   {!addrBlock && sale.fulfillment_method === "pickup" && (
                     <p className="text-sm text-muted-foreground">

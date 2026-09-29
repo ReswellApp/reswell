@@ -27,6 +27,7 @@ import { Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
 import { SellerShippingLabelCheckout } from "@/components/seller-shipping-label-checkout"
+import { SantaBarbaraDropoffInstructionsCard } from "@/components/features/sales/santa-barbara-dropoff-instructions-card"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
 
@@ -42,6 +43,14 @@ type OverviewResponse = {
   data: {
     eligible: boolean
     ineligibleReasons: string[]
+    santaBarbaraDropoffDetails: {
+      addressLine1: string
+      city: string
+      state: string
+      postalCode: string
+      phoneDisplay: string
+      phoneE164: string
+    } | null
     shipEngineConfigured: boolean
     walletSpendableUsd: number
     buyerPrepaidShippingUsd: number
@@ -366,6 +375,14 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
 
   if (!overview) {
     return null
+  }
+
+  if (overview.santaBarbaraDropoffDetails) {
+    return (
+      <SantaBarbaraDropoffInstructionsCard
+        {...overview.santaBarbaraDropoffDetails}
+      />
+    )
   }
 
   const manualParcelCheck = manualParcelValidation(manualParcel)
