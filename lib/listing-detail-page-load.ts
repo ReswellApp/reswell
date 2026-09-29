@@ -7,6 +7,7 @@ import {
   getCachedPublicSurfboardListing,
   SURFBOARD_LISTING_SELECT,
 } from "@/lib/listing-detail-cache"
+import { overlayListingPublicCommerceFields } from "@/lib/listing-public-commerce"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 
 export type ListingDetailPageSharedProps = {
@@ -57,6 +58,7 @@ export async function loadListingDetailPageContext({
       })
       listing = (r.listing as Record<string, unknown> | null) ?? null
     }
+    listing = await overlayListingPublicCommerceFields(listing)
   }
 
   return {

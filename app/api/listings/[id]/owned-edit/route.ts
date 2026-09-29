@@ -1,6 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser, resolveServerAuth } from "@/lib/auth/get-safe-server-user"
+import { revalidateAfterListingWrite } from "@/lib/cache/revalidate-after-listing-write"
 import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
 import {
   IMPERSONATION_COOKIE,
@@ -292,6 +293,15 @@ export async function PUT(
       })
     })
   }
+
+  const existingSection =
+    typeof existingListing.section === "string" ? existingListing.section : null
+  await revalidateAfterListingWrite(writeDb, {
+    listingId,
+    slug: result.slug,
+    sellerUserId: ownerUserId,
+    section: existingSection,
+  })
 
   return NextResponse.json({
     success: true,
