@@ -174,7 +174,7 @@ export function GiveawayDetail({
                   </Link>
                 </Button>
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Free to list. No sale required. Winner drawn October 3rd.
+                  Free to list. No sale required. Winner drawn October 10th.
                 </p>
               </CardContent>
             </Card>
