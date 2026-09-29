@@ -16,6 +16,20 @@ export function isPermanentRestrictionUntil(iso: string | null | undefined): boo
   return Number.isFinite(ms) && Number.isFinite(permanentMs) && ms >= permanentMs
 }
 
+/** Directory status for the admin users list. Permanent bans stay banned; expired locks are active. */
+export type AccountAccessStatus = "active" | "locked" | "banned"
+
+export function classifyAccountAccess(
+  restrictedUntil: string | null | undefined,
+  nowMs: number = Date.now(),
+): AccountAccessStatus {
+  if (isPermanentRestrictionUntil(restrictedUntil)) return "banned"
+  if (!restrictedUntil) return "active"
+  const ms = Date.parse(restrictedUntil)
+  if (Number.isFinite(ms) && ms > nowMs) return "locked"
+  return "active"
+}
+
 export function isUserAuthBanned(
   user:
     | {
