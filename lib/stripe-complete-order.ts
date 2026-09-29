@@ -1148,6 +1148,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     promoKind,
     lineItems: klaviyoLineItems,
     amount: chargedUsd,
+    platformFeeUsd: platformFee,
+    sellerEarningsUsd: sellerEarnings,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
     pickupCode,
     paymentMethod: "stripe",

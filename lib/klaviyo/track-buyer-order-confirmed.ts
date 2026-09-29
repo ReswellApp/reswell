@@ -8,7 +8,10 @@
  * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Purchase Successful** →
  * add email; in the template use event variables, e.g. `{{ event.order_num }}`, `{{ event.Title }}`,
  * `{{ event.order_url }}`, `{{ event.listing_url }}`, `{{ event.listing_image_url }}`,
- * `{{ event.fulfillment_method }}`, `{{ event.payment_method }}`.
+ * `{{ event.fulfillment_method }}`, `{{ event.payment_method }}`,
+ * `{{ event.listing_price }}`, `{{ event.order_total }}`, `{{ event.shipping_amount }}`,
+ * `{{ event.platform_fee }}`, `{{ event.seller_earnings }}`.
+ * `listing_price` is the order-page item price (order total minus buyer-paid shipping).
  * For shipping-only confirmation, filter `fulfillment_method` equals `shipping`. For pickup, use metric **Local Pickup Order Placed** instead.
  *
  * Profile on the event is the **buyer** (`external_id` + email when available).
@@ -27,7 +30,11 @@ import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { trackKlaviyoLocalPickupOrderPlaced } from "@/lib/klaviyo/track-local-pickup-order-placed"
 import { trackKlaviyoPlacedOrder } from "@/lib/klaviyo/track-placed-order"
-import { klaviyoBuyerOrderPriceProperties } from "@/lib/klaviyo/order-charges-for-email"
+import {
+  formatKlaviyoOrderAmountDisplay,
+  klaviyoBuyerOrderPriceProperties,
+} from "@/lib/klaviyo/order-charges-for-email"
+import { purchaseSuccessfulOrderAmounts } from "@/lib/klaviyo/purchase-successful-amounts"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import type { CheckoutPromoKind } from "@/lib/services/checkoutPromo"
 
@@ -66,6 +73,10 @@ export type KlaviyoBuyerOrderConfirmedPayload = {
   shippingAmountUsd?: number | null
   /** Buyer promo credit stored on `orders.promo_discount_usd`. */
   promoDiscountUsd?: number | null
+  /** Marketplace fee stored on `orders.platform_fee`. */
+  platformFeeUsd?: number | null
+  /** Seller net stored on `orders.seller_earnings`. */
+  sellerEarningsUsd?: number | null
   /** Redeemed promo code string, e.g. `WELCOME-ABC123`. */
   promoCode?: string | null
   promoKind?: CheckoutPromoKind | null
@@ -230,6 +241,12 @@ export async function trackKlaviyoBuyerOrderConfirmed(
       order_url: orderUrl,
       checkout_items: checkoutItemsForEmail,
       ...priceProperties,
+      ...purchaseSuccessfulAmountProperties({
+        orderTotalUsd: amountNum,
+        shippingAmountUsd: payload.shippingAmountUsd,
+        platformFeeUsd: payload.platformFeeUsd,
+        sellerEarningsUsd: payload.sellerEarningsUsd,
+      }),
     },
   })
 
@@ -237,5 +254,33 @@ export async function trackKlaviyoBuyerOrderConfirmed(
 
   if (payload.fulfillmentMethod === "pickup") {
     await trackKlaviyoLocalPickupOrderPlaced(payload)
+  }
+}
+
+function purchaseSuccessfulAmountProperties(input: {
+  orderTotalUsd: number
+  shippingAmountUsd?: number | null
+  platformFeeUsd?: number | null
+  sellerEarningsUsd?: number | null
+}): Record<string, number | string> {
+  const amounts = purchaseSuccessfulOrderAmounts(input)
+  return {
+    listing_price: amounts.listingPrice,
+    listing_price_display: formatKlaviyoOrderAmountDisplay(amounts.listingPrice),
+    item_price: amounts.listingPrice,
+    item_price_display: formatKlaviyoOrderAmountDisplay(amounts.listingPrice),
+    order_total: amounts.orderTotal,
+    shipping_amount: amounts.shippingPaidByBuyer,
+    shipping_amount_display:
+      amounts.shippingPaidByBuyer > 0
+        ? formatKlaviyoOrderAmountDisplay(amounts.shippingPaidByBuyer)
+        : "",
+    platform_fee: amounts.platformFee,
+    platform_fee_display:
+      amounts.platformFee > 0
+        ? `-${formatKlaviyoOrderAmountDisplay(amounts.platformFee)}`
+        : "",
+    seller_earnings: amounts.sellerEarnings,
+    seller_earnings_display: formatKlaviyoOrderAmountDisplay(amounts.sellerEarnings),
   }
 }

@@ -858,6 +858,8 @@ export async function completeAdminTerminalCashSale(
     listingSlug: listing.slug ?? null,
     lineItems: klaviyoLineItems,
     amount: totalUsd,
+    platformFeeUsd: platformFee,
+    sellerEarningsUsd: sellerEarnings,
     fulfillmentMethod: "pickup",
     pickupCode: null,
     paymentMethod: "cash",
