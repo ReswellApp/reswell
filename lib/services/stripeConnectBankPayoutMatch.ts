@@ -20,7 +20,6 @@ export interface MatchTransfer {
   stripePayoutId: string | null
   bankPayoutStatus: BankPayoutStatus | null
   expectedArrivalAtIso: string | null
-  bankPaidAtIso: string | null
 }
 
 export interface MatchPayout {
@@ -47,8 +46,6 @@ export interface BankPayoutPatch {
   stripePayoutId: string
   bankPayoutStatus: BankPayoutStatus
   expectedArrivalAtIso: string | null
-  /** Null clears a previous paid timestamp when a retry replaces a failed attempt. */
-  bankPaidAtIso: string | null
 }
 
 export function usdToCents(amount: string | number | null | undefined): number {
@@ -239,7 +236,6 @@ function sameInstant(left: string | null | undefined, right: string | null): boo
 export function planStripeConnectBankPayoutUpdates(
   transfers: MatchTransfer[],
   assignments: BankPayoutAssignment[],
-  nowIso: string,
 ): BankPayoutPatch[] {
   const byId = new Map(transfers.map((transfer) => [transfer.id, transfer]))
   const patches: BankPayoutPatch[] = []
@@ -267,16 +263,10 @@ export function planStripeConnectBankPayoutUpdates(
       continue
     }
 
-    const nextPaidAt =
-      assignment.bankPayoutStatus === "paid"
-        ? (current.bankPaidAtIso ?? assignment.expectedArrivalAtIso ?? nowIso)
-        : null
-
     const unchanged =
       samePayout &&
       current.bankPayoutStatus === assignment.bankPayoutStatus &&
-      sameInstant(current.expectedArrivalAtIso, assignment.expectedArrivalAtIso) &&
-      sameInstant(current.bankPaidAtIso, nextPaidAt)
+      sameInstant(current.expectedArrivalAtIso, assignment.expectedArrivalAtIso)
 
     if (unchanged) continue
 
@@ -285,7 +275,6 @@ export function planStripeConnectBankPayoutUpdates(
       stripePayoutId: assignment.stripePayoutId,
       bankPayoutStatus: assignment.bankPayoutStatus,
       expectedArrivalAtIso: assignment.expectedArrivalAtIso,
-      bankPaidAtIso: nextPaidAt,
     })
   }
 

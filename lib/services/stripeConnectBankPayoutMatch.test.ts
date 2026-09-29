@@ -18,7 +18,6 @@ function transfer(overrides: Partial<MatchTransfer> & Pick<MatchTransfer, "id" |
     stripePayoutId: null,
     bankPayoutStatus: null,
     expectedArrivalAtIso: null,
-    bankPaidAtIso: null,
     ...overrides,
   }
 }
@@ -181,7 +180,6 @@ describe("matchStripeConnectBankPayouts", () => {
           createdAtMs: first,
           bankPayoutStatus: "paid",
           stripePayoutId: "po_old",
-          bankPaidAtIso: new Date(first + 2 * DAY).toISOString(),
         }),
         transfer({ id: "t-open", amountCents: 10000, createdAtMs: second }),
       ],
@@ -219,8 +217,6 @@ describe("matchStripeConnectBankPayouts", () => {
 })
 
 describe("planStripeConnectBankPayoutUpdates", () => {
-  const nowIso = "2026-09-29T20:00:00.000Z"
-
   it("skips a row that already matches the payout", () => {
     const arrival = "2026-09-30T00:00:00.000Z"
     const patches = planStripeConnectBankPayoutUpdates(
@@ -232,7 +228,6 @@ describe("planStripeConnectBankPayoutUpdates", () => {
           stripePayoutId: "po_1",
           bankPayoutStatus: "paid",
           expectedArrivalAtIso: arrival,
-          bankPaidAtIso: arrival,
         }),
       ],
       [
@@ -243,7 +238,6 @@ describe("planStripeConnectBankPayoutUpdates", () => {
           expectedArrivalAtIso: arrival,
         },
       ],
-      nowIso,
     )
     assert.equal(patches.length, 0)
   })
@@ -257,7 +251,7 @@ describe("planStripeConnectBankPayoutUpdates", () => {
           createdAtMs: 1,
           stripePayoutId: "po_1",
           bankPayoutStatus: "paid",
-          bankPaidAtIso: nowIso,
+          expectedArrivalAtIso: "2026-09-30T00:00:00.000Z",
         }),
       ],
       [
@@ -268,12 +262,11 @@ describe("planStripeConnectBankPayoutUpdates", () => {
           expectedArrivalAtIso: "2026-10-01T00:00:00.000Z",
         },
       ],
-      nowIso,
     )
     assert.equal(patches.length, 0)
   })
 
-  it("replaces a failed payout with the retry and clears the paid timestamp", () => {
+  it("replaces a failed payout with the retry", () => {
     const patches = planStripeConnectBankPayoutUpdates(
       [
         transfer({
@@ -292,11 +285,10 @@ describe("planStripeConnectBankPayoutUpdates", () => {
           expectedArrivalAtIso: "2026-10-02T00:00:00.000Z",
         },
       ],
-      nowIso,
     )
     assert.equal(patches.length, 1)
     assert.equal(patches[0]?.stripePayoutId, "po_retry")
-    assert.equal(patches[0]?.bankPaidAtIso, null)
+    assert.equal(patches[0]?.bankPayoutStatus, "in_transit")
     assert.equal(patches[0]?.expectedArrivalAtIso, "2026-10-02T00:00:00.000Z")
   })
 })

@@ -24,7 +24,6 @@ export interface StripeConnectTransferRow {
   bank_payout_status?: string | null
   /** Stripe payout.arrival_date, as an ISO timestamp (UTC midnight of that day). */
   expected_arrival_at?: string | null
-  bank_paid_at?: string | null
   status: string
   failure_reason: string | null
   created_at: string
@@ -154,7 +153,6 @@ export async function updateStripeConnectTransferBankPayout(
     stripe_payout_id: string
     bank_payout_status: string
     expected_arrival_at: string | null
-    bank_paid_at: string | null
   },
   options?: { protectPaid?: boolean },
 ): Promise<boolean> {
@@ -164,7 +162,6 @@ export async function updateStripeConnectTransferBankPayout(
       stripe_payout_id: patch.stripe_payout_id,
       bank_payout_status: patch.bank_payout_status,
       expected_arrival_at: patch.expected_arrival_at,
-      bank_paid_at: patch.bank_paid_at,
       updated_at: new Date().toISOString(),
     })
     .eq("id", transferId)

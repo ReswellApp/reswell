@@ -36,7 +36,6 @@ function rowToMatchTransfer(row: StripeConnectTransferRow): MatchTransfer {
     stripePayoutId: row.stripe_payout_id?.trim() || null,
     bankPayoutStatus: bankStatusFromRow(row.bank_payout_status),
     expectedArrivalAtIso: row.expected_arrival_at ?? null,
-    bankPaidAtIso: row.bank_paid_at ?? null,
   }
 }
 
@@ -135,7 +134,7 @@ export async function syncStripeConnectBankPayoutsForUser(
 
   const transfers = rows.map(rowToMatchTransfer)
   const assignments = matchStripeConnectBankPayouts(transfers, payouts)
-  const patches = planStripeConnectBankPayoutUpdates(transfers, assignments, new Date().toISOString())
+  const patches = planStripeConnectBankPayoutUpdates(transfers, assignments)
 
   for (const patch of patches) {
     const saved = await updateStripeConnectTransferBankPayout(
@@ -145,7 +144,6 @@ export async function syncStripeConnectBankPayoutsForUser(
         stripe_payout_id: patch.stripePayoutId,
         bank_payout_status: patch.bankPayoutStatus,
         expected_arrival_at: patch.expectedArrivalAtIso,
-        bank_paid_at: patch.bankPaidAtIso,
       },
       { protectPaid: patch.bankPayoutStatus !== "paid" },
     )
