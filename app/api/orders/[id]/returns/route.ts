@@ -3,6 +3,7 @@ import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { listOrderItemReturnsForOrder } from "@/lib/db/orderItemReturns"
 import { returnHasLabelPdf, returnHasPaperlessQr } from "@/lib/db/orderItemReturns"
+import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 
 export const dynamic = "force-dynamic"
 
@@ -46,6 +47,9 @@ export async function GET(
 
   const service = createServiceRoleClient()
   const returns = await listOrderItemReturnsForOrder(service, parsed.data)
+  const sellerView = row.seller_id === user.id && row.buyer_id !== user.id
+  const hideLabelsFromSeller =
+    sellerView && (await fetchSantaBarbaraDropoffOrderIds(service, [parsed.data])).has(parsed.data)
 
   return NextResponse.json({
     data: {
@@ -60,10 +64,10 @@ export async function GET(
         tracking_carrier: r.tracking_carrier,
         carrier_delivered_at: r.carrier_delivered_at,
         refunded_at: r.refunded_at,
-        paperless_instructions: r.paperless_instructions,
-        paperless_handoff_code: r.paperless_handoff_code,
-        has_label_pdf: returnHasLabelPdf(r),
-        has_paperless_qr: returnHasPaperlessQr(r),
+        paperless_instructions: hideLabelsFromSeller ? null : r.paperless_instructions,
+        paperless_handoff_code: hideLabelsFromSeller ? null : r.paperless_handoff_code,
+        has_label_pdf: hideLabelsFromSeller ? false : returnHasLabelPdf(r),
+        has_paperless_qr: hideLabelsFromSeller ? false : returnHasPaperlessQr(r),
         created_at: r.created_at,
       })),
     },

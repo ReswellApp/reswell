@@ -38,3 +38,28 @@ export function listingsUseSantaBarbaraDropoff(
 ): boolean {
   return listings.some(listingUsesSantaBarbaraDropoff)
 }
+
+type SantaBarbaraDropoffOrderSource = {
+  listings?: SantaBarbaraDropoffListingSource | SantaBarbaraDropoffListingSource[] | null
+  order_items?: Array<{
+    listings?: SantaBarbaraDropoffListingSource | SantaBarbaraDropoffListingSource[] | null
+  }> | null
+}
+
+function firstListing(
+  listings: SantaBarbaraDropoffListingSource | SantaBarbaraDropoffListingSource[] | null | undefined,
+): SantaBarbaraDropoffListingSource | null {
+  if (!listings) return null
+  return Array.isArray(listings) ? listings[0] ?? null : listings
+}
+
+/** True when the order's listing, or any packed line, chose Santa Barbara drop-off. */
+export function orderUsesSantaBarbaraDropoff(
+  order: SantaBarbaraDropoffOrderSource | null | undefined,
+): boolean {
+  if (!order) return false
+  return listingsUseSantaBarbaraDropoff([
+    firstListing(order.listings),
+    ...(order.order_items ?? []).map((item) => firstListing(item.listings)),
+  ])
+}

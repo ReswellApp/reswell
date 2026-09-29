@@ -6,6 +6,7 @@ import {
 } from "@/lib/db/adminOrderShippingLabels"
 import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
 import { buildShippingLabelThreadPlainText } from "@/lib/messages/shipping-label-thread"
+import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import type { AdminShippingLabelMessagePayload } from "@/lib/validations/shipping-label-message-metadata"
 
 /**
@@ -85,7 +86,10 @@ export async function attachAdminShippingLabelToOrder(params: {
     }
   }
 
-  const labelPdfUrl = params.labelPdfUrl?.trim() || null
+  const hideLabelFromSeller = (
+    await fetchSantaBarbaraDropoffOrderIds(params.supabase, [u.id])
+  ).has(u.id)
+  const labelPdfUrl = hideLabelFromSeller ? null : params.labelPdfUrl?.trim() || null
   const content = buildShippingLabelThreadPlainText({
     orderNum: params.displayOrderNum,
     listingTitle: params.listingTitle,
@@ -100,7 +104,9 @@ export async function attachAdminShippingLabelToOrder(params: {
     trackingNumber: track,
     trackingCarrier: car,
     labelPdfUrl,
-    hasPaperlessQr: Boolean(params.paperlessQrUrl || params.paperlessQrStoragePath),
+    hasPaperlessQr: hideLabelFromSeller
+      ? false
+      : Boolean(params.paperlessQrUrl || params.paperlessQrStoragePath),
   }
 
   let conv = await getConversationForBuyerSellerListing(

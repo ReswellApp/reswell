@@ -199,6 +199,9 @@ export function ConversationThreadClient({
   const [messages, setMessages] = useState<Message[]>(
     () => (initialData.messages as unknown as Message[]) ?? [],
   )
+  const [hiddenShippingLabelOrderIds, setHiddenShippingLabelOrderIds] = useState(
+    () => new Set(initialData.hiddenShippingLabelOrderIds ?? []),
+  )
   const [offersById, setOffersById] = useState<Record<string, OfferRowLite>>(() =>
     buildOffersMap(initialData),
   )
@@ -477,6 +480,7 @@ export function ConversationThreadClient({
 
       const rows = result.messages as unknown as Message[]
 
+      setHiddenShippingLabelOrderIds(new Set(result.hiddenShippingLabelOrderIds ?? []))
       setOtherPartyProfile(result.otherPartyProfile)
       setCurrentUserId(result.currentUserId)
       setConversation(nextConv)
@@ -548,15 +552,24 @@ export function ConversationThreadClient({
         },
         (payload) => {
           const msg = payload.new as Message
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev
-            const withoutPending = prev.filter(
-              (m) => !(String(m.id).startsWith('pending-') && m.content === msg.content && m.sender_id === msg.sender_id),
-            )
-            return [...withoutPending, msg]
-          })
-          if (msg.offer_id) {
-            fetchOfferForMessage(msg.offer_id, () => active)
+          const viewerIsSeller = Boolean(
+            currentUserId && conversation?.seller_id === currentUserId,
+          )
+          const hideSellerLabelPayload =
+            viewerIsSeller && parseShippingLabelThreadMessage(msg.content, msg.metadata)
+          if (hideSellerLabelPayload) {
+            void loadThread()
+          } else {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === msg.id)) return prev
+              const withoutPending = prev.filter(
+                (m) => !(String(m.id).startsWith('pending-') && m.content === msg.content && m.sender_id === msg.sender_id),
+              )
+              return [...withoutPending, msg]
+            })
+            if (msg.offer_id) {
+              fetchOfferForMessage(msg.offer_id, () => active)
+            }
           }
           if (currentUserId && msg.sender_id !== currentUserId) {
             // Viewing this thread — clear badge/inbox for the inbound message
@@ -580,7 +593,7 @@ export function ConversationThreadClient({
       active = false
       supabase.removeChannel(channel)
     }
-  }, [id, supabase, fetchOfferForMessage, currentUserId])
+  }, [id, supabase, fetchOfferForMessage, currentUserId, conversation?.seller_id, loadThread])
 
   const handleSend = async () => {
     const trimmed = newMessage.trim()
@@ -1052,6 +1065,11 @@ export function ConversationThreadClient({
                             payload={shippingLabel}
                             createdAt={message.created_at}
                             viewerRole={isSeller ? 'seller' : 'buyer'}
+                            hideLabelFromSeller={
+                              isSeller &&
+                              shippingLabel.orderId != null &&
+                              hiddenShippingLabelOrderIds.has(shippingLabel.orderId)
+                            }
                           />
                         </div>
                       )

@@ -4,6 +4,7 @@ import { getSellerEmailForKlaviyo } from "@/lib/klaviyo/seller-sale-event-helper
 import { trackKlaviyoSellerShippingLabelReady } from "@/lib/klaviyo/track-seller-shipping-label-ready"
 import { buildShippingLabelThreadPlainText } from "@/lib/messages/shipping-label-thread"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import type { ShippingLabelReadyMessagePayload } from "@/lib/validations/shipping-label-message-metadata"
 
 const SHIPPING_LABEL_READY_KIND = "shipping_label_ready" as const
@@ -164,6 +165,11 @@ export async function ensureReswellShippingLabelReadyThreadNotification(
     trackingNumber: (order.tracking_number as string | null) ?? null,
     trackingCarrier: (order.tracking_carrier as string | null) ?? null,
   })
+
+  const hideLabelFromSeller = (
+    await fetchSantaBarbaraDropoffOrderIds(supabase, [order.id as string])
+  ).has(order.id as string)
+  if (hideLabelFromSeller) return
 
   const sellerEmail = await getSellerEmailForKlaviyo(order.seller_id as string)
   void trackKlaviyoSellerShippingLabelReady({

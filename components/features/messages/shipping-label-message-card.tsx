@@ -16,7 +16,14 @@ function formatThreadTime(dateStr: string) {
   return format(date, "MMM d, h:mm a")
 }
 
-function roleCopy(payload: ShippingLabelThreadPayload, viewer: "buyer" | "seller" | "admin"): string {
+function roleCopy(
+  payload: ShippingLabelThreadPayload,
+  viewer: "buyer" | "seller" | "admin",
+  hideLabelFromSeller: boolean,
+): string {
+  if (viewer === "seller" && hideLabelFromSeller) {
+    return "Reswell packs and ships this board from the Santa Barbara drop-off. You don't need a shipping label."
+  }
   if (viewer === "seller") {
     return payload.hasPaperlessQr
       ? "Print the label or open the USPS QR code from your sale page, pack the item, and hand it to the carrier. Confirm drop-off when you’re done."
@@ -34,10 +41,13 @@ export function ShippingLabelMessageCard({
   payload,
   createdAt,
   viewerRole,
+  hideLabelFromSeller = false,
 }: {
   payload: ShippingLabelThreadPayload
   createdAt?: string
   viewerRole: "buyer" | "seller" | "admin"
+  /** Santa Barbara drop-off: the seller must not see or download the carrier label. */
+  hideLabelFromSeller?: boolean
 }) {
   const orderLabel = payload.orderNum ? `#${payload.orderNum}` : "Shipping"
   const dashboardHref =
@@ -58,7 +68,8 @@ export function ShippingLabelMessageCard({
     payload.trackingNumber != null
       ? carrierTrackingUrl(payload.trackingNumber, payload.trackingCarrier)
       : null
-  const canDownload = Boolean(payload.labelPdfUrl) && viewerRole !== "buyer"
+  const sellerLabelHidden = hideLabelFromSeller && viewerRole === "seller"
+  const canDownload = Boolean(payload.labelPdfUrl) && viewerRole !== "buyer" && !sellerLabelHidden
 
   return (
     <div
@@ -73,7 +84,7 @@ export function ShippingLabelMessageCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Shipping label ready
+            {sellerLabelHidden ? "Santa Barbara drop-off" : "Shipping label ready"}
           </p>
           <p className="mt-0.5 truncate text-[17px] font-semibold leading-snug tracking-[-0.02em]">
             {orderLabel}
@@ -93,7 +104,7 @@ export function ShippingLabelMessageCard({
       />
 
       <p className="mt-3 text-[14px] leading-snug text-foreground/90">
-        {roleCopy(payload, viewerRole)}
+        {roleCopy(payload, viewerRole, sellerLabelHidden)}
       </p>
 
       <div className="mt-3 space-y-2">

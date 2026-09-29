@@ -3,6 +3,7 @@ import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getOrderItemReturnById } from "@/lib/db/orderItemReturns"
 import { resolveOrderReturnLabelPaperless } from "@/lib/services/resolveOrderReturnLabelPaperless"
+import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 export const dynamic = "force-dynamic"
@@ -56,6 +57,14 @@ export async function GET(
   }
 
   const service = createServiceRoleClient()
+  if (
+    orderRow.seller_id === user.id &&
+    orderRow.buyer_id !== user.id &&
+    (await fetchSantaBarbaraDropoffOrderIds(service, [id])).has(id)
+  ) {
+    return NextResponse.json({ error: "No paperless QR for this return" }, { status: 404 })
+  }
+
   const row = await getOrderItemReturnById(service, returnId)
   if (!row || row.order_id !== id) {
     return NextResponse.json({ error: "Return not found" }, { status: 404 })
