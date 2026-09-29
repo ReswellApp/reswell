@@ -291,8 +291,8 @@ export function AdminLabelsCreatedTab() {
       }
       toast.success(
         parsed.data.approved
-          ? `Void approved — ${parsed.data.message}`
-          : `Carrier response: ${parsed.data.message}`,
+          ? `Void confirmed — postage goes back to the ShipEngine balance. ${parsed.data.message}`
+          : `Not confirmed voided yet. ${parsed.data.message}`,
         { duration: 12_000 },
       )
       if (parsed.data.clearedOrderTracking) {

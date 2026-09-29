@@ -55,6 +55,7 @@ export type ShipEngineLabelDetail = {
   status: string | null
   voided: boolean
   carrier_code: string | null
+  carrier_id: string | null
   downloads: ReturnType<typeof extractLabelDownloadUrls>
 }
 
@@ -68,6 +69,8 @@ function normalizeLabelRow(label: Record<string, unknown>): ShipEngineLabelDetai
   const voided = label.voided === true
   const carrier =
     typeof label.carrier_code === "string" ? label.carrier_code.trim() || null : null
+  const carrierId =
+    typeof label.carrier_id === "string" ? label.carrier_id.trim() || null : null
   return {
     label_id: labelId,
     shipment_id: shipmentId,
@@ -75,6 +78,7 @@ function normalizeLabelRow(label: Record<string, unknown>): ShipEngineLabelDetai
     status,
     voided,
     carrier_code: carrier,
+    carrier_id: carrierId,
     downloads: extractLabelDownloadUrls(label),
   }
 }

@@ -16,6 +16,7 @@ function label(partial: Partial<ShipEnginePurchasedLabel> & { labelId: string })
     shipmentId: null,
     trackingNumber: null,
     carrierCode: "ups",
+    carrierId: null,
     serviceCode: "ups_ground",
     createdAt: "2026-09-02T18:00:00.000Z",
     voided: false,
