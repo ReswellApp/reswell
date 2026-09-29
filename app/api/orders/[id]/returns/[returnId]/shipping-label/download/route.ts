@@ -3,6 +3,7 @@ import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getOrderItemReturnById, returnHasLabelPdf } from "@/lib/db/orderItemReturns"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 
 export const dynamic = "force-dynamic"
 
@@ -55,6 +56,14 @@ export async function GET(
   }
 
   const service = createServiceRoleClient()
+  if (
+    orderRow.seller_id === user.id &&
+    orderRow.buyer_id !== user.id &&
+    (await fetchSantaBarbaraDropoffOrderIds(service, [id])).has(id)
+  ) {
+    return NextResponse.json({ error: "No return label found" }, { status: 404 })
+  }
+
   const row = await getOrderItemReturnById(service, returnId)
   if (!row || row.order_id !== id || !returnHasLabelPdf(row)) {
     return NextResponse.json({ error: "No return label found" }, { status: 404 })

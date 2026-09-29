@@ -327,12 +327,14 @@ export default async function SalesPage({
     })
 
   const awaitingDropoffSales: AwaitingDropoffSale[] = list
-    .filter((sale) =>
-      saleIsAwaitingCarrierScan({
-        ...saleFilterInput(sale),
-        trackingNumber: sale.tracking_number,
-        trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
-      }),
+    .filter(
+      (sale) =>
+        !santaBarbaraDropoffOrderIds.has(sale.id) &&
+        saleIsAwaitingCarrierScan({
+          ...saleFilterInput(sale),
+          trackingNumber: sale.tracking_number,
+          trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
+        }),
     )
     .map((sale) => {
       const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings

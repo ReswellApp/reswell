@@ -10,6 +10,7 @@ const santaBarbaraDropoff = require(
 const {
   listingUsesSantaBarbaraDropoff,
   listingsUseSantaBarbaraDropoff,
+  orderUsesSantaBarbaraDropoff,
   SANTA_BARBARA_DROPOFF_LOCATION_ID,
 } = santaBarbaraDropoff
 
@@ -59,6 +60,29 @@ describe("listingsUseSantaBarbaraDropoff", () => {
         { dropoff_locations: { slug: "santa-barbara" } },
       ]),
       true,
+    )
+  })
+})
+
+describe("orderUsesSantaBarbaraDropoff", () => {
+  it("matches a packed line even when the primary listing embed is an array", () => {
+    assert.equal(
+      orderUsesSantaBarbaraDropoff({
+        listings: [{ dropoff_location_id: null }],
+        order_items: [
+          { listings: { dropoff_locations: { slug: "santa-barbara" } } },
+        ],
+      }),
+      true,
+    )
+  })
+
+  it("does not match an order that ships from the seller", () => {
+    assert.equal(
+      orderUsesSantaBarbaraDropoff({
+        listings: { dropoff_location_id: null, dropoff_locations: { slug: "ventura" } },
+      }),
+      false,
     )
   })
 })

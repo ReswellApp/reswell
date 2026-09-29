@@ -35,6 +35,7 @@ import {
   type OtherPartyProfileSummary,
 } from "@/lib/messages/profile-reviews-loader"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
+import { redactSantaBarbaraDropoffShippingLabels } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import {
   filterConversationsWithMessages,
   type InboxConversationRow,
@@ -1092,6 +1093,19 @@ export async function loadCounterpartyThreads(
     }
   }
 
+  const sellerThreads = threads.filter((thread) => thread.seller_id === user.id)
+  if (sellerThreads.length > 0) {
+    const combined = sellerThreads.flatMap((thread) => thread.messages)
+    const redacted = await redactSantaBarbaraDropoffShippingLabels(service, combined)
+    if (redacted.hiddenOrderIds.length > 0) {
+      let cursor = 0
+      for (const thread of sellerThreads) {
+        thread.messages = redacted.messages.slice(cursor, cursor + thread.messages.length)
+        cursor += thread.messages.length
+      }
+    }
+  }
+
   return {
     currentUserId: user.id,
     otherUser: (profile as CounterpartyThreadProfile | null) ?? {
@@ -1174,6 +1188,11 @@ export type ConversationThreadData = {
   otherPartyProfile: OtherPartyProfileSummary | null
   /** Inbound unread messages in this thread (for optimistic header badge updates). */
   unreadInboundCount: number
+  /**
+   * Santa Barbara drop-off orders whose shipping labels stay off this seller's thread.
+   * Admins still open those labels from the order page.
+   */
+  hiddenShippingLabelOrderIds: string[]
 }
 
 /**
@@ -1266,7 +1285,13 @@ export async function loadConversationThread(
 
   // Fetched newest-first (so the cap keeps the most recent messages); the client
   // renders oldest-first, so restore ascending order here.
-  const messages = ((msgData ?? []) as Record<string, unknown>[]).slice().reverse()
+  let messages = ((msgData ?? []) as Record<string, unknown>[]).slice().reverse()
+  let hiddenShippingLabelOrderIds: string[] = []
+  if (user.id === sellerId) {
+    const redacted = await redactSantaBarbaraDropoffShippingLabels(service, messages)
+    messages = redacted.messages
+    hiddenShippingLabelOrderIds = redacted.hiddenOrderIds
+  }
 
   const offerIds = [
     ...new Set(messages.map((m) => m.offer_id).filter(Boolean)),
@@ -1312,6 +1337,7 @@ export async function loadConversationThread(
     threadListings,
     otherPartyProfile,
     unreadInboundCount: unreadInboundCount ?? 0,
+    hiddenShippingLabelOrderIds,
   }
 }
 
