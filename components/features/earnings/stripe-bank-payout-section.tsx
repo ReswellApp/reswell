@@ -34,6 +34,7 @@ import type { StripeConnectStatusPayload, PayoutSetupStatus } from "@/lib/utils/
 import { AlertCircle, Building2, CheckCircle2, Loader2, Shield, Trash2, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { bankTransferBadge } from "@/lib/utils/stripe-connect-transfer-status"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 /** Mirrors Stripe Connect external bank accounts returned by `/api/stripe/connect/status`. */
@@ -75,6 +76,8 @@ interface StripeTransferHistoryRow {
   stripe_transfer_id: string | null
   stripe_payout_id?: string | null
   status: string
+  bank_payout_status?: string | null
+  expected_arrival_at?: string | null
   created_at: string
 }
 
@@ -96,35 +99,43 @@ export interface StripeBankPayoutSectionProps {
 function TransferStatusBadge({
   status,
   payoutSpeed,
+  bankPayoutStatus,
+  expectedArrivalAt,
 }: {
   status: string
   payoutSpeed?: string | null
+  bankPayoutStatus?: string | null
+  expectedArrivalAt?: string | null
 }) {
-  const u = status.toUpperCase()
-  if (u === "SUCCEEDED") {
-    const isStandard = payoutSpeed?.toLowerCase() === "standard"
-    if (isStandard) {
-      return (
-        <Badge
-          variant="secondary"
-          className="bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/50 dark:text-blue-100 dark:border-blue-800"
-        >
-          Processing
-        </Badge>
-      )
-    }
+  const badge = bankTransferBadge({
+    status,
+    payoutSpeed,
+    bankPayoutStatus,
+    expectedArrivalAt,
+  })
+  if (badge.kind === "sent") {
     return (
       <Badge className="bg-emerald-600 hover:bg-emerald-600/90 text-white border-transparent">
-        Sent
+        {badge.label}
       </Badge>
     )
   }
-  if (u === "REVERSED" || u === "FAILED") {
-    return <Badge variant="destructive">Reversed</Badge>
+  if (badge.kind === "processing") {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/50 dark:text-blue-100 dark:border-blue-800"
+      >
+        {badge.label}
+      </Badge>
+    )
+  }
+  if (badge.kind === "reversed" || badge.kind === "failed") {
+    return <Badge variant="destructive">{badge.label}</Badge>
   }
   return (
     <Badge variant="secondary" className="bg-muted text-muted-foreground">
-      {status}
+      {badge.label}
     </Badge>
   )
 }
@@ -633,10 +644,11 @@ export function StripeBankPayoutSection({
           <div className="pt-2 border-t border-border/60">
             <h3 className="text-sm font-semibold mb-3">Bank transfer history</h3>
             <p className="text-xs text-muted-foreground leading-snug mb-3">
-              New payouts appear here right away. Standard (free) transfers stay{" "}
-              <span className="text-foreground font-medium">Processing</span> while the ACH to your bank is in flight;
-              instant transfers show <span className="text-foreground font-medium">Sent</span> once the payout to your bank
-              has started.
+              New payouts appear here right away.{" "}
+              <span className="text-foreground font-medium">Processing</span> means the deposit has not reached your
+              bank yet. <span className="text-foreground font-medium">Arrives</span> is the day Stripe expects it.{" "}
+              <span className="text-foreground font-medium">Sent</span> means that day has arrived, shown as Deposit.
+              Your bank can still take the rest of the day to post it.
             </p>
             {transferHistory.length === 0 ? (
               <p className="text-sm text-muted-foreground">No bank transfers yet.</p>
@@ -653,6 +665,12 @@ export function StripeBankPayoutSection({
                         : feeRaw
                       : 0
                   const isInstant = row.payout_speed?.toLowerCase() === "instant"
+                  const deposit = bankTransferBadge({
+                    status: row.status,
+                    payoutSpeed: row.payout_speed,
+                    bankPayoutStatus: row.bank_payout_status,
+                    expectedArrivalAt: row.expected_arrival_at,
+                  })
                   const ref =
                     row.stripe_payout_id?.trim() || row.stripe_transfer_id?.trim() || "—"
                   return (
@@ -686,8 +704,16 @@ export function StripeBankPayoutSection({
                       <span className="text-muted-foreground truncate min-w-0 font-mono text-[11px] sm:text-xs">
                         {ref}
                       </span>
-                      <span className="ml-auto shrink-0">
-                        <TransferStatusBadge status={row.status} payoutSpeed={row.payout_speed} />
+                      <span className="ml-auto shrink-0 inline-flex items-center gap-2">
+                        {deposit.hint ? (
+                          <span className="text-xs text-muted-foreground tabular-nums">{deposit.hint}</span>
+                        ) : null}
+                        <TransferStatusBadge
+                          status={row.status}
+                          payoutSpeed={row.payout_speed}
+                          bankPayoutStatus={row.bank_payout_status}
+                          expectedArrivalAt={row.expected_arrival_at}
+                        />
                       </span>
                     </li>
                   )

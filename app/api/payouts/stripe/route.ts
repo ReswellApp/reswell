@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { cashOutToStripeConnectedAccount } from "@/lib/services/stripeConnect"
+import { syncStripeConnectBankPayoutsForUser } from "@/lib/services/stripeConnectBankPayoutSync"
 import { stripeConnectCashOutBodySchema } from "@/lib/validations/stripe-connect"
 import { trackKlaviyoPayout } from "@/lib/klaviyo/track-payout"
 
@@ -17,17 +18,48 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { data: rows } = await supabase
+  try {
+    await syncStripeConnectBankPayoutsForUser(user.id)
+  } catch (e) {
+    console.error("[payouts stripe] bank payout sync failed", e)
+  }
+
+  const columns =
+    "id, amount, fee_amount, payout_speed, stripe_transfer_id, stripe_payout_id, status, bank_payout_status, expected_arrival_at, created_at"
+  const listed = await supabase
     .from("stripe_connect_transfers")
-    .select(
-      "id, amount, fee_amount, payout_speed, stripe_transfer_id, stripe_payout_id, status, created_at",
-    )
+    .select(columns)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50)
 
+  if (listed.error) {
+    const message = listed.error.message ?? ""
+    const missingDepositColumns =
+      message.includes("bank_payout_status") || message.includes("expected_arrival_at")
+    if (!missingDepositColumns) {
+      console.error("[payouts stripe] transfer history", listed.error)
+      return NextResponse.json({ history: [] })
+    }
+
+    console.error("[payouts stripe] deposit columns missing; returning transfer history without them", listed.error)
+    const legacy = await supabase
+      .from("stripe_connect_transfers")
+      .select(
+        "id, amount, fee_amount, payout_speed, stripe_transfer_id, stripe_payout_id, status, created_at",
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50)
+    if (legacy.error) {
+      console.error("[payouts stripe] transfer history", legacy.error)
+      return NextResponse.json({ history: [] })
+    }
+    return NextResponse.json({ history: legacy.data ?? [] })
+  }
+
   return NextResponse.json({
-    history: rows ?? [],
+    history: listed.data ?? [],
   })
 }
 

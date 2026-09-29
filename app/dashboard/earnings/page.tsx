@@ -24,6 +24,8 @@ interface StripeTransferHistoryItem {
   stripe_transfer_id: string | null
   stripe_payout_id?: string | null
   status: string
+  bank_payout_status?: string | null
+  expected_arrival_at?: string | null
   created_at: string
 }
 

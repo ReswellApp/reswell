@@ -1,6 +1,10 @@
 import type Stripe from "stripe"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { getStripeConnectTransferByStripeId, getStripeConnectTransferByPayoutId } from "@/lib/db/stripeConnect"
+import {
+  getStripeConnectTransferByStripeId,
+  listStripeConnectTransfersByPayoutId,
+} from "@/lib/db/stripeConnect"
+import { syncStripeConnectBankPayoutsForUser } from "@/lib/services/stripeConnectBankPayoutSync"
 import {
   restoreWalletForReversedConnectCashout,
   syncStripeConnectAccountRow,
@@ -154,15 +158,52 @@ export async function tryHandleStripeConnectEvent(event: Stripe.Event): Promise<
     return false
   }
 
-  if (event.type === "payout.failed" || event.type === "payout.canceled") {
+  if (
+    event.type === "payout.created" ||
+    event.type === "payout.updated" ||
+    event.type === "payout.paid" ||
+    event.type === "payout.failed" ||
+    event.type === "payout.canceled"
+  ) {
     const payout = event.data.object as Stripe.Payout
     const supabase = createServiceRoleClient()
-    const row = await getStripeConnectTransferByPayoutId(supabase, payout.id)
-    if (!row || row.status === "REVERSED") {
-      return true
+    const accountId = typeof event.account === "string" ? event.account : ""
+    let userId = ""
+    if (accountId.startsWith("acct_")) {
+      const { data: accountRow, error: accountError } = await supabase
+        .from("stripe_connect_accounts")
+        .select("user_id")
+        .eq("stripe_account_id", accountId)
+        .maybeSingle()
+      if (accountError) {
+        console.error("[stripe webhook] payout account lookup", accountError)
+      }
+      userId = typeof accountRow?.user_id === "string" ? accountRow.user_id : ""
     }
 
-    const amountUsd = roundMoney(parseFloat(String(row.amount)))
+    if (userId) {
+      try {
+        await syncStripeConnectBankPayoutsForUser(userId, supabase)
+      } catch (e) {
+        console.error("[stripe webhook] bank payout sync failed", e)
+      }
+    }
+
+    if (event.type !== "payout.failed" && event.type !== "payout.canceled") {
+      return Boolean(userId)
+    }
+
+    // Instant payouts are one shot we created. A failure returns the wallet.
+    // Standard ACH failures stay on the connected account; Stripe retries them,
+    // and the sync above records Failed until that retry is paid.
+    const rows = await listStripeConnectTransfersByPayoutId(supabase, payout.id)
+    const instantRows = rows.filter(
+      (row) => row.payout_speed?.toLowerCase() === "instant" && row.status !== "REVERSED",
+    )
+    if (instantRows.length === 0) {
+      return Boolean(userId) || rows.length > 0
+    }
+
     const failureReason =
       typeof payout.failure_message === "string" && payout.failure_message.trim()
         ? payout.failure_message.trim()
@@ -170,37 +211,40 @@ export async function tryHandleStripeConnectEvent(event: Stripe.Event): Promise<
           ? "Instant payout canceled"
           : "Instant payout failed"
 
-    if (row.stripe_transfer_id) {
-      try {
-        const stripe = getStripe()
-        await stripe.transfers.createReversal(row.stripe_transfer_id)
-      } catch (e) {
-        console.error("[stripe webhook] createReversal after payout failure", e)
+    for (const row of instantRows) {
+      const amountUsd = roundMoney(parseFloat(String(row.amount)))
+      if (row.stripe_transfer_id) {
+        try {
+          const stripe = getStripe()
+          await stripe.transfers.createReversal(row.stripe_transfer_id)
+        } catch (e) {
+          console.error("[stripe webhook] createReversal after payout failure", e)
+        }
       }
-    }
 
-    const restored = await restoreWalletForReversedConnectCashout(supabase, {
-      transferRowId: row.id,
-      userId: row.user_id,
-      amountUsd,
-      failureReason,
-      fromStatuses: ["PROCESSING", "SUCCEEDED"],
-    })
-
-    if (!restored) {
-      console.error("[stripe webhook] CRITICAL wallet not restored on payout failure", {
-        payoutId: payout.id,
+      const restored = await restoreWalletForReversedConnectCashout(supabase, {
         transferRowId: row.id,
         userId: row.user_id,
         amountUsd,
+        failureReason,
+        fromStatuses: ["PROCESSING", "SUCCEEDED"],
       })
-    }
 
-    await supabase
-      .from("wallet_transactions")
-      .update({ status: "failed" })
-      .eq("reference_type", "stripe_connect_transfer")
-      .eq("reference_id", row.id)
+      if (!restored) {
+        console.error("[stripe webhook] CRITICAL wallet not restored on payout failure", {
+          payoutId: payout.id,
+          transferRowId: row.id,
+          userId: row.user_id,
+          amountUsd,
+        })
+      }
+
+      await supabase
+        .from("wallet_transactions")
+        .update({ status: "failed" })
+        .eq("reference_type", "stripe_connect_transfer")
+        .eq("reference_id", row.id)
+    }
 
     return true
   }

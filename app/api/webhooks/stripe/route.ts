@@ -30,8 +30,10 @@ export const runtime = "nodejs"
  * Stripe → Developers → Webhooks → Add endpoint: `https://<your-domain>/api/webhooks/stripe`
  * Events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.failed`,
  * `refund.created`, `refund.updated`, `charge.refunded`,
- * `account.updated`, `transfer.reversed`, `payout.failed`, `payout.canceled` (Connect —
- * the endpoint must listen to events on connected accounts, not only the platform)
+ * `account.updated`, `transfer.reversed`, `payout.created`, `payout.updated`, `payout.paid`,
+ * `payout.failed`, `payout.canceled` (Connect — the endpoint must listen to events on
+ * connected accounts, not only the platform). `payout.paid` is what moves a free ACH
+ * from Processing to Sent on the expected deposit date.
  * Signing secret: `STRIPE_WEBHOOK_SECRET` — one value, or comma/newline-separated during rotation.
  *
  * Use the **canonical** host Vercel serves without a redirect (www vs apex). Stripe does not follow
