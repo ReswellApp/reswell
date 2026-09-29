@@ -5,13 +5,17 @@
  *
  * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Sale Successful** →
  * add email; in the template use event variables, e.g. `{{ event.order_num }}`, `{{ event.Title }}`,
- * `{{ event.order_url }}`, `{{ event.listing_url }}`, `{{ event.seller_earnings }}`, `{{ event.fulfillment_method }}`,
- * `{{ event.payment_method }}`.
+ * `{{ event.order_url }}`, `{{ event.listing_url }}`, `{{ event.listing_image_url }}`,
+ * `{{ event.seller_earnings }}`, `{{ event.fulfillment_method }}`, `{{ event.payment_method }}`.
  *
  * Profile on the event is the **seller** (`external_id` + email when available).
  */
 
 import { listingDetailHref } from "@/lib/listing-href"
+import {
+  isKlaviyoPlaceholderListingPhotoUrl,
+  klaviyoEmailListingPhotoUrl,
+} from "@/lib/klaviyo/catalog-product"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -26,6 +30,8 @@ export type KlaviyoSellerOrderConfirmedPayload = {
   listingTitle: string
   listingSection: string
   listingSlug?: string | null
+  /** Absolute listing photo URL for the email hero. Empty when the listing has no photo. */
+  listingImageUrl?: string | null
   /** Total order amount (buyer paid). */
   orderAmount: number
   sellerEarnings: number
@@ -54,6 +60,7 @@ export async function trackKlaviyoSellerOrderConfirmed(
   })
   const listingUrl = `${origin}${listingPath}`
   const orderUrl = `${origin}/dashboard/sales/${payload.orderId}`
+  const listingImageUrl = resolveSaleListingImageUrl(payload.listingImageUrl)
 
   await sendKlaviyoServerEvent({
     metricName: "Sale Successful",
@@ -72,6 +79,9 @@ export async function trackKlaviyoSellerOrderConfirmed(
       fulfillment_method: payload.fulfillmentMethod,
       payment_method: payload.paymentMethod,
       listing_url: listingUrl,
+      listing_image_url: listingImageUrl,
+      photo_url: listingImageUrl,
+      has_product_image: Boolean(listingImageUrl),
       order_url: orderUrl,
       sale_url: orderUrl,
       order_amount: Number.isFinite(orderAmountNum) ? orderAmountNum : payload.orderAmount,
@@ -79,4 +89,10 @@ export async function trackKlaviyoSellerOrderConfirmed(
       platform_fee: Number.isFinite(platformFeeNum) ? platformFeeNum : payload.platformFee,
     },
   })
+}
+
+function resolveSaleListingImageUrl(raw: string | null | undefined): string {
+  const resolved = klaviyoEmailListingPhotoUrl(raw)
+  if (!resolved.trim() || isKlaviyoPlaceholderListingPhotoUrl(resolved)) return ""
+  return resolved
 }

@@ -1,5 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { fetchPrimaryListingImageUrlsForKlaviyo } from "@/lib/klaviyo/fetch-primary-listing-image-urls"
 import { trackKlaviyoSellerOrderConfirmed } from "@/lib/klaviyo/track-seller-order-confirmed"
 
 /**
@@ -39,13 +40,17 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
       .eq("id", orderId)
       .maybeSingle()
 
-    const { data: listing } = order?.listing_id
-      ? await supabase
-          .from("listings")
-          .select("id, title, section, slug")
-          .eq("id", order.listing_id)
-          .maybeSingle()
-      : { data: null }
+    const listingId = order?.listing_id ? String(order.listing_id) : ""
+    const [{ data: listing }, imageUrls] = listingId
+      ? await Promise.all([
+          supabase
+            .from("listings")
+            .select("id, title, section, slug")
+            .eq("id", listingId)
+            .maybeSingle(),
+          fetchPrimaryListingImageUrlsForKlaviyo(supabase, [listingId]),
+        ])
+      : [{ data: null }, new Map<string, string>()]
 
     if (order?.seller_id && listing && order.buyer_id !== order.seller_id) {
       const sellerEmail = await getAuthEmailForUserId(order.seller_id)
@@ -61,6 +66,7 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
         listingTitle: listing.title ?? "",
         listingSection: listing.section ?? "",
         listingSlug: listing.slug ?? null,
+        listingImageUrl: imageUrls.get(listing.id) ?? null,
         orderAmount: Number.isFinite(amount) ? amount : 0,
         sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
         platformFee: Number.isFinite(platformFee) ? platformFee : 0,
