@@ -1,4 +1,5 @@
 import { listTippedMarkSoldGmsContributions } from '@/lib/db/sellerSaleTips'
+import { classifyAccountAccess, type AccountAccessStatus } from '@/lib/messages/account-ban-errors'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
 /**
@@ -30,6 +31,9 @@ export type AdminUserDirectoryRow = {
   draft_listings_count: number
   sales_count: number
   gmv: number
+  /** Permanent account ban, temporary lock, or neither. Expired locks are active. */
+  account_access: AccountAccessStatus
+  account_restricted_until: string | null
 }
 
 export type AdminUsersDirectory = {
@@ -68,6 +72,7 @@ type ProfileRow = {
   shop_verified: boolean | null
   is_reswell_seller: boolean | null
   created_at: string
+  account_restricted_until: string | null
 }
 
 type ListingRow = { user_id: string | null; status: string | null }
@@ -97,7 +102,7 @@ export async function loadAdminUsersDirectory(): Promise<
         db
           .from('profiles')
           .select(
-            'id, email, display_name, avatar_url, city, is_admin, is_employee, shop_verified, is_reswell_seller, created_at',
+            'id, email, display_name, avatar_url, city, is_admin, is_employee, shop_verified, is_reswell_seller, created_at, account_restricted_until',
           )
           .order('created_at', { ascending: false })
           .range(from, to),
@@ -157,6 +162,11 @@ export async function loadAdminUsersDirectory(): Promise<
         draft_listings_count: listingAgg?.draft ?? 0,
         sales_count: salesAgg?.count ?? 0,
         gmv: salesAgg?.gmv ?? 0,
+        account_restricted_until:
+          typeof p.account_restricted_until === 'string' ? p.account_restricted_until : null,
+        account_access: classifyAccountAccess(
+          typeof p.account_restricted_until === 'string' ? p.account_restricted_until : null,
+        ),
       }
     })
 

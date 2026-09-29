@@ -129,6 +129,7 @@ function downloadUsersCsv(rows: User[]): void {
     'sales',
     'gmv',
     'joined',
+    'account_status',
   ]
   const lines = rows.map((u) =>
     [
@@ -145,6 +146,7 @@ function downloadUsersCsv(rows: User[]): void {
       u.sales_count,
       u.gmv,
       format(new Date(u.created_at), 'yyyy-MM-dd'),
+      u.account_access,
     ]
       .map(csvCell)
       .join(','),
@@ -227,6 +229,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
+  const [accessFilter, setAccessFilter] = useState('all')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
@@ -248,7 +251,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [searchQuery, roleFilter, pageSize, sortKey, sortDir])
+  }, [searchQuery, roleFilter, accessFilter, pageSize, sortKey, sortDir])
 
   async function fetchUsers() {
     setLoading(true)
@@ -638,6 +641,8 @@ export default function AdminUsersPage() {
         default:
           break
       }
+      if (accessFilter === 'banned' && u.account_access !== 'banned') return false
+      if (accessFilter === 'locked' && u.account_access !== 'locked') return false
       if (!q) return true
       return (
         (u.display_name?.toLowerCase().includes(q) ?? false) ||
@@ -663,7 +668,7 @@ export default function AdminUsersPage() {
       }
     })
     return result
-  }, [users, searchQuery, roleFilter, sortKey, sortDir])
+  }, [users, searchQuery, roleFilter, accessFilter, sortKey, sortDir])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -825,6 +830,16 @@ export default function AdminUsersPage() {
                 <SelectItem value="standard">Standard users</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={accessFilter} onValueChange={setAccessFilter}>
+              <SelectTrigger className="h-10 w-full bg-white sm:w-[180px]" aria-label="Account status">
+                <SelectValue placeholder="Account status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All accounts</SelectItem>
+                <SelectItem value="banned">Banned</SelectItem>
+                <SelectItem value="locked">Locked</SelectItem>
+              </SelectContent>
+            </Select>
             <Popover>
               <PopoverTrigger asChild>
                 <Button type="button" variant="outline" className="h-10 bg-white">
@@ -922,6 +937,7 @@ export default function AdminUsersPage() {
                 onClick={() => {
                   setSearchQuery('')
                   setRoleFilter('all')
+                  setAccessFilter('all')
                 }}
               >
                 Reset filters
@@ -989,8 +1005,15 @@ export default function AdminUsersPage() {
                         )}
                       </span>
                       <span className="flex min-w-0 flex-col">
-                        <span className="line-clamp-1 max-w-[200px] font-medium text-foreground group-hover:underline">
-                          {user.display_name || 'Unknown'}
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="line-clamp-1 min-w-0 font-medium text-foreground group-hover:underline">
+                            {user.display_name || 'Unknown'}
+                          </span>
+                          {user.account_access === 'banned' ? (
+                            <AdminStatusPill label="Banned" tone="red" className="shrink-0 px-2 py-0.5" />
+                          ) : user.account_access === 'locked' ? (
+                            <AdminStatusPill label="Locked" tone="amber" className="shrink-0 px-2 py-0.5" />
+                          ) : null}
                         </span>
                         <span className="line-clamp-1 max-w-[200px] text-xs text-muted-foreground">
                           {user.email ?? '—'}
