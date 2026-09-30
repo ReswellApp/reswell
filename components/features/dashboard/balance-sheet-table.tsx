@@ -124,16 +124,28 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
             Page {sheet.page} of {sheet.totalPages}
           </p>
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm" disabled={sheet.page <= 1}>
-              <Link href={`/dashboard/balance-sheet?page=${Math.max(1, sheet.page - 1)}`}>
+            {sheet.page > 1 ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/dashboard/balance-sheet?page=${sheet.page - 1}`}>
+                  <ArrowLeft className="mr-1 h-4 w-4" /> Previous
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
                 <ArrowLeft className="mr-1 h-4 w-4" /> Previous
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm" disabled={sheet.page >= sheet.totalPages}>
-              <Link href={`/dashboard/balance-sheet?page=${Math.min(sheet.totalPages, sheet.page + 1)}`}>
+              </Button>
+            )}
+            {sheet.page < sheet.totalPages ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/dashboard/balance-sheet?page=${sheet.page + 1}`}>
+                  Next <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
                 Next <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
+              </Button>
+            )}
           </div>
         </div>
       ) : null}
