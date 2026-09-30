@@ -18,7 +18,6 @@ export default function GlobalError({
   reset: () => void
 }) {
   const [recovering, setRecovering] = useState(false)
-  const [referenceCode, setReferenceCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (isChunkLoadError(error)) {
@@ -29,33 +28,6 @@ export default function GlobalError({
       }
     }
     console.error("[app] global error:", error)
-
-    // Inline fetch — avoid importing app modules that may have caused the layout failure.
-    const controller = new AbortController()
-    void fetch("/api/ops/report", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        source: "client",
-        name: error.name,
-        message: error.message || "Global error",
-        stack: error.stack,
-        digest: error.digest,
-        url: typeof window !== "undefined" ? window.location.href : undefined,
-        path: typeof window !== "undefined" ? window.location.pathname : undefined,
-        context: { boundary: "app/global-error" },
-      }),
-      keepalive: true,
-      signal: controller.signal,
-    })
-      .then(async (res) => {
-        if (!res.ok) return
-        const json = (await res.json()) as { data?: { referenceCode?: string } }
-        if (json.data?.referenceCode) setReferenceCode(json.data.referenceCode)
-      })
-      .catch(() => {})
-
-    return () => controller.abort()
   }, [error])
 
   return (
@@ -90,9 +62,9 @@ export default function GlobalError({
                     Go home
                   </a>
                 </div>
-                {(referenceCode || error.digest) && (
+                {error.digest && (
                   <p className="mt-6 text-xs text-neutral-400">
-                    Ref: {referenceCode ?? error.digest}
+                    Ref: {error.digest}
                   </p>
                 )}
               </>

@@ -1,7 +1,6 @@
 import { cache } from "react"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
-import { captureException } from "@/lib/services/opsIngest"
 import {
   fetchListingExclusiveBuyerFields,
   resolveListingExclusivePurchaseAccess,
@@ -54,10 +53,6 @@ export async function ListingDetailPeerPurchaseActionsLoader(
     )
   } catch (error) {
     console.error("[ListingDetailPeerPurchaseActionsLoader] failed", error)
-    await captureException(error, {
-      boundary: "ListingDetailPeerPurchaseActionsLoader",
-      listingId: props.listingId,
-    })
     return (
       <ListingDetailPeerPurchaseActions
         {...props}

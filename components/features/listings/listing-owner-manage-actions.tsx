@@ -2,7 +2,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { EndListingButton } from "@/components/end-listing-button"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
-import { captureException } from "@/lib/services/opsIngest"
 import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { isPeerListingSection, peerListingEditHref } from "@/lib/peer-listing-sections"
@@ -36,10 +35,6 @@ export async function ListingOwnerManageActions(props: ListingOwnerManageActions
       throw error
     }
     console.error("[ListingOwnerManageActions] failed", error)
-    await captureException(error, {
-      boundary: "ListingOwnerManageActions",
-      listingId: props.listingId,
-    })
     const editHref = peerListingEditHref(props.section, props.listingId)
     return (
       <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">

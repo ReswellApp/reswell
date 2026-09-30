@@ -1,5 +1,4 @@
 import type { ReactNode } from "react"
-import { captureException } from "@/lib/services/opsIngest"
 import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-load"
 
 function isNextControlFlowError(error: unknown): boolean {
@@ -10,8 +9,8 @@ function isNextControlFlowError(error: unknown): boolean {
 
 /**
  * Signed-in `/l` extras (owner tools, favorites, recently viewed) must never
- * take down the public PDP. On throw, log the real server error and rerender
- * as the guest catalog view.
+ * take down the public PDP. On throw, log the server error and rerender as the
+ * guest catalog view.
  */
 export async function renderListingDetailWithGuestFallback(
   props: ListingDetailPageSharedProps,
@@ -25,12 +24,6 @@ export async function renderListingDetailWithGuestFallback(
       listingParam: props.listingParam,
       anonymousPublicView: Boolean(props.anonymousPublicView),
       message: error instanceof Error ? error.message : String(error),
-    })
-    await captureException(error, {
-      boundary: "listing-detail-page",
-      path: `/l/${props.listingParam}`,
-      listingParam: props.listingParam,
-      anonymousPublicView: Boolean(props.anonymousPublicView),
     })
     if (!props.anonymousPublicView && props.prefetchedListing) {
       return render({

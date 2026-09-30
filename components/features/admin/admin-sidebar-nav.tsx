@@ -66,7 +66,6 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
     case 'waves':
       return <Waves className={NAV_ICON_CLASS} aria-hidden />
     case 'activity':
-    case 'activityPulse':
       return <Activity className={NAV_ICON_CLASS} aria-hidden />
     case 'lineChart':
       return <LineChart className={NAV_ICON_CLASS} aria-hidden />

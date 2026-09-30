@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
-  Activity,
   ArrowUpRight,
   ContactRound,
   Crown,
@@ -135,7 +134,6 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/seo', label: 'SEO', description: 'Page metadata & sitemaps', icon: Search },
       { href: '/admin/wallets', label: 'Wallet balances', description: 'Balances & payouts', icon: Wallet },
       { href: '/admin/fraud-messages', label: 'Fraud messages', description: 'Flagged conversations', icon: Shield },
-      { href: '/admin/ops', label: 'Platform ops', description: 'Site errors and fix tickets', icon: Activity },
       { href: '/admin/reswelltickets', label: 'Reswell tickets', description: 'Admin progress and bug tracker — not customer support', icon: Ticket },
       { href: '/admin/tools', label: 'Admin tools', description: 'Search, cache & lifecycle jobs', icon: Wrench },
       { href: '/admin/site-assets', label: 'Site assets', description: 'Visual inventory of site imagery', icon: Layers },
