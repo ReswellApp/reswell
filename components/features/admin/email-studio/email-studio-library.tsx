@@ -8,10 +8,10 @@ import {
   deleteEmailStudioAction,
   duplicateEmailStudioAction,
 } from "@/lib/actions/emailStudio"
-import { EMAIL_STUDIO_STARTERS } from "@/lib/email-studio/document"
 import type { EmailStudioRecord } from "@/lib/types/emailStudio"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { EmailStudioFoundationPicker } from "@/components/features/admin/email-studio/email-studio-foundation-picker"
 import { EmailStudioGenerate } from "@/components/features/admin/email-studio/email-studio-generate"
 
 export function EmailStudioLibrary({
@@ -64,37 +64,13 @@ export function EmailStudioLibrary({
           <Input value={name} placeholder="Order shipped — buyer" aria-label="Project name" onChange={(event) => setName(event.target.value)} />
           <Button disabled={creating} onClick={() => void createProject()}>{creating ? "Creating" : "Start project"}</Button>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {EMAIL_STUDIO_STARTERS.map((starter) => {
-            const selected = !templateId && starter.id === starterId
-            return (
-              <button
-                key={starter.id}
-                type="button"
-                aria-pressed={selected}
-                className={`rounded-lg border p-3 text-left transition ${
-                  selected
-                    ? "border-[#5574AD] bg-[#5574AD]/5 ring-2 ring-[#5574AD]/15"
-                    : "border-border hover:border-[#5574AD]/40 hover:bg-muted/30"
-                }`}
-                onClick={() => {
-                  setStarterId(starter.id)
-                  setTemplateId("")
-                }}
-              >
-                <span className="block text-sm font-medium">{starter.name}</span>
-                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                  {starter.description}
-                </span>
-                {starter.triggerMetric ? (
-                  <span className="mt-2 inline-flex rounded-full bg-muted px-2 py-1 text-[10px] text-muted-foreground">
-                    {starter.triggerMetric}
-                  </span>
-                ) : null}
-              </button>
-            )
-          })}
-        </div>
+        <EmailStudioFoundationPicker
+          selectedId={templateId ? "" : starterId}
+          onSelect={(id) => {
+            setStarterId(id)
+            setTemplateId("")
+          }}
+        />
         {templates.length > 0 ? (
           <label className="block max-w-sm space-y-1.5 text-xs font-medium">
             Or use one of your saved templates
