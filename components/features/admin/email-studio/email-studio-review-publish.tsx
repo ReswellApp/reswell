@@ -11,6 +11,10 @@ import {
 import {
   validateEmailStudioPreflight,
 } from "@/lib/email-studio/preflight"
+import {
+  isEmailStudioPublishComplete,
+  type EmailStudioPublishResult,
+} from "@/lib/email-studio/publish-result"
 import type { EmailStudioDocument } from "@/lib/types/emailStudio"
 import { KLAVIYO_CAMPAIGNS_URL } from "@/lib/klaviyo/web-links"
 import { Button } from "@/components/ui/button"
@@ -26,11 +30,6 @@ import { EmailStudioCampaignHandoff } from "@/components/features/admin/email-st
 import { EmailStudioReviewPreview } from "@/components/features/admin/email-studio/email-studio-review-preview"
 
 const TEST_EMAIL_STORAGE_KEY = "reswell-email-studio-test-recipient"
-
-interface PublishResult {
-  success: boolean
-  message: string
-}
 
 export function EmailStudioReviewPublish({
   open,
@@ -51,11 +50,11 @@ export function EmailStudioReviewPublish({
   html: string
   connected: boolean
   onOpenChange: (open: boolean) => void
-  onPublish: (recipient: string) => Promise<PublishResult>
+  onPublish: (recipient: string) => Promise<EmailStudioPublishResult>
 }) {
   const [recipient, setRecipient] = useState("")
   const [publishing, setPublishing] = useState(false)
-  const [result, setResult] = useState<PublishResult | null>(null)
+  const [result, setResult] = useState<EmailStudioPublishResult | null>(null)
   const issues = useMemo(
     () => validateEmailStudioPreflight({ subject, previewText, document }),
     [document, previewText, subject],
@@ -64,6 +63,7 @@ export function EmailStudioReviewPublish({
   const warnings = issues.filter((issue) => issue.severity === "warning")
   const previewHtml = useMemo(() => withEmailPreviewSamples(html), [html])
   const validRecipient = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.trim())
+  const publishComplete = isEmailStudioPublishComplete(result)
 
   useEffect(() => {
     if (!open) return
@@ -90,7 +90,7 @@ export function EmailStudioReviewPublish({
     const next = await onPublish(email)
     setResult(next)
     setPublishing(false)
-    if (next.success) {
+    if (isEmailStudioPublishComplete(next)) {
       handoff?.location.replace(KLAVIYO_CAMPAIGNS_URL)
     } else {
       handoff?.close()
@@ -130,22 +130,28 @@ export function EmailStudioReviewPublish({
                 }}
               />
               {result ? (
-                <p className={`mt-1.5 text-xs ${result.success ? "text-emerald-700" : "text-destructive"}`}>
+                <p className={`mt-1.5 text-xs ${
+                  result.status === "success"
+                    ? "text-emerald-700"
+                    : result.status === "warning"
+                      ? "text-amber-700"
+                      : "text-destructive"
+                }`}>
                   {result.message}
                 </p>
               ) : null}
             </div>
             <Button
               className="h-10 shrink-0"
-              disabled={publishing || result?.success === true || errors.length > 0 || !validRecipient || !connected}
+              disabled={publishing || publishComplete || errors.length > 0 || !validRecipient || !connected}
               onClick={() => void publish()}
             >
               {publishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              {publishing ? "Testing and publishing…" : result?.success ? "Published" : "Send test & publish"}
+              {publishing ? "Testing and publishing…" : publishComplete ? "Published" : "Send test & publish"}
             </Button>
           </div>
           {!connected ? <p className="mt-2 text-xs text-destructive">Connect the Klaviyo API key before publishing.</p> : null}
-          {result?.success ? <EmailStudioCampaignHandoff projectName={projectName} /> : null}
+          {publishComplete ? <EmailStudioCampaignHandoff projectName={projectName} /> : null}
         </footer>
       </DialogContent>
     </Dialog>

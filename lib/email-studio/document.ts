@@ -218,6 +218,8 @@ export const EMAIL_STUDIO_STARTERS: EmailStudioStarter[] = [
       createEmailFrame("spotlight", {
         title: "Still on your list",
         text: "Hey {{ first_name|default:'there' }} — this one moved. Take another look.",
+        imageSrc: "{{ event|lookup:'image_url'|default:'' }}",
+        imageAlt: "{{ event|lookup:'Title'|default:'Surfboard listing' }}",
         buttonLabel: "View listing",
         buttonHref: "{{ event|lookup:'listing_url'|default:'https://www.reswell.app' }}",
       }),

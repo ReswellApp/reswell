@@ -1,8 +1,14 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { emailStudioDocumentSchema } from "../validations/emailStudio"
+import { hydrateEmailStudioProductSnapshots } from "../services/emailStudioProducts"
+import type {
+  EmailStudioDocument,
+  EmailStudioProductSnapshot,
+} from "../types/emailStudio"
 import { cloneEmailDocument, starterById } from "./document"
 import { validateEmailStudioPreflight } from "./preflight"
+import { isEmailStudioPublishComplete } from "./publish-result"
 import {
   renderEmailStudioHtml,
   resolveEmailStudioHtml,
@@ -378,5 +384,67 @@ describe("email studio html", () => {
     assert.ok(issues.some((issue) => issue.code === "invalid-link" && issue.severity === "error"))
     assert.ok(issues.some((issue) => issue.code === "missing-footer" && issue.severity === "error"))
     assert.ok(issues.some((issue) => issue.code === "missing-preview-text" && issue.severity === "warning"))
+  })
+
+  it("keeps every product block hydrated across the document", () => {
+    const ids = Array.from(
+      { length: 6 },
+      (_, index) => `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    )
+    const snapshot = (id: string): EmailStudioProductSnapshot => ({
+      id,
+      title: `Board ${id.slice(-1)}`,
+      priceDisplay: "$500",
+      condition: "Good",
+      dimensions: "6'0″ × 20″ × 2.5″",
+      boardType: "Shortboard",
+      imageUrl: "https://www.reswell.app/board.jpg",
+      productUrl: `https://www.reswell.app/l/${id}`,
+      availability: "available",
+    })
+    const productBlock = (id: string, listingIds: string[]) => ({
+      id,
+      type: "product" as const,
+      title: "Boards",
+      listingIds,
+      items: [],
+      showPrice: true,
+      showCondition: true,
+      showDimensions: true,
+      showBoardType: true,
+      showAvailability: true,
+      ctaLabel: "View board",
+    })
+    const document: EmailStudioDocument = {
+      blocks: [
+        productBlock("00000000-0000-4000-8000-000000000101", ids.slice(0, 3)),
+        productBlock("00000000-0000-4000-8000-000000000102", ids.slice(3)),
+      ],
+    }
+
+    const hydrated = hydrateEmailStudioProductSnapshots(document, ids.map(snapshot))
+    const hydratedIds = hydrated.blocks.flatMap((block) => (
+      block.type === "product" ? block.items.map((item) => item.id) : []
+    ))
+
+    assert.deepEqual(hydratedIds, ids)
+  })
+
+  it("ships the listing spotlight starter without preflight errors", () => {
+    const starter = starterById("listing-spotlight")
+    assert.ok(starter)
+    const errors = validateEmailStudioPreflight({
+      subject: starter.subject,
+      previewText: starter.previewText,
+      document: starter.document,
+    }).filter((issue) => issue.severity === "error")
+
+    assert.deepEqual(errors, [])
+  })
+
+  it("treats verification warnings as completed publishes", () => {
+    assert.equal(isEmailStudioPublishComplete({ status: "success", message: "Published" }), true)
+    assert.equal(isEmailStudioPublishComplete({ status: "warning", message: "Verification pending" }), true)
+    assert.equal(isEmailStudioPublishComplete({ status: "error", message: "Failed" }), false)
   })
 })

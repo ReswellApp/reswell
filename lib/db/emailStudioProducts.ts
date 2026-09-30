@@ -3,7 +3,6 @@ import type {
   KlaviyoListingImage,
   KlaviyoListingProductSource,
 } from "@/lib/klaviyo/catalog-product"
-import type { ListingDimensionsWithDisplay } from "@/lib/listing-dimensions-display"
 
 const EMAIL_STUDIO_PRODUCT_SELECT = `
   id,
@@ -14,24 +13,14 @@ const EMAIL_STUDIO_PRODUCT_SELECT = `
   board_type,
   condition,
   dimensions,
-  length_feet,
-  length_inches,
-  width,
-  thickness,
-  volume,
-  length_inches_display,
-  width_inches_display,
-  thickness_inches_display,
-  volume_display,
   status,
   hidden_from_site,
   archived_at,
   listing_images ( url, thumbnail_url, is_primary, sort_order )
 `.trim()
 
-export interface EmailStudioProductRow
-  extends KlaviyoListingProductSource,
-    ListingDimensionsWithDisplay {
+export interface EmailStudioProductRow extends KlaviyoListingProductSource {
+  dimensions: string | null
   status: string
   hidden_from_site: boolean | null
   archived_at: string | null
@@ -61,7 +50,7 @@ export async function fetchEmailStudioProductRowsByIds(
   supabase: SupabaseClient,
   listingIds: readonly string[],
 ): Promise<EmailStudioProductRow[]> {
-  const ids = [...new Set(listingIds)].slice(0, 4)
+  const ids = [...new Set(listingIds)]
   if (ids.length === 0) return []
 
   const { data, error } = await supabase

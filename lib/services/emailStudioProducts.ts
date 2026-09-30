@@ -10,7 +10,7 @@ import {
   formatKlaviyoPriceDisplay,
   parseKlaviyoListingPrice,
 } from "@/lib/klaviyo/catalog-product"
-import { formatListingDimensionsLine } from "@/lib/listing-dimensions-display"
+import { formatStoredListingDimensions } from "@/lib/listing-dimensions-display"
 import {
   isListingPubliclyVisible,
   isListingPurchasable,
@@ -37,7 +37,7 @@ export function emailStudioProductSnapshot(
     title: row.title?.trim() || "Untitled listing",
     priceDisplay: formatKlaviyoPriceDisplay(parseKlaviyoListingPrice(row.price)),
     condition: row.condition?.trim() || "",
-    dimensions: formatListingDimensionsLine(row) ?? "",
+    dimensions: formatStoredListingDimensions(row.dimensions) ?? "",
     boardType: row.board_type?.trim() || "",
     imageUrl: absoluteKlaviyoListingImageUrl(row),
     productUrl: absoluteKlaviyoListingUrl(row),
@@ -57,7 +57,7 @@ export async function loadEmailStudioProducts(
   supabase: SupabaseClient,
   listingIds: readonly string[],
 ): Promise<EmailStudioProductSnapshot[]> {
-  const ids = [...new Set(listingIds)].slice(0, 4)
+  const ids = [...new Set(listingIds)]
   const rows = await fetchEmailStudioProductRowsByIds(supabase, ids)
   const snapshots = new Map(rows.map((row) => [row.id, emailStudioProductSnapshot(row)]))
   return ids.flatMap((id) => {
@@ -66,14 +66,10 @@ export async function loadEmailStudioProducts(
   })
 }
 
-export async function hydrateEmailStudioProductBlocks(
-  supabase: SupabaseClient,
+export function hydrateEmailStudioProductSnapshots(
   document: EmailStudioDocument,
-): Promise<EmailStudioDocument> {
-  const ids = document.blocks.flatMap((block) => block.type === "product" ? block.listingIds : [])
-  if (ids.length === 0) return document
-
-  const liveItems = await loadEmailStudioProducts(supabase, ids)
+  liveItems: readonly EmailStudioProductSnapshot[],
+): EmailStudioDocument {
   const liveById = new Map(liveItems.map((item) => [item.id, item]))
   const blocks: EmailBlock[] = document.blocks.map((block) => {
     if (block.type !== "product") return block
@@ -89,4 +85,15 @@ export async function hydrateEmailStudioProductBlocks(
     }
   })
   return { ...document, blocks }
+}
+
+export async function hydrateEmailStudioProductBlocks(
+  supabase: SupabaseClient,
+  document: EmailStudioDocument,
+): Promise<EmailStudioDocument> {
+  const ids = document.blocks.flatMap((block) => block.type === "product" ? block.listingIds : [])
+  if (ids.length === 0) return document
+
+  const liveItems = await loadEmailStudioProducts(supabase, ids)
+  return hydrateEmailStudioProductSnapshots(document, liveItems)
 }

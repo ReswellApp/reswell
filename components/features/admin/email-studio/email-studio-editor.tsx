@@ -46,6 +46,7 @@ import {
   renderEmailStudioHtml,
   resolveEmailStudioHtml,
 } from "@/lib/email-studio/render-html"
+import type { EmailStudioPublishResult } from "@/lib/email-studio/publish-result"
 import { KNOWN_KLAVIYO_METRIC_NAMES } from "@/lib/klaviyo/event-log-shared"
 import type {
   EmailBlockType,
@@ -339,20 +340,20 @@ export function EmailStudioEditor({
     router.refresh()
   }
 
-  async function reviewAndPublish(recipient: string): Promise<{ success: boolean; message: string }> {
+  async function reviewAndPublish(recipient: string): Promise<EmailStudioPublishResult> {
     const ok = await save({ flush: true })
-    if (!ok) return { success: false, message: "Save the email before publishing." }
+    if (!ok) return { status: "error", message: "Save the email before publishing." }
     const test = await sendEmailStudioTestAction({
       id: draft.id,
       recipient,
     })
     if ("error" in test) {
-      return { success: false, message: test.error }
+      return { status: "error", message: test.error }
     }
     const published = await pushEmailStudioToKlaviyoAction({ id: draft.id })
     if ("error" in published) {
       return {
-        success: false,
+        status: "error",
         message: `Test queued for ${recipient}, but final Klaviyo verification failed: ${published.error}`,
       }
     }
@@ -365,12 +366,12 @@ export function EmailStudioEditor({
     router.refresh()
     if (published.warning) {
       return {
-        success: false,
+        status: "warning",
         message: `Test queued for ${recipient}. ${published.warning}`,
       }
     }
     toast.success("Test queued and approved version published.")
-    return { success: true, message: `Test queued for ${recipient}. Approved version verified in Klaviyo.` }
+    return { status: "success", message: `Test queued for ${recipient}. Approved version verified in Klaviyo.` }
   }
 
   function navigateAfterSave(event: ReactMouseEvent<HTMLAnchorElement>, href: string): void {
