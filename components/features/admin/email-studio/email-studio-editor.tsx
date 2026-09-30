@@ -35,7 +35,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import {
-  pushEmailStudioToKlaviyoAction,
   saveEmailStudioTemplateAction,
   sendEmailStudioTestAction,
 } from "@/lib/actions/emailStudio"
@@ -350,24 +349,17 @@ export function EmailStudioEditor({
     if ("error" in test) {
       return { status: "error", message: test.error }
     }
-    const published = await pushEmailStudioToKlaviyoAction({ id: draft.id })
-    if ("error" in published) {
-      return {
-        status: "error",
-        message: `Test queued for ${recipient}, but final Klaviyo verification failed: ${published.error}`,
-      }
-    }
     mergeServerFields({
-      klaviyoTemplateId: published.templateId,
-      klaviyoSyncedRevision: published.syncedRevision,
-      klaviyoContentChecksum: published.checksum,
-      klaviyoSyncedAt: published.syncedAt,
+      klaviyoTemplateId: test.templateId,
+      klaviyoSyncedRevision: test.syncedRevision,
+      klaviyoContentChecksum: test.checksum,
+      klaviyoSyncedAt: test.syncedAt,
     })
     router.refresh()
-    if (published.warning) {
+    if (test.warning) {
       return {
         status: "warning",
-        message: `Test queued for ${recipient}. ${published.warning}`,
+        message: `Test queued for ${recipient}. ${test.warning}`,
       }
     }
     toast.success("Test queued and approved version published.")

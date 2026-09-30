@@ -11,7 +11,11 @@ import {
   starterById,
   blankEmailDocument,
 } from "@/lib/email-studio/document"
-import { renderEmailStudioText, resolveEmailStudioHtml } from "@/lib/email-studio/render-html"
+import {
+  EMAIL_STUDIO_PREVIEW_SAMPLE,
+  renderEmailStudioText,
+  resolveEmailStudioHtml,
+} from "@/lib/email-studio/render-html"
 import { validateEmailStudioPreflight } from "@/lib/email-studio/preflight"
 import {
   deleteEmailStudioDocument,
@@ -265,16 +269,18 @@ type KlaviyoTemplateResponse = {
   }
 }
 
-export async function pushEmailStudioToKlaviyoService(
-  id: string,
-): Promise<{
+interface EmailStudioKlaviyoPublishSuccess {
   success: true
   templateId: string
   syncedRevision: number | null
   checksum: string | null
   syncedAt: string | null
   warning: string | null
-} | ServiceError> {
+}
+
+export async function pushEmailStudioToKlaviyoService(
+  id: string,
+): Promise<EmailStudioKlaviyoPublishSuccess | ServiceError> {
   const staff = await requireStaff()
   if (!staff.ok) return { error: staff.error }
   try {
@@ -389,24 +395,14 @@ export async function hydrateEmailStudioProductsService(
 export async function sendEmailStudioTestService(
   id: string,
   recipient: string,
-): Promise<{ success: true; jobId: string } | ServiceError> {
+): Promise<(EmailStudioKlaviyoPublishSuccess & { jobId: string }) | ServiceError> {
   const staff = await requireStaff()
   if (!staff.ok) return { error: staff.error }
   try {
-    const client = dbClient(staff.supabase)
-    let existing = await getEmailStudioDocument(client, id)
-    if (!existing) return { error: "Project not found" }
-    if (
-      !existing.klaviyoTemplateId
-      || existing.klaviyoSyncedRevision !== existing.revision
-    ) {
-      const pushed = await pushEmailStudioToKlaviyoService(id)
-      if ("error" in pushed) return pushed
-      existing = await getEmailStudioDocument(client, id)
-      if (!existing) return { error: "Project not found after Klaviyo sync" }
-    }
-    const templateId = existing.klaviyoTemplateId
-    if (!templateId) return { error: "Push the template to Klaviyo before sending a test." }
+    // Hydrate and publish on every test so live listing data cannot drift from
+    // the template the reviewer receives, even when the revision is unchanged.
+    const pushed = await pushEmailStudioToKlaviyoService(id)
+    if ("error" in pushed) return pushed
     const sent = await klaviyoWrite<{ data?: { id?: string } }>(
       "POST",
       "/api/template-preview-send-jobs",
@@ -416,19 +412,15 @@ export async function sendEmailStudioTestService(
           attributes: {
             recipients: [recipient],
             context: {
-              first_name: "Alex",
-              event: {
-                order_num: "RW-1042",
-                Title: "6'2 Reswell Test Board",
-                "$value": "$640",
-                order_url: "https://www.reswell.app",
-                listing_url: "https://www.reswell.app",
-              },
+              email: EMAIL_STUDIO_PREVIEW_SAMPLE.profile.email,
+              first_name: EMAIL_STUDIO_PREVIEW_SAMPLE.profile.firstName,
+              last_name: EMAIL_STUDIO_PREVIEW_SAMPLE.profile.lastName,
+              event: EMAIL_STUDIO_PREVIEW_SAMPLE.event,
             },
           },
           relationships: {
             template: {
-              data: { type: "template", id: templateId },
+              data: { type: "template", id: pushed.templateId },
             },
           },
         },
@@ -438,7 +430,7 @@ export async function sendEmailStudioTestService(
     if (!sent.ok) return { error: sent.detail || "Klaviyo rejected the test send" }
     const jobId = sent.data.data?.id
     if (!jobId) return { error: "Klaviyo accepted the test without a job id" }
-    return { success: true, jobId }
+    return { ...pushed, jobId }
   } catch (error) {
     console.error("[email_studio] test send failed", error)
     return { error: "Could not send this test email" }

@@ -423,6 +423,28 @@ export interface EmailPreviewData {
   event: Record<string, unknown>
 }
 
+export const EMAIL_STUDIO_PREVIEW_SAMPLE: EmailPreviewData = {
+  profile: {
+    email: "alex@example.com",
+    firstName: "Alex",
+    lastName: "Surfer",
+  },
+  event: {
+    order_num: "RW-1042",
+    Title: "6'2 Pyzel Ghost",
+    "$value": "$640",
+    order_url: "https://www.reswell.app/dashboard/purchases",
+    listing_url: "https://www.reswell.app/boards",
+    image_url: "https://www.reswell.app/opengraph-image.jpg",
+    price_label: "$640 · Excellent condition",
+    seller_payout: "$576",
+    carrier: "UPS",
+    tracking_number: "1Z999AA10123456784",
+    tracking_url: "https://www.ups.com/track?tracknum=1Z999AA10123456784",
+    review_url: "https://www.reswell.app/dashboard/purchases",
+  },
+}
+
 /** Replaces Klaviyo tags for the preview pane only. Pushed HTML stays untouched. */
 export function withEmailPreviewData(html: string, data: EmailPreviewData): string {
   const profileValues: Record<string, unknown> = {
@@ -450,16 +472,7 @@ export function withEmailPreviewData(html: string, data: EmailPreviewData): stri
 
 /** Stable fallback when no live Klaviyo event has reached this metric yet. */
 export function withEmailPreviewSamples(html: string): string {
-  return withEmailPreviewData(html, {
-    profile: { email: "alex@example.com", firstName: "Alex", lastName: "Surfer" },
-    event: {
-      order_num: "RW-1042",
-      Title: "6'2 Pyzel Ghost",
-      "$value": "$640",
-      order_url: "https://www.reswell.app",
-      listing_url: "https://www.reswell.app",
-    },
-  })
+  return withEmailPreviewData(html, EMAIL_STUDIO_PREVIEW_SAMPLE)
 }
 
 export function renderEmailStudioText(input: EmailStudioRenderInput): string {

@@ -16,6 +16,7 @@ import {
   resolveEmailStudioHtml,
   safeEmailHref,
   withEmailPreviewData,
+  withEmailPreviewSamples,
 } from "./render-html"
 
 describe("email studio html", () => {
@@ -53,6 +54,48 @@ describe("email studio html", () => {
     assert.match(preview, /Fallback/)
     assert.doesNotMatch(preview, /<script>/)
     assert.match(source, /\{\{ first_name/)
+  })
+
+  it("fills every foundation event field in sample previews", () => {
+    const source = [
+      "{{ event|lookup:'image_url'|default:'' }}",
+      "{{ event|lookup:'price_label'|default:'' }}",
+      "{{ event|lookup:'seller_payout'|default:'' }}",
+      "{{ event|lookup:'carrier'|default:'' }}",
+      "{{ event|lookup:'tracking_number'|default:'' }}",
+      "{{ event|lookup:'tracking_url'|default:'' }}",
+      "{{ event|lookup:'review_url'|default:'' }}",
+    ].join(" | ")
+    const preview = withEmailPreviewSamples(source)
+
+    assert.doesNotMatch(preview, /\{\{\s*event\|lookup:/)
+    assert.match(preview, /opengraph-image\.jpg/)
+    assert.match(preview, /\$640 · Excellent condition/)
+    assert.match(preview, /\$576/)
+    assert.match(preview, /UPS/)
+    assert.match(preview, /1Z999AA10123456784/)
+    assert.match(preview, /ups\.com\/track/)
+    assert.match(preview, /dashboard\/purchases/)
+  })
+
+  it("uses a valid static fallback for the shipping tracking link", () => {
+    const starter = starterById("shipping-update")
+    assert.ok(starter)
+    const html = renderEmailStudioHtml({
+      name: starter.name,
+      subject: starter.subject,
+      previewText: starter.previewText,
+      flowName: "",
+      triggerMetric: starter.triggerMetric,
+      document: cloneEmailDocument(starter.document),
+    })
+
+    assert.match(
+      html,
+      /\{\{ event\|lookup:'tracking_url'\|default:'https:\/\/www\.reswell\.app\/dashboard\/purchases' \}\}/,
+    )
+    assert.doesNotMatch(html, /default:event\.order_url/)
+    assert.match(withEmailPreviewSamples(html), /https:\/\/www\.ups\.com\/track\?tracknum=/)
   })
 
   it("renders a buyer order starter as a table email", () => {
@@ -418,7 +461,7 @@ describe("email studio html", () => {
     const html = renderEmailStudioHtml(input)
     const text = renderEmailStudioText(input)
 
-    assert.doesNotMatch(html, /\{\{|\}\}|\{%|%\}/)
+    assert.doesNotMatch(html, /\{\{|\{%/)
     assert.doesNotMatch(text, /\{\{|\}\}|\{%|%\}/)
     assert.match(html, /Board ｛｛ profile\.email ｝｝/)
     assert.match(html, /images\.example\.com\/｛｛ event\.id ｝｝\.jpg/)

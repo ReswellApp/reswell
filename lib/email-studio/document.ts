@@ -384,7 +384,7 @@ export const EMAIL_STUDIO_STARTERS: EmailStudioStarter[] = [
         heading: "Track the shipment",
         text: "The latest scan and seller messages are available on Reswell.",
         buttonLabel: "Track order",
-        buttonHref: "{{ event|lookup:'tracking_url'|default:event.order_url|default:'https://www.reswell.app/dashboard/purchases' }}",
+        buttonHref: "{{ event|lookup:'tracking_url'|default:'https://www.reswell.app/dashboard/purchases' }}",
       }),
       createEmailBlock("footer"),
     ],
