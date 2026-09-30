@@ -1,12 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { BookOpen, Eye, EyeOff, Layers2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { Eye, EyeOff, Layers2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ListingDetailAdminCartHolders } from "@/components/features/listings/listing-detail-admin-cart-holders"
 import { ListingDetailAdminCatalogDialogs } from "@/components/features/listings/listing-detail-admin-catalog-dialogs"
 import { ListingDetailAdminMoreMenu } from "@/components/features/listings/listing-detail-admin-more-menu"
-import { ListingDetailAdminRelatedBlogDialog } from "@/components/features/listings/listing-detail-admin-related-blog-dialog"
 import { ListingDetailAdminSearchTags } from "@/components/features/listings/listing-detail-admin-search-tags"
 import { useListingDetailAdminBar } from "@/components/features/listings/hooks/use-listing-detail-admin-bar"
 import type {
@@ -49,7 +48,6 @@ export function ListingDetailAdminBar({
   const [brandOpen, setBrandOpen] = React.useState(false)
   const [modelOpen, setModelOpen] = React.useState(false)
   const [linkOpen, setLinkOpen] = React.useState(false)
-  const [blogOpen, setBlogOpen] = React.useState(false)
   const busy = actions.busy !== null
 
   return (
@@ -99,10 +97,6 @@ export function ListingDetailAdminBar({
             <Layers2 />
             Model
           </Button>
-          <Button type="button" size="sm" variant="ghost" className={actionClass} onClick={() => setBlogOpen(true)}>
-            <BookOpen />
-            Blog
-          </Button>
           <ListingDetailAdminSearchTags listing={listing} actionClass={actionClass} />
           <Button
             type="button"
@@ -140,7 +134,6 @@ export function ListingDetailAdminBar({
         linkOpen={linkOpen}
         onLinkOpenChange={setLinkOpen}
       />
-      <ListingDetailAdminRelatedBlogDialog listing={listing} open={blogOpen} onOpenChange={setBlogOpen} />
     </div>
   )
 }
