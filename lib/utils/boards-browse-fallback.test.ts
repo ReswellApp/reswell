@@ -1,9 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import {
-  resolveNearbyBrowseFallbackRows,
-  type BrowseFallbackSourceRow,
-} from "./boards-browse-fallback.ts"
+// @ts-expect-error Node's strip-types runner requires the source extension.
+import { resolveNearbyBrowseFallbackRows, type BrowseFallbackSourceRow } from "./boards-browse-fallback.ts"
 
 function row(
   id: string,

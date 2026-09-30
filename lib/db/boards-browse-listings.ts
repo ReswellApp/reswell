@@ -87,7 +87,7 @@ export type BoardBrowseListingRow = {
  * clauses and private pricing, shipping-pack, and guest-token columns never
  * cross the PostgREST boundary.
  */
-export const SURFBOARD_BROWSE_LISTING_SELECT = `
+const SURFBOARD_BROWSE_LISTING_COLUMNS = `
   id,
   slug,
   user_id,
@@ -106,12 +106,16 @@ export const SURFBOARD_BROWSE_LISTING_SELECT = `
   tile_gallery_images,
   board_type,
   condition,
-  suppressed_on_boards_browse,
+  suppressed_on_boards_browse
+`
+
+export const SURFBOARD_BROWSE_LISTING_SELECT = `
+  ${SURFBOARD_BROWSE_LISTING_COLUMNS},
   categories (name)
 `
 
 const SURFBOARD_BROWSE_FALLBACK_SELECT = `
-  ${SURFBOARD_BROWSE_LISTING_SELECT},
+  ${SURFBOARD_BROWSE_LISTING_COLUMNS},
   description,
   brand,
   fins_setup,

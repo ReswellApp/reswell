@@ -101,7 +101,7 @@ export async function fetchPurchasableFavoriteListingsForKlaviyo(
 
   const listings: KlaviyoFavoriteListingRow[] = []
   for (const row of data ?? []) {
-    const raw = row as { listing: unknown | unknown[] | null }
+    const raw = row as unknown as { listing: unknown | unknown[] | null }
     const nested = raw.listing
     const listingRaw = Array.isArray(nested) ? nested[0] : nested
     const listing = normalizeFavoriteListingRow(listingRaw)

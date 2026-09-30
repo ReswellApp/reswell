@@ -1,7 +1,5 @@
-import {
-  hydrateCardListingImages,
-  type ListingImageForCard,
-} from "../listing-image-display.ts"
+// @ts-expect-error Node's strip-types runner requires the source extension.
+import { hydrateCardListingImages, type ListingImageForCard } from "../listing-image-display.ts"
 
 export const NEARBY_BROWSE_FALLBACK_RADIUS_MI = 100
 
@@ -29,7 +27,7 @@ export type BrowseFallbackCardRow = {
   suppressed_on_boards_browse?: boolean | null
 }
 
-export type BrowseFallbackSourceRow = BrowseFallbackCardRow & {
+export type BrowseFallbackSourceRow = Omit<BrowseFallbackCardRow, "categories"> & {
   description?: string | null
   brand?: string | null
   fins_setup?: string | null
