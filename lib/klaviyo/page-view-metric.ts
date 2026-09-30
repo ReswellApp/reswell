@@ -46,3 +46,8 @@ export function klaviyoPageViewMetricForPathname(
   }
   return { metricName: "Viewed Site Page", segment: "site" }
 }
+
+/** Only verify a page-view user when the request may contain a signed-in session. */
+export function pageViewRequiresUserLookup(hasAuthCookies: boolean): boolean {
+  return hasAuthCookies
+}

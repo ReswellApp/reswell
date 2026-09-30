@@ -187,7 +187,7 @@ async function refreshSupabaseSession(
   let user: Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user'] =
     null
   let authLookupFailedUpstream = false
-  const getUserAttempts = 5
+  const getUserAttempts = 2
   const getUserRetryDelayMs = 300
   for (let attempt = 0; attempt < getUserAttempts; attempt += 1) {
     try {

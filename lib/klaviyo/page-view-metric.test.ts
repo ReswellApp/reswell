@@ -5,6 +5,7 @@ import {
   isListingProductPathname,
   klaviyoPageViewMetricForPathname,
   listingParamFromProductPathname,
+  pageViewRequiresUserLookup,
 } from "./page-view-metric.ts"
 
 describe("isListingProductPathname", () => {
@@ -72,5 +73,15 @@ describe("klaviyoPageViewMetricForPathname", () => {
       metricName: "Viewed Sell Page",
       segment: "sell",
     })
+  })
+})
+
+describe("pageViewRequiresUserLookup", () => {
+  it("bypasses Auth for every cookie-less page-view beacon", () => {
+    assert.equal(pageViewRequiresUserLookup(false), false)
+  })
+
+  it("keeps verified signed-in enrichment when auth cookies exist", () => {
+    assert.equal(pageViewRequiresUserLookup(true), true)
   })
 })
