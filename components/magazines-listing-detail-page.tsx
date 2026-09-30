@@ -33,7 +33,6 @@ import { ListingBoardSpecTable } from "@/components/features/listings/listing-bo
 import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
 import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
-import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
 import { cn } from "@/lib/utils"
@@ -681,8 +680,6 @@ async function renderMagazinesListingDetailPage({
               </div>
             ) : null}
         </div>
-
-        <ListingRelatedContentSection listingId={magazine.id as string} variant="embedded" />
 
         {sellerMagazines && sellerMagazines.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">

@@ -30,7 +30,6 @@ export function AdminGuard({
         pathname === '/admin/ads' ||
         pathname.startsWith('/admin/ads/') ||
         pathname === '/admin/search-curation' ||
-        pathname === '/admin/related-content' ||
         pathname === '/admin/shipping' ||
         pathname === '/admin/dropoff-locations' ||
         pathname === '/admin/tools' ||
