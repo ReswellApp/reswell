@@ -176,6 +176,10 @@ export function EmailStudioEditor({
       const target = event.target as HTMLElement | null
       const editing = target?.matches("input, textarea, [contenteditable='true']")
       if (event.key === "Escape" && !editing) {
+        if (mode === "preview") {
+          setMode("display")
+          return
+        }
         setSelectedId(null)
         setInspecting(false)
         return
@@ -572,14 +576,6 @@ export function EmailStudioEditor({
               }}
             />
           ) : null}
-          {mode === "preview" ? (
-            <EmailStudioLivePreview
-              projectId={draft.id}
-              metricName={draft.triggerMetric}
-              html={html}
-              width={frameWidth}
-            />
-          ) : null}
           {mode === "code" ? (
             <textarea
               value={draft.document.htmlOverride ?? generatedHtml}
@@ -791,6 +787,14 @@ export function EmailStudioEditor({
         ) : null}
       </DragOverlay>
       </DndContext>
+      {mode === "preview" ? (
+        <EmailStudioLivePreview
+          projectId={draft.id}
+          metricName={draft.triggerMetric}
+          html={html}
+          onClose={() => setMode("display")}
+        />
+      ) : null}
     </div>
   )
 }
