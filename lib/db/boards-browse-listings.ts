@@ -36,6 +36,10 @@ import {
   volumeBucketBySlug,
   type BoardsBrowseFacetSelections,
 } from "@/lib/boards-browse-facets"
+import {
+  executeNearbyBrowseFallback,
+  type NearbyBrowseFallbackKind,
+} from "@/lib/utils/boards-browse-fallback"
 
 /**
  * Explicit chain type so `async function` return is not inferred as `PostgrestSingleResponse`
@@ -78,14 +82,35 @@ export type BoardBrowseListingRow = {
 }
 
 /**
- * Card cover + carousel come from denormalized primary_* / tile_gallery_images
- * (no listing_images join). `*` still used for browse filters; nest removed to
- * cut PostgREST lateral cost.
+ * Smallest public surfboard tile projection. Filter-only columns stay in WHERE
+ * clauses and private pricing, shipping-pack, and guest-token columns never
+ * cross the PostgREST boundary.
  */
+const SURFBOARD_BROWSE_LISTING_COLUMNS = `
+  id,
+  slug,
+  user_id,
+  title,
+  price,
+  compare_at_price,
+  is_good_deal,
+  status,
+  created_at,
+  latitude,
+  longitude,
+  local_pickup,
+  shipping_available,
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images,
+  board_type,
+  condition,
+  suppressed_on_boards_browse
+`
+
 export const SURFBOARD_BROWSE_LISTING_SELECT = `
-  *,
-  categories (name),
-  profiles!listings_user_id_fkey (display_name, avatar_url, location, shop_verified)
+  ${SURFBOARD_BROWSE_LISTING_COLUMNS},
+  categories (name)
 `
 
 // 30 fills full rows on 2/3-col and lg 4-col grids (xl 5-col leaves a short last row),
@@ -697,6 +722,134 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
     rows.length === 0 ? 0 : Math.max(1, Math.ceil(rows.length / params.limit))
   const boards = rows.slice(params.offset, params.offset + params.limit)
   return { boards, totalPages }
+}
+
+type NearbySurfboardFallbackParams = {
+  supabase: SupabaseClient
+  anchorLat: number
+  anchorLng: number
+  boardType: string
+  condition: string
+  query: string
+  brand?: string
+  model?: string
+  brandId?: string
+  brandModelId?: string
+  dimensionFields?: BoardDimensionBrowseFields
+  legacyDimensions?: string
+  facets?: BoardsBrowseFacetSelections
+  minPrice?: number
+  maxPrice?: number
+  shippingAvailable?: boolean
+  offset: number
+  limit: number
+  useSuppressionSort?: boolean
+}
+
+type NearbyFallbackRpcRow = {
+  id: string
+  fallback_kind: NearbyBrowseFallbackKind
+  total_count: number | string
+}
+
+function nearbyFallbackFilters(
+  params: NearbySurfboardFallbackParams,
+): Record<string, unknown> {
+  const facets = params.facets
+  const styleSlugs = facets?.styles?.length
+    ? facets.styles
+    : params.boardType !== "all"
+      ? [params.boardType]
+      : []
+  const boardTypes = Array.from(
+    new Set(
+      styleSlugs
+        .map((slug) => boardTypeForDbFromBrowseParam(slug))
+        .filter((value): value is string => Boolean(value)),
+    ),
+  )
+  const dimensionTokens = boardDimensionBrowseIlikeTokens(
+    params.dimensionFields ??
+      boardDimensionBrowseFieldsFromSearchParams({
+        legacyDimensions: params.legacyDimensions,
+      }),
+  )
+  return {
+    boardTypes,
+    categoryIds: categoryIdsForBrowseBoardTypes(styleSlugs),
+    styleTags: listingSearchTagSlugsForStyles(styleSlugs),
+    conditions:
+      facets?.conditions?.length
+        ? facets.conditions
+        : params.condition !== "all"
+          ? [params.condition]
+          : [],
+    finSystems: facets?.finSystems ?? [],
+    constructions: facets?.constructions ?? [],
+    finSetups: facets?.finSetups ?? [],
+    lengthRanges: (facets?.lengthBuckets ?? [])
+      .map((slug) => lengthBucketBySlug(slug))
+      .filter((range): range is NonNullable<typeof range> => Boolean(range))
+      .map((range) => ({ min_value: range.min, max_value: range.max })),
+    volumeRanges: (facets?.volumeBuckets ?? [])
+      .map((slug) => volumeBucketBySlug(slug))
+      .filter((range): range is NonNullable<typeof range> => Boolean(range))
+      .map((range) => ({ min_value: range.min, max_value: range.max })),
+    dimensionTokens,
+    brandId: params.brandModelId ? null : params.brandId ?? null,
+    brandModelId: params.brandModelId ?? null,
+    brand: params.brand ?? null,
+    model: params.model ?? null,
+    minPrice:
+      params.minPrice != null && Number.isFinite(params.minPrice) && params.minPrice >= 0
+        ? params.minPrice
+        : null,
+    maxPrice:
+      params.maxPrice != null && Number.isFinite(params.maxPrice) && params.maxPrice >= 0
+        ? params.maxPrice
+        : null,
+    shippingAvailable: params.shippingAvailable === true,
+  }
+}
+
+/**
+ * One RLS-invoker RPC applies browse filters and keyword/distance tiering in
+ * Postgres, returning a bounded ID page. A second narrow query hydrates cards.
+ */
+export async function fetchNearbySurfboardFallback(
+  params: NearbySurfboardFallbackParams,
+): Promise<{
+  boards: BoardBrowseListingRow[]
+  totalPages: number
+  kind: NearbyBrowseFallbackKind | null
+}> {
+  return executeNearbyBrowseFallback({
+    selectIds: async () => {
+      const { data, error } = await params.supabase.rpc("boards_browse_geo_fallback", {
+        p_anchor_lat: params.anchorLat,
+        p_anchor_lng: params.anchorLng,
+        p_query: params.query,
+        p_filters: nearbyFallbackFilters(params),
+        p_offset: params.offset,
+        p_limit: params.limit,
+      })
+      if (error) {
+        console.error("fetchNearbySurfboardFallback:", describeBrowseQueryError(error))
+        return { ids: [], totalPages: 0, kind: null }
+      }
+      const rows = (data ?? []) as NearbyFallbackRpcRow[]
+      const totalCount = Number(rows[0]?.total_count ?? 0)
+      return {
+        ids: rows.map((row) => row.id),
+        totalPages:
+          totalCount > 0 && Number.isFinite(totalCount)
+            ? Math.max(1, Math.ceil(totalCount / params.limit))
+            : 0,
+        kind: rows[0]?.fallback_kind ?? null,
+      }
+    },
+    hydrate: (ids) => hydrateSurfboardBrowseRowsByIds(params.supabase, ids),
+  })
 }
 
 function hasNonEmptyParam(value: string | undefined): boolean {

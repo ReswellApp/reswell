@@ -6,6 +6,7 @@ import {
 } from "@/lib/peer-listing-sections"
 import { isReswellShopListing, RESWELL_SHOP_SECTION } from "@/lib/reswell-shop"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
+import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -64,7 +65,8 @@ export async function fetchCheckoutCartListingsForSeller(
       ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT},
       stock_quantity,
       slug,
-      listing_images ( url, thumbnail_url, is_primary )
+      primary_image_url,
+      primary_thumbnail_url
     `.trim(),
     )
     .in("id", orderedIds)
@@ -78,7 +80,15 @@ export async function fetchCheckoutCartListingsForSeller(
   }
 
   const byId = new Map<string, CheckoutCartListingRow>()
-  for (const row of listingRows as unknown as CheckoutCartListingRow[]) {
+  const hydratedRows = hydrateCardListingImages(
+    listingRows as unknown as Array<
+      CheckoutCartListingRow & {
+        primary_image_url?: string | null
+        primary_thumbnail_url?: string | null
+      }
+    >,
+  )
+  for (const row of hydratedRows) {
     byId.set(row.id, row)
   }
 

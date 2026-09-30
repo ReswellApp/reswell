@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { KlaviyoListingProductSource } from "@/lib/klaviyo/catalog-product"
 import { isListingPurchasable, type ListingPublicVisibilityFields } from "@/lib/listing-public-visibility"
+import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
 
 const FAVORITE_LISTING_SELECT = `
   id,
@@ -18,7 +19,8 @@ const FAVORITE_LISTING_SELECT = `
   status,
   hidden_from_site,
   archived_at,
-  listing_images ( url, thumbnail_url, is_primary, sort_order )
+  primary_image_url,
+  primary_thumbnail_url
 `.trim()
 
 export type KlaviyoFavoriteListingRow = KlaviyoListingProductSource &
@@ -48,9 +50,10 @@ function normalizeFavoriteListingRow(raw: unknown): KlaviyoFavoriteListingRow | 
     status,
     hidden_from_site: row.hidden_from_site as boolean | null | undefined,
     archived_at: row.archived_at as string | null | undefined,
-    listing_images: Array.isArray(row.listing_images)
-      ? (row.listing_images as KlaviyoListingProductSource["listing_images"])
-      : null,
+    listing_images: listingImagesFromPrimaryFields(
+      typeof row.primary_image_url === "string" ? row.primary_image_url : null,
+      typeof row.primary_thumbnail_url === "string" ? row.primary_thumbnail_url : null,
+    ),
   }
 }
 
@@ -98,7 +101,7 @@ export async function fetchPurchasableFavoriteListingsForKlaviyo(
 
   const listings: KlaviyoFavoriteListingRow[] = []
   for (const row of data ?? []) {
-    const raw = row as { listing: unknown | unknown[] | null }
+    const raw = row as unknown as { listing: unknown | unknown[] | null }
     const nested = raw.listing
     const listingRaw = Array.isArray(nested) ? nested[0] : nested
     const listing = normalizeFavoriteListingRow(listingRaw)

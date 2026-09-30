@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import {
+  hydrateCardListingImages,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import type { PriceGuideCategorySlug } from "@/lib/price-guide/categories"
 
 const FETCH_PAGE = 1000
@@ -274,14 +278,9 @@ export type PriceGuideLiveListingRow = {
   dimensions: string | null
   city: string | null
   state: string | null
-  listing_images:
-    | Array<{
-        url?: string | null
-        thumbnail_url?: string | null
-        is_primary?: boolean | null
-        sort_order?: number | null
-      }>
-    | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
+  listing_images: ListingImageForCard[] | null
 }
 
 export async function selectPriceGuideLiveListings(
@@ -292,7 +291,7 @@ export async function selectPriceGuideLiveListings(
   let query = supabase
     .from("listings")
     .select(
-      "id, slug, title, price, condition, dimensions, city, state, listing_images (url, thumbnail_url, is_primary, sort_order)",
+      "id, slug, title, price, condition, dimensions, city, state, primary_image_url, primary_thumbnail_url",
     )
     .eq("section", filters.section)
     .eq("brand_id", filters.brandId)
@@ -310,5 +309,5 @@ export async function selectPriceGuideLiveListings(
     if (error) console.error("[price-guide] live listings:", error.message)
     return []
   }
-  return data as PriceGuideLiveListingRow[]
+  return hydrateCardListingImages(data as unknown as PriceGuideLiveListingRow[])
 }

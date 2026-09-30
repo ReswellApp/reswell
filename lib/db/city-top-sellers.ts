@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  hydrateCardListingImages,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import { applyListingsLocationTextFilter } from "@/lib/listing-location-or-filter"
 
 export const CITY_TOP_SELLERS_LISTINGS_FETCH_CAP = 2000
@@ -10,6 +13,8 @@ export type CityTopSellerListingSeed = {
   state: string | null
   status: string | null
   shipping_available: boolean | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
   listing_images: ListingImageForCard[] | null
 }
 
@@ -39,7 +44,7 @@ export async function listCityTopSellerListingSeeds(
   let query = supabase
     .from("listings")
     .select(
-      "user_id, city, state, status, shipping_available, listing_images (url, thumbnail_url, is_primary)",
+      "user_id, city, state, status, shipping_available, primary_image_url, primary_thumbnail_url",
     )
     .eq("section", "surfboards")
     .in("status", ["active", "sold"])
@@ -55,7 +60,7 @@ export async function listCityTopSellerListingSeeds(
     return []
   }
 
-  return (data ?? []) as CityTopSellerListingSeed[]
+  return hydrateCardListingImages((data ?? []) as unknown as CityTopSellerListingSeed[])
 }
 
 export async function listCityTopSellerProfiles(

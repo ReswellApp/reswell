@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  listingHeroSlideSrc,
+  listingImagesFromPrimaryFields,
+} from "@/lib/listing-image-display"
 
 /** True when `listings.suppressed_on_boards_browse` exists (migration applied). */
 export async function isBoardsBrowseSuppressionSortAvailable(
@@ -23,7 +26,8 @@ const ADMIN_SURFBOARD_PICKER_SELECT = `
   hidden_from_site,
   suppressed_on_boards_browse,
   is_good_deal,
-  listing_images (url, thumbnail_url, is_primary)
+  primary_image_url,
+  primary_thumbnail_url
 `
 
 export type BoardsBrowseSuppressedAdminRow = {
@@ -49,7 +53,8 @@ function mapPickerRow(row: {
   hidden_from_site: boolean | null
   suppressed_on_boards_browse: boolean | null
   is_good_deal: boolean | null
-  listing_images: ListingImageForCard[] | null
+  primary_image_url: string | null
+  primary_thumbnail_url: string | null
 }): BoardsBrowseSuppressedAdminRow {
   return {
     id: row.id,
@@ -61,7 +66,9 @@ function mapPickerRow(row: {
     hidden_from_site: row.hidden_from_site,
     suppressed_on_boards_browse: row.suppressed_on_boards_browse,
     is_good_deal: row.is_good_deal,
-    primary_image_url: listingHeroSlideSrc(row.listing_images),
+    primary_image_url: listingHeroSlideSrc(
+      listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url),
+    ),
   }
 }
 
