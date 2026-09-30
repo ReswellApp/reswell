@@ -1,6 +1,11 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
-import { getSellerBalanceSheetPage } from "@/lib/db/sellerBalanceSheet"
+import {
+  getSellerBalanceSheetPage,
+  updateOwnedListingAcquisition,
+} from "@/lib/db/sellerBalanceSheet"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
+import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
 
 export class SellerBalanceSheetAccessError extends Error {
   constructor() {
@@ -55,4 +60,12 @@ export async function getAdminSellerBalanceSheet(
     })
     throw error
   }
+}
+
+export async function updateSellerListingAcquisition(
+  supabase: SupabaseClient,
+  userId: string,
+  input: UpdateListingAcquisitionInput,
+): Promise<boolean> {
+  return updateOwnedListingAcquisition(supabase, userId, input)
 }

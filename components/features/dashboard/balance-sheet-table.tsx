@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { AcquisitionDetailsDialog } from "@/components/features/dashboard/acquisition-details-dialog"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
 
@@ -76,7 +77,16 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                     {sourceLabel(entry.saleSource)}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums">{usd(entry.purchasePrice)}</td>
+                <td className="px-4 py-3 text-right">
+                  <AcquisitionDetailsDialog
+                    listingId={entry.listingId}
+                    listingTitle={entry.listingTitle}
+                    purchasePrice={entry.purchasePrice}
+                    purchasedFrom={entry.purchasedFrom}
+                    purchasedOn={entry.purchasedOn}
+                    trigger="price"
+                  />
+                </td>
                 <td className="px-4 py-3 text-right tabular-nums">{usd(entry.soldPrice)}</td>
                 <td className="px-4 py-3 text-right tabular-nums">
                   {entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}
@@ -120,6 +130,14 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                 <div><dt className="text-muted-foreground">Fee</dt><dd className="tabular-nums">{entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}</dd></div>
                 <div><dt className="text-muted-foreground">Profit</dt><dd className={`font-semibold tabular-nums ${profitClass(entry.profit)}`}>{entry.saleSource === "inventory" ? "—" : usd(entry.profit)}</dd></div>
               </dl>
+              <AcquisitionDetailsDialog
+                listingId={entry.listingId}
+                listingTitle={entry.listingTitle}
+                purchasePrice={entry.purchasePrice}
+                purchasedFrom={entry.purchasedFrom}
+                purchasedOn={entry.purchasedOn}
+                trigger="button"
+              />
             </CardContent>
           </Card>
         ))}

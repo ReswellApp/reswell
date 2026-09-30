@@ -5,6 +5,7 @@ import type {
   SellerBalanceSheetPage,
   SellerBalanceSheetSummary,
 } from "@/lib/types/sellerBalanceSheet"
+import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
 
 interface BalanceSheetViewRow {
   entry_key: string
@@ -124,4 +125,26 @@ export async function getSellerBalanceSheetPage(
     totalEntries,
     totalPages,
   }
+}
+
+export async function updateOwnedListingAcquisition(
+  supabase: SupabaseClient,
+  userId: string,
+  input: UpdateListingAcquisitionInput,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("listings")
+    .update({
+      seller_purchase_price_usd: input.purchasePrice,
+      seller_purchased_from: input.purchasedFrom,
+      seller_purchased_on: input.purchasedOn,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.listingId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) throw error
+  return data?.id === input.listingId
 }
