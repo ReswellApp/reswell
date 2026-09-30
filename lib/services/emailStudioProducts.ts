@@ -15,8 +15,8 @@ import {
   isListingPubliclyVisible,
   isListingPurchasable,
 } from "@/lib/listing-public-visibility"
+import { reconcileEmailStudioProductBlock } from "@/lib/email-studio/product-reconciliation"
 import type {
-  EmailBlock,
   EmailStudioDocument,
   EmailStudioProductAvailability,
   EmailStudioProductSnapshot,
@@ -70,19 +70,9 @@ export function hydrateEmailStudioProductSnapshots(
   document: EmailStudioDocument,
   liveItems: readonly EmailStudioProductSnapshot[],
 ): EmailStudioDocument {
-  const liveById = new Map(liveItems.map((item) => [item.id, item]))
-  const blocks: EmailBlock[] = document.blocks.map((block) => {
+  const blocks = document.blocks.map((block) => {
     if (block.type !== "product") return block
-    const cachedById = new Map(block.items.map((item) => [item.id, item]))
-    return {
-      ...block,
-      items: block.listingIds.flatMap((id) => {
-        const live = liveById.get(id)
-        if (live) return [live]
-        const cached = cachedById.get(id)
-        return cached ? [{ ...cached, availability: "unavailable" as const }] : []
-      }),
-    }
+    return reconcileEmailStudioProductBlock(block, liveItems)
   })
   return { ...document, blocks }
 }
