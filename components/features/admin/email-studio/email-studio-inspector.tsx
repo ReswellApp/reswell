@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { EmailBlock, EmailDetailRow } from "@/lib/types/emailStudio"
-import { emailBlockLabel } from "@/components/features/admin/email-studio/email-studio-outline"
 import { EmailStudioSectionInspector } from "@/components/features/admin/email-studio/email-studio-section-inspector"
 
 const fieldClass = "space-y-1.5"
@@ -76,7 +75,6 @@ export function EmailStudioInspector({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium">{emailBlockLabel(block.type)}</p>
       {block.type === "section" ? (
         <EmailStudioSectionInspector section={block} onChange={onChange} />
       ) : null}

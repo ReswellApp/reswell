@@ -22,7 +22,18 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
-import { ArrowLeft, Bot, Monitor, Redo2, Settings2, SlidersHorizontal, Smartphone, Undo2 } from "lucide-react"
+import {
+  ArrowLeft,
+  Copy,
+  Download,
+  Eye,
+  Monitor,
+  Redo2,
+  Send,
+  Smartphone,
+  Sparkles,
+  Undo2,
+} from "lucide-react"
 import { toast } from "sonner"
 import {
   pushEmailStudioToKlaviyoAction,
@@ -48,10 +59,18 @@ import type { EmailStudioMessage } from "@/lib/types/emailStudioFlow"
 import { cn } from "@/lib/utils"
 import { EmailStudioAssistant } from "@/components/features/admin/email-studio/email-studio-assistant"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { EmailStudioCanvas, EmailStudioPaletteChip } from "@/components/features/admin/email-studio/email-studio-canvas"
-import { EmailStudioFrameChip } from "@/components/features/admin/email-studio/email-studio-frame-library"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { EmailStudioCanvas } from "@/components/features/admin/email-studio/email-studio-canvas"
 import { EmailStudioInspector } from "@/components/features/admin/email-studio/email-studio-inspector"
+import { EmailStudioRail, type EmailStudioRailTab } from "@/components/features/admin/email-studio/email-studio-rail"
 import {
   EmailStudioOutlineRow,
   emailBlockLabel,
@@ -60,21 +79,6 @@ import {
 import { EmailStudioVersionHistory } from "@/components/features/admin/email-studio/email-studio-version-history"
 import { EmailStudioLivePreview } from "@/components/features/admin/email-studio/email-studio-live-preview"
 import { useEmailStudioDocument } from "@/components/features/admin/email-studio/hooks/use-email-studio-document"
-
-const ADDABLE: EmailBlockType[] = [
-  "section",
-  "logo",
-  "eyebrow",
-  "heading",
-  "text",
-  "image",
-  "button",
-  "split",
-  "details",
-  "divider",
-  "spacer",
-  "footer",
-]
 
 export function EmailStudioEditor({
   project,
@@ -108,16 +112,17 @@ export function EmailStudioEditor({
     mergeServerFields,
     getCurrent,
   } = useEmailStudioDocument(project)
-  const [selectedId, setSelectedId] = useState(
-    pendingProposal?.email.document.blocks[0]?.id ?? project.document.blocks[0]?.id ?? null,
+  const [selectedId, setSelectedId] = useState<string | null>(
+    pendingProposal?.email.document.blocks[0]?.id ?? null,
   )
   const [mode, setMode] = useState<"display" | "preview" | "code">("display")
   const [frameWidth, setFrameWidth] = useState<375 | 600>(600)
   const [templateName, setTemplateName] = useState("")
   const [testRecipient, setTestRecipient] = useState("")
   const [testSending, setTestSending] = useState(false)
-  const [leftPanel, setLeftPanel] = useState<"content" | "layers">("content")
-  const [rightPanel, setRightPanel] = useState<"edit" | "settings" | "assistant">("edit")
+  const [rail, setRail] = useState<EmailStudioRailTab>(pendingProposal ? "assistant" : "content")
+  const [railOpen, setRailOpen] = useState(true)
+  const [inspecting, setInspecting] = useState(false)
   const [proposalPreview, setProposalPreview] = useState<{
     subject: string
     previewText: string
@@ -170,6 +175,15 @@ export function EmailStudioEditor({
       }
       const target = event.target as HTMLElement | null
       const editing = target?.matches("input, textarea, [contenteditable='true']")
+      if (event.key === "Escape" && !editing) {
+        if (mode === "preview") {
+          setMode("display")
+          return
+        }
+        setSelectedId(null)
+        setInspecting(false)
+        return
+      }
       if (!mod || editing) return
       if (event.key.toLowerCase() === "z" && !event.shiftKey) {
         event.preventDefault()
@@ -205,7 +219,7 @@ export function EmailStudioEditor({
       const index = blocks.findIndex((item) => item.id === overId)
       blocks.splice(overId === "canvas-end" || index < 0 ? blocks.length : index, 0, block)
       updateBlocks(blocks)
-      setSelectedId(block.id)
+      selectBlock(block.id)
       return
     }
     if (activeId.startsWith("palette:")) {
@@ -215,7 +229,7 @@ export function EmailStudioEditor({
       const index = blocks.findIndex((item) => item.id === overId)
       blocks.splice(overId === "canvas-end" || index < 0 ? blocks.length : index, 0, block)
       updateBlocks(blocks)
-      setSelectedId(block.id)
+      selectBlock(block.id)
       return
     }
     if (activeId === overId) return
@@ -226,6 +240,12 @@ export function EmailStudioEditor({
     updateBlocks(arrayMove(draft.document.blocks, from, to))
   }
 
+  function selectBlock(id: string | null) {
+    setSelectedId(id)
+    setInspecting(Boolean(id))
+    if (id) setRailOpen(true)
+  }
+
   function insertFrame(frameId: EmailStudioFrameId) {
     if (proposalPreview) return
     const block = createEmailFrame(frameId)
@@ -233,7 +253,7 @@ export function EmailStudioEditor({
     const index = blocks.findIndex((item) => item.id === selectedId)
     blocks.splice(index >= 0 ? index + 1 : blocks.length, 0, block)
     updateBlocks(blocks)
-    setSelectedId(block.id)
+    selectBlock(block.id)
   }
 
   function addBlock(type: EmailBlockType) {
@@ -243,7 +263,7 @@ export function EmailStudioEditor({
     const index = blocks.findIndex((item) => item.id === selectedId)
     blocks.splice(index >= 0 ? index + 1 : blocks.length, 0, block)
     updateBlocks(blocks)
-    setSelectedId(block.id)
+    selectBlock(block.id)
   }
 
   function download() {
@@ -317,85 +337,133 @@ export function EmailStudioEditor({
     })
   }
 
+  const headerAction = "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[#3f3f46] hover:bg-[#f4f4f5]"
+  const klaviyoLabel = !klaviyoConnected
+    ? "Klaviyo key missing"
+    : draft.klaviyoTemplateId
+      ? klaviyoStale
+        ? "Update Klaviyo"
+        : "Synced to Klaviyo"
+      : "Push to Klaviyo"
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex min-h-14 flex-wrap items-center gap-2 border-b border-border bg-white px-3 py-2">
-        <Button variant="ghost" size="icon" asChild>
+    <div className="flex h-full min-h-0 flex-col bg-white text-[#18181b] [--background:0_0%_100%] [--foreground:222_56%_3.5%] [--border:214_32%_91%] [--input:213_27%_84%] [--muted:210_40%_98%] [--muted-foreground:215_16%_47%] [--primary:222_56%_3.5%] [--primary-foreground:0_0%_100%] [--popover:0_0%_100%] [--popover-foreground:222_56%_3.5%] [--ring:222_56%_3.5%]">
+      <header className="flex h-12 shrink-0 items-center gap-1 border-b border-[#e4e4e7] bg-white px-2">
+        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
           <Link href="/admin/email-studio" aria-label="Back to Email Studio" onClick={(event) => navigateAfterSave(event, "/admin/email-studio")}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
+        <div className="mx-1 hidden h-5 w-px bg-[#e4e4e7] sm:block" />
         <Input
           value={draft.name}
           aria-label="Project name"
           disabled={Boolean(proposalPreview)}
-          className="h-9 max-w-64 border-transparent bg-transparent px-2 text-sm font-medium shadow-none hover:border-input focus:border-input"
+          className="h-8 min-w-[9rem] max-w-72 flex-1 border-transparent bg-transparent px-2 text-sm font-medium text-[#18181b] shadow-none hover:border-[#e4e4e7] focus:border-[#e4e4e7]"
           onChange={(event) => patch({ name: event.target.value }, "meta:name")}
         />
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span
-            className={conflict || saveError ? "text-xs text-destructive" : "text-xs text-muted-foreground"}
-            title={saveError ?? undefined}
+        <span
+          className={cn("hidden truncate text-[11px] sm:inline", conflict || saveError ? "text-destructive" : "text-[#71717a]")}
+          title={saveError ?? undefined}
+        >
+          {conflict
+            ? "Save conflict"
+            : saving
+              ? "Saving…"
+              : saveError
+                ? "Autosave paused"
+                : dirty
+                  ? "Unsaved"
+                  : `Saved · v${draft.revision}`}
+        </span>
+        {conflict ? (
+          <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
+            Reload
+          </Button>
+        ) : null}
+        <div className="ml-auto flex items-center gap-0.5">
+          <button
+            type="button"
+            className={cn(headerAction, mode === "preview" && "bg-[#f4f4f5] text-[#18181b]")}
+            onClick={() => setMode(mode === "preview" ? "display" : "preview")}
           >
-            {conflict
-              ? "Save conflict"
-              : saving
-                ? "Saving…"
-                : saveError
-                  ? "Autosave paused"
-                  : dirty
-                    ? "Autosave pending"
-                    : `Saved · v${draft.revision}`}
-          </span>
-          {conflict ? (
-            <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
-              Reload
-            </Button>
-          ) : null}
-          <Button size="icon" variant="ghost" aria-label="Undo" disabled={!canUndo} onClick={undo}>
-            <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="ghost" aria-label="Redo" disabled={!canRedo} onClick={redo}>
-            <Redo2 className="h-4 w-4" />
-          </Button>
+            <Eye className="h-4 w-4" />
+            <span className="hidden md:inline">Preview</span>
+          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className={headerAction}>
+                <Send className="h-4 w-4" />
+                <span className="hidden lg:inline">Send test</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 space-y-3">
+              <div>
+                <p className="text-sm font-medium text-[#18181b]">Send a test</p>
+                <p className="mt-1 text-xs text-[#71717a]">Queues this design through Klaviyo.</p>
+              </div>
+              <Input type="email" value={testRecipient} placeholder="you@reswell.app" disabled={!klaviyoConnected || testSending} onChange={(event) => setTestRecipient(event.target.value)} />
+              <Button size="sm" className="w-full" disabled={!klaviyoConnected || !testRecipient.trim() || testSending || Boolean(proposalPreview)} onClick={() => void sendTest()}>
+                {testSending ? "Sending…" : "Send test"}
+              </Button>
+            </PopoverContent>
+          </Popover>
+          <button
+            type="button"
+            className={cn(headerAction, rail === "assistant" && railOpen && !inspecting && "bg-[#f4f4f5] text-[#18181b]")}
+            onClick={() => {
+              setRail("assistant")
+              setInspecting(false)
+              setRailOpen(true)
+            }}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden md:inline">AI</span>
+          </button>
           <EmailStudioVersionHistory
+            compact
             scope="email"
             scopeId={draft.id}
             currentRevision={draft.revision}
-            onRestored={reset}
-          />
-          <Button size="sm" variant="outline" onClick={download}>Download HTML</Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              void navigator.clipboard.writeText(html)
-              toast.success("HTML copied")
+            onRestored={(record) => {
+              reset(record)
+              setInspecting(false)
             }}
-          >
-            Copy HTML
-          </Button>
-          <Button size="sm" variant={rightPanel === "assistant" ? "default" : "outline"} onClick={() => setRightPanel("assistant")}>
-            <Bot className="h-3.5 w-3.5" />
-            AI assistant
-          </Button>
-          <Button size="sm" variant="outline" asChild>
-            <Link href="/admin/email-studio/flows" onClick={(event) => navigateAfterSave(event, "/admin/email-studio/flows")}>Flows</Link>
-          </Button>
-          <Button size="sm" variant="outline" disabled={!klaviyoConnected || saving || Boolean(proposalPreview)} onClick={() => void pushKlaviyo()}>
-            {!klaviyoConnected
-              ? "Klaviyo key missing"
-              : draft.klaviyoTemplateId
-                ? klaviyoStale
-                  ? "Update Klaviyo"
-                  : "Synced to Klaviyo"
-                : "Push to Klaviyo"}
-          </Button>
-          <Button size="sm" disabled={saving || conflict} onClick={() => void save({ announce: true, flush: true })}>
-            {saving ? "Saving" : "Save now"}
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[#e4e4e7] bg-white px-2.5 text-sm text-[#18181b] hover:bg-[#f4f4f5]">
+                <Download className="h-4 w-4" />
+                <span className="hidden md:inline">Export</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onSelect={download}>Download HTML</DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  void navigator.clipboard.writeText(html)
+                  toast.success("HTML copied")
+                }}
+              >
+                <Copy className="h-4 w-4" />
+                Copy HTML
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled={!klaviyoConnected || saving || Boolean(proposalPreview)} onSelect={() => void pushKlaviyo()}>
+                {klaviyoLabel}
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/admin/email-studio/flows" onClick={(event) => navigateAfterSave(event, "/admin/email-studio/flows")}>
+                  Flows
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" className="ml-1 h-8 rounded-md bg-[#18181b] px-3 text-white hover:bg-black" disabled={saving || conflict} onClick={() => void save({ announce: true, flush: true })}>
+            {saving ? "Saving" : "Save"}
           </Button>
         </div>
-      </div>
+      </header>
 
       <DndContext
         sensors={sensors}
@@ -413,128 +481,50 @@ export function EmailStudioEditor({
         onDragEnd={onDragEnd}
         onDragCancel={() => setDraggingLabel(null)}
       >
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[224px_minmax(0,1fr)_320px]">
-        <aside className="flex min-h-0 flex-col overflow-y-auto border-b border-border bg-white lg:border-b-0 lg:border-r">
-          <div className="grid grid-cols-2 border-b border-border p-2">
-            <button type="button" className={cn("rounded-md px-3 py-2 text-xs font-medium", leftPanel === "content" ? "bg-muted text-foreground" : "text-muted-foreground")} onClick={() => setLeftPanel("content")}>Add content</button>
-            <button type="button" className={cn("rounded-md px-3 py-2 text-xs font-medium", leftPanel === "layers" ? "bg-muted text-foreground" : "text-muted-foreground")} onClick={() => setLeftPanel("layers")}>Layers</button>
-          </div>
-          <div className="space-y-4 p-3">
-          {leftPanel === "layers" ? (
-            <>
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Layers</p>
-                <span className="text-[11px] text-muted-foreground">{draft.document.blocks.length}</span>
-              </div>
-          <SortableContext
-            items={draft.document.blocks.map((block) => `outline:${block.id}`)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-1">
-              {draft.document.blocks.map((block, index) => (
-                <div key={block.id} className="space-y-1">
-                  <EmailStudioOutlineRow
-                    block={block}
-                    sortableId={`outline:${block.id}`}
-                    active={block.id === selectedId}
-                    onSelect={() => setSelectedId(block.id)}
-                    onRemove={() => {
-                      updateBlocks(draft.document.blocks.filter((item) => item.id !== block.id))
-                      if (selectedId === block.id) {
-                        setSelectedId(
-                          draft.document.blocks[index + 1]?.id
-                            ?? draft.document.blocks[index - 1]?.id
-                            ?? null,
-                        )
-                      }
-                    }}
-                    onMove={(direction) => {
-                      const target = index + direction
-                      if (target < 0 || target >= draft.document.blocks.length) return
-                      updateBlocks(arrayMove(draft.document.blocks, index, target))
-                    }}
-                  />
-                  {block.type === "section" ? (
-                    <div className="space-y-1 border-l border-border pl-3">
-                      {block.columns.flatMap((column) => column.blocks).map((child) => (
-                        <button
-                          key={child.id}
-                          type="button"
-                          className={`w-full rounded px-2 py-1 text-left text-xs ${child.id === selectedId ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/60"}`}
-                          onClick={() => setSelectedId(child.id)}
-                        >
-                          <span className="font-medium">{emailBlockLabel(child.type)}</span>
-                          {emailBlockSummary(child) ? ` · ${emailBlockSummary(child)}` : ""}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
+        <section className="flex min-h-[320px] min-w-0 flex-1 flex-col bg-[#e6e6e6]">
+          <div className="grid h-11 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#e4e4e7] bg-[#f6f6f6] px-3">
+            <div className="flex items-center gap-0.5">
+              <button type="button" aria-label="Undo" disabled={!canUndo} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#3f3f46] hover:bg-white disabled:opacity-30" onClick={undo}>
+                <Undo2 className="h-4 w-4" />
+              </button>
+              <button type="button" aria-label="Redo" disabled={!canRedo} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#3f3f46] hover:bg-white disabled:opacity-30" onClick={redo}>
+                <Redo2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="inline-flex rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-black/5">
+              {([
+                ["display", "Design"],
+                ["preview", "Preview"],
+                ["code", "Code"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={cn(
+                    "rounded-md px-3 py-1 text-xs font-medium",
+                    mode === value ? "bg-[#18181b] text-white" : "text-[#3f3f46] hover:bg-[#f4f4f5]",
+                  )}
+                  onClick={() => setMode(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              {mode === "code" ? (
+                <span className="hidden text-[11px] text-[#71717a] lg:inline">Export uses this HTML.</span>
+              ) : (
+                <div className="inline-flex rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-black/5">
+                  <button type="button" aria-label="Desktop canvas" className={cn("inline-flex h-7 w-8 items-center justify-center rounded-md", frameWidth === 600 ? "bg-[#f4f4f5] text-[#18181b]" : "text-[#71717a]")} onClick={() => setFrameWidth(600)}>
+                    <Monitor className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" aria-label="Mobile canvas" className={cn("inline-flex h-7 w-8 items-center justify-center rounded-md", frameWidth === 375 ? "bg-[#f4f4f5] text-[#18181b]" : "text-[#71717a]")} onClick={() => setFrameWidth(375)}>
+                    <Smartphone className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
-          </SortableContext>
-            </>
-          ) : (
-            <>
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Basic blocks</p>
-            <div className="grid grid-cols-2 gap-2">
-              {ADDABLE.map((type) => (
-                <span
-                  key={type}
-                  onClick={() => {
-                    if (suppressPaletteClick.current) {
-                      suppressPaletteClick.current = false
-                      return
-                    }
-                    addBlock(type)
-                  }}
-                >
-                  <EmailStudioPaletteChip type={type} />
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="border-t border-border pt-4">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Layouts</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {EMAIL_STUDIO_FRAMES.map((frame) => (
-                <span
-                  key={frame.id}
-                  onClick={() => {
-                    if (suppressPaletteClick.current) {
-                      suppressPaletteClick.current = false
-                      return
-                    }
-                    insertFrame(frame.id)
-                  }}
-                >
-                  <EmailStudioFrameChip id={frame.id} />
-                </span>
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">Drag a block or layout onto the email canvas.</p>
-          </div>
-            </>
-          )}
-          </div>
-        </aside>
-
-        <section className="flex min-h-[420px] min-w-0 flex-col bg-[#F9F9F2]">
-          <div className="flex items-center gap-2 border-b border-border bg-background px-3 py-2">
-            <div className="inline-flex rounded-md border border-border p-0.5">
-              <button type="button" className={`rounded px-3 py-1 text-sm ${mode === "display" ? "bg-foreground text-background" : ""}`} onClick={() => setMode("display")}>Display</button>
-              <button type="button" className={`rounded px-3 py-1 text-sm ${mode === "preview" ? "bg-foreground text-background" : ""}`} onClick={() => setMode("preview")}>Preview</button>
-              <button type="button" className={`rounded px-3 py-1 text-sm ${mode === "code" ? "bg-foreground text-background" : ""}`} onClick={() => setMode("code")}>Code</button>
-            </div>
-            {mode !== "code" ? (
-              <div className="inline-flex rounded-md border border-border p-0.5">
-                <button type="button" aria-label="Desktop canvas" className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${frameWidth === 600 ? "bg-muted" : ""}`} onClick={() => setFrameWidth(600)}><Monitor className="h-3.5 w-3.5" />Desktop</button>
-                <button type="button" aria-label="Mobile canvas" className={`flex items-center gap-1 rounded px-2 py-1 text-xs ${frameWidth === 375 ? "bg-muted" : ""}`} onClick={() => setFrameWidth(375)}><Smartphone className="h-3.5 w-3.5" />Mobile</button>
-              </div>
-            ) : (
-              <span className="text-xs text-muted-foreground">Preview, download, and Klaviyo use this HTML in Reswell colors and Stack Sans.</span>
-            )}
           </div>
           {proposalPreview ? (
             <div className="border-b border-[#5574AD]/30 bg-[#5574AD]/5 px-3 py-2 text-xs text-[#355185]">
@@ -543,7 +533,7 @@ export function EmailStudioEditor({
           ) : null}
           {mode === "display" && customHtml ? (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex items-center justify-between gap-2 border-b border-border bg-background px-3 py-2 text-xs">
+              <div className="flex items-center justify-between gap-2 border-b border-[#e4e4e7] bg-white px-3 py-2 text-xs">
                 <span>Showing your edited HTML.</span>
                 <button
                   type="button"
@@ -554,8 +544,8 @@ export function EmailStudioEditor({
                   Back to page editing
                 </button>
               </div>
-              <div className="min-h-0 flex-1 overflow-auto p-4">
-                <iframe title="Email display" sandbox="" srcDoc={html} style={{ width: frameWidth }} className="mx-auto block h-[720px] max-w-full rounded-md border border-border bg-white shadow-sm" />
+              <div className="min-h-0 flex-1 overflow-auto bg-[#e6e6e6] p-8">
+                <iframe title="Email display" sandbox="" srcDoc={html} style={{ width: frameWidth }} className="mx-auto block h-[720px] max-w-full bg-white shadow-[0_18px_50px_rgba(15,23,42,0.14)]" />
               </div>
             </div>
           ) : null}
@@ -564,12 +554,15 @@ export function EmailStudioEditor({
               blocks={displayDraft.document.blocks}
               selectedId={selectedId}
               width={frameWidth}
-              onSelect={setSelectedId}
+              onSelect={selectBlock}
+              onClear={() => selectBlock(null)}
               onChange={(block) => updateBlocks(displayDraft.document.blocks.map((item) => (item.id === block.id ? block : item)))}
               onRemove={(id) => {
                 const index = displayDraft.document.blocks.findIndex((item) => item.id === id)
                 updateBlocks(displayDraft.document.blocks.filter((item) => item.id !== id))
-                if (selectedId === id) setSelectedId(displayDraft.document.blocks[index + 1]?.id ?? displayDraft.document.blocks[index - 1]?.id ?? null)
+                if (selectedId === id) {
+                  selectBlock(displayDraft.document.blocks[index + 1]?.id ?? displayDraft.document.blocks[index - 1]?.id ?? null)
+                }
               }}
               onDuplicate={(id) => {
                 const index = displayDraft.document.blocks.findIndex((item) => item.id === id)
@@ -579,16 +572,8 @@ export function EmailStudioEditor({
                 const blocks = [...displayDraft.document.blocks]
                 blocks.splice(index + 1, 0, copy)
                 updateBlocks(blocks)
-                setSelectedId(copy.id)
+                selectBlock(copy.id)
               }}
-            />
-          ) : null}
-          {mode === "preview" ? (
-            <EmailStudioLivePreview
-              projectId={draft.id}
-              metricName={draft.triggerMetric}
-              html={html}
-              width={frameWidth}
             />
           ) : null}
           {mode === "code" ? (
@@ -611,45 +596,38 @@ export function EmailStudioEditor({
           ) : null}
         </section>
 
-        <aside className="flex min-h-[280px] min-w-0 flex-col border-t border-border bg-white lg:border-l lg:border-t-0">
-          <div className="grid grid-cols-3 border-b border-border p-2">
-            {([
-              ["edit", "Edit", SlidersHorizontal],
-              ["settings", "Settings", Settings2],
-              ["assistant", "AI", Bot],
-            ] as const).map(([value, label, Icon]) => (
-              <button
-                key={value}
-                type="button"
-                className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium",
-                  rightPanel === value ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
-                )}
-                onClick={() => setRightPanel(value)}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className={cn("min-h-0 flex-1", rightPanel === "assistant" ? "overflow-hidden p-3" : "overflow-y-auto p-4")}>
-          {rightPanel === "edit" ? (
-            proposalPreview ? (
-              <p className="text-sm text-muted-foreground">Resolve the assistant proposal before editing properties.</p>
-            ) : (
-              <EmailStudioInspector
-                block={selected}
-                onChange={(block) => {
-                  if (proposalPreview) return
-                  patch({ document: replaceEmailBlock(draft.document, block) }, "blocks")
-                }}
-              />
-            )
-          ) : null}
-          {rightPanel === "settings" ? (
+        <EmailStudioRail
+          tab={rail}
+          open={railOpen}
+          inspecting={inspecting && Boolean(selected)}
+          selectedLabel={selected ? emailBlockLabel(selected.type) : "Block"}
+          locked={Boolean(proposalPreview)}
+          paletteGuard={suppressPaletteClick}
+          blockCount={draft.document.blocks.length}
+          onTab={(next) => {
+            setRail(next)
+            setInspecting(false)
+            setRailOpen(true)
+          }}
+          onOpenChange={setRailOpen}
+          onBack={() => setInspecting(false)}
+          onAddBlock={addBlock}
+          onInsertFrame={insertFrame}
+          properties={proposalPreview ? (
+            <p className="text-sm text-[#71717a]">Resolve the assistant proposal before editing properties.</p>
+          ) : (
+            <EmailStudioInspector
+              block={selected}
+              onChange={(block) => {
+                if (proposalPreview) return
+                patch({ document: replaceEmailBlock(draft.document, block) }, "blocks")
+              }}
+            />
+          )}
+          settings={(
             <div className="space-y-5">
               <div className="space-y-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Email details</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#71717a]">Inbox</p>
                 <label className="block space-y-1.5 text-xs font-medium">
                   Subject
                   <Input value={displayDraft.subject} disabled={Boolean(proposalPreview)} placeholder="Email subject" onChange={(event) => patch({ subject: event.target.value }, "meta:subject")} />
@@ -683,20 +661,13 @@ export function EmailStudioEditor({
                   </select>
                 </label>
               </div>
-              <div className="space-y-2 border-t border-border pt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Save as template</p>
+              <div className="space-y-2 border-t border-[#ececee] pt-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#71717a]">Template</p>
                 <Input value={templateName} placeholder="Template name" disabled={Boolean(proposalPreview)} onChange={(event) => setTemplateName(event.target.value)} />
                 <Button size="sm" variant="outline" disabled={Boolean(proposalPreview)} onClick={() => void saveTemplate()}>Save template</Button>
                 {draft.klaviyoTemplateId ? (
-                  <p className="break-all text-xs text-muted-foreground">Klaviyo template {draft.klaviyoTemplateId}{klaviyoStale ? " · Local changes not pushed" : " · Up to date"}</p>
+                  <p className="break-all text-xs text-[#71717a]">Klaviyo template {draft.klaviyoTemplateId}{klaviyoStale ? " · Local changes not pushed" : " · Up to date"}</p>
                 ) : null}
-              </div>
-              <div className="space-y-2 border-t border-border pt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Test send</p>
-                <Input type="email" value={testRecipient} placeholder="you@reswell.app" disabled={!klaviyoConnected || testSending} onChange={(event) => setTestRecipient(event.target.value)} />
-                <Button size="sm" variant="outline" disabled={!klaviyoConnected || !testRecipient.trim() || testSending || Boolean(proposalPreview)} onClick={() => void sendTest()}>
-                  {testSending ? "Sending…" : "Send test"}
-                </Button>
               </div>
               <label className="block text-xs font-medium">
                 Notes
@@ -704,8 +675,8 @@ export function EmailStudioEditor({
               </label>
               {!draft.flowId ? <Input value={draft.flowName} disabled={Boolean(proposalPreview)} placeholder="Flow name" onChange={(event) => patch({ flowName: event.target.value }, "meta:flow-name")} /> : null}
             </div>
-          ) : null}
-          {rightPanel === "assistant" ? (
+          )}
+          assistant={(
             <EmailStudioAssistant
               scope="email"
               scopeId={draft.id}
@@ -752,18 +723,78 @@ export function EmailStudioEditor({
                 setProposalPreview(null)
                 reset(record)
                 setSelectedId(record.document.blocks[0]?.id ?? null)
+                setInspecting(false)
               }}
             />
-          ) : null}
-          </div>
-        </aside>
+          )}
+          structure={(
+            <SortableContext
+              items={draft.document.blocks.map((block) => `outline:${block.id}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-1">
+                {draft.document.blocks.map((block, index) => (
+                  <div key={block.id} className="space-y-1">
+                    <EmailStudioOutlineRow
+                      block={block}
+                      sortableId={`outline:${block.id}`}
+                      active={block.id === selectedId}
+                      onSelect={() => selectBlock(block.id)}
+                      onRemove={() => {
+                        updateBlocks(draft.document.blocks.filter((item) => item.id !== block.id))
+                        if (selectedId === block.id) {
+                          selectBlock(
+                            draft.document.blocks[index + 1]?.id
+                              ?? draft.document.blocks[index - 1]?.id
+                              ?? null,
+                          )
+                        }
+                      }}
+                      onMove={(direction) => {
+                        const target = index + direction
+                        if (target < 0 || target >= draft.document.blocks.length) return
+                        updateBlocks(arrayMove(draft.document.blocks, index, target))
+                      }}
+                    />
+                    {block.type === "section" ? (
+                      <div className="space-y-1 border-l border-[#e4e4e7] pl-3">
+                        {block.columns.flatMap((column) => column.blocks).map((child) => (
+                          <button
+                            key={child.id}
+                            type="button"
+                            className={cn(
+                              "w-full rounded px-2 py-1 text-left text-xs",
+                              child.id === selectedId ? "bg-[#2F6FED]/10 text-[#18181b]" : "text-[#71717a] hover:bg-[#f4f4f5]",
+                            )}
+                            onClick={() => selectBlock(child.id)}
+                          >
+                            <span className="font-medium">{emailBlockLabel(child.type)}</span>
+                            {emailBlockSummary(child) ? ` · ${emailBlockSummary(child)}` : ""}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </SortableContext>
+          )}
+        />
       </div>
       <DragOverlay>
         {draggingLabel ? (
-          <div className="rounded-md border border-border bg-white px-3 py-2 text-xs shadow-md">{draggingLabel}</div>
+          <div className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-[#18181b] shadow-lg ring-1 ring-black/10">{draggingLabel}</div>
         ) : null}
       </DragOverlay>
       </DndContext>
+      {mode === "preview" ? (
+        <EmailStudioLivePreview
+          projectId={draft.id}
+          metricName={draft.triggerMetric}
+          html={html}
+          onClose={() => setMode("display")}
+        />
+      ) : null}
     </div>
   )
 }
