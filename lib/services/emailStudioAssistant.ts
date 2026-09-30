@@ -56,10 +56,17 @@ import {
   assistantTranscriptContent,
   type AssistantScreenshot,
 } from "@/lib/email-studio/assistant-images"
+import {
+  buildStructuredEmailBrief,
+  RESWELL_EMAIL_VOICE_PROMPT,
+} from "@/lib/email-studio/reswell-email-voice"
+import type { GenerateEmailStudioInput } from "@/lib/validations/emailStudio"
 
 const SYSTEM = `You are the Reswell email studio assistant. Staff describe an unsent email or Klaviyo flow in ordinary language. Build exactly what they asked for: one email, a flow, or both in the same reply.
 
-Write short, plain Reswell copy. Keep Klaviyo tags as typed, for example {{ first_name|default:'there' }} and {{ event|lookup:'order_num' }}. Do not set colors, hex values, or font names. The studio applies the Reswell palette and Stack Sans.
+${RESWELL_EMAIL_VOICE_PROMPT}
+
+Keep Klaviyo tags as typed, for example {{ first_name|default:'there' }} and {{ event|lookup:'order_num' }}. Do not set colors, hex values, or font names. The studio applies the Reswell palette and Stack Sans.
 
 applyEmail is yes when the request creates or changes the open email. applyFlow is yes when the request creates or changes a flow. Set the other to no and leave its list empty.
 
@@ -707,11 +714,7 @@ export async function askEmailStudioAssistantService(input: {
   }
 }
 
-export async function generateEmailStudioFromBriefService(input: {
-  brief: string
-  name?: string
-  target: "email" | "flow"
-}): Promise<
+export async function generateEmailStudioFromBriefService(input: GenerateEmailStudioInput): Promise<
   | { success: true; target: "email" | "flow"; id: string; name: string }
   | { error: string }
 > {
@@ -742,6 +745,9 @@ export async function generateEmailStudioFromBriefService(input: {
   })()
   const catalog = await listKlaviyoFlowCatalogService()
   const preferredName = input.name?.trim() ?? ""
+  const request = "brief" in input
+    ? input.brief
+    : buildStructuredEmailBrief(input)
   let output: {
     reply: string
     operation: AssistantOperation
@@ -761,7 +767,7 @@ export async function generateEmailStudioFromBriefService(input: {
         catalogLines("Lists", catalog.lists),
         catalogLines("Segments", catalog.segments),
         preferredName ? `Preferred name: ${preferredName}` : "",
-        `Request: ${input.brief}`,
+        `Request: ${request}`,
       ].filter(Boolean).join("\n\n"),
     })
   } catch (error) {
@@ -794,7 +800,7 @@ export async function generateEmailStudioFromBriefService(input: {
         scope: "email",
         scopeId: created.id,
         role: "user",
-        content: input.brief,
+        content: request,
         userId: user.id,
       })
       await insertEmailStudioMessage(client, {
@@ -846,7 +852,7 @@ export async function generateEmailStudioFromBriefService(input: {
       scope: "flow",
       scopeId: created.id,
       role: "user",
-      content: input.brief,
+      content: request,
       userId: user.id,
     })
     await insertEmailStudioMessage(client, {

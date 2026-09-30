@@ -5,11 +5,55 @@ const idSchema = z.string().uuid()
 const shortText = z.string().max(500)
 const bodyText = z.string().max(8000)
 const hrefText = z.string().max(2000)
+const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/)
+const hideOnSchema = z.enum(["desktop", "mobile"])
+const fontWeightSchema = z.enum(["normal", "bold"])
+const textStyleSchema = {
+  color: hexColor.optional(),
+  fontSize: z.number().int().min(10).max(64).optional(),
+  fontWeight: fontWeightSchema.optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
+  strike: z.boolean().optional(),
+  hideOn: hideOnSchema.optional(),
+}
+const paddingSchema = z.object({
+  top: z.number().int().min(0).max(120),
+  right: z.number().int().min(0).max(120),
+  bottom: z.number().int().min(0).max(120),
+  left: z.number().int().min(0).max(120),
+})
 
 const detailRowSchema = z.object({
   id: idSchema,
   label: shortText,
   value: z.string().max(2000),
+})
+
+const emailStudioProductSnapshotSchema = z.object({
+  id: idSchema,
+  title: shortText,
+  priceDisplay: shortText,
+  condition: shortText,
+  dimensions: shortText,
+  boardType: shortText,
+  imageUrl: hrefText,
+  productUrl: hrefText,
+  availability: z.enum(["available", "pending", "sold", "unavailable"]),
+})
+
+export const emailProductBlockSchema = z.object({
+  id: idSchema,
+  type: z.literal("product"),
+  title: shortText,
+  listingIds: z.array(idSchema).max(4),
+  items: z.array(emailStudioProductSnapshotSchema).max(4),
+  showPrice: z.boolean(),
+  showCondition: z.boolean(),
+  showDimensions: z.boolean(),
+  showBoardType: z.boolean(),
+  showAvailability: z.boolean(),
+  ctaLabel: shortText,
 })
 
 export const emailContentBlockSchema = z.discriminatedUnion("type", [
@@ -26,18 +70,21 @@ export const emailContentBlockSchema = z.discriminatedUnion("type", [
     type: z.literal("eyebrow"),
     text: shortText,
     align: alignSchema,
+    ...textStyleSchema,
   }),
   z.object({
     id: idSchema,
     type: z.literal("heading"),
     text: shortText,
     align: alignSchema,
+    ...textStyleSchema,
   }),
   z.object({
     id: idSchema,
     type: z.literal("text"),
     text: bodyText,
     align: alignSchema,
+    ...textStyleSchema,
   }),
   z.object({
     id: idSchema,
@@ -47,6 +94,9 @@ export const emailContentBlockSchema = z.discriminatedUnion("type", [
     href: hrefText,
     width: z.number().int().min(40).max(560).optional(),
     height: z.number().int().min(40).max(800).nullable().optional(),
+    radius: z.number().int().min(0).max(40).optional(),
+    padding: paddingSchema.optional(),
+    hideOn: hideOnSchema.optional(),
   }),
   z.object({
     id: idSchema,
@@ -54,6 +104,14 @@ export const emailContentBlockSchema = z.discriminatedUnion("type", [
     label: shortText,
     href: hrefText,
     align: alignSchema,
+    fullWidth: z.boolean().optional(),
+    fontFamily: z.enum(["sans", "headline"]).optional(),
+    fontWeight: fontWeightSchema.optional(),
+    fontSize: z.number().int().min(10).max(32).optional(),
+    backgroundColor: hexColor.optional(),
+    textColor: hexColor.optional(),
+    radius: z.number().int().min(0).max(40).optional(),
+    hideOn: hideOnSchema.optional(),
   }),
   z.object({
     id: idSchema,
@@ -102,11 +160,22 @@ export const emailSectionBlockSchema = z.object({
   gap: z.enum(["compact", "comfortable", "spacious"]),
   stackOnMobile: z.boolean(),
   columns: z.array(emailSectionColumnSchema).min(1).max(3),
+  backgroundColor: hexColor.optional(),
+  contentBackgroundColor: hexColor.optional(),
+  backgroundImage: hrefText.optional(),
+  backgroundImageOn: z.enum(["row", "content"]).optional(),
+  backgroundFit: z.boolean().optional(),
+  backgroundRepeat: z.boolean().optional(),
+  backgroundCenter: z.boolean().optional(),
+  borderWidth: z.number().int().min(0).max(12).optional(),
+  borderColor: hexColor.optional(),
+  hideOn: hideOnSchema.optional(),
 })
 
 export const emailBlockSchema = z.union([
   emailContentBlockSchema,
   emailSectionBlockSchema,
+  emailProductBlockSchema,
 ])
 
 export const emailStudioDocumentSchema = z.object({
@@ -154,11 +223,37 @@ export const sendEmailStudioTestSchema = z.object({
   recipient: z.string().trim().email().max(320),
 })
 
-export const generateEmailStudioSchema = z.object({
+export const searchEmailStudioProductsSchema = z.object({
+  query: z.string().trim().max(120),
+})
+
+export const hydrateEmailStudioProductsSchema = z.object({
+  listingIds: z.array(z.string().uuid()).max(4),
+})
+
+const generateEmailStudioFromBriefSchema = z.object({
   brief: z.string().trim().min(8, "Describe it in a sentence").max(2000),
   name: z.string().trim().max(120).optional(),
   target: z.enum(["email", "flow"]),
 })
 
+const generateEmailStudioFromStructuredBriefSchema = z.object({
+  target: z.literal("email"),
+  name: z.string().trim().max(120).optional(),
+  objective: z.string().trim().min(3, "Add an objective").max(500),
+  audience: z.string().trim().min(2, "Add an audience").max(500),
+  emailType: z.string().trim().min(2, "Choose an email type").max(120),
+  productsOrCategory: z.string().trim().min(2, "Add a product or category").max(1000),
+  offer: z.string().trim().max(500).optional(),
+  tone: z.string().trim().min(2, "Choose a tone").max(120),
+  primaryCta: z.string().trim().min(2, "Add a primary call to action").max(500),
+})
+
+export const generateEmailStudioSchema = z.union([
+  generateEmailStudioFromStructuredBriefSchema,
+  generateEmailStudioFromBriefSchema,
+])
+
 export type CreateEmailStudioInput = z.infer<typeof createEmailStudioSchema>
 export type UpdateEmailStudioInput = z.infer<typeof updateEmailStudioSchema>
+export type GenerateEmailStudioInput = z.infer<typeof generateEmailStudioSchema>

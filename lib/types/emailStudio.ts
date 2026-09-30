@@ -1,5 +1,6 @@
 export const EMAIL_BLOCK_TYPES = [
   "section",
+  "product",
   "logo",
   "eyebrow",
   "heading",
@@ -13,20 +14,59 @@ export const EMAIL_BLOCK_TYPES = [
   "footer",
 ] as const
 
-export const EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION = 2
+export const EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION = 3
 
 export type EmailBlockType = (typeof EMAIL_BLOCK_TYPES)[number]
 
 export type EmailAlign = "left" | "center"
+export type EmailHideOn = "desktop" | "mobile"
+export type EmailFontWeight = "normal" | "bold"
+export type EmailFontFamily = "sans" | "headline"
 
 export type EmailStudioKind = "project" | "template"
 export type EmailSectionSurface = "white" | "muted" | "brand" | "dark"
 export type EmailSectionPadding = "none" | "compact" | "comfortable" | "spacious"
 
+/** Optional paint. Omitted fields keep the existing email styles. */
+export interface EmailTextStyle {
+  color?: string
+  fontSize?: number
+  fontWeight?: EmailFontWeight
+  italic?: boolean
+  underline?: boolean
+  strike?: boolean
+  hideOn?: EmailHideOn
+}
+
+export interface EmailPadding {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
 export interface EmailDetailRow {
   id: string
   label: string
   value: string
+}
+
+export type EmailStudioProductAvailability =
+  | "available"
+  | "pending"
+  | "sold"
+  | "unavailable"
+
+export interface EmailStudioProductSnapshot {
+  id: string
+  title: string
+  priceDisplay: string
+  condition: string
+  dimensions: string
+  boardType: string
+  imageUrl: string
+  productUrl: string
+  availability: EmailStudioProductAvailability
 }
 
 interface EmailBlockBase {
@@ -41,19 +81,19 @@ export interface EmailLogoBlock extends EmailBlockBase {
   width: number
 }
 
-export interface EmailEyebrowBlock extends EmailBlockBase {
+export interface EmailEyebrowBlock extends EmailBlockBase, EmailTextStyle {
   type: "eyebrow"
   text: string
   align: EmailAlign
 }
 
-export interface EmailHeadingBlock extends EmailBlockBase {
+export interface EmailHeadingBlock extends EmailBlockBase, EmailTextStyle {
   type: "heading"
   text: string
   align: EmailAlign
 }
 
-export interface EmailTextBlock extends EmailBlockBase {
+export interface EmailTextBlock extends EmailBlockBase, EmailTextStyle {
   type: "text"
   text: string
   align: EmailAlign
@@ -68,6 +108,10 @@ export interface EmailImageBlock extends EmailBlockBase {
   width?: number
   /** Set with width to crop. Empty keeps the photo's natural height. */
   height?: number | null
+  /** Corner radius in pixels. Omitted images keep the 8px email radius. */
+  radius?: number
+  padding?: EmailPadding
+  hideOn?: EmailHideOn
 }
 
 export interface EmailButtonBlock extends EmailBlockBase {
@@ -75,6 +119,15 @@ export interface EmailButtonBlock extends EmailBlockBase {
   label: string
   href: string
   align: EmailAlign
+  /** Hugs the label when omitted. Set to stretch across the column. */
+  fullWidth?: boolean
+  fontFamily?: EmailFontFamily
+  fontWeight?: EmailFontWeight
+  fontSize?: number
+  backgroundColor?: string
+  textColor?: string
+  radius?: number
+  hideOn?: EmailHideOn
 }
 
 export interface EmailSplitBlock extends EmailBlockBase {
@@ -111,6 +164,19 @@ export interface EmailFooterBlock extends EmailBlockBase {
   showUnsubscribe: boolean
 }
 
+export interface EmailProductBlock extends EmailBlockBase {
+  type: "product"
+  title: string
+  listingIds: string[]
+  items: EmailStudioProductSnapshot[]
+  showPrice: boolean
+  showCondition: boolean
+  showDimensions: boolean
+  showBoardType: boolean
+  showAvailability: boolean
+  ctaLabel: string
+}
+
 export type EmailContentBlock =
   | EmailLogoBlock
   | EmailEyebrowBlock
@@ -137,9 +203,19 @@ export interface EmailSectionBlock extends EmailBlockBase {
   gap: "compact" | "comfortable" | "spacious"
   stackOnMobile: boolean
   columns: EmailSectionColumn[]
+  backgroundColor?: string
+  contentBackgroundColor?: string
+  backgroundImage?: string
+  backgroundImageOn?: "row" | "content"
+  backgroundFit?: boolean
+  backgroundRepeat?: boolean
+  backgroundCenter?: boolean
+  borderWidth?: number
+  borderColor?: string
+  hideOn?: EmailHideOn
 }
 
-export type EmailBlock = EmailContentBlock | EmailSectionBlock
+export type EmailBlock = EmailContentBlock | EmailSectionBlock | EmailProductBlock
 
 export interface EmailStudioDocument {
   blocks: EmailBlock[]

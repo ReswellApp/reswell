@@ -62,7 +62,13 @@ function FrameThumb({ id }: { id: EmailStudioFrameId }) {
   )
 }
 
-export function EmailStudioFrameChip({ id }: { id: EmailStudioFrameId }) {
+export function EmailStudioFrameChip({
+  id,
+  onActivate,
+}: {
+  id: EmailStudioFrameId
+  onActivate?: () => void
+}) {
   const frame = EMAIL_STUDIO_FRAMES.find((item) => item.id === id)
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `frame:${id}` })
   if (!frame) return null
@@ -71,15 +77,16 @@ export function EmailStudioFrameChip({ id }: { id: EmailStudioFrameId }) {
       ref={setNodeRef}
       type="button"
       className={cn(
-        "w-full cursor-grab rounded-md border border-border bg-background p-1.5 text-left active:cursor-grabbing",
-        isDragging && "opacity-50",
+        "w-full cursor-grab rounded-lg bg-[#f3f3f4] p-2 text-left transition hover:bg-[#e7e7ea] active:cursor-grabbing",
+        isDragging && "opacity-40",
       )}
       {...attributes}
       {...listeners}
+      onClick={onActivate}
     >
       <FrameThumb id={id} />
-      <span className="mt-1 block text-xs font-medium">{frame.name}</span>
-      <span className="block text-[10px] leading-snug text-muted-foreground">{frame.blurb}</span>
+      <span className="mt-2 block text-xs font-medium text-[#27272a]">{frame.name}</span>
+      <span className="mt-0.5 block text-[11px] leading-snug text-[#71717a]">{frame.blurb}</span>
     </button>
   )
 }

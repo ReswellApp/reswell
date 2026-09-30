@@ -29,7 +29,6 @@ export type AdminNavIconKey =
   | 'bellRing'
   | 'code'
   | 'rotateCcw'
-  | 'activityPulse'
   | 'sparkles'
   | 'fileText'
   | 'brain'
@@ -65,7 +64,6 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/ad-sales',
   '/admin/ads',
   '/admin/search-curation',
-  '/admin/related-content',
   '/admin/partner-embeds',
   '/admin/shipping',
   '/admin/dropoff-locations',
@@ -126,7 +124,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/llm-usage', label: 'LLM Usage', icon: 'sparkles' },
       { href: '/admin/search-quality', label: 'Search Quality', icon: 'sparkles' },
       { href: '/admin/search-curation', label: 'Search Curation', icon: 'wrench' },
-      { href: '/admin/related-content', label: 'Related content', icon: 'bookOpen' },
       { href: '/admin/price-guide', label: 'Price Guide', icon: 'bookOpen' },
       { href: '/admin/used-board-market-dashboard', label: 'Used Board Market Catalog', icon: 'waves' },
     ],
@@ -191,7 +188,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
       { href: '/admin/fraud-messages', label: 'Fraud messages', icon: 'shield' },
-      { href: '/admin/ops', label: 'Platform ops', icon: 'activityPulse' },
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },
       { href: '/admin/reswelltickets', label: 'Reswell tickets', icon: 'ticket' },
       { href: '/admin/tools', label: 'Admin tools', icon: 'wrench' },

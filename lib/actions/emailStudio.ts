@@ -5,10 +5,12 @@ import {
   createEmailStudioService,
   deleteEmailStudioService,
   duplicateEmailStudioService,
+  hydrateEmailStudioProductsService,
   listEmailLibraryImagesService,
   pushEmailStudioToKlaviyoService,
   saveEmailStudioTemplateService,
   sendEmailStudioTestService,
+  searchEmailStudioProductsService,
   updateEmailStudioService,
 } from "@/lib/services/emailStudio"
 import { generateEmailStudioFromBriefService } from "@/lib/services/emailStudioAssistant"
@@ -16,7 +18,9 @@ import {
   createEmailStudioSchema,
   emailStudioIdSchema,
   generateEmailStudioSchema,
+  hydrateEmailStudioProductsSchema,
   saveEmailStudioTemplateSchema,
+  searchEmailStudioProductsSchema,
   sendEmailStudioTestSchema,
   updateEmailStudioSchema,
 } from "@/lib/validations/emailStudio"
@@ -85,6 +89,18 @@ export async function saveEmailStudioTemplateAction(raw: unknown) {
 
 export async function listEmailLibraryImagesAction() {
   return listEmailLibraryImagesService()
+}
+
+export async function searchEmailStudioProductsAction(raw: unknown) {
+  const parsed = searchEmailStudioProductsSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  return searchEmailStudioProductsService(parsed.data.query)
+}
+
+export async function hydrateEmailStudioProductsAction(raw: unknown) {
+  const parsed = hydrateEmailStudioProductsSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  return hydrateEmailStudioProductsService(parsed.data.listingIds)
 }
 
 export async function pushEmailStudioToKlaviyoAction(raw: unknown) {

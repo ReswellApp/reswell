@@ -1,10 +1,50 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { generateEmailStudioAction } from "@/lib/actions/emailStudio"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+
+const EMAIL_TYPES = [
+  "Campaign announcement",
+  "Product spotlight",
+  "Newsletter or editorial",
+  "Lifecycle or retention",
+  "Transactional",
+  "Educational",
+] as const
+
+const EMAIL_TONES = [
+  "Calm and direct",
+  "Warm and personal",
+  "Editorial",
+  "Helpful and reassuring",
+  "Urgent but restrained",
+] as const
+
+interface EmailBrief {
+  objective: string
+  audience: string
+  emailType: string
+  productsOrCategory: string
+  offer: string
+  tone: string
+  primaryCta: string
+}
+
+const INITIAL_EMAIL_BRIEF: EmailBrief = {
+  objective: "",
+  audience: "",
+  emailType: EMAIL_TYPES[0],
+  productsOrCategory: "",
+  offer: "",
+  tone: EMAIL_TONES[0],
+  primaryCta: "",
+}
 
 export function EmailStudioGenerate({
   target,
@@ -15,19 +55,30 @@ export function EmailStudioGenerate({
 }) {
   const router = useRouter()
   const [brief, setBrief] = useState("")
+  const [emailBrief, setEmailBrief] = useState<EmailBrief>(INITIAL_EMAIL_BRIEF)
   const [pending, setPending] = useState(false)
-  const placeholder = target === "flow"
-    ? "Welcome flow: an email now, wait two days, then a listing spotlight. Subscribers only."
-    : "A calm shipped email with the order number, the board, and one tracking button."
 
   async function generate(): Promise<void> {
     const text = brief.trim()
-    if (text.length < 8) {
+    if (target === "flow" && text.length < 8) {
       toast.error("Describe it in a sentence")
       return
     }
+    if (
+      target === "email"
+      && (!emailBrief.objective.trim()
+        || !emailBrief.audience.trim()
+        || !emailBrief.productsOrCategory.trim()
+        || !emailBrief.primaryCta.trim())
+    ) {
+      toast.error("Complete the required email brief")
+      return
+    }
+
     setPending(true)
-    const result = await generateEmailStudioAction({ brief: text, target })
+    const result = target === "flow"
+      ? await generateEmailStudioAction({ brief: text, target })
+      : await generateEmailStudioAction({ target, ...emailBrief })
     setPending(false)
     if ("error" in result) {
       toast.error(result.error)
@@ -48,24 +99,116 @@ export function EmailStudioGenerate({
         </p>
       </div>
       {enabled ? (
-        <>
-          <textarea
-            value={brief}
-            aria-label={target === "flow" ? "Flow brief" : "Email brief"}
-            placeholder={placeholder}
-            maxLength={2000}
-            className="min-h-24 w-full rounded-md border border-input bg-background p-3 text-sm"
-            onChange={(event) => setBrief(event.target.value)}
-          />
-          <Button disabled={pending} onClick={() => void generate()}>
-            {pending ? "Designing…" : target === "flow" ? "Generate flow" : "Generate email"}
-          </Button>
-        </>
+        <form className="space-y-4" onSubmit={(event) => {
+          event.preventDefault()
+          void generate()
+        }}>
+          {target === "flow" ? (
+            <Textarea
+              value={brief}
+              aria-label="Flow brief"
+              placeholder="Welcome flow: an email now, wait two days, then a listing spotlight. Subscribers only."
+              maxLength={2000}
+              className="min-h-24 bg-background"
+              onChange={(event) => setBrief(event.target.value)}
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <BriefField label="Objective" required>
+                <Input
+                  value={emailBrief.objective}
+                  placeholder="Drive qualified buyers to new mid-length listings"
+                  maxLength={500}
+                  onChange={(event) => setEmailBrief((current) => ({ ...current, objective: event.target.value }))}
+                />
+              </BriefField>
+              <BriefField label="Audience" required>
+                <Input
+                  value={emailBrief.audience}
+                  placeholder="Subscribers interested in mid-length boards"
+                  maxLength={500}
+                  onChange={(event) => setEmailBrief((current) => ({ ...current, audience: event.target.value }))}
+                />
+              </BriefField>
+              <BriefField label="Email type" required>
+                <select
+                  value={emailBrief.emailType}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  onChange={(event) => setEmailBrief((current) => ({ ...current, emailType: event.target.value }))}
+                >
+                  {EMAIL_TYPES.map((type) => <option key={type}>{type}</option>)}
+                </select>
+              </BriefField>
+              <BriefField label="Products or category" required>
+                <Input
+                  value={emailBrief.productsOrCategory}
+                  placeholder="Mid-length boards, or paste exact listing details"
+                  maxLength={1000}
+                  onChange={(event) => setEmailBrief((current) => ({ ...current, productsOrCategory: event.target.value }))}
+                />
+              </BriefField>
+              <BriefField label="Offer">
+                <Input
+                  value={emailBrief.offer}
+                  placeholder="Optional — leave blank when there is no offer"
+                  maxLength={500}
+                  onChange={(event) => setEmailBrief((current) => ({ ...current, offer: event.target.value }))}
+                />
+              </BriefField>
+              <BriefField label="Tone" required>
+                <select
+                  value={emailBrief.tone}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  onChange={(event) => setEmailBrief((current) => ({ ...current, tone: event.target.value }))}
+                >
+                  {EMAIL_TONES.map((tone) => <option key={tone}>{tone}</option>)}
+                </select>
+              </BriefField>
+              <BriefField label="Primary call to action" required className="sm:col-span-2">
+                <Input
+                  value={emailBrief.primaryCta}
+                  placeholder="Browse mid-lengths — https://www.reswell.app/boards"
+                  maxLength={500}
+                  onChange={(event) => setEmailBrief((current) => ({ ...current, primaryCta: event.target.value }))}
+                />
+              </BriefField>
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={pending}>
+              {pending ? "Designing…" : target === "flow" ? "Generate flow" : "Generate email"}
+            </Button>
+            {target === "email" ? (
+              <p className="text-xs text-muted-foreground">Reswell voice, layout, footer, and brand styling are applied automatically.</p>
+            ) : null}
+          </div>
+        </form>
       ) : (
         <p className="text-xs text-muted-foreground">
           Generation needs AI Gateway authentication. Set AI_GATEWAY_API_KEY, or pull Vercel OIDC credentials, then restart the dev server.
         </p>
       )}
     </section>
+  )
+}
+
+function BriefField({
+  label,
+  required = false,
+  className,
+  children,
+}: {
+  label: string
+  required?: boolean
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <Label className={className}>
+      <span className="mb-1.5 block text-xs">
+        {label}{required ? <span className="text-destructive"> *</span> : null}
+      </span>
+      {children}
+    </Label>
   )
 }

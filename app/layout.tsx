@@ -5,7 +5,6 @@ import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
 import { SiteChromeShell } from '@/components/site-chrome-shell'
 import { AbortErrorSuppressor } from '@/components/abort-error-suppressor'
-import { OpsErrorReporter } from '@/components/ops-error-reporter'
 import { LiveChatWidgetGate } from '@/components/features/live-chat/live-chat-widget-gate'
 import { DEFAULT_LOCALE } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
@@ -88,7 +87,6 @@ export default function RootLayout({
         </noscript>
         <JsonLd data={[organizationSchema(publicSiteOrigin()), webSiteSchema(publicSiteOrigin())]} />
         <AbortErrorSuppressor />
-        <OpsErrorReporter />
         {/* Ads tags stay in the document with next/script lazyOnload so gclid / first
             load measurement still happen after window load without competing with LCP.
             Klaviyo, PostHog identify, page-view beacons, and Vercel Analytics mount

@@ -26,7 +26,6 @@ export async function fetchAdminNavBadgeCounts(
     orderSupportNewRes,
     liveChatOpenRes,
     fraudRes,
-    opsOpenRes,
     brandPendingRes,
     labelFailuresRes,
     hiddenActiveRes,
@@ -52,10 +51,6 @@ export async function fetchAdminNavBadgeCounts(
         .from('fraud_messages')
         .select('*', { count: 'exact', head: true })
         .neq('llm_review_status', 'dismissed'),
-      supabase
-        .from('ops_groups')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'open'),
       options.includeBrandRequests
         ? supabase
             .from('brand_requests')
@@ -87,7 +82,6 @@ export async function fetchAdminNavBadgeCounts(
       : take(supportNewRes),
     '/admin/live-chat': take(liveChatOpenRes),
     '/admin/fraud-messages': take(fraudRes),
-    '/admin/ops': take(opsOpenRes),
     '/admin/listings/hidden': hiddenActiveRes,
     '/admin/we-buy': buyQueue,
     '/admin/careers': take(careerNewRes),

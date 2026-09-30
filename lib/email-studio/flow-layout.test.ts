@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { layoutEmailStudioFlow } from "./flow-layout"
+// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
+import { layoutEmailStudioFlow } from "./flow-layout.ts"
 import type { EmailStudioFlowDefinition } from "@/lib/types/emailStudioFlow"
 
 const DELAY = "11111111-1111-4111-8111-111111111111"
@@ -76,5 +77,21 @@ describe("email studio flow layout", () => {
     assert.ok(yesNode && noNode && continuation)
     assert.ok(continuation.y > yesNode.y)
     assert.ok(continuation.y > noNode.y)
+  })
+
+  it("adds action insertion points at empty entries, branches, and path ends", () => {
+    const empty = definition()
+    empty.entryStepId = null
+    empty.steps = []
+    assert.deepEqual(layoutEmailStudioFlow(empty).insertionPoints.map((point) => point.anchor), [
+      { kind: "entry" },
+    ])
+
+    const flow = definition()
+    const split = flow.steps.find((step) => step.id === SPLIT)
+    if (split?.type === "split") split.no = null
+    const insertionPoints = layoutEmailStudioFlow(flow).insertionPoints
+    assert.ok(insertionPoints.some((point) => point.anchor.kind === "no"))
+    assert.ok(insertionPoints.some((point) => point.anchor.kind === "next"))
   })
 })

@@ -1,7 +1,5 @@
-import { Suspense } from "react"
 import { ListingPrivateChromeIsland } from "@/components/features/listings/listing-private-chrome-island"
 import { ListingViewerProvider } from "@/components/features/listings/listing-viewer-provider"
-import { ListingRelatedContentSection } from "@/components/features/listings/listing-related-content-section"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 import { ListingPdpProductJsonLd } from "@/components/features/listings/listing-pdp-product-json-ld"
 import { isGoogleMerchantPeerSection } from "@/lib/google-merchant/config"
@@ -15,18 +13,6 @@ type PublicListingRow = Record<string, unknown> & {
 }
 
 export type { PublicListingRow }
-
-const EMBEDDED_RELATED_CONTENT_SECTIONS = new Set([
-  "surfboards",
-  "fins",
-  "traction",
-  "wetsuits",
-  "apparel",
-  "magazines",
-  "boardbags",
-  "leashes",
-  "surfpacks",
-])
 
 function normalizePublicListingRow(listing: PublicListingRow): PublicListingRow {
   return {
@@ -142,11 +128,6 @@ export async function ListingDetailPublicBody({
       ) : null}
       <ListingViewTracker listingId={listing.id} />
       {sectionPage}
-      {EMBEDDED_RELATED_CONTENT_SECTIONS.has(listing.section) ? null : (
-        <Suspense fallback={null}>
-          <ListingRelatedContentSection listingId={listing.id} />
-        </Suspense>
-      )}
     </ListingViewerProvider>
   )
 }

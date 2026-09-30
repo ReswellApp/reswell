@@ -12,7 +12,15 @@ import {
 import { sanitizeEmailHtml } from "@/lib/email-studio/brand-html"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
-import type { EmailBlock, EmailStudioDocument } from "@/lib/types/emailStudio"
+import type {
+  EmailBlock,
+  EmailFontWeight,
+  EmailHideOn,
+  EmailPadding,
+  EmailSectionBlock,
+  EmailStudioDocument,
+  EmailStudioProductSnapshot,
+} from "@/lib/types/emailStudio"
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
 const HEADLINE = KLAVIYO_EMAIL_FONT_HEADLINE
@@ -42,6 +50,30 @@ function textToHtml(value: string): string {
   return escapeText(value).replace(/\r\n/g, "\n").replace(/\n/g, "<br>")
 }
 
+/**
+ * Seller-controlled listing fields are data, never Klaviyo template source.
+ * Fullwidth braces preserve readable content while making every Liquid
+ * delimiter variant inert in HTML attributes, HTML text, and plain text.
+ */
+export function neutralizeKlaviyoLiquidData(value: string): string {
+  return value.replaceAll("{", "｛").replaceAll("}", "｝")
+}
+
+function productSnapshotAsData(
+  item: EmailStudioProductSnapshot,
+): EmailStudioProductSnapshot {
+  return {
+    ...item,
+    title: neutralizeKlaviyoLiquidData(item.title),
+    priceDisplay: neutralizeKlaviyoLiquidData(item.priceDisplay),
+    condition: neutralizeKlaviyoLiquidData(item.condition),
+    dimensions: neutralizeKlaviyoLiquidData(item.dimensions),
+    boardType: neutralizeKlaviyoLiquidData(item.boardType),
+    imageUrl: neutralizeKlaviyoLiquidData(item.imageUrl),
+    productUrl: neutralizeKlaviyoLiquidData(item.productUrl),
+  }
+}
+
 export function safeEmailHref(href: string): string {
   const trimmed = href.trim()
   if (!trimmed) return ""
@@ -54,13 +86,76 @@ function align(value: "left" | "center"): string {
   return value === "center" ? "center" : "left"
 }
 
-function buttonHtml(label: string, href: string): string {
+function safeHex(value: string | undefined): string | null {
+  if (!value || !/^#[0-9A-Fa-f]{6}$/.test(value)) return null
+  return value
+}
+
+function safeImageUrl(value: string | undefined): string | null {
+  if (!value) return null
+  const safe = safeEmailHref(value)
+  return /^https:\/\//i.test(safe) ? safe : null
+}
+
+function rowOpen(hideOn?: EmailHideOn): string {
+  if (hideOn === "mobile") return '<tr class="hide-mobile">'
+  if (hideOn === "desktop") return '<tr class="hide-desktop">'
+  return "<tr>"
+}
+
+function fontStyleCss(italic?: boolean): string {
+  return italic ? "font-style:italic;" : ""
+}
+
+function textDecorCss(underline?: boolean, strike?: boolean): string {
+  const parts = [underline ? "underline" : "", strike ? "line-through" : ""].filter(Boolean)
+  return parts.length > 0 ? `text-decoration:${parts.join(" ")};` : ""
+}
+
+function textWeightCss(weight?: EmailFontWeight): string {
+  if (weight === "bold") return "font-weight:700;"
+  if (weight === "normal") return "font-weight:400;"
+  return ""
+}
+
+function paddingCss(padding: EmailPadding | undefined, fallback: string): string {
+  if (!padding) return fallback
+  return `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`
+}
+
+function hexLuminance(hex: string): number {
+  const n = Number.parseInt(hex.slice(1), 16)
+  const red = (n >> 16) & 255
+  const green = (n >> 8) & 255
+  const blue = n & 255
+  return (red * 299 + green * 587 + blue * 114) / 1000
+}
+
+interface ButtonPaint {
+  fullWidth?: boolean
+  fontWeight?: EmailFontWeight
+  fontSize?: number
+  fontFamily?: "sans" | "headline"
+  backgroundColor?: string
+  textColor?: string
+  radius?: number
+}
+
+function buttonHtml(label: string, href: string, options?: ButtonPaint): string {
   const safe = safeEmailHref(href)
   const inner = escapeText(label || "Open")
+  const family = options?.fontFamily === "headline" ? HEADLINE : FONT
+  const weight = options?.fontWeight === "bold" ? 700 : options?.fontWeight === "normal" ? 400 : 600
+  const size = options?.fontSize == null ? KLAVIYO_EMAIL_BUTTON_FONT_SIZE : `${options.fontSize}px`
+  const text = safeHex(options?.textColor) ?? BUTTON_TEXT
+  const background = safeHex(options?.backgroundColor) ?? BUTTON
+  const radius = options?.radius == null ? KLAVIYO_EMAIL_BUTTON_RADIUS : `${options.radius}px`
+  const widthCss = options?.fullWidth ? "display:block;width:100%;text-align:center;" : "display:inline-block;"
   const link = safe
-    ? `<a href="${safe}" style="display:inline-block;padding:14px 28px;font-family:${FONT};font-size:${KLAVIYO_EMAIL_BUTTON_FONT_SIZE};font-weight:600;color:${BUTTON_TEXT};text-decoration:none;letter-spacing:-0.02em;">${inner}</a>`
-    : `<span style="display:inline-block;padding:14px 28px;font-family:${FONT};font-size:${KLAVIYO_EMAIL_BUTTON_FONT_SIZE};font-weight:600;color:${BUTTON_TEXT};letter-spacing:-0.02em;">${inner}</span>`
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td align="center" bgcolor="${BUTTON}" style="border-radius:${KLAVIYO_EMAIL_BUTTON_RADIUS};">${link}</td></tr></table>`
+    ? `<a href="${safe}" style="${widthCss}padding:14px 28px;font-family:${family};font-size:${size};font-weight:${weight};color:${text};text-decoration:none;letter-spacing:-0.02em;">${inner}</a>`
+    : `<span style="${widthCss}padding:14px 28px;font-family:${family};font-size:${size};font-weight:${weight};color:${text};letter-spacing:-0.02em;">${inner}</span>`
+  const tableWidth = options?.fullWidth ? ' width="100%"' : ""
+  return `<table role="presentation"${tableWidth} cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td align="center" bgcolor="${background}" style="border-radius:${radius};">${link}</td></tr></table>`
 }
 
 function imageHtml(
@@ -69,18 +164,71 @@ function imageHtml(
   href: string,
   width: number,
   height: number | null,
+  radius?: number,
 ): string {
+  const radiusCss = radius == null ? KLAVIYO_EMAIL_RADIUS : `${radius}px`
   const safeSrc = safeEmailHref(emailImageSrc(src))
   if (!safeSrc) {
-    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:${KLAVIYO_EMAIL_COLORS.canvas};border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};"><tr><td align="center" style="padding:36px 16px;font-family:${FONT};font-size:13px;color:${KLAVIYO_EMAIL_MUTED};">Image</td></tr></table>`
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:${KLAVIYO_EMAIL_COLORS.canvas};border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${radiusCss};"><tr><td align="center" style="padding:36px 16px;font-family:${FONT};font-size:13px;color:${KLAVIYO_EMAIL_MUTED};">Image</td></tr></table>`
   }
   const w = Math.min(560, Math.max(40, width || 560))
   const cropped = height != null && height >= 40
   const img = cropped
-    ? `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" height="${height}" style="display:block;width:${w}px;max-width:100%;height:${height}px;object-fit:cover;object-position:center;border:0;border-radius:${KLAVIYO_EMAIL_RADIUS};" />`
-    : `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" style="display:block;width:${w}px;max-width:100%;height:auto;border:0;border-radius:${KLAVIYO_EMAIL_RADIUS};" />`
+    ? `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" height="${height}" style="display:block;width:${w}px;max-width:100%;height:${height}px;object-fit:cover;object-position:center;border:0;border-radius:${radiusCss};" />`
+    : `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" style="display:block;width:${w}px;max-width:100%;height:auto;border:0;border-radius:${radiusCss};" />`
   const safeHref = safeEmailHref(href)
   return safeHref ? `<a href="${safeHref}" style="text-decoration:none;">${img}</a>` : img
+}
+
+function productAvailabilityLabel(value: "available" | "pending" | "sold" | "unavailable"): string {
+  if (value === "available") return "Available"
+  if (value === "pending") return "Pending sale"
+  if (value === "sold") return "Sold"
+  return "Unavailable"
+}
+
+function productCardHtml(
+  item: Extract<EmailBlock, { type: "product" }>["items"][number],
+  block: Extract<EmailBlock, { type: "product" }>,
+  compact: boolean,
+): string {
+  const data = productSnapshotAsData(item)
+  const details = [
+    block.showBoardType && data.boardType ? data.boardType : "",
+    block.showCondition && data.condition ? data.condition : "",
+    block.showDimensions && data.dimensions ? data.dimensions : "",
+  ].filter(Boolean)
+  const imageWidth = compact ? 248 : 220
+  const image = imageHtml(data.imageUrl, data.title, data.productUrl, imageWidth, compact ? 180 : 220)
+  const status = block.showAvailability
+    ? `<p style="margin:0 0 7px 0;font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${item.availability === "available" ? KLAVIYO_EMAIL_COLORS.price : KLAVIYO_EMAIL_MUTED};">${productAvailabilityLabel(item.availability)}</p>`
+    : ""
+  const price = block.showPrice && data.priceDisplay
+    ? `<p style="margin:0 0 8px 0;font-family:${FONT};font-size:18px;font-weight:700;color:${INK};">${textToHtml(data.priceDisplay)}</p>`
+    : ""
+  const specs = details.length
+    ? `<p style="margin:0 0 16px 0;font-family:${FONT};font-size:13px;line-height:1.5;color:${KLAVIYO_EMAIL_MUTED};">${details.map(textToHtml).join(" · ")}</p>`
+    : ""
+  const cta = item.availability === "available" || item.availability === "pending"
+    ? buttonHtml(block.ctaLabel || "View board", data.productUrl)
+    : data.productUrl
+      ? `<a href="${safeEmailHref(data.productUrl)}" style="font-family:${FONT};font-size:14px;font-weight:600;color:${LINK};">View listing</a>`
+      : ""
+  const copy = `${status}<p style="margin:0 0 8px 0;font-family:${HEADLINE};font-size:${compact ? 18 : 22}px;font-weight:700;line-height:1.1;letter-spacing:-0.04em;color:${INK};">${textToHtml(data.title)}</p>${price}${specs}${cta}`
+
+  if (compact) {
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="padding-bottom:14px;">${image}</td></tr><tr><td>${copy}</td></tr></table>`
+  }
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td class="stack" valign="top" width="44%" style="padding:0 18px 0 0;">${image}</td><td class="stack" valign="middle" width="56%" style="padding:0 0 0 18px;">${copy}</td></tr></table>`
+}
+
+function sectionBackgroundCss(block: EmailSectionBlock, target: "row" | "content"): string {
+  const image = safeImageUrl(block.backgroundImage)
+  if (!image || (block.backgroundImageOn ?? "row") !== target) return ""
+  const size = block.backgroundFit === false ? "auto" : "cover"
+  const repeat = block.backgroundRepeat ? "repeat" : "no-repeat"
+  const position = block.backgroundCenter === false ? "left top" : "center"
+  return `background-image:url('${image}');background-size:${size};background-repeat:${repeat};background-position:${position};`
 }
 
 function renderBlock(
@@ -89,16 +237,22 @@ function renderBlock(
 ): string {
   switch (block.type) {
     case "section": {
-      const background = block.surface === "white"
+      const surfaceColor = block.surface === "white"
         ? KLAVIYO_EMAIL_COLORS.background
         : block.surface === "muted"
           ? KLAVIYO_EMAIL_COLORS.canvas
           : block.surface === "brand"
             ? BUTTON
             : INK
-      const childColors = block.surface === "brand" || block.surface === "dark"
-        ? { ink: BUTTON_TEXT, muted: KLAVIYO_EMAIL_BORDER }
-        : colors
+      const background = safeHex(block.backgroundColor) ?? surfaceColor
+      const customBackground = safeHex(block.backgroundColor)
+      const childColors = customBackground
+        ? hexLuminance(customBackground) < 150
+          ? { ink: BUTTON_TEXT, muted: KLAVIYO_EMAIL_BORDER }
+          : { ink: INK, muted: KLAVIYO_EMAIL_MUTED }
+        : block.surface === "brand" || block.surface === "dark"
+          ? { ink: BUTTON_TEXT, muted: KLAVIYO_EMAIL_BORDER }
+          : colors
       const padding = block.padding === "none"
         ? 0
         : block.padding === "compact"
@@ -108,6 +262,10 @@ function renderBlock(
             : 24
       const gap = block.gap === "compact" ? 6 : block.gap === "spacious" ? 16 : 10
       const totalWidth = block.columns.reduce((sum, column) => sum + column.width, 0)
+      const contentBackground = safeHex(block.contentBackgroundColor)
+      const contentImage = sectionBackgroundCss(block, "content")
+      const contentExtra = `${contentBackground ? `background:${contentBackground};` : ""}${contentImage}`
+      const wrapStyle = contentExtra ? `border-collapse:collapse;${contentExtra}` : "border-collapse:collapse"
       const columns = block.columns.map((column, index) => {
         const width = Math.round((column.width / totalWidth) * 100)
         const content = column.blocks.map((child) => renderBlock(child, childColors)).join("\n")
@@ -115,7 +273,13 @@ function renderBlock(
         const right = index === block.columns.length - 1 ? 0 : gap
         return `<td${block.stackOnMobile ? ' class="stack"' : ""} valign="top" width="${width}%" style="width:${width}%;padding:0 ${right}px 0 ${left}px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${content}</table></td>`
       }).join("")
-      return `<tr><td bgcolor="${background}" style="padding:${padding}px;border-radius:${KLAVIYO_EMAIL_RADIUS};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${columns}</tr></table></td></tr><tr><td style="height:20px;line-height:20px;font-size:0;">&nbsp;</td></tr>`
+      const rowImageUrl = (block.backgroundImageOn ?? "row") === "row" ? safeImageUrl(block.backgroundImage) : null
+      const rowImage = sectionBackgroundCss(block, "row")
+      const border = block.borderWidth && block.borderWidth > 0
+        ? `border:${block.borderWidth}px solid ${safeHex(block.borderColor) ?? KLAVIYO_EMAIL_BORDER};`
+        : ""
+      const rowImageAttr = rowImageUrl ? ` background="${rowImageUrl}"` : ""
+      return `${rowOpen(block.hideOn)}<td bgcolor="${background}"${rowImageAttr} style="padding:${padding}px;border-radius:${KLAVIYO_EMAIL_RADIUS};${rowImage}${border}"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${wrapStyle}"><tr>${columns}</tr></table></td></tr><tr><td style="height:20px;line-height:20px;font-size:0;">&nbsp;</td></tr>`
     }
     case "logo": {
       const width = Math.min(220, Math.max(80, block.width || 140))
@@ -125,15 +289,33 @@ function renderBlock(
       return `<tr><td align="center" style="padding:0 0 28px 0;">${inner}</td></tr>`
     }
     case "eyebrow":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 8px 0;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${colors.muted};">${textToHtml(block.text)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="${align(block.align)}" style="padding:0 0 8px 0;font-family:${FONT};font-size:${block.fontSize ?? 12}px;font-weight:${block.fontWeight === "normal" ? 400 : 700};${fontStyleCss(block.italic)}${textDecorCss(block.underline, block.strike)}letter-spacing:0.1em;text-transform:uppercase;color:${safeHex(block.color) ?? colors.muted};">${textToHtml(block.text)}</td></tr>`
     case "heading":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 16px 0;font-family:${HEADLINE};font-size:26px;font-weight:700;line-height:1.05;letter-spacing:-0.05em;color:${colors.ink};">${textToHtml(block.text)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="${align(block.align)}" style="padding:0 0 16px 0;font-family:${HEADLINE};font-size:${block.fontSize ?? 26}px;font-weight:${block.fontWeight === "normal" ? 400 : 700};${fontStyleCss(block.italic)}${textDecorCss(block.underline, block.strike)}line-height:1.05;letter-spacing:-0.05em;color:${safeHex(block.color) ?? colors.ink};">${textToHtml(block.text)}</td></tr>`
     case "text":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 20px 0;font-family:${FONT};font-size:16px;line-height:1.55;color:${colors.ink};">${textToHtml(block.text)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="${align(block.align)}" style="padding:0 0 20px 0;font-family:${FONT};font-size:${block.fontSize ?? 16}px;${textWeightCss(block.fontWeight)}${fontStyleCss(block.italic)}${textDecorCss(block.underline, block.strike)}line-height:1.55;color:${safeHex(block.color) ?? colors.ink};">${textToHtml(block.text)}</td></tr>`
     case "image":
-      return `<tr><td align="center" style="padding:0 0 20px 0;">${imageHtml(block.src, block.alt, block.href, block.width ?? 560, block.height ?? null)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="center" style="padding:${paddingCss(block.padding, "0 0 20px 0")};">${imageHtml(block.src, block.alt, block.href, block.width ?? 560, block.height ?? null, block.radius)}</td></tr>`
     case "button":
-      return `<tr><td align="${align(block.align)}" style="padding:4px 0 24px 0;">${buttonHtml(block.label, block.href)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="${align(block.align)}" style="padding:4px 0 24px 0;">${buttonHtml(block.label, block.href, block)}</td></tr>`
+    case "product": {
+      const items = block.items.slice(0, 4)
+      if (items.length === 0) {
+        return `<tr><td style="padding:24px;border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};font-family:${FONT};font-size:14px;text-align:center;color:${KLAVIYO_EMAIL_MUTED};">Choose up to four Reswell listings.</td></tr><tr><td style="height:20px;">&nbsp;</td></tr>`
+      }
+      const title = block.title.trim()
+        ? `<tr><td style="padding:0 0 18px 0;font-family:${HEADLINE};font-size:24px;font-weight:700;letter-spacing:-0.04em;color:${INK};">${textToHtml(block.title)}</td></tr>`
+        : ""
+      if (items.length === 1) {
+        return `${title}<tr><td style="padding:0 0 24px 0;">${productCardHtml(items[0], block, false)}</td></tr>`
+      }
+      const rows: string[] = []
+      for (let index = 0; index < items.length; index += 2) {
+        const pair = items.slice(index, index + 2)
+        rows.push(`<tr>${pair.map((item, pairIndex) => `<td class="stack" valign="top" width="50%" style="padding:0 ${pairIndex === 0 ? 10 : 0}px 24px ${pairIndex === 1 ? 10 : 0}px;">${productCardHtml(item, block, true)}</td>`).join("")}${pair.length === 1 ? '<td width="50%"></td>' : ""}</tr>`)
+      }
+      return `${title}<tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${rows.join("")}</table></td></tr>`
+    }
     case "divider":
       return `<tr><td style="padding:4px 0 20px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${KLAVIYO_EMAIL_BORDER};font-size:0;line-height:0;">&nbsp;</td></tr></table></td></tr>`
     case "spacer": {
@@ -193,7 +375,7 @@ export function renderEmailStudioHtml(input: EmailStudioRenderInput): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="x-apple-disable-message-reformatting" />
   <title>${escapeText(input.subject || input.name || "Reswell")}</title>
-  <style>${klaviyoEmailFontFaceCss(publicSiteOriginForEmail())}@media only screen and (max-width:600px){.stack{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;padding-bottom:16px!important;}}</style>
+  <style>${klaviyoEmailFontFaceCss(publicSiteOriginForEmail())}@media only screen and (max-width:600px){.stack{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;padding-bottom:16px!important;}.hide-mobile{display:none!important;max-height:0!important;overflow:hidden!important;}}@media only screen and (min-width:601px){.hide-desktop{display:none!important;max-height:0!important;overflow:hidden!important;}}</style>
 </head>
 <body style="margin:0;padding:0;background:${KLAVIYO_EMAIL_COLORS.background};">
 <!--
@@ -241,6 +423,28 @@ export interface EmailPreviewData {
   event: Record<string, unknown>
 }
 
+export const EMAIL_STUDIO_PREVIEW_SAMPLE: EmailPreviewData = {
+  profile: {
+    email: "alex@example.com",
+    firstName: "Alex",
+    lastName: "Surfer",
+  },
+  event: {
+    order_num: "RW-1042",
+    Title: "6'2 Pyzel Ghost",
+    "$value": "$640",
+    order_url: "https://www.reswell.app/dashboard/purchases",
+    listing_url: "https://www.reswell.app/boards",
+    image_url: "https://www.reswell.app/opengraph-image.jpg",
+    price_label: "$640 · Excellent condition",
+    seller_payout: "$576",
+    carrier: "UPS",
+    tracking_number: "1Z999AA10123456784",
+    tracking_url: "https://www.ups.com/track?tracknum=1Z999AA10123456784",
+    review_url: "https://www.reswell.app/dashboard/purchases",
+  },
+}
+
 /** Replaces Klaviyo tags for the preview pane only. Pushed HTML stays untouched. */
 export function withEmailPreviewData(html: string, data: EmailPreviewData): string {
   const profileValues: Record<string, unknown> = {
@@ -268,16 +472,7 @@ export function withEmailPreviewData(html: string, data: EmailPreviewData): stri
 
 /** Stable fallback when no live Klaviyo event has reached this metric yet. */
 export function withEmailPreviewSamples(html: string): string {
-  return withEmailPreviewData(html, {
-    profile: { email: "alex@example.com", firstName: "Alex", lastName: "Surfer" },
-    event: {
-      order_num: "RW-1042",
-      Title: "6'2 Pyzel Ghost",
-      "$value": "$640",
-      order_url: "https://www.reswell.app",
-      listing_url: "https://www.reswell.app",
-    },
-  })
+  return withEmailPreviewData(html, EMAIL_STUDIO_PREVIEW_SAMPLE)
 }
 
 export function renderEmailStudioText(input: EmailStudioRenderInput): string {
@@ -300,6 +495,22 @@ export function renderEmailStudioText(input: EmailStudioRenderInput): string {
       lines.push("")
     } else if (block.type === "split") {
       lines.push(block.title.trim(), block.text.trim(), "")
+    } else if (block.type === "product") {
+      if (block.title.trim()) lines.push(block.title.trim(), "")
+      for (const item of block.items) {
+        const data = productSnapshotAsData(item)
+        lines.push(data.title)
+        if (block.showPrice && data.priceDisplay) lines.push(data.priceDisplay)
+        const details = [
+          block.showBoardType ? data.boardType : "",
+          block.showCondition ? data.condition : "",
+          block.showDimensions ? data.dimensions : "",
+        ].filter(Boolean)
+        if (details.length) lines.push(details.join(" · "))
+        if (block.showAvailability) lines.push(productAvailabilityLabel(item.availability))
+        if (data.productUrl) lines.push(data.productUrl)
+        lines.push("")
+      }
     }
   }
   for (const block of input.document.blocks) appendBlock(block)
