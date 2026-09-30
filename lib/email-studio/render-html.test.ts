@@ -2,12 +2,12 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 // @ts-expect-error Node's type-stripping test runner requires the explicit extension.
 import { cloneEmailDocument, starterById } from "./document.ts"
-// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
 import {
   renderEmailStudioHtml,
   resolveEmailStudioHtml,
   safeEmailHref,
   withEmailPreviewData,
+// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
 } from "./render-html.ts"
 // @ts-expect-error Node's type-stripping test runner requires the explicit extension.
 import { emailStudioDocumentSchema } from "../validations/emailStudio.ts"
