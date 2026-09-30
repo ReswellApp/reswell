@@ -26,7 +26,6 @@ import {
   ArrowLeft,
   Copy,
   Download,
-  Eye,
   Monitor,
   Redo2,
   Send,
@@ -67,7 +66,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { EmailStudioCanvas } from "@/components/features/admin/email-studio/email-studio-canvas"
 import { EmailStudioInspector } from "@/components/features/admin/email-studio/email-studio-inspector"
 import { EmailStudioRail, type EmailStudioRailTab } from "@/components/features/admin/email-studio/email-studio-rail"
@@ -78,6 +76,7 @@ import {
 } from "@/components/features/admin/email-studio/email-studio-outline"
 import { EmailStudioVersionHistory } from "@/components/features/admin/email-studio/email-studio-version-history"
 import { EmailStudioLivePreview } from "@/components/features/admin/email-studio/email-studio-live-preview"
+import { EmailStudioReviewPublish } from "@/components/features/admin/email-studio/email-studio-review-publish"
 import { useEmailStudioDocument } from "@/components/features/admin/email-studio/hooks/use-email-studio-document"
 
 export function EmailStudioEditor({
@@ -118,8 +117,7 @@ export function EmailStudioEditor({
   const [mode, setMode] = useState<"display" | "preview" | "code">("display")
   const [frameWidth, setFrameWidth] = useState<375 | 600>(600)
   const [templateName, setTemplateName] = useState("")
-  const [testRecipient, setTestRecipient] = useState("")
-  const [testSending, setTestSending] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [rail, setRail] = useState<EmailStudioRailTab>(pendingProposal ? "assistant" : "content")
   const [railOpen, setRailOpen] = useState(true)
   const [inspecting, setInspecting] = useState(false)
@@ -276,24 +274,6 @@ export function EmailStudioEditor({
     URL.revokeObjectURL(url)
   }
 
-  async function pushKlaviyo() {
-    const ok = dirty ? await save({ flush: true }) : true
-    if (!ok) return
-    const result = await pushEmailStudioToKlaviyoAction({ id: draft.id })
-    if ("error" in result) {
-      toast.error(result.error)
-      return
-    }
-    mergeServerFields({
-      klaviyoTemplateId: result.templateId,
-      klaviyoSyncedRevision: result.syncedRevision,
-      klaviyoContentChecksum: result.checksum,
-      klaviyoSyncedAt: result.syncedAt,
-    })
-    if (result.warning) toast.warning(result.warning)
-    else toast.success("Template is verified in Klaviyo.")
-  }
-
   async function saveTemplate() {
     const name = templateName.trim()
     if (!name) {
@@ -312,21 +292,38 @@ export function EmailStudioEditor({
     router.refresh()
   }
 
-  async function sendTest(): Promise<void> {
+  async function reviewAndPublish(recipient: string): Promise<{ success: boolean; message: string }> {
     const ok = await save({ flush: true })
-    if (!ok) return
-    setTestSending(true)
-    const result = await sendEmailStudioTestAction({
+    if (!ok) return { success: false, message: "Save the email before publishing." }
+    const test = await sendEmailStudioTestAction({
       id: draft.id,
-      recipient: testRecipient,
+      recipient,
     })
-    setTestSending(false)
-    if ("error" in result) {
-      toast.error(result.error)
-      return
+    if ("error" in test) {
+      return { success: false, message: test.error }
     }
-    toast.success(`Test queued for ${testRecipient}`)
+    const published = await pushEmailStudioToKlaviyoAction({ id: draft.id })
+    if ("error" in published) {
+      return {
+        success: false,
+        message: `Test queued for ${recipient}, but final Klaviyo verification failed: ${published.error}`,
+      }
+    }
+    mergeServerFields({
+      klaviyoTemplateId: published.templateId,
+      klaviyoSyncedRevision: published.syncedRevision,
+      klaviyoContentChecksum: published.checksum,
+      klaviyoSyncedAt: published.syncedAt,
+    })
     router.refresh()
+    if (published.warning) {
+      return {
+        success: false,
+        message: `Test queued for ${recipient}. ${published.warning}`,
+      }
+    }
+    toast.success("Test queued and approved version published.")
+    return { success: true, message: `Test queued for ${recipient}. Approved version verified in Klaviyo.` }
   }
 
   function navigateAfterSave(event: ReactMouseEvent<HTMLAnchorElement>, href: string): void {
@@ -338,14 +335,6 @@ export function EmailStudioEditor({
   }
 
   const headerAction = "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm text-[#3f3f46] hover:bg-[#f4f4f5]"
-  const klaviyoLabel = !klaviyoConnected
-    ? "Klaviyo key missing"
-    : draft.klaviyoTemplateId
-      ? klaviyoStale
-        ? "Update Klaviyo"
-        : "Synced to Klaviyo"
-      : "Push to Klaviyo"
-
   return (
     <div className="flex h-full min-h-0 flex-col bg-white text-[#18181b] [--background:0_0%_100%] [--foreground:222_56%_3.5%] [--border:214_32%_91%] [--input:213_27%_84%] [--muted:210_40%_98%] [--muted-foreground:215_16%_47%] [--primary:222_56%_3.5%] [--primary-foreground:0_0%_100%] [--popover:0_0%_100%] [--popover-foreground:222_56%_3.5%] [--ring:222_56%_3.5%]">
       <header className="flex h-12 shrink-0 items-center gap-1 border-b border-[#e4e4e7] bg-white px-2">
@@ -384,30 +373,13 @@ export function EmailStudioEditor({
         <div className="ml-auto flex items-center gap-0.5">
           <button
             type="button"
-            className={cn(headerAction, mode === "preview" && "bg-[#f4f4f5] text-[#18181b]")}
-            onClick={() => setMode(mode === "preview" ? "display" : "preview")}
+            className={cn(headerAction, reviewOpen && "bg-[#f4f4f5] text-[#18181b]")}
+            disabled={Boolean(proposalPreview)}
+            onClick={() => setReviewOpen(true)}
           >
-            <Eye className="h-4 w-4" />
-            <span className="hidden md:inline">Preview</span>
+            <Send className="h-4 w-4" />
+            <span className="hidden lg:inline">Review & publish</span>
           </button>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button type="button" className={headerAction}>
-                <Send className="h-4 w-4" />
-                <span className="hidden lg:inline">Send test</span>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 space-y-3">
-              <div>
-                <p className="text-sm font-medium text-[#18181b]">Send a test</p>
-                <p className="mt-1 text-xs text-[#71717a]">Queues this design through Klaviyo.</p>
-              </div>
-              <Input type="email" value={testRecipient} placeholder="you@reswell.app" disabled={!klaviyoConnected || testSending} onChange={(event) => setTestRecipient(event.target.value)} />
-              <Button size="sm" className="w-full" disabled={!klaviyoConnected || !testRecipient.trim() || testSending || Boolean(proposalPreview)} onClick={() => void sendTest()}>
-                {testSending ? "Sending…" : "Send test"}
-              </Button>
-            </PopoverContent>
-          </Popover>
           <button
             type="button"
             className={cn(headerAction, rail === "assistant" && railOpen && !inspecting && "bg-[#f4f4f5] text-[#18181b]")}
@@ -449,9 +421,6 @@ export function EmailStudioEditor({
                 Copy HTML
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={!klaviyoConnected || saving || Boolean(proposalPreview)} onSelect={() => void pushKlaviyo()}>
-                {klaviyoLabel}
-              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/admin/email-studio/flows" onClick={(event) => navigateAfterSave(event, "/admin/email-studio/flows")}>
                   Flows
@@ -795,6 +764,16 @@ export function EmailStudioEditor({
           onClose={() => setMode("display")}
         />
       ) : null}
+      <EmailStudioReviewPublish
+        open={reviewOpen}
+        subject={displayDraft.subject}
+        previewText={displayDraft.previewText}
+        document={displayDraft.document}
+        html={html}
+        connected={klaviyoConnected}
+        onOpenChange={setReviewOpen}
+        onPublish={reviewAndPublish}
+      />
     </div>
   )
 }

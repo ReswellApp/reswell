@@ -12,6 +12,7 @@ import {
   blankEmailDocument,
 } from "@/lib/email-studio/document"
 import { renderEmailStudioText, resolveEmailStudioHtml } from "@/lib/email-studio/render-html"
+import { validateEmailStudioPreflight } from "@/lib/email-studio/preflight"
 import {
   deleteEmailStudioDocument,
   getEmailStudioDocument,
@@ -281,6 +282,16 @@ export async function pushEmailStudioToKlaviyoService(
     const existing = await getEmailStudioDocument(client, id)
     if (!existing) return { error: "Project not found" }
     const hydratedDocument = await hydrateEmailStudioProductBlocks(client, existing.document)
+    const preflightErrors = validateEmailStudioPreflight({
+      subject: existing.subject,
+      previewText: existing.previewText,
+      document: hydratedDocument,
+    }).filter((issue) => issue.severity === "error")
+    if (preflightErrors.length > 0) {
+      return {
+        error: `Fix ${preflightErrors.length} email issue${preflightErrors.length === 1 ? "" : "s"} before publishing: ${preflightErrors[0]?.message ?? "Preflight failed."}`,
+      }
+    }
     const renderInput = {
       name: existing.name,
       subject: existing.subject,

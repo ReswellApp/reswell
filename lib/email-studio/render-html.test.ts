@@ -11,6 +11,8 @@ import {
 } from "./render-html.ts"
 // @ts-expect-error Node's type-stripping test runner requires the explicit extension.
 import { emailStudioDocumentSchema } from "../validations/emailStudio.ts"
+// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
+import { validateEmailStudioPreflight } from "./preflight.ts"
 
 describe("email studio html", () => {
   it("drops unsafe links and keeps Klaviyo tags", () => {
@@ -226,5 +228,25 @@ describe("email studio html", () => {
       blocks: [{ ...product, listingIds: Array.from({ length: 5 }, (_, index) => `00000000-0000-4000-8000-00000000002${index}`) }],
     })
     assert.equal(tooMany.success, false)
+  })
+
+  it("blocks malformed variables, unsafe links, and missing unsubscribe content", () => {
+    const issues = validateEmailStudioPreflight({
+      subject: "A board for {{ first_name",
+      previewText: "",
+      document: {
+        blocks: [{
+          id: "00000000-0000-4000-8000-000000000030",
+          type: "button",
+          label: "View board",
+          href: "javascript:alert(1)",
+          align: "left",
+        }],
+      },
+    })
+    assert.ok(issues.some((issue) => issue.code === "malformed-variable" && issue.severity === "error"))
+    assert.ok(issues.some((issue) => issue.code === "invalid-link" && issue.severity === "error"))
+    assert.ok(issues.some((issue) => issue.code === "missing-footer" && issue.severity === "error"))
+    assert.ok(issues.some((issue) => issue.code === "missing-preview-text" && issue.severity === "warning"))
   })
 })
