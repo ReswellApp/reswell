@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
   }
 
   const shouldLookUpUser = pageViewRequiresUserLookup(
-    p,
     hasSupabaseAuthCookies(request.cookies.getAll()),
   )
   const supabase = shouldLookUpUser ? await createClient() : undefined

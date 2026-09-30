@@ -47,14 +47,7 @@ export function klaviyoPageViewMetricForPathname(
   return { metricName: "Viewed Site Page", segment: "site" }
 }
 
-/**
- * Product and sell events require a verified user. Storefront events only need
- * one when auth cookies indicate that signed-in enrichment may be available.
- */
-export function pageViewRequiresUserLookup(
-  pathname: string,
-  hasAuthCookies: boolean,
-): boolean {
-  const metric = klaviyoPageViewMetricForPathname(pathname)
-  return metric?.segment === "product" || metric?.segment === "sell" || hasAuthCookies
+/** Only verify a page-view user when the request may contain a signed-in session. */
+export function pageViewRequiresUserLookup(hasAuthCookies: boolean): boolean {
+  return hasAuthCookies
 }

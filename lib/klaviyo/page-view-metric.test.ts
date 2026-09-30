@@ -77,14 +77,11 @@ describe("klaviyoPageViewMetricForPathname", () => {
 })
 
 describe("pageViewRequiresUserLookup", () => {
-  it("bypasses Auth for anonymous storefront analytics", () => {
-    assert.equal(pageViewRequiresUserLookup("/", false), false)
-    assert.equal(pageViewRequiresUserLookup("/boards", false), false)
+  it("bypasses Auth for every cookie-less page-view beacon", () => {
+    assert.equal(pageViewRequiresUserLookup(false), false)
   })
 
-  it("keeps signed-in enrichment and authenticated-only page metrics", () => {
-    assert.equal(pageViewRequiresUserLookup("/boards", true), true)
-    assert.equal(pageViewRequiresUserLookup("/l/board", false), true)
-    assert.equal(pageViewRequiresUserLookup("/sell", false), true)
+  it("keeps verified signed-in enrichment when auth cookies exist", () => {
+    assert.equal(pageViewRequiresUserLookup(true), true)
   })
 })
