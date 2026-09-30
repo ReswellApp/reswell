@@ -550,9 +550,6 @@ export async function askEmailStudioAssistantService(input: {
       history: history.slice(-6).map((item) => ({ role: item.role, content: item.content })),
       prompt: [
         `Scope: ${input.scope}`,
-        input.scope === "email"
-          ? "Email Studio creates email content only. Do not create, modify, or propose a flow."
-          : "",
         input.selectedBlockId ? `Selected block id: ${input.selectedBlockId}` : "No block is selected.",
         `Known metrics: ${KNOWN_KLAVIYO_METRIC_NAMES.join(", ")}`,
         catalogLines("Metrics", catalog.metrics),
@@ -575,13 +572,6 @@ export async function askEmailStudioAssistantService(input: {
         ? "The assistant could not read that screenshot. Try a clearer image, or describe the layout in words."
         : "The assistant could not draft that. Say what the email or flow should do and try again.",
     }
-  }
-
-  if (input.scope === "email" && output.flow) {
-    if (!output.email) {
-      return { error: "Email Studio creates emails only. Generate the flow emails here, then assemble the flow in Klaviyo." }
-    }
-    output.flow = null
   }
 
   let email: { subject: string; previewText: string; notes: string; document: EmailStudioDocument } | null = null
@@ -728,9 +718,6 @@ export async function generateEmailStudioFromBriefService(input: GenerateEmailSt
   | { success: true; target: "email" | "flow"; id: string; name: string }
   | { error: string }
 > {
-  if (input.target === "flow") {
-    return { error: "Flow building is no longer available. Generate each email here and assemble the flow in Klaviyo." }
-  }
   if (!isEmailStudioAssistantEnabled()) {
     return {
       error: "The email assistant needs AI Gateway authentication. Set AI_GATEWAY_API_KEY or pull Vercel OIDC credentials, then restart the dev server.",
