@@ -20,6 +20,10 @@ export interface StripeConnectTransferRow {
   payout_speed?: string | null
   stripe_transfer_id: string | null
   stripe_payout_id?: string | null
+  /** Stripe payout status for the deposit to the seller's bank. Null until a po_ is matched. */
+  bank_payout_status?: string | null
+  /** Stripe payout.arrival_date, as an ISO timestamp (UTC midnight of that day). */
+  expected_arrival_at?: string | null
   status: string
   failure_reason: string | null
   created_at: string
@@ -107,21 +111,72 @@ export async function getStripeConnectTransferByStripeId(
   return data as StripeConnectTransferRow | null
 }
 
-export async function getStripeConnectTransferByPayoutId(
+export async function listStripeConnectTransfersByPayoutId(
   supabase: SupabaseClient,
   stripePayoutId: string,
-): Promise<StripeConnectTransferRow | null> {
+): Promise<StripeConnectTransferRow[]> {
   const { data, error } = await supabase
     .from("stripe_connect_transfers")
     .select("*")
     .eq("stripe_payout_id", stripePayoutId)
-    .maybeSingle()
 
   if (error) {
-    console.error("[stripe connect db] getStripeConnectTransferByPayoutId", error)
-    return null
+    console.error("[stripe connect db] listStripeConnectTransfersByPayoutId", error)
+    return []
   }
-  return data as StripeConnectTransferRow | null
+  return (data ?? []) as StripeConnectTransferRow[]
+}
+
+export async function listStripeConnectTransfersForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 500,
+): Promise<StripeConnectTransferRow[]> {
+  const { data, error } = await supabase
+    .from("stripe_connect_transfers")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("[stripe connect db] listStripeConnectTransfersForUser", error)
+    return []
+  }
+  return (data ?? []) as StripeConnectTransferRow[]
+}
+
+export async function updateStripeConnectTransferBankPayout(
+  supabase: SupabaseClient,
+  transferId: string,
+  patch: {
+    stripe_payout_id: string
+    bank_payout_status: string
+    expected_arrival_at: string | null
+  },
+  options?: { protectPaid?: boolean },
+): Promise<boolean> {
+  let query = supabase
+    .from("stripe_connect_transfers")
+    .update({
+      stripe_payout_id: patch.stripe_payout_id,
+      bank_payout_status: patch.bank_payout_status,
+      expected_arrival_at: patch.expected_arrival_at,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", transferId)
+
+  if (options?.protectPaid) {
+    query = query.or("bank_payout_status.is.null,bank_payout_status.neq.paid")
+  }
+
+  const { data, error } = await query.select("id").maybeSingle()
+
+  if (error) {
+    console.error("[stripe connect db] updateStripeConnectTransferBankPayout", error)
+    return false
+  }
+  return Boolean(data)
 }
 
 export async function getStripeConnectTransferById(

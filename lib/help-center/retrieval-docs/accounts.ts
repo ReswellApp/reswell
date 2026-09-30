@@ -148,7 +148,7 @@ export const accountsRetrievalDocs = [
       },
       {
         heading: "Tracking",
-        text: "Bank transfer history shows Processing, Sent, or Reversed. Returned transfers usually mean a closed account or mismatched name. Use Manage payout banks to fix details.",
+        text: "Bank transfer history shows Processing until the expected deposit date, then Sent. Your bank can post a Sent transfer later that same day. Reversed means the amount is back in your wallet. Use Manage payout banks if a transfer fails.",
       },
     ],
   }),

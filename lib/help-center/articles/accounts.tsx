@@ -298,9 +298,10 @@ export const accountsHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Bank transfers appear in <strong>Bank transfer history</strong> with statuses like{" "}
-              <strong>Processing</strong>, <strong>Sent</strong>, or <strong>Reversed</strong>. Use{" "}
-              <strong>Manage payout banks</strong> to update your account if a transfer fails.
+              Bank transfers appear in <strong>Bank transfer history</strong> as{" "}
+              <strong>Processing</strong> until the expected deposit date, then <strong>Sent</strong>.{" "}
+              <strong>Reversed</strong> means the amount is back in your wallet. Your bank can still post a
+              Sent transfer later that same day. Use <strong>Manage payout banks</strong> if a transfer fails.
             </p>
             <HelpNote>
               Keep payout details up to date. Returned transfers usually mean a closed account or
