@@ -54,22 +54,52 @@ export function EmailStudioLibrary({
     <div className="space-y-8">
       <EmailStudioGenerate target="email" enabled={assistantEnabled} />
       <section className="space-y-3 rounded-lg border border-border p-4">
-        <h2 className="text-sm font-medium">New project</h2>
-        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_220px_220px_auto]">
+        <div>
+          <h2 className="text-sm font-medium">Start from a foundation</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Choose the job this email needs to do. Copy, images, and links stay editable.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <Input value={name} placeholder="Order shipped — buyer" aria-label="Project name" onChange={(event) => setName(event.target.value)} />
+          <Button disabled={creating} onClick={() => void createProject()}>{creating ? "Creating" : "Start project"}</Button>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {EMAIL_STUDIO_STARTERS.map((starter) => {
+            const selected = !templateId && starter.id === starterId
+            return (
+              <button
+                key={starter.id}
+                type="button"
+                aria-pressed={selected}
+                className={`rounded-lg border p-3 text-left transition ${
+                  selected
+                    ? "border-[#5574AD] bg-[#5574AD]/5 ring-2 ring-[#5574AD]/15"
+                    : "border-border hover:border-[#5574AD]/40 hover:bg-muted/30"
+                }`}
+                onClick={() => {
+                  setStarterId(starter.id)
+                  setTemplateId("")
+                }}
+              >
+                <span className="block text-sm font-medium">{starter.name}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                  {starter.description}
+                </span>
+                {starter.triggerMetric ? (
+                  <span className="mt-2 inline-flex rounded-full bg-muted px-2 py-1 text-[10px] text-muted-foreground">
+                    {starter.triggerMetric}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
+        {templates.length > 0 ? (
+          <label className="block max-w-sm space-y-1.5 text-xs font-medium">
+            Or use one of your saved templates
           <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            aria-label="Starter"
-            value={starterId}
-            disabled={Boolean(templateId)}
-            onChange={(event) => setStarterId(event.target.value)}
-          >
-            {EMAIL_STUDIO_STARTERS.map((starter) => (
-              <option key={starter.id} value={starter.id}>{starter.name}</option>
-            ))}
-          </select>
-          <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-normal"
             aria-label="Saved template"
             value={templateId}
             onChange={(event) => setTemplateId(event.target.value)}
@@ -79,11 +109,8 @@ export function EmailStudioLibrary({
               <option key={template.id} value={template.id}>{template.name}</option>
             ))}
           </select>
-          <Button disabled={creating} onClick={() => void createProject()}>{creating ? "Creating" : "Start"}</Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {EMAIL_STUDIO_STARTERS.find((starter) => starter.id === starterId)?.description}
-        </p>
+          </label>
+        ) : null}
       </section>
 
       <section className="space-y-3">
