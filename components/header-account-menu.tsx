@@ -84,7 +84,7 @@ function HeaderAccountMenuInner({
           </div>
         </div>
         <DropdownMenuSeparator />
-        {DASHBOARD_NAV_LINKS.map((link) => {
+        {DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || isAdmin).map((link) => {
           const Icon = link.icon
           if (link.href === "/dashboard/earnings") {
             return (

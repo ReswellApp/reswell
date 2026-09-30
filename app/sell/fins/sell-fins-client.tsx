@@ -147,6 +147,8 @@ type FinFormState = {
   description: string
   price: string
   sellerPurchasePrice: string
+  sellerPurchasedFrom: string
+  sellerPurchasedOn: string
   condition: string
   size: string
   finSetup: string
@@ -177,6 +179,8 @@ const INITIAL_STATE: FinFormState = {
   description: "",
   price: "",
   sellerPurchasePrice: "",
+  sellerPurchasedFrom: "",
+  sellerPurchasedOn: "",
   condition: "",
   size: "",
   finSetup: "",
@@ -423,6 +427,8 @@ export default function SellFinsFlow({
       description: form.description,
       price: form.price,
       sellerPurchasePrice: form.sellerPurchasePrice,
+      sellerPurchasedFrom: form.sellerPurchasedFrom,
+      sellerPurchasedOn: form.sellerPurchasedOn,
       condition: form.condition,
       size: form.size || null,
       finSetup: form.finSetup || null,
@@ -511,6 +517,10 @@ export default function SellFinsFlow({
           if (v == null || v === "") return ""
           return String(v)
         })(),
+        sellerPurchasedFrom:
+          (listing as { seller_purchased_from?: string | null }).seller_purchased_from ?? "",
+        sellerPurchasedOn:
+          (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
         size: (listing as { fin_size?: string | null }).fin_size ?? "",
         finSetup: singleFinSetupSlugForForm((listing as { fins_setup?: string | null }).fins_setup),
@@ -916,6 +926,8 @@ export default function SellFinsFlow({
       reswellPackageWeightOz: form.reswellPackageWeightOz,
       buyerOffers: form.buyerOffers,
       sellerPurchasePrice: form.sellerPurchasePrice ? Number(form.sellerPurchasePrice) : null,
+      sellerPurchasedFrom: form.sellerPurchasedFrom || null,
+      sellerPurchasedOn: form.sellerPurchasedOn || null,
       images: readyImages.map((p, index) => ({
         id: p.id,
         url: p.url!,
@@ -1468,6 +1480,10 @@ export default function SellFinsFlow({
                     onListingPriceChange={(value) => setField("price", value)}
                     sellerPurchasePrice={form.sellerPurchasePrice}
                     onSellerPurchasePriceChange={(value) => setField("sellerPurchasePrice", value)}
+                    sellerPurchasedFrom={form.sellerPurchasedFrom}
+                    onSellerPurchasedFromChange={(value) => setField("sellerPurchasedFrom", value)}
+                    sellerPurchasedOn={form.sellerPurchasedOn}
+                    onSellerPurchasedOnChange={(value) => setField("sellerPurchasedOn", value)}
                     purchaseAccordionTitle="What you paid for the fins"
                     purchaseAccordionDescription="Keep track of what you paid versus what they sell for. This info is for your benefit only."
                     afterListingPrice={

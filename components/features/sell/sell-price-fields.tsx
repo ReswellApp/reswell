@@ -33,6 +33,10 @@ export interface SellPriceFieldsProps {
   onListingPriceChange: (value: string) => void
   sellerPurchasePrice: string
   onSellerPurchasePriceChange: (value: string) => void
+  sellerPurchasedFrom: string
+  onSellerPurchasedFromChange: (value: string) => void
+  sellerPurchasedOn: string
+  onSellerPurchasedOnChange: (value: string) => void
   /** Renders after the purchase-price accordion (e.g. sell-faster toggles). */
   afterListingPrice?: ReactNode
   purchaseAccordionTitle?: string
@@ -49,6 +53,10 @@ export function SellPriceFields({
   onListingPriceChange,
   sellerPurchasePrice,
   onSellerPurchasePriceChange,
+  sellerPurchasedFrom,
+  onSellerPurchasedFromChange,
+  sellerPurchasedOn,
+  onSellerPurchasedOnChange,
   afterListingPrice,
   purchaseAccordionTitle = "What you paid for the board",
   purchaseAccordionDescription = "Keep track of what you paid for the board versus what it sells for. This info is for your benefit only.",
@@ -153,6 +161,35 @@ export function SellPriceFields({
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">Not shown publicly.</p>
+                </div>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="sell-seller-purchased-from" className="text-sm font-semibold">
+                      Bought from
+                    </Label>
+                    <Input
+                      id="sell-seller-purchased-from"
+                      type="text"
+                      autoComplete="off"
+                      maxLength={200}
+                      placeholder="Shop, seller, marketplace"
+                      value={sellerPurchasedFrom}
+                      onChange={(event) => onSellerPurchasedFromChange(event.target.value)}
+                      className={SELL_CONTROL_CLASS}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sell-seller-purchased-on" className="text-sm font-semibold">
+                      Date purchased
+                    </Label>
+                    <Input
+                      id="sell-seller-purchased-on"
+                      type="date"
+                      value={sellerPurchasedOn}
+                      onChange={(event) => onSellerPurchasedOnChange(event.target.value)}
+                      className={SELL_CONTROL_CLASS}
+                    />
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>

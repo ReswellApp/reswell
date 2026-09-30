@@ -118,6 +118,8 @@ async function renderMagazinesListingDetailPage({
   }
 
   delete magazine.seller_purchase_price_usd
+  delete magazine.seller_purchased_from
+  delete magazine.seller_purchased_on
 
   const p = magazine.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

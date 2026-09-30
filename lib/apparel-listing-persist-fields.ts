@@ -68,6 +68,8 @@ export function buildApparelListingPersistFields(
     ...packedRow,
     buyer_offers_enabled: input.buyerOffers !== false,
     seller_purchase_price_usd: input.sellerPurchasePrice ?? null,
+    seller_purchased_from: input.sellerPurchasedFrom?.trim() || null,
+    seller_purchased_on: input.sellerPurchasedOn || null,
     brand,
     brand_id: brandId,
     model,

@@ -129,6 +129,8 @@ async function renderWetsuitsListingDetailPage({
   }
 
   delete wetsuit.seller_purchase_price_usd
+  delete wetsuit.seller_purchased_from
+  delete wetsuit.seller_purchased_on
 
   const p = wetsuit.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

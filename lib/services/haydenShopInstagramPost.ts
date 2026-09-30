@@ -21,7 +21,7 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { isPeerListingSection, PEER_LISTING_SECTION_LABELS } from "@/lib/peer-listing-sections"
-import { resolveHaydenShopUserId } from "@/lib/services/pnlHaydenShopSale"
+import { resolveMetaCatalogHaydenShopUserId } from "@/lib/services/metaCatalogFeed"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { slugify } from "@/lib/slugify"
 
@@ -127,7 +127,7 @@ function toPack(listing: HaydenShopInstagramListingRow, seller: HaydenShopInstag
 }
 
 async function requireHaydenShop(supabase: NonNullable<ReturnType<typeof serviceClient>>) {
-  const userId = await resolveHaydenShopUserId(supabase)
+  const userId = await resolveMetaCatalogHaydenShopUserId(supabase)
   if (!userId) {
     return { ok: false as const, error: "Hayden's Shop seller is not configured", status: 500 }
   }

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import type { AdminMonthlyRevenueRow } from '@/lib/types/adminBusinessInsights'
-import { formatMonthKey } from '@/lib/pnl-calc'
+import { formatMonthKey } from '@/lib/utils/adminRevenueMonthly'
 import { BUSINESS_TIMEZONE_LABEL } from '@/lib/utils/business-timezone'
 import { cn } from '@/lib/utils'
 

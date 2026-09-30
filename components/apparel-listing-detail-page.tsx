@@ -128,6 +128,8 @@ async function renderApparelListingDetailPage({
   }
 
   delete apparel.seller_purchase_price_usd
+  delete apparel.seller_purchased_from
+  delete apparel.seller_purchased_on
 
   const p = apparel.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

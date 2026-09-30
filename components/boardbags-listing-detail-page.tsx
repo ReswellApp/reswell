@@ -124,6 +124,8 @@ async function renderBoardbagsListingDetailPage({
   }
 
   delete boardbag.seller_purchase_price_usd
+  delete boardbag.seller_purchased_from
+  delete boardbag.seller_purchased_on
 
   const p = boardbag.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

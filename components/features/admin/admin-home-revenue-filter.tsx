@@ -19,7 +19,7 @@ import {
   businessYearMonthChoices,
   type AdminHomeRevenueRange,
 } from '@/lib/utils/adminInsightsPeriod'
-import { formatMonthKey } from '@/lib/pnl-calc'
+import { formatMonthKey } from '@/lib/utils/adminRevenueMonthly'
 
 const ROLLING_30 = '30d'
 const ROLLING_90 = '90d'

@@ -131,12 +131,14 @@ function DashboardNavItem({
 
 export interface DashboardSidebarNavProps {
   sellerProfileHref: string | null
+  isAdmin?: boolean
   /** Larger nav for `/dashboard` shell; messages keeps the default compact size. */
   size?: "default" | "large"
 }
 
 export function DashboardSidebarNav({
   sellerProfileHref,
+  isAdmin = false,
   size = "default",
 }: DashboardSidebarNavProps) {
   const pathname = usePathname() ?? ""
@@ -153,7 +155,7 @@ export function DashboardSidebarNav({
       className={cn("hidden lg:block", isLarge ? "space-y-2" : "space-y-1.5")}
       aria-label="Dashboard"
     >
-      {DASHBOARD_NAV_LINKS.map((link) => (
+      {DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || isAdmin).map((link) => (
         <DashboardNavItem key={link.href} link={link} size={size} />
       ))}
       {sellerProfileHref ? (

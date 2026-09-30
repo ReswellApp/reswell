@@ -120,6 +120,8 @@ async function renderAccessoriesListingDetailPage({
   }
 
   delete accessory.seller_purchase_price_usd
+  delete accessory.seller_purchased_from
+  delete accessory.seller_purchased_on
 
   const p = accessory.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

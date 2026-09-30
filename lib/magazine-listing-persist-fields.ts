@@ -47,6 +47,8 @@ export function buildMagazineListingPersistFields(
     ...packedRow,
     buyer_offers_enabled: false,
     seller_purchase_price_usd: null,
+    seller_purchased_from: null,
+    seller_purchased_on: null,
     brand,
     brand_id: null,
     model: null,
