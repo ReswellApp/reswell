@@ -24,6 +24,7 @@ import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import { getAllHelpRetrievalDocuments } from "@/lib/help-center/retrieval-docs"
 import { helpTopicIndexes } from "@/lib/help-center/topics"
 import { helpTopicPath } from "@/lib/help-center/paths"
+import { buildModelPageSitemapEntries } from "@/lib/sitemap/model-page-entries"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
 export type { SitemapUrlEntry } from "@/lib/sitemap/types"
@@ -221,12 +222,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: 0.55,
   }))
 
-  const modelPages: SitemapUrlEntry[] = modelRows.map((row) => ({
-    url: `${BASE}/${row.brandSlug}/${row.modelSlug}`,
-    lastModified: now,
-    changeFrequency: "daily",
-    priority: 0.65,
-  }))
+  const modelPages = buildModelPageSitemapEntries(modelRows, BASE, now)
 
   const cityPages: SitemapUrlEntry[] = cityDirectory.cities.map((city) => ({
     url: `${BASE}${cityLandingHref(city.slug)}`,

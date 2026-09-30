@@ -3,7 +3,6 @@ import { notFound } from "next/navigation"
 import { ModelPageView } from "@/components/features/models/model-page-view"
 import { getDb } from "@/lib/supabase/db"
 import { createClient } from "@/lib/supabase/server"
-import { fetchBrandModelSitemapEntries } from "@/lib/db/sitemap-models"
 import { isReservedModelPageBrandSegment } from "@/lib/models/routes"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { getModelPage } from "@/lib/services/modelPage"
@@ -13,15 +12,14 @@ import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 
 export const revalidate = 3600
+export const dynamicParams = true
 
 type Props = {
   params: Promise<{ brand: string; model: string }>
 }
 
-export async function generateStaticParams() {
-  const supabase = getDb({ consistency: "eventual" })
-  const rows = await fetchBrandModelSitemapEntries(supabase)
-  return rows.map((row) => ({ brand: row.brandSlug, model: row.modelSlug }))
+export function generateStaticParams(): Array<{ brand: string; model: string }> {
+  return []
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
