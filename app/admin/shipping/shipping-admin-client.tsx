@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils'
 import type { AdminShippingStats } from '@/lib/services/adminShippingStats'
 import { AdminAdjustedLabelsTab } from './admin-adjusted-labels-tab'
 import { AdminLabelSpendTab } from './admin-label-spend-tab'
+import { AdminPostageRecoveryTab } from './admin-postage-recovery-tab'
 import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
 import { AdminFailedLabelsTab } from './admin-failed-labels-tab'
 import { AdminOrderLabelPurchase } from './admin-order-label-purchase'
@@ -182,7 +183,8 @@ export function AdminShippingClient() {
     tabFromUrl === 'create' ||
     tabFromUrl === 'labels-created' ||
     tabFromUrl === 'adjusted-labels' ||
-    tabFromUrl === 'label-spend'
+    tabFromUrl === 'label-spend' ||
+    tabFromUrl === 'postage-recovery'
       ? tabFromUrl
       : 'overview'
 
@@ -459,6 +461,10 @@ export function AdminShippingClient() {
               <Landmark className="h-4 w-4" />
               Label spend
             </TabsTrigger>
+            <TabsTrigger value="postage-recovery" className={tabTriggerClass}>
+              <Wallet className="h-4 w-4" />
+              Postage recovery
+            </TabsTrigger>
             <TabsTrigger value="failed-labels" className={tabTriggerClass}>
               <TriangleAlert className="h-4 w-4" />
               Failed labels
@@ -502,6 +508,10 @@ export function AdminShippingClient() {
 
           <TabsContent value="label-spend" className="page-enter mt-6">
             <AdminLabelSpendTab />
+          </TabsContent>
+
+          <TabsContent value="postage-recovery" className="page-enter mt-6">
+            <AdminPostageRecoveryTab />
           </TabsContent>
 
           <TabsContent value="adjusted-labels" className="page-enter mt-6">

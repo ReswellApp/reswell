@@ -196,9 +196,24 @@ export async function voidShipEngineLabelForOrder(params: {
     return { ok: false, error: voided.error, status: voided.status }
   }
 
+  let shipengineVoided = false
+  if (voided.result.approved) {
+    const confirmed = await fetchLabelById(labelId)
+    shipengineVoided = confirmed.ok && confirmed.label.voided
+    if (confirmed.ok && confirmed.label.carrier_id && !labelRow.carrier_id) {
+      labelRow = { ...labelRow, carrier_id: confirmed.label.carrier_id }
+    }
+  }
+
+  const message = shipengineVoided
+    ? voided.result.message
+    : voided.result.approved
+      ? `${voided.result.message} Label is not marked voided yet — unused postage recovery will retry.`
+      : voided.result.message
+
   const orderTrack = normalizeTracking(o.tracking_number)
   const labelTrack = normalizeTracking(labelRow.tracking_number)
-  const shouldClear = Boolean(labelTrack && orderTrack && labelTrack === orderTrack)
+  const shouldClear = Boolean(shipengineVoided && labelTrack && orderTrack && labelTrack === orderTrack)
 
   if (shouldClear) {
     const { error: upErr } = await params.supabase
@@ -219,8 +234,8 @@ export async function voidShipEngineLabelForOrder(params: {
     ok: true,
     data: {
       labelId,
-      approved: voided.result.approved,
-      message: voided.result.message,
+      approved: shipengineVoided,
+      message,
       clearedOrderTracking: shouldClear,
     },
   }

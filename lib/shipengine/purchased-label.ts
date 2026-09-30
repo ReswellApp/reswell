@@ -16,6 +16,7 @@ export type ShipEnginePurchasedLabel = {
   shipmentId: string | null
   trackingNumber: string | null
   carrierCode: string | null
+  carrierId: string | null
   serviceCode: string | null
   createdAt: string
   voided: boolean
@@ -34,6 +35,8 @@ export function purchasedLabelFromApi(row: Record<string, unknown>): ShipEngineP
   const shipmentId = typeof row.shipment_id === "string" ? row.shipment_id : null
   const carrierCode =
     typeof row.carrier_code === "string" ? row.carrier_code.trim() || null : null
+  const carrierId =
+    typeof row.carrier_id === "string" ? row.carrier_id.trim() || null : null
   const serviceCode =
     typeof row.service_code === "string" ? row.service_code.trim() || null : null
 
@@ -42,6 +45,7 @@ export function purchasedLabelFromApi(row: Record<string, unknown>): ShipEngineP
     shipmentId,
     trackingNumber: tracking,
     carrierCode,
+    carrierId,
     serviceCode,
     createdAt,
     voided: row.voided === true,
