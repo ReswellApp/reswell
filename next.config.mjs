@@ -347,6 +347,12 @@ const withObservability = posthogApiKey && posthogProjectId
       personalApiKey: posthogApiKey,
       projectId: posthogProjectId,
       host: 'https://us.posthog.com',
+      // Vercel has no reliable detached post-build hook. Keep PostHog's
+      // runtime analytics/error capture, but do not block static generation
+      // while the compiler hook processes and uploads every emitted map.
+      sourcemaps: {
+        enabled: false,
+      },
     })
   : analyzed
 
