@@ -36,6 +36,11 @@ import {
   volumeBucketBySlug,
   type BoardsBrowseFacetSelections,
 } from "@/lib/boards-browse-facets"
+import {
+  resolveNearbyBrowseFallbackRows,
+  type BrowseFallbackSourceRow,
+  type NearbyBrowseFallbackKind,
+} from "@/lib/utils/boards-browse-fallback"
 
 /**
  * Explicit chain type so `async function` return is not inferred as `PostgrestSingleResponse`
@@ -78,14 +83,40 @@ export type BoardBrowseListingRow = {
 }
 
 /**
- * Card cover + carousel come from denormalized primary_* / tile_gallery_images
- * (no listing_images join). `*` still used for browse filters; nest removed to
- * cut PostgREST lateral cost.
+ * Smallest public surfboard tile projection. Filter-only columns stay in WHERE
+ * clauses and private pricing, shipping-pack, and guest-token columns never
+ * cross the PostgREST boundary.
  */
 export const SURFBOARD_BROWSE_LISTING_SELECT = `
-  *,
-  categories (name),
-  profiles!listings_user_id_fkey (display_name, avatar_url, location, shop_verified)
+  id,
+  slug,
+  user_id,
+  title,
+  price,
+  compare_at_price,
+  is_good_deal,
+  status,
+  created_at,
+  latitude,
+  longitude,
+  local_pickup,
+  shipping_available,
+  primary_image_url,
+  primary_thumbnail_url,
+  tile_gallery_images,
+  board_type,
+  condition,
+  suppressed_on_boards_browse,
+  categories (name)
+`
+
+const SURFBOARD_BROWSE_FALLBACK_SELECT = `
+  ${SURFBOARD_BROWSE_LISTING_SELECT},
+  description,
+  brand,
+  fins_setup,
+  tail_shape,
+  categories (name, slug)
 `
 
 // 30 fills full rows on 2/3-col and lg 4-col grids (xl 5-col leaves a short last row),
@@ -697,6 +728,90 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
     rows.length === 0 ? 0 : Math.max(1, Math.ceil(rows.length / params.limit))
   const boards = rows.slice(params.offset, params.offset + params.limit)
   return { boards, totalPages }
+}
+
+/**
+ * One bounded PostgREST read for the empty-result location fallback.
+ * The wide candidate set is partitioned locally in the same UX order as the
+ * former 100mi/wide + keyword/relaxed retry chain.
+ */
+export async function fetchNearbySurfboardFallback(params: {
+  supabase: SupabaseClient
+  anchorLat: number
+  anchorLng: number
+  boardType: string
+  condition: string
+  query: string
+  brand?: string
+  model?: string
+  brandId?: string
+  brandModelId?: string
+  dimensionFields?: BoardDimensionBrowseFields
+  legacyDimensions?: string
+  facets?: BoardsBrowseFacetSelections
+  minPrice?: number
+  maxPrice?: number
+  shippingAvailable?: boolean
+  offset: number
+  limit: number
+  useSuppressionSort?: boolean
+}): Promise<{
+  boards: BoardBrowseListingRow[]
+  totalPages: number
+  kind: NearbyBrowseFallbackKind | null
+}> {
+  const chain = (await buildSurfboardBrowseBaseQuery(params.supabase, {
+    boardType: params.boardType,
+    condition: params.condition,
+    // Fetch once without the keyword; resolve exact-vs-relaxed tiers locally.
+    query: "",
+    brand: params.brand,
+    model: params.model,
+    brandId: params.brandId,
+    brandModelId: params.brandModelId,
+    dimensionFields: params.dimensionFields,
+    legacyDimensions: params.legacyDimensions,
+    facets: params.facets,
+    minPrice: params.minPrice,
+    maxPrice: params.maxPrice,
+    shippingAvailable: params.shippingAvailable,
+    useSuppressionSort: params.useSuppressionSort,
+    geoBbox: {
+      lat: params.anchorLat,
+      lng: params.anchorLng,
+      radiusMiles: LOCATION_FALLBACK_WIDE_RADIUS_MI,
+    },
+    rangeBeforeKeywordOr: { from: 0, to: GEO_BROWSE_HTML_MAX_ROWS - 1 },
+    prependCreatedAtOrder: true,
+    withCount: false,
+    selectColumns: SURFBOARD_BROWSE_FALLBACK_SELECT,
+  })) as unknown as SurfboardBrowseListingsQuery
+
+  const { data, error } = await chain
+  if (error) {
+    console.error("fetchNearbySurfboardFallback:", describeBrowseQueryError(error))
+    return { boards: [], totalPages: 0, kind: null }
+  }
+
+  const candidates = ((data ?? []) as BrowseFallbackSourceRow[])
+    .map((row) => ({
+      ...row,
+      _distance: haversineMi(
+        params.anchorLat,
+        params.anchorLng,
+        row.latitude,
+        row.longitude,
+      ),
+    }))
+    .filter((row) => row._distance <= LOCATION_FALLBACK_WIDE_RADIUS_MI)
+  const resolved = resolveNearbyBrowseFallbackRows(candidates, params.query)
+  const totalPages =
+    resolved.rows.length === 0 ? 0 : Math.max(1, Math.ceil(resolved.rows.length / params.limit))
+  return {
+    boards: resolved.rows.slice(params.offset, params.offset + params.limit),
+    totalPages,
+    kind: resolved.kind,
+  }
 }
 
 function hasNonEmptyParam(value: string | undefined): boolean {

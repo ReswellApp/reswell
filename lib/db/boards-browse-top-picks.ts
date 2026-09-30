@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  listingHeroSlideSrc,
+  listingImagesFromPrimaryFields,
+} from "@/lib/listing-image-display"
 
 const CURATION_TABLE = "boards_browse_top_picks_listings"
 
@@ -12,7 +15,8 @@ const CURATION_LISTING_SELECT = `
   status,
   hidden_from_site,
   is_good_deal,
-  listing_images (url, thumbnail_url, is_primary)
+  primary_image_url,
+  primary_thumbnail_url
 `
 
 type JoinedListing = {
@@ -24,7 +28,8 @@ type JoinedListing = {
   status: string | null
   hidden_from_site: boolean | null
   is_good_deal: boolean | null
-  listing_images: ListingImageForCard[] | null
+  primary_image_url: string | null
+  primary_thumbnail_url: string | null
 }
 
 type RawCurationRow = {
@@ -68,7 +73,12 @@ function hydrateRow(row: RawCurationRow): BoardsBrowseTopPickCurationRow | null 
       status: listing.status,
       hidden_from_site: listing.hidden_from_site,
       is_good_deal: listing.is_good_deal,
-      primary_image_url: listingHeroSlideSrc(listing.listing_images),
+      primary_image_url: listingHeroSlideSrc(
+        listingImagesFromPrimaryFields(
+          listing.primary_image_url,
+          listing.primary_thumbnail_url,
+        ),
+      ),
     },
   }
 }
@@ -226,7 +236,7 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
     .from("listings")
     .select(
       `id, slug, title, price, board_type, status, hidden_from_site, is_good_deal,
-       listing_images (url, thumbnail_url, is_primary)`,
+       primary_image_url, primary_thumbnail_url`,
     )
     .eq("status", "active")
     .eq("hidden_from_site", false)
@@ -254,7 +264,8 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
     status: string | null
     hidden_from_site: boolean | null
     is_good_deal: boolean | null
-    listing_images: ListingImageForCard[] | null
+    primary_image_url: string | null
+    primary_thumbnail_url: string | null
   }>
 
   const ids = rows.map((r) => r.id)
@@ -280,7 +291,9 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
     status: r.status,
     hidden_from_site: r.hidden_from_site,
     is_good_deal: r.is_good_deal,
-    primary_image_url: listingHeroSlideSrc(r.listing_images),
+    primary_image_url: listingHeroSlideSrc(
+      listingImagesFromPrimaryFields(r.primary_image_url, r.primary_thumbnail_url),
+    ),
     already_curated: curatedIds.has(r.id),
   }))
 }

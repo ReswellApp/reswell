@@ -29,10 +29,9 @@ import {
   compareBoardBrowseRows,
   compareBoardBrowseRowsDailyRotate,
   fetchBoardsBrowseDailyRotatePage,
-  fetchNearestSurfboardsWithinRadius,
+  fetchNearbySurfboardFallback,
   isBoardsBrowseTopPicksSort,
   LOCATION_FALLBACK_RADIUS_MI,
-  LOCATION_FALLBACK_WIDE_RADIUS_MI,
   suppressedBrowseRank,
   type BoardBrowseListingRow,
   type SurfboardBrowseListingsQuery,
@@ -487,88 +486,39 @@ async function BoardListings({
       const nearbyModel =
         brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined
 
-      async function fetchNearbyRadiusEs(radiusCapMi: number, q: string) {
-        const pageResult = await getBoardsBrowseListingsPageViaEs(supabase, {
-          boardType,
-          condition,
-          query: q || esQuery,
-          brand:
-            nearbyBrand ??
-            (esBrandModelIds?.length || esBrandModelId ? undefined : esBrand),
-          model:
-            nearbyModel ??
-            (esBrandModelIds?.length || esBrandModelId || esBrandId ? undefined : esModel),
-          brandId: esBrandModelIds?.length || esBrandModelId ? undefined : esBrandId,
-          brandModelId: esBrandModelId,
-          brandModelIds: esBrandModelIds,
-          expansions: esExpansions,
-          lengthInches: esLengthInches,
-          minLengthInches: esMinLengthInches,
-          maxLengthInches: esMaxLengthInches,
-          tailShapes: esTailShapes,
-          dimensionTokens: boardDimensionBrowseIlikeTokens(dimensionFields),
-          facets,
-          minPrice,
-          maxPrice,
-          shippingAvailable,
-          geo: { lat: alat, lng: alng, radiusMi: radiusCapMi },
-          sort: "nearest",
-          page,
-        })
-        return pageResult ?? { boards: [] as BoardBrowseListingRow[], totalPages: 0 }
-      }
+      const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
+      const fallback = await fetchNearbySurfboardFallback({
+        supabase,
+        anchorLat: alat,
+        anchorLng: alng,
+        boardType,
+        condition,
+        query,
+        brand: nearbyBrand,
+        model: nearbyModel,
+        brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+        brandModelId: brandModelIdForQuery,
+        dimensionFields,
+        facets,
+        minPrice,
+        maxPrice,
+        shippingAvailable,
+        offset,
+        limit,
+        useSuppressionSort,
+      })
 
-      async function fetchNearbyRadiusPg(radiusCapMi: number, q: string) {
-        const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
-        return fetchNearestSurfboardsWithinRadius({
-          supabase,
-          anchorLat: alat,
-          anchorLng: alng,
-          radiusCapMi,
-          boardType,
-          condition,
-          query: q,
-          brand: nearbyBrand,
-          model: nearbyModel,
-          brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
-          brandModelId: brandModelIdForQuery,
-          dimensionFields,
-          facets,
-          minPrice,
-          maxPrice,
-          shippingAvailable,
-          offset,
-          limit,
-          maxFetch: radiusCapMi >= LOCATION_FALLBACK_WIDE_RADIUS_MI ? 4000 : 2500,
-          useSuppressionSort,
-        })
-      }
-
-      async function fetchNearbyRadius(radiusCapMi: number, q: string) {
-        // When ES is on, widen via the listings index — never Postgres ILIKE for nearby search.
-        if (esEnabled) return fetchNearbyRadiusEs(radiusCapMi, q)
-        return fetchNearbyRadiusPg(radiusCapMi, q)
-      }
-
-      const try100MiFirst =
-        !filterByRadius ||
-        radiusMi == null ||
-        radiusMi < LOCATION_FALLBACK_RADIUS_MI
-
-      if (try100MiFirst) {
-        let fb = await fetchNearbyRadius(LOCATION_FALLBACK_RADIUS_MI, query)
-        let widenedKeyword = false
-        if (fb.boards.length === 0 && query.trim()) {
-          fb = await fetchNearbyRadius(LOCATION_FALLBACK_RADIUS_MI, "")
-          widenedKeyword = true
-        }
-        if (fb.boards.length > 0) {
-          boards = fb.boards
-          totalPages = fb.totalPages
-          if (widenedKeyword) {
-            locationFallbackNotice =
-              "No exact matches for your search in this area — showing the nearest surfboards within 100 miles."
-          } else if (filterByRadius && radiusMi != null && radiusMi < LOCATION_FALLBACK_RADIUS_MI) {
+      if (fallback.boards.length > 0 && fallback.kind) {
+        boards = fallback.boards
+        totalPages = fallback.totalPages
+        if (fallback.kind === "near-relaxed") {
+          locationFallbackNotice =
+            "No exact matches for your search in this area — showing the nearest surfboards within 100 miles."
+        } else if (fallback.kind === "wide-relaxed") {
+          locationFallbackNotice =
+            "No exact matches in this region — showing the closest listings we have (sorted by distance)."
+        } else if (fallback.kind === "near-keyword") {
+          if (filterByRadius && radiusMi != null && radiusMi < LOCATION_FALLBACK_RADIUS_MI) {
             locationFallbackNotice = `No boards within ${Math.round(radiusMi)} mi — showing the nearest listings within ${LOCATION_FALLBACK_RADIUS_MI} miles.`
           } else if (geocodedForFallback) {
             locationFallbackNotice = `No listings right in that area — showing the nearest surfboards within ${LOCATION_FALLBACK_RADIUS_MI} miles.`
@@ -576,28 +526,15 @@ async function BoardListings({
             locationFallbackNotice =
               "No listings matched that closely — showing the nearest surfboards within 100 miles."
           }
-        }
-      }
-
-      if ((!boards || boards.length === 0) && !locationFallbackNotice) {
-        let fbWide = await fetchNearbyRadius(LOCATION_FALLBACK_WIDE_RADIUS_MI, query)
-        let widenedKeywordWide = false
-        if (fbWide.boards.length === 0 && query.trim()) {
-          fbWide = await fetchNearbyRadius(LOCATION_FALLBACK_WIDE_RADIUS_MI, "")
-          widenedKeywordWide = true
-        }
-        if (fbWide.boards.length > 0) {
-          boards = fbWide.boards
-          totalPages = fbWide.totalPages
-          if (widenedKeywordWide) {
-            locationFallbackNotice =
-              "No exact matches in this region — showing the closest listings we have (sorted by distance)."
-          } else if (filterByRadius && radiusMi != null && radiusMi >= LOCATION_FALLBACK_RADIUS_MI) {
-            locationFallbackNotice = `No boards within ${Math.round(radiusMi)} mi — showing the closest listings we have (sorted by distance).`
-          } else {
-            locationFallbackNotice =
-              "No boards within 100 miles with those filters — showing the closest listings we have (sorted by distance)."
-          }
+        } else if (
+          filterByRadius &&
+          radiusMi != null &&
+          radiusMi >= LOCATION_FALLBACK_RADIUS_MI
+        ) {
+          locationFallbackNotice = `No boards within ${Math.round(radiusMi)} mi — showing the closest listings we have (sorted by distance).`
+        } else {
+          locationFallbackNotice =
+            "No boards within 100 miles with those filters — showing the closest listings we have (sorted by distance)."
         }
       }
     }

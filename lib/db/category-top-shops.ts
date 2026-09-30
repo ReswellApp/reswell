@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  hydrateCardListingImages,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import type { CategoryTopShopSection } from "@/lib/types/category-top-shops"
 
@@ -13,6 +16,8 @@ export type CategoryTopShopListingRow = {
   city: string | null
   state: string | null
   shipping_available: boolean | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
   listing_images: ListingImageForCard[] | null
 }
 
@@ -136,7 +141,7 @@ export async function listCategoryListingsForSellers(
 
   let query = supabase
     .from("listings")
-    .select("user_id, city, state, shipping_available, listing_images (url, thumbnail_url, is_primary)")
+    .select("user_id, city, state, shipping_available, primary_image_url, primary_thumbnail_url")
     .eq("section", section)
     .eq("status", status)
     .eq("hidden_from_site", false)
@@ -155,7 +160,7 @@ export async function listCategoryListingsForSellers(
     return []
   }
 
-  return (data ?? []) as CategoryTopShopListingRow[]
+  return hydrateCardListingImages((data ?? []) as unknown as CategoryTopShopListingRow[])
 }
 
 export async function listCategoryTopShopProfiles(
