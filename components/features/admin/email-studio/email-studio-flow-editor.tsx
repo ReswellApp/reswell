@@ -661,7 +661,13 @@ function TriggerInspector({
               placeholder="Property"
               onChange={(event) => onChange({
                 ...definition,
-                profileFilter: { ...definition.profileFilter, property: event.target.value },
+                profileFilter: {
+                  type: "property-equals",
+                  property: event.target.value,
+                  value: definition.profileFilter.type === "property-equals"
+                    ? definition.profileFilter.value
+                    : "",
+                },
               })}
             />
             <Input
@@ -670,7 +676,13 @@ function TriggerInspector({
               placeholder="Value"
               onChange={(event) => onChange({
                 ...definition,
-                profileFilter: { ...definition.profileFilter, value: event.target.value },
+                profileFilter: {
+                  type: "property-equals",
+                  property: definition.profileFilter.type === "property-equals"
+                    ? definition.profileFilter.property
+                    : "",
+                  value: event.target.value,
+                },
               })}
             />
           </div>

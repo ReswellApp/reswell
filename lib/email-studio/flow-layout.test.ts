@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { layoutEmailStudioFlow } from "./flow-layout"
+// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
+import { layoutEmailStudioFlow } from "./flow-layout.ts"
 import type { EmailStudioFlowDefinition } from "@/lib/types/emailStudioFlow"
 
 const DELAY = "11111111-1111-4111-8111-111111111111"
