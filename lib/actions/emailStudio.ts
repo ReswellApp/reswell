@@ -99,6 +99,9 @@ export async function pushEmailStudioToKlaviyoAction(raw: unknown) {
 export async function generateEmailStudioAction(raw: unknown) {
   const parsed = generateEmailStudioSchema.safeParse(raw)
   if (!parsed.success) return { error: flattenZod(parsed.error) }
+  if (parsed.data.target === "flow") {
+    return { error: "Flow building is no longer available. Generate each flow email in Email Studio and assemble the flow in Klaviyo." }
+  }
   const result = await generateEmailStudioFromBriefService(parsed.data)
   if ("error" in result) return result
   revalidateStudio(result.id)

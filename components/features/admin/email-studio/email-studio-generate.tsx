@@ -7,6 +7,7 @@ import { generateEmailStudioAction } from "@/lib/actions/emailStudio"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 const EMAIL_TYPES = [
   "Campaign announcement",
@@ -46,33 +47,45 @@ const INITIAL_EMAIL_BRIEF: EmailBrief = {
 }
 
 export function EmailStudioGenerate({
+  target,
   enabled,
 }: {
+  target: "email" | "flow"
   enabled: boolean
 }) {
   const router = useRouter()
+  const [brief, setBrief] = useState("")
   const [emailBrief, setEmailBrief] = useState<EmailBrief>(INITIAL_EMAIL_BRIEF)
   const [pending, setPending] = useState(false)
 
   async function generate(): Promise<void> {
-    if (!emailBrief.objective.trim()
-      || !emailBrief.audience.trim()
-      || !emailBrief.productsOrCategory.trim()
-      || !emailBrief.primaryCta.trim()
+    const text = brief.trim()
+    if (target === "flow" && text.length < 8) {
+      toast.error("Describe it in a sentence")
+      return
+    }
+    if (
+      target === "email"
+      && (!emailBrief.objective.trim()
+        || !emailBrief.audience.trim()
+        || !emailBrief.productsOrCategory.trim()
+        || !emailBrief.primaryCta.trim())
     ) {
       toast.error("Complete the required email brief")
       return
     }
 
     setPending(true)
-    const result = await generateEmailStudioAction({ target: "email", ...emailBrief })
+    const result = target === "flow"
+      ? await generateEmailStudioAction({ brief: text, target })
+      : await generateEmailStudioAction({ target, ...emailBrief })
     setPending(false)
     if ("error" in result) {
       toast.error(result.error)
       return
     }
-    toast.success("Email designed")
-    router.push(`/admin/email-studio/${result.id}`)
+    toast.success(target === "flow" ? "Flow designed" : "Email designed")
+    router.push(target === "flow" ? `/admin/email-studio/flows/${result.id}` : `/admin/email-studio/${result.id}`)
   }
 
   return (
@@ -80,7 +93,9 @@ export function EmailStudioGenerate({
       <div>
         <h2 className="text-sm font-medium">Generate with the assistant</h2>
         <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-          Describe the email. The assistant designs the hero, the sections, and the closer, then opens it on the artboard.
+          {target === "flow"
+            ? "Describe the sequence. The assistant builds the trigger, the waits, and a designed email for each send. Nothing goes live."
+            : "Describe the email. The assistant designs the hero, the sections, and the closer, then opens it on the artboard."}
         </p>
       </div>
       {enabled ? (
@@ -88,7 +103,17 @@ export function EmailStudioGenerate({
           event.preventDefault()
           void generate()
         }}>
-          <div className="grid gap-4 sm:grid-cols-2">
+          {target === "flow" ? (
+            <Textarea
+              value={brief}
+              aria-label="Flow brief"
+              placeholder="Welcome flow: an email now, wait two days, then a listing spotlight. Subscribers only."
+              maxLength={2000}
+              className="min-h-24 bg-background"
+              onChange={(event) => setBrief(event.target.value)}
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
               <BriefField label="Objective" required>
                 <Input
                   value={emailBrief.objective}
@@ -147,12 +172,15 @@ export function EmailStudioGenerate({
                   onChange={(event) => setEmailBrief((current) => ({ ...current, primaryCta: event.target.value }))}
                 />
               </BriefField>
-          </div>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={pending}>
-              {pending ? "Designing…" : "Generate email"}
+              {pending ? "Designing…" : target === "flow" ? "Generate flow" : "Generate email"}
             </Button>
-            <p className="text-xs text-muted-foreground">Reswell voice, layout, footer, and brand styling are applied automatically.</p>
+            {target === "email" ? (
+              <p className="text-xs text-muted-foreground">Reswell voice, layout, footer, and brand styling are applied automatically.</p>
+            ) : null}
           </div>
         </form>
       ) : (
