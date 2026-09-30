@@ -59,7 +59,7 @@ export function EmailStudioSectionInspector({
 
   function addBlock(columnId: string, type: EmailBlockType): void {
     const block = createEmailBlock(type)
-    if (block.type === "section") return
+    if (block.type === "section" || block.type === "product") return
     onChange({
       ...section,
       columns: section.columns.map((column) => (

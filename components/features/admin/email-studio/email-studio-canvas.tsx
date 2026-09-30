@@ -244,7 +244,7 @@ function BlockBody({
                     selectedId={selectedId}
                     onSelect={onSelect}
                     onChange={(replacement) => {
-                      if (replacement.type === "section") return
+                      if (replacement.type === "section" || replacement.type === "product") return
                       onChange({
                         ...block,
                         columns: block.columns.map((item) => (

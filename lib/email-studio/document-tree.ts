@@ -43,11 +43,14 @@ export function findEmailBlock(
 }
 
 export function flattenEmailBlocks(document: EmailStudioDocument): EmailBlock[] {
-  return document.blocks.flatMap((block) => (
-    block.type === "section"
-      ? [block, ...block.columns.flatMap((column) => column.blocks)]
-      : [block]
-  ))
+  const flattened: EmailBlock[] = []
+  for (const block of document.blocks) {
+    flattened.push(block)
+    if (block.type === "section") {
+      flattened.push(...block.columns.flatMap((column) => column.blocks))
+    }
+  }
+  return flattened
 }
 
 export function replaceEmailBlock(

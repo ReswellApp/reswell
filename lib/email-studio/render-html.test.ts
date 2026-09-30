@@ -1,13 +1,16 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { cloneEmailDocument, starterById } from "./document"
+// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
+import { cloneEmailDocument, starterById } from "./document.ts"
+// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
 import {
   renderEmailStudioHtml,
   resolveEmailStudioHtml,
   safeEmailHref,
   withEmailPreviewData,
-} from "./render-html"
-import { emailStudioDocumentSchema } from "../validations/emailStudio"
+} from "./render-html.ts"
+// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
+import { emailStudioDocumentSchema } from "../validations/emailStudio.ts"
 
 describe("email studio html", () => {
   it("drops unsafe links and keeps Klaviyo tags", () => {
