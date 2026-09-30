@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { MessageCircle } from 'lucide-react'
-import { reportClientError } from '@/lib/utils/reportClientError'
 
 export default function MessagesError({
   error,
@@ -12,19 +11,8 @@ export default function MessagesError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  const [referenceCode, setReferenceCode] = useState<string | null>(null)
-
   useEffect(() => {
     console.error('[messages] page error:', error)
-    void reportClientError({
-      name: error.name,
-      message: error.message || 'Messages route error',
-      stack: error.stack,
-      digest: error.digest,
-      context: { boundary: 'app/messages/error' },
-    }).then((result) => {
-      if (result?.referenceCode) setReferenceCode(result.referenceCode)
-    })
   }, [error])
 
   return (
@@ -46,9 +34,9 @@ export default function MessagesError({
         >
           Try again
         </Button>
-        {(referenceCode || error.digest) && (
+        {error.digest && (
           <p className="mt-6 text-xs text-muted-foreground">
-            Ref: {referenceCode ?? error.digest}
+            Ref: {error.digest}
           </p>
         )}
       </div>

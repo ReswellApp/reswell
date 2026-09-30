@@ -10,7 +10,6 @@ import {
   isGoogleMerchantEligibleListing,
   type GoogleMerchantListingRow,
 } from "@/lib/google-merchant/map-listing-to-product-input"
-import { captureException } from "@/lib/services/opsIngest"
 import { UnavailableListingLandingPage } from "@/components/features/listings/unavailable-listing-landing-page"
 import { buildUnavailableListingLanding } from "@/lib/services/unavailableListingLanding"
 import {
@@ -69,11 +68,6 @@ export async function ListingDetailDynamicGate(props: {
     console.error("[ListingDetailDynamicGate] signed-in gate failed", {
       listingParam: props.listingParam,
       message: error instanceof Error ? error.message : String(error),
-    })
-    await captureException(error, {
-      boundary: "ListingDetailDynamicGate",
-      path: `/l/${props.listingParam}`,
-      listingParam: props.listingParam,
     })
     const cached = props.prefetchedListing
     if (cached && cached.hidden_from_site !== true && typeof cached.section === "string") {

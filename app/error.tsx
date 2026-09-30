@@ -8,7 +8,6 @@ import { isAndroidWebViewBridgeNoise } from "@/lib/utils/is-android-webview-brid
 import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
-import { reportClientError } from "@/lib/utils/reportClientError"
 import posthog from "posthog-js"
 
 /**
@@ -16,7 +15,7 @@ import posthog from "posthog-js"
  * segment (so the user keeps the site chrome instead of Next.js's full-page fatal screen).
  *
  * Stale-asset failures after a deploy (`ChunkLoadError`) self-heal with one fresh reload;
- * anything else shows a branded, recoverable fallback and reports to platform ops.
+ * anything else shows a branded, recoverable fallback and reports to PostHog.
  */
 export default function RootError({
   error,
@@ -26,7 +25,6 @@ export default function RootError({
   reset: () => void
 }) {
   const [recovering, setRecovering] = useState(false)
-  const [referenceCode, setReferenceCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (isChunkLoadError(error)) {
@@ -41,15 +39,6 @@ export default function RootError({
     if (isStaleFileNotFoundError(error)) return
     console.error("[app] route error:", error)
     posthog.captureException(error)
-    void reportClientError({
-      name: error.name,
-      message: error.message || "Route error",
-      stack: error.stack,
-      digest: error.digest,
-      context: { boundary: "app/error" },
-    }).then((result) => {
-      if (result?.referenceCode) setReferenceCode(result.referenceCode)
-    })
   }, [error])
 
   if (recovering) {
@@ -82,9 +71,9 @@ export default function RootError({
             <Link href="/">Go home</Link>
           </Button>
         </div>
-        {(referenceCode || error.digest) && (
+        {error.digest && (
           <p className="mt-6 text-xs text-muted-foreground">
-            Ref: {referenceCode ?? error.digest}
+            Ref: {error.digest}
           </p>
         )}
       </div>

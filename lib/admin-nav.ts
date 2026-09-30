@@ -29,7 +29,6 @@ export type AdminNavIconKey =
   | 'bellRing'
   | 'code'
   | 'rotateCcw'
-  | 'activityPulse'
   | 'sparkles'
   | 'fileText'
   | 'brain'
@@ -190,7 +189,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
       { href: '/admin/fraud-messages', label: 'Fraud messages', icon: 'shield' },
-      { href: '/admin/ops', label: 'Platform ops', icon: 'activityPulse' },
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },
       { href: '/admin/pnl', label: 'Balance sheet', icon: 'dollarSign' },
       { href: '/admin/reswelltickets', label: 'Reswell tickets', icon: 'ticket' },
