@@ -5,6 +5,7 @@ import {
   listingVideosFieldSchema,
 } from "@/lib/validations/listing-video"
 import { LEASH_SIZE_OPTIONS } from "@/lib/leash-listing-config"
+import { listingAcquisitionFieldShape } from "@/lib/validations/listing-acquisition"
 import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
@@ -67,7 +68,7 @@ const leashListingBaseSchema = z.object({
   reswellPackageWeightOz: z.string().optional().default(""),
 
   buyerOffers: z.boolean().default(true),
-  sellerPurchasePrice: z.coerce.number().nonnegative().nullable().optional(),
+  ...listingAcquisitionFieldShape,
 
   images: z
     .array(leashListingImageSchema)

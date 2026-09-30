@@ -123,6 +123,8 @@ async function renderSurfpacksListingDetailPage({
   }
 
   delete surfpack.seller_purchase_price_usd
+  delete surfpack.seller_purchased_from
+  delete surfpack.seller_purchased_on
 
   const p = surfpack.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

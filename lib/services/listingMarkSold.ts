@@ -8,7 +8,6 @@ import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
 import { removeListingFromGoogleMerchantFeed } from "@/lib/services/googleMerchantSync"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { syncHaydenShopPnlOnSale } from "@/lib/services/pnlHaydenShopSale"
 import type { SoldOffPlatformChannel } from "@/lib/validations/mark-listing-sold"
 
 type ListingMarkSoldRow = {
@@ -163,15 +162,5 @@ export async function markSellerListingSoldOffPlatform(
 
   const priceUsd = Number(row.price)
   const salePrice = Number.isFinite(priceUsd) ? priceUsd : 0
-  void syncHaydenShopPnlOnSale({
-    sellerId: sellerUserId,
-    sales: [
-      {
-        listingId,
-        salePrice,
-        saleDate: soldAt,
-      },
-    ],
-  })
   return { ok: true, priceUsd: salePrice }
 }

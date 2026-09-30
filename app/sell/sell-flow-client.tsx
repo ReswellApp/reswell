@@ -601,6 +601,8 @@ function createInitialSellFormData() {
     description: "",
     price: "",
     sellerPurchasePrice: "",
+    sellerPurchasedFrom: "",
+    sellerPurchasedOn: "",
     category: "",
     condition: "",
     brand: "",
@@ -1296,6 +1298,8 @@ function SellPageContentInner({
       description: formData.description,
       price: formData.price,
       sellerPurchasePrice: formData.sellerPurchasePrice,
+      sellerPurchasedFrom: formData.sellerPurchasedFrom,
+      sellerPurchasedOn: formData.sellerPurchasedOn,
       condition: formData.condition,
       category: formData.category,
       brand: formData.brand,
@@ -1489,6 +1493,10 @@ function SellPageContentInner({
           if (v == null || v === "") return ""
           return String(v)
         })(),
+        sellerPurchasedFrom:
+          (listing as { seller_purchased_from?: string | null }).seller_purchased_from ?? "",
+        sellerPurchasedOn:
+          (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         category: listing.category_id ?? "",
         condition: sellFormConditionValue(listing.condition),
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
@@ -3546,6 +3554,8 @@ function SellPageContentInner({
           brand_id: boardBrandId || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
+          seller_purchased_from: fd.sellerPurchasedFrom.trim() || null,
+          seller_purchased_on: fd.sellerPurchasedOn || null,
           compare_at_price: resolveCompareAtPriceOnUpdate({
             currentPriceUsd: fd.loadedPublishedPriceUsd ?? parseFloat(fd.price),
             nextPriceUsd: parseFloat(fd.price),
@@ -3652,6 +3662,8 @@ function SellPageContentInner({
           brand_id: boardBrandId || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
+          seller_purchased_from: fd.sellerPurchasedFrom.trim() || null,
+          seller_purchased_on: fd.sellerPurchasedOn || null,
           compare_at_price: null,
         }
 
@@ -4777,7 +4789,14 @@ function SellPageContentInner({
                     onSellerPurchasePriceChange={(value) =>
                       setFormData({ ...formData, sellerPurchasePrice: value })
                     }
-                    showPurchasePrice={false}
+                    sellerPurchasedFrom={formData.sellerPurchasedFrom}
+                    onSellerPurchasedFromChange={(value) =>
+                      setFormData({ ...formData, sellerPurchasedFrom: value })
+                    }
+                    sellerPurchasedOn={formData.sellerPurchasedOn}
+                    onSellerPurchasedOnChange={(value) =>
+                      setFormData({ ...formData, sellerPurchasedOn: value })
+                    }
                     publishedPriceUsd={formData.loadedPublishedPriceUsd}
                     existingCompareAtPriceUsd={formData.loadedCompareAtPriceUsd}
                     showPriceMarkdown={formData.showPriceMarkdown === true}

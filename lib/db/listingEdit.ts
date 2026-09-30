@@ -51,6 +51,8 @@ export type OwnedListingForEditRow = {
   auto_price_drop_floor?: number | string | null
   auto_price_drop_scheduled_for?: string | null
   seller_purchase_price_usd?: number | string | null
+  seller_purchased_from?: string | null
+  seller_purchased_on?: string | null
   wetsuit_size?: string | null
   apparel_kind?: string | null
   apparel_size?: string | null

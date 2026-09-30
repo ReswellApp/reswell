@@ -11,6 +11,13 @@ const OVERVIEW_META: DashboardSectionMeta = {
 
 const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] = [
   {
+    prefix: "/dashboard/balance-sheet",
+    meta: {
+      sectionName: "Balance Sheet",
+      description: "Realized listing profit derived from your sales and cost basis.",
+    },
+  },
+  {
     prefix: "/messages",
     meta: {
       sectionName: "Messages",

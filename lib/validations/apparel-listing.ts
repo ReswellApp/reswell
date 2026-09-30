@@ -5,6 +5,7 @@ import {
   listingVideosFieldSchema,
 } from "@/lib/validations/listing-video"
 import { APPAREL_KIND_OPTIONS, APPAREL_SIZE_OPTIONS } from "@/lib/apparel-listing-config"
+import { listingAcquisitionFieldShape } from "@/lib/validations/listing-acquisition"
 import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
@@ -71,7 +72,7 @@ const apparelListingBaseSchema = z.object({
   reswellPackageWeightOz: z.string().optional().default(""),
 
   buyerOffers: z.boolean().default(true),
-  sellerPurchasePrice: z.coerce.number().nonnegative().nullable().optional(),
+  ...listingAcquisitionFieldShape,
 
   images: z
     .array(apparelListingImageSchema)

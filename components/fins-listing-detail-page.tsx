@@ -133,6 +133,8 @@ async function renderFinsListingDetailPage({
   }
 
   delete fin.seller_purchase_price_usd
+  delete fin.seller_purchased_from
+  delete fin.seller_purchased_on
 
   const p = fin.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

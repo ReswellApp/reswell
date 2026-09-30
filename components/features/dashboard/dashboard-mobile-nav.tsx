@@ -51,12 +51,14 @@ function resolveActiveLink(
 
 export interface DashboardMobileNavProps {
   sellerProfileHref: string | null
+  isAdmin?: boolean
   /** Pango-style bordered bar for account pages (e.g. /messages). */
   variant?: "default" | "account"
 }
 
 export function DashboardMobileNav({
   sellerProfileHref,
+  isAdmin = false,
   variant = "default",
 }: DashboardMobileNavProps) {
   const isAccountVariant = variant === "account"
@@ -74,10 +76,13 @@ export function DashboardMobileNav({
       : null
 
     return [
-      ...DASHBOARD_NAV_LINKS.map((l) => ({ ...l, key: l.href })),
+      ...DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || isAdmin).map((l) => ({
+        ...l,
+        key: l.href,
+      })),
       ...(sellerLink ? [sellerLink] : []),
     ]
-  }, [sellerProfileHref])
+  }, [isAdmin, sellerProfileHref])
 
   const activeLink = useMemo(() => resolveActiveLink(pathname, links), [links, pathname])
 

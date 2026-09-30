@@ -88,6 +88,8 @@ export function buildFinListingDraftRow(
     ...packedRow,
     buyer_offers_enabled: input.buyerOffers !== false,
     seller_purchase_price_usd: sellerPurchasePriceToDb(input.sellerPurchasePrice ?? ""),
+    seller_purchased_from: input.sellerPurchasedFrom?.trim() || null,
+    seller_purchased_on: input.sellerPurchasedOn || null,
     brand: input.brand?.trim() || null,
     brand_id: input.brandId?.trim() || null,
     model: input.model?.trim() || null,

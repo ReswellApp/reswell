@@ -11,6 +11,7 @@ import {
   Users,
   MessageSquare,
   LifeBuoy,
+  Scale,
 } from "lucide-react"
 
 export interface DashboardNavChildLink {
@@ -22,6 +23,7 @@ export interface DashboardNavLink {
   name: string
   href: string
   icon: LucideIcon
+  adminOnly?: boolean
   children?: DashboardNavChildLink[]
 }
 
@@ -35,6 +37,12 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
+  {
+    name: "Balance Sheet",
+    href: "/dashboard/balance-sheet",
+    icon: Scale,
+    adminOnly: true,
+  },
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Offers", href: "/dashboard/offers", icon: Handshake },
   DASHBOARD_MESSAGES_NAV,

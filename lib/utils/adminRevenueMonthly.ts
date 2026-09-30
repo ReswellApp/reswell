@@ -2,7 +2,6 @@ import type {
   AdminInsightsDailyPoint,
   AdminRevenueMonthlyPoint,
 } from '@/lib/types/adminBusinessInsights'
-import { formatMonthKey } from '@/lib/pnl-calc'
 import { formatCompactUsd } from '@/lib/utils/format-compact-usd'
 import { shiftYearMonth, type AdminHomeRevenueRange } from '@/lib/utils/adminInsightsPeriod'
 import {
@@ -22,6 +21,16 @@ function monthShort(yearMonth: string): string {
   if (!year || !month) return yearMonth
   return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', {
     month: 'short',
+    timeZone: 'UTC',
+  })
+}
+
+export function formatMonthKey(yearMonth: string): string {
+  const [year, month] = yearMonth.split('-').map(Number)
+  if (!year || !month) return yearMonth
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
     timeZone: 'UTC',
   })
 }

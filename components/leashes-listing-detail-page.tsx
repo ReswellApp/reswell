@@ -123,6 +123,8 @@ async function renderLeashesListingDetailPage({
   }
 
   delete leash.seller_purchase_price_usd
+  delete leash.seller_purchased_from
+  delete leash.seller_purchased_on
 
   const p = leash.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

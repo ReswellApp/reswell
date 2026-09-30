@@ -123,6 +123,8 @@ async function renderTractionListingDetailPage({
   }
 
   delete traction.seller_purchase_price_usd
+  delete traction.seller_purchased_from
+  delete traction.seller_purchased_on
 
   const p = traction.profiles as Record<string, unknown> | null
   if (p && typeof p === "object") {

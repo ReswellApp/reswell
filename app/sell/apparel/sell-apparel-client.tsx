@@ -138,6 +138,8 @@ type ApparelFormState = {
   description: string
   price: string
   sellerPurchasePrice: string
+  sellerPurchasedFrom: string
+  sellerPurchasedOn: string
   kind: string
   condition: string
   size: string
@@ -165,6 +167,8 @@ const INITIAL_STATE: ApparelFormState = {
   description: "",
   price: "",
   sellerPurchasePrice: "",
+  sellerPurchasedFrom: "",
+  sellerPurchasedOn: "",
   kind: "",
   condition: "",
   size: "",
@@ -364,6 +368,10 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           if (v == null || v === "") return ""
           return String(v)
         })(),
+        sellerPurchasedFrom:
+          (listing as { seller_purchased_from?: string | null }).seller_purchased_from ?? "",
+        sellerPurchasedOn:
+          (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         kind: (listing as { apparel_kind?: string | null }).apparel_kind ?? "",
         condition: sellFormConditionValue(listing.condition),
         size: (listing as { apparel_size?: string | null }).apparel_size ?? "",
@@ -743,6 +751,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       reswellPackageWeightOz: form.reswellPackageWeightOz,
       buyerOffers: form.buyerOffers,
       sellerPurchasePrice: form.sellerPurchasePrice ? Number(form.sellerPurchasePrice) : null,
+      sellerPurchasedFrom: form.sellerPurchasedFrom || null,
+      sellerPurchasedOn: form.sellerPurchasedOn || null,
       images: readyPhotos.map((p, index) => ({
         id: p.imageId,
         url: p.url!,
@@ -1309,6 +1319,10 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                     onListingPriceChange={(value) => setField("price", value)}
                     sellerPurchasePrice={form.sellerPurchasePrice}
                     onSellerPurchasePriceChange={(value) => setField("sellerPurchasePrice", value)}
+                    sellerPurchasedFrom={form.sellerPurchasedFrom}
+                    onSellerPurchasedFromChange={(value) => setField("sellerPurchasedFrom", value)}
+                    sellerPurchasedOn={form.sellerPurchasedOn}
+                    onSellerPurchasedOnChange={(value) => setField("sellerPurchasedOn", value)}
                     purchaseAccordionTitle="What you paid for the apparel"
                     purchaseAccordionDescription="Keep track of what you paid versus what it sells for. This info is for your benefit only."
                     afterListingPrice={

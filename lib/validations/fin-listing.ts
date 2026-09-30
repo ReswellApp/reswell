@@ -4,6 +4,7 @@ import {
   listingVideosFieldSchema,
 } from "@/lib/validations/listing-video"
 import { z } from "zod"
+import { listingAcquisitionFieldShape } from "@/lib/validations/listing-acquisition"
 import {
   FIN_SETUP_OPTIONS,
   FIN_SYSTEM_OPTIONS_FOR_FINS,
@@ -80,7 +81,7 @@ const finListingBaseObject = z.object({
   reswellPackageWeightOz: z.string().optional().default(""),
 
   buyerOffers: z.boolean().default(true),
-  sellerPurchasePrice: z.coerce.number().nonnegative().nullable().optional(),
+  ...listingAcquisitionFieldShape,
 
   images: z
     .array(finListingImageSchema)

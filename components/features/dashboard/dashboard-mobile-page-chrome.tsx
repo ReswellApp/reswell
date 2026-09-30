@@ -12,10 +12,12 @@ import { cn } from "@/lib/utils"
 
 export interface DashboardMobilePageChromeProps {
   sellerProfileHref: string | null
+  isAdmin?: boolean
 }
 
 export function DashboardMobilePageChrome({
   sellerProfileHref,
+  isAdmin = false,
 }: DashboardMobilePageChromeProps) {
   const pathname = usePathname() ?? ""
   const { sectionName, description } = resolveDashboardSectionMeta(pathname)
@@ -24,7 +26,11 @@ export function DashboardMobilePageChrome({
     <div className="space-y-5 pt-4 lg:hidden">
       <h1 className={dashboardPageTitleClass}>Dashboard - {sectionName}</h1>
 
-      <DashboardMobileNav sellerProfileHref={sellerProfileHref} variant="account" />
+      <DashboardMobileNav
+        sellerProfileHref={sellerProfileHref}
+        isAdmin={isAdmin}
+        variant="account"
+      />
 
       <header className="space-y-2 border-b border-border/60 pb-5">
         <h2 className={dashboardMobileSectionTitleClass}>{sectionName}</h2>

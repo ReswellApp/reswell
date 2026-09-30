@@ -133,6 +133,8 @@ export function buildSurfboardDraftListingRow(
     brand: fd.brand?.trim() ? fd.brand.trim() : null,
     brand_id: fd.boardBrandId?.trim() || null,
     seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice ?? ""),
+    seller_purchased_from: fd.sellerPurchasedFrom?.trim() || null,
+    seller_purchased_on: fd.sellerPurchasedOn || null,
     status: "draft",
     hidden_from_site: true,
     updated_at: new Date().toISOString(),

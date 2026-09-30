@@ -106,6 +106,8 @@ async function renderSurfboardListingDetailPage({
   const board = boardRaw as any
 
   delete board.seller_purchase_price_usd
+  delete board.seller_purchased_from
+  delete board.seller_purchased_on
 
   // Ensure seller profile never contains private data (email, etc.) before sending to client
   const profilesRaw = board.profiles as Record<string, unknown> | Record<string, unknown>[] | null
