@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { readFile } from "node:fs/promises"
+import { readdir, readFile } from "node:fs/promises"
 import { describe, it } from "node:test"
 
 import {
@@ -71,6 +71,35 @@ describe("admin analytics retention policy", () => {
 
     assert.match(rollupRoute, /ADMIN_ANALYTICS_RAW_PRUNING_ENABLED/)
     assert.match(rollupRoute, /isAdminAnalyticsRawPruningEnabled/)
+    assert.match(rollupRoute, /isCronRequestAuthorized/)
     assert.doesNotMatch(flowStatsRoute, /pruneEventLog/)
+
+    const vercelConfig = JSON.parse(
+      await readFile(new URL("../../vercel.json", import.meta.url), "utf8"),
+    ) as { crons?: Array<{ path?: string }> }
+    assert.ok(
+      vercelConfig.crons?.some(
+        (cron) => cron.path === "/api/cron/admin-analytics-rollups",
+      ),
+    )
+  })
+
+  it("keeps the merged rollout migration versions unique", async () => {
+    const migrations = await readdir(
+      new URL("../../supabase/migrations", import.meta.url),
+    )
+    const rolloutMigrations = migrations.filter((filename) =>
+      [
+        "async_recently_viewed_retention.sql",
+        "boards_browse_geo_fallback_rpc.sql",
+        "admin_analytics_daily_rollups.sql",
+      ].some((suffix) => filename.endsWith(suffix)),
+    )
+    const versions = rolloutMigrations
+      .map((filename) => filename.match(/^(\d+)_/)?.[1])
+      .filter((version): version is string => Boolean(version))
+
+    assert.equal(rolloutMigrations.length, 3)
+    assert.equal(new Set(versions).size, 3)
   })
 })

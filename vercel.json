@@ -59,6 +59,10 @@
       "schedule": "30 9 * * *"
     },
     {
+      "path": "/api/cron/admin-analytics-rollups",
+      "schedule": "15 */2 * * *"
+    },
+    {
       "path": "/api/cron/purge-stale-offers",
       "schedule": "5 * * * *"
     },
