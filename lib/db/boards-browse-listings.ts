@@ -37,8 +37,7 @@ import {
   type BoardsBrowseFacetSelections,
 } from "@/lib/boards-browse-facets"
 import {
-  resolveNearbyBrowseFallbackRows,
-  type BrowseFallbackSourceRow,
+  resolveNearbyBrowseFallbackCandidates,
   type NearbyBrowseFallbackKind,
 } from "@/lib/utils/boards-browse-fallback"
 
@@ -114,15 +113,6 @@ export const SURFBOARD_BROWSE_LISTING_SELECT = `
   categories (name)
 `
 
-const SURFBOARD_BROWSE_FALLBACK_SELECT = `
-  ${SURFBOARD_BROWSE_LISTING_COLUMNS},
-  description,
-  brand,
-  fins_setup,
-  tail_shape,
-  categories (name, slug)
-`
-
 // 30 fills full rows on 2/3-col and lg 4-col grids (xl 5-col leaves a short last row),
 // trading a slightly shorter page for ~25% less HTML + image decode per browse page.
 export const BOARDS_BROWSE_PAGE_SIZE = 30
@@ -134,6 +124,8 @@ export const LOCATION_FALLBACK_WIDE_RADIUS_MI = 2200
  * Lower than the old 500-row cap so TTFB stays reasonable; ES geo_distance does not use this.
  */
 export const GEO_BROWSE_HTML_MAX_ROWS = 180
+const GEO_FALLBACK_CANDIDATE_PAGE_SIZE = 1000
+const GEO_FALLBACK_CANDIDATE_MAX = 20_000
 
 export function suppressedBrowseRank(row: BoardBrowseListingRow): number {
   return row.suppressed_on_boards_browse === true ? 1 : 0
@@ -734,12 +726,7 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
   return { boards, totalPages }
 }
 
-/**
- * One bounded PostgREST read for the empty-result location fallback.
- * The wide candidate set is partitioned locally in the same UX order as the
- * former 100mi/wide + keyword/relaxed retry chain.
- */
-export async function fetchNearbySurfboardFallback(params: {
+type NearbySurfboardFallbackParams = {
   supabase: SupabaseClient
   anchorLat: number
   anchorLng: number
@@ -759,60 +746,102 @@ export async function fetchNearbySurfboardFallback(params: {
   offset: number
   limit: number
   useSuppressionSort?: boolean
-}): Promise<{
-  boards: BoardBrowseListingRow[]
-  totalPages: number
-  kind: NearbyBrowseFallbackKind | null
-}> {
-  const chain = (await buildSurfboardBrowseBaseQuery(params.supabase, {
-    boardType: params.boardType,
-    condition: params.condition,
-    // Fetch once without the keyword; resolve exact-vs-relaxed tiers locally.
-    query: "",
-    brand: params.brand,
-    model: params.model,
-    brandId: params.brandId,
-    brandModelId: params.brandModelId,
-    dimensionFields: params.dimensionFields,
-    legacyDimensions: params.legacyDimensions,
-    facets: params.facets,
-    minPrice: params.minPrice,
-    maxPrice: params.maxPrice,
-    shippingAvailable: params.shippingAvailable,
-    useSuppressionSort: params.useSuppressionSort,
-    geoBbox: {
-      lat: params.anchorLat,
-      lng: params.anchorLng,
-      radiusMiles: LOCATION_FALLBACK_WIDE_RADIUS_MI,
-    },
-    rangeBeforeKeywordOr: { from: 0, to: GEO_BROWSE_HTML_MAX_ROWS - 1 },
-    prependCreatedAtOrder: true,
-    withCount: false,
-    selectColumns: SURFBOARD_BROWSE_FALLBACK_SELECT,
-  })) as unknown as SurfboardBrowseListingsQuery
+}
 
-  const { data, error } = await chain
-  if (error) {
-    console.error("fetchNearbySurfboardFallback:", describeBrowseQueryError(error))
-    return { boards: [], totalPages: 0, kind: null }
-  }
+type NearbyFallbackCandidateRow = {
+  id: string
+  latitude: number | null
+  longitude: number | null
+}
 
-  const candidates = ((data ?? []) as BrowseFallbackSourceRow[])
-    .map((row) => ({
-      ...row,
-      _distance: haversineMi(
+async function listNearbyFallbackCandidates(
+  params: NearbySurfboardFallbackParams,
+  query: string,
+): Promise<Array<{ id: string; distanceMi: number }>> {
+  const candidates: Array<{ id: string; distanceMi: number }> = []
+  for (
+    let from = 0;
+    from < GEO_FALLBACK_CANDIDATE_MAX;
+    from += GEO_FALLBACK_CANDIDATE_PAGE_SIZE
+  ) {
+    const chain = (await buildSurfboardBrowseBaseQuery(params.supabase, {
+      boardType: params.boardType,
+      condition: params.condition,
+      query,
+      brand: params.brand,
+      model: params.model,
+      brandId: params.brandId,
+      brandModelId: params.brandModelId,
+      dimensionFields: params.dimensionFields,
+      legacyDimensions: params.legacyDimensions,
+      facets: params.facets,
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+      shippingAvailable: params.shippingAvailable,
+      geoBbox: {
+        lat: params.anchorLat,
+        lng: params.anchorLng,
+        radiusMiles: LOCATION_FALLBACK_WIDE_RADIUS_MI,
+      },
+      pagedSort: "id",
+      pagedRange: {
+        from,
+        to: from + GEO_FALLBACK_CANDIDATE_PAGE_SIZE - 1,
+      },
+      withCount: false,
+      selectColumns: "id, latitude, longitude",
+    })) as unknown as SurfboardBrowseListingsQuery
+
+    const { data, error } = await chain
+    if (error) {
+      console.error("listNearbyFallbackCandidates:", describeBrowseQueryError(error))
+      return []
+    }
+    const batch = (data ?? []) as NearbyFallbackCandidateRow[]
+    for (const row of batch) {
+      const distanceMi = haversineMi(
         params.anchorLat,
         params.anchorLng,
         row.latitude,
         row.longitude,
-      ),
-    }))
-    .filter((row) => row._distance <= LOCATION_FALLBACK_WIDE_RADIUS_MI)
-  const resolved = resolveNearbyBrowseFallbackRows(candidates, params.query)
+      )
+      if (distanceMi <= LOCATION_FALLBACK_WIDE_RADIUS_MI) {
+        candidates.push({ id: row.id, distanceMi })
+      }
+    }
+    if (batch.length < GEO_FALLBACK_CANDIDATE_PAGE_SIZE) break
+  }
+  return candidates
+}
+
+/**
+ * Scan only ids + coordinates across the complete bounded filtered candidate
+ * set, let Postgres evaluate keyword predicates, then hydrate one card page.
+ * This avoids choosing the newest 180 before distance/relevance is known.
+ */
+export async function fetchNearbySurfboardFallback(
+  params: NearbySurfboardFallbackParams,
+): Promise<{
+  boards: BoardBrowseListingRow[]
+  totalPages: number
+  kind: NearbyBrowseFallbackKind | null
+}> {
+  const hasKeyword = params.query.trim().length > 0
+  const [candidates, keywordCandidates] = await Promise.all([
+    listNearbyFallbackCandidates(params, ""),
+    hasKeyword ? listNearbyFallbackCandidates(params, params.query) : Promise.resolve([]),
+  ])
+  const resolved = resolveNearbyBrowseFallbackCandidates(
+    candidates,
+    new Set(keywordCandidates.map((row) => row.id)),
+    hasKeyword,
+  )
   const totalPages =
-    resolved.rows.length === 0 ? 0 : Math.max(1, Math.ceil(resolved.rows.length / params.limit))
+    resolved.ids.length === 0 ? 0 : Math.max(1, Math.ceil(resolved.ids.length / params.limit))
+  const pageIds = resolved.ids.slice(params.offset, params.offset + params.limit)
+  const boards = await hydrateSurfboardBrowseRowsByIds(params.supabase, pageIds)
   return {
-    boards: resolved.rows.slice(params.offset, params.offset + params.limit),
+    boards,
     totalPages,
     kind: resolved.kind,
   }
