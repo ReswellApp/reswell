@@ -154,11 +154,29 @@ export const sendEmailStudioTestSchema = z.object({
   recipient: z.string().trim().email().max(320),
 })
 
-export const generateEmailStudioSchema = z.object({
+const generateEmailStudioFromBriefSchema = z.object({
   brief: z.string().trim().min(8, "Describe it in a sentence").max(2000),
   name: z.string().trim().max(120).optional(),
   target: z.enum(["email", "flow"]),
 })
 
+const generateEmailStudioFromStructuredBriefSchema = z.object({
+  target: z.literal("email"),
+  name: z.string().trim().max(120).optional(),
+  objective: z.string().trim().min(3, "Add an objective").max(500),
+  audience: z.string().trim().min(2, "Add an audience").max(500),
+  emailType: z.string().trim().min(2, "Choose an email type").max(120),
+  productsOrCategory: z.string().trim().min(2, "Add a product or category").max(1000),
+  offer: z.string().trim().max(500).optional(),
+  tone: z.string().trim().min(2, "Choose a tone").max(120),
+  primaryCta: z.string().trim().min(2, "Add a primary call to action").max(500),
+})
+
+export const generateEmailStudioSchema = z.union([
+  generateEmailStudioFromStructuredBriefSchema,
+  generateEmailStudioFromBriefSchema,
+])
+
 export type CreateEmailStudioInput = z.infer<typeof createEmailStudioSchema>
 export type UpdateEmailStudioInput = z.infer<typeof updateEmailStudioSchema>
+export type GenerateEmailStudioInput = z.infer<typeof generateEmailStudioSchema>
