@@ -54,11 +54,6 @@ const brandCatalogImageHosts = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
-  // Email studio screenshots travel on the ask server action. Compressed
-  // images need more than the 1mb default.
-  serverActions: {
-    bodySizeLimit: '6mb',
-  },
   serverExternalPackages: ['exceljs', 'archiver'],
   outputFileTracingIncludes: {
     '/app/api/admin/facebook-marketplace-bulk/export/route': [
@@ -150,6 +145,11 @@ const nextConfig = {
     ],
   },
   experimental: {
+    // Email studio screenshots travel on the ask server action. Compressed
+    // images need more than the 1mb default.
+    serverActions: {
+      bodySizeLimit: '6mb',
+    },
     // Tree-shake icon/component libraries so only imported symbols end up in the
     // bundle — biggest win for lucide-react (hundreds of icons) and Radix UI.
     optimizePackageImports: [
