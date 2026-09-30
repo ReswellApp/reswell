@@ -11,6 +11,26 @@ export type NearbyBrowseFallbackKind =
   | "wide-keyword"
   | "wide-relaxed"
 
+export async function executeNearbyBrowseFallback<T>(params: {
+  selectIds: () => Promise<{
+    ids: string[]
+    totalPages: number
+    kind: NearbyBrowseFallbackKind | null
+  }>
+  hydrate: (ids: string[]) => Promise<T[]>
+}): Promise<{
+  boards: T[]
+  totalPages: number
+  kind: NearbyBrowseFallbackKind | null
+}> {
+  const selected = await params.selectIds()
+  return {
+    boards: await params.hydrate(selected.ids),
+    totalPages: selected.totalPages,
+    kind: selected.kind,
+  }
+}
+
 export function resolveNearbyBrowseFallbackCandidates(
   rows: NearbyBrowseFallbackCandidate[],
   keywordMatchedIds: ReadonlySet<string>,

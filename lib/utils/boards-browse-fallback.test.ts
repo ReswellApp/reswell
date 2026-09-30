@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 // @ts-expect-error Node's strip-types runner requires the source extension.
-import { resolveNearbyBrowseFallbackCandidates } from "./boards-browse-fallback.ts"
+import {
+  executeNearbyBrowseFallback,
+  resolveNearbyBrowseFallbackCandidates,
+} from "./boards-browse-fallback.ts"
 
 function row(
   id: string,
@@ -46,5 +49,24 @@ describe("resolveNearbyBrowseFallbackCandidates", () => {
 
     assert.equal(resolved.kind, "near-keyword")
     assert.equal(resolved.ids[0], olderNearestMatch.id)
+  })
+
+  it("uses one ranked-ID query and one hydration query", async () => {
+    let selectCalls = 0
+    let hydrateCalls = 0
+    const result = await executeNearbyBrowseFallback({
+      selectIds: async () => {
+        selectCalls += 1
+        return { ids: ["nearest"], totalPages: 1, kind: "near-keyword" as const }
+      },
+      hydrate: async (ids) => {
+        hydrateCalls += 1
+        return ids.map((id) => ({ id }))
+      },
+    })
+
+    assert.equal(selectCalls, 1)
+    assert.equal(hydrateCalls, 1)
+    assert.deepEqual(result.boards, [{ id: "nearest" }])
   })
 })
