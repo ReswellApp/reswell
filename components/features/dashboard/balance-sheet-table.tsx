@@ -3,11 +3,14 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { AcquisitionDetailsDialog } from "@/components/features/dashboard/acquisition-details-dialog"
 import { listingDetailHref } from "@/lib/listing-href"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
 
 interface BalanceSheetTableProps {
   sheet: SellerBalanceSheetPage
+  category: PeerListingSection | null
 }
 
 function usd(value: number | null): string {
@@ -37,7 +40,13 @@ function sourceLabel(source: SellerBalanceSheetPage["entries"][number]["saleSour
   return source === "reswell" ? "Reswell sale" : "Off-platform sale"
 }
 
-export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
+function pageHref(page: number, category: PeerListingSection | null): string {
+  const params = new URLSearchParams({ page: String(page) })
+  if (category) params.set("category", category)
+  return `/dashboard/balance-sheet?${params.toString()}`
+}
+
+export function BalanceSheetTable({ sheet, category }: BalanceSheetTableProps) {
   return (
     <div className="space-y-4">
       <div className="hidden overflow-hidden rounded-xl border md:block">
@@ -76,7 +85,16 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                     {sourceLabel(entry.saleSource)}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums">{usd(entry.purchasePrice)}</td>
+                <td className="px-4 py-3 text-right">
+                  <AcquisitionDetailsDialog
+                    listingId={entry.listingId}
+                    listingTitle={entry.listingTitle}
+                    purchasePrice={entry.purchasePrice}
+                    purchasedFrom={entry.purchasedFrom}
+                    purchasedOn={entry.purchasedOn}
+                    trigger="price"
+                  />
+                </td>
                 <td className="px-4 py-3 text-right tabular-nums">{usd(entry.soldPrice)}</td>
                 <td className="px-4 py-3 text-right tabular-nums">
                   {entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}
@@ -120,6 +138,14 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                 <div><dt className="text-muted-foreground">Fee</dt><dd className="tabular-nums">{entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}</dd></div>
                 <div><dt className="text-muted-foreground">Profit</dt><dd className={`font-semibold tabular-nums ${profitClass(entry.profit)}`}>{entry.saleSource === "inventory" ? "—" : usd(entry.profit)}</dd></div>
               </dl>
+              <AcquisitionDetailsDialog
+                listingId={entry.listingId}
+                listingTitle={entry.listingTitle}
+                purchasePrice={entry.purchasePrice}
+                purchasedFrom={entry.purchasedFrom}
+                purchasedOn={entry.purchasedOn}
+                trigger="button"
+              />
             </CardContent>
           </Card>
         ))}
@@ -133,7 +159,7 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
           <div className="flex gap-2">
             {sheet.page > 1 ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={`/dashboard/balance-sheet?page=${sheet.page - 1}`}>
+                <Link href={pageHref(sheet.page - 1, category)}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Previous
                 </Link>
               </Button>
@@ -144,7 +170,7 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
             )}
             {sheet.page < sheet.totalPages ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={`/dashboard/balance-sheet?page=${sheet.page + 1}`}>
+                <Link href={pageHref(sheet.page + 1, category)}>
                   Next <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>

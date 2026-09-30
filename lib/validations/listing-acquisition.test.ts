@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { z } from "zod"
-import { listingAcquisitionFieldShape } from "./listing-acquisition.ts"
+import {
+  listingAcquisitionFieldShape,
+  updateListingAcquisitionSchema,
+} from "./listing-acquisition.ts"
 
 const schema = z.object(listingAcquisitionFieldShape)
 
@@ -35,5 +38,38 @@ describe("listing acquisition fields", () => {
       schema.safeParse({ sellerPurchasedFrom: "x".repeat(201) }).success,
       false,
     )
+  })
+})
+
+describe("update listing acquisition input", () => {
+  const listingId = "2cd9388f-8527-4218-83f3-233f21a42425"
+
+  it("normalizes cleared fields to null", () => {
+    const parsed = updateListingAcquisitionSchema.parse({
+      listingId,
+      purchasePrice: "",
+      purchasedFrom: "  ",
+      purchasedOn: "",
+    })
+
+    assert.deepEqual(parsed, {
+      listingId,
+      purchasePrice: null,
+      purchasedFrom: null,
+      purchasedOn: null,
+    })
+  })
+
+  it("coerces a valid edited price and trims its source", () => {
+    const parsed = updateListingAcquisitionSchema.parse({
+      listingId,
+      purchasePrice: "120.50",
+      purchasedFrom: "  Local seller  ",
+      purchasedOn: "2026-09-30",
+    })
+
+    assert.equal(parsed.purchasePrice, 120.5)
+    assert.equal(parsed.purchasedFrom, "Local seller")
+    assert.equal(parsed.purchasedOn, "2026-09-30")
   })
 })

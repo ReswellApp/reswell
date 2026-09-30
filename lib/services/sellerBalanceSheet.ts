@@ -1,6 +1,12 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
-import { getSellerBalanceSheetPage } from "@/lib/db/sellerBalanceSheet"
+import {
+  getSellerBalanceSheetPage,
+  updateOwnedListingAcquisition,
+} from "@/lib/db/sellerBalanceSheet"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
+import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
 
 export class SellerBalanceSheetAccessError extends Error {
   constructor() {
@@ -12,6 +18,7 @@ export class SellerBalanceSheetAccessError extends Error {
 export async function getAdminSellerBalanceSheet(
   page: number,
   pageSize: number,
+  listingSection: PeerListingSection | null,
 ): Promise<SellerBalanceSheetPage> {
   const supabase = await createClient()
   const {
@@ -44,15 +51,30 @@ export async function getAdminSellerBalanceSheet(
   }
 
   try {
-    return await getSellerBalanceSheetPage(supabase, user.id, page, pageSize)
+    return await getSellerBalanceSheetPage(
+      supabase,
+      user.id,
+      page,
+      pageSize,
+      listingSection,
+    )
   } catch (error) {
     console.error("[sellerBalanceSheet] balance sheet query failed", {
       userId: user.id,
       page,
       pageSize,
+      listingSection,
       error,
       timestamp: new Date().toISOString(),
     })
     throw error
   }
+}
+
+export async function updateSellerListingAcquisition(
+  supabase: SupabaseClient,
+  userId: string,
+  input: UpdateListingAcquisitionInput,
+): Promise<boolean> {
+  return updateOwnedListingAcquisition(supabase, userId, input)
 }
