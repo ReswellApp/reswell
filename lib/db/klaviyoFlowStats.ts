@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+import { pruneAdminAnalyticsRawBatch } from "@/lib/db/adminAnalyticsRollups"
 import type { NotificationsCenterRange } from "@/lib/klaviyo/event-log-shared"
 import {
   performanceDateWindow,
@@ -127,31 +128,26 @@ export async function upsertKlaviyoMetricCounts(
 }
 
 const EVENT_LOG_RETENTION_MS = 90 * 24 * 60 * 60 * 1000
-const PRUNE_BATCH = 1000
+const PRUNE_BATCH = 10_000
 const PRUNE_BATCHES = 10
 
-/** Deletes event-log rows older than 90 days, in small batches. */
+/**
+ * Deletes up to 100k event-log rows older than 90 days. The database only
+ * removes rows whose complete UTC date has proven rollup coverage.
+ */
 export async function pruneKlaviyoEventLog(supabase: SupabaseClient, now = new Date()): Promise<number> {
   const cutoff = new Date(now.getTime() - EVENT_LOG_RETENTION_MS).toISOString()
   let deleted = 0
 
   for (let batch = 0; batch < PRUNE_BATCHES; batch += 1) {
-    const { data, error } = await supabase
-      .from("klaviyo_event_log")
-      .select("id")
-      .lt("created_at", cutoff)
-      .limit(PRUNE_BATCH)
-
-    if (error) throw new Error(error.message)
-    const ids = (data ?? [])
-      .map((row) => (typeof row.id === "string" ? row.id : ""))
-      .filter(Boolean)
-    if (ids.length === 0) break
-
-    const removed = await supabase.from("klaviyo_event_log").delete().in("id", ids)
-    if (removed.error) throw new Error(removed.error.message)
-    deleted += ids.length
-    if (ids.length < PRUNE_BATCH) break
+    const removed = await pruneAdminAnalyticsRawBatch(
+      supabase,
+      "klaviyo_event_log",
+      cutoff,
+      PRUNE_BATCH,
+    )
+    deleted += removed
+    if (removed < PRUNE_BATCH) break
   }
 
   return deleted
