@@ -10,6 +10,12 @@ export const ADMIN_ANALYTICS_RETENTION_DAYS: Record<
   klaviyo_event_log: 90,
 }
 
+export function isAdminAnalyticsRawPruningEnabled(
+  value: string | undefined,
+): boolean {
+  return value === "true"
+}
+
 export function analyticsRetentionCutoff(
   source: AdminAnalyticsRollupSource,
   now: Date,

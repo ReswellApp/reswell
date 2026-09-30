@@ -5,9 +5,18 @@ import { describe, it } from "node:test"
 import {
   ADMIN_ANALYTICS_RETENTION_DAYS,
   analyticsRetentionCutoff,
+  isAdminAnalyticsRawPruningEnabled,
 } from "./admin-rollup-policy.ts"
 
 describe("admin analytics retention policy", () => {
+  it("keeps raw pruning disabled unless explicitly enabled", () => {
+    assert.equal(isAdminAnalyticsRawPruningEnabled(undefined), false)
+    assert.equal(isAdminAnalyticsRawPruningEnabled(""), false)
+    assert.equal(isAdminAnalyticsRawPruningEnabled("false"), false)
+    assert.equal(isAdminAnalyticsRawPruningEnabled("TRUE"), false)
+    assert.equal(isAdminAnalyticsRawPruningEnabled("true"), true)
+  })
+
   it("keeps longer raw retention for Klaviyo than site traffic", () => {
     assert.equal(ADMIN_ANALYTICS_RETENTION_DAYS.site_traffic, 45)
     assert.equal(ADMIN_ANALYTICS_RETENTION_DAYS.klaviyo_event_log, 90)
@@ -26,7 +35,7 @@ describe("admin analytics retention policy", () => {
   it("coverage-gates both bounded raw deletion paths", async () => {
     const migration = await readFile(
       new URL(
-        "../../supabase/migrations/20271002120000_admin_analytics_daily_rollups.sql",
+        "../../supabase/migrations/20271008120000_admin_analytics_daily_rollups.sql",
         import.meta.url,
       ),
       "utf8",
@@ -42,5 +51,26 @@ describe("admin analytics retention policy", () => {
     )
     assert.match(migration, /LIMIT v_limit/)
     assert.match(migration, /only completed UTC dates may be rolled up/)
+  })
+
+  it("keeps scheduled backfill separate from raw pruning", async () => {
+    const rollupRoute = await readFile(
+      new URL(
+        "../../app/api/cron/admin-analytics-rollups/route.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    )
+    const flowStatsRoute = await readFile(
+      new URL(
+        "../../app/api/cron/klaviyo-flow-stats/route.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    )
+
+    assert.match(rollupRoute, /ADMIN_ANALYTICS_RAW_PRUNING_ENABLED/)
+    assert.match(rollupRoute, /isAdminAnalyticsRawPruningEnabled/)
+    assert.doesNotMatch(flowStatsRoute, /pruneEventLog/)
   })
 })
