@@ -16,6 +16,7 @@ import {
   PanelBottom,
   Pilcrow,
   RectangleHorizontal,
+  ShoppingBag,
   Type,
 } from "lucide-react"
 import { EmailStudioBlockFrame, EmailStudioFormatBar } from "@/components/features/admin/email-studio/email-studio-selection"
@@ -38,6 +39,7 @@ const TILE_LABEL: Partial<Record<EmailBlockType, string>> = {
   text: "Paragraph",
   eyebrow: "Kicker",
   split: "Image & text",
+  product: "Products",
 }
 
 export function emailStudioTileLabel(type: EmailBlockType): string {
@@ -46,6 +48,7 @@ export function emailStudioTileLabel(type: EmailBlockType): string {
 
 const PALETTE_ICONS: Record<EmailBlockType, typeof Type> = {
   section: LayoutPanelTop,
+  product: ShoppingBag,
   logo: RectangleHorizontal,
   eyebrow: Type,
   heading: Heading1,
@@ -262,7 +265,7 @@ function BlockBody({
             <div key={column.id} className="min-w-0 space-y-3">
               {column.blocks.map((child) => {
                 const replaceChild = (replacement: EmailBlock) => {
-                  if (replacement.type === "section") return
+                  if (replacement.type === "section" || replacement.type === "product") return
                   onChange({
                     ...block,
                     columns: block.columns.map((item) => (
@@ -378,6 +381,53 @@ function BlockBody({
       </div>
     )
   }
+  if (block.type === "product") {
+    return (
+      <div>
+        <InlineText
+          label="Product block title"
+          value={block.title}
+          onChange={(title) => onChange({ ...block, title })}
+          className="mb-4 text-2xl font-bold"
+          style={{ fontFamily: HEADLINE, letterSpacing: "-0.04em" }}
+        />
+        {block.items.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-[#d4d4d8] px-4 py-10 text-center text-sm text-[#71717a]">
+            Select Reswell listings in the sidebar
+          </div>
+        ) : (
+          <div className={cn("grid gap-4", block.items.length > 1 && "sm:grid-cols-2")}>
+            {block.items.map((item) => (
+              <div key={item.id} className={cn("min-w-0", block.items.length === 1 && "sm:grid sm:grid-cols-2 sm:gap-5")}>
+                {/* Listing photos are dynamic marketplace URLs and cannot use a fixed next/image host. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.imageUrl} alt={item.title} className="aspect-[4/3] w-full rounded-lg object-cover" />
+                <div className="pt-3">
+                  {block.showAvailability ? (
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
+                      {productAvailabilityLabel(item.availability)}
+                    </p>
+                  ) : null}
+                  <p className="text-lg font-bold" style={{ fontFamily: HEADLINE, letterSpacing: "-0.04em" }}>{item.title}</p>
+                  {block.showPrice && item.priceDisplay ? <p className="mt-1 font-bold">{item.priceDisplay}</p> : null}
+                  <p className="mt-1 text-xs leading-relaxed text-[#64748B]">
+                    {[
+                      block.showBoardType ? item.boardType : "",
+                      block.showCondition ? item.condition : "",
+                      block.showDimensions ? item.dimensions : "",
+                    ].filter(Boolean).join(" · ")}
+                  </p>
+                  <span className="mt-3 inline-block rounded-lg bg-[#5574AD] px-4 py-2 text-sm font-semibold text-white">
+                    {item.availability === "available" || item.availability === "pending" ? block.ctaLabel : "View listing"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
   if (block.type === "image" || block.type === "split") {
     const frame = (
       <EmailImageFrame
@@ -453,6 +503,13 @@ function BlockBody({
       {block.showUnsubscribe ? <p className="mt-2">Unsubscribe</p> : null}
     </div>
   )
+}
+
+function productAvailabilityLabel(value: "available" | "pending" | "sold" | "unavailable"): string {
+  if (value === "available") return "Available"
+  if (value === "pending") return "Pending sale"
+  if (value === "sold") return "Sold"
+  return "Unavailable"
 }
 
 export function EmailStudioPaletteChip({

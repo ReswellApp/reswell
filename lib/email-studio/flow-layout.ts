@@ -3,8 +3,14 @@ import type {
   EmailStudioFlowStep,
 } from "@/lib/types/emailStudioFlow"
 
-export const FLOW_NODE_WIDTH = 190
-export const FLOW_NODE_HEIGHT = 72
+export const FLOW_NODE_WIDTH = 220
+export const FLOW_NODE_HEIGHT = 88
+
+export type FlowInsertAnchor =
+  | { kind: "entry" }
+  | { kind: "next"; stepId: string }
+  | { kind: "yes"; stepId: string }
+  | { kind: "no"; stepId: string }
 
 export interface FlowLayoutNode {
   id: string
@@ -24,9 +30,20 @@ export interface FlowLayoutEdge {
   targetY: number
 }
 
+export interface FlowInsertionPoint {
+  id: string
+  anchor: FlowInsertAnchor
+  label: "Yes" | "No" | null
+  sourceX: number
+  sourceY: number
+  x: number
+  y: number
+}
+
 export interface FlowLayout {
   nodes: FlowLayoutNode[]
   edges: FlowLayoutEdge[]
+  insertionPoints: FlowInsertionPoint[]
   width: number
   height: number
 }
@@ -99,7 +116,7 @@ export function layoutEmailStudioFlow(definition: EmailStudioFlowDefinition): Fl
     padding * 2 + maxColumns * FLOW_NODE_WIDTH + (maxColumns - 1) * horizontalGap,
   )
   const maxRank = Math.max(1, ...ranks.values())
-  const height = padding * 2 + (maxRank + 1) * FLOW_NODE_HEIGHT + maxRank * verticalGap
+  const baseHeight = padding * 2 + (maxRank + 1) * FLOW_NODE_HEIGHT + maxRank * verticalGap
   const positions = new Map<string, { x: number; y: number }>()
   positions.set("trigger", {
     x: (width - FLOW_NODE_WIDTH) / 2,
@@ -148,5 +165,45 @@ export function layoutEmailStudioFlow(definition: EmailStudioFlowDefinition): Fl
       targetY: to.y,
     }]
   })
-  return { nodes, edges, width, height }
+  const insertionPoints: FlowInsertionPoint[] = []
+  function addInsertionPoint(
+    id: string,
+    anchor: FlowInsertAnchor,
+    fromId: string,
+    label: "Yes" | "No" | null,
+  ): void {
+    const from = positions.get(fromId)
+    if (!from) return
+    const branchOffset = label === "Yes"
+      ? -(FLOW_NODE_WIDTH / 2 + horizontalGap)
+      : label === "No"
+        ? FLOW_NODE_WIDTH / 2 + horizontalGap
+        : 0
+    insertionPoints.push({
+      id,
+      anchor,
+      label,
+      sourceX: from.x + FLOW_NODE_WIDTH / 2,
+      sourceY: from.y + FLOW_NODE_HEIGHT,
+      x: from.x + FLOW_NODE_WIDTH / 2 + branchOffset,
+      y: from.y + FLOW_NODE_HEIGHT + 46,
+    })
+  }
+
+  if (!definition.entryStepId) {
+    addInsertionPoint("entry", { kind: "entry" }, "trigger", null)
+  }
+  for (const step of definition.steps) {
+    if (step.type === "split") {
+      if (!step.yes) addInsertionPoint(`${step.id}:yes`, { kind: "yes", stepId: step.id }, step.id, "Yes")
+      if (!step.no) addInsertionPoint(`${step.id}:no`, { kind: "no", stepId: step.id }, step.id, "No")
+    } else if (!step.next) {
+      addInsertionPoint(`${step.id}:next`, { kind: "next", stepId: step.id }, step.id, null)
+    }
+  }
+  const height = Math.max(
+    baseHeight,
+    ...insertionPoints.map((point) => point.y + 84),
+  )
+  return { nodes, edges, insertionPoints, width, height }
 }

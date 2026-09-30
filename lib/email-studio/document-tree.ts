@@ -44,11 +44,14 @@ export function findEmailBlock(
 }
 
 export function flattenEmailBlocks(document: EmailStudioDocument): EmailBlock[] {
-  return document.blocks.flatMap((block) => (
-    block.type === "section"
-      ? [block, ...block.columns.flatMap((column) => column.blocks)]
-      : [block]
-  ))
+  const flattened: EmailBlock[] = []
+  for (const block of document.blocks) {
+    flattened.push(block)
+    if (block.type === "section") {
+      flattened.push(...block.columns.flatMap((column) => column.blocks))
+    }
+  }
+  return flattened
 }
 
 export function replaceEmailBlock(
@@ -64,8 +67,8 @@ export function replaceEmailBlock(
       htmlOverride: null,
     }
   }
-  if (replacement.type === "section") {
-    throw new Error("A section cannot be nested inside another section.")
+  if (replacement.type === "section" || replacement.type === "product") {
+    throw new Error("Sections and product blocks cannot be nested inside another section.")
   }
   return {
     ...document,
@@ -138,8 +141,8 @@ export function duplicateEmailBlock(
     blocks.splice(location.topLevelIndex + 1, 0, copy)
     return { document: { ...document, blocks, htmlOverride: null }, id: copy.id }
   }
-  if (copy.type === "section") {
-    throw new Error("A section cannot be nested inside another section.")
+  if (copy.type === "section" || copy.type === "product") {
+    throw new Error("Sections and product blocks cannot be nested inside another section.")
   }
   const child = copy
   return {
@@ -171,7 +174,7 @@ export function insertEmailBlockAfter(
   const location = findEmailBlock(document, afterId)
   if (!location) throw new Error("That email block no longer exists.")
   const nest = Boolean(location.sectionId && location.columnId && location.childIndex !== null)
-  if (!nest || block.type === "section") {
+  if (!nest || block.type === "section" || block.type === "product") {
     const blocks = [...document.blocks]
     blocks.splice(location.topLevelIndex + 1, 0, block)
     return { ...document, blocks, htmlOverride: null }

@@ -12,6 +12,7 @@ import {
   pushEmailStudioFlowAction,
   setEmailStudioFlowStatusAction,
 } from "@/lib/actions/emailStudioFlows"
+import type { FlowInsertAnchor } from "@/lib/email-studio/flow-layout"
 import { klaviyoFromEmail, klaviyoFromLabel } from "@/lib/email-studio/flow-definition"
 import type {
   EmailStudioAssistantProposalPreview,
@@ -98,13 +99,39 @@ export function EmailStudioFlowEditor({
     commitDefinition(definition)
   }
 
-  function add(type: EmailStudioFlowStep["type"]) {
+  function add(type: EmailStudioFlowStep["type"], anchor?: FlowInsertAnchor) {
     if (proposalPreview) return
+    if (draft.definition.steps.length >= 40) {
+      toast.error("A flow can contain up to 40 actions.")
+      return
+    }
     const step = newStep(type)
     const steps = [...draft.definition.steps]
     const entry = draft.definition.entryStepId
-    if (!entry) {
+    if (anchor?.kind === "entry" || !entry) {
       patchDefinition({ ...draft.definition, entryStepId: step.id, steps: [...steps, step] })
+    } else if (anchor) {
+      const parent = steps.find((item) => item.id === anchor.stepId)
+      if (!parent) return
+      if (anchor.kind === "next" && parent.type !== "split") {
+        patchDefinition({
+          ...draft.definition,
+          steps: [
+            ...steps.map((item) => item.id === parent.id ? { ...parent, next: step.id } : item),
+            step,
+          ],
+        })
+      } else if ((anchor.kind === "yes" || anchor.kind === "no") && parent.type === "split") {
+        patchDefinition({
+          ...draft.definition,
+          steps: [
+            ...steps.map((item) => item.id === parent.id ? { ...parent, [anchor.kind]: step.id } : item),
+            step,
+          ],
+        })
+      } else {
+        return
+      }
     } else {
       const selected = steps.find((item) => item.id === selectedId)
       if (!selected) {
@@ -363,59 +390,23 @@ export function EmailStudioFlowEditor({
       </div>
       <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_320px_360px]">
         <div className="flex min-h-0 flex-col">
-          <fieldset disabled={Boolean(proposalPreview)} className="grid gap-2 border-b border-border p-3 md:grid-cols-2">
-            <select className={selectClass} aria-label="Trigger" value={trigger.type} onChange={(event) => {
-              const type = event.target.value
-              const next = type === "list"
-                ? { type: "list" as const, listId: "", listName: "" }
-                : type === "segment"
-                  ? { type: "segment" as const, segmentId: "", segmentName: "" }
-                  : type === "profile-date"
-                    ? { type: "profile-date" as const, property: "", beforeUnit: "days" as const, beforeValue: 0, recurrence: "annually" as const }
-                    : { type: "metric" as const, metricId: "", metricName: "" }
-              patchDefinition({ ...draft.definition, trigger: next })
-            }}>
-              <option value="metric">Metric</option>
-              <option value="list">Added to list</option>
-              <option value="segment">Entered segment</option>
-              <option value="profile-date">Profile date</option>
-            </select>
-            <TriggerFields
-              trigger={trigger}
-              metrics={metrics}
-              lists={lists}
-              segments={segments}
-              onChange={(next) => patchDefinition({ ...draft.definition, trigger: next })}
-            />
-            <select className={selectClass} aria-label="Who can enter" value={displayDraft.definition.profileFilter.type} onChange={(event) => {
-              const type = event.target.value
-              const profileFilter = type === "property-equals"
-                ? { type: "property-equals" as const, property: "", value: "" }
-                : type === "none"
-                  ? { type: "none" as const }
-                  : { type: "email-subscribed" as const }
-              patchDefinition({ ...draft.definition, profileFilter })
-            }}>
-              <option value="email-subscribed">Email subscribers</option>
-              <option value="none">Everyone the trigger matches</option>
-              <option value="property-equals">Profile property equals</option>
-            </select>
-            {displayDraft.definition.profileFilter.type === "property-equals" ? (
-              <>
-                <Input value={displayDraft.definition.profileFilter.property} aria-label="Filter property" placeholder="Property" onChange={(event) => patchDefinition({ ...draft.definition, profileFilter: { type: "property-equals", property: event.target.value, value: draft.definition.profileFilter.type === "property-equals" ? draft.definition.profileFilter.value : "" } })} />
-                <Input value={displayDraft.definition.profileFilter.value} aria-label="Filter value" placeholder="Value" onChange={(event) => patchDefinition({ ...draft.definition, profileFilter: { type: "property-equals", property: draft.definition.profileFilter.type === "property-equals" ? draft.definition.profileFilter.property : "", value: event.target.value } })} />
-              </>
-            ) : null}
-          </fieldset>
           {proposalPreview ? (
             <div className="border-b border-[#5574AD]/30 bg-[#5574AD]/5 px-3 py-2 text-xs text-[#355185]">
               Assistant preview · Accept or reject it in the assistant panel.
             </div>
           ) : null}
           <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 py-2">
-            <span className="mr-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Add after selection</span>
-            {(["delay", "email", "sms", "split", "update-profile", "list-update", "webhook"] as const).map((type) => (
-              <Button key={type} size="sm" variant="outline" disabled={Boolean(proposalPreview)} onClick={() => add(type)}>{type}</Button>
+            <span className="mr-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Add after selected action</span>
+            {([
+              ["delay", "Time delay"],
+              ["email", "Email"],
+              ["sms", "SMS"],
+              ["split", "Conditional split"],
+              ["update-profile", "Update profile"],
+              ["list-update", "List update"],
+              ["webhook", "Webhook"],
+            ] as const).map(([type, label]) => (
+              <Button key={type} size="sm" variant="outline" disabled={Boolean(proposalPreview)} onClick={() => add(type)}>{label}</Button>
             ))}
           </div>
           <EmailStudioFlowCanvas
@@ -423,6 +414,8 @@ export function EmailStudioFlowEditor({
             selectedId={selectedId}
             projects={projects}
             onSelect={(id) => setSelectedId(id)}
+            onInsert={(anchor, type) => add(type, anchor)}
+            disabled={Boolean(proposalPreview)}
           />
           <div className="space-y-3 border-t border-border px-3 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -536,9 +529,14 @@ export function EmailStudioFlowEditor({
               </Button>
             </fieldset>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Trigger and entry rules are edited above the canvas.
-            </p>
+            <TriggerInspector
+              definition={displayDraft.definition}
+              metrics={metrics}
+              lists={lists}
+              segments={segments}
+              disabled={Boolean(proposalPreview)}
+              onChange={patchDefinition}
+            />
           )}
           <label className="block text-xs text-muted-foreground">
             Notes
@@ -596,6 +594,107 @@ function triggerSummary(trigger: EmailStudioFlowRecord["definition"]["trigger"])
   return trigger.property || "profile date"
 }
 
+function TriggerInspector({
+  definition,
+  metrics,
+  lists,
+  segments,
+  disabled,
+  onChange,
+}: {
+  definition: EmailStudioFlowRecord["definition"]
+  metrics: KlaviyoCatalogOption[]
+  lists: KlaviyoCatalogOption[]
+  segments: KlaviyoCatalogOption[]
+  disabled: boolean
+  onChange: (definition: EmailStudioFlowRecord["definition"]) => void
+}) {
+  const trigger = definition.trigger
+  return (
+    <fieldset disabled={disabled} className="space-y-4">
+      <div className="space-y-2">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Trigger</p>
+        <select className={`${selectClass} w-full`} aria-label="Trigger type" value={trigger.type} onChange={(event) => {
+          const type = event.target.value
+          const next = type === "list"
+            ? { type: "list" as const, listId: "", listName: "" }
+            : type === "segment"
+              ? { type: "segment" as const, segmentId: "", segmentName: "" }
+              : type === "profile-date"
+                ? { type: "profile-date" as const, property: "", beforeUnit: "days" as const, beforeValue: 0, recurrence: "annually" as const }
+                : { type: "metric" as const, metricId: "", metricName: "" }
+          onChange({ ...definition, trigger: next })
+        }}>
+          <option value="metric">Metric</option>
+          <option value="list">Added to list</option>
+          <option value="segment">Entered segment</option>
+          <option value="profile-date">Profile date</option>
+        </select>
+        <TriggerFields
+          trigger={trigger}
+          metrics={metrics}
+          lists={lists}
+          segments={segments}
+          onChange={(next) => onChange({ ...definition, trigger: next })}
+        />
+      </div>
+      <div className="space-y-2 border-t border-border pt-4">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Entry filter</p>
+        <select className={`${selectClass} w-full`} aria-label="Who can enter" value={definition.profileFilter.type} onChange={(event) => {
+          const type = event.target.value
+          const profileFilter = type === "property-equals"
+            ? { type: "property-equals" as const, property: "", value: "" }
+            : type === "none"
+              ? { type: "none" as const }
+              : { type: "email-subscribed" as const }
+          onChange({ ...definition, profileFilter })
+        }}>
+          <option value="email-subscribed">Email subscribers</option>
+          <option value="none">Everyone the trigger matches</option>
+          <option value="property-equals">Profile property equals</option>
+        </select>
+        {definition.profileFilter.type === "property-equals" ? (
+          <div className="space-y-2">
+            <Input
+              value={definition.profileFilter.property}
+              aria-label="Filter property"
+              placeholder="Property"
+              onChange={(event) => onChange({
+                ...definition,
+                profileFilter: {
+                  type: "property-equals",
+                  property: event.target.value,
+                  value: definition.profileFilter.type === "property-equals"
+                    ? definition.profileFilter.value
+                    : "",
+                },
+              })}
+            />
+            <Input
+              value={definition.profileFilter.value}
+              aria-label="Filter value"
+              placeholder="Value"
+              onChange={(event) => onChange({
+                ...definition,
+                profileFilter: {
+                  type: "property-equals",
+                  property: definition.profileFilter.type === "property-equals"
+                    ? definition.profileFilter.property
+                    : "",
+                  value: event.target.value,
+                },
+              })}
+            />
+          </div>
+        ) : null}
+      </div>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Select another card on the canvas to configure that action.
+      </p>
+    </fieldset>
+  )
+}
+
 function TriggerFields({
   trigger,
   metrics,
@@ -611,7 +710,7 @@ function TriggerFields({
 }) {
   if (trigger.type === "metric") {
     return (
-      <select className={selectClass} aria-label="Metric" value={trigger.metricId} onChange={(event) => {
+      <select className={`${selectClass} w-full`} aria-label="Metric" value={trigger.metricId} onChange={(event) => {
         const metric = metrics.find((item) => item.id === event.target.value)
         onChange({ type: "metric", metricId: event.target.value, metricName: metric?.name ?? trigger.metricName })
       }}>
@@ -623,7 +722,7 @@ function TriggerFields({
   }
   if (trigger.type === "list") {
     return (
-      <select className={selectClass} aria-label="List" value={trigger.listId} onChange={(event) => {
+      <select className={`${selectClass} w-full`} aria-label="List" value={trigger.listId} onChange={(event) => {
         const list = lists.find((item) => item.id === event.target.value)
         onChange({ type: "list", listId: event.target.value, listName: list?.name ?? "" })
       }}>
@@ -634,7 +733,7 @@ function TriggerFields({
   }
   if (trigger.type === "segment") {
     return (
-      <select className={selectClass} aria-label="Segment" value={trigger.segmentId} onChange={(event) => {
+      <select className={`${selectClass} w-full`} aria-label="Segment" value={trigger.segmentId} onChange={(event) => {
         const segment = segments.find((item) => item.id === event.target.value)
         onChange({ type: "segment", segmentId: event.target.value, segmentName: segment?.name ?? "" })
       }}>
@@ -644,10 +743,10 @@ function TriggerFields({
     )
   }
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
+    <div className="space-y-2">
       <Input value={trigger.property} aria-label="Date property" placeholder="Property" onChange={(event) => onChange({ ...trigger, property: event.target.value })} />
       <Input type="number" min={0} value={trigger.beforeValue} aria-label="Days before" onChange={(event) => onChange({ ...trigger, beforeValue: Number(event.target.value) })} />
-      <select className={selectClass} aria-label="Repeat" value={trigger.recurrence} onChange={(event) => onChange({ ...trigger, recurrence: event.target.value as typeof trigger.recurrence })}>
+      <select className={`${selectClass} w-full`} aria-label="Repeat" value={trigger.recurrence} onChange={(event) => onChange({ ...trigger, recurrence: event.target.value as typeof trigger.recurrence })}>
         <option value="never">Once</option>
         <option value="annually">Every year</option>
         <option value="monthly">Every month</option>
