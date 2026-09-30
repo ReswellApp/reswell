@@ -6,7 +6,6 @@ export const maxDuration = 120
 
 /**
  * Daily snapshot of Klaviyo flow delivery stats and recent metric ingest counts.
- * Also prunes klaviyo_event_log rows older than 90 days.
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")
@@ -18,7 +17,6 @@ export async function GET(request: Request) {
   try {
     const summary = await syncKlaviyoFlowPerformance({
       metricCounts: true,
-      pruneEventLog: true,
     })
     return NextResponse.json(summary)
   } catch (e) {
