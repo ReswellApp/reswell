@@ -7,8 +7,27 @@ import { EMAIL_MERGE_TOKENS } from "@/lib/email-studio/tokens"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { EmailBlock, EmailDetailRow } from "@/lib/types/emailStudio"
+import type {
+  EmailBlock,
+  EmailButtonBlock,
+  EmailDetailRow,
+  EmailFontFamily,
+  EmailFontWeight,
+  EmailTextStyle,
+} from "@/lib/types/emailStudio"
+import {
+  ColorField,
+  HideOnField,
+  LinkFields,
+  PaddingFields,
+  PropertyRow,
+  PropertySection,
+  PurpleSwitch,
+  Stepper,
+  propertySelectClass,
+} from "@/components/features/admin/email-studio/email-studio-property-controls"
 import { EmailStudioSectionInspector } from "@/components/features/admin/email-studio/email-studio-section-inspector"
+import { KLAVIYO_EMAIL_COLORS } from "@/lib/klaviyo/email-brand-styles"
 
 const fieldClass = "space-y-1.5"
 
@@ -74,10 +93,11 @@ export function EmailStudioInspector({
   }
 
   return (
-    <div className="space-y-3">
+    <div>
       {block.type === "section" ? (
         <EmailStudioSectionInspector section={block} onChange={onChange} />
       ) : null}
+      <div className={block.type === "section" ? "hidden" : block.type === "logo" || block.type === "split" || block.type === "details" || block.type === "spacer" || block.type === "footer" ? "space-y-3 p-4" : undefined}>
       {block.type === "logo" ? (
         <>
           <div className={fieldClass}>
@@ -106,43 +126,79 @@ export function EmailStudioInspector({
       ) : null}
       {block.type === "eyebrow" || block.type === "heading" || block.type === "text" ? (
         <>
-          <div className={fieldClass}>
-            <Label>Copy</Label>
-            <Textarea
-              value={block.text}
-              rows={block.type === "text" ? 8 : 3}
-              onChange={(event) => onChange({ ...block, text: event.target.value })}
-            />
+          <div className="space-y-3 p-4">
+            <div className={fieldClass}>
+              <Label>Copy</Label>
+              <Textarea
+                value={block.text}
+                rows={block.type === "text" ? 8 : 3}
+                onChange={(event) => onChange({ ...block, text: event.target.value })}
+              />
+            </div>
+            <TokenSelect onPick={(token) => onChange({ ...block, text: `${block.text}${block.text ? " " : ""}${token}` })} />
+            <AlignField value={block.align} onChange={(align) => onChange({ ...block, align })} />
           </div>
-          <TokenSelect onPick={(token) => onChange({ ...block, text: `${block.text}${block.text ? " " : ""}${token}` })} />
-          <AlignField value={block.align} onChange={(align) => onChange({ ...block, align })} />
+          <TextStyleFields
+            block={block}
+            defaultSize={block.type === "heading" ? 26 : block.type === "eyebrow" ? 12 : 16}
+            fallbackColor={block.type === "eyebrow" ? "#64748B" : KLAVIYO_EMAIL_COLORS.foreground}
+            onChange={(patch) => onChange({ ...block, ...patch })}
+          />
         </>
       ) : null}
       {block.type === "image" ? (
         <>
-          <ImageFields
-            src={block.src}
-            alt={block.alt}
-            href={block.href}
-            uploading={uploading}
-            onChange={(patch) => onChange({ ...block, ...patch })}
-            onFile={(file) => void upload(file, (src) => onChange({ ...block, src: emailImageSrc(src) }))}
-          />
+          <div className="space-y-3 p-4">
+            <ImageFields
+              src={block.src}
+              alt={block.alt}
+              href={block.href}
+              uploading={uploading}
+              onChange={(patch) => onChange({ ...block, ...patch })}
+              onFile={(file) => void upload(file, (src) => onChange({ ...block, src: emailImageSrc(src) }))}
+            />
+          </div>
+          <PropertySection title="Image options">
+            <PropertyRow label="Width">
+              <Stepper
+                label="Width"
+                min={40}
+                max={560}
+                value={block.width ?? 560}
+                onChange={(width) => onChange({ ...block, width })}
+              />
+            </PropertyRow>
+            <PropertyRow label="Crop height">
+              <Stepper
+                label="Crop height"
+                min={0}
+                max={800}
+                value={block.height ?? 0}
+                onChange={(next) => {
+                  const current = block.height ?? 0
+                  if (next > current) onChange({ ...block, height: Math.max(40, next) })
+                  else onChange({ ...block, height: next < 40 ? null : next })
+                }}
+              />
+            </PropertyRow>
+            <PropertyRow label="All corners">
+              <Stepper
+                label="Corner radius"
+                min={0}
+                max={40}
+                value={block.radius ?? 8}
+                onChange={(radius) => onChange({ ...block, radius })}
+              />
+            </PropertyRow>
+          </PropertySection>
+          <PropertySection title="Block options">
+            <PaddingFields value={block.padding} onChange={(padding) => onChange({ ...block, padding })} />
+            <HideOnField value={block.hideOn} onChange={(hideOn) => onChange({ ...block, hideOn })} />
+          </PropertySection>
         </>
       ) : null}
       {block.type === "button" ? (
-        <>
-          <div className={fieldClass}>
-            <Label>Label</Label>
-            <Input value={block.label} onChange={(event) => onChange({ ...block, label: event.target.value })} />
-          </div>
-          <div className={fieldClass}>
-            <Label>Link</Label>
-            <Input value={block.href} onChange={(event) => onChange({ ...block, href: event.target.value })} />
-          </div>
-          <TokenSelect onPick={(token) => onChange({ ...block, href: token })} />
-          <AlignField value={block.align} onChange={(align) => onChange({ ...block, align })} />
-        </>
+        <ButtonProperties block={block} onChange={onChange} />
       ) : null}
       {block.type === "split" ? (
         <>
@@ -211,9 +267,155 @@ export function EmailStudioInspector({
         </>
       ) : null}
       {block.type === "divider" ? (
-        <p className="text-sm text-muted-foreground">A hairline between sections.</p>
+        <p className="p-4 text-sm text-muted-foreground">A hairline between sections.</p>
       ) : null}
+      </div>
     </div>
+  )
+}
+
+function TextStyleFields({
+  block,
+  defaultSize,
+  fallbackColor,
+  onChange,
+}: {
+  block: EmailTextStyle & { type: "text" | "heading" | "eyebrow" }
+  defaultSize: number
+  fallbackColor: string
+  onChange: (patch: Partial<EmailTextStyle>) => void
+}) {
+  const weight = block.fontWeight ?? (block.type === "text" ? "normal" : "bold")
+  return (
+    <>
+      <PropertySection title="Text options">
+        <PropertyRow label="Color">
+          <ColorField label="Text color" value={block.color} fallback={fallbackColor} onChange={(color) => onChange({ color })} />
+        </PropertyRow>
+        <PropertyRow label="Font size">
+          <Stepper
+            label="Font size"
+            min={10}
+            max={block.type === "heading" ? 48 : 32}
+            value={block.fontSize ?? defaultSize}
+            onChange={(fontSize) => onChange({ fontSize })}
+          />
+        </PropertyRow>
+        <PropertyRow label="Font weight">
+          <select
+            aria-label="Font weight"
+            className={propertySelectClass}
+            value={weight}
+            onChange={(event) => onChange({ fontWeight: event.target.value === "bold" ? "bold" : "normal" })}
+          >
+            <option value="normal">Regular</option>
+            <option value="bold">Bold</option>
+          </select>
+        </PropertyRow>
+      </PropertySection>
+      <PropertySection title="Block options">
+        <HideOnField value={block.hideOn} onChange={(hideOn) => onChange({ hideOn })} />
+      </PropertySection>
+    </>
+  )
+}
+
+function ButtonProperties({
+  block,
+  onChange,
+}: {
+  block: EmailButtonBlock
+  onChange: (block: EmailBlock) => void
+}) {
+  return (
+    <>
+      <div className="space-y-3 p-4">
+        <div className={fieldClass}>
+          <Label>Label</Label>
+          <Input value={block.label} onChange={(event) => onChange({ ...block, label: event.target.value })} />
+        </div>
+        <AlignField value={block.align} onChange={(align) => onChange({ ...block, align })} />
+      </div>
+      <PropertySection title="Action">
+        <LinkFields href={block.href} onChange={(href) => onChange({ ...block, href })} />
+      </PropertySection>
+      <PropertySection title="Button options">
+        <PropertyRow label="Auto width">
+          <PurpleSwitch
+            label="Auto width"
+            checked={!block.fullWidth}
+            onChange={(auto) => onChange({ ...block, fullWidth: auto ? undefined : true })}
+          />
+        </PropertyRow>
+        <PropertyRow label="Font family">
+          <select
+            aria-label="Font family"
+            className={propertySelectClass}
+            value={block.fontFamily ?? "sans"}
+            onChange={(event) => {
+              const fontFamily: EmailFontFamily = event.target.value === "headline" ? "headline" : "sans"
+              onChange({ ...block, fontFamily: fontFamily === "sans" ? undefined : fontFamily })
+            }}
+          >
+            <option value="sans">Global font</option>
+            <option value="headline">Headline</option>
+          </select>
+        </PropertyRow>
+        <PropertyRow label="Font weight">
+          <select
+            aria-label="Font weight"
+            className={propertySelectClass}
+            value={block.fontWeight ?? "semibold"}
+            onChange={(event) => {
+              const next = event.target.value
+              const fontWeight: EmailFontWeight | undefined = next === "normal" || next === "bold" ? next : undefined
+              onChange({ ...block, fontWeight })
+            }}
+          >
+            <option value="semibold">Semibold</option>
+            <option value="normal">Regular</option>
+            <option value="bold">Bold</option>
+          </select>
+        </PropertyRow>
+        <PropertyRow label="Font size">
+          <Stepper
+            label="Font size"
+            min={10}
+            max={32}
+            value={block.fontSize ?? 16}
+            onChange={(fontSize) => onChange({ ...block, fontSize })}
+          />
+        </PropertyRow>
+        <PropertyRow label="Background color">
+          <ColorField
+            label="Button background color"
+            value={block.backgroundColor}
+            fallback={KLAVIYO_EMAIL_COLORS.buttonBg}
+            onChange={(backgroundColor) => onChange({ ...block, backgroundColor })}
+          />
+        </PropertyRow>
+        <PropertyRow label="Text color">
+          <ColorField
+            label="Button text color"
+            value={block.textColor}
+            fallback={KLAVIYO_EMAIL_COLORS.buttonText}
+            onChange={(textColor) => onChange({ ...block, textColor })}
+          />
+        </PropertyRow>
+        <PropertyRow label="Corner radius">
+          <Stepper
+            label="Corner radius"
+            min={0}
+            max={40}
+            value={block.radius ?? 8}
+            onChange={(radius) => onChange({ ...block, radius })}
+          />
+        </PropertyRow>
+      </PropertySection>
+      <PropertySection title="Block options">
+        <HideOnField value={block.hideOn} onChange={(hideOn) => onChange({ ...block, hideOn })} />
+      </PropertySection>
+    </>
   )
 }
 
