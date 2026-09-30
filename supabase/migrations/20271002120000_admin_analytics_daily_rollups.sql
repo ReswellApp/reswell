@@ -4,6 +4,8 @@
 -- the RPCs fall back to raw rows only for dates whose coverage marker is absent. The
 -- cron backfills a few UTC dates per invocation, one RPC transaction per source/day.
 -- Raw retention refuses to delete a row unless that row's complete UTC date is covered.
+-- Rollback: disable the rollup cron before restoring the prior dashboard RPCs. Keep
+-- these rollup/coverage tables for reconciliation; retention may have removed older raw rows.
 
 CREATE TABLE public.admin_analytics_rollup_coverage (
   source text NOT NULL CHECK (source IN ('site_traffic', 'klaviyo_event_log')),
