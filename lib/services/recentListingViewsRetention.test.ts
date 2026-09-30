@@ -1,21 +1,18 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import type { SupabaseClient } from "@supabase/supabase-js"
 
 import {
   RECENT_LISTING_VIEWS_KEEP_ROWS,
   RECENT_LISTING_VIEWS_MAX_BATCHES,
   RECENT_LISTING_VIEWS_TRIM_BATCH_SIZE,
-  trimRecentListingViewsRetention,
-} from "./recentListingViewsRetention.ts"
+  runRecentListingViewsRetention,
+} from "./recentListingViewsRetentionPolicy.ts"
 
-const supabase = {} as SupabaseClient
-
-describe("trimRecentListingViewsRetention", () => {
+describe("runRecentListingViewsRetention", () => {
   it("uses the 100-row retention boundary and stops when no stale rows remain", async () => {
     const calls: Array<{ keepRows: number; deleteLimit: number }> = []
 
-    const summary = await trimRecentListingViewsRetention(supabase, async (_client, options) => {
+    const summary = await runRecentListingViewsRetention(async (options) => {
       calls.push(options)
       return 0
     })
@@ -39,10 +36,7 @@ describe("trimRecentListingViewsRetention", () => {
   it("continues after a full batch and stops on a partial batch", async () => {
     const deletes = [RECENT_LISTING_VIEWS_TRIM_BATCH_SIZE, 7]
 
-    const summary = await trimRecentListingViewsRetention(
-      supabase,
-      async () => deletes.shift() ?? 0,
-    )
+    const summary = await runRecentListingViewsRetention(async () => deletes.shift() ?? 0)
 
     assert.equal(summary.deleted, RECENT_LISTING_VIEWS_TRIM_BATCH_SIZE + 7)
     assert.equal(summary.batches, 2)
@@ -50,12 +44,14 @@ describe("trimRecentListingViewsRetention", () => {
   })
 
   it("caps each run and reports a possible backlog", async () => {
-    const summary = await trimRecentListingViewsRetention(
-      supabase,
+    const summary = await runRecentListingViewsRetention(
       async () => RECENT_LISTING_VIEWS_TRIM_BATCH_SIZE,
     )
 
-    assert.equal(summary.deleted, RECENT_LISTING_VIEWS_MAX_BATCHES * RECENT_LISTING_VIEWS_TRIM_BATCH_SIZE)
+    assert.equal(
+      summary.deleted,
+      RECENT_LISTING_VIEWS_MAX_BATCHES * RECENT_LISTING_VIEWS_TRIM_BATCH_SIZE,
+    )
     assert.equal(summary.batches, RECENT_LISTING_VIEWS_MAX_BATCHES)
     assert.equal(summary.limitReached, true)
   })
