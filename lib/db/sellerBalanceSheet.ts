@@ -138,7 +138,6 @@ export async function updateOwnedListingAcquisition(
       seller_purchase_price_usd: input.purchasePrice,
       seller_purchased_from: input.purchasedFrom,
       seller_purchased_on: input.purchasedOn,
-      updated_at: new Date().toISOString(),
     })
     .eq("id", input.listingId)
     .eq("user_id", userId)
