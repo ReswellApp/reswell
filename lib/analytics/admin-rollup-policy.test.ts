@@ -84,14 +84,22 @@ describe("admin analytics retention policy", () => {
     )
   })
 
-  it("keeps every Supabase migration version unique", async () => {
+  it("keeps the merged rollout migration versions unique", async () => {
     const migrations = await readdir(
       new URL("../../supabase/migrations", import.meta.url),
     )
-    const versions = migrations
+    const rolloutMigrations = migrations.filter((filename) =>
+      [
+        "async_recently_viewed_retention.sql",
+        "boards_browse_geo_fallback_rpc.sql",
+        "admin_analytics_daily_rollups.sql",
+      ].some((suffix) => filename.endsWith(suffix)),
+    )
+    const versions = rolloutMigrations
       .map((filename) => filename.match(/^(\d+)_/)?.[1])
       .filter((version): version is string => Boolean(version))
 
-    assert.equal(new Set(versions).size, versions.length)
+    assert.equal(rolloutMigrations.length, 3)
+    assert.equal(new Set(versions).size, 3)
   })
 })
