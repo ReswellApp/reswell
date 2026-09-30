@@ -27,6 +27,9 @@ interface BalanceSheetViewRow {
 }
 
 interface BalanceSheetSummaryRow {
+  inventory_listings: number | string
+  inventory_asking_value: number | string
+  inventory_cost_basis: number | string
   realized_sales: number | string
   gross_sales: number | string
   reswell_fees: number | string
@@ -70,6 +73,9 @@ function mapEntry(row: BalanceSheetViewRow): SellerBalanceSheetEntry {
 
 function mapSummary(row: BalanceSheetSummaryRow | null): SellerBalanceSheetSummary {
   return {
+    inventoryListings: Number(row?.inventory_listings ?? 0),
+    inventoryAskingValue: money(row?.inventory_asking_value ?? 0),
+    inventoryCostBasis: money(row?.inventory_cost_basis ?? 0),
     realizedSales: Number(row?.realized_sales ?? 0),
     grossSales: money(row?.gross_sales ?? 0),
     reswellFees: money(row?.reswell_fees ?? 0),

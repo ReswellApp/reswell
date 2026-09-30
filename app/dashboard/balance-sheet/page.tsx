@@ -46,7 +46,7 @@ export default async function BalanceSheetPage({
     <div className="space-y-6">
       <DashboardPageHeader
         title="Balance Sheet"
-        description="Realized sales and profit update automatically from orders, refunds, and tipped off-platform sales."
+        description="Inventory, realized sales, and profit update automatically from listings, orders, refunds, and tipped off-platform sales."
       />
 
       <BalanceSheetSummary summary={sheet.summary} />
@@ -55,9 +55,10 @@ export default async function BalanceSheetPage({
         <div className="flex gap-3 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4 text-sm">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
           <p>
-            {sheet.summary.missingCostBasis} sold{" "}
+            {sheet.summary.missingCostBasis}{" "}
             {sheet.summary.missingCostBasis === 1 ? "listing is" : "listings are"} missing a
-            purchase price. Add it by editing the listing to calculate profit.
+            purchase price. Add it by editing the listing to complete its cost basis and calculate
+            profit after a sale.
           </p>
         </div>
       ) : null}
@@ -68,10 +69,10 @@ export default async function BalanceSheetPage({
         <Card>
           <CardContent className="flex flex-col items-center py-14 text-center">
             <ReceiptText className="mb-4 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">No realized sales yet</p>
+            <p className="font-medium">No balance sheet listings yet</p>
             <p className="mt-1 max-w-md text-sm text-muted-foreground">
-              Confirmed Reswell sales appear here automatically. Off-platform sales appear after
-              you mark the listing sold and leave a completed tip.
+              Active inventory and confirmed Reswell sales appear automatically. Off-platform
+              sales appear after you mark the listing sold and leave a completed tip.
             </p>
           </CardContent>
         </Card>

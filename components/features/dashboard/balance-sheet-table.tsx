@@ -32,6 +32,11 @@ function profitClass(profit: number | null): string {
   return profit >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"
 }
 
+function sourceLabel(source: SellerBalanceSheetPage["entries"][number]["saleSource"]): string {
+  if (source === "inventory") return "Inventory"
+  return source === "reswell" ? "Reswell sale" : "Off-platform sale"
+}
+
 export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
   return (
     <div className="space-y-4">
@@ -40,9 +45,9 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
           <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Listing</th>
-              <th className="px-4 py-3 font-medium">Sold</th>
+              <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 text-right font-medium">Paid</th>
-              <th className="px-4 py-3 text-right font-medium">Sold for</th>
+              <th className="px-4 py-3 text-right font-medium">Asking / sold</th>
               <th className="px-4 py-3 text-right font-medium">Fee</th>
               <th className="px-4 py-3 text-right font-medium">Profit</th>
             </tr>
@@ -68,14 +73,16 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                 <td className="px-4 py-3">
                   <p>{soldDate(entry.soldAt)}</p>
                   <Badge variant="outline" className="mt-1 font-normal">
-                    {entry.saleSource === "reswell" ? "Reswell" : "Off-platform"}
+                    {sourceLabel(entry.saleSource)}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums">{usd(entry.purchasePrice)}</td>
                 <td className="px-4 py-3 text-right tabular-nums">{usd(entry.soldPrice)}</td>
-                <td className="px-4 py-3 text-right tabular-nums">{usd(entry.reswellFee)}</td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  {entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}
+                </td>
                 <td className={`px-4 py-3 text-right font-semibold tabular-nums ${profitClass(entry.profit)}`}>
-                  {usd(entry.profit)}
+                  {entry.saleSource === "inventory" ? "—" : usd(entry.profit)}
                   {entry.profitMarginPercent != null ? (
                     <span className="ml-1 block text-xs font-normal">
                       {entry.profitMarginPercent.toFixed(1)}%
@@ -100,18 +107,18 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                   {entry.listingTitle}
                 </Link>
                 <Badge variant="outline">
-                  {entry.saleSource === "reswell" ? "Reswell" : "Off-platform"}
+                  {sourceLabel(entry.saleSource)}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                Sold {soldDate(entry.soldAt)}
+                {entry.saleSource === "inventory" ? "Listed" : "Sold"} {soldDate(entry.soldAt)}
                 {entry.purchasedFrom ? ` · Bought from ${entry.purchasedFrom}` : ""}
               </p>
               <dl className="grid grid-cols-2 gap-3 border-t pt-3 text-sm">
                 <div><dt className="text-muted-foreground">Paid</dt><dd className="tabular-nums">{usd(entry.purchasePrice)}</dd></div>
-                <div><dt className="text-muted-foreground">Sold for</dt><dd className="tabular-nums">{usd(entry.soldPrice)}</dd></div>
-                <div><dt className="text-muted-foreground">Fee</dt><dd className="tabular-nums">{usd(entry.reswellFee)}</dd></div>
-                <div><dt className="text-muted-foreground">Profit</dt><dd className={`font-semibold tabular-nums ${profitClass(entry.profit)}`}>{usd(entry.profit)}</dd></div>
+                <div><dt className="text-muted-foreground">{entry.saleSource === "inventory" ? "Asking" : "Sold for"}</dt><dd className="tabular-nums">{usd(entry.soldPrice)}</dd></div>
+                <div><dt className="text-muted-foreground">Fee</dt><dd className="tabular-nums">{entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}</dd></div>
+                <div><dt className="text-muted-foreground">Profit</dt><dd className={`font-semibold tabular-nums ${profitClass(entry.profit)}`}>{entry.saleSource === "inventory" ? "—" : usd(entry.profit)}</dd></div>
               </dl>
             </CardContent>
           </Card>

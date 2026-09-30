@@ -14,15 +14,18 @@ function formatUsd(value: number): string {
 
 export function BalanceSheetSummary({ summary }: BalanceSheetSummaryProps) {
   const cards = [
+    { label: "Inventory listings", value: String(summary.inventoryListings) },
+    { label: "Inventory asking value", value: formatUsd(summary.inventoryAskingValue) },
+    { label: "Inventory cost basis", value: formatUsd(summary.inventoryCostBasis) },
     { label: "Realized sales", value: String(summary.realizedSales) },
     { label: "Gross sold", value: formatUsd(summary.grossSales) },
     { label: "Reswell fees", value: formatUsd(summary.reswellFees) },
-    { label: "Cost basis", value: formatUsd(summary.recordedCostBasis) },
+    { label: "Sold cost basis", value: formatUsd(summary.recordedCostBasis) },
     { label: "Realized profit", value: formatUsd(summary.realizedProfit) },
   ]
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
         <Card key={card.label}>
           <CardContent className="p-4">

@@ -1,4 +1,4 @@
-export type BalanceSheetSaleSource = "reswell" | "off_platform"
+export type BalanceSheetSaleSource = "inventory" | "reswell" | "off_platform"
 
 export interface SellerBalanceSheetEntry {
   entryKey: string
@@ -21,6 +21,9 @@ export interface SellerBalanceSheetEntry {
 }
 
 export interface SellerBalanceSheetSummary {
+  inventoryListings: number
+  inventoryAskingValue: number
+  inventoryCostBasis: number
   realizedSales: number
   grossSales: number
   reswellFees: number

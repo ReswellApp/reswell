@@ -1,7 +1,7 @@
 -- Replace the manually synchronized admin P&L ledger with a seller-owned,
 -- derived balance sheet. Acquisition metadata remains optional on listings;
--- realized sale economics always come from checkout snapshots or succeeded
--- off-platform sale tips.
+-- inventory comes from listings, while realized sale economics always come
+-- from checkout snapshots or succeeded off-platform sale tips.
 
 ALTER TABLE public.listings
   ADD COLUMN IF NOT EXISTS seller_purchased_from text,
@@ -19,35 +19,8 @@ COMMENT ON COLUMN public.listings.seller_purchased_from IS
 COMMENT ON COLUMN public.listings.seller_purchased_on IS
   'Optional seller-only acquisition date; not shown to buyers.';
 
--- Preserve every legacy ledger row that can be tied to a listing. Existing
--- listing metadata wins because it is already the canonical seller value.
-WITH latest_linked_entry AS (
-  SELECT DISTINCT ON (listing_id)
-    listing_id,
-    purchase_price,
-    bought_from,
-    purchase_date
-  FROM public.pnl_entries
-  WHERE listing_id IS NOT NULL
-  ORDER BY listing_id, updated_at DESC
-)
-UPDATE public.listings AS listing
-SET
-  seller_purchase_price_usd = COALESCE(
-    listing.seller_purchase_price_usd,
-    entry.purchase_price
-  ),
-  seller_purchased_from = COALESCE(
-    listing.seller_purchased_from,
-    NULLIF(btrim(entry.bought_from), '')
-  ),
-  seller_purchased_on = COALESCE(
-    listing.seller_purchased_on,
-    entry.purchase_date
-  )
-FROM latest_linked_entry AS entry
-WHERE listing.id = entry.listing_id;
-
+-- The old manually maintained ledger is intentionally discarded. Listings,
+-- orders, refunds, and succeeded tips are the only balance-sheet sources.
 DROP TABLE IF EXISTS public.pnl_loan_repayments;
 DROP TABLE IF EXISTS public.pnl_loans;
 DROP TABLE IF EXISTS public.pnl_entries;
@@ -65,7 +38,11 @@ CREATE INDEX IF NOT EXISTS seller_sale_tips_succeeded_seller_idx
 
 CREATE INDEX IF NOT EXISTS listings_off_platform_balance_sheet_idx
   ON public.listings (user_id, sold_off_platform_at DESC)
-  WHERE status = 'sold' AND sold_off_platform = true;
+  WHERE status IN ('sold', 'removed') AND sold_off_platform = true;
+
+CREATE INDEX IF NOT EXISTS listings_inventory_balance_sheet_idx
+  ON public.listings (user_id, created_at DESC)
+  WHERE status IN ('active', 'pending');
 
 DROP VIEW IF EXISTS public.seller_balance_sheet_entries;
 CREATE VIEW public.seller_balance_sheet_entries
@@ -179,40 +156,77 @@ off_platform_lines AS (
   JOIN tip_totals AS tips
     ON tips.listing_id = l.id
    AND tips.seller_user_id = l.user_id
-  WHERE l.status = 'sold'
+  WHERE l.status IN ('sold', 'removed')
     AND l.sold_off_platform = true
     AND NOT EXISTS (
       SELECT 1
       FROM checkout_lines AS checkout
       WHERE checkout.listing_id = l.id
     )
+),
+sold_lines AS (
+  SELECT * FROM checkout_lines
+  UNION ALL
+  SELECT * FROM off_platform_lines
+),
+inventory_lines AS (
+  SELECT
+    l.user_id AS owner_id,
+    'inventory:' || l.id::text AS entry_key,
+    'inventory'::text AS sale_source,
+    l.id AS listing_id,
+    l.title AS listing_title,
+    l.section AS listing_section,
+    l.slug AS listing_slug,
+    l.seller_purchase_price_usd AS purchase_price,
+    l.seller_purchased_from AS purchased_from,
+    l.seller_purchased_on AS purchased_on,
+    l.price AS sold_price,
+    0::numeric AS reswell_fee,
+    0::numeric AS seller_proceeds,
+    COALESCE(l.created_at, l.updated_at, now()) AS sold_at,
+    NULL::uuid AS order_id,
+    NULL::text AS order_num
+  FROM public.listings AS l
+  WHERE l.status IN ('active', 'pending')
+    AND NOT EXISTS (
+      SELECT 1
+      FROM sold_lines AS sold
+      WHERE sold.listing_id = l.id
+    )
 )
 SELECT
   line.*,
   CASE
-    WHEN line.purchase_price IS NULL THEN NULL
+    WHEN line.sale_source = 'inventory' OR line.purchase_price IS NULL THEN NULL
     ELSE ROUND(line.seller_proceeds - line.purchase_price, 2)
   END AS profit,
   CASE
-    WHEN line.purchase_price IS NULL OR line.sold_price <= 0 THEN NULL
+    WHEN line.sale_source = 'inventory'
+      OR line.purchase_price IS NULL
+      OR line.sold_price <= 0
+    THEN NULL
     ELSE ROUND(
       ((line.seller_proceeds - line.purchase_price) / line.sold_price) * 100,
       2
     )
   END AS profit_margin_percent
 FROM (
-  SELECT * FROM checkout_lines
+  SELECT * FROM sold_lines
   UNION ALL
-  SELECT * FROM off_platform_lines
+  SELECT * FROM inventory_lines
 ) AS line;
 
 COMMENT ON VIEW public.seller_balance_sheet_entries IS
-  'Live seller balance sheet derived from non-refunded checkout lines and tipped off-platform sales.';
+  'Live seller inventory and sales derived from listings, non-refunded checkout lines, and tipped off-platform sales.';
 
 GRANT SELECT ON public.seller_balance_sheet_entries TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.get_my_balance_sheet_summary()
 RETURNS TABLE (
+  inventory_listings bigint,
+  inventory_asking_value numeric,
+  inventory_cost_basis numeric,
   realized_sales bigint,
   gross_sales numeric,
   reswell_fees numeric,
@@ -226,11 +240,32 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
   SELECT
-    COUNT(*)::bigint,
-    COALESCE(SUM(entry.sold_price), 0)::numeric,
-    COALESCE(SUM(entry.reswell_fee), 0)::numeric,
-    COALESCE(SUM(entry.purchase_price), 0)::numeric,
-    COALESCE(SUM(entry.profit), 0)::numeric,
+    COUNT(*) FILTER (WHERE entry.sale_source = 'inventory')::bigint,
+    COALESCE(
+      SUM(entry.sold_price) FILTER (WHERE entry.sale_source = 'inventory'),
+      0
+    )::numeric,
+    COALESCE(
+      SUM(entry.purchase_price) FILTER (WHERE entry.sale_source = 'inventory'),
+      0
+    )::numeric,
+    COUNT(*) FILTER (WHERE entry.sale_source <> 'inventory')::bigint,
+    COALESCE(
+      SUM(entry.sold_price) FILTER (WHERE entry.sale_source <> 'inventory'),
+      0
+    )::numeric,
+    COALESCE(
+      SUM(entry.reswell_fee) FILTER (WHERE entry.sale_source <> 'inventory'),
+      0
+    )::numeric,
+    COALESCE(
+      SUM(entry.purchase_price) FILTER (WHERE entry.sale_source <> 'inventory'),
+      0
+    )::numeric,
+    COALESCE(
+      SUM(entry.profit) FILTER (WHERE entry.sale_source <> 'inventory'),
+      0
+    )::numeric,
     COUNT(*) FILTER (WHERE entry.purchase_price IS NULL)::bigint
   FROM public.seller_balance_sheet_entries AS entry
   WHERE entry.owner_id = auth.uid();
