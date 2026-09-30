@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { readFile } from "node:fs/promises"
+import { readdir, readFile } from "node:fs/promises"
 import { describe, it } from "node:test"
 
 import {
@@ -71,6 +71,27 @@ describe("admin analytics retention policy", () => {
 
     assert.match(rollupRoute, /ADMIN_ANALYTICS_RAW_PRUNING_ENABLED/)
     assert.match(rollupRoute, /isAdminAnalyticsRawPruningEnabled/)
+    assert.match(rollupRoute, /isCronRequestAuthorized/)
     assert.doesNotMatch(flowStatsRoute, /pruneEventLog/)
+
+    const vercelConfig = JSON.parse(
+      await readFile(new URL("../../vercel.json", import.meta.url), "utf8"),
+    ) as { crons?: Array<{ path?: string }> }
+    assert.ok(
+      vercelConfig.crons?.some(
+        (cron) => cron.path === "/api/cron/admin-analytics-rollups",
+      ),
+    )
+  })
+
+  it("keeps every Supabase migration version unique", async () => {
+    const migrations = await readdir(
+      new URL("../../supabase/migrations", import.meta.url),
+    )
+    const versions = migrations
+      .map((filename) => filename.match(/^(\d+)_/)?.[1])
+      .filter((version): version is string => Boolean(version))
+
+    assert.equal(new Set(versions).size, versions.length)
   })
 })
