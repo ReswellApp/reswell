@@ -7,6 +7,7 @@
 import "@/lib/klaviyo/bootstrap-env"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
+import { shouldRecordKlaviyoEventLog } from "@/lib/klaviyo/event-log-policy"
 
 const KLAVIYO_EVENTS_URL = "https://a.klaviyo.com/api/events"
 export const KLAVIYO_API_REVISION = "2026-07-15"
@@ -87,13 +88,15 @@ export async function sendKlaviyoServerEvent(
   input: SendKlaviyoServerEventInput,
 ): Promise<SendKlaviyoServerEventResult> {
   const result = await performSendKlaviyoServerEvent(input)
-  // Durable, best-effort log for the admin notifications center. Never blocks the
-  // send result and never throws. Imported lazily to avoid a server-only import cycle.
-  try {
-    const { recordKlaviyoEventLog } = await import("@/lib/db/klaviyoEventLog")
-    await recordKlaviyoEventLog(input, result)
-  } catch (e) {
-    console.error("[klaviyo] event log skipped:", e instanceof Error ? e.message : e)
+  if (shouldRecordKlaviyoEventLog(input.metricName)) {
+    // Durable, best-effort log for the admin notifications center. Never blocks the
+    // send result and never throws. Imported lazily to avoid a server-only import cycle.
+    try {
+      const { recordKlaviyoEventLog } = await import("@/lib/db/klaviyoEventLog")
+      await recordKlaviyoEventLog(input, result)
+    } catch (e) {
+      console.error("[klaviyo] event log skipped:", e instanceof Error ? e.message : e)
+    }
   }
   return result
 }

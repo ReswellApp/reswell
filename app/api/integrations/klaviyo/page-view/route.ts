@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
+import { hasSupabaseAuthCookies } from "@/lib/auth/has-supabase-auth-cookies"
+import { pageViewRequiresUserLookup } from "@/lib/klaviyo/page-view-metric"
 import { klaviyoPageViewBodySchema } from "@/lib/validations/klaviyoPageView"
 import { trackKlaviyoPageView } from "@/lib/services/klaviyoPageView"
 import { recordSiteTrafficPageViewEvent } from "@/lib/services/siteTraffic"
@@ -27,10 +29,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true })
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const shouldLookUpUser = pageViewRequiresUserLookup(
+    p,
+    hasSupabaseAuthCookies(request.cookies.getAll()),
+  )
+  const supabase = shouldLookUpUser ? await createClient() : undefined
+  const user = supabase
+    ? (await supabase.auth.getUser()).data.user
+    : null
 
   if (!user && !parsed.data.anonymous_id?.trim()) {
     return NextResponse.json(

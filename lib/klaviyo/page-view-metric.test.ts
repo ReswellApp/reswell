@@ -5,6 +5,7 @@ import {
   isListingProductPathname,
   klaviyoPageViewMetricForPathname,
   listingParamFromProductPathname,
+  pageViewRequiresUserLookup,
 } from "./page-view-metric.ts"
 
 describe("isListingProductPathname", () => {
@@ -72,5 +73,18 @@ describe("klaviyoPageViewMetricForPathname", () => {
       metricName: "Viewed Sell Page",
       segment: "sell",
     })
+  })
+})
+
+describe("pageViewRequiresUserLookup", () => {
+  it("bypasses Auth for anonymous storefront analytics", () => {
+    assert.equal(pageViewRequiresUserLookup("/", false), false)
+    assert.equal(pageViewRequiresUserLookup("/boards", false), false)
+  })
+
+  it("keeps signed-in enrichment and authenticated-only page metrics", () => {
+    assert.equal(pageViewRequiresUserLookup("/boards", true), true)
+    assert.equal(pageViewRequiresUserLookup("/l/board", false), true)
+    assert.equal(pageViewRequiresUserLookup("/sell", false), true)
   })
 })

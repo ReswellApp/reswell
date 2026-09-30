@@ -869,13 +869,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     }
   }, [supabase, router, refetchFromClient])
 
-  /** Wallet, ledger, and profile — one Realtime channel (fewer DB connections per tab). */
+  /** Messaging profile and conversations — one Realtime channel per signed-in tab. */
   useEffect(() => {
     if (!user?.id) return
-    const refreshHeader = () => {
-      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
-    }
-
     const applyUnreadFromProfileRow = (row: unknown) => {
       if (!row || typeof row !== "object") return false
       const raw = (row as { unread_message_count?: unknown }).unread_message_count
@@ -908,26 +904,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
     const channel = supabase
       .channel(`header_realtime_${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "wallets",
-          filter: `user_id=eq.${user.id}`,
-        },
-        refreshHeader,
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "wallet_transactions",
-          filter: `user_id=eq.${user.id}`,
-        },
-        refreshHeader,
-      )
       .on(
         "postgres_changes",
         {
