@@ -147,7 +147,14 @@ tip_totals AS (
     SUM(tip.amount_cents)::numeric / 100 AS tip_amount,
     MIN(COALESCE(tip.succeeded_at, tip.created_at)) AS first_succeeded_at
   FROM public.seller_sale_tips AS tip
+  JOIN public.listings AS tipped_listing ON tipped_listing.id = tip.listing_id
   WHERE tip.status = 'succeeded'
+    -- A listing can be relisted and sold again. Tips from an earlier sale cycle
+    -- must not become fees on the current sale.
+    AND (
+      tipped_listing.sold_off_platform_at IS NULL
+      OR COALESCE(tip.succeeded_at, tip.created_at) >= tipped_listing.sold_off_platform_at
+    )
   GROUP BY tip.listing_id, tip.seller_user_id
 ),
 off_platform_lines AS (
