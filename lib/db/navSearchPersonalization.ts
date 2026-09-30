@@ -9,7 +9,7 @@ import type {
 } from "@/lib/types/nav-search-personalization"
 
 export const MAX_USER_RECENT_SEARCHES = 5
-/** Matches `record_user_listing_view` trim cap in DB. */
+/** Matches the asynchronous recently viewed retention cap. */
 export const MAX_USER_RECENTLY_VIEWED = 100
 export const NAV_RECENTLY_VIEWED_DISPLAY_LIMIT = 10
 export const MAX_USER_RECENTLY_VIEWED_BRANDS = 24
