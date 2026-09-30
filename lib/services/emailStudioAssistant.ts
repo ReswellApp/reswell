@@ -725,12 +725,9 @@ export async function askEmailStudioAssistantService(input: {
 }
 
 export async function generateEmailStudioFromBriefService(input: GenerateEmailStudioInput): Promise<
-  | { success: true; target: "email" | "flow"; id: string; name: string }
+  | { success: true; target: "email"; id: string; name: string }
   | { error: string }
 > {
-  if (input.target === "flow") {
-    return { error: "Flow building is no longer available. Generate each email here and assemble the flow in Klaviyo." }
-  }
   if (!isEmailStudioAssistantEnabled()) {
     return {
       error: "The email assistant needs AI Gateway authentication. Set AI_GATEWAY_API_KEY or pull Vercel OIDC credentials, then restart the dev server.",
@@ -758,9 +755,7 @@ export async function generateEmailStudioFromBriefService(input: GenerateEmailSt
   })()
   const catalog = await listKlaviyoFlowCatalogService()
   const preferredName = input.name?.trim() ?? ""
-  const request = "brief" in input
-    ? input.brief
-    : buildStructuredEmailBrief(input)
+  const request = buildStructuredEmailBrief(input)
   let output: {
     reply: string
     operation: AssistantOperation
@@ -772,9 +767,7 @@ export async function generateEmailStudioFromBriefService(input: GenerateEmailSt
     output = await draftFromModel({
       history: [],
       prompt: [
-        input.target === "flow"
-          ? "Build a complete draft flow. applyFlow is yes. applyEmail is no. Every email step needs layout, eyebrow, heading, body, buttonLabel, and buttonHref. Vary layouts across the sequence so each send looks designed."
-          : "Build one designed email. applyEmail is yes. applyFlow is no. operation is replace-document. Use logo, at least two sections with different surfaces, and a footer.",
+        "Build one designed email. applyEmail is yes. applyFlow is no. operation is replace-document. Use logo, at least two sections with different surfaces, and a footer.",
         `Known metrics: ${KNOWN_KLAVIYO_METRIC_NAMES.join(", ")}`,
         catalogLines("Metrics", catalog.metrics),
         catalogLines("Lists", catalog.lists),
@@ -792,90 +785,37 @@ export async function generateEmailStudioFromBriefService(input: GenerateEmailSt
   }
 
   try {
-    if (input.target === "email") {
-      if (!output.email) return { error: "The assistant did not return an email. Describe the message and try again." }
-      const name = (preferredName || output.email.name || "Untitled email").slice(0, 120)
-      const created = await insertEmailStudioDocument(client, {
-        kind: "project",
-        name,
-        subject: output.email.subject,
-        previewText: output.email.previewText,
-        flowName: "",
-        flowId: "",
-        triggerMetric: "",
-        notes: output.email.notes,
-        document: output.email.document,
-        userId: user.id,
-        source: "assistant",
-        summary: "Generated from a brief",
-      })
-      await insertEmailStudioMessage(client, {
-        scope: "email",
-        scopeId: created.id,
-        role: "user",
-        content: request,
-        userId: user.id,
-      })
-      await insertEmailStudioMessage(client, {
-        scope: "email",
-        scopeId: created.id,
-        role: "assistant",
-        content: output.reply,
-        userId: null,
-      })
-      return { success: true, target: "email", id: created.id, name: created.name }
-    }
-
-    if (!output.flow) return { error: "The assistant did not return a flow. Describe the sequence and try again." }
-    const triggerMetric = output.flow.triggerType === "metric" ? output.flow.triggerName : ""
-    const built = chainSteps(output.flow.steps, output.flow.name, triggerMetric)
-    const definition = definitionFromProposal(output.flow, built)
-    for (const project of built.emailProjects) {
-      await insertEmailStudioDocument(client, {
-        id: project.id,
-        kind: "project",
-        name: project.name,
-        subject: project.subject,
-        previewText: project.previewText,
-        flowName: output.flow.name,
-        flowId: "",
-        triggerMetric: project.triggerMetric,
-        notes: project.notes,
-        document: project.document,
-        userId: user.id,
-        source: "assistant",
-        summary: `Generated for ${output.flow.name}`,
-      })
-    }
-    const created = await insertEmailStudioFlow(client, {
-      name: (preferredName || output.flow.name || "Untitled flow").slice(0, 120),
-      definition,
+    if (!output.email) return { error: "The assistant did not return an email. Describe the message and try again." }
+    const name = (preferredName || output.email.name || "Untitled email").slice(0, 120)
+    const created = await insertEmailStudioDocument(client, {
+      kind: "project",
+      name,
+      subject: output.email.subject,
+      previewText: output.email.previewText,
+      flowName: "",
+      flowId: "",
+      triggerMetric: "",
+      notes: output.email.notes,
+      document: output.email.document,
       userId: user.id,
+      source: "assistant",
+      summary: "Generated from a brief",
     })
-    if (output.flow.notes) {
-      await updateEmailStudioFlow(client, {
-        id: created.id,
-        name: created.name,
-        notes: output.flow.notes,
-        definition,
-        userId: user.id,
-      })
-    }
     await insertEmailStudioMessage(client, {
-      scope: "flow",
+      scope: "email",
       scopeId: created.id,
       role: "user",
       content: request,
       userId: user.id,
     })
     await insertEmailStudioMessage(client, {
-      scope: "flow",
+      scope: "email",
       scopeId: created.id,
       role: "assistant",
       content: output.reply,
       userId: null,
     })
-    return { success: true, target: "flow", id: created.id, name: created.name }
+    return { success: true, target: "email", id: created.id, name: created.name }
   } catch (error) {
     console.error("[email_studio] save generated draft failed", error)
     const message = error instanceof Error ? error.message : ""

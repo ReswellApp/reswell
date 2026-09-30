@@ -23,34 +23,6 @@ const FLOW_BUILDING_DISABLED = {
   error: "Flow building is no longer available in Email Studio. Build the flow in Klaviyo and use Reswell for its email templates.",
 } as const
 
-export async function createEmailStudioFlowAction(_raw: unknown) {
-  return FLOW_BUILDING_DISABLED
-}
-
-export async function openKlaviyoFlowAction(_raw: unknown) {
-  return FLOW_BUILDING_DISABLED
-}
-
-export async function updateEmailStudioFlowAction(_raw: unknown) {
-  return FLOW_BUILDING_DISABLED
-}
-
-export async function deleteEmailStudioFlowAction(_raw: unknown) {
-  return FLOW_BUILDING_DISABLED
-}
-
-export async function pushEmailStudioFlowAction(_raw: unknown) {
-  return FLOW_BUILDING_DISABLED
-}
-
-export async function publishEmailStudioFlowAction(_raw: unknown) {
-  return FLOW_BUILDING_DISABLED
-}
-
-export async function setEmailStudioFlowStatusAction(_raw: unknown) {
-  return FLOW_BUILDING_DISABLED
-}
-
 const askSchema = z.object({
   scope: z.enum(["email", "flow"]),
   scopeId: z.string().uuid(),
