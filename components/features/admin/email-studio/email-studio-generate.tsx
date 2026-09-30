@@ -60,14 +60,20 @@ export function EmailStudioGenerate({
 
   async function generate(): Promise<void> {
     const text = brief.trim()
-    if (target === "flow" && text.length < 8) return toast.error("Describe it in a sentence")
+    if (target === "flow" && text.length < 8) {
+      toast.error("Describe it in a sentence")
+      return
+    }
     if (
       target === "email"
       && (!emailBrief.objective.trim()
         || !emailBrief.audience.trim()
         || !emailBrief.productsOrCategory.trim()
         || !emailBrief.primaryCta.trim())
-    ) return toast.error("Complete the required email brief")
+    ) {
+      toast.error("Complete the required email brief")
+      return
+    }
 
     setPending(true)
     const result = target === "flow"
@@ -170,7 +176,7 @@ export function EmailStudioGenerate({
           )}
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={pending}>
-            {pending ? "Designing…" : target === "flow" ? "Generate flow" : "Generate email"}
+              {pending ? "Designing…" : target === "flow" ? "Generate flow" : "Generate email"}
             </Button>
             {target === "email" ? (
               <p className="text-xs text-muted-foreground">Reswell voice, layout, footer, and brand styling are applied automatically.</p>

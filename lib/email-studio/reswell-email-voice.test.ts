@@ -1,9 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import {
-  buildStructuredEmailBrief,
-  RESWELL_EMAIL_VOICE_PROMPT,
-} from "./reswell-email-voice"
+// @ts-expect-error Node's type-stripping test runner requires the explicit extension.
+import { buildStructuredEmailBrief, RESWELL_EMAIL_VOICE_PROMPT } from "./reswell-email-voice.ts"
 
 describe("Reswell email voice", () => {
   it("keeps the structured brief explicit and marks an empty offer as absent", () => {
