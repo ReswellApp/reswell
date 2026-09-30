@@ -75,6 +75,8 @@ export type PostageRecoverySummary = {
   refundPendingCount: number
   voidSkippedUsd: number
   voidSkippedCount: number
+  readyToVoidUsd: number
+  readyToVoidCount: number
   scannedKeptUsd: number
   scannedKeptCount: number
   /** Postage that is unused, denied, unconfirmed, pending, or already past the void deadline. */
@@ -90,6 +92,7 @@ export type PostageRecoveryRun = {
   summary: PostageRecoverySummary
   cracks: PostageAuditRow[]
   recoveredThisRun: PostageAuditRow[]
+  readyToVoid: PostageAuditRow[]
   rows: PostageAuditRow[]
 }
 
@@ -150,6 +153,8 @@ function emptySummary(listedCount: number): PostageRecoverySummary {
     refundPendingCount: 0,
     voidSkippedUsd: 0,
     voidSkippedCount: 0,
+    readyToVoidUsd: 0,
+    readyToVoidCount: 0,
     scannedKeptUsd: 0,
     scannedKeptCount: 0,
     cracksUsd: 0,
@@ -201,6 +206,10 @@ export function summarizePostageAudit(rows: PostageAuditRow[]): PostageRecoveryS
       case "void_skipped":
         summary.voidSkippedUsd += amount
         summary.voidSkippedCount += 1
+        break
+      case "ready_to_void":
+        summary.readyToVoidUsd += amount
+        summary.readyToVoidCount += 1
         break
       case "scanned_keep":
         summary.scannedKeptUsd += amount
@@ -294,6 +303,8 @@ export async function executePostageRecovery(params: {
   labels: PostageRecoveryLabel[]
   now: Date
   autoVoidEnabled: boolean
+  /** Classify voids without calling ShipEngine void. */
+  dryRun?: boolean
   reswellUpsCarrierId: string
   truncated: boolean
   deps: PostageRecoveryDeps
@@ -339,6 +350,15 @@ export async function executePostageRecovery(params: {
 
     if (plan.action !== "void") {
       return baseRow(resolved, plan, { scanStatusCode: statusCode })
+    }
+
+    if (params.dryRun) {
+      return baseRow(resolved, { ...plan, disposition: "ready_to_void" }, {
+        scanStatusCode: statusCode,
+        voidApproved: null,
+        shipengineVoided: false,
+        message: "Unused. Recovery will void this label.",
+      })
     }
 
     const attemptCount = resolved.attemptCount + 1
@@ -396,6 +416,10 @@ export async function executePostageRecovery(params: {
     .filter((row) => row.voidedThisRun)
     .sort((a, b) => b.faceUsd - a.faceUsd)
     .slice(0, RECOVERED_LIMIT)
+  const readyToVoid = rows
+    .filter((row) => row.disposition === "ready_to_void")
+    .sort((a, b) => b.faceUsd - a.faceUsd)
+    .slice(0, RECOVERED_LIMIT)
 
   return {
     buyerRefundsIssued: 0,
@@ -405,6 +429,7 @@ export async function executePostageRecovery(params: {
     summary,
     cracks,
     recoveredThisRun,
+    readyToVoid,
     rows,
   }
 }

@@ -174,6 +174,25 @@ describe("executePostageRecovery", () => {
     assert.equal(run.summary.voidedThisRunUsd, 15)
   })
 
+  it("audits without voiding when the run is read-only", async () => {
+    const client = deps()
+    const run = await executePostageRecovery({
+      now: NOW,
+      autoVoidEnabled: true,
+      dryRun: true,
+      reswellUpsCarrierId: UPS,
+      truncated: false,
+      deps: client,
+      labels: [label({ labelId: "se-stale", createdAt: daysAgo(21), postageUsd: 12, insuranceUsd: 0 })],
+    })
+
+    assert.deepEqual(client.voids, [])
+    assert.equal(run.rows[0]?.disposition, "ready_to_void")
+    assert.equal(run.summary.readyToVoidUsd, 12)
+    assert.equal(run.summary.recoveredBalanceUsd, 0)
+    assert.equal(run.buyerRefundsIssued, 0)
+  })
+
   it("voids an unused return label without treating it as a buyer refund", async () => {
     const client = deps()
     const run = await executePostageRecovery({

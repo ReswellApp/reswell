@@ -1,18 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { dbRecordAdminVoidAttempt } from "@/lib/db/shipenginePostageRecovery"
 import {
   fetchLabelById,
   fetchLabelsByTrackingNumber,
   type ShipEngineLabelDetail,
 } from "@/lib/shipengine/label-lookup"
-import { getReswellUpsCarrierId } from "@/lib/shipengine/config"
 import { voidShipEngineLabel } from "@/lib/shipengine/label-void"
-import {
-  dispositionForRecoveryKind,
-  postageRecoveryKind,
-  type PostageDisposition,
-  type PostageRecoveryKind,
-} from "@/lib/shipping/unused-label-void-policy"
 
 function normalizeTracking(s: string | null | undefined): string {
   return (s ?? "")
@@ -109,11 +101,6 @@ export async function voidShipEngineLabelForOrder(params: {
       return { ok: false, error: detail.error, status: detail.status }
     }
     if (detail.label.voided) {
-      await rememberAdminVoid(params.supabase, o.id, detail.label, {
-        approved: true,
-        shipengineVoided: true,
-        message: "Label was already voided in ShipEngine.",
-      })
       return {
         ok: true,
         data: {
@@ -159,11 +146,6 @@ export async function voidShipEngineLabelForOrder(params: {
     const active = listed.labels.find((l) => !l.voided && l.label_id)
     const anyWithId = listed.labels.find((l) => l.label_id)
     if (!active?.label_id && anyWithId?.label_id) {
-      await rememberAdminVoid(params.supabase, o.id, anyWithId, {
-        approved: true,
-        shipengineVoided: true,
-        message: "Label was already voided in ShipEngine.",
-      })
       return {
         ok: true,
         data: {
@@ -189,11 +171,6 @@ export async function voidShipEngineLabelForOrder(params: {
       return { ok: false, error: detail.error, status: detail.status }
     }
     if (detail.label.voided) {
-      await rememberAdminVoid(params.supabase, o.id, detail.label, {
-        approved: true,
-        shipengineVoided: true,
-        message: "Label was already voided in ShipEngine.",
-      })
       return {
         ok: true,
         data: {
@@ -216,11 +193,6 @@ export async function voidShipEngineLabelForOrder(params: {
 
   const voided = await voidShipEngineLabel(labelId)
   if (!voided.ok) {
-    await rememberAdminVoid(params.supabase, o.id, labelRow, {
-      approved: false,
-      shipengineVoided: false,
-      message: voided.error,
-    })
     return { ok: false, error: voided.error, status: voided.status }
   }
 
@@ -238,12 +210,6 @@ export async function voidShipEngineLabelForOrder(params: {
     : voided.result.approved
       ? `${voided.result.message} Label is not marked voided yet — unused postage recovery will retry.`
       : voided.result.message
-
-  await rememberAdminVoid(params.supabase, o.id, labelRow, {
-    approved: voided.result.approved,
-    shipengineVoided,
-    message,
-  })
 
   const orderTrack = normalizeTracking(o.tracking_number)
   const labelTrack = normalizeTracking(labelRow.tracking_number)
@@ -272,39 +238,6 @@ export async function voidShipEngineLabelForOrder(params: {
       message,
       clearedOrderTracking: shouldClear,
     },
-  }
-}
-
-async function rememberAdminVoid(
-  supabase: SupabaseClient,
-  orderId: string,
-  label: ShipEngineLabelDetail,
-  outcome: { approved: boolean; shipengineVoided: boolean; message: string },
-): Promise<void> {
-  const kind: PostageRecoveryKind = postageRecoveryKind({
-    carrierCode: label.carrier_code,
-    carrierId: label.carrier_id,
-    reswellUpsCarrierId: getReswellUpsCarrierId(),
-  })
-  const disposition: PostageDisposition = outcome.shipengineVoided
-    ? dispositionForRecoveryKind(kind)
-    : outcome.approved
-      ? "refund_pending"
-      : "void_denied"
-  const recorded = await dbRecordAdminVoidAttempt(supabase, {
-    labelId: label.label_id,
-    trackingNumber: label.tracking_number,
-    carrierCode: label.carrier_code,
-    carrierId: label.carrier_id,
-    orderId,
-    approved: outcome.approved,
-    shipengineVoided: outcome.shipengineVoided,
-    message: outcome.message,
-    recoveryKind: outcome.shipengineVoided ? kind : "none",
-    disposition,
-  })
-  if (recorded.error) {
-    console.error("[voidShipEngineLabelForOrder] ledger:", recorded.error.message)
   }
 }
 

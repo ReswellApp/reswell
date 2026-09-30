@@ -31,6 +31,7 @@ export type PostageDisposition =
   | "scan_unconfirmed"
   | "refund_pending"
   | "void_skipped"
+  | "ready_to_void"
 
 export type UnusedLabelPlan = {
   action: "none" | "void"

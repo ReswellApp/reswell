@@ -70,7 +70,7 @@ function formatLabelVoidSuffix(labelVoid: MarketplaceOrderRefundLabelVoidResult)
   if (labelVoid.approved) {
     return ` ShipEngine label ${labelVoid.labelId} voided — postage refund to ShipEngine balance approved.`
   }
-  return ` ShipEngine label ${labelVoid.labelId} void requested but not approved yet: ${labelVoid.message} Unused postage recovery will retry until the carrier deadline.`
+  return ` ShipEngine label ${labelVoid.labelId} void requested but not approved yet: ${labelVoid.message} If it is still unused at 20 days, postage recovery will void it.`
 }
 
 function successMessageForDisposition(

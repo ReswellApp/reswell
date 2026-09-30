@@ -1,11 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import {
-  dbInsertPostageRecoveryRun,
-  dbLatestPostageRecoveryRun,
-  dbListPostageVoidHints,
-  dbUpsertPostageLedger,
-  type PostageRecoverySnapshot,
-} from "@/lib/db/shipenginePostageRecovery"
 import { dbMatchTrackingToOrders } from "@/lib/db/shipengineLabelSpend"
 import { fetchLabelById } from "@/lib/shipengine/label-lookup"
 import { listPurchasedShipEngineLabels } from "@/lib/shipengine/list-purchased-labels"
@@ -17,12 +10,26 @@ import {
   executePostageRecovery,
   type PostageAuditRow,
   type PostageRecoveryLabel,
+  type PostageRecoveryRun,
 } from "@/lib/shipping/recover-unused-postage"
 import { POSTAGE_AUDIT_LOOKBACK_DAYS } from "@/lib/shipping/unused-label-void-policy"
 import { buildOrderTrackingDetailFromShipEngineData } from "@/lib/shipping/order-tracking-detail"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 
-export type { PostageRecoverySnapshot } from "@/lib/db/shipenginePostageRecovery"
+export type PostageRecoverySnapshot = {
+  finishedAt: string
+  /** True when the scheduled job is allowed to void. The admin button voids either way. */
+  autoVoidEnabled: boolean
+  dryRun: boolean
+  truncated: boolean
+  listedCount: number
+  lookbackDays: number
+  buyerRefundsIssued: 0
+  summary: PostageRecoveryRun["summary"]
+  cracks: PostageRecoveryRun["cracks"]
+  recoveredThisRun: PostageRecoveryRun["recoveredThisRun"]
+  readyToVoid: PostageRecoveryRun["readyToVoid"]
+}
 
 const MS_PER_DAY = 86_400_000
 
@@ -40,6 +47,7 @@ function trackingKey(tracking: string | null | undefined): string {
 
 /**
  * Audit ShipEngine labels in the void window and void unused ones.
+ * ShipEngine is the billing record. This does not copy labels into another table.
  * Credits the ShipEngine balance (or closes Reswell UPS billing). Never refunds a buyer.
  */
 export async function recoverUnusedShipEnginePostage(params: {
@@ -47,13 +55,16 @@ export async function recoverUnusedShipEnginePostage(params: {
   now?: Date
   /** Admin click. Ignores the cron kill switch. */
   force?: boolean
+  /** Read ShipEngine and report. Do not void. */
+  dryRun?: boolean
 }): Promise<
   | { ok: true; data: PostageRecoverySnapshot; warnings: string[] }
   | { ok: false; error: string; status: number }
 > {
   const now = params.now ?? new Date()
-  const startedAtIso = now.toISOString()
-  const autoVoidEnabled = params.force ? true : isUnusedLabelAutoVoidEnabled()
+  const dryRun = params.dryRun === true
+  const cronEnabled = isUnusedLabelAutoVoidEnabled()
+  const autoVoidEnabled = dryRun || params.force ? true : cronEnabled
   const start = new Date(now.getTime() - POSTAGE_AUDIT_LOOKBACK_DAYS * MS_PER_DAY)
   const end = new Date(now.getTime() + 60_000)
 
@@ -80,15 +91,10 @@ export async function recoverUnusedShipEnginePostage(params: {
     .map((label) => label.trackingNumber)
     .filter((tn): tn is string => Boolean(tn))
 
-  const [hints, matches] = await Promise.all([
-    dbListPostageVoidHints(params.supabase, start.toISOString()),
-    dbMatchTrackingToOrders(params.supabase, trackingNumbers),
-  ])
-  if (hints.error) warnings.push(`Could not read prior void attempts: ${hints.error.message}`)
+  const matches = await dbMatchTrackingToOrders(params.supabase, trackingNumbers)
   if (matches.error) warnings.push(`Could not match labels to orders: ${matches.error.message}`)
 
   const labels: PostageRecoveryLabel[] = listed.labels.map((label) => {
-    const hint = hints.data.get(label.labelId)
     const match = trackingKey(label.trackingNumber)
     return {
       labelId: label.labelId,
@@ -102,8 +108,8 @@ export async function recoverUnusedShipEnginePostage(params: {
       postageUsd: label.postageUsd,
       insuranceUsd: label.insuranceUsd,
       orderId: match ? (matches.data.get(match)?.orderId ?? null) : null,
-      adminVoidRequested: hint?.adminVoidRequested ?? false,
-      attemptCount: hint?.attemptCount ?? 0,
+      adminVoidRequested: false,
+      attemptCount: 0,
     }
   })
 
@@ -111,6 +117,7 @@ export async function recoverUnusedShipEnginePostage(params: {
     labels,
     now,
     autoVoidEnabled,
+    dryRun,
     reswellUpsCarrierId: getReswellUpsCarrierId(),
     truncated: listed.truncated,
     deps: {
@@ -120,10 +127,10 @@ export async function recoverUnusedShipEnginePostage(params: {
     },
   })
 
-  const finishedAtIso = new Date().toISOString()
   const snapshot: PostageRecoverySnapshot = {
-    finishedAt: finishedAtIso,
-    autoVoidEnabled,
+    finishedAt: new Date().toISOString(),
+    autoVoidEnabled: cronEnabled,
+    dryRun,
     truncated: run.truncated,
     listedCount: listed.labels.length,
     lookbackDays: run.lookbackDays,
@@ -131,28 +138,12 @@ export async function recoverUnusedShipEnginePostage(params: {
     summary: run.summary,
     cracks: run.cracks,
     recoveredThisRun: run.recoveredThisRun,
+    readyToVoid: run.readyToVoid,
   }
 
-  const ledger = await dbUpsertPostageLedger(params.supabase, run.rows, finishedAtIso)
-  if (ledger.error) {
-    warnings.push(`Void ledger was not saved: ${ledger.error.message}`)
-    console.error("[postage recovery] ledger upsert:", ledger.error.message)
+  if (!dryRun) {
+    await clearTrackingForRecoveredLabels(params.supabase, run.rows)
   }
-
-  const saved = await dbInsertPostageRecoveryRun(params.supabase, {
-    startedAtIso,
-    finishedAtIso,
-    autoVoidEnabled,
-    truncated: run.truncated,
-    listedCount: listed.labels.length,
-    result: snapshot,
-  })
-  if (saved.error) {
-    warnings.push(`Audit run was not saved: ${saved.error.message}`)
-    console.error("[postage recovery] run insert:", saved.error.message)
-  }
-
-  await clearTrackingForRecoveredLabels(params.supabase, run.rows)
 
   if (run.summary.expiredLostUsd > 0) {
     console.error("[postage recovery] postage past the carrier void deadline", {
@@ -170,19 +161,6 @@ export async function recoverUnusedShipEnginePostage(params: {
   })
 
   return { ok: true, data: snapshot, warnings }
-}
-
-export async function getLatestPostageRecovery(
-  supabase: SupabaseClient,
-): Promise<
-  | { ok: true; data: PostageRecoverySnapshot | null }
-  | { ok: false; error: string; status: number }
-> {
-  const latest = await dbLatestPostageRecoveryRun(supabase)
-  if (latest.error) {
-    return { ok: false, error: latest.error.message, status: 500 }
-  }
-  return { ok: true, data: latest.data }
 }
 
 async function trackForRecovery(

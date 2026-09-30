@@ -16,7 +16,7 @@ import {
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { Loader2, RefreshCw, TriangleAlert } from "lucide-react"
 import { toast } from "sonner"
-import type { PostageRecoverySnapshot } from "@/lib/db/shipenginePostageRecovery"
+import type { PostageRecoverySnapshot } from "@/lib/services/recoverUnusedShipEnginePostage"
 import type { PostageDisposition } from "@/lib/shipping/unused-label-void-policy"
 
 function formatUsd(value: number): string {
@@ -52,6 +52,8 @@ function dispositionLabel(disposition: PostageDisposition): string {
       return "Approaching day 20"
     case "in_grace":
       return "Inside 16 days"
+    case "ready_to_void":
+      return "Ready to void"
     default:
       return disposition
   }
@@ -120,9 +122,9 @@ export function AdminPostageRecoveryTab() {
           <div>
             <CardTitle className="text-lg">Unused postage</CardTitle>
             <CardDescription className="max-w-2xl">
-              Labels with no carrier scan for 20 days are voided. Wallet postage is credited to the ShipEngine
-              balance. Reswell&apos;s own UPS account is post-billed, so an unscanned void is never invoiced.
-              Buyers are not refunded.
+              Reads ShipEngine directly. Labels with no carrier scan for 20 days are voided, and wallet postage
+              is credited to the ShipEngine balance. Reswell&apos;s own UPS account is post-billed, so an unscanned
+              void is never invoiced. Buyers are not refunded.
             </CardDescription>
           </div>
           <Button onClick={() => void runNow()} disabled={running} className="shrink-0">
@@ -141,16 +143,17 @@ export function AdminPostageRecoveryTab() {
           ) : null}
           {!loading && !error && !data ? (
             <p className="text-sm text-muted-foreground">
-              No audit yet. Recovery also runs twice a day. Run it now to void unused labels before the carrier
-              deadline (USPS 28 days, other carriers 30).
+              Recovery also runs twice a day. Opening this tab reads ShipEngine. It does not keep a separate copy
+              of the labels.
             </p>
           ) : null}
           {data && summary ? (
             <>
               <p className="text-xs text-muted-foreground">
-                Last run <LocalDateTime iso={data.finishedAt} /> · {data.listedCount} labels in the last{" "}
+                ShipEngine as of <LocalDateTime iso={data.finishedAt} /> · {data.listedCount} labels in the last{" "}
                 {data.lookbackDays} days
-                {data.autoVoidEnabled ? "" : " · auto-void is paused"}
+                {data.dryRun ? " · audit only" : ""}
+                {data.autoVoidEnabled ? "" : " · scheduled void is paused"}
                 {data.truncated ? " · ShipEngine list was truncated" : ""}
               </p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -159,7 +162,8 @@ export function AdminPostageRecoveryTab() {
                 <Stat label="UPS not billed" value={formatUsd(summary.recoveredUpsUsd)} hint={`${summary.recoveredUpsCount} own-account`} />
                 <Stat label="Slipping through" value={formatUsd(summary.cracksUsd)} hint={`${summary.cracksCount} need attention`} />
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat label="Ready to void" value={formatUsd(summary.readyToVoidUsd)} hint={`${summary.readyToVoidCount} unused and inside the window`} />
                 <Stat label="Approaching day 20" value={formatUsd(summary.approachingUsd)} hint={`${summary.approachingCount} unscanned`} />
                 <Stat label="Past deadline" value={formatUsd(summary.expiredLostUsd)} hint={`${summary.expiredLostCount} too late to void`} />
                 <Stat label="Inside 16 days" value={formatUsd(summary.inGraceUsd)} hint={`${summary.inGraceCount} not eligible to void yet`} />
@@ -168,6 +172,21 @@ export function AdminPostageRecoveryTab() {
           ) : null}
         </CardContent>
       </Card>
+
+      {data && data.readyToVoid.length > 0 ? (
+        <Card className="rounded-2xl border-border bg-card">
+          <CardHeader>
+            <CardTitle className="text-base">Ready to void</CardTitle>
+            <CardDescription>
+              Unused and still inside the carrier deadline. Recover unused postage voids these. The credit lands on
+              the ShipEngine balance.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LabelTable rows={data.readyToVoid} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {data && data.cracks.length > 0 ? (
         <Card className="rounded-2xl border-border bg-card">
