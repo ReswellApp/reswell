@@ -1,10 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 // @ts-expect-error Node's strip-types runner requires the source extension.
-import {
-  executeNearbyBrowseFallback,
-  resolveNearbyBrowseFallbackCandidates,
-} from "./boards-browse-fallback.ts"
+import { executeNearbyBrowseFallback, resolveNearbyBrowseFallbackCandidates } from "./boards-browse-fallback.ts"
 
 function row(
   id: string,
