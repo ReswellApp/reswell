@@ -10,7 +10,9 @@ import { cloneEmailDocument, starterById } from "./document"
 import { validateEmailStudioPreflight } from "./preflight"
 import { isEmailStudioPublishComplete } from "./publish-result"
 import {
+  neutralizeKlaviyoLiquidData,
   renderEmailStudioHtml,
+  renderEmailStudioText,
   resolveEmailStudioHtml,
   safeEmailHref,
   withEmailPreviewData,
@@ -364,6 +366,64 @@ describe("email studio html", () => {
       blocks: [{ ...product, listingIds: Array.from({ length: 5 }, (_, index) => `00000000-0000-4000-8000-00000000002${index}`) }],
     })
     assert.equal(tooMany.success, false)
+  })
+
+  it("treats every listing snapshot field as data instead of Liquid", () => {
+    const tokenVariants = [
+      "{{ profile.email }}",
+      "{% comment %}",
+      "{{- profile.email -}}",
+      "{%- comment -%}",
+      "stray }}",
+      "stray %}",
+      "{{{ overlapping }}}",
+    ]
+    for (const value of tokenVariants) {
+      assert.doesNotMatch(neutralizeKlaviyoLiquidData(value), /\{\{|\}\}|\{%|%\}/)
+    }
+
+    const document: EmailStudioDocument = {
+      blocks: [{
+        id: "00000000-0000-4000-8000-000000000025",
+        type: "product",
+        title: "Featured listing",
+        listingIds: ["00000000-0000-4000-8000-000000000026"],
+        items: [{
+          id: "00000000-0000-4000-8000-000000000026",
+          title: "Board {{ profile.email }}",
+          priceDisplay: "$500 {% assign altered = true %}",
+          condition: "Good {{- profile.first_name -}}",
+          dimensions: "6'0 {%- comment -%}hidden{%- endcomment -%}",
+          boardType: "Fish }} %}",
+          imageUrl: "https://images.example.com/{{ event.id }}.jpg",
+          productUrl: "https://www.reswell.app/l/{% include 'listing' %}",
+          availability: "available",
+        }],
+        showPrice: true,
+        showCondition: true,
+        showDimensions: true,
+        showBoardType: true,
+        showAvailability: true,
+        ctaLabel: "View board",
+      }],
+    }
+    const input = {
+      name: "Untrusted listing data",
+      subject: "",
+      previewText: "",
+      flowName: "",
+      triggerMetric: "",
+      document,
+    }
+    const html = renderEmailStudioHtml(input)
+    const text = renderEmailStudioText(input)
+
+    assert.doesNotMatch(html, /\{\{|\}\}|\{%|%\}/)
+    assert.doesNotMatch(text, /\{\{|\}\}|\{%|%\}/)
+    assert.match(html, /Board ｛｛ profile\.email ｝｝/)
+    assert.match(html, /images\.example\.com\/｛｛ event\.id ｝｝\.jpg/)
+    assert.match(html, /www\.reswell\.app\/l\/｛% include/)
+    assert.match(text, /Fish ｝｝ %｝/)
   })
 
   it("blocks malformed variables, unsafe links, and missing unsubscribe content", () => {

@@ -12,7 +12,15 @@ import {
 import { sanitizeEmailHtml } from "@/lib/email-studio/brand-html"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
-import type { EmailBlock, EmailFontWeight, EmailHideOn, EmailPadding, EmailSectionBlock, EmailStudioDocument } from "@/lib/types/emailStudio"
+import type {
+  EmailBlock,
+  EmailFontWeight,
+  EmailHideOn,
+  EmailPadding,
+  EmailSectionBlock,
+  EmailStudioDocument,
+  EmailStudioProductSnapshot,
+} from "@/lib/types/emailStudio"
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
 const HEADLINE = KLAVIYO_EMAIL_FONT_HEADLINE
@@ -40,6 +48,30 @@ function escapeText(value: string): string {
 
 function textToHtml(value: string): string {
   return escapeText(value).replace(/\r\n/g, "\n").replace(/\n/g, "<br>")
+}
+
+/**
+ * Seller-controlled listing fields are data, never Klaviyo template source.
+ * Fullwidth braces preserve readable content while making every Liquid
+ * delimiter variant inert in HTML attributes, HTML text, and plain text.
+ */
+export function neutralizeKlaviyoLiquidData(value: string): string {
+  return value.replaceAll("{", "｛").replaceAll("}", "｝")
+}
+
+function productSnapshotAsData(
+  item: EmailStudioProductSnapshot,
+): EmailStudioProductSnapshot {
+  return {
+    ...item,
+    title: neutralizeKlaviyoLiquidData(item.title),
+    priceDisplay: neutralizeKlaviyoLiquidData(item.priceDisplay),
+    condition: neutralizeKlaviyoLiquidData(item.condition),
+    dimensions: neutralizeKlaviyoLiquidData(item.dimensions),
+    boardType: neutralizeKlaviyoLiquidData(item.boardType),
+    imageUrl: neutralizeKlaviyoLiquidData(item.imageUrl),
+    productUrl: neutralizeKlaviyoLiquidData(item.productUrl),
+  }
 }
 
 export function safeEmailHref(href: string): string {
@@ -160,28 +192,29 @@ function productCardHtml(
   block: Extract<EmailBlock, { type: "product" }>,
   compact: boolean,
 ): string {
+  const data = productSnapshotAsData(item)
   const details = [
-    block.showBoardType && item.boardType ? item.boardType : "",
-    block.showCondition && item.condition ? item.condition : "",
-    block.showDimensions && item.dimensions ? item.dimensions : "",
+    block.showBoardType && data.boardType ? data.boardType : "",
+    block.showCondition && data.condition ? data.condition : "",
+    block.showDimensions && data.dimensions ? data.dimensions : "",
   ].filter(Boolean)
   const imageWidth = compact ? 248 : 220
-  const image = imageHtml(item.imageUrl, item.title, item.productUrl, imageWidth, compact ? 180 : 220)
+  const image = imageHtml(data.imageUrl, data.title, data.productUrl, imageWidth, compact ? 180 : 220)
   const status = block.showAvailability
     ? `<p style="margin:0 0 7px 0;font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${item.availability === "available" ? KLAVIYO_EMAIL_COLORS.price : KLAVIYO_EMAIL_MUTED};">${productAvailabilityLabel(item.availability)}</p>`
     : ""
-  const price = block.showPrice && item.priceDisplay
-    ? `<p style="margin:0 0 8px 0;font-family:${FONT};font-size:18px;font-weight:700;color:${INK};">${textToHtml(item.priceDisplay)}</p>`
+  const price = block.showPrice && data.priceDisplay
+    ? `<p style="margin:0 0 8px 0;font-family:${FONT};font-size:18px;font-weight:700;color:${INK};">${textToHtml(data.priceDisplay)}</p>`
     : ""
   const specs = details.length
     ? `<p style="margin:0 0 16px 0;font-family:${FONT};font-size:13px;line-height:1.5;color:${KLAVIYO_EMAIL_MUTED};">${details.map(textToHtml).join(" · ")}</p>`
     : ""
   const cta = item.availability === "available" || item.availability === "pending"
-    ? buttonHtml(block.ctaLabel || "View board", item.productUrl)
-    : item.productUrl
-      ? `<a href="${safeEmailHref(item.productUrl)}" style="font-family:${FONT};font-size:14px;font-weight:600;color:${LINK};">View listing</a>`
+    ? buttonHtml(block.ctaLabel || "View board", data.productUrl)
+    : data.productUrl
+      ? `<a href="${safeEmailHref(data.productUrl)}" style="font-family:${FONT};font-size:14px;font-weight:600;color:${LINK};">View listing</a>`
       : ""
-  const copy = `${status}<p style="margin:0 0 8px 0;font-family:${HEADLINE};font-size:${compact ? 18 : 22}px;font-weight:700;line-height:1.1;letter-spacing:-0.04em;color:${INK};">${textToHtml(item.title)}</p>${price}${specs}${cta}`
+  const copy = `${status}<p style="margin:0 0 8px 0;font-family:${HEADLINE};font-size:${compact ? 18 : 22}px;font-weight:700;line-height:1.1;letter-spacing:-0.04em;color:${INK};">${textToHtml(data.title)}</p>${price}${specs}${cta}`
 
   if (compact) {
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="padding-bottom:14px;">${image}</td></tr><tr><td>${copy}</td></tr></table>`
@@ -452,16 +485,17 @@ export function renderEmailStudioText(input: EmailStudioRenderInput): string {
     } else if (block.type === "product") {
       if (block.title.trim()) lines.push(block.title.trim(), "")
       for (const item of block.items) {
-        lines.push(item.title)
-        if (block.showPrice && item.priceDisplay) lines.push(item.priceDisplay)
+        const data = productSnapshotAsData(item)
+        lines.push(data.title)
+        if (block.showPrice && data.priceDisplay) lines.push(data.priceDisplay)
         const details = [
-          block.showBoardType ? item.boardType : "",
-          block.showCondition ? item.condition : "",
-          block.showDimensions ? item.dimensions : "",
+          block.showBoardType ? data.boardType : "",
+          block.showCondition ? data.condition : "",
+          block.showDimensions ? data.dimensions : "",
         ].filter(Boolean)
         if (details.length) lines.push(details.join(" · "))
         if (block.showAvailability) lines.push(productAvailabilityLabel(item.availability))
-        if (item.productUrl) lines.push(item.productUrl)
+        if (data.productUrl) lines.push(data.productUrl)
         lines.push("")
       }
     }
