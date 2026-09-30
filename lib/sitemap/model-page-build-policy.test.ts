@@ -19,7 +19,7 @@ describe("model page build policy", () => {
     assert.match(modelPageSource, /export const dynamicParams = true/)
     assert.match(
       modelPageSource,
-      /generateStaticParams\(\)[^{]*\{\s*return \[\]\s*\}/,
+      /export function generateStaticParams[\s\S]*?\n  return \[\]\n\}/,
     )
     assert.doesNotMatch(modelPageSource, /fetchBrandModelSitemapEntries/)
   })
