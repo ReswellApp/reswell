@@ -7,6 +7,7 @@ import {
   safeEmailHref,
   withEmailPreviewData,
 } from "./render-html"
+import { emailStudioDocumentSchema } from "../validations/emailStudio"
 
 describe("email studio html", () => {
   it("drops unsafe links and keeps Klaviyo tags", () => {
@@ -174,5 +175,53 @@ describe("email studio html", () => {
     assert.match(html, /padding:32px/)
     assert.match(html, /max-width:600px/)
     assert.match(html, /color:#FFFFFF/i)
+  })
+
+  it("renders product-aware listing cards and enforces the four-listing cap", () => {
+    const product = {
+      id: "00000000-0000-4000-8000-000000000020",
+      type: "product" as const,
+      title: "Boards worth a look",
+      listingIds: ["00000000-0000-4000-8000-000000000021"],
+      items: [{
+        id: "00000000-0000-4000-8000-000000000021",
+        title: "6'2 Ghost",
+        priceDisplay: "$640",
+        condition: "Excellent",
+        dimensions: "6'2″ × 19″ × 2 1/2″ · 30 L",
+        boardType: "Shortboard",
+        imageUrl: "https://www.reswell.app/board.jpg",
+        productUrl: "https://www.reswell.app/l/ghost",
+        availability: "available" as const,
+      }],
+      showPrice: true,
+      showCondition: true,
+      showDimensions: true,
+      showBoardType: true,
+      showAvailability: true,
+      ctaLabel: "View board",
+    }
+    const document = { blocks: [product] }
+    const parsed = emailStudioDocumentSchema.safeParse(document)
+    assert.equal(parsed.success, true)
+
+    const html = renderEmailStudioHtml({
+      name: "Products",
+      subject: "",
+      previewText: "",
+      flowName: "",
+      triggerMetric: "",
+      document,
+    })
+    assert.match(html, /Boards worth a look/)
+    assert.match(html, /\$640/)
+    assert.match(html, /Excellent/)
+    assert.match(html, /Available/)
+    assert.match(html, /https:\/\/www\.reswell\.app\/l\/ghost/)
+
+    const tooMany = emailStudioDocumentSchema.safeParse({
+      blocks: [{ ...product, listingIds: Array.from({ length: 5 }, (_, index) => `00000000-0000-4000-8000-00000000002${index}`) }],
+    })
+    assert.equal(tooMany.success, false)
   })
 })

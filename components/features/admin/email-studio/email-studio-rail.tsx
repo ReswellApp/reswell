@@ -12,6 +12,7 @@ export type EmailStudioRailTab = "content" | "rows" | "settings" | "assistant"
 
 const GROUPS: { title: string; types: EmailBlockType[] }[] = [
   { title: "Text", types: ["heading", "text", "eyebrow"] },
+  { title: "Commerce", types: ["product"] },
   { title: "Media", types: ["image", "logo"] },
   { title: "Button", types: ["button"] },
   { title: "Layout", types: ["section", "split", "details"] },

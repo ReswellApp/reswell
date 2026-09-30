@@ -22,7 +22,13 @@ import {
   updateEmailStudioKlaviyoSync,
 } from "@/lib/db/emailStudio"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
+import {
+  hydrateEmailStudioProductBlocks,
+  loadEmailStudioProducts,
+  searchEmailStudioProducts,
+} from "@/lib/services/emailStudioProducts"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION } from "@/lib/types/emailStudio"
 import type {
   EmailStudioDocument,
   EmailStudioFlowOption,
@@ -173,6 +179,7 @@ export async function updateEmailStudioService(
       notes: input.notes,
       document: input.document,
       userId: staff.userId,
+      schemaVersion: EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION,
     })
     return { success: true, data }
   } catch (error) {
@@ -273,13 +280,14 @@ export async function pushEmailStudioToKlaviyoService(
     const client = dbClient(staff.supabase)
     const existing = await getEmailStudioDocument(client, id)
     if (!existing) return { error: "Project not found" }
+    const hydratedDocument = await hydrateEmailStudioProductBlocks(client, existing.document)
     const renderInput = {
       name: existing.name,
       subject: existing.subject,
       previewText: existing.previewText,
       flowName: existing.flowName,
       triggerMetric: existing.triggerMetric,
-      document: existing.document,
+      document: hydratedDocument,
     }
     const html = resolveEmailStudioHtml(renderInput)
     const text = renderEmailStudioText(renderInput)
@@ -336,6 +344,34 @@ export async function pushEmailStudioToKlaviyoService(
   } catch (error) {
     console.error("[email_studio] klaviyo push failed", error)
     return { error: "Could not push this template to Klaviyo" }
+  }
+}
+
+export async function searchEmailStudioProductsService(
+  query: string,
+): Promise<{ success: true; data: Awaited<ReturnType<typeof searchEmailStudioProducts>> } | ServiceError> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+  try {
+    const data = await searchEmailStudioProducts(dbClient(staff.supabase), query)
+    return { success: true, data }
+  } catch (error) {
+    console.error("[email_studio] product search failed", error)
+    return { error: "Could not search listings" }
+  }
+}
+
+export async function hydrateEmailStudioProductsService(
+  listingIds: string[],
+): Promise<{ success: true; data: Awaited<ReturnType<typeof loadEmailStudioProducts>> } | ServiceError> {
+  const staff = await requireStaff()
+  if (!staff.ok) return { error: staff.error }
+  try {
+    const data = await loadEmailStudioProducts(dbClient(staff.supabase), listingIds)
+    return { success: true, data }
+  } catch (error) {
+    console.error("[email_studio] product refresh failed", error)
+    return { error: "Could not refresh listings" }
   }
 }
 

@@ -1,5 +1,6 @@
 export const EMAIL_BLOCK_TYPES = [
   "section",
+  "product",
   "logo",
   "eyebrow",
   "heading",
@@ -13,7 +14,7 @@ export const EMAIL_BLOCK_TYPES = [
   "footer",
 ] as const
 
-export const EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION = 2
+export const EMAIL_STUDIO_DOCUMENT_SCHEMA_VERSION = 3
 
 export type EmailBlockType = (typeof EMAIL_BLOCK_TYPES)[number]
 
@@ -27,6 +28,24 @@ export interface EmailDetailRow {
   id: string
   label: string
   value: string
+}
+
+export type EmailStudioProductAvailability =
+  | "available"
+  | "pending"
+  | "sold"
+  | "unavailable"
+
+export interface EmailStudioProductSnapshot {
+  id: string
+  title: string
+  priceDisplay: string
+  condition: string
+  dimensions: string
+  boardType: string
+  imageUrl: string
+  productUrl: string
+  availability: EmailStudioProductAvailability
 }
 
 interface EmailBlockBase {
@@ -111,6 +130,19 @@ export interface EmailFooterBlock extends EmailBlockBase {
   showUnsubscribe: boolean
 }
 
+export interface EmailProductBlock extends EmailBlockBase {
+  type: "product"
+  title: string
+  listingIds: string[]
+  items: EmailStudioProductSnapshot[]
+  showPrice: boolean
+  showCondition: boolean
+  showDimensions: boolean
+  showBoardType: boolean
+  showAvailability: boolean
+  ctaLabel: string
+}
+
 export type EmailContentBlock =
   | EmailLogoBlock
   | EmailEyebrowBlock
@@ -139,7 +171,7 @@ export interface EmailSectionBlock extends EmailBlockBase {
   columns: EmailSectionColumn[]
 }
 
-export type EmailBlock = EmailContentBlock | EmailSectionBlock
+export type EmailBlock = EmailContentBlock | EmailSectionBlock | EmailProductBlock
 
 export interface EmailStudioDocument {
   blocks: EmailBlock[]

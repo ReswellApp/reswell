@@ -83,6 +83,47 @@ function imageHtml(
   return safeHref ? `<a href="${safeHref}" style="text-decoration:none;">${img}</a>` : img
 }
 
+function productAvailabilityLabel(value: "available" | "pending" | "sold" | "unavailable"): string {
+  if (value === "available") return "Available"
+  if (value === "pending") return "Pending sale"
+  if (value === "sold") return "Sold"
+  return "Unavailable"
+}
+
+function productCardHtml(
+  item: Extract<EmailBlock, { type: "product" }>["items"][number],
+  block: Extract<EmailBlock, { type: "product" }>,
+  compact: boolean,
+): string {
+  const details = [
+    block.showBoardType && item.boardType ? item.boardType : "",
+    block.showCondition && item.condition ? item.condition : "",
+    block.showDimensions && item.dimensions ? item.dimensions : "",
+  ].filter(Boolean)
+  const imageWidth = compact ? 248 : 220
+  const image = imageHtml(item.imageUrl, item.title, item.productUrl, imageWidth, compact ? 180 : 220)
+  const status = block.showAvailability
+    ? `<p style="margin:0 0 7px 0;font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${item.availability === "available" ? KLAVIYO_EMAIL_COLORS.price : KLAVIYO_EMAIL_MUTED};">${productAvailabilityLabel(item.availability)}</p>`
+    : ""
+  const price = block.showPrice && item.priceDisplay
+    ? `<p style="margin:0 0 8px 0;font-family:${FONT};font-size:18px;font-weight:700;color:${INK};">${textToHtml(item.priceDisplay)}</p>`
+    : ""
+  const specs = details.length
+    ? `<p style="margin:0 0 16px 0;font-family:${FONT};font-size:13px;line-height:1.5;color:${KLAVIYO_EMAIL_MUTED};">${details.map(textToHtml).join(" · ")}</p>`
+    : ""
+  const cta = item.availability === "available" || item.availability === "pending"
+    ? buttonHtml(block.ctaLabel || "View board", item.productUrl)
+    : item.productUrl
+      ? `<a href="${safeEmailHref(item.productUrl)}" style="font-family:${FONT};font-size:14px;font-weight:600;color:${LINK};">View listing</a>`
+      : ""
+  const copy = `${status}<p style="margin:0 0 8px 0;font-family:${HEADLINE};font-size:${compact ? 18 : 22}px;font-weight:700;line-height:1.1;letter-spacing:-0.04em;color:${INK};">${textToHtml(item.title)}</p>${price}${specs}${cta}`
+
+  if (compact) {
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="padding-bottom:14px;">${image}</td></tr><tr><td>${copy}</td></tr></table>`
+  }
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td class="stack" valign="top" width="44%" style="padding:0 18px 0 0;">${image}</td><td class="stack" valign="middle" width="56%" style="padding:0 0 0 18px;">${copy}</td></tr></table>`
+}
+
 function renderBlock(
   block: EmailBlock,
   colors: { ink: string; muted: string } = { ink: INK, muted: KLAVIYO_EMAIL_MUTED },
@@ -134,6 +175,24 @@ function renderBlock(
       return `<tr><td align="center" style="padding:0 0 20px 0;">${imageHtml(block.src, block.alt, block.href, block.width ?? 560, block.height ?? null)}</td></tr>`
     case "button":
       return `<tr><td align="${align(block.align)}" style="padding:4px 0 24px 0;">${buttonHtml(block.label, block.href)}</td></tr>`
+    case "product": {
+      const items = block.items.slice(0, 4)
+      if (items.length === 0) {
+        return `<tr><td style="padding:24px;border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};font-family:${FONT};font-size:14px;text-align:center;color:${KLAVIYO_EMAIL_MUTED};">Choose up to four Reswell listings.</td></tr><tr><td style="height:20px;">&nbsp;</td></tr>`
+      }
+      const title = block.title.trim()
+        ? `<tr><td style="padding:0 0 18px 0;font-family:${HEADLINE};font-size:24px;font-weight:700;letter-spacing:-0.04em;color:${INK};">${textToHtml(block.title)}</td></tr>`
+        : ""
+      if (items.length === 1) {
+        return `${title}<tr><td style="padding:0 0 24px 0;">${productCardHtml(items[0], block, false)}</td></tr>`
+      }
+      const rows: string[] = []
+      for (let index = 0; index < items.length; index += 2) {
+        const pair = items.slice(index, index + 2)
+        rows.push(`<tr>${pair.map((item, pairIndex) => `<td class="stack" valign="top" width="50%" style="padding:0 ${pairIndex === 0 ? 10 : 0}px 24px ${pairIndex === 1 ? 10 : 0}px;">${productCardHtml(item, block, true)}</td>`).join("")}${pair.length === 1 ? '<td width="50%"></td>' : ""}</tr>`)
+      }
+      return `${title}<tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${rows.join("")}</table></td></tr>`
+    }
     case "divider":
       return `<tr><td style="padding:4px 0 20px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${KLAVIYO_EMAIL_BORDER};font-size:0;line-height:0;">&nbsp;</td></tr></table></td></tr>`
     case "spacer": {
@@ -300,6 +359,21 @@ export function renderEmailStudioText(input: EmailStudioRenderInput): string {
       lines.push("")
     } else if (block.type === "split") {
       lines.push(block.title.trim(), block.text.trim(), "")
+    } else if (block.type === "product") {
+      if (block.title.trim()) lines.push(block.title.trim(), "")
+      for (const item of block.items) {
+        lines.push(item.title)
+        if (block.showPrice && item.priceDisplay) lines.push(item.priceDisplay)
+        const details = [
+          block.showBoardType ? item.boardType : "",
+          block.showCondition ? item.condition : "",
+          block.showDimensions ? item.dimensions : "",
+        ].filter(Boolean)
+        if (details.length) lines.push(details.join(" · "))
+        if (block.showAvailability) lines.push(productAvailabilityLabel(item.availability))
+        if (item.productUrl) lines.push(item.productUrl)
+        lines.push("")
+      }
     }
   }
   for (const block of input.document.blocks) appendBlock(block)

@@ -8,6 +8,7 @@ import type { EmailBlock, EmailBlockType } from "@/lib/types/emailStudio"
 
 const LABELS: Record<EmailBlockType, string> = {
   section: "Section",
+  product: "Products",
   logo: "Logo",
   eyebrow: "Eyebrow",
   heading: "Headline",
@@ -34,6 +35,7 @@ export function emailBlockSummary(block: EmailBlock): string {
     return block.text.replace(/\s+/g, " ").trim().slice(0, 42)
   }
   if (block.type === "button") return block.label
+  if (block.type === "product") return `${block.items.length} listing${block.items.length === 1 ? "" : "s"}`
   if (block.type === "details") return block.title
   if (block.type === "split") return block.title
   if (block.type === "footer") return block.showUnsubscribe ? "Unsubscribe on" : "Unsubscribe off"

@@ -20,6 +20,20 @@ export function emailBlockId(): string {
 export function createEmailBlock(type: EmailBlockType): EmailBlock {
   const id = emailBlockId()
   switch (type) {
+    case "product":
+      return {
+        id,
+        type,
+        title: "Featured boards",
+        listingIds: [],
+        items: [],
+        showPrice: true,
+        showCondition: true,
+        showDimensions: true,
+        showBoardType: true,
+        showAvailability: true,
+        ctaLabel: "View board",
+      }
     case "section":
       return {
         id,

@@ -12,6 +12,32 @@ const detailRowSchema = z.object({
   value: z.string().max(2000),
 })
 
+const emailStudioProductSnapshotSchema = z.object({
+  id: idSchema,
+  title: shortText,
+  priceDisplay: shortText,
+  condition: shortText,
+  dimensions: shortText,
+  boardType: shortText,
+  imageUrl: hrefText,
+  productUrl: hrefText,
+  availability: z.enum(["available", "pending", "sold", "unavailable"]),
+})
+
+export const emailProductBlockSchema = z.object({
+  id: idSchema,
+  type: z.literal("product"),
+  title: shortText,
+  listingIds: z.array(idSchema).max(4),
+  items: z.array(emailStudioProductSnapshotSchema).max(4),
+  showPrice: z.boolean(),
+  showCondition: z.boolean(),
+  showDimensions: z.boolean(),
+  showBoardType: z.boolean(),
+  showAvailability: z.boolean(),
+  ctaLabel: shortText,
+})
+
 export const emailContentBlockSchema = z.discriminatedUnion("type", [
   z.object({
     id: idSchema,
@@ -107,6 +133,7 @@ export const emailSectionBlockSchema = z.object({
 export const emailBlockSchema = z.union([
   emailContentBlockSchema,
   emailSectionBlockSchema,
+  emailProductBlockSchema,
 ])
 
 export const emailStudioDocumentSchema = z.object({
@@ -152,6 +179,14 @@ export const saveEmailStudioTemplateSchema = z.object({
 export const sendEmailStudioTestSchema = z.object({
   id: z.string().uuid(),
   recipient: z.string().trim().email().max(320),
+})
+
+export const searchEmailStudioProductsSchema = z.object({
+  query: z.string().trim().max(120),
+})
+
+export const hydrateEmailStudioProductsSchema = z.object({
+  listingIds: z.array(z.string().uuid()).max(4),
 })
 
 const generateEmailStudioFromBriefSchema = z.object({
