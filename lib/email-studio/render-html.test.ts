@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
+import { emailStudioDocumentSchema } from "../validations/emailStudio"
 import { cloneEmailDocument, starterById } from "./document"
 import {
   renderEmailStudioHtml,
@@ -174,5 +175,139 @@ describe("email studio html", () => {
     assert.match(html, /padding:32px/)
     assert.match(html, /max-width:600px/)
     assert.match(html, /color:#FFFFFF/i)
+  })
+
+  it("keeps the default button markup until a style is set", () => {
+    const html = renderEmailStudioHtml({
+      name: "Button",
+      subject: "",
+      previewText: "",
+      flowName: "",
+      triggerMetric: "",
+      document: {
+        blocks: [
+          {
+            id: "00000000-0000-4000-8000-000000000021",
+            type: "button",
+            label: "Open",
+            href: "https://www.reswell.app",
+            align: "center",
+          },
+        ],
+      },
+    })
+    assert.match(html, /bgcolor="#5574AD"/)
+    assert.match(html, /font-size:16px/)
+    assert.match(html, /font-weight:600/)
+    assert.match(html, /border-radius:8px/)
+    assert.doesNotMatch(html, /role="presentation" width="100%"/)
+    assert.doesNotMatch(html, /class="hide-mobile"/)
+  })
+
+  it("paints button, image, and row styles when they are set", () => {
+    const html = renderEmailStudioHtml({
+      name: "Styled",
+      subject: "",
+      previewText: "",
+      flowName: "",
+      triggerMetric: "",
+      document: {
+        blocks: [
+          {
+            id: "00000000-0000-4000-8000-000000000031",
+            type: "section",
+            surface: "white",
+            padding: "compact",
+            gap: "compact",
+            stackOnMobile: false,
+            backgroundColor: "#111111",
+            contentBackgroundColor: "#f7f6f2",
+            borderWidth: 2,
+            borderColor: "#e3ddd1",
+            columns: [
+              {
+                id: "00000000-0000-4000-8000-000000000032",
+                width: 1,
+                blocks: [
+                  {
+                    id: "00000000-0000-4000-8000-000000000033",
+                    type: "button",
+                    label: "Try it",
+                    href: "https://www.reswell.app",
+                    align: "left",
+                    fullWidth: true,
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    backgroundColor: "#101112",
+                    textColor: "#f7f6f2",
+                    radius: 24,
+                  },
+                  {
+                    id: "00000000-0000-4000-8000-000000000034",
+                    type: "image",
+                    src: "https://www.reswell.app/images/reswell-logo.png",
+                    alt: "Reswell",
+                    href: "",
+                    radius: 0,
+                    hideOn: "mobile",
+                    padding: { top: 20, right: 0, bottom: 40, left: 0 },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    })
+    assert.match(html, /bgcolor="#111111"/)
+    assert.match(html, /background:#f7f6f2/)
+    assert.match(html, /border:2px solid #e3ddd1/)
+    assert.match(html, /bgcolor="#101112"/)
+    assert.match(html, /color:#f7f6f2/)
+    assert.match(html, /font-size:18px/)
+    assert.match(html, /font-weight:700/)
+    assert.match(html, /border-radius:24px/)
+    assert.match(html, /role="presentation" width="100%"/)
+    assert.match(html, /border-radius:0px/)
+    assert.match(html, /class="hide-mobile"/)
+    assert.match(html, /padding:20px 0px 40px 0px/)
+    const parsed = emailStudioDocumentSchema.safeParse({
+      blocks: [
+        {
+          id: "00000000-0000-4000-8000-000000000031",
+          type: "section",
+          surface: "white",
+          padding: "compact",
+          gap: "compact",
+          stackOnMobile: false,
+          backgroundColor: "#111111",
+          contentBackgroundColor: "#f7f6f2",
+          borderWidth: 2,
+          borderColor: "#e3ddd1",
+          columns: [
+            {
+              id: "00000000-0000-4000-8000-000000000032",
+              width: 1,
+              blocks: [
+                {
+                  id: "00000000-0000-4000-8000-000000000033",
+                  type: "button",
+                  label: "Try it",
+                  href: "https://www.reswell.app",
+                  align: "left",
+                  fullWidth: true,
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  backgroundColor: "#101112",
+                  textColor: "#f7f6f2",
+                  radius: 24,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    assert.equal(parsed.success, true)
   })
 })
