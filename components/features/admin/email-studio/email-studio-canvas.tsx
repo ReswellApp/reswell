@@ -1,13 +1,11 @@
 "use client"
 
-import { useEffect, useRef, type CSSProperties } from "react"
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react"
 import { useDraggable, useDroppable } from "@dnd-kit/core"
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import {
   Columns3,
-  Copy,
-  GripVertical,
   Heading1,
   ImageIcon,
   LayoutPanelTop,
@@ -18,9 +16,9 @@ import {
   PanelBottom,
   Pilcrow,
   RectangleHorizontal,
-  Trash2,
   Type,
 } from "lucide-react"
+import { EmailStudioBlockFrame, EmailStudioFormatBar } from "@/components/features/admin/email-studio/email-studio-selection"
 import { EmailImageFrame } from "@/components/features/admin/email-studio/email-studio-image-frame"
 import {
   KLAVIYO_EMAIL_BORDER,
@@ -30,7 +28,7 @@ import {
   KLAVIYO_EMAIL_MUTED,
 } from "@/lib/klaviyo/email-brand-styles"
 import { cn } from "@/lib/utils"
-import type { EmailBlock, EmailBlockType } from "@/lib/types/emailStudio"
+import type { EmailBlock, EmailBlockType, EmailTextStyle } from "@/lib/types/emailStudio"
 import { emailBlockLabel } from "@/components/features/admin/email-studio/email-studio-outline"
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
@@ -93,6 +91,7 @@ function InlineText({
       className={cn("outline-none", className)}
       style={style}
       onMouseDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
       onFocus={() => {
         editing.current = true
       }}
@@ -105,99 +104,113 @@ function InlineText({
   )
 }
 
-function CanvasBlock({
-  block,
-  selectedId,
-  onSelect,
-  onChange,
-  onRemove,
-  onDuplicate,
-}: {
-  block: EmailBlock
+interface CanvasHandlers {
   selectedId: string | null
   onSelect: (id: string) => void
+  onRemove: (id: string) => void
+  onDuplicate: (id: string) => void
+  onInsert: (afterId: string, type: EmailBlockType) => void
+}
+
+function hexIsDark(hex: string): boolean {
+  if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return false
+  const value = Number.parseInt(hex.slice(1), 16)
+  const red = (value >> 16) & 255
+  const green = (value >> 8) & 255
+  const blue = value & 255
+  return (red * 299 + green * 587 + blue * 114) / 1000 < 150
+}
+
+function textPaint(block: EmailTextStyle): CSSProperties {
+  const decoration = [block.underline ? "underline" : "", block.strike ? "line-through" : ""].filter(Boolean).join(" ")
+  return {
+    color: block.color,
+    fontSize: block.fontSize,
+    fontWeight: block.fontWeight === "bold" ? 700 : block.fontWeight === "normal" ? 400 : undefined,
+    fontStyle: block.italic ? "italic" : undefined,
+    textDecoration: decoration || undefined,
+  }
+}
+
+function formatBar(block: EmailBlock, onChange: (block: EmailBlock) => void): ReactNode {
+  if (block.type === "heading" || block.type === "text" || block.type === "eyebrow") {
+    const bold = block.type === "text" ? block.fontWeight === "bold" : block.fontWeight !== "normal"
+    return (
+      <EmailStudioFormatBar
+        bold={bold}
+        italic={block.italic}
+        underline={block.underline}
+        strike={block.strike}
+        align={block.align}
+        onBold={() => onChange({ ...block, fontWeight: bold ? "normal" : "bold" })}
+        onItalic={() => onChange({ ...block, italic: !block.italic })}
+        onUnderline={() => onChange({ ...block, underline: !block.underline })}
+        onStrike={() => onChange({ ...block, strike: !block.strike })}
+        onAlign={(align) => onChange({ ...block, align })}
+        onToken={(token) => onChange({ ...block, text: `${block.text}${block.text ? " " : ""}${token}` })}
+      />
+    )
+  }
+  if (block.type === "button") {
+    const bold = block.fontWeight === "bold"
+    return (
+      <EmailStudioFormatBar
+        bold={bold}
+        align={block.align}
+        onBold={() => onChange({ ...block, fontWeight: bold ? "normal" : "bold" })}
+        onAlign={(align) => onChange({ ...block, align })}
+      />
+    )
+  }
+  return null
+}
+
+function CanvasBlock({
+  block,
+  handlers,
+  onChange,
+}: {
+  block: EmailBlock
+  handlers: CanvasHandlers
   onChange: (block: EmailBlock) => void
-  onRemove: () => void
-  onDuplicate: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id })
-  const selected = block.id === selectedId
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : undefined }}
-      className={cn(
-        "relative rounded-sm",
-        selected
-          ? "outline outline-2 -outline-offset-2 outline-[#2F6FED]"
-          : "hover:outline hover:outline-1 hover:-outline-offset-2 hover:outline-[#2F6FED]/70",
-      )}
-      onClick={() => onSelect(block.id)}
+      {...attributes}
+      {...listeners}
     >
-      {selected && !isDragging ? (
-        <div className="absolute -top-3 left-2 z-20 flex items-center overflow-hidden rounded-md bg-white shadow-[0_6px_18px_rgba(15,23,42,0.14)] ring-1 ring-black/10">
-          <span className="bg-[#2F6FED] px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-            {emailBlockLabel(block.type)}
-          </span>
-          <button
-            type="button"
-            className="p-1.5 text-[#3f3f46] hover:bg-[#f4f4f5]"
-            aria-label={`Drag ${emailBlockLabel(block.type)}`}
-            onClick={(event) => event.stopPropagation()}
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            className="p-1.5 text-[#3f3f46] hover:bg-[#f4f4f5]"
-            aria-label="Duplicate block"
-            onClick={(event) => {
-              event.stopPropagation()
-              onDuplicate()
-            }}
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            className="p-1.5 text-[#3f3f46] hover:bg-red-50 hover:text-red-600"
-            aria-label="Remove block"
-            onClick={(event) => {
-              event.stopPropagation()
-              onRemove()
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      ) : null}
-      <BlockBody
-        block={block}
-        selectedId={selectedId}
-        onSelect={onSelect}
-        onChange={onChange}
-      />
+      <EmailStudioBlockFrame
+        selected={block.id === handlers.selectedId}
+        label={emailBlockLabel(block.type)}
+        allowSection
+        format={formatBar(block, onChange)}
+        onSelect={() => handlers.onSelect(block.id)}
+        onRemove={() => handlers.onRemove(block.id)}
+        onDuplicate={() => handlers.onDuplicate(block.id)}
+        onInsert={(type) => handlers.onInsert(block.id, type)}
+      >
+        <BlockBody block={block} handlers={handlers} onChange={onChange} />
+      </EmailStudioBlockFrame>
     </div>
   )
 }
 
 function BlockBody({
   block,
-  selectedId,
-  onSelect,
+  handlers,
   onChange,
   tone = "ink",
 }: {
   block: EmailBlock
-  selectedId: string | null
-  onSelect: (id: string) => void
+  handlers: CanvasHandlers
   onChange: (block: EmailBlock) => void
   tone?: "ink" | "light"
 }) {
-  const selected = block.id === selectedId
+  const selected = block.id === handlers.selectedId
   if (block.type === "section") {
     const surface = block.surface === "white"
       ? "bg-white"
@@ -214,51 +227,77 @@ function BlockBody({
           ? "p-8"
           : "p-6"
     const gap = block.gap === "compact" ? "gap-3" : block.gap === "spacious" ? "gap-8" : "gap-5"
-    const childTone = block.surface === "brand" || block.surface === "dark" ? "light" : "ink"
+    const customDark = block.backgroundColor ? hexIsDark(block.backgroundColor) : null
+    const childTone = customDark === null
+      ? block.surface === "brand" || block.surface === "dark" ? "light" : "ink"
+      : customDark ? "light" : "ink"
+    const rowImage = block.backgroundImage && (block.backgroundImageOn ?? "row") === "row" ? block.backgroundImage : undefined
+    const contentImage = block.backgroundImage && block.backgroundImageOn === "content" ? block.backgroundImage : undefined
     return (
-      <div className={cn("rounded-lg", surface, padding)}>
+      <div
+        className={cn("rounded-lg", !block.backgroundColor && surface, padding, childTone === "light" && "text-white")}
+        style={{
+          backgroundColor: block.backgroundColor,
+          backgroundImage: rowImage ? `url("${rowImage}")` : undefined,
+          backgroundSize: block.backgroundFit === false ? "auto" : "cover",
+          backgroundRepeat: block.backgroundRepeat ? "repeat" : "no-repeat",
+          backgroundPosition: block.backgroundCenter === false ? "left top" : "center",
+          borderWidth: block.borderWidth || undefined,
+          borderStyle: block.borderWidth ? "solid" : undefined,
+          borderColor: block.borderWidth ? block.borderColor ?? KLAVIYO_EMAIL_BORDER : undefined,
+        }}
+      >
         <div
           className={cn(block.stackOnMobile ? "flex flex-col sm:grid" : "grid", gap)}
-          style={{ gridTemplateColumns: block.columns.map((column) => `${column.width}fr`).join(" ") }}
+          style={{
+            gridTemplateColumns: block.columns.map((column) => `${column.width}fr`).join(" "),
+            backgroundColor: block.contentBackgroundColor,
+            backgroundImage: contentImage ? `url("${contentImage}")` : undefined,
+            backgroundSize: block.backgroundFit === false ? "auto" : "cover",
+            backgroundRepeat: block.backgroundRepeat ? "repeat" : "no-repeat",
+            backgroundPosition: block.backgroundCenter === false ? "left top" : "center",
+          }}
         >
           {block.columns.map((column) => (
             <div key={column.id} className="min-w-0 space-y-3">
-              {column.blocks.map((child) => (
-                <div
-                  key={child.id}
-                  className={cn(
-                    "rounded-sm",
-                    child.id === selectedId && "outline outline-2 -outline-offset-2 outline-[#2F6FED]",
-                  )}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    onSelect(child.id)
-                  }}
-                >
-                  <BlockBody
-                    block={child}
-                    tone={childTone}
-                    selectedId={selectedId}
-                    onSelect={onSelect}
-                    onChange={(replacement) => {
-                      if (replacement.type === "section") return
-                      onChange({
-                        ...block,
-                        columns: block.columns.map((item) => (
-                          item.id === column.id
-                            ? {
-                                ...item,
-                                blocks: item.blocks.map((current) => (
-                                  current.id === replacement.id ? replacement : current
-                                )),
-                              }
-                            : item
-                        )),
-                      })
-                    }}
-                  />
-                </div>
-              ))}
+              {column.blocks.map((child) => {
+                const replaceChild = (replacement: EmailBlock) => {
+                  if (replacement.type === "section") return
+                  onChange({
+                    ...block,
+                    columns: block.columns.map((item) => (
+                      item.id === column.id
+                        ? {
+                            ...item,
+                            blocks: item.blocks.map((current) => (
+                              current.id === replacement.id ? replacement : current
+                            )),
+                          }
+                        : item
+                    )),
+                  })
+                }
+                return (
+                  <EmailStudioBlockFrame
+                    key={child.id}
+                    selected={child.id === handlers.selectedId}
+                    label={emailBlockLabel(child.type)}
+                    allowSection={false}
+                    format={formatBar(child, replaceChild)}
+                    onSelect={() => handlers.onSelect(child.id)}
+                    onRemove={() => handlers.onRemove(child.id)}
+                    onDuplicate={() => handlers.onDuplicate(child.id)}
+                    onInsert={(type) => handlers.onInsert(child.id, type)}
+                  >
+                    <BlockBody
+                      block={child}
+                      tone={childTone}
+                      handlers={handlers}
+                      onChange={replaceChild}
+                    />
+                  </EmailStudioBlockFrame>
+                )
+              })}
             </div>
           ))}
         </div>
@@ -286,9 +325,10 @@ function BlockBody({
         onChange={(text) => onChange({ ...block, text })}
         className={cn(
           "text-xs font-bold uppercase tracking-[0.1em]",
-          tone === "light" ? "text-white/70" : "text-[#64748B]",
+          !block.color && (tone === "light" ? "text-white/70" : "text-[#64748B]"),
           block.align === "center" && "text-center",
         )}
+        style={textPaint(block)}
       />
     )
   }
@@ -298,8 +338,8 @@ function BlockBody({
         label="Headline"
         value={block.text}
         onChange={(text) => onChange({ ...block, text })}
-        className={cn("text-[26px] font-bold", block.align === "center" && "text-center")}
-        style={{ fontFamily: HEADLINE, letterSpacing: "-0.05em", lineHeight: 1.05 }}
+        className={cn(!block.fontSize && "text-[26px]", block.fontWeight !== "normal" && "font-bold", block.align === "center" && "text-center")}
+        style={{ fontFamily: HEADLINE, letterSpacing: "-0.05em", lineHeight: 1.05, ...textPaint(block) }}
       />
     )
   }
@@ -309,18 +349,31 @@ function BlockBody({
         label="Text"
         value={block.text}
         onChange={(text) => onChange({ ...block, text })}
-        className={cn("whitespace-pre-wrap text-base leading-relaxed", block.align === "center" && "text-center")}
+        className={cn("whitespace-pre-wrap leading-relaxed", !block.fontSize && "text-base", block.align === "center" && "text-center")}
+        style={textPaint(block)}
       />
     )
   }
   if (block.type === "button") {
     return (
-      <div className={cn("py-1", block.align === "center" && "text-center")}>
+      <div className={cn("py-1", block.align === "center" && "text-center", block.fullWidth && "w-full")}>
         <InlineText
           label="Button label"
           value={block.label}
           onChange={(label) => onChange({ ...block, label })}
-          className="inline-block rounded-lg bg-[#5574AD] px-7 py-3.5 text-base font-semibold text-white"
+          className={cn(
+            "inline-block px-7 py-3.5 text-white",
+            !block.fontSize && "text-base",
+            block.fontWeight === "normal" ? "font-normal" : block.fontWeight === "bold" ? "font-bold" : "font-semibold",
+            block.fullWidth && "block w-full text-center",
+          )}
+          style={{
+            backgroundColor: block.backgroundColor ?? "#5574AD",
+            color: block.textColor ?? "#ffffff",
+            borderRadius: block.radius ?? 8,
+            fontSize: block.fontSize,
+            fontFamily: block.fontFamily === "headline" ? HEADLINE : undefined,
+          }}
         />
       </div>
     )
@@ -333,6 +386,7 @@ function BlockBody({
         width={block.type === "image" ? block.width ?? 560 : block.imageWidth ?? 240}
         height={block.type === "image" ? block.height ?? null : block.imageHeight ?? null}
         maxWidth={block.type === "image" ? 560 : 280}
+        radius={block.type === "image" ? block.radius : undefined}
         selected={selected}
         onChange={(patch) => {
           if (block.type === "image") {
@@ -355,7 +409,14 @@ function BlockBody({
         }}
       />
     )
-    if (block.type === "image") return frame
+    if (block.type === "image") {
+      const pad = block.padding
+      return (
+        <div style={pad ? { padding: `${pad.top}px ${pad.right}px ${pad.bottom}px ${pad.left}px` } : undefined}>
+          {frame}
+        </div>
+      )
+    }
     return (
       <div className="grid gap-3 sm:grid-cols-2">
         {frame}
@@ -429,6 +490,7 @@ export function EmailStudioCanvas({
   onChange,
   onRemove,
   onDuplicate,
+  onInsert,
   onClear,
 }: {
   blocks: EmailBlock[]
@@ -438,6 +500,7 @@ export function EmailStudioCanvas({
   onChange: (block: EmailBlock) => void
   onRemove: (id: string) => void
   onDuplicate: (id: string) => void
+  onInsert: (afterId: string, type: EmailBlockType) => void
   onClear?: () => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "canvas-end" })
@@ -463,7 +526,7 @@ export function EmailStudioCanvas({
       >
         <SortableContext items={blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
         <div
-          className="space-y-6 px-6 py-8"
+          className="space-y-6 px-6 pb-8 pt-16"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) onClear?.()
           }}
@@ -472,11 +535,8 @@ export function EmailStudioCanvas({
             <CanvasBlock
               key={block.id}
               block={block}
-              selectedId={selectedId}
-              onSelect={onSelect}
+              handlers={{ selectedId, onSelect, onRemove, onDuplicate, onInsert }}
               onChange={onChange}
-              onRemove={() => onRemove(block.id)}
-              onDuplicate={() => onDuplicate(block.id)}
             />
           ))}
         </div>
@@ -487,7 +547,7 @@ export function EmailStudioCanvas({
             blocks.length === 0
               ? "mx-6 mb-8 rounded-md border border-dashed border-[#d4d4d8] px-3 py-16 text-center text-sm text-[#71717a]"
               : "mx-6 mb-6 h-8 rounded-md border border-dashed border-transparent",
-            isOver && "border-[#2F6FED] bg-[#2F6FED]/5",
+            isOver && "border-[#7C5CFC] bg-[#7C5CFC]/5",
           )}
         >
           {blocks.length === 0 ? "Drag a row or content block onto the stage" : null}

@@ -12,7 +12,7 @@ import {
 import { sanitizeEmailHtml } from "@/lib/email-studio/brand-html"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
-import type { EmailBlock, EmailStudioDocument } from "@/lib/types/emailStudio"
+import type { EmailBlock, EmailFontWeight, EmailHideOn, EmailPadding, EmailSectionBlock, EmailStudioDocument } from "@/lib/types/emailStudio"
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
 const HEADLINE = KLAVIYO_EMAIL_FONT_HEADLINE
@@ -54,13 +54,76 @@ function align(value: "left" | "center"): string {
   return value === "center" ? "center" : "left"
 }
 
-function buttonHtml(label: string, href: string): string {
+function safeHex(value: string | undefined): string | null {
+  if (!value || !/^#[0-9A-Fa-f]{6}$/.test(value)) return null
+  return value
+}
+
+function safeImageUrl(value: string | undefined): string | null {
+  if (!value) return null
+  const safe = safeEmailHref(value)
+  return /^https:\/\//i.test(safe) ? safe : null
+}
+
+function rowOpen(hideOn?: EmailHideOn): string {
+  if (hideOn === "mobile") return '<tr class="hide-mobile">'
+  if (hideOn === "desktop") return '<tr class="hide-desktop">'
+  return "<tr>"
+}
+
+function fontStyleCss(italic?: boolean): string {
+  return italic ? "font-style:italic;" : ""
+}
+
+function textDecorCss(underline?: boolean, strike?: boolean): string {
+  const parts = [underline ? "underline" : "", strike ? "line-through" : ""].filter(Boolean)
+  return parts.length > 0 ? `text-decoration:${parts.join(" ")};` : ""
+}
+
+function textWeightCss(weight?: EmailFontWeight): string {
+  if (weight === "bold") return "font-weight:700;"
+  if (weight === "normal") return "font-weight:400;"
+  return ""
+}
+
+function paddingCss(padding: EmailPadding | undefined, fallback: string): string {
+  if (!padding) return fallback
+  return `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`
+}
+
+function hexLuminance(hex: string): number {
+  const n = Number.parseInt(hex.slice(1), 16)
+  const red = (n >> 16) & 255
+  const green = (n >> 8) & 255
+  const blue = n & 255
+  return (red * 299 + green * 587 + blue * 114) / 1000
+}
+
+interface ButtonPaint {
+  fullWidth?: boolean
+  fontWeight?: EmailFontWeight
+  fontSize?: number
+  fontFamily?: "sans" | "headline"
+  backgroundColor?: string
+  textColor?: string
+  radius?: number
+}
+
+function buttonHtml(label: string, href: string, options?: ButtonPaint): string {
   const safe = safeEmailHref(href)
   const inner = escapeText(label || "Open")
+  const family = options?.fontFamily === "headline" ? HEADLINE : FONT
+  const weight = options?.fontWeight === "bold" ? 700 : options?.fontWeight === "normal" ? 400 : 600
+  const size = options?.fontSize == null ? KLAVIYO_EMAIL_BUTTON_FONT_SIZE : `${options.fontSize}px`
+  const text = safeHex(options?.textColor) ?? BUTTON_TEXT
+  const background = safeHex(options?.backgroundColor) ?? BUTTON
+  const radius = options?.radius == null ? KLAVIYO_EMAIL_BUTTON_RADIUS : `${options.radius}px`
+  const widthCss = options?.fullWidth ? "display:block;width:100%;text-align:center;" : "display:inline-block;"
   const link = safe
-    ? `<a href="${safe}" style="display:inline-block;padding:14px 28px;font-family:${FONT};font-size:${KLAVIYO_EMAIL_BUTTON_FONT_SIZE};font-weight:600;color:${BUTTON_TEXT};text-decoration:none;letter-spacing:-0.02em;">${inner}</a>`
-    : `<span style="display:inline-block;padding:14px 28px;font-family:${FONT};font-size:${KLAVIYO_EMAIL_BUTTON_FONT_SIZE};font-weight:600;color:${BUTTON_TEXT};letter-spacing:-0.02em;">${inner}</span>`
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td align="center" bgcolor="${BUTTON}" style="border-radius:${KLAVIYO_EMAIL_BUTTON_RADIUS};">${link}</td></tr></table>`
+    ? `<a href="${safe}" style="${widthCss}padding:14px 28px;font-family:${family};font-size:${size};font-weight:${weight};color:${text};text-decoration:none;letter-spacing:-0.02em;">${inner}</a>`
+    : `<span style="${widthCss}padding:14px 28px;font-family:${family};font-size:${size};font-weight:${weight};color:${text};letter-spacing:-0.02em;">${inner}</span>`
+  const tableWidth = options?.fullWidth ? ' width="100%"' : ""
+  return `<table role="presentation"${tableWidth} cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td align="center" bgcolor="${background}" style="border-radius:${radius};">${link}</td></tr></table>`
 }
 
 function imageHtml(
@@ -69,18 +132,29 @@ function imageHtml(
   href: string,
   width: number,
   height: number | null,
+  radius?: number,
 ): string {
+  const radiusCss = radius == null ? KLAVIYO_EMAIL_RADIUS : `${radius}px`
   const safeSrc = safeEmailHref(emailImageSrc(src))
   if (!safeSrc) {
-    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:${KLAVIYO_EMAIL_COLORS.canvas};border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${KLAVIYO_EMAIL_RADIUS};"><tr><td align="center" style="padding:36px 16px;font-family:${FONT};font-size:13px;color:${KLAVIYO_EMAIL_MUTED};">Image</td></tr></table>`
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;background:${KLAVIYO_EMAIL_COLORS.canvas};border:1px dashed ${KLAVIYO_EMAIL_BORDER};border-radius:${radiusCss};"><tr><td align="center" style="padding:36px 16px;font-family:${FONT};font-size:13px;color:${KLAVIYO_EMAIL_MUTED};">Image</td></tr></table>`
   }
   const w = Math.min(560, Math.max(40, width || 560))
   const cropped = height != null && height >= 40
   const img = cropped
-    ? `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" height="${height}" style="display:block;width:${w}px;max-width:100%;height:${height}px;object-fit:cover;object-position:center;border:0;border-radius:${KLAVIYO_EMAIL_RADIUS};" />`
-    : `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" style="display:block;width:${w}px;max-width:100%;height:auto;border:0;border-radius:${KLAVIYO_EMAIL_RADIUS};" />`
+    ? `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" height="${height}" style="display:block;width:${w}px;max-width:100%;height:${height}px;object-fit:cover;object-position:center;border:0;border-radius:${radiusCss};" />`
+    : `<img src="${safeSrc}" alt="${escapeText(alt)}" width="${w}" style="display:block;width:${w}px;max-width:100%;height:auto;border:0;border-radius:${radiusCss};" />`
   const safeHref = safeEmailHref(href)
   return safeHref ? `<a href="${safeHref}" style="text-decoration:none;">${img}</a>` : img
+}
+
+function sectionBackgroundCss(block: EmailSectionBlock, target: "row" | "content"): string {
+  const image = safeImageUrl(block.backgroundImage)
+  if (!image || (block.backgroundImageOn ?? "row") !== target) return ""
+  const size = block.backgroundFit === false ? "auto" : "cover"
+  const repeat = block.backgroundRepeat ? "repeat" : "no-repeat"
+  const position = block.backgroundCenter === false ? "left top" : "center"
+  return `background-image:url('${image}');background-size:${size};background-repeat:${repeat};background-position:${position};`
 }
 
 function renderBlock(
@@ -89,16 +163,22 @@ function renderBlock(
 ): string {
   switch (block.type) {
     case "section": {
-      const background = block.surface === "white"
+      const surfaceColor = block.surface === "white"
         ? KLAVIYO_EMAIL_COLORS.background
         : block.surface === "muted"
           ? KLAVIYO_EMAIL_COLORS.canvas
           : block.surface === "brand"
             ? BUTTON
             : INK
-      const childColors = block.surface === "brand" || block.surface === "dark"
-        ? { ink: BUTTON_TEXT, muted: KLAVIYO_EMAIL_BORDER }
-        : colors
+      const background = safeHex(block.backgroundColor) ?? surfaceColor
+      const customBackground = safeHex(block.backgroundColor)
+      const childColors = customBackground
+        ? hexLuminance(customBackground) < 150
+          ? { ink: BUTTON_TEXT, muted: KLAVIYO_EMAIL_BORDER }
+          : { ink: INK, muted: KLAVIYO_EMAIL_MUTED }
+        : block.surface === "brand" || block.surface === "dark"
+          ? { ink: BUTTON_TEXT, muted: KLAVIYO_EMAIL_BORDER }
+          : colors
       const padding = block.padding === "none"
         ? 0
         : block.padding === "compact"
@@ -108,6 +188,10 @@ function renderBlock(
             : 24
       const gap = block.gap === "compact" ? 6 : block.gap === "spacious" ? 16 : 10
       const totalWidth = block.columns.reduce((sum, column) => sum + column.width, 0)
+      const contentBackground = safeHex(block.contentBackgroundColor)
+      const contentImage = sectionBackgroundCss(block, "content")
+      const contentExtra = `${contentBackground ? `background:${contentBackground};` : ""}${contentImage}`
+      const wrapStyle = contentExtra ? `border-collapse:collapse;${contentExtra}` : "border-collapse:collapse"
       const columns = block.columns.map((column, index) => {
         const width = Math.round((column.width / totalWidth) * 100)
         const content = column.blocks.map((child) => renderBlock(child, childColors)).join("\n")
@@ -115,7 +199,13 @@ function renderBlock(
         const right = index === block.columns.length - 1 ? 0 : gap
         return `<td${block.stackOnMobile ? ' class="stack"' : ""} valign="top" width="${width}%" style="width:${width}%;padding:0 ${right}px 0 ${left}px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${content}</table></td>`
       }).join("")
-      return `<tr><td bgcolor="${background}" style="padding:${padding}px;border-radius:${KLAVIYO_EMAIL_RADIUS};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${columns}</tr></table></td></tr><tr><td style="height:20px;line-height:20px;font-size:0;">&nbsp;</td></tr>`
+      const rowImageUrl = (block.backgroundImageOn ?? "row") === "row" ? safeImageUrl(block.backgroundImage) : null
+      const rowImage = sectionBackgroundCss(block, "row")
+      const border = block.borderWidth && block.borderWidth > 0
+        ? `border:${block.borderWidth}px solid ${safeHex(block.borderColor) ?? KLAVIYO_EMAIL_BORDER};`
+        : ""
+      const rowImageAttr = rowImageUrl ? ` background="${rowImageUrl}"` : ""
+      return `${rowOpen(block.hideOn)}<td bgcolor="${background}"${rowImageAttr} style="padding:${padding}px;border-radius:${KLAVIYO_EMAIL_RADIUS};${rowImage}${border}"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${wrapStyle}"><tr>${columns}</tr></table></td></tr><tr><td style="height:20px;line-height:20px;font-size:0;">&nbsp;</td></tr>`
     }
     case "logo": {
       const width = Math.min(220, Math.max(80, block.width || 140))
@@ -125,15 +215,15 @@ function renderBlock(
       return `<tr><td align="center" style="padding:0 0 28px 0;">${inner}</td></tr>`
     }
     case "eyebrow":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 8px 0;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${colors.muted};">${textToHtml(block.text)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="${align(block.align)}" style="padding:0 0 8px 0;font-family:${FONT};font-size:${block.fontSize ?? 12}px;font-weight:${block.fontWeight === "normal" ? 400 : 700};${fontStyleCss(block.italic)}${textDecorCss(block.underline, block.strike)}letter-spacing:0.1em;text-transform:uppercase;color:${safeHex(block.color) ?? colors.muted};">${textToHtml(block.text)}</td></tr>`
     case "heading":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 16px 0;font-family:${HEADLINE};font-size:26px;font-weight:700;line-height:1.05;letter-spacing:-0.05em;color:${colors.ink};">${textToHtml(block.text)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="${align(block.align)}" style="padding:0 0 16px 0;font-family:${HEADLINE};font-size:${block.fontSize ?? 26}px;font-weight:${block.fontWeight === "normal" ? 400 : 700};${fontStyleCss(block.italic)}${textDecorCss(block.underline, block.strike)}line-height:1.05;letter-spacing:-0.05em;color:${safeHex(block.color) ?? colors.ink};">${textToHtml(block.text)}</td></tr>`
     case "text":
-      return `<tr><td align="${align(block.align)}" style="padding:0 0 20px 0;font-family:${FONT};font-size:16px;line-height:1.55;color:${colors.ink};">${textToHtml(block.text)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="${align(block.align)}" style="padding:0 0 20px 0;font-family:${FONT};font-size:${block.fontSize ?? 16}px;${textWeightCss(block.fontWeight)}${fontStyleCss(block.italic)}${textDecorCss(block.underline, block.strike)}line-height:1.55;color:${safeHex(block.color) ?? colors.ink};">${textToHtml(block.text)}</td></tr>`
     case "image":
-      return `<tr><td align="center" style="padding:0 0 20px 0;">${imageHtml(block.src, block.alt, block.href, block.width ?? 560, block.height ?? null)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="center" style="padding:${paddingCss(block.padding, "0 0 20px 0")};">${imageHtml(block.src, block.alt, block.href, block.width ?? 560, block.height ?? null, block.radius)}</td></tr>`
     case "button":
-      return `<tr><td align="${align(block.align)}" style="padding:4px 0 24px 0;">${buttonHtml(block.label, block.href)}</td></tr>`
+      return `${rowOpen(block.hideOn)}<td align="${align(block.align)}" style="padding:4px 0 24px 0;">${buttonHtml(block.label, block.href, block)}</td></tr>`
     case "divider":
       return `<tr><td style="padding:4px 0 20px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${KLAVIYO_EMAIL_BORDER};font-size:0;line-height:0;">&nbsp;</td></tr></table></td></tr>`
     case "spacer": {
@@ -193,7 +283,7 @@ export function renderEmailStudioHtml(input: EmailStudioRenderInput): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="x-apple-disable-message-reformatting" />
   <title>${escapeText(input.subject || input.name || "Reswell")}</title>
-  <style>${klaviyoEmailFontFaceCss(publicSiteOriginForEmail())}@media only screen and (max-width:600px){.stack{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;padding-bottom:16px!important;}}</style>
+  <style>${klaviyoEmailFontFaceCss(publicSiteOriginForEmail())}@media only screen and (max-width:600px){.stack{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;padding-bottom:16px!important;}.hide-mobile{display:none!important;max-height:0!important;overflow:hidden!important;}}@media only screen and (min-width:601px){.hide-desktop{display:none!important;max-height:0!important;overflow:hidden!important;}}</style>
 </head>
 <body style="margin:0;padding:0;background:${KLAVIYO_EMAIL_COLORS.background};">
 <!--

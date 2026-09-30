@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Rows3, Settings2, Sparkles } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, Copy, LayoutGrid, Rows3, Settings2, Sparkles, Trash2, X } from "lucide-react"
 import { EMAIL_STUDIO_FRAMES, type EmailStudioFrameId } from "@/lib/email-studio/frames"
 import type { EmailBlockType } from "@/lib/types/emailStudio"
 import { cn } from "@/lib/utils"
@@ -36,6 +36,8 @@ export function EmailStudioRail({
   onTab,
   onOpenChange,
   onBack,
+  onRemove,
+  onDuplicate,
   onAddBlock,
   onInsertFrame,
   properties,
@@ -53,6 +55,8 @@ export function EmailStudioRail({
   onTab: (tab: EmailStudioRailTab) => void
   onOpenChange: (open: boolean) => void
   onBack: () => void
+  onRemove: () => void
+  onDuplicate: () => void
   onAddBlock: (type: EmailBlockType) => void
   onInsertFrame: (id: EmailStudioFrameId) => void
   properties: ReactNode
@@ -92,18 +96,38 @@ export function EmailStudioRail({
       {open ? (
         inspecting ? (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex h-12 shrink-0 items-center gap-1 border-b border-[#ececee] px-2">
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#3f3f46] hover:bg-[#f4f4f5]"
-                aria-label="Back to content blocks"
-                onClick={onBack}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <p className="truncate text-sm font-medium text-[#18181b]">{selectedLabel}</p>
+            <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-[#ececee] bg-[#f6f6f7] px-4">
+              <p className="truncate text-xs font-semibold uppercase tracking-[0.08em] text-[#3f3f46]">
+                {selectedLabel} properties
+              </p>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center text-[#3f3f46] hover:text-[#18181b]"
+                  aria-label={`Delete ${selectedLabel}`}
+                  onClick={onRemove}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center text-[#3f3f46] hover:text-[#18181b]"
+                  aria-label={`Duplicate ${selectedLabel}`}
+                  onClick={onDuplicate}
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center text-[#3f3f46] hover:text-[#18181b]"
+                  aria-label="Close properties"
+                  onClick={onBack}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">{properties}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto">{properties}</div>
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
@@ -118,7 +142,7 @@ export function EmailStudioRail({
                     className={cn(
                       "flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium",
                       active
-                        ? "text-[#2F6FED] shadow-[inset_0_-2px_0_0_#2F6FED]"
+                        ? "text-[#7C5CFC] shadow-[inset_0_-2px_0_0_#7C5CFC]"
                         : "text-[#71717a] hover:text-[#18181b]",
                     )}
                     onClick={() => onTab(id)}
@@ -140,7 +164,7 @@ export function EmailStudioRail({
                       value={query}
                       aria-label="Search content"
                       placeholder="Search content"
-                      className="h-9 w-full rounded-md border border-[#e4e4e7] bg-white px-3 text-sm text-[#18181b] outline-none placeholder:text-[#a1a1aa] focus:border-[#2F6FED] focus:ring-2 focus:ring-[#2F6FED]/20"
+                      className="h-9 w-full rounded-md border border-[#e4e4e7] bg-white px-3 text-sm text-[#18181b] outline-none placeholder:text-[#a1a1aa] focus:border-[#7C5CFC] focus:ring-2 focus:ring-[#7C5CFC]/20"
                       onChange={(event) => setQuery(event.target.value)}
                     />
                     {groups.map((group) => (
