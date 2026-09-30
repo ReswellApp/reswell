@@ -766,6 +766,7 @@ export function EmailStudioEditor({
       ) : null}
       <EmailStudioReviewPublish
         open={reviewOpen}
+        projectName={displayDraft.name}
         subject={displayDraft.subject}
         previewText={displayDraft.previewText}
         document={displayDraft.document}

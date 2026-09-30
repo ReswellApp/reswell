@@ -12,6 +12,7 @@ import {
   validateEmailStudioPreflight,
 } from "@/lib/email-studio/preflight"
 import type { EmailStudioDocument } from "@/lib/types/emailStudio"
+import { KLAVIYO_CAMPAIGNS_URL } from "@/lib/klaviyo/web-links"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { EmailStudioCampaignHandoff } from "@/components/features/admin/email-studio/email-studio-campaign-handoff"
 import { EmailStudioReviewPreview } from "@/components/features/admin/email-studio/email-studio-review-preview"
 
 const TEST_EMAIL_STORAGE_KEY = "reswell-email-studio-test-recipient"
@@ -32,6 +34,7 @@ interface PublishResult {
 
 export function EmailStudioReviewPublish({
   open,
+  projectName,
   subject,
   previewText,
   document,
@@ -41,6 +44,7 @@ export function EmailStudioReviewPublish({
   onPublish,
 }: {
   open: boolean
+  projectName: string
   subject: string
   previewText: string
   document: EmailStudioDocument
@@ -76,6 +80,8 @@ export function EmailStudioReviewPublish({
     if (!validRecipient || errors.length > 0 || !connected) return
     setPublishing(true)
     setResult(null)
+    const handoff = window.open("about:blank", "_blank")
+    if (handoff) handoff.opener = null
     try {
       window.localStorage.setItem(TEST_EMAIL_STORAGE_KEY, email)
     } catch {
@@ -84,6 +90,11 @@ export function EmailStudioReviewPublish({
     const next = await onPublish(email)
     setResult(next)
     setPublishing(false)
+    if (next.success) {
+      handoff?.location.replace(KLAVIYO_CAMPAIGNS_URL)
+    } else {
+      handoff?.close()
+    }
   }
 
   return (
@@ -134,6 +145,7 @@ export function EmailStudioReviewPublish({
             </Button>
           </div>
           {!connected ? <p className="mt-2 text-xs text-destructive">Connect the Klaviyo API key before publishing.</p> : null}
+          {result?.success ? <EmailStudioCampaignHandoff projectName={projectName} /> : null}
         </footer>
       </DialogContent>
     </Dialog>
