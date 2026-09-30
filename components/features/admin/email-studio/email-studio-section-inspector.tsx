@@ -8,6 +8,7 @@ import type {
   EmailSectionBlock,
 } from "@/lib/types/emailStudio"
 import { emailBlockLabel } from "@/components/features/admin/email-studio/email-studio-outline"
+import { EmailStudioRowProperties } from "@/components/features/admin/email-studio/email-studio-row-properties"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
@@ -71,7 +72,9 @@ export function EmailStudioSectionInspector({
   }
 
   return (
-    <div className="space-y-4">
+    <div>
+      <EmailStudioRowProperties section={section} onChange={onChange} />
+      <div className="space-y-4 p-4">
       <div className="grid grid-cols-2 gap-2">
         <label className="space-y-1">
           <Label>Surface</Label>
@@ -144,6 +147,7 @@ export function EmailStudioSectionInspector({
           </select>
         </div>
       ))}
+      </div>
     </div>
   )
 }

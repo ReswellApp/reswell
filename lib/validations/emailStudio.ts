@@ -5,6 +5,24 @@ const idSchema = z.string().uuid()
 const shortText = z.string().max(500)
 const bodyText = z.string().max(8000)
 const hrefText = z.string().max(2000)
+const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/)
+const hideOnSchema = z.enum(["desktop", "mobile"])
+const fontWeightSchema = z.enum(["normal", "bold"])
+const textStyleSchema = {
+  color: hexColor.optional(),
+  fontSize: z.number().int().min(10).max(64).optional(),
+  fontWeight: fontWeightSchema.optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
+  strike: z.boolean().optional(),
+  hideOn: hideOnSchema.optional(),
+}
+const paddingSchema = z.object({
+  top: z.number().int().min(0).max(120),
+  right: z.number().int().min(0).max(120),
+  bottom: z.number().int().min(0).max(120),
+  left: z.number().int().min(0).max(120),
+})
 
 const detailRowSchema = z.object({
   id: idSchema,
@@ -52,18 +70,21 @@ export const emailContentBlockSchema = z.discriminatedUnion("type", [
     type: z.literal("eyebrow"),
     text: shortText,
     align: alignSchema,
+    ...textStyleSchema,
   }),
   z.object({
     id: idSchema,
     type: z.literal("heading"),
     text: shortText,
     align: alignSchema,
+    ...textStyleSchema,
   }),
   z.object({
     id: idSchema,
     type: z.literal("text"),
     text: bodyText,
     align: alignSchema,
+    ...textStyleSchema,
   }),
   z.object({
     id: idSchema,
@@ -73,6 +94,9 @@ export const emailContentBlockSchema = z.discriminatedUnion("type", [
     href: hrefText,
     width: z.number().int().min(40).max(560).optional(),
     height: z.number().int().min(40).max(800).nullable().optional(),
+    radius: z.number().int().min(0).max(40).optional(),
+    padding: paddingSchema.optional(),
+    hideOn: hideOnSchema.optional(),
   }),
   z.object({
     id: idSchema,
@@ -80,6 +104,14 @@ export const emailContentBlockSchema = z.discriminatedUnion("type", [
     label: shortText,
     href: hrefText,
     align: alignSchema,
+    fullWidth: z.boolean().optional(),
+    fontFamily: z.enum(["sans", "headline"]).optional(),
+    fontWeight: fontWeightSchema.optional(),
+    fontSize: z.number().int().min(10).max(32).optional(),
+    backgroundColor: hexColor.optional(),
+    textColor: hexColor.optional(),
+    radius: z.number().int().min(0).max(40).optional(),
+    hideOn: hideOnSchema.optional(),
   }),
   z.object({
     id: idSchema,
@@ -128,6 +160,16 @@ export const emailSectionBlockSchema = z.object({
   gap: z.enum(["compact", "comfortable", "spacious"]),
   stackOnMobile: z.boolean(),
   columns: z.array(emailSectionColumnSchema).min(1).max(3),
+  backgroundColor: hexColor.optional(),
+  contentBackgroundColor: hexColor.optional(),
+  backgroundImage: hrefText.optional(),
+  backgroundImageOn: z.enum(["row", "content"]).optional(),
+  backgroundFit: z.boolean().optional(),
+  backgroundRepeat: z.boolean().optional(),
+  backgroundCenter: z.boolean().optional(),
+  borderWidth: z.number().int().min(0).max(12).optional(),
+  borderColor: hexColor.optional(),
+  hideOn: hideOnSchema.optional(),
 })
 
 export const emailBlockSchema = z.union([

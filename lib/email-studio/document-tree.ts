@@ -1,3 +1,4 @@
+import { cloneEmailBlock } from "@/lib/email-studio/document"
 import type {
   EmailBlock,
   EmailContentBlock,
@@ -66,8 +67,8 @@ export function replaceEmailBlock(
       htmlOverride: null,
     }
   }
-  if (replacement.type === "section") {
-    throw new Error("A section cannot be nested inside another section.")
+  if (replacement.type === "section" || replacement.type === "product") {
+    throw new Error("Sections and product blocks cannot be nested inside another section.")
   }
   return {
     ...document,
@@ -126,4 +127,73 @@ export function updateEmailSection(
   section: EmailSectionBlock,
 ): EmailStudioDocument {
   return replaceEmailBlock(document, section)
+}
+
+export function duplicateEmailBlock(
+  document: EmailStudioDocument,
+  blockId: string,
+): { document: EmailStudioDocument; id: string } {
+  const location = findEmailBlock(document, blockId)
+  if (!location) throw new Error("That email block no longer exists.")
+  const copy = cloneEmailBlock(location.block)
+  if (!location.sectionId || !location.columnId || location.childIndex === null) {
+    const blocks = [...document.blocks]
+    blocks.splice(location.topLevelIndex + 1, 0, copy)
+    return { document: { ...document, blocks, htmlOverride: null }, id: copy.id }
+  }
+  if (copy.type === "section" || copy.type === "product") {
+    throw new Error("Sections and product blocks cannot be nested inside another section.")
+  }
+  const child = copy
+  return {
+    id: child.id,
+    document: {
+      ...document,
+      htmlOverride: null,
+      blocks: document.blocks.map((block) => {
+        if (block.type !== "section" || block.id !== location.sectionId) return block
+        return {
+          ...block,
+          columns: block.columns.map((column) => {
+            if (column.id !== location.columnId || location.childIndex === null) return column
+            const blocks = [...column.blocks]
+            blocks.splice(location.childIndex + 1, 0, child)
+            return { ...column, blocks }
+          }),
+        }
+      }),
+    },
+  }
+}
+
+export function insertEmailBlockAfter(
+  document: EmailStudioDocument,
+  afterId: string,
+  block: EmailBlock,
+): EmailStudioDocument {
+  const location = findEmailBlock(document, afterId)
+  if (!location) throw new Error("That email block no longer exists.")
+  const nest = Boolean(location.sectionId && location.columnId && location.childIndex !== null)
+  if (!nest || block.type === "section" || block.type === "product") {
+    const blocks = [...document.blocks]
+    blocks.splice(location.topLevelIndex + 1, 0, block)
+    return { ...document, blocks, htmlOverride: null }
+  }
+  const child = block
+  return {
+    ...document,
+    htmlOverride: null,
+    blocks: document.blocks.map((item) => {
+      if (item.type !== "section" || item.id !== location.sectionId) return item
+      return {
+        ...item,
+        columns: item.columns.map((column) => {
+          if (column.id !== location.columnId || location.childIndex === null) return column
+          const blocks = [...column.blocks]
+          blocks.splice(location.childIndex + 1, 0, child)
+          return { ...column, blocks }
+        }),
+      }
+    }),
+  }
 }

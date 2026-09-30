@@ -39,9 +39,9 @@ import {
   saveEmailStudioTemplateAction,
   sendEmailStudioTestAction,
 } from "@/lib/actions/emailStudio"
-import { cloneEmailBlock, createEmailBlock } from "@/lib/email-studio/document"
+import { createEmailBlock } from "@/lib/email-studio/document"
 import { createEmailFrame, EMAIL_STUDIO_FRAMES, isEmailStudioFrameId, type EmailStudioFrameId } from "@/lib/email-studio/frames"
-import { findEmailBlock, replaceEmailBlock } from "@/lib/email-studio/document-tree"
+import { duplicateEmailBlock, findEmailBlock, insertEmailBlockAfter, removeEmailBlock, replaceEmailBlock } from "@/lib/email-studio/document-tree"
 import {
   renderEmailStudioHtml,
   resolveEmailStudioHtml,
@@ -252,6 +252,53 @@ export function EmailStudioEditor({
     blocks.splice(index >= 0 ? index + 1 : blocks.length, 0, block)
     updateBlocks(blocks)
     selectBlock(block.id)
+  }
+
+  function removeBlock(id: string) {
+    if (proposalPreview) return
+    const location = findEmailBlock(displayDraft.document, id)
+    if (!location) return
+    let nextId: string | null = selectedId
+    if (selectedId === id) {
+      if (location.sectionId && location.columnId && location.childIndex !== null) {
+        const section = displayDraft.document.blocks[location.topLevelIndex]
+        const column = section?.type === "section"
+          ? section.columns.find((item) => item.id === location.columnId)
+          : undefined
+        nextId = column?.blocks[location.childIndex + 1]?.id
+          ?? column?.blocks[location.childIndex - 1]?.id
+          ?? section?.id
+          ?? null
+      } else {
+        nextId = displayDraft.document.blocks[location.topLevelIndex + 1]?.id
+          ?? displayDraft.document.blocks[location.topLevelIndex - 1]?.id
+          ?? null
+      }
+    }
+    updateBlocks(removeEmailBlock(displayDraft.document, id).blocks)
+    if (selectedId === id) selectBlock(nextId)
+  }
+
+  function duplicateBlock(id: string) {
+    if (proposalPreview) return
+    try {
+      const result = duplicateEmailBlock(displayDraft.document, id)
+      updateBlocks(result.document.blocks)
+      selectBlock(result.id)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not duplicate that block")
+    }
+  }
+
+  function insertBlock(afterId: string, type: EmailBlockType) {
+    if (proposalPreview) return
+    try {
+      const block = createEmailBlock(type)
+      updateBlocks(insertEmailBlockAfter(displayDraft.document, afterId, block).blocks)
+      selectBlock(block.id)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not add that block")
+    }
   }
 
   function addBlock(type: EmailBlockType) {
@@ -526,23 +573,9 @@ export function EmailStudioEditor({
               onSelect={selectBlock}
               onClear={() => selectBlock(null)}
               onChange={(block) => updateBlocks(displayDraft.document.blocks.map((item) => (item.id === block.id ? block : item)))}
-              onRemove={(id) => {
-                const index = displayDraft.document.blocks.findIndex((item) => item.id === id)
-                updateBlocks(displayDraft.document.blocks.filter((item) => item.id !== id))
-                if (selectedId === id) {
-                  selectBlock(displayDraft.document.blocks[index + 1]?.id ?? displayDraft.document.blocks[index - 1]?.id ?? null)
-                }
-              }}
-              onDuplicate={(id) => {
-                const index = displayDraft.document.blocks.findIndex((item) => item.id === id)
-                const source = displayDraft.document.blocks[index]
-                if (!source) return
-                const copy = cloneEmailBlock(source)
-                const blocks = [...displayDraft.document.blocks]
-                blocks.splice(index + 1, 0, copy)
-                updateBlocks(blocks)
-                selectBlock(copy.id)
-              }}
+              onRemove={removeBlock}
+              onDuplicate={duplicateBlock}
+              onInsert={insertBlock}
             />
           ) : null}
           {mode === "code" ? (
@@ -569,7 +602,7 @@ export function EmailStudioEditor({
           tab={rail}
           open={railOpen}
           inspecting={inspecting && Boolean(selected)}
-          selectedLabel={selected ? emailBlockLabel(selected.type) : "Block"}
+          selectedLabel={selected ? (selected.type === "section" ? "Row" : emailBlockLabel(selected.type)) : "Block"}
           locked={Boolean(proposalPreview)}
           paletteGuard={suppressPaletteClick}
           blockCount={draft.document.blocks.length}
@@ -579,7 +612,13 @@ export function EmailStudioEditor({
             setRailOpen(true)
           }}
           onOpenChange={setRailOpen}
-          onBack={() => setInspecting(false)}
+          onBack={() => selectBlock(null)}
+          onRemove={() => {
+            if (selected) removeBlock(selected.id)
+          }}
+          onDuplicate={() => {
+            if (selected) duplicateBlock(selected.id)
+          }}
           onAddBlock={addBlock}
           onInsertFrame={insertFrame}
           properties={proposalPreview ? (
@@ -709,16 +748,7 @@ export function EmailStudioEditor({
                       sortableId={`outline:${block.id}`}
                       active={block.id === selectedId}
                       onSelect={() => selectBlock(block.id)}
-                      onRemove={() => {
-                        updateBlocks(draft.document.blocks.filter((item) => item.id !== block.id))
-                        if (selectedId === block.id) {
-                          selectBlock(
-                            draft.document.blocks[index + 1]?.id
-                              ?? draft.document.blocks[index - 1]?.id
-                              ?? null,
-                          )
-                        }
-                      }}
+                      onRemove={() => removeBlock(block.id)}
                       onMove={(direction) => {
                         const target = index + direction
                         if (target < 0 || target >= draft.document.blocks.length) return
@@ -733,7 +763,7 @@ export function EmailStudioEditor({
                             type="button"
                             className={cn(
                               "w-full rounded px-2 py-1 text-left text-xs",
-                              child.id === selectedId ? "bg-[#2F6FED]/10 text-[#18181b]" : "text-[#71717a] hover:bg-[#f4f4f5]",
+                              child.id === selectedId ? "bg-[#7C5CFC]/10 text-[#18181b]" : "text-[#71717a] hover:bg-[#f4f4f5]",
                             )}
                             onClick={() => selectBlock(child.id)}
                           >
