@@ -5,6 +5,7 @@ import type {
   SellerBalanceSheetPage,
   SellerBalanceSheetSummary,
 } from "@/lib/types/sellerBalanceSheet"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
 
 interface BalanceSheetViewRow {
@@ -94,19 +95,28 @@ export async function getSellerBalanceSheetPage(
   userId: string,
   page: number,
   pageSize: number,
+  listingSection: PeerListingSection | null,
 ): Promise<SellerBalanceSheetPage> {
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
+  let entriesQuery = supabase
+    .from("seller_balance_sheet_entries")
+    .select(BALANCE_SHEET_COLUMNS, { count: "exact" })
+    .eq("owner_id", userId)
+
+  if (listingSection) {
+    entriesQuery = entriesQuery.eq("listing_section", listingSection)
+  }
+
   const [entriesResult, summaryResult] = await Promise.all([
-    supabase
-      .from("seller_balance_sheet_entries")
-      .select(BALANCE_SHEET_COLUMNS, { count: "exact" })
-      .eq("owner_id", userId)
+    entriesQuery
       .order("sold_at", { ascending: false })
       .order("entry_key", { ascending: false })
       .range(from, to),
-    supabase.rpc("get_my_balance_sheet_summary"),
+    supabase.rpc("get_my_balance_sheet_summary_by_section", {
+      p_listing_section: listingSection,
+    }),
   ])
 
   if (entriesResult.error) throw entriesResult.error
