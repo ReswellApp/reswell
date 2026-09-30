@@ -21,6 +21,10 @@ function isEmailStudioEditor(pathname: string): boolean {
   return /^\/admin\/email-studio\/(?:[^/]+|flows\/[^/]+)$/.test(pathname)
 }
 
+function isEmailStudioDesignPath(pathname: string): boolean {
+  return /^\/admin\/email-studio\/(?!flows(?:\/|$))[^/]+$/.test(pathname)
+}
+
 function isFullBleedAdminPath(pathname: string): boolean {
   return (
     pathname === '/admin/home' ||
@@ -50,6 +54,7 @@ export function AdminAppShell({
   const [mobileOpen, setMobileOpen] = useState(false)
   const fullBleed = isFullBleedAdminPath(pathname)
   const workspace = isSupportInboxPath(pathname) || isEmailStudioEditor(pathname)
+  const designSurface = isEmailStudioDesignPath(pathname)
   const pageTitle = getAdminPageTitle(pathname, groups)
 
   useEffect(() => {
@@ -74,9 +79,11 @@ export function AdminAppShell({
         <ImpersonationBanner initialIsAdmin={isAdmin} />
       </Suspense>
       <div className={cn('flex min-h-0 min-w-0 flex-1', workspace && 'overflow-hidden')}>
-        <aside className="hidden h-full w-[260px] shrink-0 border-r border-border/70 bg-white dark:bg-card lg:flex lg:flex-col">
-          <AdminSidebarPanel groups={groups} badgeCounts={badgeCounts} user={user} isAdmin={isAdmin} />
-        </aside>
+        {designSurface ? null : (
+          <aside className="hidden h-full w-[260px] shrink-0 border-r border-border/70 bg-white dark:bg-card lg:flex lg:flex-col">
+            <AdminSidebarPanel groups={groups} badgeCounts={badgeCounts} user={user} isAdmin={isAdmin} />
+          </aside>
+        )}
 
         <div
           className={cn(
@@ -84,7 +91,7 @@ export function AdminAppShell({
             workspace ? 'overflow-hidden' : 'max-w-full',
           )}
         >
-          <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-border/70 bg-white px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] dark:bg-card lg:hidden">
+          <div className={cn("sticky top-0 z-30 flex items-center gap-3 border-b border-border/70 bg-white px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] dark:bg-card lg:hidden", designSurface && "hidden")}>
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <Button
                 type="button"

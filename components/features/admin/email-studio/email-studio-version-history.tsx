@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-type VersionHistoryProps =
+type VersionHistoryProps = (
   | {
       scope: "email"
       scopeId: string
@@ -30,9 +30,12 @@ type VersionHistoryProps =
       currentRevision: number
       onRestored: (record: EmailStudioFlowRecord) => void
     }
+) & {
+  compact?: boolean
+}
 
 export function EmailStudioVersionHistory(props: VersionHistoryProps) {
-  const { scope, scopeId, currentRevision } = props
+  const { scope, scopeId, currentRevision, compact } = props
   const [revisions, setRevisions] = useState<EmailStudioRevision[]>([])
   const [loading, setLoading] = useState(false)
   const [restoring, setRestoring] = useState<number | null>(null)
@@ -82,9 +85,9 @@ export function EmailStudioVersionHistory(props: VersionHistoryProps) {
       if (open) void load()
     }}>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="outline" aria-label="Version history">
-          <History className="mr-1.5 h-3.5 w-3.5" />
-          History
+        <Button size="sm" variant={compact ? "ghost" : "outline"} className={compact ? "h-8 px-2" : undefined} aria-label="Version history">
+          <History className={compact ? "h-4 w-4" : "mr-1.5 h-3.5 w-3.5"} />
+          {compact ? <span className="sr-only">History</span> : "History"}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">

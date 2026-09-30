@@ -28,7 +28,6 @@ import {
   KLAVIYO_EMAIL_FONT_HEADLINE,
   KLAVIYO_EMAIL_FONT_SANS,
   KLAVIYO_EMAIL_MUTED,
-  KLAVIYO_EMAIL_RADIUS,
 } from "@/lib/klaviyo/email-brand-styles"
 import { cn } from "@/lib/utils"
 import type { EmailBlock, EmailBlockType } from "@/lib/types/emailStudio"
@@ -36,6 +35,17 @@ import { emailBlockLabel } from "@/components/features/admin/email-studio/email-
 
 const FONT = KLAVIYO_EMAIL_FONT_SANS
 const HEADLINE = KLAVIYO_EMAIL_FONT_HEADLINE
+const TILE_LABEL: Partial<Record<EmailBlockType, string>> = {
+  heading: "Title",
+  text: "Paragraph",
+  eyebrow: "Kicker",
+  split: "Image & text",
+}
+
+export function emailStudioTileLabel(type: EmailBlockType): string {
+  return TILE_LABEL[type] ?? emailBlockLabel(type)
+}
+
 const PALETTE_ICONS: Record<EmailBlockType, typeof Type> = {
   section: LayoutPanelTop,
   logo: RectangleHorizontal,
@@ -117,34 +127,53 @@ function CanvasBlock({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : undefined }}
-      className={cn("group relative rounded-md", selected && "ring-2 ring-[#5574AD] ring-offset-2")}
+      className={cn(
+        "relative rounded-sm",
+        selected
+          ? "outline outline-2 -outline-offset-2 outline-[#2F6FED]"
+          : "hover:outline hover:outline-1 hover:-outline-offset-2 hover:outline-[#2F6FED]/70",
+      )}
       onClick={() => onSelect(block.id)}
     >
-      {selected ? (
-        <span className="absolute left-2 top-2 z-10 rounded bg-[#5574AD] px-1.5 py-0.5 text-[10px] font-medium text-white">
-          {emailBlockLabel(block.type)}
-        </span>
+      {selected && !isDragging ? (
+        <div className="absolute -top-3 left-2 z-20 flex items-center overflow-hidden rounded-md bg-white shadow-[0_6px_18px_rgba(15,23,42,0.14)] ring-1 ring-black/10">
+          <span className="bg-[#2F6FED] px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            {emailBlockLabel(block.type)}
+          </span>
+          <button
+            type="button"
+            className="p-1.5 text-[#3f3f46] hover:bg-[#f4f4f5]"
+            aria-label={`Drag ${emailBlockLabel(block.type)}`}
+            onClick={(event) => event.stopPropagation()}
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            className="p-1.5 text-[#3f3f46] hover:bg-[#f4f4f5]"
+            aria-label="Duplicate block"
+            onClick={(event) => {
+              event.stopPropagation()
+              onDuplicate()
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            className="p-1.5 text-[#3f3f46] hover:bg-red-50 hover:text-red-600"
+            aria-label="Remove block"
+            onClick={(event) => {
+              event.stopPropagation()
+              onRemove()
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       ) : null}
-      <div className={cn(
-        "absolute right-1 top-1 z-10 flex gap-1",
-        selected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
-      )}>
-        <button
-          type="button"
-          className="rounded border border-border bg-white p-1 text-muted-foreground shadow-sm"
-          aria-label={`Drag ${emailBlockLabel(block.type)}`}
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" className="rounded border border-border bg-white p-1 text-muted-foreground shadow-sm" aria-label="Duplicate block" onClick={onDuplicate}>
-          <Copy className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" className="rounded border border-border bg-white p-1 text-muted-foreground shadow-sm hover:text-destructive" aria-label="Remove block" onClick={onRemove}>
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
       <BlockBody
         block={block}
         selectedId={selectedId}
@@ -198,8 +227,8 @@ function BlockBody({
                 <div
                   key={child.id}
                   className={cn(
-                    "rounded-md",
-                    child.id === selectedId && "ring-2 ring-white/80 ring-offset-2 ring-offset-transparent",
+                    "rounded-sm",
+                    child.id === selectedId && "outline outline-2 -outline-offset-2 outline-[#2F6FED]",
                   )}
                   onClick={(event) => {
                     event.stopPropagation()
@@ -365,7 +394,13 @@ function BlockBody({
   )
 }
 
-export function EmailStudioPaletteChip({ type }: { type: EmailBlockType }) {
+export function EmailStudioPaletteChip({
+  type,
+  onActivate,
+}: {
+  type: EmailBlockType
+  onActivate?: () => void
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `palette:${type}` })
   const Icon = PALETTE_ICONS[type]
   return (
@@ -373,14 +408,15 @@ export function EmailStudioPaletteChip({ type }: { type: EmailBlockType }) {
       ref={setNodeRef}
       type="button"
       className={cn(
-        "flex h-16 w-full cursor-grab flex-col items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2 text-xs font-medium shadow-sm transition hover:border-[#5574AD]/40 hover:bg-muted/50 active:cursor-grabbing",
-        isDragging && "opacity-50",
+        "flex h-[78px] w-full cursor-grab flex-col items-center justify-center gap-2 rounded-lg bg-[#f3f3f4] px-1 text-[11px] font-medium leading-tight text-[#3f3f46] transition hover:bg-[#e7e7ea] active:cursor-grabbing",
+        isDragging && "opacity-40",
       )}
       {...attributes}
       {...listeners}
+      onClick={onActivate}
     >
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      {emailBlockLabel(type)}
+      <Icon className="h-5 w-5 text-[#52525b]" strokeWidth={1.75} />
+      {emailStudioTileLabel(type)}
     </button>
   )
 }
@@ -393,6 +429,7 @@ export function EmailStudioCanvas({
   onChange,
   onRemove,
   onDuplicate,
+  onClear,
 }: {
   blocks: EmailBlock[]
   selectedId: string | null
@@ -401,23 +438,36 @@ export function EmailStudioCanvas({
   onChange: (block: EmailBlock) => void
   onRemove: (id: string) => void
   onDuplicate: (id: string) => void
+  onClear?: () => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: "canvas-end" })
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto bg-[#F4F5F7] p-8">
+    <div
+      className="min-h-0 flex-1 overflow-auto bg-[#e6e6e6] px-8 py-14 sm:px-14"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClear?.()
+      }}
+    >
       <div
-        className="mx-auto bg-white px-6 py-8 shadow-sm ring-1 ring-black/5"
+        className="mx-auto bg-white shadow-[0_18px_50px_rgba(15,23,42,0.14)]"
         style={{
           width,
           maxWidth: "100%",
           fontFamily: FONT,
           color: KLAVIYO_EMAIL_COLORS.foreground,
-          borderRadius: KLAVIYO_EMAIL_RADIUS,
+        }}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) onClear?.()
         }}
       >
         <SortableContext items={blocks.map((block) => block.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3">
+        <div
+          className="space-y-6 px-6 py-8"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) onClear?.()
+          }}
+        >
           {blocks.map((block) => (
             <CanvasBlock
               key={block.id}
@@ -434,11 +484,13 @@ export function EmailStudioCanvas({
         <div
           ref={setNodeRef}
           className={cn(
-            "mt-4 rounded-md border border-dashed px-3 py-6 text-center text-xs text-muted-foreground",
-            isOver && "border-[#5574AD] bg-[#5574AD]/5",
+            blocks.length === 0
+              ? "mx-6 mb-8 rounded-md border border-dashed border-[#d4d4d8] px-3 py-16 text-center text-sm text-[#71717a]"
+              : "mx-6 mb-6 h-8 rounded-md border border-dashed border-transparent",
+            isOver && "border-[#2F6FED] bg-[#2F6FED]/5",
           )}
         >
-          Drop a frame or block here
+          {blocks.length === 0 ? "Drag a row or content block onto the stage" : null}
         </div>
       </div>
     </div>
