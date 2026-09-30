@@ -1,19 +1,16 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type DragEvent } from "react"
 import { useRouter } from "next/navigation"
-import {
-  ArrowUp,
-  Check,
-  Command,
-  LayoutTemplate,
-  MessageSquareText,
-  Sparkles,
-  WandSparkles,
-} from "lucide-react"
+import { ImagePlus, Sparkles, WandSparkles } from "lucide-react"
 import { toast } from "sonner"
 import { resolveEmailStudioProposalAction } from "@/lib/actions/emailStudioCommands"
 import { askEmailStudioAssistantAction } from "@/lib/actions/emailStudioFlows"
+import {
+  ASSISTANT_SCREENSHOT_MAX_COUNT,
+  assistantScreenshotRequest,
+  assistantTranscriptContent,
+} from "@/lib/email-studio/assistant-images"
 import type { EmailStudioDocument, EmailStudioRecord } from "@/lib/types/emailStudio"
 import type {
   EmailStudioAssistantProposalPreview,
@@ -23,10 +20,15 @@ import type {
   EmailStudioFlowRecord,
   EmailStudioMessage,
 } from "@/lib/types/emailStudioFlow"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import {
+  EmailStudioAssistantComposer,
+  type AssistantScreenshotAttachment,
+} from "@/components/features/admin/email-studio/email-studio-assistant-composer"
 import { EmailStudioAssistantProposal } from "@/components/features/admin/email-studio/email-studio-assistant-proposal"
+import { prepareAssistantScreenshot } from "@/components/features/admin/email-studio/prepare-assistant-screenshot"
+
+type AssistantChatMessage = EmailStudioMessage & { previews?: string[] }
 
 const EMAIL_SUGGESTIONS = [
   {
@@ -95,19 +97,98 @@ export function EmailStudioAssistant({
   onFlowAccepted?: (record: EmailStudioFlowRecord) => void
 }) {
   const router = useRouter()
-  const [messages, setMessages] = useState(initialMessages)
+  const [messages, setMessages] = useState<AssistantChatMessage[]>(initialMessages)
   const [text, setText] = useState("")
+  const [attachments, setAttachments] = useState<AssistantScreenshotAttachment[]>([])
+  const [preparing, setPreparing] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
   const [pending, setPending] = useState(false)
   const [proposal, setProposal] = useState<EmailStudioAssistantProposalPreview | null>(initialProposal)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const previewUrls = useRef<string[]>([])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
   }, [messages, pending, proposal])
 
+  useEffect(() => {
+    const urls = previewUrls.current
+    return () => {
+      for (const url of urls) URL.revokeObjectURL(url)
+    }
+  }, [])
+
+  useEffect(() => {
+    function clearDrag() {
+      setDragOver(false)
+    }
+    window.addEventListener("dragend", clearDrag)
+    window.addEventListener("drop", clearDrag)
+    return () => {
+      window.removeEventListener("dragend", clearDrag)
+      window.removeEventListener("drop", clearDrag)
+    }
+  }, [])
+
+  function hasDraggedFiles(event: DragEvent): boolean {
+    return Array.from(event.dataTransfer.types).includes("Files")
+  }
+
+  async function addFiles(files: File[]) {
+    if (!enabled) {
+      toast.error("Assistant is off until the AI gateway key is set")
+      return
+    }
+    if (proposal) {
+      toast.message("Review the preview before adding a screenshot.")
+      return
+    }
+    if (preparing) {
+      toast.message("Still reading that screenshot.")
+      return
+    }
+    if (pending) {
+      toast.message("Wait for the assistant to finish.")
+      return
+    }
+    const room = ASSISTANT_SCREENSHOT_MAX_COUNT - attachments.length
+    if (room <= 0) {
+      toast.error(`You can attach up to ${ASSISTANT_SCREENSHOT_MAX_COUNT} screenshots.`)
+      return
+    }
+    const accepted = files.slice(0, room)
+    if (files.length > room) {
+      toast.message(`You can attach up to ${ASSISTANT_SCREENSHOT_MAX_COUNT} screenshots.`)
+    }
+    setPreparing(true)
+    const next: AssistantScreenshotAttachment[] = []
+    for (const file of accepted) {
+      const prepared = await prepareAssistantScreenshot(file)
+      if ("error" in prepared) {
+        toast.error(prepared.error)
+        continue
+      }
+      previewUrls.current.push(prepared.previewUrl)
+      next.push({ id: crypto.randomUUID(), ...prepared })
+    }
+    setPreparing(false)
+    if (next.length > 0) {
+      setAttachments((current) => [...current, ...next].slice(0, ASSISTANT_SCREENSHOT_MAX_COUNT))
+    }
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments((current) => {
+      const removed = current.find((item) => item.id === id)
+      if (removed) URL.revokeObjectURL(removed.previewUrl)
+      return current.filter((item) => item.id !== id)
+    })
+  }
+
   async function send() {
-    const message = text.trim()
-    if (!message || pending || proposal) return
+    const message = assistantScreenshotRequest(scope, text)
+    if ((!text.trim() && attachments.length === 0) || pending || preparing || proposal) return
+    const outgoing = attachments
     setPending(true)
     const context = prepare ? await prepare() : { snapshot, baseRevision }
     if (!context) {
@@ -115,9 +196,16 @@ export function EmailStudioAssistant({
       return
     }
     setText("")
+    setAttachments([])
     setMessages((current) => [
       ...current,
-      { id: crypto.randomUUID(), role: "user", content: message, createdAt: new Date().toISOString() },
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: assistantTranscriptContent(message, outgoing.length),
+        createdAt: new Date().toISOString(),
+        previews: outgoing.map((item) => item.previewUrl),
+      },
     ])
     const result = await askEmailStudioAssistantAction({
       scope,
@@ -126,6 +214,14 @@ export function EmailStudioAssistant({
       selectedBlockId: context.selectedBlockId,
       message,
       snapshot: context.snapshot,
+      ...(outgoing.length > 0
+        ? {
+            images: outgoing.map((item) => ({
+              mediaType: item.mediaType,
+              dataBase64: item.dataBase64,
+            })),
+          }
+        : {}),
     })
     setPending(false)
     if ("error" in result) {
@@ -213,10 +309,42 @@ export function EmailStudioAssistant({
   }
 
   const suggestions = scope === "email" ? EMAIL_SUGGESTIONS : FLOW_SUGGESTIONS
-  const canSend = enabled && !pending && !proposal && text.trim().length > 0
+  const dropEnabled = enabled && !pending && !preparing && !proposal
 
   return (
-    <div className="-m-3 flex h-[calc(100%+1.5rem)] min-h-0 flex-col bg-[#F8FAFC]">
+    <div
+      className="relative -m-3 flex h-[calc(100%+1.5rem)] min-h-0 flex-col bg-[#F8FAFC]"
+      onDragEnter={(event) => {
+        if (!hasDraggedFiles(event)) return
+        event.preventDefault()
+        if (dropEnabled) setDragOver(true)
+      }}
+      onDragOver={(event) => {
+        if (!hasDraggedFiles(event)) return
+        event.preventDefault()
+      }}
+      onDragLeave={(event) => {
+        if (!hasDraggedFiles(event)) return
+        const next = event.relatedTarget
+        if (next instanceof Node && event.currentTarget.contains(next)) return
+        setDragOver(false)
+      }}
+      onDrop={(event) => {
+        if (!hasDraggedFiles(event)) return
+        event.preventDefault()
+        setDragOver(false)
+        void addFiles(Array.from(event.dataTransfer.files))
+      }}
+    >
+      {dragOver ? (
+        <div className="pointer-events-none absolute -inset-3 z-10 flex items-center justify-center bg-[#F8FAFC]/80 p-6">
+          <div className="rounded-2xl border-2 border-dashed border-[#5574AD] bg-white px-6 py-5 text-center shadow-sm">
+            <ImagePlus className="mx-auto h-5 w-5 text-[#355185]" />
+            <p className="mt-2 text-sm font-medium">Drop a screenshot</p>
+            <p className="mt-1 text-xs text-muted-foreground">The assistant will build from this design.</p>
+          </div>
+        </div>
+      ) : null}
       <header className="border-b border-border bg-background px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0F172A] text-white shadow-sm">
@@ -256,7 +384,7 @@ export function EmailStudioAssistant({
                 {scope === "email" ? "What should this email become?" : "What should this flow do?"}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Describe the goal, tone, and layout. I will build a preview on the
+                Drop a screenshot of a layout to match, or describe the goal and tone. I will build a preview on the
                 {scope === "email" ? " artboard" : " flow canvas"} before anything is saved.
               </p>
             </div>
@@ -303,6 +431,19 @@ export function EmailStudioAssistant({
                   : "rounded-bl-md border border-border bg-background text-foreground",
               )}
             >
+              {message.previews && message.previews.length > 0 ? (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {message.previews.map((src) => (
+                    // Blob previews cannot go through next/image.
+                    <img
+                      key={src}
+                      src={src}
+                      alt="Attached screenshot"
+                      className="h-16 w-16 rounded-lg object-cover"
+                    />
+                  ))}
+                </div>
+              ) : null}
               <p className="whitespace-pre-wrap">{message.content}</p>
             </div>
           </div>
@@ -335,62 +476,19 @@ export function EmailStudioAssistant({
         <div ref={messagesEndRef} />
       </div>
 
-      <footer className="border-t border-border bg-background p-3">
-        {proposal ? (
-          <div className="mb-2 flex items-center gap-2 rounded-lg bg-[#5574AD]/5 px-2.5 py-2 text-[11px] text-[#355185]">
-            <Check className="h-3.5 w-3.5" />
-            Review the preview before starting another request.
-          </div>
-        ) : null}
-        <div className="rounded-2xl border border-border bg-background p-2 shadow-sm transition focus-within:border-[#5574AD]/50 focus-within:ring-2 focus-within:ring-[#5574AD]/10">
-          <Textarea
-            value={text}
-            aria-label="Message the assistant"
-            placeholder={
-              enabled
-                ? scope === "email"
-                  ? "Describe a layout, rewrite, or campaign…"
-                  : "Describe a flow, trigger, or sequence…"
-                : "Assistant is off until the AI gateway key is set"
-            }
-            maxLength={4000}
-            disabled={!enabled || pending || Boolean(proposal)}
-            className="min-h-20 resize-none border-0 p-2 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            onChange={(event) => setText(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault()
-                if (canSend) void send()
-              }
-            }}
-          />
-          <div className="flex items-center justify-between gap-2 px-1 pb-0.5">
-            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <Command className="h-3 w-3" />
-              Enter to send · Shift + Enter for a new line
-            </span>
-            <Button
-              size="icon"
-              className="h-8 w-8 rounded-xl"
-              aria-label="Send message"
-              disabled={!canSend}
-              onClick={() => void send()}
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="mt-2 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <LayoutTemplate className="h-3 w-3" />
-            Canvas-aware
-          </span>
-          <span className="flex items-center gap-1">
-            <MessageSquareText className="h-3 w-3" />
-            Approval required
-          </span>
-        </div>
-      </footer>
+      <EmailStudioAssistantComposer
+        scope={scope}
+        enabled={enabled}
+        pending={pending}
+        preparing={preparing}
+        locked={Boolean(proposal)}
+        text={text}
+        attachments={attachments}
+        onTextChange={setText}
+        onSend={() => void send()}
+        onAttachFiles={(files) => void addFiles(files)}
+        onRemoveAttachment={removeAttachment}
+      />
     </div>
   )
 }

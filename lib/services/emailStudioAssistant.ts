@@ -51,6 +51,11 @@ import type {
 import type { EmailStudioFlowDefinition, EmailStudioFlowStep, KlaviyoCatalogOption } from "@/lib/types/emailStudioFlow"
 import { listKlaviyoFlowCatalogService } from "@/lib/services/emailStudioFlows"
 import { emailStudioFlowDefinitionSchema } from "@/lib/validations/emailStudioFlow"
+import {
+  assistantScreenshotInstruction,
+  assistantTranscriptContent,
+  type AssistantScreenshot,
+} from "@/lib/email-studio/assistant-images"
 
 const SYSTEM = `You are the Reswell email studio assistant. Staff describe an unsent email or Klaviyo flow in ordinary language. Build exactly what they asked for: one email, a flow, or both in the same reply.
 
@@ -60,7 +65,7 @@ applyEmail is yes when the request creates or changes the open email. applyFlow 
 
 For an email, choose operation deliberately. Use replace-selection when the request refers to the selected block and return that replacement block first. Use insert-after-selection when asked to add content near the selection. Use metadata-only for subject, preview, or notes changes, and list exactly those requested keys in metadataFields; this permits an intentional empty value such as removing preview text. Use an empty metadataFields list for other operations. Use replace-document only for a new email or a whole-email redesign. Block type is one of section, logo, eyebrow, heading, text, image, button, split, details, divider, spacer, footer. A section is an email-safe visual container with 1–3 columns; choose its surface, padding, gap, mobile stacking, and column content. A column may include eyebrow, imageSrc, heading, text, buttonLabel, and buttonHref. align is left or center.
 
-Design a replace-document email the way a layout tool would. Return logo, then at least two section blocks that use different surfaces, then a footer with showUnsubscribe true. Open with a dark or muted hero, follow with a content section (one column, an editorial two-column split, or a three-up), and end with a dark closer that holds the button. Do not return a loose stack of heading, text, and button for a new email or a redesign. Put buttons on white, muted, or dark surfaces so they stay visible. Leave image src empty when you do not have a real https image.
+Design a replace-document email the way a layout tool would. Return logo, then at least two section blocks that use different surfaces, then a footer with showUnsubscribe true. When no screenshot is attached, open with a dark or muted hero, follow with a content section (one column, an editorial two-column split, or a three-up), and end with a dark closer that holds the button. When screenshots are attached, they are the design to build: match their section order, column counts, alignment, and readable copy, and choose dark, muted, or white surfaces from what the image shows. Use replace-document when a screenshot shows a whole email. Do not embed the screenshot itself. A previous message may say a screenshot was attached. That image is not included. Only screenshots on the current message can be seen. Do not return a loose stack of heading, text, and button for a new email or a redesign. Put buttons on white, muted, or dark surfaces so they stay visible. Leave image src empty when you do not have a real https image.
 
 For a flow, return steps in order. type is delay, email, sms, webhook, update-profile, list-update, or split. branch is main, yes, or no. A split is a main step. The yes and no steps that follow it belong to that split until the next main step. splitMode is profile-property, email-subscribed, or event-property. Each email step includes subject, previewText, layout, eyebrow, heading, body, buttonLabel, and buttonHref. layout is announcement, editorial, transactional, or product. The studio turns that step into a designed email with a hero, sections, and a closer. Use transactional for orders and shipping, product for a listing, editorial for a story, and announcement for a campaign. Use a trigger id from the catalog when you have one. If you only know a metric name, put it in triggerName and leave triggerId empty. A step after the split on the main branch runs after both branches. Flows are saved as drafts. Never tell the user the flow is live.
 
@@ -359,6 +364,7 @@ function presentStudioDraft(draft: {
 async function draftFromModel(input: {
   prompt: string
   history: { role: "user" | "assistant"; content: string }[]
+  images?: AssistantScreenshot[]
 }): Promise<{
   reply: string
   operation: "replace-document" | "replace-selection" | "insert-after-selection" | "metadata-only"
@@ -367,10 +373,23 @@ async function draftFromModel(input: {
   flow: AssistantFlowDraft | null
 }> {
   const model = resolveConfiguredModel(feature())
+  const images = input.images ?? []
   const messages = [
     ...input.history.slice(-6),
-    { role: "user" as const, content: input.prompt },
+    {
+      role: "user" as const,
+      content: images.length === 0
+        ? input.prompt
+        : [
+            { type: "text" as const, text: input.prompt },
+            ...images.flatMap((image, index) => [
+              { type: "text" as const, text: `Screenshot ${index + 1} of ${images.length}.` },
+              { type: "file" as const, mediaType: image.mediaType, data: image.bytes },
+            ]),
+          ],
+    },
   ]
+  const timeout = images.length > 0 ? 60_000 : 45_000
   try {
     const result = await generateText({
       model,
@@ -380,7 +399,7 @@ async function draftFromModel(input: {
       temperature: 0.2,
       maxOutputTokens: 8000,
       maxRetries: 0,
-      timeout: 45_000,
+      timeout,
       providerOptions: providerOptions(),
     })
     const coerced = coerceAssistantStudio(result.output)
@@ -402,7 +421,7 @@ async function draftFromModel(input: {
     temperature: 0.2,
     maxOutputTokens: 8000,
     maxRetries: 0,
-    timeout: 45_000,
+    timeout,
     providerOptions: providerOptions(),
   })
   const json = extractJsonObject(fallback.text)
@@ -461,6 +480,7 @@ export async function askEmailStudioAssistantService(input: {
   selectedBlockId?: string
   message: string
   snapshot: string
+  images?: AssistantScreenshot[]
 }): Promise<
   | {
       success: true
@@ -502,11 +522,12 @@ export async function askEmailStudioAssistantService(input: {
 
   const history = await listEmailStudioMessages(client, input.scope, input.scopeId)
   const catalog = await listKlaviyoFlowCatalogService()
+  const images = input.images ?? []
   await insertEmailStudioMessage(client, {
     scope: input.scope,
     scopeId: input.scopeId,
     role: "user",
-    content: input.message,
+    content: assistantTranscriptContent(input.message, images.length),
     userId: user.id,
   })
 
@@ -529,15 +550,21 @@ export async function askEmailStudioAssistantService(input: {
         catalogLines("Segments", catalog.segments),
         "Current draft:",
         input.snapshot.slice(0, 12000),
+        assistantScreenshotInstruction(images.length),
         `Request: ${input.message}`,
       ].filter(Boolean).join("\n\n"),
+      images,
     })
   } catch (error) {
     console.error("[email_studio] assistant failed", error)
     if (error instanceof Error && error.message.startsWith("AI Gateway is not authenticated")) {
       return { error: error.message }
     }
-    return { error: "The assistant could not draft that. Say what the email or flow should do and try again." }
+    return {
+      error: images.length > 0
+        ? "The assistant could not read that screenshot. Try a clearer image, or describe the layout in words."
+        : "The assistant could not draft that. Say what the email or flow should do and try again.",
+    }
   }
 
   let email: { subject: string; previewText: string; notes: string; document: EmailStudioDocument } | null = null
