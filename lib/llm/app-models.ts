@@ -252,13 +252,13 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "email_studio",
     name: "Email studio assistant",
     purpose:
-      "Drafts and revises Klaviyo email blocks and full flows inside /admin/email-studio. Staff can drop screenshots; the model reads them and drafts a matching layout. Flows stay drafts until staff push them.",
+      "Drafts and revises Klaviyo email templates inside /admin/email-studio. Staff can drop screenshots; the model reads them and drafts a matching layout.",
     gatewayFeatureTag: "feature:email-studio",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-flash",
     modelEnvVar: "EMAIL_STUDIO_ASSISTANT_MODEL",
     enabledEnvVar: "EMAIL_STUDIO_ASSISTANT_ENABLED",
-    surfaces: ["/admin/email-studio", "/admin/email-studio/flows"],
+    surfaces: ["/admin/email-studio"],
     sourceFiles: ["lib/services/emailStudioAssistant.ts"],
   },
 ] as const

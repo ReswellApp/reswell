@@ -1,27 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import {
-  createEmailStudioFlowService,
-  deleteEmailStudioFlowService,
-  openKlaviyoFlowInStudioService,
-  publishEmailStudioFlowService,
-  pushEmailStudioFlowService,
-  setEmailStudioFlowStatusService,
-  updateEmailStudioFlowService,
-} from "@/lib/services/emailStudioFlows"
-import {
-  askEmailStudioAssistantService,
-} from "@/lib/services/emailStudioAssistant"
-import {
-  createEmailStudioFlowSchema,
-  emailStudioFlowIdSchema,
-  openKlaviyoFlowSchema,
-  publishEmailStudioFlowSchema,
-  pushEmailStudioFlowSchema,
-  setEmailStudioFlowStatusSchema,
-  updateEmailStudioFlowSchema,
-} from "@/lib/validations/emailStudioFlow"
+import { askEmailStudioAssistantService } from "@/lib/services/emailStudioAssistant"
 import {
   ASSISTANT_SCREENSHOT_MAX_BASE64_CHARS,
   ASSISTANT_SCREENSHOT_MAX_COUNT,
@@ -39,79 +19,36 @@ function flattenZod(error: {
   return firstField?.[0] ?? flat.formErrors[0] ?? "Check the form and try again."
 }
 
-function revalidateFlow(id?: string) {
-  revalidatePath("/admin/email-studio")
-  revalidatePath("/admin/email-studio/flows")
-  if (id) revalidatePath(`/admin/email-studio/flows/${id}`)
+const FLOW_BUILDING_DISABLED = {
+  error: "Flow building is no longer available in Email Studio. Build the flow in Klaviyo and use Reswell for its email templates.",
+} as const
+
+export async function createEmailStudioFlowAction(_raw: unknown) {
+  return FLOW_BUILDING_DISABLED
 }
 
-export async function createEmailStudioFlowAction(raw: unknown) {
-  const parsed = createEmailStudioFlowSchema.safeParse(raw)
-  if (!parsed.success) return { error: flattenZod(parsed.error) }
-  const result = await createEmailStudioFlowService(parsed.data.name)
-  if ("error" in result) return result
-  revalidateFlow(result.data.id)
-  return result
+export async function openKlaviyoFlowAction(_raw: unknown) {
+  return FLOW_BUILDING_DISABLED
 }
 
-export async function openKlaviyoFlowAction(raw: unknown) {
-  const parsed = openKlaviyoFlowSchema.safeParse(raw)
-  if (!parsed.success) return { error: flattenZod(parsed.error) }
-  const result = await openKlaviyoFlowInStudioService(parsed.data.klaviyoFlowId)
-  if ("error" in result) return result
-  revalidateFlow(result.flowId)
-  return result
+export async function updateEmailStudioFlowAction(_raw: unknown) {
+  return FLOW_BUILDING_DISABLED
 }
 
-export async function updateEmailStudioFlowAction(raw: unknown) {
-  const parsed = updateEmailStudioFlowSchema.safeParse(raw)
-  if (!parsed.success) return { error: flattenZod(parsed.error) }
-  const result = await updateEmailStudioFlowService(parsed.data)
-  if ("error" in result) return result
-  revalidateFlow(result.data.id)
-  return result
+export async function deleteEmailStudioFlowAction(_raw: unknown) {
+  return FLOW_BUILDING_DISABLED
 }
 
-export async function deleteEmailStudioFlowAction(raw: unknown) {
-  const parsed = emailStudioFlowIdSchema.safeParse(raw)
-  if (!parsed.success) return { error: flattenZod(parsed.error) }
-  const result = await deleteEmailStudioFlowService(parsed.data.id)
-  if ("error" in result) return result
-  revalidateFlow()
-  return result
+export async function pushEmailStudioFlowAction(_raw: unknown) {
+  return FLOW_BUILDING_DISABLED
 }
 
-export async function pushEmailStudioFlowAction(raw: unknown) {
-  const parsed = pushEmailStudioFlowSchema.safeParse(raw)
-  if (!parsed.success) return { error: flattenZod(parsed.error) }
-  const result = await pushEmailStudioFlowService(parsed.data.id, parsed.data.replace)
-  if ("error" in result) return result
-  revalidateFlow(parsed.data.id)
-  return result
+export async function publishEmailStudioFlowAction(_raw: unknown) {
+  return FLOW_BUILDING_DISABLED
 }
 
-export async function publishEmailStudioFlowAction(raw: unknown) {
-  const parsed = publishEmailStudioFlowSchema.safeParse(raw)
-  if (!parsed.success) return { error: flattenZod(parsed.error) }
-  const result = await publishEmailStudioFlowService(
-    parsed.data.id,
-    parsed.data.confirmLive,
-  )
-  revalidateFlow(parsed.data.id)
-  return result
-}
-
-export async function setEmailStudioFlowStatusAction(raw: unknown) {
-  const parsed = setEmailStudioFlowStatusSchema.safeParse(raw)
-  if (!parsed.success) return { error: flattenZod(parsed.error) }
-  const result = await setEmailStudioFlowStatusService(
-    parsed.data.id,
-    parsed.data.status,
-    parsed.data.confirmLive,
-  )
-  if ("error" in result) return result
-  revalidateFlow(parsed.data.id)
-  return result
+export async function setEmailStudioFlowStatusAction(_raw: unknown) {
+  return FLOW_BUILDING_DISABLED
 }
 
 const askSchema = z.object({
@@ -138,6 +75,7 @@ const askSchema = z.object({
 export async function askEmailStudioAssistantAction(raw: unknown) {
   const parsed = askSchema.safeParse(raw)
   if (!parsed.success) return { error: flattenZod(parsed.error) }
+  if (parsed.data.scope === "flow") return FLOW_BUILDING_DISABLED
   const images = decodeAssistantScreenshots(parsed.data.images)
   if (!images.ok) return { error: images.error }
   const message = images.images.length > 0
@@ -153,7 +91,6 @@ export async function askEmailStudioAssistantAction(raw: unknown) {
     images: images.images,
   })
   if ("error" in result) return result
-  if (result.flowId) revalidateFlow(result.flowId)
   revalidatePath(`/admin/email-studio/${parsed.data.scopeId}`)
   return result
 }

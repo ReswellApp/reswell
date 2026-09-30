@@ -452,11 +452,6 @@ export function EmailStudioEditor({
               <DropdownMenuItem disabled={!klaviyoConnected || saving || Boolean(proposalPreview)} onSelect={() => void pushKlaviyo()}>
                 {klaviyoLabel}
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/admin/email-studio/flows" onClick={(event) => navigateAfterSave(event, "/admin/email-studio/flows")}>
-                  Flows
-                </Link>
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" className="ml-1 h-8 rounded-md bg-[#18181b] px-3 text-white hover:bg-black" disabled={saving || conflict} onClick={() => void save({ announce: true, flush: true })}>
