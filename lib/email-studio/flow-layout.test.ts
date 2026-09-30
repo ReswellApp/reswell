@@ -77,4 +77,20 @@ describe("email studio flow layout", () => {
     assert.ok(continuation.y > yesNode.y)
     assert.ok(continuation.y > noNode.y)
   })
+
+  it("adds action insertion points at empty entries, branches, and path ends", () => {
+    const empty = definition()
+    empty.entryStepId = null
+    empty.steps = []
+    assert.deepEqual(layoutEmailStudioFlow(empty).insertionPoints.map((point) => point.anchor), [
+      { kind: "entry" },
+    ])
+
+    const flow = definition()
+    const split = flow.steps.find((step) => step.id === SPLIT)
+    if (split?.type === "split") split.no = null
+    const insertionPoints = layoutEmailStudioFlow(flow).insertionPoints
+    assert.ok(insertionPoints.some((point) => point.anchor.kind === "no"))
+    assert.ok(insertionPoints.some((point) => point.anchor.kind === "next"))
+  })
 })

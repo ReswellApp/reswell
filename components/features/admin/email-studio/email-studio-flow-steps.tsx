@@ -182,8 +182,18 @@ export function EmailStudioFlowStepInspector({
           <Input value={step.value} aria-label="Split value" placeholder="Value" onChange={(event) => onChange({ ...step, value: event.target.value })} />
         </div>
       ) : null}
-      <BranchSelect label="Yes path" value={step.yes} options={nextOptions} onChange={(yes) => onChange({ ...step, yes })} />
-      <BranchSelect label="No path" value={step.no} options={nextOptions} onChange={(no) => onChange({ ...step, no })} />
+      <details className="rounded-md border border-border">
+        <summary className="cursor-pointer px-3 py-2 text-xs font-medium">
+          Advanced path links
+        </summary>
+        <div className="space-y-2 border-t border-border p-3">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Normally, add actions with the plus buttons on each branch.
+          </p>
+          <BranchSelect label="Yes path" value={step.yes} options={nextOptions} onChange={(yes) => onChange({ ...step, yes })} />
+          <BranchSelect label="No path" value={step.no} options={nextOptions} onChange={(no) => onChange({ ...step, no })} />
+        </div>
+      </details>
     </div>
   )
 }

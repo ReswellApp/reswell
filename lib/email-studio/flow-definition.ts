@@ -61,7 +61,7 @@ export function walkFlowSteps(definition: EmailStudioFlowDefinition): EmailStudi
 export function flowStepLabel(step: EmailStudioFlowStep): string {
   switch (step.type) {
     case "delay":
-      return `Wait ${step.value} ${step.unit}`
+      return "Time delay"
     case "email":
       return "Email"
     case "sms":
@@ -73,6 +73,6 @@ export function flowStepLabel(step: EmailStudioFlowStep): string {
     case "list-update":
       return step.add ? "Add to list" : "Remove from list"
     case "split":
-      return "Split"
+      return step.mode === "event-property" ? "Trigger split" : "Conditional split"
   }
 }
