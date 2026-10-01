@@ -1,0 +1,35 @@
+{
+  "generated_for": "Infinity Surfboards official leftover named models",
+  "source": "https://www.infinitysurf.com/collections/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "infinity-surfboards",
+      "name": "Infinity Surfboards",
+      "website_url": "https://www.infinitysurf.com",
+      "location_label": "Dana Point, California",
+      "founder_name": "Chuck Shipman",
+      "short_description": "Dana Point, California surfboards from the Infinity / Boehne family shaping bay.",
+      "models": [
+        {
+          "name": "RAINBOW CHASER",
+          "image_url": "https://cdn.shopify.com/s/files/1/0048/3065/8671/files/IMG_2971_ffe0a6c2-29bf-4d2b-80e8-a09f1a5ec1bd.jpg?v=1694459958",
+          "description": "Rainbow Chaser is a hybrid design by Dave Boehne. The outline is inspired by the Tombstone with a short length, wider width, and a wider tailblock for get-up-and-go speed and glide through flat sections. Quad fins add drive and control. Thin performance rails, low rocker, shallow single to an aggressive concave vee between the fins, and a diamond tail that shortens the rail line and adds grip.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "LP",
+          "image_url": "https://cdn.shopify.com/s/files/1/0048/3065/8671/products/Infinity_Lp_1.jpg?v=1633031802",
+          "description": "LP is Infinity's wide pintail longboard. It has a wider nose template and a thinner 50/50 rail with a hard edge at the fins for hard carves. It locks in nose rides through the section and also likes to steer from the nose. Best in longer LP sizes: 9'5\", 9'8\", 10'.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "TOMBSTONE InfinFLEX Tech",
+          "image_url": "https://cdn.shopify.com/s/files/1/0048/3065/8671/products/Infinity_TombstoneSurf_1_289fdded-6b80-463f-9e70-1a79a80e24bb.png?v=1677099071",
+          "description": "This mini-Simmons style twin is Infinity's fastest planing surf vessel. The InfinFLEX version uses an EPS core vacuum-bagged with a carbon fiber and PVC hybrid construction for a light, durable, custom-tuned flex. A parallel outline and twin-fin keels cut drag. Blended deck, thin angular rails, rolled hull entry into a single concave exit.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
