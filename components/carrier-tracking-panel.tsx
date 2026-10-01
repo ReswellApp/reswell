@@ -36,7 +36,7 @@ export function CarrierTrackingPanel(props: {
               {marketplaceDeliveryStatus !== "delivered" ? (
                 variant === "seller" ? (
                   <>
-                    When the carrier reports delivery, Reswell releases your payout automatically after a 24-hour
+                    When the carrier reports delivery, Reswell releases your payout automatically after a 4-day
                     review window.
                   </>
                 ) : (
@@ -69,7 +69,7 @@ export function CarrierTrackingPanel(props: {
             {variant === "seller" ? (
               <>
                 The carrier reports delivery. Reswell uses carrier tracking as the source of truth — your payout
-                releases automatically 24 hours after delivery.
+                releases automatically 4 days after delivery.
               </>
             ) : (
               <>

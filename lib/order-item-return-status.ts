@@ -65,5 +65,5 @@ export function orderItemReturnBadgeVariant(status: string): BadgeProps["variant
   }
 }
 
-/** 24h hold after return carrier delivery before auto item refund (mirrors payout hold). */
+/** 24h hold after return carrier delivery before the automatic item refund. */
 export const RETURN_DELIVERY_REFUND_HOLD_MS = 24 * 60 * 60 * 1000

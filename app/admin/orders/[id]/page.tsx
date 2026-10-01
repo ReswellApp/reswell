@@ -518,7 +518,7 @@ export default function AdminOrderDetailPage() {
                       o.carrier_delivered_at && (
                       <p className="text-xs text-muted-foreground leading-relaxed rounded-md border border-border/60 bg-muted/30 px-3 py-2">
                         <span className="font-medium text-foreground">Carrier delivery confirmed. </span>
-                        Seller earnings release automatically 24 hours after the carrier delivery timestamp (
+                        Seller earnings release automatically 4 days after the carrier delivery timestamp (
                         {format(carrierDeliveryPayoutEligibleAt(new Date(o.carrier_delivered_at)), "MMM d, yyyy HH:mm")}
                         ).
                       </p>
@@ -552,7 +552,7 @@ export default function AdminOrderDetailPage() {
                       canReleaseShippingSellerEarnings &&
                       o.payout.hold_reason !== "awaiting_carrier_settlement" && (
                       <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/60 pt-3">
-                        Payout is on hold. Carrier-tracked Reswell shipping orders release automatically 24 hours
+                        Payout is on hold. Carrier-tracked Reswell shipping orders release automatically 4 days
                         after ShipEngine reports delivery.
                       </p>
                     )}

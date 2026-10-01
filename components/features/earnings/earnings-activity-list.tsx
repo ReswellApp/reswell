@@ -275,7 +275,12 @@ export function EarningsActivityList({
                   : 0
                 const visualKind = singleRowVisualKind(t, titleForSingleRow(t), reversedOrderIds)
                 const label = kindLabel(visualKind, t.type)
+                const parsedDescription = parseDescription(t.description, t.type)
                 const title = titleForSingleRow(t)
+                const adjustmentExplanation =
+                  t.reference_type === "shipengine_label_adjustment"
+                    ? parsedDescription.subtitle
+                    : null
                 const time = formatTimeOnly(t.created_at)
                 const statusNote = t.status && t.status !== "completed" ? t.status : ""
                 const Icon =
@@ -316,6 +321,11 @@ export function EarningsActivityList({
                             </>
                           ) : null}
                         </p>
+                        {adjustmentExplanation ? (
+                          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+                            {adjustmentExplanation}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="text-right shrink-0 min-w-[6rem] pl-2">
                         <Tooltip>

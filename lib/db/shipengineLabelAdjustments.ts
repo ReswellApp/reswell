@@ -20,7 +20,15 @@ export type ShipEngineLabelAdjustmentRow = {
   actual_width: number | null
   actual_height: number | null
   order_id: string | null
+  wallet_transaction_id: string | null
+  wallet_debited_at: string | null
   created_at: string
+}
+
+export type ShipEngineAdjustmentDebitSummary = {
+  processed: number
+  charged: number
+  alreadyCharged: number
 }
 
 function num(v: number | string | null | undefined): number | null {
@@ -48,7 +56,41 @@ function mapRow(row: Record<string, unknown>): ShipEngineLabelAdjustmentRow {
     actual_width: num(row.actual_width as number | string | null),
     actual_height: num(row.actual_height as number | string | null),
     order_id: typeof row.order_id === "string" ? row.order_id : null,
+    wallet_transaction_id:
+      typeof row.wallet_transaction_id === "string" ? row.wallet_transaction_id : null,
+    wallet_debited_at:
+      typeof row.wallet_debited_at === "string" ? row.wallet_debited_at : null,
     created_at: String(row.created_at),
+  }
+}
+
+export async function dbApplyShipEngineAdjustmentDebits(
+  supabase: SupabaseClient,
+  limit = 500,
+): Promise<{ data: ShipEngineAdjustmentDebitSummary | null; error: Error | null }> {
+  const { data, error } = await supabase.rpc("apply_shipengine_label_adjustment_debits", {
+    p_limit: limit,
+  })
+  if (error) return { data: null, error: new Error(error.message) }
+
+  const result =
+    data != null && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : null
+  if (!result) {
+    return { data: null, error: new Error("Invalid wallet debit response") }
+  }
+
+  const processed = num(result.processed as number | string | null)
+  const charged = num(result.charged as number | string | null)
+  const alreadyCharged = num(result.already_charged as number | string | null)
+  if (processed == null || charged == null || alreadyCharged == null) {
+    return { data: null, error: new Error("Invalid wallet debit summary") }
+  }
+
+  return {
+    data: { processed, charged, alreadyCharged },
+    error: null,
   }
 }
 

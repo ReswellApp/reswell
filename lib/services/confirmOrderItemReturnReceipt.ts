@@ -4,7 +4,7 @@ import { tryRefundOrderItemReturnAfterCarrierHold } from "@/lib/services/autoRef
 
 /**
  * Admin marks a return as received when carrier tracking is stuck.
- * Starts the same 24h refund clock as carrier delivery.
+ * Starts the 24h return-refund clock when carrier tracking is unavailable.
  */
 export async function confirmOrderItemReturnReceipt(params: {
   supabase: SupabaseClient

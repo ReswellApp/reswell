@@ -361,8 +361,8 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <p>
             Verification must be complete and you need available (ready) balance in your wallet.
-            Pending earnings from recent sales may still be held until carrier delivery is confirmed on
-            Reswell tracking (plus a 24-hour review window) or pickup is verified. See{" "}
+            Pending earnings from recent sales stay held until 4 days after carrier delivery is confirmed on
+            Reswell tracking, or until pickup is verified. See{" "}
             {helpLink("/help/selling/how-long-to-get-paid", "How long does it take to get paid?")}.
           </p>
         ),
@@ -429,8 +429,8 @@ export const sellingHelpArticles: HelpArticle[] = [
     quickAnswer: (
       <>
         Open the sale in {helpLink("/dashboard/sales", "Sales")}. Ship with tracking or verify local
-        pickup in Messages. Your earnings release to your wallet once the order clears Purchase
-        Protection timelines.
+        pickup in Messages. Shipped-order earnings release 4 days after carrier-confirmed delivery;
+        local-pickup earnings release when the pickup code is verified.
       </>
     ),
     sections: [
@@ -528,8 +528,8 @@ export const sellingHelpArticles: HelpArticle[] = [
             <p>
               After a sale, your earnings show as <strong>Pending</strong> in{" "}
               {helpLink("/dashboard/earnings", "Earnings")} until the order clears Purchase Protection
-              timelines. That usually means the buyer received the item (tracked shipping) or you
-              verified pickup.
+              timelines. For shipped items, funds release 4 days after carrier-confirmed delivery.
+              For local pickup, they release when the pickup code is verified.
             </p>
             <p>
               Once released, funds move to your <strong>Ready to transfer to your bank</strong>{" "}
@@ -543,7 +543,7 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <BulletList
             items={[
-              <>Shipped orders: tracking not added yet, or carrier has not reported delivery (Reswell releases earnings 24 hours after carrier delivery).</>,
+              <>Shipped orders: tracking not added yet, or fewer than 4 days have passed since carrier-confirmed delivery.</>,
               <>Pickup orders: pickup code not verified.</>,
               <>An open Purchase Protection claim or refund on the order.</>,
             ]}
@@ -1110,6 +1110,26 @@ export const sellingHelpArticles: HelpArticle[] = [
               {helpLink("/shipping-estimator", "the shipping estimator")} before you list. Ship within{" "}
               {SHIPPING_DEADLINE_DAYS} days. Message the buyer if you are running behind.
             </p>
+          </>
+        ),
+      },
+      {
+        heading: "Avoid carrier adjustment fees",
+        body: (
+          <>
+            <p>
+              Carrier labels are priced from the packed dimensions and weight entered when the label
+              is purchased. Carriers measure packages again after drop-off. If your sealed box is
+              larger or heavier than the label allows, the carrier may charge an adjustment and that
+              amount is deducted from your earnings for the sale.
+            </p>
+            <BulletList
+              items={[
+                <>Measure the outside of the fully packed box twice before carrier handoff.</>,
+                <>Keep every dimension and the final weight at or below the measurements on the label.</>,
+                <>Take clear photos of the sealed box, measurements, and attached label before drop-off.</>,
+              ]}
+            />
           </>
         ),
       },

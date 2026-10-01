@@ -4,7 +4,7 @@ import { autoReleaseShippingPayoutsAfterCarrierDelivery } from "@/lib/services/a
 export const maxDuration = 60
 
 /**
- * Every ~15 minutes: release seller wallet earnings 24h after ShipEngine reports delivery.
+ * Every ~15 minutes: release seller wallet earnings four days after ShipEngine reports delivery.
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */
 export async function GET(request: Request) {

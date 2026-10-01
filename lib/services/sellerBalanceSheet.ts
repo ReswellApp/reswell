@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import {
+  excludeOwnedBalanceSheetItem,
   getSellerBalanceSheetPage,
   updateOwnedListingAcquisition,
 } from "@/lib/db/sellerBalanceSheet"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
 import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
+import type { RemoveBalanceSheetItemInput } from "@/lib/validations/seller-balance-sheet"
 
 export class SellerBalanceSheetAccessError extends Error {
   constructor() {
@@ -77,4 +79,12 @@ export async function updateSellerListingAcquisition(
   input: UpdateListingAcquisitionInput,
 ): Promise<boolean> {
   return updateOwnedListingAcquisition(supabase, userId, input)
+}
+
+export async function removeSellerBalanceSheetItem(
+  supabase: SupabaseClient,
+  userId: string,
+  input: RemoveBalanceSheetItemInput,
+): Promise<void> {
+  await excludeOwnedBalanceSheetItem(supabase, userId, input)
 }
