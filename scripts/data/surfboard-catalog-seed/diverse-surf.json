@@ -1,0 +1,295 @@
+{
+  "generated_for": "Diverse Surf official named standup catalog",
+  "source": "https://diversesurf.com.au/board-models-2/ (WordPress named model pages only — excludes merch, board art, custom deposits, past-favourites without photos, and size-chart-only SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "diverse-surf",
+      "name": "Diverse Surf",
+      "website_url": "https://diversesurf.com.au/",
+      "location_label": "Kirra, Gold Coast, Queensland, Australia",
+      "founder_name": "Dave Verrall",
+      "lead_shaper_name": "Dave Verrall",
+      "short_description": "Gold Coast custom surfboards by Dave Verrall — Diverse Dynocore shapes from mullets and twins through logs and step-ups, built in Kirra since the late 1980s.",
+      "logo_url": "https://diversesurf.com.au/wp-content/uploads/2016/09/diverse3d.png",
+      "models": [
+        {
+          "name": "Astral Tracer",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2017/11/Diverse-Fish-AstralBlack.png",
+          "description": "The Astral Tracer twin fin ranks high for maneuverability. A twin fin can practically turn on a dime. When making a turn, one fin will act at the pivot point while the other spins around it. The result is a board that will go exactly where you point it. It is also known for being very fast. It doesn’t have a trailing center fin producing drag which means the board can speed down the line. The Astral Tracer has a concave deck in the tail making a lower centre of pivot and increased control. The Astral Tracer works best in conditions from 1-6ft. The looseness of the setup makes it one of the best for sloppy conditions between 2-4ft but a skilled surfer can utilize a twin fin in steep 5-6ft+ conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BroadBean",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/BB.png",
+          "description": "Maximum Paddle Power in an Egg style Shortboard. Maximum Paddle Power in an Egg style Shortboard. The extra foam in this little board means extra fun! The BB is a performance board when the waves are on or a small wave monster when its lacking punch. If your riding a 6’1 as your standard shorty you will be on a 5’4 BB and still have more paddle power! This means every time you get up your foot is on the tail kicker and you are ready to bust that first turn, and this thing will fit a turn in where you never thought possible. With all the foam under your feet this board makes average conditions fun and good conditions outrageous! The eggy outline allows volume to be packed into every part of the board so you can go super short. The round tail is perfect for average conditions with its wide plaining area under the fins and when it turns on the longer rail line holds in and flows from rail to rail with ease. Heaps of paddle power, tight turning radius, responsiveness and quad/thruster set up mean the BB has it all!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cliche",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2015/05/11378032_848025861929511_1755350512_n.jpg",
+          "description": "A Cliche is an idea, or element of an artistic work which has become overused to the point of losing its original meaning or purpose, even to the point of being normal or mainstream, especially when at some earlier time it was considered meaningful or novel. Well a few Years ago Dave designed the Felix Model. A cut down shortboard.. the World wasn’t ready then, but now Firewire have Pushed Tomo Shapes to the Market Along with Kelly Slater Coming along for the Ride, Are you ready for the Ultimate performance Ride? The Tech details are ample planing area to get you on the move Quickly, relatively parallel outline to reduce Drag. 5 fin combo for versatility. Single concave to induce control. I will boast… Not one dissatisfied customer with this model.. the board goes insane. Specs below the pics.. The overused element or common option common Fruit? Cliche the best Surfboard you haven’t ridden yet….",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Daily Driver",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DD.png",
+          "description": "Daily Driver all round Shortboard. Sick of seeing potatoe chips and wafer thin whizsticks dominate the lineups and surf shop shelves.. Finally a mans board with beef for reef! Decently proportioned volume with abundant width under your feet to give the stability you need… A smooth low rocker for maximum drive in the tail combined with forgiving rails and subtle bottom contours will get you into waves not weight watchers! You dont need to order lots of thickness as we keep the deck quite flat and the rails tuned for maximum flow.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Felix",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2011/08/DSC_3775.jpg",
+          "description": "The crazy concoction set to replace the performance shortboard. The smartest board you will ever ride… it acts like your on wheels in a skate park or on powder in the snow…. Originally the FELIX was the fruits of a shaping machine mishap….but with dave at the helm and some inspiration from Dan Thompson this is what you get! The Felix removes all the board parts you don’t need, the Felix has super high speed snappy turning and is a reward to ride! Made only in our Dynocore technology with deck channels and foot wells the board has pop and life with no fear of snap! If you are looking for an addition to your quiver this summer that tighten turns and sharpen your surfing then the Felix is for you! Felix Dynocore™ in ASL magazine.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Free Parking",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2018/08/free-parking-bott.png",
+          "description": "single fin do it all Log Longboard The Free Parking has balanced features a plenty with this one, a proven rocker line. An outline that is timeless. Rails that perfectly allow for this board to do everything it is meant too. Up turned 50/50 rails through out give that feeling of sitting in the water we associate with boards of old, but don’t be confused, the blended nose concave through to subtle rolled panel vee mean that this board will nose ride and trim like nothing else, as well as respond and flow of the tail. Fined tuned at Rainbow bay and Indos best longboard spots give this board amazing character If there is an all round longboard today.. this is it! a tribute to gold coasts free parking.. for now!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fresh Fish",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2016/10/IMG_3755.jpg",
+          "description": "Fresh Fish for Fresh Surfing Fresh, Fun and free (not the price but the feeling lol). A good summer surfboard with all round small to medium capabilities. Made for the Gold coast but will work anywhere having Volume to paddle and Five fcs2 fins to be versatile. a nice wider platform to have even the most relaxed surfer catching everything. this one is Plain white begging for you to paint something nice.. or drop us a line to custom spray something for you.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Garden Variety",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2015/07/yuki-garden-variety.jpg",
+          "description": "The Garden Variety is Your everyday amazing traditional shortboard. Morphed and refined over countless hours of performance surfing by experienced individuals, the Garden Variety model has been designed by Dave as the ultimate performance board in our Diverse range. Think 17 Airs in a row, Cmon.. Don’t be A Rook, or lose like a Duck without Nuts… Want to win your local club round or blow your friends away in the water? This board has all the potential you need. Single to double concave blended with an advanced rocker gives you speed and control for every situation. Choose your favourite fcs2 thruster set of fins and go throw buckets or blow minds at you local today.You dot need size recommendations.. you know what you want , grab it and go surfing… The Common Dominant board to plant under your feet. X Marks the Spot get yours wet today.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "General Manager",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/05/DSC_8747.jpg",
+          "description": "Paddles like a longboard rides like a shortboard This is a new model created from the desire to have a versatile 2+1 board that “paddles like a longboard, rides like a short board” Longboarders wanting a smaller board to manage in bigger surf, or older Surfers wanting a step up for paddling in currents will have their surfing fire re-ignited with this thing! This board will blow you away with its turning ability, it feels so stable and locked in through a turn due to its refined rails and pin tail that you can keep pushing harder and harder through each turn. When designing this board we wanted a board to surf the points when it gets too big for a log but what we got is a board that could almost replace every other board for the traditional or longboard rider.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Happy Meal",
+          "image_url": "https://diversesurf.com.au/wp-content/gallery/happy-meal/Happy-Meal-Pono.jpg",
+          "description": "Maximum paddle power in an egg style short board. More Fun Than Lunch with Ronald With extra foam in this little board means extra fun! The Happy Meal is a performance board when the waves are on or a small wave monster when its lacking punch. Narrow enough to get young arms around along with this Round Nose your kids will be comfortable getting used to a real board while learning. Dad will love it along with anyone wanting an alternative from the pointy everyday nose. The eggy outline allows volume to be packed into every part of the board so you can go super short. The rounded squash tail is perfect for average conditions with its wide planing area under the fins and when it turns on the longer rail line holds in and flows from rail to rail with ease.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Happy Trails",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2018/07/37202549_248698312402492_5493888286894063616_n.jpg",
+          "description": "too easy… fun with finesse. Heading down the sand on the happy trail to your morning surf, our anticipation is high. Surf Satisfaction is what we are chasing, lots of fun rides. Volume is key to catching lots of waves and the Happy Trails has that hidden volume with refined rails. The happy Trails makes Surfing easy again for those with many years of surfing experiance. Single double concave into vee and a 5 fin combo setup make the complete combo to your satisfaction. The Simple way to make surfing fun here is some actual quotes from Customers with this model.. “The Closest to a one board quiver i have had” “Makes surfing easy again” “Its so fast.. But turns so easy” If you want to be one of the growing list of satisfied people who get daily thrills surfing a board like this.. call me for a custom now.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HP Longboard",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/IMG_3753.jpg",
+          "description": "Tropical Delight Carbon Stripes on the bottom 3x Aussie Champ Jason Blewitt’s Signature Competition Model, this one is glassed with Carbon strips and a double stringer to keep you charging hard.. High performance surfing is your choice with this board, shortboard turns with classic style when you want.. We also have made this model with some tiny changes for Chelsea Williams, Husni Ridhwan and Isaac Paddon. Husni Holds 2 Indonesian Titles riding our High performance longboards. Chelsea Williams is one of the best women on a longboard, she has won several WCT events and came 2nd a couple of times at the world titles.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "J-Lo",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2015/07/jlo.png",
+          "description": "Hot Performing Incut outline Fun Board. This board model comes from Dave’s experiments after going snowboarding, the side cut used in snowboards to create curve throughout the rear of the board while keeping a full out line in the front half got him experimenting with figure 8 outlines. As the return of the quad fin became popular the merits of the wider tail were welcomed and the J-lo became a very user friendly board that allowed any one to have fun. The rear outline of the board allows the wave to be caught quickly and the board turns very easily on the hips. the full nose & volume allow it to paddle really well & Noseride incredibly well. If you are looking for a longer board that turns easy and makes life easy the J-lo is the one for you. Hybrid fish vs longboard style.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "JB Classic",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DSC_56392.jpg",
+          "description": "Jason Blewitt’s Classic all round do everything Longboard. This is the board that does it all, trims and noserides like a log and flows and turns off the tail like its a board half the size. The pulled in tail with a little hard edge releases water allowing it to move with ease and the medium rocker and nose concave lets it trim, soft roll leading into a double concave through the tail mean this board is suitable for small waves when surfed like a log or when the waves bulk up it can be thrown around off the tail. If you want 1 longboard to do it all, this is it! Perched on the nose of the JB.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Kwad",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DK.png",
+          "description": "High Performance Quad Fin Shortboard The DK is the shortboard for the surfer who needs hold and speed in good waves and wants to step up to the benefits of a quad. The DK is the most advanced Quad shape in the diverse lineup, the original features in this board show the innovation and progression Diverse are famous for. Faster than a Silver Bullet, Not too Fat or Too Skinny… Just Right! This board is best suited to hollow powerful waves where speed is key and confidence and hold are a must! The bottom shape of the DK is all about funnelling water through the fins and creating speed while having hold and direction. The double concave entry creates lift and direction and aids paddling into bigger and bumpier waves while the big double to vee tail contour channels water through the fins. heres some action pics from Jake in Tassie.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Magic Mullet",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/MM.png",
+          "description": "Designed to keep young tricksters happy, this Magic board is a long standing Favourite at Diverse. The double concave makes it faster and more manoeuvrable than your normal thruster. However the width gives stability and flow thru flatter surf. Although designed for teenage performers the Magic Mullet is often used by Grommits as a step up from a Foamie & Ladies who like the forgiveness.This board should be ordered about 4 inches shorter, 1 inch wider and 1/8th thicker than your favourite all round board. p.s. you dont need a mullet haircut to ride this baby! WEIGHT BUILD.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "McBean",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2024/01/mcbean-look.png",
+          "description": "McB McBean Fat Fun for everyone… Designed for those who don’t take much in life seriously. The McBean was developed from the well-rounded designs of shaping legend Geoff McCoy. Geoff’s influence on modern shortboards is widely forgotten, but it is essential to lead us to today’s modern small-wave performance boards. This one has been designed with heaps of rail curve and quad speed with a strong double concave to maintain direction and control. Super fast and loose this will surf anything and make every session crazy fun We generally make this model around as wide as possible and 10? shorter than your traditional style thruster. Small wave joy and fun fat and fun.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mini Chopper",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2011/12/mc.png",
+          "description": "The Modern Version of the Simmons tweaked for extra performance. The Mini Chopper came about after a long time playing with Mini Simmons style boards. It has similar turning speed and flow characteristics but is more suited to the performance surfer who cant quite get their head around the wide hull nose of the Simmons or is surfing in choppy conditions where the pulled in nose and flat entry are more forgiving. You will do things on this board you didn’t think were possible, they catch heaps of waves and are not limited to small waves by any means, the speed you can obtain with great control is incredible! Ridden it 10-15? shorter than your traditional shortboard or half the size of your ten foot log, its super versatile and can be ridden as a twin, quad or thruster More history than a pier pony… the mini Chopper Comes from a long thourobred line of Diverse Shapes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mini Simmons",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2011/08/DSC_3730.jpg",
+          "description": "TS Mini Simmons A Diverse look at the Mini Simmons shape This board came about in early 2005 after dave was inspired by a young American shaper by the name of Ian Zamora to read “Naval Architecture of Planing Hulls” and give the twinny developed by Robert (Bob) Simmons in the late 40?s a try. The Simmons has taken off since then especially in the last few years after Tyler Warren put them in the spotlight with his ‘bar of soap’ board and showed the masses how to surf them properly and how much fun they can be. Since their rise in popularity most shapers have gone away from what makes these boards work so well by pulling in the tail and changing the outline and concave’s, we stay true to the original design features of hull entry into concave through the tail, straight rails line and fin’s placed right back and on the rails, this is how the Simmons shape works best. This shape works so well and is so fun to ride because it is an all new experience on the wave, you will go faster than you ever have on a wave and because of the design you are doing the opposite of a conventional board and leaning forward to slow down and leaning back to speed up……lean back to speed up while you are tu.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mister Comfort",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2015/07/Mr-Comfort.png",
+          "description": "Mr Comfort Age Shall not weary us.. but one day of a holiday into really good waves reminds us that we need more paddling power than we used to… This board was designed with those of us who have done the years and have the experience but just not the time to keep our surf fitness at peak. Floatation is our new found friend so relying on area,curves for comfort and ease of use is the answer to keeping our wave count up and the session logbook open. Glassed to last and Built with Confidence… Order yours today! Float.. Foam is your Friend.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MW Twin Fin",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/MW.png",
+          "description": "Martin Wright’s version of the Traditional Style MR SuperTwin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pig",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DP-outline.png",
+          "description": "The Pig is all about style, 60s inspired with modern foils for all-round log riding with flair. This board has it all covered, curvy hips around your back foot allow smooth turns and rail transfers you wouldn’t expect from an old style pig, while the full roll throughout the bottom keep the trim flowing on all parts of the wave. This log is meant to be surfed from tail to tip, perfect for the points with sections or glassy beach breaks. Set up a section and get to the nose and be blown away by how well it hangs back in the pocket flowing with the speed of the wave. Available with fin box or glass on hand foiled wooden D-fin. Suggested sizing 9’1 to 10’1 and at least 23 x 3.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pirate Pig",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/PP.png",
+          "description": "Longboard heaven Longboard heaven Classic Pig with Modern Maneuvability. its a Classic Pig with Modern Manoeuvrability. Longboarding made easy A Cool Blue tint with a couple nice extra patches of Glass, This Pirate pig is ready for your adventures. smooth to ride with total control over your speed.. get greedy and take over the points like a pirate today.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Quad Fish",
+          "image_url": "https://diversesurf.com.au/wp-content/gallery/dq/IMG_3257.JPG",
+          "description": "The Quad Fin Board that takes Fishes to the Next Level. You have seen lots around. Most guys riding them are getting lots of waves, Well Todays Quads give you rail to rail zip like nothing else. Our Quad has a double vee with a rocket concave between the fins. The speed gained when you turn is elevating! You want to make sections and have flow? If you want blistering speed with a board that turns on a dime take one of our DQ boards for a run. Order a custom Today or Check out the Volume and size reccomendations or grab one here.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Racing Mullet",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DSC00909.jpg",
+          "description": "The Mullet is a wave catching machine that can be thrown around and punt in the slop or flow down the line when it turns on. The flat entry rocker and wide nose means this thing picks up any bump in the ocean and gets you in early when its bigger, combine this with the double concave running all the way through and you have a board that gets up and plaining straight away to make the most out of any conditions. The full outline and wide round tail combined with the 5 fin set up make this the most versatile board going around. Set it up as a thruster in the small stuff to throw around and slide the tail, or change up to a quad for crazy speed and hold on the better days. This board has volume but don’t be fooled into thinking it is a boat, low rails and thinner foil throughout the board mean this thing will bite and respond when you put it on a rail. The RM looks like a small wave board but can be ridden in waves up to 6 ft.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rough Diamond",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2018/08/rough-diamond-bott-1.png",
+          "description": "Everyday power surfing A long time ago when i started shaping Surfboards didn’t really have model names, We just made Custom boards. But times changed and about 20 years ago is when i really started to name different Diverse shapes. My everyday shortboard was the “Sprint Model” The next one i made was the “Stealth Model” it was really popular and became a staple board. it was very popular for everyday gold coast surf. And todays “Rough Diamond” is based on it. Benefiting with refinements from our teams experiences, We moved the flyers to locate them adjacent to the fins so there is a wide range of sweet spots. the Diamond tail shortens the Rail line for turning and keeps length for drive. giving the bottom an impressive double concave thru to channel the water through giving lift, direction and greater stability at speed. Having a Five fin combo allows you to tune the board to your style or the given conditions for the day making this board a truly versatile all round shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sgt. Trim",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/NR.png",
+          "description": "The Log Built for Extended Time on the Tip The Sargent Trim Noserider model is all about trim and time perched on the nose. Its got all the tried and tested ingredients to make a classic noserider, full nose with concave running until just forward of centre point, rolled bottom from midway through the tail, parallel rail line with slight hip, big chop tail and full 50/50 rails. The whole idea coming together to have lift and direction from the front half of the board and suction created by water running over the tail and creating downward pressure from the back half, this is the key to a good noserider! Ridden with a big straight up hatchet fin this board will have you perched on the tip riding through steep sections, foam sections and flat spots. And jam your back foot on the tail to get that pivot turn happening to get you back into the right section to get back to the tip. Available fro 8’2 to 12’1 but best at 9’4 or 9’6 For clean waves 1 to 3 foot. Justin on his green 9’6 Sgt. Trim in Java, March 2012.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2015/07/So-Good.png",
+          "description": "an Advanced Single-Fin with side bites that surfs so Smooth. Morning of the earth style.. 2+1 fin setup When it comes to style you cant go past something like this. The SG is a Classic pod shape Single Fin from DIVERSE. This model has a wider nose & We put in the old school thickness, vee and concaves in all the right areas. If you enjoy singles as an alternative, they excell in tube riding & give you more freedom to move than your Longboard. The SG also is a great option instead of a Mini Mal. We usually add side bites bonza style! Color your dreams with your choice of Tints, Pigments and Polishes.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sir Rooster",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2016/10/Screenshot-2016-10-04-10.15.06.png",
+          "description": "The Distinguished Gentlemens board So, We all want to stay stylish as time goes on. We know your skills are high, years of surfing experience has kept you sharp. If you do not want to go longer with your board but want to get volume while keeping it short. Sir Rooster will allow you too turn like you always did. In fact if i were to make another board for Tom Curren.. this would be it! Clean classic yes yes sir smooth clean cuts good better best rooster test.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sock-On",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2015/06/11282271_984469248244708_1645333753_n.jpg",
+          "description": "Rock on with a Sock-On.. The Sock-On is a wider nose mutant mush machine, good for novices, weekenders and regular Fun Surfing. Rock on with a sock on… The Sock-On is a wider nose mutant mush machine.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Sonic Pro",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/sonic-pro-model.png",
+          "description": "The Sonic Pro is designed with speed in mind! Space is the next Frontier Ideal for everyday conditions it is a new take on the performance shortboard. It is fast down the line and maintains speed through flat sections while transferring from rail to rail effortlessly. The combination of bottom curve and parallel rail through the middle eliminates drag and allows it to flow through dead sections and gives instint speed from take off, while the increased tail curve around your back foot allows it to flow from rail to rail and carve hard powerful turns. Both Swallow Tail and Squash Tail Work really well. Ideal waves: 2 to 6 foot Built for Flying Fast for Tricks Mostly Single Concave for high speed Control Available with thruster fins of your choice from 5’3 to 6’6.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sprint",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DS1.png",
+          "description": "When it comes to the Sprint nothing gets in the way of performance. At the top of the tree in performance this is the board all our team riders are on and a must in hollow powerful waves like Straddie and D-bar or your local reef. The DS has a smooth pulled in outline leading into a squash tail for performance in all conditions. The single to double concave and tail lift mean this is a performance machine that will handle anything you can throw at it. Perfect for the performance surfer in all conditions, push turns harder, boost higher and get deeper on a DS! Yuta showing what can be done on a Dynocore cork-top Sprint even is average conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stealth",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/STX.png",
+          "description": "Sneaky small wave board that loves windswells and mush.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Strike Mission",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2019/05/Strike-Mission.png",
+          "description": "Step up and surf more With more than 20 years of developing shorter, wide nose, low entry travel boards, I feel like this is one of the best yet. The Strike Mission features a modest, overall rocker that is “pulled back” so that the entry is low, fast and calculated. The tail rocker has the curve and release of a high performance step up for tight radius whip and control. The rail line creates a shallow concave under and between feet to add lift and freedom, but zeros out in the nose and tail, to keep things catch free, forgiving, settled and precise. There’s a slight double concave cutting through the tail rocker which adds lift and speed in smaller waves, as well as drive in larger ones. The outline, with its noticeably wider than the average nose (and a pulled in the round tail) is semi-elliptical and continuously curving, lending a feeling of comfort underfoot. Combined with the low entry rocker, this outline enables the board to be ridden quite short. The tail is pulled in “late”, but still features enough surface area in the fin area, under the rear foot, to be surfed fast and radical in everyday waves, while the narrow tail tip holds in solid surf and tube riding when asked.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Style Commander",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/SC-.png",
+          "description": "High performance and Longboards have one main Difference usually… Length!.. the Style commander has the length of the longboard taken away from the middle.. This Style adjustment takes cutbacks and bottom turns to a new level, easy to turn because of its Vee in the tail. You can ride this board short, but because of its dimensions and versatility. This board offers more stability than your normal shortboard. Retro stylists will love the smooth mid-length flow this board gets from the soft rocker entry and soft rails forward of the fins when set up as a 2+1 or single fin, while the performance surfer will have speed to burn and all the forgiveness in the world when set up as a quad and surfed off your back foot. Smooth and classic Setup your way Style turns and fades, cheater 5’s, floaters, hacks and fin throws…..Do it all with style on the Style Commander.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tasty V2",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/WD-2015_otl.png",
+          "description": "The Tasty is the shorter wider short board that everybody wants! The compact plain shape lets it fit in tighter positions on the wave and shortens turning radius. Fuller nose and tail template along with fuller rails mean it gets up and goes and is very forgiving when landing airs or spinning out of manoeuvres, but the thinned out tail rails and rear end foil mean it turns hard and can be relied upon in the bigger days when surfing on the face. The Simple bottom shape is designed to maintain speed in the pocket and on the face yet be consistent and forgiving in all conditions. New Fresh Tastes The wider rounded square works for all conditions but can be ordered with a round tail for hollower waves and tighter arc’s, or a diamond tail for the beachies and fat waves. The 5 fin combo lets you have 2 boards in one, as a thruster it will slide the tail and make speed in junky waves and as a quad it will hold all the way through a turn and hold and flow down the line on bigger days.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Dominatrix",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2016/12/Screenshot-2016-12-01-06.31.31.png",
+          "description": "Dominate your surfspot You want to more catch waves without compromising performance? The Dominatrix is here to improve your wave count. A sleek outline for detailed refined pocket turning, But volume to catch ripples? How do we do it? The dominatrix uses the proven flatter deck contours of our old famous WD model. Tapering down to a lower rail with clean smooth bottom contours that just work in all conditions. Setup for the indecisive with 5 fin plugs you can go crazy with your regular fin setup or try some mad new combos.. A great range of Volume and size choices too.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Favourite",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2016/10/Screenshot-2016-10-04-10.38.25.png",
+          "description": "The old Magic Mullet renewed.. One of the longest running models at Diverse… This was one of my first winning boards back in the days, I recently revisited it for a Customer and could not let it go. I Just needed to make it available for everyone again. Back when Rusty was making these double flyers for Occy i wanted one, I remember so many fun surfs with this model, swapping it in the water with the other shapers i worked with in the Nev glassing factory. Seeing them make them too after that. I do it in a swallow tail or the Rounded square. Always ready hybrid, Proven reliable Rounded Square for snappy power turns The Favourite Flyer fish The Favourite rocker.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Machine",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DM.png",
+          "description": "The DM is a mix of traditional performance shortboard blended with new age full outline trick machine. If you want to go shorter and wider for small wave dominance but dont want go give away performance in bigger waves the DM is the one! The Machine has all the volume of your daily driver, it’s around 2″ shorter that your traditional hp short board and 1/4″ – 3/8″ wider. With bit more thickness in the centre and a rolled deck and medium low rails. The light width increase in the nose and tail measurements keep it speedy and reliable matched with light single double concaves for control at speed. Carefully combined rocker with all the right numbers keep it loose, fast & accurate wherever you place the board Its the all rounder that’s always going to be the right board to grab, whatever conditions are out the front or down the road.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tube Hunter",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/TH.png",
+          "description": "gold coast heritage Born on the Gold Coast Points, Bred for Barrels.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Turbo",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DT.png",
+          "description": "If you Froth or Travel for Powerful Surf, You Need one of these. A proven travel board. This is the board We all turn to for the last few years from 6’3” to 7’6” at places like the Maldives and Indo. When the waves get a little bigger or powerful, but you don’t quite need a gun, this is the board. Everyone needs a good strong fresh one of these if your serious about surfing! Winter Wonderland.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Twin Zippi",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2011/12/TZ.png",
+          "description": "A Twin Fin Honed for Modern Surfing. Fun on 2 fins is a great feeling. This model has a narrower tail than our retro and is a more performance orientated board. if you love to shortboard but need something for smaller surf, You have just discovered what your going to love! Based on origions of Americas Zippi Twin, Its time to enjoy freedom & fun! This board comes with Glass removable fins so you can take it with you wherever you go.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Viagra Gun",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2012/01/DV.png",
+          "description": "For those who like to go big & hard, the Viagra model has been developed from years of team experience in Indo & Hawaii. This gun has a smooth entry rocker through to flat centre with positive feeling vee between your feet exiting the tail via the pin of joy. You get great feelings on this no nonsense smoking gun! Designed with volume enough to paddle into heart stopping caverns yet nimble enough to slide under light feathered lips, there is no reason for going soft if you have one of these under your belt. From 6′ plus waves to whatever your ready for, dont hold back! Take the drop and order the length your ready to charge on. GO HUGE…! No excuses….",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Vintage Mullet",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2016/10/Screenshot-2016-10-04-11.13.55.png",
+          "description": "old vs new.. bring back the good old days The good old Fish board from the 80’s, Cut backs and Floaters get better with age.. time you got Modern vintage style in a shortboard fish. classic vintage not plastic smooth bottom contours speed was key to surfing in the 80’s.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wet Kiss",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2015/08/wet-kiss-2.png",
+          "description": "“the perfect sensation of touch with timing” “the perfect sensation of touch with timing” This Amazing Board is Born from our Team Riders and High level customers design feedback while living in Bali. When you want the board that is just right for the good days this is it! Based on the Garden Variety All round Shortboard, we increased the outline and Rocker Curves obtaining better mastery and response in hollow waves and lined up walls. There is also slightly lower rails some additional single concave for greater control. Generally Ridden a foot longer than your Garden Variety everyday shortboard, this gives you a light volume increase getting you into the wave earlier and easier as well. if you surf South Straddie regularly or are planning a surf trip in good waves grab one now to fine tune your skills ad be ready for your best days! The Bottom Of it All Top It Off with your Favourite Spray The Bottom Contours Built for Speed and Control.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wham Bam",
+          "image_url": "https://diversesurf.com.au/wp-content/uploads/2015/05/WhamBam.png",
+          "description": "Wham Bam Thank-you Ma-am… Every good session will have you saying this out loud… If your Irregular at getting wet, the added Volume is your Friend. the wider outline and elongated rail line make for easy stable take offs and quick acceleration. Great for everyday Surf and whatever day you go surfing. Wham Bam, Thankyou Ma’am WhamBam.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
