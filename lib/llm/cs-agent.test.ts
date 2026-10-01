@@ -237,7 +237,7 @@ describe("cs agent harness", () => {
     assert.match(prompt, new RegExp(`The seller keeps ${SELLER_SHARE_PERCENT}%`))
     assert.match(prompt, new RegExp(`within ${SHIPPING_DEADLINE_DAYS} days`))
     assert.match(prompt, /do not compute a payout from that total/i)
-    assert.match(prompt, /Seller earnings stay pending/)
+    assert.match(prompt, /Shipped-order earnings stay pending until 4 days after carrier-confirmed delivery/)
     assert.match(prompt, /2 to 3 business days/)
     assert.doesNotMatch(prompt, /never send/i)
     assert.match(prompt, /Hayden or David/)

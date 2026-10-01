@@ -1,10 +1,11 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
+// @ts-expect-error Node's type-stripping test runner requires the TypeScript extension.
 import {
   CARRIER_DELIVERY_PAYOUT_HOLD_DAYS,
   carrierDeliveryPayoutEligibleAt,
   carrierDeliveryPayoutHoldElapsed,
-} from "./carrier-delivery-payout-hold.ts"
+} from "./carrier-delivery-payout-timing.ts"
 
 describe("carrier delivery payout hold", () => {
   const deliveredAt = new Date("2026-10-01T12:00:00.000Z")
