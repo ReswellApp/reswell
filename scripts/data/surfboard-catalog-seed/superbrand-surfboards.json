@@ -1,0 +1,155 @@
+{
+  "generated_for": "Superbrand official named model catalog",
+  "source": "https://www.superbranded.com/products.json",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "superbrand-surfboards",
+      "name": "Superbrand",
+      "website_url": "https://www.superbranded.com/",
+      "location_label": "Australia",
+      "lead_shaper_name": "Adam \"Sparrow\" Fletcher",
+      "short_description": "Australian surfboards from the Superbrand Shapers' Collective, founded in 2008. Official named production designs from the brand's shop.",
+      "models": [
+        {
+          "name": "Vapors",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/files/Vapors2.png?v=1699939804",
+          "description": "The Vapors is one of the most versatile rip sticks we have ever made. After many custom requests we decided to bring it back with a some general updates to the foil, rocker and suggested dims.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spam Hot N Spicy",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/files/SpamHotandSpicy.png?v=1699924720",
+          "description": "Introducing the ultimate hybrid surfboard: the \"Spam Hot and Spicy\". We\u2019ve taken the best features from two iconic models to create a board that\u2019s perfect for maximizing your fun in sub par conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Future Shapes V",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/files/FSV.png?v=1699925735",
+          "description": "Post-modern performance shape of the nihilistic apocalypse. A pointless performer that has all the feels of that magic board you\u2019ve always dreamed of and so much more.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Future Shapes Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/files/FSTT.png?v=1699923489",
+          "description": "Twin fins have been our past and present, now they are our future. The Future Shapes Twin features a super fast foward outline with a low continuous rocker for all out speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fling Flying Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/files/FlingFlyingTwin.png?v=1699922835",
+          "description": "Introducing the Flying Twin Fling, an evolution of the original Fling model that redefines small wave performance. With a unique double -wing flyer tail shape and the addition of a twin fin, including an optional trailer fin, we\u2019ve crafted the fastest Fling to date, if not the fastest small wave board on the market.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Serial Try",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/files/SERIALTRY_DECK.jpg?v=1691647029",
+          "description": "The Serial Try is the product of a collaboration between Japanese Youtube sensations the Kume Bros and esteemed Japanese shaper Mr Murohara. Building on the Serial Keeler platform designed by Sparrow, this is an all-round surfboard that combines the speed of a twin fin with the performance of a tri fin!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pigdog Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/Pigdogtwin_web.png?v=1647391633",
+          "description": "The Original Pig Dog (First Released in 2010), with its curvy outline, wide nose, and pulled in tail make it a perfect fit for pulling in under the lip or taking off deep. The Pigdog Twin was the result of some conversations between the collective as to how the shape might work as a pure twin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Super Symmetry Yin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/SS_Yin_Clear_ALL-01_2000x_4cc60161-e4fc-49c7-bb55-ab9e0a7dab4e.png?v=1612319463",
+          "description": "The SUPERsymmetry Collection, designed by Californian shaperJason Koons, represents the a broad range of mid-length surfing experience. The YIN offers a modern take on classic glide and trim.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super Symmetry Yang",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/SS_Yang_Clear_ALL-01_2000x_e6faa480-127e-4f06-9855-162fb15020a1.png?v=1612314620",
+          "description": "The SUPERsymmetry Collection, designed by Californian shaper Jason Koons, represents the a broad range of mid-length surfing experience. The Yang is a modern take on the traditional egg design.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Madcat",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/MadCat_PUcl_SQ_ALL_ds_2000x_c3c3bdf3-a43a-4705-960c-1edfc392bf33.png?v=1583720438",
+          "description": "The Madcat features extra width in the nose for paddling power and nose pick recoveries, full, boxy rails to match his power, and a pulled in, rounded square tail to keep things quick and tight, but its features also make it forgiving, easy to paddle, and ultra-smooth in rail-to-rail transitions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "PigDog Dad",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/PigDog_DAD_Clear_ALL_2000x_cdad8663-a63c-4254-9ea8-cf2ee1cab84d.png?v=1583466448",
+          "description": "The Original Pig Dog (First Released in 2010), with its curvy outline, wide nose, and pulled in tail make it a perfect fit for pulling in under the lip or taking off deep. It was designed while working closely with Outer Banks legends Jesse Hines and Brett Barley.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "PigDog OG",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/PigDog_OG_White_ALL_2000x_82fd1819-7db8-47e6-a164-fee50731ef3a.png?v=1583465207",
+          "description": "The Original Pig Dog (First Released in 2010), with its curvy outline, wide nose, and pulled in tail make it a perfect fit for pulling in under the lip or taking off deep. It was designed while working closely with Outer Banks legends Jesse Hines and Brett Barley.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PigDog Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/PigDog_PRO_Clear_ALL_2000x_f1b2f0f3-0ed4-46fe-be9d-94e42e60bee3.png?v=1583463006",
+          "description": "The Original Pig Dog (First Released in 2010), with its curvy outline, wide nose, and pulled in tail make it a perfect fit for pulling in under the lip or taking off deep. It was designed while working closely with Outer Banks legends Jesse Hines and Brett Barley.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Magic Mix",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/MMix_TV_ALL_2000x_91d248b7-13fe-48c5-9791-e4a71838c4af.png?v=1583458309",
+          "description": "A one-board quiver suited for nearly all conditions; the Magic Mix is a blend of all the magic elements that go into some of our most popular boards. Super versatile, the Magic Mix excels in surf from knee high to overhead and from burgers to barrels.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fling",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/FNG_PU_OG_FUT_ALL-01_2000x_6bf4210c-a0d5-4911-ad51-6b88ea6f6889.png?v=1621996742",
+          "description": "The Fling is the world\u2019s best variable performance fish in our opinion. \u201cIt makes small and average feel like head high and glassy\u201d and \u201cIt brought my love of surfing back to life\u201d are the most common feedback we hear.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Black Viper",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/BlackViper_PU_Clear_ALL_2000x_4ca417ae-86b7-46ec-8362-0a9793f4764d.png?v=1584325559",
+          "description": "The Black Viper represents our pursuit of achieving optimal foam distribution to balance planing ability and rail agility. A curvy outline with a slight blended hip makes this board feel like your step down to paddle and while planing through flatter sections, while its quick off the bottom and holds in the pocket in more powerful surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Serial Keeler",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/SK_CLR_ALL-01_2000x_f3c5dd2c-f54b-4f73-abfc-4c697a2c98d4.png?v=1612312011",
+          "description": "The Serial Keeler is a brand-new twin fin inspired by the surf in our global back yards, the softer points and back beaches of the Australian East Coast as well as the reefs and beach breaks of San Diego county. Inspired by the regional, traditional fish shapes, this Keel fin twin draws on everything we love about the traditional fishes and blends that with the performance our riders and athletes demand.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blackout",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/blackoutdeck.jpg?v=1584330657",
+          "description": "Designed by Shapers' Collective member, Adam \u201cSparrow\u201d Fletcher in conjunction with our team riders around the world, the Blackout is our world tour, elite level surfboard designed for pro level surfers. It's built on all the feedback we\u2019ve received from our competitive team and touring pros who trust our boards when they come to town.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Toy X Junior",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/toyjnrblackdeck_1451bd30-1784-4775-a8a1-71e236dcf6fb.jpg?v=1513214099",
+          "description": "The Toy X Junior Surfboard was created for the junior shredder. Low rocker and a wider outline make for great paddling power and a subtle single to double concave creates drive through sections.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Toy X",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/toydeck.jpg?v=1513214570",
+          "description": "The Toy Surfboard was Initially created as a small wave groveler, the Toy morphed into a high performance yet user-friendly model. Low rocker and a wider outline make for great paddling power and a subtle single to double concave creates drive through sections.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Tazer",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/tazerdeck.jpg?v=1511832659",
+          "description": "Expanding on our concept for the Unit, the Tazer has been built for speed and maneuverability. Maintaining a curvy outline and a rocker and concave combo designed to achieve maximum speed, the Tazer has drive and control in the pocket, on the face, and off the lip.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spam",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/spamdeck.jpg?v=1511833891",
+          "description": "The Spam Surfboard Built for speed and maximum levels of fun in small surf with a wide outline combined with low rocker and single to double concave with vee off the tail provides the jets, while the winged swallowtail allows for super tight turning radius. Can be ridden as a thruster or twin fin with trailer in smaller conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Siamese Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1437/3542/products/siamesetwindeck.jpg?v=1584333095",
+          "description": "Originally intended as a limited release, the Siamese Twin has blown both staff and team minds and has quickly become a factory favourite. Taking cues from retro fish designs but with a slightly more modern outline, this twin will deliver jaw dropping acceleration and drive while turning hard in the pocket.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
