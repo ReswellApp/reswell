@@ -30,7 +30,7 @@ import { toast } from "sonner"
 
 type OrderApiResponse =
   | {
-      data: AdminOrderDetail
+      data: AdminOrderDetail & { shipping_adjusted_fee: number }
       capabilities: {
         canRefund: boolean
         canReleaseShippingSellerEarnings: boolean
@@ -331,6 +331,14 @@ export default function AdminOrderDetailPage() {
               </p>
               <p className="font-medium tabular-nums">${o.shipping_amount.toFixed(2)}</p>
             </div>
+            {o.shipping_adjusted_fee > 0 ? (
+              <div>
+                <p className="text-muted-foreground">Shipping price adjusted fee</p>
+                <p className="font-semibold tabular-nums text-rose-700 dark:text-rose-400">
+                  +${o.shipping_adjusted_fee.toFixed(2)}
+                </p>
+              </div>
+            ) : null}
             <div>
               <p className="text-muted-foreground">Platform fee (7% of item)</p>
               <p className="font-medium tabular-nums">-${o.platform_fee.toFixed(2)}</p>

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listOrderAdminShippingLabels } from "@/lib/db/adminOrderShippingLabels"
+import { dbGetIncreasedAdjustmentTotalsByTrackingNumbers } from "@/lib/db/shipengineLabelAdjustments"
+import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import { z } from "zod"
 
 const querySchema = z.object({
@@ -55,14 +57,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: [], total: 0 })
   }
 
-  const { data: orders, error: ordErr } = await supabase
-    .from("orders")
-    .select("id, order_num, buyer_id, seller_id")
-    .in("id", orderIds)
+  const [ordersResult, adjustments] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("id, order_num, buyer_id, seller_id")
+      .in("id", orderIds),
+    dbGetIncreasedAdjustmentTotalsByTrackingNumbers(
+      supabase,
+      rows
+        .map((row) => row.tracking_number)
+        .filter((tracking): tracking is string => Boolean(tracking?.trim())),
+    ),
+  ])
+  const { data: orders, error: ordErr } = ordersResult
 
   if (ordErr) {
     console.error("[admin labels-created orders]", ordErr)
     return NextResponse.json({ error: "Could not load orders" }, { status: 500 })
+  }
+  if (adjustments.error) {
+    console.error("[admin labels-created adjustments]", adjustments.error)
+    return NextResponse.json({ error: "Could not load label adjustments" }, { status: 500 })
   }
 
   const profileIds = new Set<string>()
@@ -106,8 +121,12 @@ export async function GET(request: NextRequest) {
     const ord = orderMap.get(row.order_id)
     const buyer = ord ? profMap.get(ord.buyer_id) : undefined
     const seller = ord ? profMap.get(ord.seller_id) : undefined
+    const trackingKey = row.tracking_number
+      ? normalizeTrackingNumberForCarrier(row.tracking_number) || row.tracking_number.trim()
+      : ""
     return {
       ...row,
+      adjusted_fee_usd: trackingKey ? (adjustments.data.get(trackingKey) ?? 0) : 0,
       orderDisplayNum: ord ? formatOrderNumForCustomer(ord.order_num, row.order_id) : row.order_id.slice(0, 8),
       buyer: buyer
         ? { display_name: buyer.display_name, email: buyer.email }

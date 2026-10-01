@@ -67,6 +67,7 @@ type OrderRow = {
   order_num: string | null
   status: string
   amount: number | string
+  shipping_adjusted_fee: number
   payment_method: string
   fulfillment_method: string | null
   delivery_status: string | null
@@ -625,6 +626,7 @@ export default function AdminOrdersPage() {
                 <TableHead className="hidden sm:table-cell">
                   <SortHeader label="Amount" sortKey="amount" />
                 </TableHead>
+                <TableHead className="hidden lg:table-cell">Shipping adjustment</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
@@ -690,6 +692,18 @@ export default function AdminOrdersPage() {
                         )}
                         Paid by {paymentLabel(r.payment_method)}
                       </p>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {r.shipping_adjusted_fee > 0 ? (
+                        <div>
+                          <p className="font-semibold tabular-nums text-rose-700 dark:text-rose-400">
+                            +{formatUsd(r.shipping_adjusted_fee)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Carrier adjusted fee</p>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <AdminStatusPill

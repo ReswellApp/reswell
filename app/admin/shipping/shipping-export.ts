@@ -29,6 +29,7 @@ export type LabelsCreatedExportRow = {
   tracking_number: string | null
   tracking_carrier: string | null
   label_cost_usd: number | string | null
+  adjusted_fee_usd: number | string | null
   label_cost_currency: string | null
   buyer: { display_name: string | null; email: string | null }
   seller: { display_name: string | null; email: string | null }
@@ -48,6 +49,7 @@ const LABELS_HEADERS = [
   "Tracking",
   "Carrier",
   "Label cost",
+  "Adjusted fee",
   "Currency",
   "Buyer",
   "Buyer email",
@@ -64,6 +66,7 @@ export function buildLabelsCreatedCsv(rows: LabelsCreatedExportRow[]): string {
     r.tracking_number ?? "",
     r.tracking_carrier ?? "",
     money(r.label_cost_usd),
+    money(r.adjusted_fee_usd),
     r.label_cost_currency ?? "",
     r.buyer.display_name ?? "",
     r.buyer.email ?? "",

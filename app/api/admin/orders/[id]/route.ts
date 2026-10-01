@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import type { AdminOrderCapabilities } from "@/lib/admin/admin-order-capabilities"
 import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
+import { dbGetIncreasedAdjustmentTotalsByOrderIds } from "@/lib/db/shipengineLabelAdjustments"
 import {
   fetchProfileAddresses,
   preferredProfileAddress,
@@ -58,14 +59,19 @@ export async function GET(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  const [hasShippingLabel, preparedShippingLabel, sellerAddresses] = await Promise.all([
+  const [hasShippingLabel, preparedShippingLabel, sellerAddresses, adjustments] = await Promise.all([
     orderHasAccessibleShippingLabelPdf(serviceSupabase, {
       orderId: parsed.data,
       trackingNumber: data.tracking_number,
     }),
     getLatestPreparedShippingLabelForOrder(serviceSupabase, parsed.data),
     fetchProfileAddresses(serviceSupabase, data.seller_id),
+    dbGetIncreasedAdjustmentTotalsByOrderIds(serviceSupabase, [parsed.data]),
   ])
+  if (adjustments.error) {
+    console.error("[admin order adjustments]", adjustments.error)
+    return NextResponse.json({ error: "Could not load shipping adjustments" }, { status: 500 })
+  }
   const hasPaperlessQr = preparedLabelHasPaperlessQr(preparedShippingLabel)
   const preferredShipFrom = preferredProfileAddress(sellerAddresses.addresses)
   const shipFromOnFile = preferredShipFrom
@@ -104,7 +110,10 @@ export async function GET(
   }
 
   return NextResponse.json({
-    data,
+    data: {
+      ...data,
+      shipping_adjusted_fee: adjustments.data.get(parsed.data) ?? 0,
+    },
     capabilities,
   })
 }

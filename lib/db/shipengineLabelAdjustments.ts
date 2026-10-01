@@ -187,3 +187,65 @@ export async function dbListIncreasedLabelAdjustments(
     error: null,
   }
 }
+
+function addAdjustmentTotal(
+  totals: Map<string, number>,
+  key: string,
+  amount: number | string | null,
+): void {
+  const value = num(amount)
+  if (value == null || value <= 0) return
+  totals.set(key, Math.round(((totals.get(key) ?? 0) + value) * 100) / 100)
+}
+
+/** Positive ShipEngine adjustment fees summed by Reswell order id. */
+export async function dbGetIncreasedAdjustmentTotalsByOrderIds(
+  supabase: SupabaseClient,
+  orderIds: string[],
+): Promise<{ data: Map<string, number>; error: Error | null }> {
+  const ids = [...new Set(orderIds.filter(Boolean))]
+  const totals = new Map<string, number>()
+
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await supabase
+      .from("shipengine_label_adjustments")
+      .select("order_id, adjustment_amount_usd")
+      .in("order_id", ids.slice(i, i + 100))
+      .gt("adjustment_amount_usd", 0)
+
+    if (error) return { data: new Map(), error: new Error(error.message) }
+    for (const row of data ?? []) {
+      const orderId = typeof row.order_id === "string" ? row.order_id : null
+      if (orderId) addAdjustmentTotal(totals, orderId, row.adjustment_amount_usd)
+    }
+  }
+
+  return { data: totals, error: null }
+}
+
+/** Positive ShipEngine adjustment fees summed by normalized tracking number. */
+export async function dbGetIncreasedAdjustmentTotalsByTrackingNumbers(
+  supabase: SupabaseClient,
+  trackingNumbers: string[],
+): Promise<{ data: Map<string, number>; error: Error | null }> {
+  const rawTrackingNumbers = [...new Set(trackingNumbers.map((value) => value.trim()).filter(Boolean))]
+  const totals = new Map<string, number>()
+
+  for (let i = 0; i < rawTrackingNumbers.length; i += 100) {
+    const { data, error } = await supabase
+      .from("shipengine_label_adjustments")
+      .select("tracking_number, adjustment_amount_usd")
+      .in("tracking_number", rawTrackingNumbers.slice(i, i + 100))
+      .gt("adjustment_amount_usd", 0)
+
+    if (error) return { data: new Map(), error: new Error(error.message) }
+    for (const row of data ?? []) {
+      if (typeof row.tracking_number !== "string") continue
+      const key =
+        normalizeTrackingNumberForCarrier(row.tracking_number) || row.tracking_number.trim()
+      if (key) addAdjustmentTotal(totals, key, row.adjustment_amount_usd)
+    }
+  }
+
+  return { data: totals, error: null }
+}

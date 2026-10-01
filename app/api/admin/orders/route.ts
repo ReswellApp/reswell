@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
+import { dbGetIncreasedAdjustmentTotalsByOrderIds } from "@/lib/db/shipengineLabelAdjustments"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { z } from "zod"
 
@@ -143,6 +144,14 @@ export async function GET(request: NextRequest) {
   }
 
   const rows = data ?? []
+  const adjustments = await dbGetIncreasedAdjustmentTotalsByOrderIds(
+    serviceSupabase,
+    rows.map((row) => row.id as string),
+  )
+  if (adjustments.error) {
+    console.error("[admin orders adjustments]", adjustments.error)
+    return NextResponse.json({ error: "Could not load shipping adjustments" }, { status: 500 })
+  }
 
   // Batch-resolve buyer/seller labels in a single query to avoid N+1.
   const partyIds = Array.from(
@@ -212,6 +221,7 @@ export async function GET(request: NextRequest) {
 
   const enriched = rows.map((r) => ({
     ...r,
+    shipping_adjusted_fee: adjustments.data.get(r.id as string) ?? 0,
     buyer: partyById.get(r.buyer_id) ?? null,
     seller: partyById.get(r.seller_id) ?? null,
     listing: typeof r.listing_id === "string" ? listingById.get(r.listing_id) ?? null : null,
