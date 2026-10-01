@@ -83,7 +83,7 @@ export type AdminOrderDetail = {
   /** Listing-scoped buyer↔seller thread for this order, when one exists. */
   conversation_id: string | null
   marketplace_message_count: number
-  /** Matching payouts row when present — shipping uses held → pending after carrier delivery + 24h hold. */
+  /** Matching payouts row when present — shipping uses held → pending after carrier delivery + four-day hold. */
   payout: { status: string; hold_reason: string | null; released_at: string | null } | null
   sales_channel: string | null
   /** Six-digit buyer code for local pickup handoff; null for shipping and admin-terminal sales. */

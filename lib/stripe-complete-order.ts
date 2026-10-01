@@ -228,7 +228,7 @@ async function maybeSyncAdminTerminalGuestToCrm(
 function walletPendingSaleDescription(listingTitle: string, platformFeeUsd: number): string {
   const safeTitle =
     listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
-  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd)}, card — available after delivery)`
+  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd)}, card — available after fulfillment hold)`
   return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
 }
 

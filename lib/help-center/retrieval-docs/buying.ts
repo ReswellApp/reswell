@@ -354,7 +354,7 @@ export const buyingRetrievalDocs = [
     sections: [
       {
         heading: "What is wallet balance?",
-        text: "The wallet holds earnings from completed Reswell sales. After a sale clears Purchase Protection timelines, funds show in Earnings as ready. You can spend ready balance or cash out to your bank.",
+        text: "The wallet holds earnings from completed Reswell sales. Shipped-order earnings show as ready 4 days after carrier-confirmed delivery; local-pickup earnings become ready when pickup is verified. You can spend ready balance or cash out to your bank.",
       },
       {
         heading: "Using balance toward a purchase",

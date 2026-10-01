@@ -9,7 +9,7 @@ const orderIdSchema = z.string().uuid()
  * POST /api/admin/orders/:id/release-shipping-seller-earnings
  *
  * Full admin only (legacy manual release): for orders without carrier auto-payout.
- * Carrier-tracked shipping releases automatically 24h after ShipEngine reports delivery.
+ * Carrier-tracked shipping releases automatically four days after ShipEngine reports delivery.
  */
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   const gate = await requireAdmin()

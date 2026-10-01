@@ -318,7 +318,7 @@ export function ReswellTrackingSection(props: {
                 {variant === "seller" ? (
                   <>
                     The carrier reports this shipment as delivered. Reswell uses carrier tracking as the source of
-                    truth — your payout releases automatically 24 hours after delivery.
+                    truth — your payout releases automatically 4 days after delivery.
                   </>
                 ) : (
                   <>

@@ -443,8 +443,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         heading: "What is wallet balance?",
         body: (
           <p>
-            Your wallet holds earnings from completed sales on Reswell. After a sale clears through
-            Purchase Protection timelines, the funds show up in{" "}
+            Your wallet holds earnings from completed sales on Reswell. Shipped-order earnings become
+            ready 4 days after carrier-confirmed delivery; local-pickup earnings become ready when
+            pickup is verified. The funds show up in{" "}
             {helpLink("/dashboard/earnings", "Earnings")}. You can spend that balance on other listings
             or cash out to your bank.
           </p>

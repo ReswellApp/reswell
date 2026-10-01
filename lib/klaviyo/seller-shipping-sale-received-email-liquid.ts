@@ -200,7 +200,7 @@ export const KLAVIYO_SELLER_SHIPPING_SALE_RECEIVED_EMAIL_HTML = `<table role="pr
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
           <tr>
             <td width="40" valign="top" style="padding:0 12px 0 0;"><div style="${stepNumStyle}">4</div></td>
-            <td style="font-family:${fontSans};font-size:15px;line-height:1.5;color:${C.foreground};">After drop-off, tracking updates automatically for the buyer. Your earnings release 24 hours after delivery.</td>
+            <td style="font-family:${fontSans};font-size:15px;line-height:1.5;color:${C.foreground};">After drop-off, tracking updates automatically for the buyer. Your earnings release 4 days after delivery.</td>
           </tr>
         </table>
       </td>

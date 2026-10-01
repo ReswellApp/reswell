@@ -9,7 +9,7 @@ export type ShippingDeliveredFinalizeResult =
 /**
  * Shipping orders: ensures `delivery_status` is `delivered`, payout moves held → pending,
  * and seller wallet credit runs (idempotent RPC).
- * Used after the 24h carrier-delivery hold and for legacy admin overrides.
+ * Used after the four-day carrier-delivery hold and for legacy admin overrides.
  */
 export async function markShippingDeliveredAndReleaseSellerEarnings(
   orderId: string,

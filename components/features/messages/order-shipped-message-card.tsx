@@ -18,7 +18,7 @@ function formatThreadTime(dateStr: string) {
 
 function roleCopy(viewer: "buyer" | "seller" | "admin"): string {
   if (viewer === "seller") {
-    return "The buyer can track this shipment. Payout releases after delivery is confirmed, plus a 24-hour review window."
+    return "The buyer can track this shipment. Payout releases after delivery is confirmed, plus a 4-day review window."
   }
   if (viewer === "buyer") {
     return "Your order is on the way. You can track it here or from your purchase page."

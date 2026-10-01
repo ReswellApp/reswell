@@ -121,7 +121,7 @@ async function creditSellerFlatShippingSurplus(params: {
     userId: params.sellerId,
     amountUsd: creditUsd,
     orderId: params.orderId,
-    description: `Pending — Flat shipping surplus — order #${params.orderDisplayNum} ($${creditUsd.toFixed(2)} unused buyer shipping — available after delivery)`,
+    description: `Pending — Flat shipping surplus — order #${params.orderDisplayNum} ($${creditUsd.toFixed(2)} unused buyer shipping — available 4 days after delivery)`,
     referenceType: SELLER_FLAT_SHIPPING_SURPLUS_REFERENCE_TYPE,
   })
 

@@ -238,7 +238,7 @@ export function parseDescription(raw: string, type: string): { title: string; su
     if (m) {
       return {
         title: `Pending — ${m[1]}`,
-        subtitle: "Waiting on delivery or pickup—then this becomes ready in your balance.",
+        subtitle: "Waiting for fulfillment and its release hold to clear.",
       }
     }
   }
@@ -330,7 +330,7 @@ export function activityEmptyFilterCopy(filter: EarningsActivityStatusFilter): {
     case "available":
       return {
         title: "Nothing is “ready to use” yet",
-        body: "Sales stay pending until delivery or pickup wraps up. Try “Pending” or “All”, or check back after the buyer confirms.",
+        body: "Shipped sales stay pending until 4 days after carrier-confirmed delivery; pickup sales wait for verification. Try “Pending” or “All”.",
       }
     case "pending":
       return {

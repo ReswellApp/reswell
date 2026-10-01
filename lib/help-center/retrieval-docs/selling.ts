@@ -232,7 +232,7 @@ export const sellingRetrievalDocs = [
       },
       {
         heading: "Before the first cash out",
-        text: "Verification must be complete and you need ready (not pending) balance. Pending earnings wait for tracked delivery (plus a 24-hour review window) or verified pickup.",
+        text: "Verification must be complete and you need ready (not pending) balance. Shipped-order earnings stay pending until 4 days after carrier-confirmed delivery; local-pickup earnings release when pickup is verified.",
       },
     ],
   }),
@@ -274,7 +274,7 @@ export const sellingRetrievalDocs = [
       "selling/cancel-order-seller",
     ],
     quickAnswer:
-      "Open the sale in Sales. Ship with tracking or verify local pickup in Messages. Earnings release to your wallet once the order clears Purchase Protection timelines — tracked delivery plus 24 hours, or a verified pickup code.",
+      "Open the sale in Sales. Ship with tracking or verify local pickup in Messages. Shipped-order earnings release 4 days after carrier-confirmed delivery; local-pickup earnings release when the pickup code is verified.",
     sections: [
       {
         heading: "Open your sale",
@@ -336,7 +336,7 @@ export const sellingRetrievalDocs = [
       "selling/marketplace-fees",
     ],
     quickAnswer:
-      "Earnings stay Pending until tracked delivery is confirmed (Reswell releases 24 hours after carrier delivery) or pickup is verified. Ready balance can be spent or cashed out. Standard ACH takes about 2 to 3 business days. Instant transfer may be available for a fee.",
+      "Shipped-order earnings stay Pending until 4 days after carrier-confirmed delivery. Local-pickup earnings release when pickup is verified. Ready balance can be spent or cashed out. Standard ACH takes about 2 to 3 business days. Instant transfer may be available for a fee.",
     sections: [
       {
         heading: "Pending vs ready",
@@ -344,7 +344,7 @@ export const sellingRetrievalDocs = [
       },
       {
         heading: "What can hold a payout",
-        text: "No tracking yet, carrier has not reported delivery, pickup code not verified, or an open Purchase Protection claim or refund.",
+        text: "No tracking yet, carrier has not reported delivery, fewer than 4 days have passed since carrier-confirmed delivery, pickup code not verified, or an open Purchase Protection claim or refund.",
       },
       {
         heading: "Cashing out",
