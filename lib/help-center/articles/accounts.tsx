@@ -201,7 +201,7 @@ export const accountsHelpArticles: HelpArticle[] = [
             <p>Earnings shows a few numbers that matter:</p>
             <BulletList
               items={[
-                <><strong>Pending</strong> holds earnings from recent sales until delivery or pickup is confirmed and any hold clears.</>,
+                <><strong>Pending</strong> holds shipped-order earnings until 4 days after carrier-confirmed delivery. Local-pickup earnings release when pickup is verified.</>,
                 <><strong>Ready to transfer to your bank</strong> is spendable now. Cash out or use it at checkout.</>,
                 <><strong>Total (including pending)</strong> is everything in your wallet.</>,
               ]}

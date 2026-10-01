@@ -95,8 +95,7 @@ export function SellerTrackingForm({
         </CardTitle>
         <CardDescription className="text-xs">
           Save your carrier tracking here — both you and the buyer can reference it on your order pages. The buyer is
-          notified when tracking is saved. Payout stays on hold until they confirm delivery and a Reswell admin
-          approves your payout.
+          notified when tracking is saved. Shipped-order earnings release 4 days after delivery is confirmed.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 pt-2">

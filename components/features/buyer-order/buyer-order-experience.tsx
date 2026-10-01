@@ -222,7 +222,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
         key: "delivered",
         title: "Delivered",
         description: hasTrack
-          ? "When the carrier reports delivery, Reswell completes your order and releases the seller payout after a 24-hour review window."
+          ? "When the carrier reports delivery, Reswell completes your order and releases the seller payout after a 4-day review window."
           : "When your order arrives, confirm delivery to complete it.",
         state: delivered ? "done" : shipped ? "current" : "upcoming",
       },

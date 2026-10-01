@@ -420,7 +420,7 @@ export function orderHelpFormCopy(
       detailsPlaceholder:
         "e.g. When does payout release, earnings still held, buyer left a review issue…",
       detailsHint: "Mention dates if it’s about payout timing.",
-      tips: ["Payouts often wait on delivery + a short protection window."],
+      tips: ["Shipped-order payouts release 4 days after carrier-confirmed delivery."],
       submitLabel: "Message Support",
       successToast: "Sent — track replies under Support.",
       peerMessage: { label: "Open this sale", href: peerHref },

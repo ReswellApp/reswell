@@ -30,7 +30,7 @@ type OpenTrackedOrder = {
 
 /**
  * Polls ShipEngine for confirmed shipping orders that still lack carrier_delivered_at.
- * Backfills delivery status when webhooks were missed and starts the 24h payout clock.
+ * Backfills delivery status when webhooks were missed and starts the four-day payout clock.
  */
 export async function syncOpenShippingCarrierTracking(): Promise<SyncOpenCarrierTrackingSummary> {
   const summary: SyncOpenCarrierTrackingSummary = {

@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
     type: "sale",
     amount: sellerEarnings,
     balance_after: prevAvailable.toFixed(2),
-    description: `Pending — Sold "${listing.title}" (${pendingSaleFeeClause(platformFee)} — available after delivery)`,
+    description: `Pending — Sold "${listing.title}" (${pendingSaleFeeClause(platformFee)} — available after fulfillment hold)`,
     reference_id: purchase.id,
     reference_type: "order_pending_earnings",
   })

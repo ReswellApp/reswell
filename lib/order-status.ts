@@ -110,7 +110,7 @@ export function payoutStatusLabel(status: string, holdReason?: string | null): s
       case "awaiting_manual_release":
         return "Held — pending admin payout approval"
       case "awaiting_carrier_settlement":
-        return "Held — carrier delivered (24h review)"
+        return "Held — carrier delivered (4-day review)"
       case "awaiting_pickup":
         return "Held — awaiting pickup"
       default:

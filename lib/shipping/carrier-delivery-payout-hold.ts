@@ -1,8 +1,10 @@
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { carrierTrackingIndicatesDelivered } from "@/lib/shipping/carrier-status-display"
 
-/** Full calendar day hold after carrier-reported delivery before seller wallet credit. */
-export const CARRIER_DELIVERY_PAYOUT_HOLD_MS = 24 * 60 * 60 * 1000
+/** Four-day hold after carrier-reported delivery before seller wallet credit. */
+export const CARRIER_DELIVERY_PAYOUT_HOLD_DAYS = 4
+export const CARRIER_DELIVERY_PAYOUT_HOLD_MS =
+  CARRIER_DELIVERY_PAYOUT_HOLD_DAYS * 24 * 60 * 60 * 1000
 
 const IN_TRANSIT_STATUS_CODES = new Set(["IT", "AC", "AT", "OF"])
 

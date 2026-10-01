@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 /**
  * Buyer marks the shipment received (manual-tracking orders only).
- * Reswell shipping with carrier tracking completes from ShipEngine delivery + 24h hold.
+ * Reswell shipping with carrier tracking completes after ShipEngine delivery + a four-day hold.
  */
 export async function POST(
   _request: NextRequest,
