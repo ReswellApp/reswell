@@ -1,0 +1,152 @@
+{
+  "generated_for": "reswell surfboards catalog",
+  "purpose": "Daily growth of small USA and Australia surfboard-maker brands",
+  "generated_on": "2026-08-27",
+  "product_category_slug": "surfboards",
+  "integrity": {
+    "first_party_only": true,
+    "surfboard_models_only": true,
+    "require_image_name_description_logo": true
+  },
+  "brands": [
+    {
+      "slug": "cronin-surfboards",
+      "name": "Cronin Surfboards",
+      "website_url": "https://croninsurfboards.com",
+      "location_label": "New Smyrna Beach, Florida",
+      "founder_name": "Craig Cronin",
+      "lead_shaper_name": "Craig Cronin",
+      "short_description": "East Coast shortboards, grovelers, hybrids, and logs from Craig Cronin in New Smyrna Beach — named models shaped for Florida beach breaks.",
+      "logo_url": "https://croninsurfboards.com/cdn/shop/t/2/assets/logo.png",
+      "models": [
+        {
+          "name": "Arrow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/ARROW_T-2_bef8a3f6-4847-4d28-a48d-8bc83b706d63.jpg",
+          "description": "The \"Arrow\" has a single wing that allows for more control and bite at higher speeds and transition through turns. This weapon gives you a wider range of performance. Concave - Single"
+        },
+        {
+          "name": "Bow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/BOW_T.jpg",
+          "description": "“The Bow” is a wave catching machine. Whether you’re a veteran, beginner, or a long boarder wanting to turn tighter, this model is the answer. Concave - Double"
+        },
+        {
+          "name": "Club",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/CLUB_T.jpg",
+          "description": "“The Club” is one of our best small wave weapons. The full nose places volume forward to allow maximum planing and paddling. Foiled nose and tail, deep double concaves, and a pulled in swallow tail allows maximum speed and performance in small conditions. Order this model 6-8 inches shorter and 1-2 inches wider than your normal shortboard. Concave - Deep Double"
+        },
+        {
+          "name": "Flail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/FLAIL_T.jpg",
+          "description": "“The Flail” is everything you want in a short board. The forgiving outline and rail, with single and double concave bottoms will deliver high performance control without the “chippy\" feel of the Mace model. This is a “Go To” model for the everyday and traveling surfer. Concave - Single"
+        },
+        {
+          "name": "High Five",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/HIGHFIVE_T-2.jpg",
+          "description": "The High Five is a great all around hybrid for beginner and intermediate surfers. The round tail also makes this board super fluid and turn exceptionally well. Concave - Rolled Bottom to Vee"
+        },
+        {
+          "name": "Holdmein",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/HOLDMEIN_T.jpg",
+          "description": "“The HoldMein” is a model developed with team rider Brent Meinhold. It is a blend between the “Mace” and “Sling”. Single concave for maximum speed in all conditions. Order this board 2″ shorter and 1/2″ wider than your standard shortboard. Concave - Single"
+        },
+        {
+          "name": "Lance",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/LANCE_T.jpg",
+          "description": "“The Lance” is geared for super small gutless surf. With flat rockers, a wide outline, and boxy rails, the volume of foam is balanced well throughout the entire board. You will experience effortless paddling and maximum wave count in the smallest conditions. It comes standard as a quad, but can easily be made as a 5 fin. Lance Concave - Single to Double Lazy & Pro Lance Concave - Single"
+        },
+        {
+          "name": "Long Bow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/LONGBOW_T.jpg",
+          "description": "“The Long Bow” is all about glide. Flatter rocker and a wider outline gives a classic feel for the true nose rider. Concave - Nose"
+        },
+        {
+          "name": "Long Sword",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/LONGSWORD_T.jpg",
+          "description": "“The Long Sword” is geared for the modern long boarder. More rocker, flatter deck, and thinner rails allow for tighter turns and maneuvers in critical sections. Concave - Nose & Double"
+        },
+        {
+          "name": "Mace",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/MACE_T.jpg",
+          "description": "“The Mace” is our pro model. It is geared to maximum performance surfing. The rocker, rails, and bottom concave will give you the means to push your surfing to the next level. Concave - Deep Single"
+        },
+        {
+          "name": "Sling",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/SLING_T.jpg",
+          "description": "“The Sling” is our version of a small wave short board. Lower rockers, wider outline, and single to double concave bottom will turn a day of 1ft. mush into something worth surfing. Its keeps the feel of a shortboard without having to ride a fish. When ordering this board, think 3-4 inches shorter than your standard shortboard. Concave - Single to Double"
+        },
+        {
+          "name": "Sling Shot",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/SLINGSHOT_T.jpg",
+          "description": "The “Sling Shot” is a shorter and wider version of the “HoldMein”. The wide point has been pushed forward with a lower rocker, allowing this board to be ridden shorter to rip 1 foot mush. Simply put…..stubby shortboard. Concave - Single"
+        },
+        {
+          "name": "Spear",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/SPEAR_T.jpg",
+          "description": "“The Spear” has forward nose volume, single to double concaves, with a pulled in thumb tail. This board works well in small and larger waves. This is a great all around board to add to you quiver. Concave - Single to Double"
+        },
+        {
+          "name": "Tomahawk",
+          "image_url": "https://cdn.shopify.com/s/files/1/0359/5925/products/TOMAHAWK_T-2.jpg",
+          "description": "“The Tomahawk” is modified version of the Arrow with a double bump squash. The double wing allows for more control and bite at higher speeds and transition through turns. This weapon gives you a wider range of performance. Concave - Single"
+        }
+      ]
+    },
+    {
+      "slug": "geraghty-shapes",
+      "name": "Geraghty Shapes",
+      "website_url": "https://www.geraghtyshapes.com",
+      "location_label": "Buderim, Sunshine Coast, Queensland",
+      "founder_name": "Dean Geraghty",
+      "lead_shaper_name": "Dean Geraghty",
+      "short_description": "Custom shortboards, hybrids, mid-lengths, and logs from Dean Geraghty on the Sunshine Coast — named models refined across 35 years of shaping.",
+      "logo_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/6997cbbcf8345326f05a46ed.png",
+      "models": [
+        {
+          "name": "Nighthawk",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e91385f734ea96a40e.png",
+          "description": "The Nighthawk is a hybrid surfboard built for reactivity."
+        },
+        {
+          "name": "Ignite",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e9d88b4170d1f4f900.png",
+          "description": "The Ignite is a mid-length surfboard designed for cruisers and chargers."
+        },
+        {
+          "name": "Feel Good",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e915ee06059ebfee1e.png",
+          "description": "The Feel Good is a Malibu longboard built for cruisers and carvers."
+        },
+        {
+          "name": "EP-Pro",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e9f980e107aa82946d.png",
+          "description": "The EP-Pro is a precision-design surfboard refined over 20 years."
+        },
+        {
+          "name": "EP-Pro 2.0",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e915ee06ccabbfee1f.png",
+          "description": "The EP-Pro 2.0 is designed for advanced surfers."
+        },
+        {
+          "name": "Flow-Rider",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e917d9a9dfd0443654.png",
+          "description": "The Flow-Rider is made for bigger, hollow waves."
+        },
+        {
+          "name": "ANON",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e9d88b41c24af4f8ff.png",
+          "description": "The ANON is a high-performance pocket-rocket surfboard."
+        }
+      ]
+    }
+  ],
+  "rejected": [
+    "yahoo-surfboards: SiteGround captcha 403s first-party images from this IP (HTML catalog is complete)",
+    "dave-macaulay-surfboards: no own-brand logo (Yahoo factory mark only); images also on Yahoo CDN"
+  ],
+  "summary": {
+    "brand_count": 2,
+    "model_count": 21,
+    "image_count": 21,
+    "logo_count": 2
+  }
+}
