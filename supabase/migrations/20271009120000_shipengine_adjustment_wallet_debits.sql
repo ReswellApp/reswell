@@ -87,6 +87,7 @@ BEGIN
   FOR r_adjustment IN
     SELECT
       a.id,
+      COALESCE(NULLIF(trim(a.adjustment_id), ''), a.transaction_id) AS debit_reference_id,
       a.adjustment_amount_usd,
       a.actual_length,
       a.actual_width,
@@ -108,7 +109,7 @@ BEGIN
     INTO v_existing_transaction_id
     FROM public.wallet_transactions wt
     WHERE wt.reference_type = 'shipengine_label_adjustment'
-      AND wt.reference_id = r_adjustment.id::text
+      AND wt.reference_id = r_adjustment.debit_reference_id
     LIMIT 1;
 
     IF v_existing_transaction_id IS NOT NULL THEN
@@ -179,7 +180,7 @@ BEGIN
       v_balance_after,
       left(v_description, 500),
       'completed',
-      r_adjustment.id::text,
+      r_adjustment.debit_reference_id,
       'shipengine_label_adjustment'
     )
     RETURNING id INTO v_transaction_id;
