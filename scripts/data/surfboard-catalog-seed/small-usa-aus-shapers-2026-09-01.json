@@ -1,0 +1,207 @@
+{
+  "generated_for": "reswell daily small USA / Australia surfboard catalog growth",
+  "generated_on": "2026-09-01",
+  "product_category_slug": "surfboards",
+  "integrity": {
+    "first_party_only": true,
+    "surfboard_models_only": true,
+    "require_unique_image_description_logo": true,
+    "collapsed_size_color_construction_variants": true,
+    "dropped_misc": [
+      "Barrette wakesurf and skimboards",
+      "Gash apparel, posters, stickers, and caps",
+      "Viking generic High Performance stock SKUs and sized CAT leftovers"
+    ]
+  },
+  "summary": {
+    "brand_count": 3,
+    "model_count": 22,
+    "brands": [
+      {
+        "slug": "viking-surfboards",
+        "name": "Viking Surfboards",
+        "models": 15
+      },
+      {
+        "slug": "barrette-surfboards",
+        "name": "Barrette Surfboards",
+        "models": 3
+      },
+      {
+        "slug": "gash-surfboards",
+        "name": "Gash Surfboards",
+        "models": 4
+      }
+    ]
+  },
+  "brands": [
+    {
+      "slug": "viking-surfboards",
+      "name": "Viking Surfboards",
+      "website_url": "https://vikingsurfboards.com",
+      "location_label": "Fort Lauderdale, Florida",
+      "founder_name": "Christian Wolthers",
+      "lead_shaper_name": "Christian Wolthers",
+      "short_description": "South Florida surfboard label founded by Christian Wolthers — Futhark retro shapes, CAT Bottom channels, and performance shortboards shaped in Fort Lauderdale.",
+      "logo_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/new-logo-mobile.jpg",
+      "models": [
+        {
+          "name": "Catbottom Longboard",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/03/9-0-catbottom-longboard.jpg",
+          "description": "This is a true performance channel. The outbound flow of water and the CAT Bottom provides the thruster effect of maneuverability while performing with added speed. Bottom belly convex channel cut compresses inbound water flow, producing up to 15% more speed on outbound water at a widening angle of flow from the board tail. An overall performance board for experienced surfers — a mostly small- to head-high hybrid with speed, fun, and maneuverability. The Cat Bottom can be applied to many different shapes with the purpose to create more speed and flow, adding more power and dynamic to your maneuver.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Catbottom Short",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/03/5-7-catbottom-short.jpg",
+          "description": "This is a true performance channel. The outbound flow of water and the CAT Bottom provides the thruster effect of maneuverability while performing with added speed. Bottom belly convex channel cut compresses inbound water flow, producing up to 15% more speed on outbound water at a widening angle of flow from the board tail. An overall performance board for experienced surfers — a mostly small- to head-high hybrid with speed, fun, and maneuverability. The Cat Bottom can be applied to many different shapes with the purpose to create more speed and flow, adding more power and dynamic to your maneuver.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Change",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-change28.jpg",
+          "description": "In the early 70’s, The Campbell Brother’s revolutionized surfboard design by adding side fins to the traditional single fin being used at the time. Driven by the need to stabilize the speed on the popular and newly designed single fin shortboards, the brothers looked into alternative boat designs to come up with a solution for their problem and so created the Bonzer fin system. This changed the history of surfboard design forever, as they were the first ever to have three fins on a board, almost a decade before the Simon Anderson’s famous thrusters. Furthermore, the brothers made a thorough study behind the hydrodynamics of surfboards on waves, coming up with unique arrangement of board…",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Energy",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-energy12.jpg",
+          "description": "Twin Fin Energy Model is a modern-day look at the 1967 Classic Twin fin design. The rails are sharper and the tail is narrower, in comparison to the Classic Twin fin Goddess model. However, the low rocker is maintained for greater glide and momentum. All in all, this is a versatile board design that goes well from small and mushy wave conditions to large and hollow surf. The surfer will be able to attack the wave with modern approach as well as draw classic rail turns, always maintaining energy between moves. The Energy Model comes as twin-fin set-up and may come with an additional central plug for a thruster set-up, making this one of the most versatile board of the Selection.…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Generous",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-generous20.jpg",
+          "description": "The Generous model can be defined in one word: simplicity. Continuous curves and minimum rocker are central characteristics of the Generous Model. The Generous Models come either as single fins or as 2 + 1 fin setups; the latter having a more precise and versatile personality. The rounded tail outline will provide and easy glide on the wave while its rounded nose gives good paddling power for the lazy paddlers. The wide point on this model is further back, approximately 2/5 of the boards’ length from the tail. This translates into …. The rails are rounded, except on the tail, where some edge is applied to create added drive. The bottom is flat for simplicity. Expect easy lines and refined…",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Goddess",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-goddess9.jpg",
+          "description": "“The classic twin fin Goddess model is inspired on the 1967 revolutionary fish-board design developed by Steve Lis and Jeff Ching. Wide and blunt outline with minimum rocker translated into unprecedented speed and traction. This board provides stability, speed and maneuverability. The extra tail width results in more flotation while still producing a fast, loose and responsive performance from the twin fin set up. This allows the surfer to attack the wave, while maintaining style and flow. All Goddess Models receive 6 ounces fiberglass: one layer on top and 2 layers on the bottom, ensuring strength and durability. Despite generally being the go-to board for weaker wave conditions, this…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Grom Series",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/performance-board5.jpg",
+          "description": "Team Choice Epoxy Grom Series great for intermediate kids and light weight advanced surfers .This model was made to shred the waves by allowing you to explore all maneuvers in any condition",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Honor",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-honor32.jpg",
+          "description": "In the late 60’s and early 70′, founders of Viking Surfboards, John Olav Wolthers (JOW) and Christian Benz Wolthers (CBW), took charge of the shortboard revolution in Brazil on single fin shortboards. The Honor Model pays tribute to that golden era of surfing while adding a contemporary finish on its design. This Model is a great board option for down the line surfing and barreling conditions. Hard edged rails and smooth curve transactions will generate precise directional stability. The Honor Model boards are glassed with three layers of 6 ounces fiberglass, one on top and two on the bottom for optimal strength and stability. From Elder Futhark Meaning: Honor, Leadership, Authority. Board…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Iztapa",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/performance-iztapa.jpg",
+          "description": "High Performance works great in powerful beach break, point break and hallow waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Journey",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-journey1.jpg",
+          "description": "The Journey Model is a proper classic log, a design that I have been working on with Neco Carbone for more than a decade. This model is inspired on the timeless Nuuhiwa outline, and is ideal for small waves: ankle to chest high. The slight nose concave, step deck and 50/50 rails will enable maximized nasal time, which is the distinctive characteristic of the Journey Model. The square tail will be optimal for shifting, beach-break conditions, while the diamond tail will be slightly better on down-the-line waves. In comparison to the Log-Pin model, this board is wider and thinner. In order to have the correct weight, the Journey Logs receives two layers of 6 ounces fiberglass on each side.…",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mush Glider",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/performance-mushglider.jpg",
+          "description": "Mush Glider created for kids in transition from foamy surfboards to fiberglass, it has a lot of volume so kids can go from beginners to intermediate. It’s also a great choice for intermediate and advanced surfers in the summer times and weak waves providing you a rail to rail performance.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Power",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-power18.jpg",
+          "description": "In 1967 Steve Lis and Jeff Ching designed the revolutionary fish board, inspired on the Paipo and Knee-boards their elderlies were riding at the time. Similarly, on a recent trip to Peru, I got the chance to prone-ride a knee-board that I borrowed from a veteran Californian surfer I had just met. The outline of that particular board was awkward and so was the angle and fin placement of the quad-fin set-up. Nonetheless, that was the fastest and most stable shortboard I had ever ridden. Based on that particular experience we design the Quad Fish Strength Model: a knee-board outline adapted to prone riding. The Strength model is suitable for virtually any type of wave; in fact the defining…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Shield",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-shield29.jpg",
+          "description": "The Shield Model is inspired on the timeless Mini Simmons board design. In 1948 Bob Simmons obtained a copy of a military study made on planning crafts as an effort to improve power boat performances. Adapting that study to surfboard design, Bob Simmons eventually came out with the Mini Simmons model. Mr. Simmons realized that using minimum rocker; drag would be reduced and with minimal curve in the outlines, trim and speed would be maximized. The result was a short, wide and flat board which provided great speed, glide and maneuverability. The key feature of the mini Simmons board model is its high width to length aspect-ratio. Hydrodynamically speaking, this translates into lower…",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Superfish Catbottom",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/03/6-0-superfish-catbottom.jpg",
+          "description": "This is a true performance channel. The outbound flow of water and the CAT Bottom provides the thruster effect of maneuverability while performing with added speed. Bottom belly convex channel cut compresses inbound water flow, producing up to 15% more speed on outbound water at a widening angle of flow from the board tail. An overall performance board for experienced surfers — a mostly small- to head-high hybrid with speed, fun, and maneuverability. The Cat Bottom can be applied to many different shapes with the purpose to create more speed and flow, adding more power and dynamic to your maneuver.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wisdom",
+          "image_url": "https://vikingsurfboards.com/wp-content/uploads/2017/05/futhark-wisdom5.jpg",
+          "description": "The Wisdom Model is yet another classic log, however the pin tail and slight rail edge (55/45) on the tail grants more drive and maneuverability than the traditional Journey Model. This model is optimal on waves up to head high and most suited for point-breaks or long waves. The 2 + 1 fin set-up is recommended for larger or hollower surf conditions. The pin outline and slight rail edge on the tail will enable the surfer to perform long, drawn-out turns without losing the traditional Log approach. In general, this board has a decisive personality: refined turns and great noserides. To provide the correct weight that a log requires, the Journey Log Models receive two layers of 6 ounces…",
+          "board_category_slug": "longboard"
+        }
+      ]
+    },
+    {
+      "slug": "barrette-surfboards",
+      "name": "Barrette Surfboards",
+      "website_url": "https://www.barrettesurfboards.com",
+      "location_label": "San Diego, California",
+      "founder_name": "Austin Barrette",
+      "lead_shaper_name": "Austin Barrette",
+      "short_description": "Hand-shaped custom surfboards by Austin Barrette in San Diego — a tight ocean lineup of twins, mid-lengths, and the original Single Wing.",
+      "logo_url": "https://barrettesurfboards.com/cdn/shop/files/Barrette_Surfboards_Wordmark_Logo_white.png",
+      "models": [
+        {
+          "name": "The Moonbeam",
+          "image_url": "https://cdn.shopify.com/s/files/1/0836/4523/5448/files/Product-MoonBeam.png",
+          "description": "The Moonbeam The number one best-selling board in our lineup, the Moonbeam is the ultimate midlength designed for versatility and pure fun. Whether you're chasing clean peelers or making the most of tricky conditions, this board delivers smooth, effortless performance in any wave. Offered with virtually any fin setup imaginable, the Moonbeam lets you fine-tune your ride to match your style. A fan-favorite since the COVID boom, the hype around this board hasn't faded—and for good reason. Features: Performance Midlength: The perfect balance of paddle power and maneuverability. Custom Fin Setups: Choose your preferred configuration for a tailored ride. Ultimate Versatility: A board that…",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Nova",
+          "image_url": "https://cdn.shopify.com/s/files/1/0836/4523/5448/files/Product-Nova.png",
+          "description": "The Nova The Nova is everything you want in a high-performance twin, delivering effortless paddling and that signature twin-fin looseness for a fun, fast ride. Designed by its shaper for long days at Lowers, this board blends speed, flow, and control, making it the perfect choice for surfers who want to maximize every session. Whether you're trimming down the line or laying into stylish turns, the Nova keeps things smooth and playful. Features: Performance Twin Shape: Balances speed and maneuverability for ultimate flow. Effortless Paddling: Designed for easy entry into waves, so you can surf longer. Loose & Fun: Experience the freedom and glide that only a twin-fin setup can offer.…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Single Wing",
+          "image_url": "https://cdn.shopify.com/s/files/1/0836/4523/5448/files/Product-SingleWing.png",
+          "description": "The Single Wing Meet the Single Wing, our original surfboard model that has stood the test of time. With over 100 variations tested and refined, this board is the definition of versatility. Whether you want a high-performance ride with a pulled-in tail and nose or prefer the original performance fish feel, the Single Wing delivers. Designed to handle everything from small slop to head-high waves, this board is an essential for every quiver. Features: Proven Versatility: Over 100 iterations perfected for all conditions. Customizable Shape: Ride it as a performance board or a classic fish. Wave-Ready Design: Handles anything from small slop to head-high surf. Optimized Sizing: Ride it an…",
+          "board_category_slug": "fish"
+        }
+      ]
+    },
+    {
+      "slug": "gash-surfboards",
+      "name": "Gash Surfboards",
+      "website_url": "https://gashfactory.com",
+      "location_label": "Fingal Head, New South Wales, Australia",
+      "founder_name": "Greg Brown",
+      "lead_shaper_name": "Greg Brown",
+      "short_description": "Australian custom surfboards from Greg Brown — Torquay-born Gash templates now built out of Fingal Head, from twins and keels to step-ups.",
+      "logo_url": "https://gashfactory.com/cdn/shop/files/Reaper_Header2.png",
+      "models": [
+        {
+          "name": "Custom Shortboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/1921/3937/files/GASH24_Surfboards_Square_gashedup10603_1.jpg",
+          "description": "Board Featured: This board is at five ten, rounded square with a bone tint and custom GASH x Soar Red glass on fins. Planshape: Narrower nose with plenty of outline curve, slight hips coming into the tail brings width in under your backfoot. The tailpad is not particularly wide. Fins: Thruster. Can be a Quad, but NOT 5 fins. Tail: Squash, Swallow, Rounded Pin Size: Five Seven to Six Four Colour: Available tints in: DeWALT yellow, Institution Orange, Butthole Purple, GASH red, Black, Bone. Available colours in: DeWALT yellow, Institution Orange, Butthole Purple, GASH red, Black, Bone. Decal: Enquire with Greg direct. Cost Breakdown: Base price: $1250 (Future fin box, no Colour) Fixed fins:…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Custom Step-up",
+          "image_url": "https://cdn.shopify.com/s/files/1/1921/3937/files/GASH24_Surfboards_Square_GASH_CORE_RH85261.jpg",
+          "description": "Board featured: Six Nine, bone tint, custom GASH x Soar red glass on fins Planshape: Narrow nose, curvacious through middle and slightly straighter into rear third. Refined tail like a blade for extra bite. Thickness pushes forward of centre for extra paddle power but fine nose tip. Fins: Thruster only. Placement, tow & camber can vary to suit individual & wave range. Tail: Swallow, Rounded Pin, Semi Pin, Narrow Wing, Mellow SC and Flat at tip Size: Six three to Six nine. Colour: Available tints in: DeWALT yellow, Institution Orange, Butthole Purple, GASH red, Black, Bone. Available colours in: DeWALT yellow, Institution Orange, Butthole Purple, GASH red, Black, Bone. Decal: Enquire with…",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Custom Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1921/3937/files/GASH24_Surfboards_Square_gashedup105991.jpg",
+          "description": "Board Featured: Five Six, Soar x GASH black glass ons with a DeWALT yellow lapped resin tint. Planshape: Not bulbous in front 1/3 like typical twin. More even nose entry with outline running a little paralleled into rear 1/3. Rolled deck for thickness through stringer, allowing slightly dropped rails with more sensitivity. To quote the legendary Hawaiian Twin Fin exponent LB. 'I like to get really low & bring it round - WOOSH!!' Fins: Twin only. Placement, tow & camber can vary to suit individual & wave range. Positioning can be altered to have more squirt off the bottom to suit more powerful turns. Tail: Swallow. Tips narrowed to allow pivot from backfoot. Rarely a rounded pin. Colour:…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Custom Twin Keel",
+          "image_url": "https://cdn.shopify.com/s/files/1/1921/3937/files/GASH25_gashedup106111.jpg",
+          "description": "Board Featured: Six Ten, Soar x GASH black glass on Keels with a Butthole Purple lapped resin tint. Planshape: Mid length Keel, deep swallow Fins: Black Soar Bolt ons, available with futures. Tail: Swallow. Tips narrowed to allow pivot from backfoot. Rarely a rounded pin. Colour: Available tints in: DeWALT yellow, Institution Orange, Butthole Purple, GASH red, Black, Bone. Available colours in: DeWALT yellow, Institution Orange, Butthole Purple, GASH red, Black, Bone. Decal: Enquire with Greg direct. Cost Breakdown: Base price: $1750 (Future fin box, no Colour) Fixed fins: +$250 (Soar x Gash bolt-ons) Tint/pigment: +$100 single side +$200 top and bottom. Lead Times Will be followed up upon…",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
