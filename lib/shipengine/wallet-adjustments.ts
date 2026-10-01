@@ -91,7 +91,9 @@ function parseAdjustment(record: Record<string, unknown>): ShipEngineWalletAdjus
     "transactionId",
   )
   const amount = moneyAmount(record.transaction_amount ?? record.transactionAmount)
-  if (!transactionId || amount == null || amount === 0) return null
+  // The wallet ledger represents carrier fees as negative balance debits.
+  // Positive adjustments are credits and must not be reported as fees.
+  if (!transactionId || amount == null || amount >= 0) return null
 
   return {
     transactionId,
