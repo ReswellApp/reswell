@@ -102,7 +102,13 @@ export function AdminAdjustedLabelsTab() {
         body: JSON.stringify({ force: false }),
       })
       const body = (await res.json()) as {
-        data?: { reportsIngested: number; increasedRows: number; skipped: number }
+        data?: {
+          reportsIngested: number
+          increasedRows: number
+          walletTransactionsSeen: number
+          walletAdjustmentsUpserted: number
+          skipped: number
+        }
         error?: string
       }
       if (!res.ok) {
@@ -111,9 +117,12 @@ export function AdminAdjustedLabelsTab() {
       }
       const ingested = body.data?.reportsIngested ?? 0
       const increased = body.data?.increasedRows ?? 0
+      const walletAdjustments = body.data?.walletAdjustmentsUpserted ?? 0
       const skipped = body.data?.skipped ?? 0
       toast.success(
-        ingested > 0
+        walletAdjustments > 0
+          ? `Imported ${walletAdjustments} balance adjustment${walletAdjustments === 1 ? "" : "s"} from ShipEngine`
+          : ingested > 0
           ? `Ingested ${ingested} report${ingested === 1 ? "" : "s"} · ${increased} price increase${increased === 1 ? "" : "s"}`
           : skipped > 0
             ? "Already up to date"
@@ -140,7 +149,7 @@ export function AdminAdjustedLabelsTab() {
             </CardTitle>
             <CardDescription className="text-sm">
               ShipEngine post-shipment fee increases — weight, dimensions, or service mismatches after
-              the label was bought. Nightly reports plus a daily cron keep this current.
+              the label was bought. Balance transactions and nightly reports plus a daily cron keep this current.
             </CardDescription>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
