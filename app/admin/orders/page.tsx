@@ -605,7 +605,6 @@ export default function AdminOrdersPage() {
                   setStatusFilter('all')
                   setOpenFilter('none')
                   setPaymentFilter('all')
-                  setTestFilter('all')
                   setDateFrom('')
                   setDateTo('')
                 }}
