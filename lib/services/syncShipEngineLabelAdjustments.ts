@@ -8,6 +8,7 @@ import {
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import {
+  dbApplyShipEngineAdjustmentDebits,
   dbListIngestedAdjustmentReportIds,
   dbResolveOrderIdsByTrackingNumbers,
   dbUpsertAdjustmentReport,
@@ -19,6 +20,7 @@ export type SyncShipEngineAdjustmentsSummary = {
   reportsIngested: number
   rowsUpserted: number
   increasedRows: number
+  walletDebits: number
   skipped: number
 }
 
@@ -117,6 +119,7 @@ export async function syncShipEngineLabelAdjustments(opts?: {
     reportsIngested: 0,
     rowsUpserted: 0,
     increasedRows: 0,
+    walletDebits: 0,
     skipped: 0,
   }
 
@@ -135,6 +138,18 @@ export async function syncShipEngineLabelAdjustments(opts?: {
       console.error("[syncShipEngineLabelAdjustments] report", report.reportId, msg)
       return { ok: false, error: msg }
     }
+  }
+
+  const debitBatchSize = 500
+  for (let batch = 0; batch < 20; batch += 1) {
+    const debits = await dbApplyShipEngineAdjustmentDebits(supabase, debitBatchSize)
+    if (debits.error || !debits.data) {
+      const message = debits.error?.message ?? "Could not apply wallet debits"
+      console.error("[syncShipEngineLabelAdjustments] wallet debits", message)
+      return { ok: false, error: message }
+    }
+    summary.walletDebits += debits.data.charged
+    if (debits.data.processed < debitBatchSize) break
   }
 
   return { ok: true, summary }
