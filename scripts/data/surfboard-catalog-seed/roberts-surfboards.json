@@ -1,0 +1,436 @@
+{
+  "generated_for": "Roberts Surfboards official model catalog",
+  "source": "https://www.robertssurf.com/",
+  "sources": [
+    "https://www.robertssurf.com/",
+    "https://www.robertssurf.com/allsurfboards.html",
+    "https://www.robertssurf.com/about-roberts.html",
+    "https://www.robertssurf.com/sitemap.xml"
+  ],
+  "skipped": [
+    "Fresh Shapes — Instagram experiments / limited one-offs, not the regular named lineup",
+    "Custom Shapes — custom order path, not a named production model",
+    "Stock Boards — dimension / in-stock SKUs, not named production models",
+    "Fins / leashes / traction — accessories",
+    "Apparel / hats / t-shirts / gift cards — merch",
+    "PU/PE, RET, RFT, RFT-2, RFT-TDD, RET-KB, ESWT — construction pages, not named models",
+    "Team rider pages, test pages, reviews, volume finder, questionnaire, dealers",
+    "CG, Black Diamond, Black Dump Truck, Black Thumb — official named models with product-front photos but no official description copy"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "roberts-surfboards",
+      "name": "Roberts Surfboards",
+      "website_url": "https://www.robertssurf.com/",
+      "location_label": "Ventura, California",
+      "founder_name": "Robert Weiner",
+      "lead_shaper_name": "Robert Weiner",
+      "short_description": "Ventura, California surfboards by Robert Weiner — White Diamond family, grovelers, high-performance shortboards, and modern classics.",
+      "models": [
+        {
+          "name": "White Diamond",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/wdbrd.png?1751602019",
+          "description": "This board was designed using some of our other small wave models and adding a diamond tail and a single concave. This design was made to give a short, wide board more high performance ability. We have left the nose, tail and rails so you can ride this board 5-6 inches shorter and only an inch wider than your standard hi-performance shortboard. This allows the board to fit in the pocket and do tight radius turns!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "White Diamond 2",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-wd2-web-wht.jpg?1751423851",
+          "description": "With feedback from the last three years, we decided on some subtle changes to make our White Diamond even better. We thinned the nose slightly and narrowed it just a tiny bit. We added double concave out the back with a tiny bit of vee. We also rounded the corners on the diamond. The WD2 is sized like the original WD at 5-to-6 inches shorter and an inch wider than your shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "WD3",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/9818158.png?1751431678",
+          "description": "The original White Diamond helped define today's small wave performance surfboard. Making it even better for everyday surfing, we created the White Diamond 2 by increasing abilities in the original WD's upper wave range. For the WD3 we refined the WD's lower range by emphasizing and improving on its original strengths for small wave groveling.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Diamond Fish",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-diamondfish-web-wht.jpg?1751514886",
+          "description": "A White Diamond with a wider nose and tail. It features a double diamond swallow tail with single to double concave. This board was designed to surfed at a high level in tiny waves and also handle chest to head high conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Disco Diamond",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-discodiamond-web-wht.jpg?1751571642",
+          "description": "The 70’s weren’t only about getting groovy on the dance floor. Back then surfers riding short fish type boards or standing on kneeboards were pushing the boundaries of the time. Fast forward 40 plus years, bell bottoms aren’t in style anymore and surfboard performance has taken on a whole new meaning. The Disco Diamond is somewhat of a flashback to those stylish surfboard outlines with the speed and performance needed for modern surfing. The Disco Diamond keeps all the style, speed and wave catching abilities that makes the Bro Fish such a great surfboard while adding even more performance. Along with the flat rockers, we’ve kept the look of the beak nose and full front end which keeps the foam forward for great paddling. The bottom contours give lift and aid in control. By reducing the tail area to a Diamond, it pivots in the pocket even easier and can do tighter turns off of the reduced rail line. The Disco Diamond can be ridden in a wide variety of waves and comes standard with our Twonzer fin set up with the addition of a center box. You can ride it as a Twin with or without a trailer for a fast but loose feel. If you really want to boogie with incredible acceleration down the line and next level confidence in high speed turns, use a set of Roberts Twonzer fins in your Disco Diamond .",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Hope Diamond",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-hopediamond-web-wht_4.jpg",
+          "description": "We have been getting a lot of custom requests for White Diamonds shaped in bigger sizes. The Hope Diamond gives you the paddling and wave-cruising abilities of a funboard with the outstanding performance levels of a White Diamond. This model helps replace a long board or fun board. Gets you out in the lineup on something stable and fun. Gives the rider tons of paddle and float for a good time.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "3DF",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-3df-web-wht_1.jpg?1751637990",
+          "description": "Designed for SPEED - low rocker and a straighter rail line makes this board fast fast fast. The wide double diamond tail provides the means for the board to use its speed keeping it loose through turns. The chopped diamond nose and forward volume allows you to ride this board short. The straight rail line and low rocker make this board extremely fast and fun even in less than ideal surf",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dream Machine",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-dreammachine-web-wht_4.jpg",
+          "description": "Shorter and wider surfboard that will be ridden 7-8 inches smaller then your standard shortboard or 3-4 inches smaller then your White Diamond . For everyday surfing, works great in small to medium sized beach breaks and point breaks.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Floaty",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-floaty-web-wht_5.jpg",
+          "description": "This board is not soft and slow! It’s Fast and Floaty ! A lot of softboards you see these days are great for getting to your feet but anything after that can be extremely frustrating. Long or short, their poor design with little detail holds back progress and performance. So what do you do if you're wanting to improve on a shorter board but still catch surf just as easily? Or what do you do if your grovel game is a beater and you want a small wave battleship that’s a bigger blast to ride? The Floaty has a full volume wide outline from nose to tail to give it that easy paddle stable feel. Low rockers provide natural speed while a little bit of flip in the nose helps to keep it from digging in on drops. The rails have been tuned for smooth surfing in mind while the outline can perform without hanging up. We do this by shaping a soft forgiving rail in the nose that graduates to a harder more performance rail in the tail of the board. The Floaty’s rails are also tapered to let lighter riders turn with confidence and advanced surfers really push it to its limits.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mush Machine",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mushmachine-web-wht_orig.jpg",
+          "description": "We've taken the Diamond Fish and added a wide squash tail lowered the rocker and added vee and deep double out the back. We designed this board for riding very small gutless mush. By giving this board a very low rocker and wide tail allows this board to fly over flat spots. Added vee out the back allows the board to turn in tight spots which makes it a performance machine!!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mutant",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mutant-web-wht_orig.jpg",
+          "description": "It's Alive!!! The Mutant is a small wave groveler that gives you tons of down-the-line speed with great control for high-speed turns. It is a very similar but more high performance version of the Mush Machine. This board is sized 6-to 9 inches shorter, 1.5 inches wider and 1/8 inches thinner than your high performance short board. Makes a small session fun while allowing the rider to still perform. Helps replace a longboard or a bulky fish style board that can hinder performance surfing.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Pool Toy",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-pooltoy-web-wht.jpg?1751652550",
+          "description": "Short, Wide, Flat and Floaty make the Pool Toy a blast to ride. Full foil and outline plus flat rockers for catching really small waves and the float you need for flying down the line. Width in the tail for increased surface area helps it maintain speed while the swallow tail gives it release for turning in the pocket and out on the shoulder. Ride it really short for less rail line sharp turning high performance. Ride it bigger for even more float and flow.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Dreamcatcher",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/8588193.png?1751647223",
+          "description": "Very versatile surfboard with a very moderate rocker. It carries foam throughout the whole board allowing the surfer to catch plenty of waves. Single to a double concave with a pulled in thumb tail which helps the board hold in bigger surf. The pulled in tail also helps control high-speed turns. A very fun board to ride. It can be approached from surfers of all different abilities due to it's shape. Will function well in everyday surf due to the moderate rocker, fuller rails and nose outline. Also works great very hollow fast waves due to the pulled tail and double concave. This thing is a barrel machine and will fly through sections.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Dreamcatcher Plus",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-dreamcatcherplus-web-wht_4.jpg?1751598994",
+          "description": "Due to our Dreamcatcher 's wide range of appeal and adaptability, we created the Dreamcatcher Plus for surfers that love the style of the original but want more board. Whether you want to match a size to your board preferences or larger frame, it will perform excellently in everyday surf at most beaches and points. It's also a great board for a beginner that wants to start out with more performance than a funboard or longboard. A wider forward outline and fuller foils make paddling and wave catching easy. The single to double concave bottom gives the board hold and control in bigger surf. And the pulled in tail area and thumb tail shape help the Dreamcatcher Plus turn smoothly at all speeds.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Dream Maker",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-dreammaker-web-wht_9.jpg?1751647003",
+          "description": "The Dream Maker is a magic design with the unbelievable powers of speed and maneuverability in small surf. From the Dreamcatcher , we kept its rockers, forward surface area, and thickness flow so that the Dream Maker catches waves just as easily and has plenty of glide. Additional width to the outline gives it flow and acceleration in small or flat faced waves. The Dream Maker has a single to double concave bottom for control and lift with some added vee in the last few inches of the tail. The vee gives the board more release off the tail while thinning the squash tail corners for extra holding power. By going with a squash tail, it gives the board more planning surface in the back for more sustained speed and glide in smaller softer surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Dream Maker Plus",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-dreammaker-web-wht_1.jpg?1751648293",
+          "description": "The Dream Maker Plus has all the magic found in its smaller sizes while providing an option for those that need something with more length and volume. Similar to the Dreamcatcher Plus it has the same rockers, forward surface area, and thickness flow that allows it to catches waves easily and carry speed. We added a small amount of width for more stability and glide in smaller waves. The single to double concave bottom gives the board hold and control. And we’ve added some vee in the last few inches of the tail. The vee gives the board more release off the tail for easier direction change while thinning the squash tail corners for extra holding power. By going with a squash tail, it gives the board more planning surface in the back for more sustained speed and glide in smaller softer surf. Size the Dream Maker Plus to your board preferences or larger frame, it will perform excellently in everyday surf at most beaches and points. It's also a great board for a beginner that wants to start out with more performance than a funboard or longboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Jackal",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-jackal-web-wht_orig.jpg",
+          "description": "On African grasslands jackals use their high sense of smell and their cunning nature to hunt for food. Much like its namesake, our Jackal is designed to lurk around the lineup helping you easily snag waves while having a surprising level of high performance capabilities. We started with the nose from our Dream Maker giving it a slightly wider surface area up front which makes it a great paddler and helps you get into waves early. Instead of going with the more flowy feel of a wide retro swallow tail, the Jackal’s tail is designed with an appetite for performance. From the mid point back, we blend the nose into a thinned winged swallowtail similar to the one found on our VLAD model. This type of tail gives it sensitivity and ease of performance at any speed. Working with the outline and foil, the rockers on the Jackal aren’t as flat as found on grovelers nor as extreme as what you’d see on narrow shortboards. The nose rocker and width works well with front footed surfing to generate speed. The moderate tail rocker with the pivot of the wings encourages you to surf more aggressively in turns or steep sections while giving the board more range in wave size.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Anything",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-anything-web-wht_orig.jpg",
+          "description": "The Diamond Fish nose with the Modern 80's tail. We took the Diamond Fish and gave it a bump squash tail. This allows the board to ride deeper in the pocket and hold better in bigger waves. It can also be ordered in a variety of fin and tail configurations. Off the rack or custom, this board works in just about Anything.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bro Fish",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-brofish-web-wht_orig.jpg",
+          "description": "Retro meets techno, the Bro Fish flies across waves to its own beat of glide and progression. Inspired by some of the traditional fish we make as customs, we created a design that looks and feels like boards of past, has elements of today and tomorrow, and can be pushed as hard as you want. Keeping the look of older style boards with their beak noses, thickness under chest, and wide swallow tails, the Bro Fish still has the wave catching ability and flow that makes those classics so fun and easy to ride. With added curve in the tail and sophisticated bottom contours of single to double to deep vee, the Bro Fish is made to carve in the pocket as well as it does out on the open face. The Bro Fish can be ridden as a twin or as a twonzer. Twins can sometimes feel too pivoty or slippery depending on your riding style or the surf. By adding the option of using a Roberts Twonzer fin set, you can get the speed of a twin while giving the board a greater ability to hold its rail at higher speeds.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Disco Hippy",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/disco-hippy_orig.png",
+          "description": "The Disco Hippy represents a progressive evolution that traces back to our retro-inspired yet performance-oriented Bro Fish. After wanting more performance in the next model, we introduced the Disco Diamond which retained that nostalgic vibe with some modifications such as a diamond tail for a shorter rail line as well as slightly thinner rails for added sensitivity. The result was a board that felt more responsive, easier to turn, and exceptionally agile in the pocket. Now with the introduction of the Disco Hippy , we have once again elevated performance while preserving all the wave-catching prowess and sheer speed of its predecessors. Inheriting the flow, glide, and stability from the fish-type outlines, the Disco Hippy also keeps the rockers and concaves from its ancestors, maintaining impressive speed and release from the tail. The wide nose is still great for paddling while removing the beak reduces swing weight and improves maneuverability. Tuned thinner rails combine harmoniously to provide precise feedback and unmatched responsiveness in the pocket. A hipped squash tail introduces a break point in the outline, resulting in tighter turns and added hold during maneuvers. All together we’ve enhanced the Disco Hippy making it great for small waves as well as a way to progress or push your performance limits in a shorter board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Metamorph",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-metamorph-web-wht_orig.jpg",
+          "description": "A transformation, the hybrid groveller. Out of its cocoon, our Metamorph takes the small wave groveller to another form. We wanted a board that can generate speed in small waves and control speed in waves where other grovellers might lose their hold. Inspiration came in the form of one of our most popular small wave boards, the Mutant . The Mutant crept its way into being a primary board for many and they took it to the limit. Like its predecessor, the Metamorph has low rocker forward of the tail area for speed with flip in the nose that doesn't hang up coming out of turns. In the rear, we opted for a thinned and tapered round tail with a hint of rocker. This gives it less surface area in the tail and a longer rail line to control speed going into tight turns or on better waves than what you'd find on just a grovel day. The bottom contours of the Metamorph start out as a single concave that blends into an extreme double concave that exits out the tail for lift and aiding the control of higher speed turns. If you want a board that thrives on speed and lives to destroy, discover the Metamorph.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Metatwin",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-metatwin-web-wht_orig.jpg",
+          "description": "The MetaTwin is our next gen twin fin. We've joined the versatility of the Metamorph and the speed of twin fins to make a board that takes off on waves like a mad hornet. The MetaTwin’s fuller outline makes it a great paddler with plenty of glide. Its wide nose increases forward surface area which helps you get into waves early and maintain flow in small or slow mushy waves. Moving to the mid-section, the rail line straightens out to aid in speed generation. And then it blends down into a round tail that adds length to the overall rail line for hold at higher speeds or in bigger surf. The bottom contours of the MetaTwin start as a single concave that blends into an extreme double concave which exits out the tail exhausting water similar to channels. Put that all together with designed twin fin placement, the Metatwin has a fast and drivey feel that remains loose and extremely maneuverable.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Army Knife",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-armyknife-web-wht_orig.jpg",
+          "description": "Designed with components from some of our most versatile models, the Army Knife carves its own path with speed and precision.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Biodiesel",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-biodiesel-web-wht_orig.jpg",
+          "description": "The BioDiesel adds to our diesel class of boards a design that’s part race-ready performance and part efficient daily driver. We started with our Turbo Diesel’s rocker, outline, & foil and tuned it to create a high performance board that excels in average middle of the road surf. The BioDiesel is reactive in the pocket with another gear for creating and maintaining speed. First we looked at the Turbo’s rocker and knew that we liked its ability for catching waves, accelerating off the bottom and arcing off the top. So we kept its rocker profile and then lowered both ends on the BioDiesel to make it an even better paddler and have more drive in waves that aren’t that very steep or fast. We then widened the Turbo’s outline from the middle through the tail so that the BioDiesel generates and maintains speed more easily with some added in glide for flatter faced waves. One final feature we considered was the Turbo’s racy tapered medium rails. By carrying those over to the BioDiesel, it has that performance feel and easily gets on rail to take advantage of all its speed.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "CG",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-cg-web-wht_orig.jpg",
+          "description": null,
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Dirty Bird",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-dirtybird-web-wht.jpg?1751831724",
+          "description": "Derived from our Black Series boards, we created the Dirty Bird to have the speed and wave catching ability needed for high performance surfing in most average conditions. Working with our team riders, the Dirty Bird’s refined outline is designed for better paddling and glide in waves that lack power. It has added width and thickness with a straightened rail line in rear of the board for more speed and drive. We gave it a swallow tail that has a slight amount of flip to harnesses that speed while also helping the Dirty Bird turn off its moderate rockers and pivot vertically with ease. The bottom contours consist of a deep single to double concave for lift and predictability when turning in the pocket. Made to excel in the knee to overhead waves, the Dirty Bird fits into our Betweeners for advanced surfers and is a great All Arounder for anyone that wants a forgiving board with hidden performance.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "El Tormentor",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-tormentor-web-wht_orig.jpg",
+          "description": "Shorter and wider surfboard that will fit in your quiver in between a Black Punt and White Diamond 2 . For everyday surfing, works great in small to medium sized beach breaks and point breaks.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish Paco",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/6444630.png?1751835961",
+          "description": "The Fish Paco is a High Performance Twin for fast vertical surfing in small waves. Part of its special ingredients is a combination of the pulled in swallow tail with a touch more rocker than what you'd see in your average small wave board. Adding that allows the board to do tight arcing turns in small waves. Pouring on the hot sauce, twin fin placement in the front boxes makes for a very fast and drivey board that pivots easily in the pocket. Full of flavor as a twin, we added rear boxes for greater range and control to make your favorite Fish Paco combo.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flying Hippie",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/fh-5_orig.png",
+          "description": "The Flying Hippie is the next performance evolution of our retro-inspired models. For a change of pace from the shortboard grind, our team has been pushing the limits of our Bro Fish and Disco models from knee-high slop to overhead barrels. As one of our test pilots has gotten older, Kellen Ellison's shortboard days are more spread out, but his addiction to putting a board on rail or above the lip hasn't gone away. D esigned with the Roberts signature blend of fun, performance, and versatility,",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Lip",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-thelip-web-wht_orig.jpg",
+          "description": "For the everyday kind of waves you see around California, The Lip is designed to be fast on a soft waves like Malibu and also control speed at punchy beach breaks like Zuma. The design started with our team riders loving the White Diamond but looking for something that felt closer to their performance boards. To give the team what they wanted, The Lip got the WD's small wave magic but with a thinner nose and a pulled in squash tail. We also added double concave in the last third of the board to give it a bit more control in vertical surfing and steeper surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Meat Cleaver",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-meatcleaver-web-wht_orig.jpg",
+          "description": "A perfect all around board that can fly through flat spots and still handle steep wave faces. Extra tail rocker and a round tail allows the board to do tight turns at high speeds.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Modern 80's",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mod80s-web-wht_orig.jpg",
+          "description": "This board features an 80’s looking outline with a modern concave and rocker. This board gives the rider a wide stable outline with a bump squash tail for tighter turns and good hold.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Modern Gem",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-moderngem-web-wht_orig.jpg",
+          "description": "Designed with Jeremy Ryan to complement his explosive modern style. Just as maneuverable and speedy as the Modern 80's while being quicker rail to rail using a narrower outline.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Star Chip",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-starchip-web-wht.jpg?1751901734",
+          "description": "Fast like a rocket, the Star Chip is a high performance all around betweener for your everyday waves up to rippable surf a couple feet overhead. A moderate rocker is used for catching waves with ease while still allowing it to be free and responsive in the pocket. It has a single to double concave bottom with four channels running out the tail. Working with the bottom contours, the channels add even more lift and water flow to create the Star Chip’s mach speeds. The Star Chip’s unique multi-angular swallow tail helps exhaust water off the channels and provides pivot points for release and precise turning. The Star Chip is designed to be ridden as a thruster or as a Twonzer . Use your favorite thruster fins for high speed performance. To take it to the next level and beyond, use a set of Roberts Twonzer fins for another dimension of acceleration and handling.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Goods",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-the-goods-900px.png?1751901952",
+          "description": "What makes it The Goods ? If you're a shortboarder you’re always looking for a board that can span a range of conditions and provide a high level of performance that isn’t too far out of reach. And if you’re new to shortboards you want a board that will give you confidence while not being too difficult to ride. A combination of the best features from some of our most popular and proven designs, The Goods is one of the most versatile boards we have in our lineup. Its moderate nose width and rocker maintains paddling while keeping swing weight down for sharp vertical turns. The Goods has an outline that leans more towards a subtle glide for smaller waves. while still being narrow enough for vertical surfing in waves with a little juice. The tail rocker is kept fairly low for speed and glide which helps immensely when dealing with slower sections found in softer waves or needing to create speed immediately in waves with tight pockets and a bit of punch. If you’re looking for a board to take your performance in small to mid sized surf to another level, check out The Goods !",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Vindicator",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-vindicator-web-wht.jpg?1751902357",
+          "description": "The Vindicator maintains our El Tormentor 's advantages in small waves while a few design adjustments give it more performance and control in bigger surf. Super high performance thinned out shortboards are made to work best in perfect waves. The Vindicator is more for everyday surfing and even some better days you might luck into. For great paddling and gliding though flat spots, especially when it's small, it has a good amount of foam under your chest and low entry rocker. We knew low tail rocker like on the Tormentor works in a broad range of surf but its advantages are felt mostly on smaller or flatter faced waves. Wanting to give The Vindicator more upper range, we designed it with a more moderate tail rocker that still works terrific in small surf. Where it shines though is allowing you to control speed plus have the ability to pivot easier in the pocket on those days you're surprised the waves are better than your normal waist high go outs. Giving The Vindicator a rounded tail lengthens rail line and reduces tail area which is awesome for doing arcing turns on bigger faces while still having release off the top for vertical maneuvers in small to bigger surf. We also thinned its tail letting it be pushed around with less effort and giving it more sensitivity at higher speeds. Bringing it all together, The Vindicator is a really versatile as well as responsive high performance board. Or sized bigger, it can be a fantastic all around board for someone looking to get into shortboards or wanting more paddle.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Vlad",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-vlad-web-wht_orig.jpg",
+          "description": "The VLAD is a small wave destroyer. We created it with a fuller curvy outline than what you find on comp style shortboards so that it catches waves easily and glides in lack luster surf. We keep some of that width through to around the last 12” of the board for extra help in creating and maintaining speed in slower sections. As the tail starts to narrow, we reduce the tail area down with a winged swallow to give it sensitivity and ease of performance at any speed. Those wings work in conjunction with the swallow tail by creating pivot points and bite for tight turns and controlling speed when needed or if pushing the board into bigger steeper waves. White Diamond style rockers make the VLAD scary fast and adds to its wave catching powers. Some flip is added to the nose for making steep drops and attacking vertical sections. And medium rails shaped with a hard tucked edge in the tail area give the VLAD a performance feel when generating speed and flying through turns. Designed for speed like the rest of the board, the bottom contours add lift plus predictability. For anyone that dares, the VLAD rises to strike at will and rip through waves, none are to be spared.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Black Cobra",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/8836896.png?1751942495",
+          "description": "With width forward of center linked with rockers and foils from our high performance shortboards, the Black Cobra paddles and handles extremely well. Since the first , our guys have been pushing the DC to its limits around California, Hawaii and Mexico. The DC's flatter rockers for easy planning and faster speeds is great in everyday waves and getting down the line in bigger surf. As the waves get bigger and you're moving faster, boards with flatter rockers tend to have less control. To take the design to another level, the Black Cobra was made to get in early like the DC and given additional rocker for more control and easier turning in the pocket at the higher speeds of bigger surf. Then back home, some of our riders started surfing on it more everyday than just using it as a step-up. Even though they love the performance of the DC, their style of surfing liked the addition of more rocker in the Black Cobra for its even tighter turning radius.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Black Diamond",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-blackdiamond-web-wht_orig.jpg",
+          "description": null,
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Black Dump Truck",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-blackdumptruck-web-wht_orig.jpg",
+          "description": null,
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Black Punt",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-punter-web-wht_orig.jpg",
+          "description": "The definitive modern day shortboard. Lower rockers for speed and wave catching ability. Flip in the nose and tail for tight turns in and above the lip. As a favorite with our team riders, it's the perfect board for high performance surfing in everyday, average surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Black Thumb",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-blackthumb-temp_orig.jpg",
+          "description": null,
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "GSD",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/4195695.png?1752248487",
+          "description": "High performance shortboard, derived from our step up board, The G Step Up . Lots of rocker to fit the pocket of a hollow and steep wave. For high performance surfing in high performance waves. Works great in real waves with some power and steepness. Perfect trip board, it's a high performance machine.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MM-16",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mm16-web-wht_orig.jpg",
+          "description": "This board was designed with Matt McCabe to complement his quick spontaneous style. This is a hi-performance shortboard for all around conditions. Everything from barrels to big airs!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MP3",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-mp3-web-wht_orig.jpg",
+          "description": "This board features a pulled in tail block which holds the board in through powerful snap turns. The rocker is a moderate continuous curve which well in the pocket. The outline has a lot of curve with a slightly wider nose which helps the board grovel well also. To be ridden in a wide variety of waves all over the world.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Redneck",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-redneck-web-wht_orig.jpg",
+          "description": "The Redneck is the combination of a high performance outline with our proven small wave rockers. The name comes to us by 2019 Junior World Champ, Dimitri Poulous and his perpetually sunburned neck. Dimitri had been testing this model for awhile and so we had asked him to come up with something to call it. After a full day of waves and way too much sun, the first thing that popped into his head was Redneck . Dimitri’s favorite small wave contest board had been our Star Chip because it has plenty of speed and glide. His coach, Mike Lamm, suggested we modify it for Dimitri to add even more performance. The main objective for the Redneck was to maximize turns in the pocket while maintaining speed going in and out of maneuvers. To get the desired result, we narrowed up the outline and then gave it a rounded squash tail while keeping the special small wave rockers. The Redneck generates speed easily, while the narrower outline allows it to be surfed rail to rail and vertically very quickly. A reduction in swing weight in the nose makes for turns that are faster and more whippy than on typical small wave boards. Narrower in the middle encourages speed generation from quicker top to bottom surfing. And finally the Redneck ’s rounded squash reduces the tail area some but not too much. We wanted to make it easy to push through radical direction changes but still help maintain speed through flat or slow sections of the wave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rob's Big Boy Tri",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-robsbigboytri-web-wht_orig.jpg",
+          "description": "Bigger guys have their own needs when it comes to getting a board that works for them. The RBBT is not just skinny-pro-board sized up for bigger guys. This is the board I created for guys like me and my fellow big bodied friends. Developed over the past 10 years, the RBBT is a board that has just the right amount of volume and curve for the larger guys in the lineup. For larger surfers that want a board that can handle steep drops and turn at high speed instead of just cruising when the surf gets good.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "T-33",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-t33-web-wht_orig.jpg",
+          "description": "T-33, high performance shortboard by Robert Weiner",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Ill",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-theill-web-wht_orig.jpg",
+          "description": "We have taken the Dill and added a wider nose and a touch of width to the tail block. We made these changes to give this hi-performance board the ability to work better in smaller surf and still keep the board’s high performance feeling in good waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Rap",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-therap-web-wht_orig.jpg",
+          "description": "We’ve been developing The Rap with Nolan Rapoza over the past 5 years. As his go to board for the 2016 contest season, he rode it to become the WSL’s 2016 North America Men’s Jr Regional Champion. Designed with a single concave bottom for speed and a continuous rocker running nose to tail harnesses Nolan’s explosive top to bottom approach to surfing. Not only is The Rap very responsive in the pocket, its flat deck and medium full rails help it carry speed through flat spots and arcing cutbacks out on the face. With Nolan receiving such excellent results at contests in locations such as Barbados, Mexico and both coasts of the US demonstrates how The Rap is just as versatile as it is high performance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Turbo Diesel",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-turbodiesel-web-wht_orig.jpg",
+          "description": "The Turbo Diesel generates speed quickly and loves to be surfed on rail in a wide range of surf! It allows for fast direction changes in the pocket and rides the tube with control. The first one was made a few years ago as a hand shape Robert designed for punchy beach break. That original was incredibly fast and nimble in hollow waves. With it being so magic, he decided to make it more user friendly to use everyday while keeping it responsive for waves with power. A few subtle changes like adding a squash tail as well as slightly widening the tail area helps maintain the board’s speed and stay lively when the surf’s not perfect. The Turbo Diesel’s front end starts with a relaxed entry rocker for getting into waves early and creating speed easily. Then the rocker accelerates from center through the tail to provide exceptional sensitivity for turns and control. Part exotic and part working class, the Turbo Diesel is the daily driver shortboard that is equipped for power and performance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Beaver",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-beaver-web-wht_orig.jpg",
+          "description": "We've been building and perfecting the Beaver model for many years while it's been winning countless contests all over the world at every level from local to international. For the groms that are putting in work to up their game, the Beaver is a model designed to develop and progress a younger surfer's ability and technique in all types of waves. It is a high performance short board with a curvy outline and double concave in the tail. The curvy outline helps give the board glide and stability while still allowing it to be put on rail. The double concave helps give the board lift for speed and helps channel water for more predictable turning. Having moderate rocker makes it great for all kinds of conditions. If you're 6-16 and looking for a board that will help you build on your surfing, then you can't go wrong with the trusty Beaver.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cruzee",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-cruzee-web-wht_orig.jpg",
+          "description": "The Cruzee is a high performance grom model designed for Cruz Dinofa. Cruz’s first real board was a White Diamond. The wider outline of the White Diamond makes it a stable platform for groms while they’re learning to make the drop and get down the line. As a grom progresses to using the rails of their board to generate speed, moving to a narrower lighter board is the next natural step in their progression. They need a board that lets them take advantage of their lighter weight and agility while taking in consideration their strengths and weaknesses. The Cruzee has been ridden in a wide range of conditions around the world so it is very capable over reef as it is in normal beach break. The Cruzee rockers are kept fairly tame to give the board speed and still be nimble while the nose has some flip in the last few inches to help prevent pearling. The rails are thin to allow easy turning while the deck is kept fairly flat to aid in stability. The bottom contours are subtle with a light single concave leading into a double concave in the tail to help the board release while being controllable. The idea in mind behind the Cruzee design is not to just shrink a pro board down. We’ve created a board for groms to enhance their strengths while helping their surfing grow stronger.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "G Step Up",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-gstepup-web-wht_orig.jpg",
+          "description": "A good wave step-up developed over the last ten years with tons of feedback from many sessions all around the World in places like Indo and Hawaii. Lots of rocker through out the board with just a slightly wider nose than step-ups of the past. It has a generally narrow outline with a pulled-in pin tail. Order the G Step UP two to four inches longer than your normal shortboard. Great for good pumping waves, whether it be big beach break tubes or a solid reef or point break. Built for going fast and holding in solid surf like a gun while maintaining the sharp reaction and maneuverability of a short board.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "OB Pin",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-obpin-web-wht_orig.jpg",
+          "description": "Originated for guys needing a design to surf Ocean Beach in San Francisco, the OB Pin works great at big wave breaks with long paddle outs and open faces. Starting with our Pin Master model, we kept its rocker in the OB Pin for maneuverability at higher speeds. Then we added some width throughout and gave it added volume under your chest to help you move around the line up and get in early. The OB Pin offers the ability to carve turns out on the open face through its rocker and pin tail. And if the wave backs off it is able to maintain speed through slopey parts of the wave due to its fuller outline! The OB Pin starts out a 7’ but can be ordered up to 9’ and made to your needs.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Pin Master",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-pinmaster-300px.png?1752252951",
+          "description": "The Pin Master is a semi-gun for high performance surfing in hollow powerful waves. It is based on an original custom hand shape Robert made years ago that became one of Sean Hayes’ most favorite boards to ride at Pipeline. While excelling in Hawaii, the Pin Master has also seen time in Puerto Escondido barrels among others at surf destinations around the world. The Pin Master features an exaggerated rocker that helps control the board in large steep surf. The bottom contours start with a very light single and then go to shallow double concave with some vee off the tail. The nose is proportioned to provide ample paddling ability while keeping the outline sleek for high performance in big waves. The Pin Master is a great board to have in your quiver if you’re heading out to places like Hawaii, Western Australia or anywhere else you might find heavy big beach breaks or reefs.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Turbo Charger",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-turbocharger-900px.png?1752253130",
+          "description": "The Turbo Charger is the high-powered step-up evolution of our Turbo Diesel model. While the TD is celebrated for its speed and dexterity in punchy surf, the Charger takes it to the next level with enhanced features, ensuring easy entry and increased hold when facing steep and critical waves. Keeping the relaxed entry rocker of the TD, we've added a touch of thickness and width in the nose on the Charger. This provides exceptional paddling power to help you get over the ledge in steep waves. Combined with the TD’s accelerated tail rocker, a narrower rounded tail gives the Turbo Charger heightened control in challenging conditions. Whether you're planning a surf trip to a place like Hawaii, Indo, or mainland Mexico or simply seeking more confidence on the best days at your local break, the Turbo Charger is primed and ready.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Woolly Mammoth",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-mammoth-300px.png?1752253324",
+          "description": "The Woolly Mammoth is our big wave paddle-in board with a proven rocker that we’ve been developing for over 20 years via personal experience and rider feedback. Created to be ridden in the biggest Hawaiian waves, the Woolly Mammoth has also helped riders conquer places like huge Mavericks, Puerto Escondido and Todos. Its volume is designed to be concentrated where needed for getting you in early and is combined with a narrower tail for controlling speed while moving down the face. Knowing the Woolly Mammoth is going to be placed in some trying conditions, we use blanks with a wide stringer, insert dual leash plugs and glassing consists of double 6oz cloth on top and 6oz cloth on the bottom.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "HPLB",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-hplb-web-wht_orig.jpg",
+          "description": "Not all longboards are made to cruise. The HPLB is designed to create speed and attack waves with the same maneuvers you see from shortboarders. Continuous rocker running nose to tail makes it sensitive and quick in the pocket and ready to turn on rail out on the shoulder. To assist in the turning and provide hold, the HPLB has beveled rails in the nose with 40/60 rails through the middle to shortboard-like hard edges in the tail. The nose area has a slight bit of concave that runs through the board to the tail area which has double concave with vee set inside. The HPLB is available in stock or custom dims in lengths between 8’ and 10’. Advanced level or lighter riders can order thinner (starting at 2 1/2” thk) for increased sensitivity. For another level of performance, we suggest our RET (stringered EPS/Epoxy) construction for reducing weight while adding strength.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Modern Mid",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/mod-mid_orig.png",
+          "description": "The Modern Mid bridges the gap between mid lengths and our high performance Dreamcatcher. Its forward wide point and curvy outline provides the enhanced paddling and glide you get from a mid length while its other features unlock an elevated level of performance that those type of boards typically don't offer. A slightly wider but thinner nose than the Dreamcatcher helps paddling and keeps swing weight down for agile performance and a lighter feel turns. Tapered down rails with their thinner profile add sensitivity. Combined with rockers designed for a blend of speed and flow, allow the Modern Mid to go on rail and turn easily. A single to double concave bottom and rounded pintail from the DC provides lift as well as better control in a broad wave size range. One of the most unique performance features we put into the is its fin box configuration. It has normally placed front fin boxes as well as a single fin box for riding the board as a single fin, single fin with side bites, or as a thruster. AND we install two extra boxes in a special placement to ride it as a twin fin or bonzer variant for greater speed with even more responsiveness. When sized between a shortboard and a classic mid length, the Modern Mid offers a level of flow and performance not typically seen in longer railed boards. In longer lengths and higher volumes, it suits lighter, newer, or older surfers seeking effortless paddling and stability. A fusion of function, performance, and style, you can choose your",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Invader",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/chatgpt-image-may-31-2026-10-40-48-am_orig.png",
+          "description": "The Invader is a stealthy wave destroyer. Beak nose, fuller volume, and mid-length describe features of boards from surfing’s past but they also add function to a style of performance board that makes the Invader very modern. The beaked nose brings volume forward into its longer length for paddling around the lineup with ease and catching waves the waves you want. With a touch more rocker in the nose and tail than boards of past, the Invader makes steep drops and rebounds off white water much easier than retro crafts. Down rails lower the rail apex for a thinner feel while giving the Invader more hold and quicker turning ability.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Twinvader",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/published/roberts-twinvader-900px.png?1752072736",
+          "description": "While following in the path of its predecessor, the Twinvader brings another level of performance to the fray. It maintains the Invader’s",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Fun 1",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-funone-web-wht_orig.jpg",
+          "description": "First board, fun board or one board, The Fun 1 is a blend of easy surfing and performance. The Fun 1 is a board we've been making for many years and has been continually perfected over time. Some similar looking boards are like a flat rockered mini longboard which can make drops and turns down the line difficult. To counter act that The Fun 1's rockers start with a slight flip in the nose to a moderate rocker in the middle and ending with a very light flip in the tail. That bit of nose flip helps to prevent pearling and hang ups. Moving back from the nose there is some curve in the rocker but not too much as to take away from easily catching waves. But it is enough so The Fun 1 will turn smoothly and with more ease when the rails are applied. This is one thing that makes it so versatile for the beginner to the advanced. As your surfing improves you'll be able to take advantage of the rocker instead of a flat board holding you back. And the beyond beginner riders can jump on it right away and feel comfortable in all kinds of surf. Medium instead of full rails aid in its stability and turning. This helps lighter riders turn and more advanced riders turn sharper. On the bottom it has single concave through the entry to a double concave in the tail for lift, speed and control. It has a slightly pulled in squash tail. A full nose outline also helps for paddling. Depending on how you size it, The Fun 1 can be great for a beginner, someone looking for a longboard alternative or even the advanced surfer wanting to catch more waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Classic LB",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/roberts-classiclb-web-wht_orig.jpg",
+          "description": "The Classic LB with its vintage 60’s outline and refined foil is perfect for cruising down the line, walking the board, and hanging ten. The Classic LB has flat rocker in the front for surfing from the nose that blends into ample rocker in the tail to make turning easier. 50/50 rails that are tapered and soft give it just the right amount of sensitivity. Its bottom contour starts with a slight concave that goes into a rolled vee through the rest of the board. For additional noseriding capabilities, Robert suggests the Classic LB with optional scooped concave in the nose to help you control speed while riding forward on the board. Many other options are also available for customization and glassing such as airbrush, resin tint, Volan cloth and gloss finish.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Mid Pin",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/cmp_orig.png",
+          "description": "Everyone knows in our time as the waves get smaller the competition to catch a wave grows. Our Classic Mid Pin revives 1960s-inspired design to conquer the challenges of today's crowded lineups thanks to its well-distributed volume. With that, the Classic Mid Pin ensures exceptional paddling, performance, and stability while providing an ideal balance of timeless style and versatility. The Classic Mid Pin brings back the essence of those early performance days when style reigned supreme and surfers were searching for more maneuverability. With its flatter rocker, similar to a longboard, you get unparalleled glide and speed. However, its shorter length combined with its pintail makes it easier to maneuver. The thinned and turned-down rails enable easy speed generation that work with the tail design for smooth rail-to-rail turns. If you’re looking for a board with effortless glide on mellow waves, the Classic Mid Pin is crafted to maintain the stylish performance of previous generations that still remains at the pinnacle of small wave surfing today.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Classic Single + 2",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/classicsingle2mick_orig.png",
+          "description": "As surfers began to search for the barrel in the late 60s and 70s, longboards were being traded for shorter and narrower single fin boards. Flatter rockers made these smaller boards still great paddlers while their narrower outlines gave them more maneuverability in the pocket and out on the shoulder than their longboard predecessors. With these new boards taking over, the style of surfing moved away from walking to the nose to stylishly trimming down the line and looking for more progressive ways to use speed. Our Classic Single + 2 brings back that flowing feeling of the 70s as a single fin with the ability to use two side fins depending on conditions or preference. By using two small side bite fins with your single, you’ll feel more hold and gain more drive. With a smaller single fin and normal thruster sides, you’ll get increased performance with a more controlled feel similar to modern boards. For a totally different trip, you might go with a set of twin fins like our upright keels for plenty of drive with a free flowing feel in turns. For below average days to epic conditions, the Classic Single + 2 gives you a great paddling board with plenty of speed for the kind of fun that has drawn people to surfing since the start of the performance era. Its fuller outline helps give it glide when the waves are weak while its ample volume allows you easy and early entry when you need it. As an fun alternative to a rockered out step up or too big longboard when the waves are better it can be an asset in anyone’s quiver from beginner to expert.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Classic Fish",
+          "image_url": "https://www.robertssurf.com/uploads/1/0/6/3/10638997/classicfishmick_orig.png",
+          "description": "Back in the 60s, it was a time of experimentation and everyone was looking at the world differently. Steve Lis, a San Diego kneeboarder and forward thinker, shaped a board for himself in 1967 that would change the course of surfing. All it took was loaning it to one of his standup surfer friends who was on a different level like Steve. His friend kept on borrowing it because he was blown away by the maneuverability it had from its short length and the speed it got from its flat bottom and twin fins compared to the longer single fins of the day. Steve eventually got tired of loaning it out, so he shaped himself one and the rest is history. Just like what those dudes were searching for back in the day, our Classic Fish handles a wide variety of waves, paddles really well and turns easily. It's also a very forgiving and user friendly option compared to modern performance designs. By sharing characteristics from those early fishes made over 50 years ago, our Classic Fish has ample volume and stability for plenty of glide and speed. That speed and agility is just like what was found so long ago on those first rides down in San Diego. And like then, our Classic Fish will open your eyes to another dimension of surfing.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
