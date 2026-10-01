@@ -19,6 +19,39 @@ export type ChannelIslandsJsonRow = {
   productImage: string
 }
 
+/** Near-duplicate / alternate spellings → canonical CI catalog names. */
+export const CHANNEL_ISLANDS_MODEL_NAME_ALIASES: Readonly<Record<string, string>> = {
+  "2.pro": "CI 2.Pro",
+  "ci 2.pro ect": "CI 2.Pro",
+  "high-5": "High 5",
+  "high five": "High 5",
+  m13: "The M13",
+  "new flyer": "The New Flyer",
+  tlow: "T-Low",
+  waterhog: "The Water Hog",
+  "black beauty": "The Black Beauty",
+  "black/white": "Black and White",
+  "black & white": "Black and White",
+  "rocket wide sqaush": "Rocket Wide Squash",
+  sp12: "Semi Pro 12",
+  msf: "The MSF G2",
+  mini: "Mini Eco-hybrid",
+  "ci mid": "CI Mid",
+  "x-lite pod mod black": "Pod Mod",
+}
+
+/**
+ * Construction / soft-goods suffixes that should not create a separate catalog model
+ * when a base model already exists.
+ */
+const CONSTRUCTION_SUFFIX =
+  /\s+(?:spine-?tek|spinetek|ect(?:\s+epoxy)?|x-?lite(?:\s+pod\s+mod)?(?:\s+black)?)\s*$/i
+
+function applyChannelIslandsModelAlias(name: string): string {
+  const key = name.trim().toLowerCase()
+  return CHANNEL_ISLANDS_MODEL_NAME_ALIASES[key] ?? name.trim()
+}
+
 export function toChannelIslandsJsonRow(raw: Record<string, string>): ChannelIslandsJsonRow {
   return {
     productName: raw["Product Name"]?.trim() ?? "",
@@ -27,12 +60,26 @@ export function toChannelIslandsJsonRow(raw: Record<string, string>): ChannelIsl
   }
 }
 
-/** Strip Shopify variant length/fin suffixes from scrape product names. */
+/** Strip Shopify size/fin/construction noise and map known aliases to canonical names. */
 export function normalizeChannelIslandsModelName(raw: string): string {
   let name = raw.trim()
+  // Drop leading stock length ("5'10 CI 2.Pro - FCSII")
   name = name.replace(/^\d+'\d*"?\s+/i, "")
   name = name.replace(/\s+-\s+(?:FCS\s*II?|FCSII|Futures?|Future\s*Flex|EPS\s*Soft?)\s*$/i, "")
-  return name.trim()
+  name = name.replace(CONSTRUCTION_SUFFIX, "")
+  name = name.replace(/\s+/g, " ").trim()
+  return applyChannelIslandsModelAlias(name)
+}
+
+/** Reject used/trade-in SKUs and truncated scrape junk. */
+export function isChannelIslandsCatalogModelName(name: string): boolean {
+  const n = name.trim()
+  if (n.length < 2) return false
+  if (/^the$/i.test(n)) return false
+  if (/\bused\s+team\s+board\b/i.test(n)) return false
+  if (/\bteam\s+trade[\s-]?in\b/i.test(n)) return false
+  if (/^1\/2\b/i.test(n)) return false
+  return true
 }
 
 function splitImageUrls(raw: string): string[] {
@@ -58,7 +105,9 @@ export function buildChannelIslandsModelDescription(row: ChannelIslandsJsonRow):
 }
 
 export function isValidChannelIslandsJsonRow(row: ChannelIslandsJsonRow): boolean {
-  return row.productName.trim().length > 0
+  if (!row.productName.trim()) return false
+  const normalized = normalizeChannelIslandsModelName(row.productName)
+  return isChannelIslandsCatalogModelName(normalized)
 }
 
 export function loadChannelIslandsJsonRows(jsonPath: string): ChannelIslandsJsonRow[] {
