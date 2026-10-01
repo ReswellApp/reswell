@@ -1,0 +1,208 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "tyler-warren-surfboards",
+      "name": "Tyler Warren Surfboards",
+      "website_url": "https://www.tylerwarrenshapes.com/",
+      "location_label": "San Clemente, California",
+      "founder_name": "Tyler Warren",
+      "lead_shaper_name": "Tyler Warren",
+      "short_description": "Southern California surfboards and art by Tyler Warren, shaped across longboards, fishes, hulls, and shortboards.",
+      "models": [
+        {
+          "name": "Bar of Soap",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1457506906625-QK8LFZKGRL4LULII6ZAR/image-asset.png",
+          "description": "A mini Simmons style shape that I have slowly been evolving for almost two decades. A slight rolled entry into a subtle tri-plane hull going into a spiral vee through the fins. The rails are up in the nose and down in the tail. Best paired with my glass on long based True Ames Soap template, available in marine ply or hex core/fiberglass fins. My dims for this style board are around 5'3'' x 20 1/4'' x 2 1/2''.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1457506933194-3JSGGIHH8XXXBKKUMMU6/image-asset.png",
+          "description": "A slight wide point forward twin fin with a pin tail to hold in a steeper face. This board will work in a wide variety of waves, usually best in smoother faces. The bottom is a slight single to double concave into a vee off the tail. You can order with a variety of glass on templates or twin boxes. Average dims are 5'9'' x 20'' x 2 1/2''.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Function Hull",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1565286051967-E20E4R6IVUY1ZRGNFFSZ/FunctionHull.png",
+          "description": "Similar to the Glider with a more forgiving round nose and tail. Slight roll to V bottom with a pinched moderate rail. Allows for swooping cutbacks and drawn out bottom turns. Also covers flat sections. Works best in clean open faced waves.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Girlfriend",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595012195441-ABWH3MBS0IVB6N44CZFY/GIRLFRIEND.JPG",
+          "description": "A board that you or your girlfriend can have fun on. This board is a double ended template with a hippy tail that has a spiral vee below around the fin producing lift and looseness. This board can be ridden in head to overhead waves.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "The One Fin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595010280617-M3TNQ93HSCAXBULSDRCX/ONE+FIN+PIN.png",
+          "description": "This board was designed with the great legend of shaping Terry Martin in 2009. The wide point is back in the \"cock pit\" below your feet as Terry would say and has a long concave blended into a rolled vee and extra tail rocker for nose riding. The straighter rail line towards the nose helps the board lock in for speed while the concave and tail rocker produce lift.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Charger",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1457506820502-EAYOLTAFO8SNN36S45NJ/image-asset.jpeg",
+          "description": "A combination of a modern short board and a 70's down-railer. Designed for round surf head high and above.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "All-Arounder",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1462996602397-ZP13H3AO9WV4EEVJXMVI/all-aroubd.jpg",
+          "description": "This board is designed to be as the name says a good all around longboard, with a neutral rocker, nose concave, rolled vee and a slight tucked edge just behind the fin it should work in anything head high and below.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Dream Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595012408491-3DAFIJNGGMP8PXS1CPBU/DREAMFISH.JPG",
+          "description": "This is my version of a updated classic fish with a bit more curve in the template and rocker. The bottom has a slight rolled entry into a subtle tri-plane hull into a light single concave then a spiral vee through the fins. The rails are forgiving forward and hard out the back. Best paired with my True Ames Mod Keel for maximum drive and release (available in marine ply or hex core fiberglass). My dims for this model are 5'5'' x 20 1/8'' x 2 1/2''.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Jazz",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1457506881840-7DMREFLW52OVI5ORFIIS/image-asset.jpeg",
+          "description": "A high performance pintail. Slight concave in the nose going into a \"V\". Tucked edge allows for forgiving turns.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Transition",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595012002263-8XCDNPXWKI4AK0PU5CN2/TRANSITION.JPG",
+          "description": "Inspired by the longboards ridden during the Hot Generation \"transition era\". No concave, thinner rails, slight roll and \"V\". These boards work best in clean pockets. The wide point is behind center so when going to the nose the board speeds up and locks in. Loose quick turns can be achieved off the tail. Usually ridden with a Greenough style fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Salinas",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595010975721-5W3AQHR8KHVW3MEGET2B/SALINAS.png",
+          "description": "A great stable platform for nose riding and quick turns. Best in waist to shoulder high surf. Concave nose to rolled V off the tail, 50/50 rails, and a little extra tail kick.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Diamond",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595011076447-JNCY5I9ALIW1NG2W5GY0/DIAMOND.png",
+          "description": "This board is inspired by the Australian foils of the mid sixties logs just before boards began to go shorter. A very foiled rail and no concave, but added nose kick to help for nose riding. A wide diamond tail produces quick responsive turns.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1565286186283-Z1YAIZOGS7IYONF32MA2/Glider.png",
+          "description": "A good paddler. Fast. Best suited for point style surf. Works best in ankle to head high surf.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Zipper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1543420674412-4HHEPE7UECS1IL7OLU47/zipper.jpg",
+          "description": "This is a board I designed with Midget Smith in 2006. The original was a diamond tail thruster. A fishy outline allowing for effortless speed and drive, a great everyday surfboard. This board can also be ridden as a quad, Bonzer, or single fin. The bottom is a slight single to double concave with a vee out the back. My average dims for this model are around 5'5'' x 20'' x 2 1/2''.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bomber",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1459662139596-PBTECL4V3IJ4CMP3UCUJ/bomber-2.jpg",
+          "description": "A classic style nose rider with a very subtle concave in the nose into some rolled vee off the tail. Utilizing a low rail in the nose helps create lift and speed on the tip. A foiled rail with some extra kick in the tail for locking in. Works best in clean down the line waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rose",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1457586599794-7YS9NKJDLZ426MVY4DK2/image-asset.jpeg",
+          "description": "This model is inspired by the boards of the mid sixties with a thin foiled rail and a more symmetrical rocker. A slight concave into a rolled vee. This board flows in and out of sections well allowing for quick turns and fast noserides.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Quadratic Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1457586747267-NHSRA5JDD8ZOWKNNZXRY/image-asset.jpeg",
+          "description": "A great board to fill the gap between the modern short board and a fish. This board carves with effortless speed and glide. The bottom has a slight single to double concave exiting to a spiral vee out the back. Fins can be glassed on marine ply, fiberglass on fin system. My favorite dims for this model are 5'10'' x 19 1/4'' x 2 1/2''.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Air",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1609002781607-AV0SZ7V2WCQVP8MSU2GM/Screen+Shot+2020-12-17+at+2.26.26+PM.png",
+          "description": "The Air model is built for fast progressive surfing with a slight concaved to flat deck for more pop and responsiveness under foot. A friendly amount of foam to get you in early. This board is the link between a modern shorty and a progressive fish. Fluid rocker for ease of speed, this board can be ridden with a variety of fin set ups. My personal dims on this model are 5'9'' x 19 1/4'' x 2 1/16''. This board is meant to be ridden about 1/4'' to 3/8'' thinner then your normal board since it has a concaved deck and bottom. (The rails are thicker then the center of the board.)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dart",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1480984882117-6Z0XWVADCYK8RTX6C7TS/image-asset.jpeg",
+          "description": "This board is a wide point forward more progressive twin fin. The bottom consists of a light single concave into a spiral vee out the back. Can be ordered as a twin or twin trailer fin set up. Subtle beak nose, flat deck, low paneled rails for extra speed and hold. Rocker is moderate, tail is foiled thin. My average dims on this design are 5'7'' x 19 1/2'' x 2 1/2''.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quad Formula",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1480984411810-OR62VM5CX82YJVDCHS0X/image-asset.png",
+          "description": "A quad shortboard that carries drive and speed. It can be ridden in 2 foot to overhead waves. Subtle rocker allows the board to fly down the line and hold its rail. This board can still drift and go vertical when approached correctly. Ride it around a inch or two smaller then your standard short board. My usual dims on this board are around 5'10'' x 19 3/8'' x 2 7/16''.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1480985233931-D26H5EZ6JK92YCWJCI7U/image-asset.jpeg",
+          "description": "This board is meant for large surf above 20 feet, for experienced surfers only. Multiple fin configurations and tails available in this model.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Truster Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1565286146869-KLC7ADFPOI2U1GG2UJO6/Thruster+Fish.jpg",
+          "description": "A swallow tail shortboard, meant to be ridden a inch or two smaller then your standard shorty. This board has a medium rocker for maximum speed and paddle. Not too chippy in the nose, single concave to light single double out the back. My average dims for this are 5'10'' x 19 3/8'' x 2 7/16''. This board can be ridden as a thruster or a quad. Best in chest to slightly over head waves. The swallow allows for a bit of extra drive and hold compared to the standard squash or round pin shorty.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "David Edwards",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1578585531550-Y0YFUE145LYXCDDPAFBR/Tyler_Warren_NoseRider.png",
+          "description": "This board is a classic style nose rider with a deep nose concave blended into a rolled vee out the back allowing for maximum tip time and quick pivoting turns while still maintaining speed, trim, and flow. This board works best in under head high conditions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Bullet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595010925300-6QDL32Z3GX4V4EYSYNIA/BULLET.png",
+          "description": "The Bullet is a combination of a fish style nose with a Bar of Soap (or mini Simmons) style tail. The moon tail helps create traction when putting it on the rail. This board has a forgiving rail and usually comes with my signature long based keels glassed on. The bottom consists of a slight rolled entry into a single concave and a spiral vee through the fins. This board is very fast and fun and can draw long or tight lines once mastered.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595010623807-JWTH34WQKESUZ78VYFDR/NOSERIDER.png",
+          "description": "This model is a well balanced noserider with less nose-concave then the David Edwards, and a more forgiving rounder rail. A mellow nose concave blends into a slight rolled vee in the tail. Slight nose rocker with a bit of extra tail kick that is not too extreme to keep down the line speed.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Evo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595010853710-8M6JDTC7A5O6OSAH3Z7L/EVO.png",
+          "description": "This model is based of the eggs that started the short-board revolution, with a much more modern rail and bottom to make it surf more easily. The bottom has a slight tri plane hull entry into a light single concave blended to a spiral vee around the fin allowing the board to naturally pick up speed and be loose and fast off the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pintail Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/1595014133036-Z5ZC67TXT3I4GYAOQZJ5/PINTAIL+NOSERIDER.PNG",
+          "description": "This board is based off the Noserider model with a pintail for a bit more hold through turns but still has excellent noseriding capabilities. The board has forgiving rocker, rails and bottom contours to keep it a smooth rider. Slight concave under the nose blended into a mellow rolled vee.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "NR Carver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/aa62a9ff-cddc-4f1c-990e-b376e87aa4ec/Screen+Shot+2023-11-21+at+2.34.09+PM.png",
+          "description": "The Noseride Carver is a great all around longboard that can work in the small stuff or a bit over head. A bit more drive off the tail while still being able to feel stable on the nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "OG Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/e3c99445-c40f-4251-adcf-2ab5ae16614a/Screen+Shot+2025-11-26+at+10.22.55+AM.png",
+          "description": "The OG Fish is my version of a classic San Diego fish with a more modern rocker, rail and bottom. This board works in small to overhead waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BWK",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/9a1f0482-3513-4eec-ad38-0b476a3aa1ae/BWK.WEB.png",
+          "description": "The BWK \"Baby Wave Killer\" is a semi wide diamond tailed quad that has a semi pulled in nose. This board works in chest to over head waves, best in lined up surf. The BWK turns quick with lots of drive due to the straighter tail template and quad fins. The bottom is a single to double concave exiting with a spiral vee. The rocker is relatively flat but seems to have just enough for most situations. This board is a great everyday rider but when the waves start pumping you will be pleasantly surprised on the ease of paddle, stability, speed and looseness. My personal dimensions are 5'11'' x 19 5/8'' x 2 7/16''.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Seed",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/8104d0e8-3313-42b9-a4e0-277c83c19456/59-tyler-warren-seed-surfboard-mollusk-surf-shop-6109686_900x.jpg.webp",
+          "description": "The Seed is a fishy style nose template with a pulled in pintail, paired with a thruster set up for maximum pivot in the pocket. The bottom consists of a slight single concave entry into a spiral vee through the tail region. This board is a blast for clean everyday style waves but can also excel in some juice. My dimensions for this model are 5'9'' x 20 1/2'' x 2 1/2''.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "90 Core",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56a2ac1ce0327c34723ebf1c/a61c7046-ccd5-4f00-8fb1-e487528cb1ca/Unknown.jpeg",
+          "description": "Inspired by the early to mid 1990's shortboards with a bit more of a forgiving rocker, bottom contour and rails. A slight single into double concave bottom usually and thruster set up. The standard dimensions for these are 6'1'' x 18 3/4'' x 2 1/4''.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
