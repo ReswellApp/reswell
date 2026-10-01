@@ -1,0 +1,24 @@
+{
+  "generated_for": "Almond Surfboards official leftover named model",
+  "source": "https://almondsurfboards.com/products/the-special-recipe-fish",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "almond-surfboards",
+      "name": "Almond Surfboards",
+      "website_url": "https://almondsurfboards.com",
+      "location_label": "Costa Mesa, California",
+      "founder_name": "Davey Brogan",
+      "lead_shaper_name": "Davey Brogan",
+      "short_description": "California-built longboards, mid-lengths, and fishes for catching waves early and often.",
+      "models": [
+        {
+          "name": "The Special Recipe Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0203/7640/files/SpecialRecipe-Front.png?v=1760990171",
+          "description": "\"A Chevy Bel Air with a Ferrari Engine.\" The Special Recipe Fish combines a full-ish outline with a more progressive rail and thickness flow—which means it has the planing surface to glide really well, but the foil and bottom contours to be surfed more aggressively. Best for the fish enthusiast who wants to explore the wave face entirely and have the drive and inherent speed to do turns up, down, left, and right. Futures twin boxes come standard.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
