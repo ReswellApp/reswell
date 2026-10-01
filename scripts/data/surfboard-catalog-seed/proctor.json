@@ -1,0 +1,468 @@
+{
+  "generated_for": "Proctor Surfboards official model catalog",
+  "source": "https://proctorsurf.com/board-models/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "proctor",
+      "name": "Proctor",
+      "website_url": "https://proctorsurf.com/",
+      "location_label": "Ventura, California",
+      "founder_name": "Todd Proctor",
+      "lead_shaper_name": "Todd Proctor",
+      "short_description": "Custom surfboards built to order by Todd Proctor at his Ventura, California factory.",
+      "models": [
+        {
+          "name": "Accelerator",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/04/tommy1-adams.jpg",
+          "description": "This board is specifically designed to make small wave performance surfing easy.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Ante-Up",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider29/ante-up-2019-bottom-orange-fcsii.png",
+          "description": "For when the waves are getting a bit bigger and punchier than your regular shortboard can handle. The Ante Up is that little extra you need to get into bigger waves easier and maintain the balance of speed and stability necessary to rip on the overhead dream days. The rocker has an even bend from nose to tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Apache",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider/cache/11eeca872feb27779b74118f88bc2804/concave-deck-super-apache-tinypng.jpg",
+          "description": "The best surfboard for small waves. But it can handle big waves too. It came in low out of the pre-dawn sky and descended on the line-up amidst the first rays of the rising sun….with the heart of an Indian warrior, the Apache has arrived.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Apex",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2019/01/nick-rozsa-apex-houston-crop.jpg",
+          "description": "An all-around high performance shortboard; a conglomeration of design aspects from the Blackbird, Super-Typhoon and Ghost models all synthesized into one versatile compact shape. The entry rocker is lower like that of the Ghost, allowing for early entry into waves and quick speed down the line. The rocker is surprisingly steep through the midsection of the board; the apex of the rocker peaking at dead center….much like that of the Supertypoon; this gives the board a nice swivelly almost ball-bearing like feel, immediately climbing it high and tight straight into the lippy power part of the wave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Archangel",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/07/hunter-archangel-board.jpg",
+          "description": "New supersnarler gigantotubos model: the “Archangel”….beware forces of darkness, there is far more power in the light. 9’8″ x 20 1/2″ x 3 5/8” This gun had a more relaxed entry rocker, and a fuller nose outline for early glide in. It features volume forward under the chest for digging up heaps of speed in paddle, a beak nose cuz their cool and keep the nose down, and a traditional vee to flat to panel vee bottom aka Pat Curren / Brewer-esque hull for predictability and smooth glide.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Back to the Future Twin Fin",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2022/07/back-to-future-twin-bottom.jpg",
+          "description": "This is THE BOARD for when it’s one foot and super grovel-town conditions. Mixing an 80’s style twinny outline with a very modern futuristic, hydro-harnessing hull contour. You wanna baffle longboarders and mid-lengthers till they shake their heads and cry??",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big Chief",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/05/TamayoBigChief.jpg",
+          "description": "Developed specifically for heavier surfers and/or those that surf more off their rail; this is the shortboard you can rip on and not sink on. Heavier surfers and those that grew up surfing during the 80’s era tend to surf more with their rails than off their fins. So the fuller rails of this design are essential for a board that “pushes back” and drives through turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Big Rascal",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2024/02/rascal-cf-wood_1200.webp",
+          "description": "The ultimate big guy fish surfboard. **All boards in the Rascal series can be built with larger dims to allow for the much loved performance features of the Rascals but with more volume where it’s appropriate for your needs. Just click on any Rascal series board in our online shop and select from the larger dimensions to make yours a “Big Rascal” This squatty firebrand has all the speed of a retro-style shape, but with the holding power of a modern board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blazer",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2024/02/blazer_concaves.webp",
+          "description": "Jetstream single to double concave to vee . . .",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Bullet",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider/cache/0dcf79c98de4c6b0e647cae2d6a6f6e9/bullet_clear_angle_fin_1920.jpg",
+          "description": "Some people say, “Man, I’m tired of wiggling….I’m tired of my board sticking….I wanna go fast, I wanna feel free to speed and arc out my turns where I wanna.” These same people also say, “I don’t want to think no more ‘bout having to surf technical and perfect in the pocket….and having my board punish me if I don’t…..somebody gimme a bullet.” The bottom runs a single through the middle under the front foot for a positive drive off the front foot when the waves are small….then it splits to double barrel concaves ahead of the fins, and finally to a spiral vee through the front fins and pronounced vee off the tail. This incorporates the smooth flow of a traditional vee bottom (which is very…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Bullpin",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/09/bullpin-bottom.jpg",
+          "description": "Customized step-up for big rolly Steamer Lane and other cali points. 7’0″ x 19 5/8″ x 2 3/4″ 39L inverted fulcrum rocker with fuller ‘bull-ish’ nose outline to tear-dropping rounded pin…not too pinny so it can hold its speed through long drawn out open faced carves, yet drawn in enough to fit steep and deep and hold a line through barrel sections. More foam under the chest to glide into waves early, but with low volume rails to knife at high speed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Circa '86",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/circa86-potts-700-mobile.jpg",
+          "description": "Can you believe there is actually an 80’s model…I’m feeling old. Actually, I was a grom in the 80’s and what a great time it was; in part due to board design – less work for more speed; surfing didn’t have to be so technical back then and it seemed like there were less knee injuries… I don’t know? Features flat deck, angled down rails, flat-to-vee bottom, even a beautifully hideous beek nose.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Classic Longboard",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/04/chet-kat-longboards.jpg",
+          "description": "Well they’re classic – 50/50 rails, rolled vee bottom, scoop in the nose; Built for trim speed, walking the nose, drop knee turns…it’s a mellower era and the mood is flowin’. We do them with volan cutlaps, paddle patches, cloth inlays, acid splashes, resin swirls, tail blocks, nose blocks, pigment opques, tints, pinline art, gloss and polish…you name it we do it (even step decks…shhh – don’t tell anybody). Made in the USA.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Da Monsta",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2024/01/SupernatMonsta_511_2up_900.jpg",
+          "description": "pat-millin-glaser-barrel 5'8\" x 19 1/4\" x 2 3/8\" Monsta v2 Carbon Footprint at Blacks. Pat is 5'11\"/180lb. photo: Glaser nick rozsa carbon footprint monsta surfboard Rozsa Homegrown Rozsa Homegrown shot/cut: Papaleo nick rozsa monsta surfboard cathedral wrap MonstaRozsa Forever Grom Explains da Monsta Forever Grom Explains da Monsta Ricky Schaffer tells why Da Monsta has put \"fresh wind and fresh fire\" into his surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Derringer",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/derringer.jpg",
+          "description": "A new very smooth and forgiving egg/hybrid/funshape design / perfect crossover for transitioning from longboard to short, or when you want the paddle ease of a bigger board but the performance characteristics of a shorter board…features a slight single to double with subtle spiral vee off the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Displacement Hull",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider35/bear-republic2-bottom.png",
+          "description": "Ever glide along at full tilt speed trim and feel like your weightless? The Hull gets you there. Pictured Here: 7’0″ x 24″ x 3 1/4″ pintail",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Earthy Midlength",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2023/04/earthy_bottom_900-1.jpg",
+          "description": "a 70’s throwback with modern accoutrement to zesty up the dish. What was I thinking? ….",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "El Pavote",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/pavote-clear-900.jpg",
+          "description": "Best summed up – easy speed with maximum hold for performance surfing. El Pavote is basically the Falcon model with all the spiral vee through the back half of the board shaped out of the bottom; and replaced with a deep even single concave with subtle doubles running the length of the back 1/3 of the rocker and off the tail block. So….what all that technical jargon means practically is that the El Pavote has more hold off your back foot so you can leave the gas at full throttle through turns, push on it as hard as you like and it will push back and redirect with smooth positive drive not unlike the speed with which demons got the boot from God’s heavenly kingdom at the dawn of time.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Falcon v2",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/02/falconv2-concaves.jpg",
+          "description": "Falcon II double wing swallowtail (extreme reverse vee / spiral vee to drop rocker single cave with full barrel sluicebox inset double concaves splitting to a spiral vee fliptail compression chamber exhaust exit). The Falcon 2 is quickly becoming the most popular new board model with its extreme reverse vee to deep single spiralling doubles hull contour. If you like a board with V8 hemi drive that likes to go on rail and pick up speed through the second half of turns…then this is the model for you.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Falcon v3",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2022/07/shaper-wood-floor-2030-falcon-1.jpg",
+          "description": "with Todd Proctor Here’s an in-depth look at the Falcon 2 & Falcon 3, a versatile groveler and performance shortboard 2-pack that revisit the reverse vee design of the early 90’s, reimagined in an extreme format complemented by a high-powered deeply concaved engine through the fins. falconv3-procco2030-showroom jake-falconv3-lowers Way out finner with hammer buckets and style. @jakes_strength yesterday at Lowers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flyin' Lion",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2024/10/flyin_lion_rozsa_jbay_900.jpg",
+          "description": "A board that has a feeling of continuous on-rail motion taking natural lines that run cross-grain to the natural pull of the water flow on the wave face; letting you gain drive by a board that intrinsically wants to go hard on rail and turn grippy yet responsive in the steepest parts of the wave. The Flyin’ Lion places the steepest point of the rocker between the center of the board and the front fins, making for an extreme bubble or apex point in the curve of the board between the feet. Both the stringerline rocker, rail line rocker and outline have the majority of curve placed behind center and through the back of the board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flyin' Monsta",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2018/12/riley-morgan-flyin-monsta.jpg",
+          "description": "New for Fall ’18…The ever and oft-so-loved Monsta design with a new slightly pulled back outline and the extreme tail rocker and heavy single co ncave of the Flyin’ Lion applied to the bottom. A new super pockety, tail whipping, steep faced rail holding bucketer. The ‘one board quiver’.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flyin' Pig",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2023/01/bethany-flyin-pig.jpg",
+          "description": "for the average head high to slightly overhead days, and for getting into the barrel easy and early, with a wide open sweet spot, a drivey board that will do crisp gafs in the pocket; an “easy” board that lets you get speed easy, but will also carve it up lightning fast..",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "G4-71",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2023/03/pete-mendia-g4-stripes.jpeg",
+          "description": "Versatile, user-friendly easyrippin’ performance board. Moderate to low drivey rocker, yet still nice and whippy. A board you don’t have to think too much on…it just goes like a horse out tha gate.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ghost",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/GhostCR-bottom.jpg",
+          "description": "For those of you who like the Monsta, this is a high performance shortboard counterpart to that design. I’ve kept the rocker and bottom contours the same as that of the Monsta….so same speed, same positive flow…The outline, rail volume and deck foil is more “shortboardy, but with the wide point moved slightly forward & a bit fuller nose outline than a standard “needled out” perfect waves shortboard. The rails are less full than that of the Monsta; more pulled down, but boxy in shape.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Greased Pig",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2013/08/PM3-Greased-Pig-Tupat.jpg",
+          "description": "Greased Pig A speed machine for chest high waves and smaller; this is the type of board that you drive like a race car….it’s going fast so all you gotta’ do is hang on and steer. It has a low entry rocker for quick paddling, ease catching waves, and increased lift in small/ flatter faced waves. The bottom has a slight rolled vee in the nose to a single concave through the belly that transitions into a pronounced spiral vee that increases off the tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Greased Rascal",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/greased-rascal-stripes-bottom-900.jpg",
+          "description": "For those of you who have a near and dear place in your heart for the exuberant speed and summertime fun-ness of the Rascal….here is the new stepchild with nitrous oxide boosters added. Slide into waves earlier, zip through the crumble-flats and nail a nice feathery little lip over and over….without having to think too hard to smile it up. Ride four to five inches shorter and 3/4″ – 1″ wider than standard shorty.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gromonsta",
+          "image_url": "https://proctorsurf.com/wp/monsta.png",
+          "description": "A Grom’s one board quiver – da GROMONSTA **All Monsta series surfboards available in grom sizes. Just visit the online board shop and select the smaller sizes from the drop down options on any Monsta series surfboard. 5 fin install u0026amp; fins to ride as quad/thruster at an additional $45.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "GrovelChief",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/07/grovelchief-concaves.jpg",
+          "description": "Features wider nose outline and full tailblock for maximum glide and carry, with a less rockered version of the #Falcon2surfboard rocker and bottom for seemless ball-bearing rail to rail execution. Top speed surpasses previous redline markers, and holds a rail like a boss on wings. Feasts on 1-4 foot summer weakness, allowing big dudes to prosper whilst many flyweights can’t even find speed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Guided Missile",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/07/guided-missile-lam-room-800.jpg",
+          "description": "Guided Missile Tow-In Board for yanking in to monsters. All boards customized with shaper Todd Proctor during custom order consult.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Hideoscillous",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/hideo-caves-1900.jpg",
+          "description": "Hideoscillous: ie. Hideous Oscillations from the Latin root hideous to the eye, yet one possessing beautiful oscillating motions in the water. An extreme combination of modern hull contours produces the glide of ‘free-friction’ between turns which intersects with the hold of a back foot ‘clamp’.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Holy Roller",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2019/02/killa-cali-hustla-bottom.png",
+          "description": "on the Holy Roller Alternative Step-Up IMG_4908-steve_gaffney-1200 6'6\" x 19\" x 2 11 1/6\" 33.5L for Matt for South Bay/El Porto. Matt is 5'11\"/185lb. photo: Steve Gaffney IMG_4785 IMG_4884-1200 IMG_4781 IMG_4909-steve_gaffney-1200 IMG_4788b mendia-IMG_5206_lugo1200 killa-cali-hustla killa-cali-hustla-bottom SHAPER BREAKDOWN A compact step-up alternative You know those days when it’s well overhead and sweeping, and you feel like you could be riding a board that’s about a foot longer and 1/4” thicker to be able to nab the goodies that always seem to be just out of reach?",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Howitzer",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2019/05/big-gun-dark-grey-bottom.png",
+          "description": "For as big of waves as you dare to paddle into. A Waimea, Todos Santos, Mavericks style gun . .",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Kookaburra",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/04/jarrah-kookaburra.jpg",
+          "description": "Named after a noisy, brightly colored bird from Australia; this board is designed to generate crazy speed at the drop of a hat, yet perform all the radical high flyin’ maneuvers of a high performance shortboard. A very versatile board that will take you wherever you wanna go whether it’s two foot and mushy or overhead and pumpin’. Jarrah Tutton, my friend from Australia, described this board to me and asked if I’d craft up one of these colorful little birds.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lil' Rascal",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/04/rascal02.jpg",
+          "description": "This squatty firebrand has all the speed of a retro-style shape, but with the holding power of a modern board. Using a bulby outline with a flatter rocker, full boxy rails, and new generation hull contours; it loves to rocket on 2 foot gutless days when most people are running for their longboards. This design has better traction than your typical retro-style speeders.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Lil' Spuddy",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/lil-spuddy-900.jpg",
+          "description": "The much loved Lil’ Rascal with a round tail This squatty firebrand has all the speed of a retro-style shape, but with the holding power of a modern board. Using a bulby outline with a flatter rocker, full boxy rails, and new generation hull contours; it loves to rocket on 2 foot gutless days when most people are running for their longboards. This design has better traction than your typical retro-style speeders.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Lumberjack",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/03/IMG_6362.jpeg",
+          "description": "Big Guy small wave groveler. Quick in take off on weak waves. Heavy single-to-inset double concaves = drive. Fuller nose outline with the wide point moved forward.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Magnum Opus",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2024/08/magnum_opus_wood.jpg",
+          "description": "A high performance average waves board that drives out of gouges with unbridled enthusiasm…disguised as an unassuming beak-nosed throw-back fishy groveller… I keep getting asked, “Hey, is there any footage of Rozsa on that new trippy little board?” Everybody has missed seeing Nick surf the last few years, as have I. But, as we all know, life has a way of throwing some twists and turns along the way…and sometimes we gotta just buckle down and take care of what’s right in front of us. And sometimes surfing has to take a back seat for awhile.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Manatee",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider/cache/32cbc80b4571470c08fac76aa8fa4947/manatee-bottom.jpg",
+          "description": "Lots of shortboarders have been jumping on this thing and raving. Mini so you can shwang it around easier than a longboard but still catch anything you want. Our laminator swears by his.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mendia",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2024/08/peter_mendia_turn_1920.jpg",
+          "description": "This board design is inspired by the surfing of madman Pete Mendia, for a powersurfing hackathon. A board designed for timeless power surfing; gouging rail arcs; big sprays; made for deep barrels and goliath turns. Crazy sweepy tail rocker for a waterworks spectacular.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MobstaChief",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/03/mobstachief-wood-floor.jpg",
+          "description": "Born 5 lbs. 2 oz. and at 6’3 1/2” x 23” x 3 3/8” 55L …we welcome to the world the #MoBstaChief a new twin fin ala MR style for da big boys.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Module",
+          "image_url": "https://proctorsurf.com/wp/module.png",
+          "description": "Module Idea taken from the escape pod used by the droids at the beginning or Star Wars. A small wave “cheeter” board with all the trim speed and carry through the flats necessary to blow up crumblers. Utilizes single-to-double concaves to pronounced vee through the tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Monstachief",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/mc-flatdeck-downrail-beaknose-1200.jpg",
+          "description": "Specifically designed for guys in the 180 – 300lbs + range that want a versatile all-around board they can gouge away on…..in anything from 2 ft. sludge, to overhead throaters. Taken from the original monsta design, this board is armed with folkloric dimensions on a grand scale.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MonstaFish",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2023/08/monstafish-bottom.jpg",
+          "description": "“Gut that fish” – the all new modern retroactive Twin/Quad Fang uses progressive rocker & deep heavy concaves for a board that gets up on plane, and holds a rail through full-speed carves like none before it. I’ve literally gutted the belly of the beast so she has more efficient water flow, making her speedy as all get out with no lack of fast-twitch muscle fiber rail response. Go on, and manhandle the baby.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MonstaPig",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2023/03/monstapig-bottom-1k.jpg",
+          "description": "Monsta with Greased Pig v.4 rocker and bottom. Quickly becoming a popular everyday board. A versatile mid-range groveler that flies through the flats, yet runs crisp and clean in a good pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Monstroscillous",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/ricky-monstro-lowers-tommy-michael.jpg",
+          "description": "features the stringerline center rocker of the Hideoscillous with a touch more entry rocker added to corner tight and dynamic, a fuller nose a la the Pavote (like a fuller outlined Monsta) with a wider steep hipsquash (kinda like a Curren tail from back in the day), and coupled with a jetstream heavy concave bottom that runs deep scalloped duals through the fins for back foot drive hold and acceleration like a hydrofoil.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Pavarotti",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider/cache/182c045075d52a7f5afc94813ad71e33/pavarotti-ridiculite.jpg",
+          "description": "It’s a new addition to the lineup this year, called the Pavarotti surfboard. This is a high performance uber-groveller, but it’s also is a great all around everyday board that catches waves easy with a fuller nose and lower entry rocker. Ridden roughly the same dimensions as a Monsta surfboard or an inch shorter.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Pelican Midlength",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/06/pelican-deck-900.jpg",
+          "description": "6-channel / panel vee bottom we’re calling “The Pelican” because it glides and swoops smooth and silent as it speeds along its beaked nose way. Now available for custom orders for all you Morning of the Earth lovers…why? Because we love you 😉 This ones for a fella named Aric who’s 31, 5’11”, 190lbs.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Longboard",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/06/larry-hplb-bottom-turn.jpg",
+          "description": "Performance Longboard The performance longboard features additional rocker, sleeker outline, and more tapered responsive rails. The bottom utilizes a concave in the nose for increased lift in noseriding, which transitions to a double concave through the mid-section of the board, then to a concave vee or “spiral vee” through the fins and last 1/3 of the board. Nobody wants to ride a longboard that feels like it’s pushing water.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Performance Noserider",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/09/hpnr-kelp-bottom-1000.jpg",
+          "description": "This board features a teardrop outline with a fuller nose to provide drive up front. A lower entry rocker and increased tail rocker keep it quick-trimming off the nose, yet loose off the tail. The bottom has a single concave under the nose that splits into double caves through the mid, and accelerates into a spiral vee through the last third of the board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pipecleaner",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/05/pipecleaner-magenta-bottom.png",
+          "description": "A gun for hollow, powerful barrels. This one has a rolled vee in the nose that transitions to extreme, accelerated panel vees through the tail to feel right at home when hangin’ deep with the foamball. All guns customized according to surfer’s build & size/shape of waves to be surfed.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Pipsqueak",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/f.pip-seq.jpg",
+          "description": "Listen to shaper Todd Proctor discuss the design concepts that went into the new MagnaSqueak surfboard. Ingredients from the beloved Pipsqueak, the TRascal, and the Magnum Opus. nick-rozsa-pipsqueak-bash-papaleo 5'8\" x 19 1/4\" x 2 3/8\" 28L for Nick.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "PostMod",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2019/02/baltic-blue-postmod-wood-1200.jpg",
+          "description": "This board combines a modernized, sleeked up retro fish outline with a progressive rocker and one-of-a-kind freaky hull contours. Glide or gouge, float or carve, crouch low with five on the nose, or stand tall and arch the back. Introducing a new rocker and hull contours to the traditional fish outline.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Procco 20/30",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2022/07/mendias-procco2030.jpg",
+          "description": "Procco 20/30 Shortboard - An Alternative to a Robotic Slave Future Shaper Breakdown me-and-my-2030-2 Procco 20/30 concaves mendias-procco2030 shaper-wood-floor-2030-falcon procco2030-home-2000 pete-procco-2030-window-wrap SHAPER BREAKDOWN A synthesis of everything I’ve learned over 30 years, an alternative to a robotic slave future. It’s a design that helps you cover more territory, with more drive, and stay on rail longer. Yet, is surgical lightning, whippy responsive in the hook.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rascal II",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider/cache/0cf993b2e4e51c1e2ed9fd0ed948d327/rascal-II-concave-deck2-950.jpg",
+          "description": "Yes, you guessed correctly; the Rascal II is an offspring of the original Lil’ Rascal. Don’t worry, it’s not meant to replace the trusty, tried and true design of the original Rascal…. It started as just some thoughts…..ideas for a new board design after contemplating just how much fun I’d had on my Lil’ Rascal over the last year and a half.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "RascSqueak",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2024/07/rascsqueak700x260.jpg",
+          "description": "A Rascal nose with a wider Pipsqueak rear & Pipsqueak flip nose. Short, wide and flat for speeding across weak waves. It uses a unique hydrofoilized jetstream hull and trenched-out, scalloped ‘sluice-box’ concaves; with down rail for going Ahwooooooooooo",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Scarecrow",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2012/06/scarecrow.jpg",
+          "description": "scary? no. this skinny-tailed-swabby is the way to go.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Shalomic Intervention",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider10/mendia-shalomic-winston-board.jpeg",
+          "description": "on the Shalomic Intervention Shalomic Intervention A good waves board featuring lots of rocker and a heavy single concave. Mendia puts it under the knife in Hawaii, Indo and the Bahamas. pete-shalomic-barrel IMG_9850FD1FE781-1 jarrah-shalomic-vert Peter Mendia: Boards for the Journey Peter Mendia: Boards for the Journey Heading to good waves?",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sickle",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2019/05/sickel-tangerine-wood-floor-1200.jpg",
+          "description": "This isn’t your grand daddy’s single fin…. it’s a high performance mono-fin sickle. It uses double barrel concaves under the front foot and channels out the back for speed and drive.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sputnik",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider/cache/2c3ace4efdfd0058c0dfe4d944882ca0/sputnik-deck-blank-1000.jpg",
+          "description": "Small waves no problem; easy entry; rocket fuel down the line. Super fast, yet turns like a good performance board and holds a rail super good too which is new territory for these kinds of shapes. For ease of paddling, quick take-off, and getting more radical & vertical Post first surf from Todd….",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "SR-71",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/05/rozsa-sr71-split.jpeg",
+          "description": "Features single-to-double concave bottom for a drivey, predictable feel. Lower entry allows you to get into waves early and gain quick bursts of speed down the line. Good amount of tail rocker bending through the second half of the board makes for a tight turning, top-to-bottom board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Super Grom",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2020/02/kepa-rockin-out-1200.jpg",
+          "description": "How great is it to be a grom?!…surfin’ three sessions a day….the perpetual salt-bake on your skin…and too amped for that next surf, to push on to the next level with the new maneuvers you’ve been trying. Here’s a board for you core groms out there. This board’s as high performance as they come; scaled down to what’s the right dimensions for you.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Super-Typhoon",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2010/12/lacerator-typhoon.jpg",
+          "description": "This has been a long-standing favorite for performance surfing when the waves get good. A perfect trip board. However, this year I’ve tweaked with the rocker a bit to give it that same good waves feel in less than perfect conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Superabound",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2014/05/mendia-stafford-superabound.jpg",
+          "description": "A “good waves” dream board. Plenty of rocker with a consistent bend from nose to tail, and lots of concave running the length of the board. The best ‘trip’ board I make, or for when your local spot gets top to bottom.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SuperFortress",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/10/superfortress-charcoal-bottom.jpg",
+          "description": "A modern interpretation of the Classic Noserider a la Nuuhiwa era. Plenty of volume, heavy concave/scoop in the nose combined with a very low rocker from the tip through the belly makes for easy glidin’. No catch 50/50 rails allows smooth transitions in trim.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SuperFortress Mod",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2021/09/larry-ugale-ventura-point-torreyjay-1500.jpg",
+          "description": "For some time now, I’ve been seeing a need for a pig style classic longboard, and finally found a window of opportunity thanks to a 12 year old girl named Lily from Ventura, who ordered this special shape custom some time back. It uses the same rocker and bottom as the Superfortress / classic noserider, but the outline has been adjusted to a sleeker nose with the planshape’s wide point pulled back and added curve into the tailblock. Less area in the nose outline will let the front end knife in to the wave face with less ‘catchiness’ and smoother nose glide….a knifey nose glide during tip time.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Supernatural",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2023/09/Supernat2030_61_18989_deck.jpg",
+          "description": "My latest performance shortboard epiphany. …a new board concept descended from its predecessors the Superabound intertwined with the Procco 20/30. I first heard of this new board when the voice of God spoke into my mind while Beethoven’s 7th symphony resounded within the walls of my skull…the sounds of each in unison speaking of a board I ought to bring to fruition…and that’s how the first Supernatural was birthed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TRascal",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider/cache/7a5905a4de261dfe3018d4acb660151e/TRascal_57_19110_angle_1920.jpg",
+          "description": "Listen to Todd tell the story of the creation of the TRascal - combining elements from his PostMod Retro Twin Fin Fish and his modern performance fish, the beloved Rascal - and introducing a new genre of performance turbo fish ... featuring more tail rocker, the stealthy shallow swallowtail ‘pizza slice’ so you can get your foot way back, the glass-on True Ames twins with small trailer, single-to-double-to-spiral vee hull contour, flat deck, u-deck, with tapered downrails especially thinned out through the fins for bite and responsiveness. Watch Shaper Breakdown Customize TRascal in the online board shop Slide Here’s a little one minute teaser snippet from a 20 minute deep dive into an 8…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "TwinStitch",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2019/01/twin-turbine-angle-cutout.png",
+          "description": "This twin fin right here has a lot of people talking. This latest variant of the performance twin fin model is bringing new, flourishing, joy/filled life and health and glide and speed and free-ness with grip and buckets of glory galore…it’s called the #Twinstitchsurfboard and it uses the bottom line and rocker of the #Zipstitchsurfboard combined with the outline and rails of the #Twinturbinesurfboard / a wider nose, narrower tailed, single-wing swallow with a slot channel through the tail for extra traction. @petemendia tells me, “I feel like I’m losing my mind on this thing!” For those of you that love the Zipstitch, this twin fin / 2+1 counterpart would be a slightly looser favorite.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Velocimonsta",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2022/08/velocimonsta-bottom-750.jpg",
+          "description": "PERFECT PARTNERS, THE PROCCO 20/30 SHORTBOARD AND VELCIMONSTA 20/30 (A STEP-DOWN MONSTA VERSION OF THE 20/30): Shaper Breakdown velocimonsta-olive-drab velocimonsta2030-1200 Procco 20/30 concaves mendias-procco2030 shaper-wood-floor-2030-falcon velocimonsta-750 velocimonsta-bottom-750 SHAPER BREAKDOWN The newly minted #Velocimonsta2030 …it’s got the bendy-between-the-feet ball-bearing pocket hustle of the #procco2030surfboard …the heavy accelerated tail concaves of the #Flyinlionsurfboard and the outline and rails of the #Monstasurfboard for a super duper responsive, drivey, rail-holding, controlled-releasing, buckets-to-the-sky, fin-wafting, don’t-gotta-think-too-hard fun craft. In the…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "West Peak",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2019/01/west-peak-arch-crimson-bottom.png",
+          "description": "A gun for double overhead and bigger; typically a travel board unless you live in Mainland Mexico, the North Shore, or somewhere like that. Perfect for the days where the playing field is large-scale and there is “a lot” of water moving. The West Peak surfs top-to-bottom like a shortboard while maintaining the paddling and stability necessary to get in the waves early and drive hard turns in maxxing conditions.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "X-15",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2026/03/x15_yves.jpg",
+          "description": "In this episode of “People Who Surf” – we have @yvesbright a core-as-it-gets surfer I’ve known for almost as long as my surfing journey began. Yves has been a stand out ripper since he was a kid…and has continued to stay super fit, stay in the water and is still upping his game. He’s a bit of a modern day renaissance man, excelling in photography, a businessman, a model, and a family man.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "ZipstaFish Quad",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/2025/04/zipstafish_bottom.jpg",
+          "description": "ZipstaFish Quad Shaper Breaks Down the ZipstaFish Quad Summertime Fish Listen to Todd describe the design features that make up the new ZipstaFish quad surfboard. A small wave summertime fish, grandson to the ZipStitch. Using a quad provides increased rail hold and drive through turns while still providing more freed-up speed with no trailer fin in the center.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "ZipstaJet",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider/cache/54fba5ca7a3caabd10201a6b24edda8c/zipstajet-swallow-deck-bottom-wall.jpg",
+          "description": "ZipstaJet swallow The latest iteration of our most oft loved “Monsta” model; a favorite for many years. It uses the centerline rocker of the Zipstitch with the outline of a swallowtail Monsta, the exaggeratedly deep and multi-scalloped concaves of the Jetstream and four short channels running off the tail. A nitrous speeder with regulatable turbulence smoothing capacities at top speed … a board that never redlines, but the faster it goes the smoother she runs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "ZipStitch",
+          "image_url": "https://proctorsurf.com/wp-content/uploads/slider5/zipstitch-bottom.png",
+          "description": "A high performance groveler for detonating small waves. For zippin’ across and stitchin’ it up. A New Covenant / A New Kind of Surfing: For the everyday core score blue collar wave rider.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
