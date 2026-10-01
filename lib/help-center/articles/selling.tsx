@@ -1113,6 +1113,26 @@ export const sellingHelpArticles: HelpArticle[] = [
           </>
         ),
       },
+      {
+        heading: "Avoid carrier adjustment fees",
+        body: (
+          <>
+            <p>
+              Carrier labels are priced from the packed dimensions and weight entered when the label
+              is purchased. Carriers measure packages again after drop-off. If your sealed box is
+              larger or heavier than the label allows, the carrier may charge an adjustment and that
+              amount is deducted from your earnings for the sale.
+            </p>
+            <BulletList
+              items={[
+                <>Measure the outside of the fully packed box twice before carrier handoff.</>,
+                <>Keep every dimension and the final weight at or below the measurements on the label.</>,
+                <>Take clear photos of the sealed box, measurements, and attached label before drop-off.</>,
+              ]}
+            />
+          </>
+        ),
+      },
     ],
   },
 ]

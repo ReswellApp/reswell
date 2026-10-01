@@ -28,6 +28,7 @@ import { toast } from "sonner"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
 import { SellerShippingLabelCheckout } from "@/components/seller-shipping-label-checkout"
 import { SantaBarbaraDropoffInstructionsCard } from "@/components/features/sales/santa-barbara-dropoff-instructions-card"
+import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
 
@@ -512,6 +513,7 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   setSelectedRateId("")
                 }}
               />
+              <CarrierAdjustmentNotice />
               {manualParcelHint ? (
                 <p className="text-sm text-destructive" role="alert">
                   {manualParcelHint}

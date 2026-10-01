@@ -226,6 +226,13 @@ export const activityRowSurfaceNeutral =
   "hover:bg-muted/35 border-l-2 border-l-transparent hover:border-l-border/80"
 
 export function parseDescription(raw: string, type: string): { title: string; subtitle: string } {
+  if (raw.startsWith("Shipping label adjustment — ")) {
+    return {
+      title: "Shipping label adjustment",
+      subtitle: raw.slice("Shipping label adjustment — ".length),
+    }
+  }
+
   if (raw.startsWith("Pending — ")) {
     const m = raw.match(/^Pending — Sold "(.+?)"\s*/)
     if (m) {

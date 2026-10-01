@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Package, Truck } from "lucide-react"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
+import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
 
 export type AwaitingDropoffSale = {
   orderId: string
@@ -22,6 +23,7 @@ export function AwaitingDropoffTiles({ sales }: { sales: AwaitingDropoffSale[] }
           Labels are ready. These leave this list when the carrier scans the package.
         </p>
       </div>
+      <CarrierAdjustmentNotice className="max-w-xl" />
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {sales.map((sale) => (
           <li key={sale.orderId}>
