@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import type { PrintableShippingLabelSale } from "@/components/features/sales/printable-shipping-label-row"
 import { SELLER_PRINT_SHIPPING_LABELS_MAX } from "@/lib/validations/seller-print-shipping-labels"
+import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
 
 export type { PrintableShippingLabelSale }
 
@@ -87,6 +88,9 @@ export function PrintShippingLabelsModule({
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">{cardCopy}</p>
+            {printableSales.length > 0 ? (
+              <CarrierAdjustmentNotice className="mt-2 max-w-xl" />
+            ) : null}
           </div>
           <Button type="button" className="shrink-0 gap-2" onClick={() => setOpen(true)}>
             <Printer className="h-4 w-4" />
