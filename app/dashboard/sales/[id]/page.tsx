@@ -83,6 +83,7 @@ import {
 } from "@/lib/dropoff-santa-barbara"
 import { SantaBarbaraDropoffInstructionsCard } from "@/components/features/sales/santa-barbara-dropoff-instructions-card"
 import { RESWELL_WAREHOUSE_ADDRESS } from "@/lib/reswell-warehouse-address"
+import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -676,6 +677,13 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               </div>
             </CardContent>
           </Card>
+
+          {!isSantaBarbaraDropoffOrder &&
+          sale.fulfillment_method === "shipping" &&
+          !isRefunded &&
+          (isReswellShippingOrder || hasPreparedShippingLabel) ? (
+            <CarrierAdjustmentNotice variant="prominent" />
+          ) : null}
 
           {isSantaBarbaraDropoffOrder && sale.fulfillment_method === "shipping" ? (
             <SantaBarbaraDropoffInstructionsCard

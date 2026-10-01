@@ -5070,6 +5070,7 @@ function SellPageContentInner({
                                     <ReswellPackageDimensionsCard
                                       showHeading
                                       exactCartonMode
+                                      showCarrierAdjustmentNotice
                                       readOnly={Boolean(formData.dropoffLocationId)}
                                       lengthPlaceholder="0"
                                       className="border-0 bg-transparent p-0 shadow-none sm:border sm:bg-card sm:p-5 sm:shadow-sm"
