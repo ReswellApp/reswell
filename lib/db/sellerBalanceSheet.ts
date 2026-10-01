@@ -7,6 +7,7 @@ import type {
 } from "@/lib/types/sellerBalanceSheet"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
+import type { RemoveBalanceSheetItemInput } from "@/lib/validations/seller-balance-sheet"
 
 interface BalanceSheetViewRow {
   entry_key: string
@@ -101,7 +102,7 @@ export async function getSellerBalanceSheetPage(
   const to = from + pageSize - 1
 
   let entriesQuery = supabase
-    .from("seller_balance_sheet_entries")
+    .from("visible_seller_balance_sheet_entries")
     .select(BALANCE_SHEET_COLUMNS, { count: "exact" })
     .eq("owner_id", userId)
 
@@ -156,4 +157,25 @@ export async function updateOwnedListingAcquisition(
 
   if (error) throw error
   return data?.id === input.listingId
+}
+
+export async function excludeOwnedBalanceSheetItem(
+  supabase: SupabaseClient,
+  userId: string,
+  input: RemoveBalanceSheetItemInput,
+): Promise<void> {
+  const { error } = await supabase
+    .from("seller_balance_sheet_exclusions")
+    .upsert(
+      {
+        owner_id: userId,
+        listing_id: input.listingId,
+      },
+      {
+        onConflict: "owner_id,listing_id",
+        ignoreDuplicates: true,
+      },
+    )
+
+  if (error) throw error
 }

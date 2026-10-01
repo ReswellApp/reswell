@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AcquisitionDetailsDialog } from "@/components/features/dashboard/acquisition-details-dialog"
+import { RemoveBalanceSheetItemButton } from "@/components/features/dashboard/remove-balance-sheet-item-button"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
@@ -59,6 +60,9 @@ export function BalanceSheetTable({ sheet, category }: BalanceSheetTableProps) {
               <th className="px-4 py-3 text-right font-medium">Asking / sold</th>
               <th className="px-4 py-3 text-right font-medium">Fee</th>
               <th className="px-4 py-3 text-right font-medium">Profit</th>
+              <th className="w-12 px-2 py-3">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -107,6 +111,12 @@ export function BalanceSheetTable({ sheet, category }: BalanceSheetTableProps) {
                     </span>
                   ) : null}
                 </td>
+                <td className="px-2 py-3 text-right">
+                  <RemoveBalanceSheetItemButton
+                    listingId={entry.listingId}
+                    listingTitle={entry.listingTitle}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -138,14 +148,21 @@ export function BalanceSheetTable({ sheet, category }: BalanceSheetTableProps) {
                 <div><dt className="text-muted-foreground">Fee</dt><dd className="tabular-nums">{entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}</dd></div>
                 <div><dt className="text-muted-foreground">Profit</dt><dd className={`font-semibold tabular-nums ${profitClass(entry.profit)}`}>{entry.saleSource === "inventory" ? "—" : usd(entry.profit)}</dd></div>
               </dl>
-              <AcquisitionDetailsDialog
-                listingId={entry.listingId}
-                listingTitle={entry.listingTitle}
-                purchasePrice={entry.purchasePrice}
-                purchasedFrom={entry.purchasedFrom}
-                purchasedOn={entry.purchasedOn}
-                trigger="button"
-              />
+              <div className="flex flex-wrap gap-2">
+                <AcquisitionDetailsDialog
+                  listingId={entry.listingId}
+                  listingTitle={entry.listingTitle}
+                  purchasePrice={entry.purchasePrice}
+                  purchasedFrom={entry.purchasedFrom}
+                  purchasedOn={entry.purchasedOn}
+                  trigger="button"
+                />
+                <RemoveBalanceSheetItemButton
+                  listingId={entry.listingId}
+                  listingTitle={entry.listingTitle}
+                  display="button"
+                />
+              </div>
             </CardContent>
           </Card>
         ))}
