@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { useEffect, useRef } from "react"
+import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import {
@@ -30,7 +31,7 @@ export function GoogleSignUpWelcomeRedirect(): null {
 
     const supabase = createClient()
 
-    const maybeRedirect = async () => {
+    const maybeRedirect = async (knownUser?: User | null) => {
       if (handledRef.current) return
       try {
         if (sessionStorage.getItem(GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY) === "1") {
@@ -40,8 +41,10 @@ export function GoogleSignUpWelcomeRedirect(): null {
         /* ignore */
       }
 
-      const { data } = await supabase.auth.getSession()
-      const user = data.session?.user
+      const user =
+        knownUser === undefined
+          ? (await supabase.auth.getSession()).data.session?.user
+          : knownUser
       if (!user || !shouldShowGoogleSignUpWelcome(user)) return
 
       // Redirect to the welcome page at most once per session. If the server can't see the
@@ -66,8 +69,13 @@ export function GoogleSignUpWelcomeRedirect(): null {
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION") return
-      if (!session?.user) return
-      void maybeRedirect()
+      const user = session?.user
+      if (!user) return
+      // INITIAL_SESSION runs while the auth client holds its lock. A nested
+      // getSession() from here never returns on Chrome.
+      window.setTimeout(() => {
+        void maybeRedirect(user)
+      }, 0)
     })
 
     return () => sub.subscription.unsubscribe()
