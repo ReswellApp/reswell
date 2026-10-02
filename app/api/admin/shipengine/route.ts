@@ -1,6 +1,10 @@
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
+import {
+  restrictShipEngineLabelPayload,
+  restrictShipEngineRatesPayload,
+} from "@/lib/shipengine/reswell-carriers"
 import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
@@ -106,7 +110,7 @@ export async function POST(request: Request) {
         )
       }
       case "rates": {
-        if (obj.payload == null || typeof obj.payload !== "object") {
+        if (obj.payload == null || typeof obj.payload !== "object" || Array.isArray(obj.payload)) {
           return NextResponse.json(
             {
               error:
@@ -115,9 +119,13 @@ export async function POST(request: Request) {
             { status: 400 },
           )
         }
+        const restricted = restrictShipEngineRatesPayload(obj.payload as Record<string, unknown>)
+        if (!restricted.ok) {
+          return NextResponse.json({ error: restricted.error }, { status: 400 })
+        }
         const res = await shipEngineRequest("/rates", {
           method: "POST",
-          body: JSON.stringify(obj.payload),
+          body: JSON.stringify(restricted.payload),
         })
         const data = await parseJsonSafe(res)
         return NextResponse.json(
@@ -126,7 +134,7 @@ export async function POST(request: Request) {
         )
       }
       case "create_label": {
-        if (obj.payload == null || typeof obj.payload !== "object") {
+        if (obj.payload == null || typeof obj.payload !== "object" || Array.isArray(obj.payload)) {
           return NextResponse.json(
             {
               error:
@@ -135,9 +143,13 @@ export async function POST(request: Request) {
             { status: 400 },
           )
         }
+        const restricted = restrictShipEngineLabelPayload(obj.payload as Record<string, unknown>)
+        if (!restricted.ok) {
+          return NextResponse.json({ error: restricted.error }, { status: 400 })
+        }
         const res = await shipEngineRequest("/labels", {
           method: "POST",
-          body: JSON.stringify(obj.payload),
+          body: JSON.stringify(restricted.payload),
         })
         const data = await parseJsonSafe(res)
         return NextResponse.json(
