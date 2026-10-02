@@ -1,6 +1,9 @@
 import { z } from "zod"
 
-/** Mirrors sell-flow listing price bounds (see `lib/sell-form-validation.ts`). */
+/**
+ * Generic peer-listing bounds. Surfboard listings are additionally rejected
+ * under $50 in `updateSellerListingQuickPrice`.
+ */
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
 

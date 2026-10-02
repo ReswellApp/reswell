@@ -11,6 +11,10 @@ import { SellerOfferToCartHolders } from "@/components/features/listings/seller-
 import { isPeerListingSection, peerListingEditHref } from "@/lib/peer-listing-sections"
 import type { ListingEnrichmentGap } from "@/lib/sell-flow/listing-enrichment"
 import { cn } from "@/lib/utils"
+import {
+  isSurfboardListingSection,
+  SURFBOARD_MIN_SALE_PRICE_USD,
+} from "@/lib/listing-price-bounds"
 
 export interface ListingOwnerManageActionsViewProps {
   listingId: string
@@ -86,6 +90,9 @@ export function ListingOwnerManageActionsView({
               listingId={listingId}
               currentPriceUsd={currentPriceUsd}
               currentCompareAtPriceUsd={currentCompareAtPriceUsd}
+              minPriceUsd={
+                isSurfboardListingSection(section) ? SURFBOARD_MIN_SALE_PRICE_USD : undefined
+              }
               triggerClassName="rounded-full border-border/60 shadow-none"
             />
           ) : null}

@@ -18,6 +18,11 @@ import { syncOfferThreadIfMissing } from "@/lib/services/syncOfferMessagesThread
 import { formatOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { effectiveMinimumOfferAmount } from "@/lib/utils/offers-minimum-amount"
+import {
+  isSurfboardListingSection,
+  SURFBOARD_MIN_SALE_PRICE_USD,
+  SURFBOARD_OFFER_MIN_MESSAGE,
+} from "@/lib/listing-price-bounds"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
@@ -108,6 +113,9 @@ export async function createListingOffer(
   const minPct = effectiveMinimumOfferPct(listing)
   const minOffer = effectiveMinimumOfferAmount(listing, listPrice)
   const amount = roundMoney(body.amount)
+  if (isSurfboardListingSection(listing.section) && amount < SURFBOARD_MIN_SALE_PRICE_USD) {
+    return { ok: false, status: 400, error: SURFBOARD_OFFER_MIN_MESSAGE }
+  }
   if (amount < minOffer) {
     return {
       ok: false,

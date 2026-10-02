@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
+import { SURFBOARD_MIN_PRICE_MESSAGE, SURFBOARD_MIN_SALE_PRICE_USD } from "@/lib/listing-price-bounds"
 import { isListingSellableCondition } from "@/lib/listing-labels"
 
 const fbMarketplaceUrlSchema = z
@@ -28,7 +29,7 @@ export const fbMarketplacePublishBodySchema = z.object({
     .max(LISTING_TITLE_MAX_LENGTH, `Title must be ${LISTING_TITLE_MAX_LENGTH} characters or fewer.`),
   price: z.coerce
     .number()
-    .positive("Enter a valid price.")
+    .min(SURFBOARD_MIN_SALE_PRICE_USD, SURFBOARD_MIN_PRICE_MESSAGE)
     .max(999_999.99, "Price is too high."),
   description: z.string().trim().max(10_000).optional().default(""),
   brand: z.string().trim().max(120).optional().default(""),

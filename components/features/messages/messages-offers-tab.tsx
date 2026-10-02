@@ -10,6 +10,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { MessagesOffersTabSkeleton } from "@/components/features/messages/messages-page-skeletons"
 import { cn } from "@/lib/utils"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
+import { effectiveMinimumOfferAmount } from "@/lib/utils/offers-minimum-amount"
 import { latestSellerCounterNoteFromTimeline, openingOfferNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import type {
   DashboardOfferRow,
@@ -245,7 +246,10 @@ export function MessagesOffersTab({
     : 0
   const minPct = dialogOffer ? minPctByListingId[dialogOffer.listing_id] ?? 70 : 70
   const minOfferAmount = Number.isFinite(listPriceNum)
-    ? Math.round(listPriceNum * (minPct / 100) * 100) / 100
+    ? effectiveMinimumOfferAmount(
+        { minimum_offer_pct: minPct, section: listingForDialog?.section },
+        listPriceNum,
+      )
     : 0
 
   const offerRowLite: OfferRowLite | null = dialogOffer

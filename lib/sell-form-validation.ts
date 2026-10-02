@@ -16,14 +16,15 @@ import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
+import {
+  surfboardMinPriceError,
+  surfboardPriceDropFloorError,
+} from "@/lib/listing-price-bounds"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 
 /** How shipping cost is set when shipping is enabled (surfboard sell flow). */
 /** Surfboard /sell UI is Reswell-only; `free` / `flat` remain for legacy DB rows & other sell flows. */
 export type BoardShippingCostMode = "reswell" | "free" | "flat"
-
-const PRICE_MIN = 0.01
-const PRICE_MAX = 999_999.99
 
 /**
  * Listing titles become URL slugs; keep them short so links stay readable in messages and search.
@@ -131,10 +132,9 @@ export function validateSellListingForm(
     return "Please select a condition."
   }
 
-  const price = parseFloat(form.price.trim())
-  if (!Number.isFinite(price) || price < PRICE_MIN || price > PRICE_MAX) {
-    return `Enter a valid price between $${PRICE_MIN} and $${PRICE_MAX.toLocaleString()}.`
-  }
+  const price = parseFloat(form.price.trim().replace(/,/g, ""))
+  const priceError = surfboardMinPriceError(price)
+  if (priceError) return priceError
 
   if (!form.category?.trim()) {
     return "Please select a category."
@@ -281,12 +281,8 @@ export function validateSellListingForm(
       return "Enter the lowest price you allow after 2 weeks, or turn off automatic price drop."
     }
     const floor = parseFloat(floorRaw.replace(/,/g, ""))
-    if (!Number.isFinite(floor) || floor < PRICE_MIN || floor > PRICE_MAX) {
-      return `Lowest-after-drop price must be between $${PRICE_MIN} and $${PRICE_MAX.toLocaleString()}.`
-    }
-    if (floor >= price) {
-      return "Lowest-after-drop price must be less than your current list price."
-    }
+    const floorError = surfboardPriceDropFloorError(floor, price)
+    if (floorError) return floorError
   }
 
   const resolvedTitle = buildResolvedListingTitle(form)

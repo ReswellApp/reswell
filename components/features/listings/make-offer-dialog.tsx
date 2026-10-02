@@ -429,7 +429,10 @@ export function MakeOfferDialog({
                       </Label>
                       {!hideMinimumUntilViolated ? (
                         <p className="text-[11px] text-muted-foreground sm:text-xs">
-                          Min ${minOfferAmount.toFixed(0)} ({minOfferPct}% of ${listPrice.toFixed(0)})
+                          Min ${minOfferAmount.toFixed(0)}
+                          {Math.abs(minOfferAmount - listPrice * (minOfferPct / 100)) < 0.5
+                            ? ` (${minOfferPct}% of $${listPrice.toFixed(0)})`
+                            : ""}
                         </p>
                       ) : null}
                     </div>

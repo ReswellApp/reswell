@@ -21,6 +21,12 @@ import {
   resolveCompareAtPriceOnUpdate,
 } from "@/lib/listing-compare-at-price"
 import { toast } from "sonner"
+import {
+  LISTING_PRICE_ABS_MIN_USD,
+  LISTING_PRICE_MAX_USD,
+  SURFBOARD_MIN_PRICE_MESSAGE,
+  SURFBOARD_MIN_SALE_PRICE_USD,
+} from "@/lib/listing-price-bounds"
 
 function formatUsdInput(amount: number): string {
   if (!Number.isFinite(amount) || amount <= 0) return ""
@@ -40,6 +46,8 @@ interface QuickEditListingPriceDialogProps {
   currentPriceUsd: number
   currentCompareAtPriceUsd?: number | null
   triggerClassName?: string
+  /** Surfboard listings pass $50. Other sections keep the generic minimum. */
+  minPriceUsd?: number
 }
 
 export function QuickEditListingPriceDialog({
@@ -47,6 +55,7 @@ export function QuickEditListingPriceDialog({
   currentPriceUsd,
   currentCompareAtPriceUsd = null,
   triggerClassName,
+  minPriceUsd = LISTING_PRICE_ABS_MIN_USD,
 }: QuickEditListingPriceDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -101,8 +110,12 @@ export function QuickEditListingPriceDialog({
     }
 
     const rounded = Math.round(parsed * 100) / 100
-    if (rounded < 0.01 || rounded > 999_999.99) {
-      toast.error("Price must be between $0.01 and $999,999.99.")
+    if (rounded < minPriceUsd || rounded > LISTING_PRICE_MAX_USD) {
+      toast.error(
+        minPriceUsd >= SURFBOARD_MIN_SALE_PRICE_USD
+          ? SURFBOARD_MIN_PRICE_MESSAGE
+          : `Price must be between $${minPriceUsd} and $${LISTING_PRICE_MAX_USD.toLocaleString()}.`,
+      )
       return
     }
 

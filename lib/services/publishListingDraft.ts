@@ -13,8 +13,12 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { qualifyPublishedListingForGiveaways } from "@/lib/services/giveawayEntry"
+import {
+  LISTING_PRICE_ABS_MIN_USD,
+  liveSurfboardPriceWriteError,
+} from "@/lib/listing-price-bounds"
 
-const PRICE_MIN = 0.01
+const PRICE_MIN = LISTING_PRICE_ABS_MIN_USD
 
 type DraftListingRow = {
   id: string
@@ -23,6 +27,8 @@ type DraftListingRow = {
   title: string | null
   description: string | null
   price: number | null
+  section: string | null
+  auto_price_drop_floor: number | null
   city: string | null
   state: string | null
   latitude: number | null
@@ -45,6 +51,8 @@ function normalizedDescription(raw: string | null | undefined): string {
 export function validateListingDraftPublishable(row: {
   status?: string | null
   price?: number | null
+  section?: string | null
+  autoPriceDropFloor?: number | null
   description?: string | null
   city?: string | null
   state?: string | null
@@ -59,6 +67,16 @@ export function validateListingDraftPublishable(row: {
   if (price == null || !Number.isFinite(Number(price)) || Number(price) < PRICE_MIN) {
     return "Listing needs a price before it can go live."
   }
+  const surfboardPriceError = liveSurfboardPriceWriteError({
+    section: row.section,
+    status: "active",
+    price: Number(price),
+    autoPriceDropFloor:
+      row.autoPriceDropFloor == null || !Number.isFinite(Number(row.autoPriceDropFloor))
+        ? null
+        : Number(row.autoPriceDropFloor),
+  })
+  if (surfboardPriceError) return surfboardPriceError
   const description = normalizedDescription(row.description)
   if (!description) {
     return "Listing needs a description before it can go live."
@@ -132,7 +150,7 @@ async function fetchDraftListingForPublish(
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, user_id, status, title, description, price, city, state, latitude, longitude, slug, section, local_pickup, shipping_available, listing_images(url)",
+      "id, user_id, status, title, description, price, auto_price_drop_floor, city, state, latitude, longitude, slug, section, local_pickup, shipping_available, listing_images(url)",
     )
     .eq("id", listingId)
     .maybeSingle()
@@ -163,6 +181,8 @@ export async function publishListingDraft(
   const validationError = validateListingDraftPublishable({
     status: row.status,
     price: row.price,
+    section: row.section,
+    autoPriceDropFloor: row.auto_price_drop_floor,
     description: row.description,
     city: row.city,
     state: row.state,

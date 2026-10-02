@@ -26,6 +26,7 @@ import {
 } from "@/lib/validations/seller-initiated-offer"
 import { randomUUID } from "node:crypto"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { surfboardOfferAmountError } from "@/lib/listing-price-bounds"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -58,7 +59,8 @@ function validateListingForSellerOffer(
     return { ok: false, error: "One or more listings do not have a valid price." }
   }
 
-  // Seller-initiated offers have no minimum — the owner can offer any amount above $0.
+  // Seller-initiated offers have no percentage minimum. Surfboards still cannot
+  // be offered under the marketplace price floor.
   const amount = roundMoney(lineAmount)
 
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -66,6 +68,10 @@ function validateListingForSellerOffer(
       ok: false,
       error: `Each offer price must be greater than $0 (check “${(listing.title ?? "listing").trim() || "listing"}”).`,
     }
+  }
+  const surfboardOfferError = surfboardOfferAmountError(amount, listing.section)
+  if (surfboardOfferError) {
+    return { ok: false, error: surfboardOfferError }
   }
   if (amount > listPrice) {
     return {

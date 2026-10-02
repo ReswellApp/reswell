@@ -10,7 +10,9 @@ import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
+import { SURFBOARD_MIN_SALE_PRICE_USD } from "@/lib/listing-price-bounds"
 import { cn } from "@/lib/utils"
+import { SURFBOARD_MIN_SALE_PRICE_USD } from "@/lib/listing-price-bounds"
 
 type BoardSellQuickListFormProps = {
   photoHero: ReactNode
@@ -118,6 +120,9 @@ export function BoardSellQuickListForm({
             onChange={(e) => onPriceChange(e.target.value)}
           />
         </div>
+        <p className="pt-2 text-xs text-muted-foreground">
+          Minimum ${SURFBOARD_MIN_SALE_PRICE_USD}.
+        </p>
         <SellEarningsBreakdown listingPrice={price} className="pt-3" />
       </QuickEssentialCard>
 

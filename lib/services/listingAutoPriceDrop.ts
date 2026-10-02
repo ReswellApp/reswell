@@ -11,6 +11,10 @@ import {
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { notifyFollowersOfPriceDrop } from "@/lib/follows/notify-followers"
 import { planListingAutoPriceDrop } from "@/lib/listing-auto-price-drop"
+import {
+  isSurfboardListingSection,
+  SURFBOARD_MIN_SALE_PRICE_USD,
+} from "@/lib/listing-price-bounds"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { notifyKlaviyoFavoritePriceDrop } from "@/lib/services/klaviyoFavoritePriceDrop"
 
@@ -76,6 +80,7 @@ async function applyOneDueListingAutoPriceDrop(
     floorUsd: row.auto_price_drop_floor,
     scheduledFor: row.auto_price_drop_scheduled_for,
     referenceTime,
+    minPriceUsd: isSurfboardListingSection(row.section) ? SURFBOARD_MIN_SALE_PRICE_USD : undefined,
   })
 
   if (plan.action === "skip") return "skipped"

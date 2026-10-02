@@ -26,6 +26,7 @@ import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFi
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
 import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
+import { liveSurfboardPriceWriteError } from "@/lib/listing-price-bounds"
 
 /** Admin impersonation saves include photos + shipping columns; give the write time to finish. */
 export const maxDuration = 60
@@ -171,14 +172,33 @@ async function putImpersonatedListing(request: NextRequest) {
 
   const publishingFromDraft =
     existingListing.status === "draft" && publishFromDraft === true
+  const nextStatus = publishingFromDraft ? "active" : existingListing.status
+  const nextSection =
+    typeof listingFields.section === "string" ? listingFields.section : existingListing.section
+  const nextPrice =
+    typeof listingFields.price === "number" ? listingFields.price : existingListing.price
+  const nextFloor =
+    typeof listingFields.auto_price_drop_floor === "number"
+      ? listingFields.auto_price_drop_floor
+      : listingFields.auto_price_drop_floor === null
+        ? null
+        : undefined
+  const surfboardPriceError = liveSurfboardPriceWriteError({
+    section: nextSection,
+    status: nextStatus,
+    price: nextPrice,
+    autoPriceDropFloor: nextFloor,
+  })
+  if (surfboardPriceError) {
+    return NextResponse.json({ error: surfboardPriceError }, { status: 400 })
+  }
 
   if (publishingFromDraft) {
     const mergedForValidation = {
       status: "draft" as const,
-      price:
-        typeof listingFields.price === "number"
-          ? listingFields.price
-          : existingListing.price,
+      price: nextPrice,
+      section: nextSection,
+      autoPriceDropFloor: nextFloor,
       description:
         typeof listingFields.description === "string"
           ? listingFields.description

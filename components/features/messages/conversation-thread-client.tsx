@@ -82,6 +82,7 @@ import {
 } from '@/lib/validations/marketplace-message-attachment'
 import { isPeerListingSection } from '@/lib/peer-listing-sections'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
+import { effectiveMinimumOfferAmount } from '@/lib/utils/offers-minimum-amount'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
 import { offerMessageAnchorId } from '@/lib/utils/offer-messages-href'
@@ -287,8 +288,14 @@ export function ConversationThreadClient({
   }, [displayListing?.price])
 
   const minOfferAmount = useMemo(() => {
-    return Math.round(listPriceNum * (listingOfferMinPct / 100) * 100) / 100
-  }, [listPriceNum, listingOfferMinPct])
+    return effectiveMinimumOfferAmount(
+      {
+        minimum_offer_pct: listingOfferMinPct,
+        section: displayListing?.section,
+      },
+      listPriceNum,
+    )
+  }, [listPriceNum, listingOfferMinPct, displayListing?.section])
 
   const listingTitleForOffers = displayListing?.title ?? ''
 

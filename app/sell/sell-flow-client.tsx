@@ -180,6 +180,10 @@ import {
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import {
+  SURFBOARD_MIN_SALE_PRICE_USD,
+  surfboardMinPriceError,
+} from "@/lib/listing-price-bounds"
+import {
   LISTING_CONDITION_SELL_OPTIONS,
   isListingSellableCondition,
   sellFormConditionValue,
@@ -2030,7 +2034,7 @@ function SellPageContentInner({
 
   const quickListPriceValid = useMemo(() => {
     const n = Number.parseFloat(formData.price.trim().replace(/,/g, ""))
-    return Number.isFinite(n) && n > 0
+    return surfboardMinPriceError(n) == null
   }, [formData.price])
 
   const quickListLocationSet = Boolean(
@@ -4803,6 +4807,7 @@ function SellPageContentInner({
                     onShowPriceMarkdownChange={(value) =>
                       setFormData({ ...formData, showPriceMarkdown: value })
                     }
+                    minimumPriceUsd={SURFBOARD_MIN_SALE_PRICE_USD}
                     afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
                         <div className="flex gap-3">

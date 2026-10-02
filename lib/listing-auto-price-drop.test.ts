@@ -92,6 +92,21 @@ describe("planListingAutoPriceDrop", () => {
     )
   })
 
+  it("clears a surfboard floor that would drop the list price under $50", () => {
+    assert.deepEqual(
+      planListingAutoPriceDrop({
+        status: "active",
+        priceUsd: 80,
+        compareAtPriceUsd: null,
+        floorUsd: 40,
+        scheduledFor: "2026-09-02T20:00:00.000Z",
+        referenceTime: now,
+        minPriceUsd: 50,
+      }),
+      { action: "clear" },
+    )
+  })
+
   it("skips listings that are not yet due", () => {
     assert.deepEqual(
       planListingAutoPriceDrop({

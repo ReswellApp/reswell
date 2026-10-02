@@ -19,6 +19,7 @@ import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
+import { liveSurfboardPriceWriteError } from "@/lib/listing-price-bounds"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -76,6 +77,22 @@ export async function POST(request: NextRequest) {
 
   if (!listingData?.title || listingData?.price == null) {
     return NextResponse.json({ error: "Missing required listing fields" }, { status: 400 })
+  }
+
+  const createdPrice =
+    typeof listingData.price === "number" ? listingData.price : Number.parseFloat(String(listingData.price))
+  const createdFloor =
+    typeof listingData.auto_price_drop_floor === "number"
+      ? listingData.auto_price_drop_floor
+      : null
+  const surfboardPriceError = liveSurfboardPriceWriteError({
+    section: typeof listingData.section === "string" ? listingData.section : null,
+    status: "active",
+    price: createdPrice,
+    autoPriceDropFloor: createdFloor,
+  })
+  if (surfboardPriceError) {
+    return NextResponse.json({ error: surfboardPriceError }, { status: 400 })
   }
 
   if (

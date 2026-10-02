@@ -1,4 +1,8 @@
 import { effectiveMinimumOfferPct } from "./offers-minimum-pct.ts"
+import {
+  isSurfboardListingSection,
+  SURFBOARD_MIN_SALE_PRICE_USD,
+} from "../listing-price-bounds.ts"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -34,12 +38,15 @@ export function effectiveMinimumOfferAmount(
   listing: {
     minimum_offer_amount?: string | number | null
     minimum_offer_pct?: number | null
+    section?: string | null
   },
   listPrice: number,
 ): number {
   const fixed = parsePositiveMoney(listing.minimum_offer_amount)
-  if (fixed != null) return fixed
-
-  const minPct = effectiveMinimumOfferPct(listing)
-  return roundMoney(listPrice * (minPct / 100))
+  const base =
+    fixed != null
+      ? fixed
+      : roundMoney(listPrice * (effectiveMinimumOfferPct(listing) / 100))
+  if (!isSurfboardListingSection(listing.section)) return base
+  return roundMoney(Math.max(base, SURFBOARD_MIN_SALE_PRICE_USD))
 }

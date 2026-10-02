@@ -8,6 +8,7 @@ import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
 import { reconcileOfferFulfillmentWithListings } from "@/lib/offer-listing-shipping"
+import { surfboardNegotiatedPriceError } from "@/lib/services/surfboardOfferPriceGuard"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -155,6 +156,14 @@ export async function respondToCounterOfferService(
 
   // accept — offer price is stored on offers only; listings.price stays at the original list price.
   const lineItems = parseOfferLineItems((offer as { line_items?: unknown }).line_items)
+  const negotiatedPriceError = await surfboardNegotiatedPriceError(supabase, {
+    section: listing.section as string | null,
+    amount: current,
+    lineItems,
+  })
+  if (negotiatedPriceError) {
+    return { ok: false, error: negotiatedPriceError }
+  }
   const extraIds = (lineItems ?? [])
     .map((row) => row.listing_id)
     .filter((id) => id !== listing.id)
