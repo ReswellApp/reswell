@@ -34,8 +34,12 @@ export async function SurfboardListingPdpCatalogStrips({
   }
   viewerUser?: User | null
 }) {
-  const { supabase, user: sessionUser } = await getCachedRequestSession()
-  const user = viewerUser ?? sessionUser
+  // `null` means the public PDP already knows this is a guest. Calling
+  // getCachedRequestSession() here reads cookies and forces `/l/[listing]` dynamic.
+  const session =
+    viewerUser === undefined || viewerUser ? await getCachedRequestSession() : null
+  const user = viewerUser === undefined ? (session?.user ?? null) : viewerUser
+  const supabase = session?.supabase
   const catalog = getDb({ consistency: "eventual" })
   const listPriceNum =
     typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
@@ -63,7 +67,7 @@ export async function SurfboardListingPdpCatalogStrips({
         .neq("id", board.id)
         .order("created_at", { ascending: false })
         .limit(SELLER_BOARDS_PDP_LIMIT),
-      user
+      user && supabase
         ? fetchSignedInPdpRecentlyViewedSurfboards(supabase, user.id, board.id)
         : Promise.resolve(undefined),
     ])
@@ -79,7 +83,7 @@ export async function SurfboardListingPdpCatalogStrips({
   ]
 
   let favoritedIds = new Set<string>()
-  if (user && stripIds.length > 0) {
+  if (user && supabase && stripIds.length > 0) {
     try {
       const { data } = await supabase
         .from("favorites")

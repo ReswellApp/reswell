@@ -90,11 +90,13 @@ async function renderSurfboardListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: boardRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: "surfboards",
     usePublicCache: true,
   })

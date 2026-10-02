@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { describe, it } from "node:test"
 import {
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
@@ -39,5 +39,35 @@ describe("public marketplace document cache", () => {
     assert.doesNotMatch(shop, /auth\.getUser\(/)
     assert.match(proxy, /shouldAttachDeviceCookieOnDocument/)
     assert.match(proxy, /applyPublicMarketplaceCacheHints/)
+  })
+
+  it("forwards anonymousPublicView so public PDPs do not call cookies()", () => {
+    const componentsDir = new URL("../../components/", import.meta.url)
+    const sectionPages = readdirSync(componentsDir).filter((name) =>
+      name.endsWith("-listing-detail-page.tsx"),
+    )
+    assert.ok(sectionPages.length >= 10)
+    for (const name of sectionPages) {
+      const source = readFileSync(new URL(name, componentsDir), "utf8")
+      if (!source.includes("loadListingDetailPageContext")) continue
+      assert.match(
+        source,
+        /loadListingDetailPageContext\(\{[\s\S]*?anonymousPublicView,/,
+        `${name} must pass anonymousPublicView into loadListingDetailPageContext`,
+      )
+    }
+
+    const strips = readFileSync(
+      new URL(
+        "../../components/features/listings/surfboard-listing-pdp-catalog-strips.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    )
+    assert.match(strips, /viewerUser === undefined \|\| viewerUser/)
+    assert.doesNotMatch(
+      strips,
+      /const \{ supabase, user: sessionUser \} = await getCachedRequestSession\(\)/,
+    )
   })
 })

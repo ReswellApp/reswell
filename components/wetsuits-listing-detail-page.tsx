@@ -114,11 +114,13 @@ async function renderWetsuitsListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: wetsuitRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: WETSUITS_SECTION,
   })
   const wetsuit = wetsuitRaw as Record<string, any> | null

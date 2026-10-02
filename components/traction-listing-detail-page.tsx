@@ -109,11 +109,13 @@ async function renderTractionListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: tractionRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: TRACTION_SECTION,
   })
   const traction = tractionRaw as Record<string, any> | null

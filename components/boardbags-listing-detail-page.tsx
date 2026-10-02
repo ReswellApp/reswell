@@ -109,11 +109,13 @@ async function renderBoardbagsListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: boardbagRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: BOARDBAGS_SECTION,
   })
   const boardbag = boardbagRaw as Record<string, any> | null
