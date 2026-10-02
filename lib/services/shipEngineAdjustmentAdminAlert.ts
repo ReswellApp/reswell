@@ -32,6 +32,51 @@ export function normalizeAdminAlertPhone(value: string | undefined): string | nu
   return /^\+[1-9]\d{7,14}$/.test(normalized) ? normalized : null
 }
 
+export async function bootstrapShipEngineAdjustmentAdminAlertMetric(): Promise<
+  | { ok: true; status: number; skipped: boolean }
+  | { ok: false; error: string }
+> {
+  const phoneNumber = normalizeAdminAlertPhone(
+    process.env.SHIPENGINE_ADJUSTMENT_ALERT_PHONE,
+  )
+  if (!phoneNumber) {
+    return {
+      ok: false,
+      error: "SHIPENGINE_ADJUSTMENT_ALERT_PHONE must be set to a valid E.164 phone number",
+    }
+  }
+
+  const event = await sendKlaviyoServerEvent({
+    metricName: ALERT_METRIC,
+    profile: { phone_number: phoneNumber },
+    uniqueId: "shipengine-adjustment-alert-metric-seed-v1",
+    value: 1,
+    valueCurrency: "USD",
+    properties: {
+      adjustment_count: 1,
+      adjustment_count_display: "1",
+      total_increase_usd: 1,
+      total_increase_display: "$1.00",
+      has_more: false,
+      tracking_numbers: ["SEED"],
+      dashboard_url: `${publicSiteOrigin()}/admin/shipping?tab=adjusted-labels`,
+      sms_message: "Metric seed — do not send",
+      reswell_metric_seed: true,
+    },
+  })
+
+  if (!event.ok) {
+    return {
+      ok: false,
+      error:
+        event.skipReason ??
+        `Klaviyo adjustment alert seed failed (${event.status || "network error"})`,
+    }
+  }
+
+  return { ok: true, status: event.status, skipped: event.skipped }
+}
+
 export async function sendShipEngineAdjustmentAdminAlert(): Promise<
   | { ok: true; summary: ShipEngineAdjustmentAdminAlertSummary }
   | { ok: false; error: string }
@@ -120,6 +165,7 @@ export async function sendShipEngineAdjustmentAdminAlert(): Promise<
         .slice(0, 10),
       dashboard_url: dashboardUrl,
       sms_message: `Reswell admin: ${countLabel} new ShipEngine label adjustment${pending.data.length === 1 ? "" : "s"} totaling ${totalDisplay}. ${dashboardUrl}`,
+      reswell_metric_seed: false,
     },
   })
 
