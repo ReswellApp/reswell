@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getAdminSession } from "@/app/actions/account"
 import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
 import { cn } from "@/lib/utils"
@@ -109,15 +110,20 @@ function listingMetaLine(opts: {
 }
 
 type BoardsBrowseAdminCuratorProps = {
-  isAdmin: boolean
   className?: string
 }
 
 /**
  * Admin CMS for /boards: pin listings to the top, suppress to sort last, or hide site-wide.
+ *
+ * `/boards` is one cached document for every visitor (ISR + CDN). Resolving
+ * `is_admin` during that render bakes the button in or out depending on who
+ * filled the cache. Check the session after mount instead.
  */
-export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdminCuratorProps) {
+export function BoardsBrowseAdminCurator({ className }: BoardsBrowseAdminCuratorProps) {
   const router = useRouter()
+  const [isAdmin, setIsAdmin] = React.useState(false)
+  const [adminLoaded, setAdminLoaded] = React.useState(false)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [activeTab, setActiveTab] = React.useState<CmsTab>("top-picks")
   const [topPicks, setTopPicks] = React.useState<TopPickRow[]>([])
@@ -204,6 +210,22 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
     } finally {
       if (append) setLoadingMoreInventory(false)
       else setSearching(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let cancelled = false
+    getAdminSession()
+      .then((session: { isAdmin?: boolean }) => {
+        if (cancelled) return
+        setIsAdmin(session.isAdmin === true)
+        setAdminLoaded(true)
+      })
+      .catch(() => {
+        if (!cancelled) setAdminLoaded(true)
+      })
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -572,7 +594,7 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
     )
   }
 
-  if (!isAdmin) return null
+  if (!adminLoaded || !isAdmin) return null
 
   return (
     <>
