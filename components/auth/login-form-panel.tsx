@@ -63,9 +63,7 @@ export function LoginFormPanel({
   const [resendSent, setResendSent] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [gate, setGate] = useState<"checking" | "ready" | "redirecting">(
-    variant === "modal" ? "ready" : "checking",
-  )
+  const [gate, setGate] = useState<"ready" | "redirecting">("ready")
   const router = useRouter()
 
   useEffect(() => {
@@ -366,16 +364,12 @@ export function LoginFormPanel({
     </div>
   )
 
-  if (variant === "page" && (gate === "checking" || gate === "redirecting")) {
+  if (variant === "page" && gate === "redirecting") {
     return <AuthTransitionShell />
   }
 
-  if (variant === "landing" && (gate === "checking" || gate === "redirecting")) {
-    return (
-      <AuthLandingLoadingIndicator
-        ariaLabel={gate === "redirecting" ? "Signing you in" : "Loading sign in"}
-      />
-    )
+  if (variant === "landing" && gate === "redirecting") {
+    return <AuthLandingLoadingIndicator ariaLabel="Signing you in" />
   }
 
   if (variant === "page") {

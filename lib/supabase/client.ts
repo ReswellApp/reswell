@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { browserAuthLock } from '@/lib/auth/browser-auth-lock'
 
 let browserClient: SupabaseClient | undefined
 
@@ -22,6 +23,8 @@ export function createClient(): SupabaseClient {
       flowType: "pkce",
       // PKCE exchange runs on `/auth/callback` (server). Client must not consume ?code= first.
       detectSessionInUrl: false,
+      // Chrome can leave `navigator.locks` pending, which hangs getSession() on sign-in.
+      lock: browserAuthLock,
     },
   })
   return browserClient
