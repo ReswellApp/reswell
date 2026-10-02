@@ -1,3 +1,11 @@
+import {
+  FOR_SURF_SHOPS_DESCRIPTION,
+  FOR_SURF_SHOPS_PAGE_KEY,
+  FOR_SURF_SHOPS_PATH,
+  FOR_SURF_SHOPS_TITLE,
+  forSurfShopsFaqStructuredData,
+} from "@/lib/for-surf-shops"
+
 /**
  * Registry of the pages that matter for SEO. This is the single source of truth for each
  * page's title, description, canonical, robots, and share images. The admin SEO panel at
@@ -457,6 +465,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Sell your surfboard to Reswell. Quote in under 30 minutes. Ship in a box max 22\" wide and 5\" high — we buy the prepaid label after you send packed measurements.",
     path: "/we-buy",
     keywords: ["sell surfboard", "we buy surfboards", "surfboard quote", "sell board to Reswell"],
+  }),
+  page(FOR_SURF_SHOPS_PAGE_KEY, "marketing", "For surf shops", {
+    title: FOR_SURF_SHOPS_TITLE,
+    description: FOR_SURF_SHOPS_DESCRIPTION,
+    path: FOR_SURF_SHOPS_PATH,
+    keywords: [
+      "surf shop used boards",
+      "sell trade-in surfboards",
+      "list used surfboards",
+      "surf shop marketplace",
+    ],
+    structuredData: forSurfShopsFaqStructuredData(),
   }),
   page("listyoursurfboard", "marketing", "List your surfboard", {
     title: "List your surfboard | Reswell",
