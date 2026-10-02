@@ -1,0 +1,67 @@
+{
+  "generated_for": "100 Percent Surfboards official named standup catalog",
+  "source": "https://www.100percentsurf.com/shortboards-surfboards-adelaide-south-australia (official Squarespace shortboard catalog — excludes generic custom categories, repairs, and one-off dimension SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "100-percent-surfboards",
+      "name": "100 Percent Surfboards",
+      "website_url": "https://www.100percentsurf.com",
+      "location_label": "Moana, South Australia",
+      "founder_name": "Rodney Bedford",
+      "lead_shaper_name": "Tom Bedford",
+      "short_description": "Third-generation custom surfboards shaped in-house by Rodney and Tom Bedford in Moana, South Australia.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/fea3c30f-4d19-4ad2-baa1-4304c0772f20/100_PERCENT_DECAL_TYPE_2025_BLACK_v01.png?format=png",
+      "models": [
+        {
+          "name": "El Chapo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1685963340478-OBGZQUID1DXJNER2U0QK/5_5_EL_CHAPO_MAY_2023_v01.jpg?format=jpg",
+          "description": "A small wave groveller built for speed and fun. The El Chapo packs volume under the chest and plenty of width through the tail, making it super easy to paddle, plane, and catch waves early. The bottom features a single to double concave for drive and lift, while the ultra-flat rocker and subtle S-deck give it that instant get-up-and-go feel. A late flip in the tail rocker keeps it responsive and engaged at speed, letting you hit sections without sliding out.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Fast Forward",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1627132297501-KWKXHVIFNPM5SWUZ1T4Q/FAST_FORWARD_TEAR_1_SURFBOARDS_SOUTH_AUSTRALIA.jpg?format=jpg",
+          "description": "A standard small-wave performance shortboard with a few subtle adjustments. A flatter bottom with a single concave that flows into a very late kick in the tail, and a late pulled-in outline, provides for the vertical surfing of an accentuated rocker when hitting the lip, without the resistance of a board that has too much rocker throughout.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Grom Sled",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1627131108368-QHVFH9WB36EWGK4S73J0/THE_GROMMET_SLED_MULTI_FLURO_1_SURFBOARDS_SOUTH_AUSTRALIA.jpg?format=jpg",
+          "description": "High performance all-rounder for the advanced grom. Designed for surfing the wide range of different, local surf conditions in South Australia. It gives exceptional performance in stormy conditions, as it fits well in-between chop on bumpy waves, while the back-end curves allow for maximising maneuverability on those clean, good days.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Real Thing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/bc83f8ed-3524-4ee0-8471-b518c54a1af9/REAL_THING_CLEAR_1_SURFBOARDS_ADELAIDE.jpg?format=jpg",
+          "description": "The ultimate medium wave shredder. This board is great in flattish, clean waves up to 4 foot. A fuller front half and pulled-in tight to a refined round tail allows surfers to generate speed easier further up the board while still being able to transition into tight turns. A wider nose and flat rocker allows a quick and stable entry, compensated by lift and acceleration with a single to double concave.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Explorer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1685962820081-G8HFLZ5OBBORSQQZ1I38/7_2_ORANGE_RAILS_MID_LENGTH_JAN_2023_v01.jpg?format=jpg",
+          "description": "The Explorer is for surfers who want to surf a longer performance board in waves up to 6 foot. This board has an outline proven to perform. Depending on what size waves you hope to surf, the tail lift can be varied to suit. For example, flatter breaking places like Middleton would require a flatter rocker, whereas for waves like bigger days on the Mid Coast or Pondie at Yorkes Peninsula, more lift in the tail and nose would be suitable.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Senior Performance",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1685963306080-D1NXPX2J5VF4COPN8M2B/6_6_Bentick_Jan_Outline_2023_v02.jpg?format=jpg",
+          "description": "Designed for an older, experienced surfer with a bottom curve that is not too flat or too curvy. It functions as an all-round shortboard for everyday advanced surfing in small to medium waves, with a single to double concave, balanced rocker, and square tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cruiser Midlength",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1685964402599-1DFVH69EGYETIZGCP844/8_0_JODIE_GREGG_CLEAR_MAY_2023_v01.jpg?format=jpg",
+          "description": "Ideal first real surfboard for learning to surf with the intention of progressing to a more advanced level. Offers stability, ease of paddling, and catching waves, with a slightly pulled-in tail to allow for more advanced maneuverability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wide Performance",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1685963415239-QKFRENO1N04MJ0SQJI9R/Adam_6_0_Rip_n_Tear_Thruster_Nov_2022_v01.jpg?format=jpg",
+          "description": "High performance-style shortboard with a touch more area in the nose for more paddling power. Slightly wider than a standard high-performance shortboard, allowing for a wider range of conditions, with a single to double concave and drawn-out nose.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
