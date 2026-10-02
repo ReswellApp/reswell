@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import type { ParsedShipEngineAdjustmentRow } from "@/lib/shipengine/adjustment-reports"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 
 export type ShipEngineLabelAdjustmentRow = {
   id: string
@@ -29,6 +30,15 @@ export type ShipEngineAdjustmentDebitSummary = {
   processed: number
   charged: number
   alreadyCharged: number
+}
+
+export type ShipEngineAdjustmentClaimContext = {
+  orderNum: string | null
+  itemTitle: string | null
+  itemImageUrl: string | null
+  sellerName: string | null
+  carrier: string | null
+  hasOriginalLabel: boolean
 }
 
 function num(v: number | string | null | undefined): number | null {
@@ -228,6 +238,180 @@ export async function dbListIncreasedLabelAdjustments(
     total: count ?? 0,
     error: null,
   }
+}
+
+type AdjustmentOrderRow = {
+  id: string
+  order_num: string | null
+  listing_id: string | null
+  seller_id: string
+  tracking_carrier: string | null
+}
+
+type AdjustmentLabelRow = {
+  order_id: string
+  order_item_id?: string | null
+  tracking_number: string | null
+  tracking_carrier: string | null
+}
+
+/**
+ * Claim-ready order context for an adjustment page. Queries are batched across
+ * the current page so the admin table does not create an N+1 per adjustment.
+ */
+export async function dbGetShipEngineAdjustmentClaimContext(
+  supabase: SupabaseClient,
+  adjustments: ShipEngineLabelAdjustmentRow[],
+): Promise<{ data: Map<string, ShipEngineAdjustmentClaimContext>; error: Error | null }> {
+  const result = new Map<string, ShipEngineAdjustmentClaimContext>()
+  const orderIds = [
+    ...new Set(
+      adjustments.map((row) => row.order_id).filter((id): id is string => Boolean(id)),
+    ),
+  ]
+  if (orderIds.length === 0) return { data: result, error: null }
+
+  const [ordersResult, itemsResult, marketplaceLabelsResult, adminLabelsResult] =
+    await Promise.all([
+      supabase
+        .from("orders")
+        .select("id, order_num, listing_id, seller_id, tracking_carrier")
+        .in("id", orderIds),
+      supabase
+        .from("order_items")
+        .select("id, order_id, listing_id, sort_order")
+        .in("order_id", orderIds)
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("order_shipping_labels")
+        .select("order_id, order_item_id, tracking_number, tracking_carrier")
+        .in("order_id", orderIds)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("order_admin_shipping_labels")
+        .select("order_id, tracking_number, tracking_carrier")
+        .in("order_id", orderIds)
+        .order("created_at", { ascending: false }),
+    ])
+
+  const failed =
+    ordersResult.error ??
+    itemsResult.error ??
+    marketplaceLabelsResult.error ??
+    adminLabelsResult.error
+  if (failed) return { data: result, error: new Error(failed.message) }
+
+  const orders = (ordersResult.data ?? []) as AdjustmentOrderRow[]
+  const orderById = new Map(orders.map((row) => [row.id, row]))
+  const sellerIds = [...new Set(orders.map((row) => row.seller_id).filter(Boolean))]
+  const items = (itemsResult.data ?? []) as Array<{
+    id: string
+    order_id: string
+    listing_id: string
+  }>
+  const itemById = new Map(items.map((row) => [row.id, row]))
+  const firstItemByOrder = new Map<string, (typeof items)[number]>()
+  for (const item of items) {
+    if (!firstItemByOrder.has(item.order_id)) firstItemByOrder.set(item.order_id, item)
+  }
+
+  const labels = [
+    ...((marketplaceLabelsResult.data ?? []) as AdjustmentLabelRow[]),
+    ...((adminLabelsResult.data ?? []) as AdjustmentLabelRow[]),
+  ]
+  const matchingLabelByAdjustment = new Map<string, AdjustmentLabelRow>()
+  const listingIdByAdjustment = new Map<string, string>()
+  for (const adjustment of adjustments) {
+    if (!adjustment.order_id) continue
+    const wantedTracking = normalizeTrackingNumberForCarrier(adjustment.tracking_number ?? "")
+    const label = labels.find(
+      (candidate) =>
+        candidate.order_id === adjustment.order_id &&
+        wantedTracking &&
+        normalizeTrackingNumberForCarrier(candidate.tracking_number ?? "") === wantedTracking,
+    )
+    if (label) matchingLabelByAdjustment.set(adjustment.id, label)
+
+    const order = orderById.get(adjustment.order_id)
+    const matchedItem = label?.order_item_id ? itemById.get(label.order_item_id) : null
+    const listingId =
+      matchedItem?.listing_id ??
+      firstItemByOrder.get(adjustment.order_id)?.listing_id ??
+      order?.listing_id
+    if (listingId) listingIdByAdjustment.set(adjustment.id, listingId)
+  }
+
+  const listingIds = [...new Set(listingIdByAdjustment.values())]
+  const [profilesResult, listingsResult] = await Promise.all([
+    sellerIds.length
+      ? supabase
+          .from("profiles")
+          .select("id, display_name, shop_name, is_shop")
+          .in("id", sellerIds)
+      : Promise.resolve({ data: [], error: null }),
+    listingIds.length
+      ? supabase
+          .from("listings")
+          .select("id, title, primary_image_url, primary_thumbnail_url")
+          .in("id", listingIds)
+      : Promise.resolve({ data: [], error: null }),
+  ])
+  const relatedError = profilesResult.error ?? listingsResult.error
+  if (relatedError) return { data: result, error: new Error(relatedError.message) }
+
+  const profiles = new Map(
+    (profilesResult.data ?? []).map((row) => {
+      const profile = row as {
+        id: string
+        display_name: string | null
+        shop_name: string | null
+        is_shop: boolean | null
+      }
+      const name =
+        (profile.is_shop ? profile.shop_name?.trim() : null) ||
+        profile.display_name?.trim() ||
+        profile.shop_name?.trim() ||
+        null
+      return [profile.id, name] as const
+    }),
+  )
+  const listings = new Map(
+    (listingsResult.data ?? []).map((row) => {
+      const listing = row as {
+        id: string
+        title: string | null
+        primary_image_url: string | null
+        primary_thumbnail_url: string | null
+      }
+      return [listing.id, listing] as const
+    }),
+  )
+
+  for (const adjustment of adjustments) {
+    const order = adjustment.order_id ? orderById.get(adjustment.order_id) : null
+    const label = matchingLabelByAdjustment.get(adjustment.id)
+    const listingId = listingIdByAdjustment.get(adjustment.id)
+    const listing = listingId ? listings.get(listingId) : null
+    const imageUrl = listing
+      ? listingTitleThumbnailSrc([
+          {
+            url: listing.primary_image_url,
+            thumbnail_url: listing.primary_thumbnail_url,
+            is_primary: true,
+          },
+        ])
+      : ""
+    result.set(adjustment.id, {
+      orderNum: order?.order_num ?? null,
+      itemTitle: listing?.title?.trim() || null,
+      itemImageUrl: imageUrl || null,
+      sellerName: order ? profiles.get(order.seller_id) ?? null : null,
+      carrier: label?.tracking_carrier?.trim() || order?.tracking_carrier?.trim() || null,
+      hasOriginalLabel: Boolean(adjustment.order_id && adjustment.tracking_number),
+    })
+  }
+
+  return { data: result, error: null }
 }
 
 function addAdjustmentTotal(

@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getLatestPreparedShippingLabelForOrder } from "@/lib/db/orderShippingLabels"
+import {
+  getLatestPreparedShippingLabelForOrder,
+  getPreparedShippingLabelForOrderByTracking,
+} from "@/lib/db/orderShippingLabels"
 import { attachOrderShippingLabel } from "@/lib/services/attachOrderShippingLabel"
+import { downloadAndStoreLabelPdf } from "@/lib/services/storeOrderShippingLabelAssets"
 import {
   fetchLabelById,
   fetchLabelsByTrackingNumber,
@@ -86,11 +90,15 @@ export async function resolveOrderShippingLabelPdf(
     }
   }
 
-  const stored = await getLatestPreparedShippingLabelForOrder(supabase, input.orderId)
-  if (stored) return stored
-
   const track = input.trackingNumber?.trim()
-  if (!track) return null
+  const exactStored = track
+    ? await getPreparedShippingLabelForOrderByTracking(supabase, input.orderId, track)
+    : null
+  if (exactStored) return exactStored
+
+  if (!track) {
+    return getLatestPreparedShippingLabelForOrder(supabase, input.orderId)
+  }
 
   const fromShipEngine = await resolveShipEngineLabelPdfByTracking(track)
   if (!fromShipEngine) return null
@@ -176,18 +184,29 @@ export async function backfillMarketplaceLabelFromShipEngine(params: {
   orderId: string
   label: ShipEngineLabelDetail
 }): Promise<void> {
-  const existing = await getLatestPreparedShippingLabelForOrder(params.supabase, params.orderId)
+  const existing = params.label.tracking_number
+    ? await getPreparedShippingLabelForOrderByTracking(
+        params.supabase,
+        params.orderId,
+        params.label.tracking_number,
+      )
+    : await getLatestPreparedShippingLabelForOrder(params.supabase, params.orderId)
   if (existing) return
 
   const pdfUrl = pickLabelPdfUrl(params.label)
   if (!pdfUrl) return
+  const stored = await downloadAndStoreLabelPdf({
+    supabase: params.supabase,
+    orderId: params.orderId,
+    pdfUrl,
+  })
 
   const attached = await attachOrderShippingLabel({
     supabase: params.supabase,
     orderId: params.orderId,
     origin: "auto_reswell_checkout",
     labelPdfUrl: pdfUrl,
-    labelStoragePath: null,
+    labelStoragePath: stored.ok ? stored.storagePath : null,
     trackingNumber: params.label.tracking_number,
     trackingCarrier: params.label.carrier_code,
     shipengineRateId: null,
