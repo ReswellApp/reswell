@@ -2,8 +2,13 @@ import { Suspense, type ReactNode } from "react"
 import { after } from "next/server"
 import { unstable_cache } from "next/cache"
 import { redirect } from "next/navigation"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { getDb } from "@/lib/supabase/db"
 import { createClient } from "@/lib/supabase/server"
+import {
+  MARKETPLACE_SEARCH_PAGE_CACHE_TAG,
+  MARKETPLACE_SEARCH_PAGE_REVALIDATE_SECONDS,
+} from "@/lib/cache/marketplace-search-page"
 import { marketplaceModelPageHrefFromParsed } from "@/lib/models/search-redirect"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
@@ -75,6 +80,181 @@ const getCachedBrowseCategories = unstable_cache(
   ["browse-categories"],
   { revalidate: 60 * 60 * 24, tags: ["browse-categories"] },
 )
+
+type SearchBrandRow = { id: string; name: string; slug: string }
+
+type MarketplaceSearchIntent = {
+  brandFromUrl: SearchBrandRow | null
+  parsedQuery: MarketplaceParsedQuery | null
+  brandRow: SearchBrandRow | null
+}
+
+type MarketplaceSearchListingsCache = {
+  listings: RecentListing[]
+  searchMeta: MarketplaceSearchResolutionMeta | null
+}
+
+function toSearchBrandRow(
+  row: { id: string; name: string; slug: string } | null,
+): SearchBrandRow | null {
+  if (!row) return null
+  return { id: row.id, name: row.name, slug: row.slug }
+}
+
+/**
+ * Brand lookup, query parse, and directory fallback. Keyed by the normalized
+ * query so "Lost" and "lost" share one entry. Must not touch cookies.
+ */
+async function loadMarketplaceSearchIntent(
+  queryNormalized: string,
+  brandSlug: string,
+): Promise<MarketplaceSearchIntent> {
+  const supabase = getDb({ consistency: "eventual" })
+  const brandSlugRequested = brandSlug.trim()
+
+  let brandFromUrl: SearchBrandRow | null = null
+  if (brandSlugRequested) {
+    const { data: brand } = await supabase
+      .from("brands")
+      .select("id, name, slug")
+      .eq("slug", brandSlugRequested)
+      .maybeSingle()
+    if (brand) {
+      brandFromUrl = { id: brand.id, name: brand.name, slug: brand.slug }
+    }
+  }
+
+  const parsedQuery =
+    queryNormalized.length >= 2
+      ? await parseMarketplaceQuery(supabase, queryNormalized, {
+          brandHint: brandFromUrl ? { ...brandFromUrl, logo_url: null } : null,
+        })
+      : null
+
+  let brandRow: SearchBrandRow | null =
+    brandFromUrl ??
+    (parsedQuery?.brand
+      ? {
+          id: parsedQuery.brand.id,
+          name: parsedQuery.brand.name,
+          slug: parsedQuery.brand.slug,
+        }
+      : null)
+
+  if (
+    !brandRow &&
+    queryNormalized &&
+    !parsedQuery?.model &&
+    !isMarketplaceSectionOnlyQuery(queryNormalized) &&
+    !isMarketplaceBoardStyleOnlyQuery(queryNormalized) &&
+    !isMarketplaceGenericSurfSearchOnly(queryNormalized)
+  ) {
+    const directory = await resolveDirectoryBrandRowFromLabel(supabase, queryNormalized)
+    brandRow = toSearchBrandRow(directory)
+  }
+
+  return { brandFromUrl, parsedQuery, brandRow }
+}
+
+const getCachedMarketplaceSearchIntent = unstable_cache(
+  loadMarketplaceSearchIntent,
+  ["marketplace-search-intent"],
+  {
+    revalidate: MARKETPLACE_SEARCH_PAGE_REVALIDATE_SECONDS,
+    tags: [MARKETPLACE_SEARCH_PAGE_CACHE_TAG],
+  },
+)
+
+async function getMarketplaceSearchIntentCached(
+  queryNormalized: string,
+  brandSlug: string,
+): Promise<MarketplaceSearchIntent> {
+  if (process.env.NODE_ENV === "development") {
+    return loadMarketplaceSearchIntent(queryNormalized, brandSlug)
+  }
+  return getCachedMarketplaceSearchIntent(queryNormalized, brandSlug)
+}
+
+async function loadMarketplaceSearchListings(
+  queryNormalized: string,
+  categoryId: string,
+  categoryName: string,
+  brandId: string,
+  brandName: string,
+  brandFromUrlFlag: string,
+  parsedQueryJson: string,
+): Promise<MarketplaceSearchListingsCache> {
+  const supabase = getDb({ consistency: "eventual" })
+  const parsedQuery: MarketplaceParsedQuery | null = parsedQueryJson
+    ? (JSON.parse(parsedQueryJson) as MarketplaceParsedQuery)
+    : null
+  const brand = brandId ? { id: brandId, name: brandName } : null
+  const category = categoryId ? { id: categoryId, name: categoryName } : null
+  return resolveSearchListings(
+    supabase,
+    queryNormalized,
+    category,
+    brand,
+    parsedQuery,
+    brandFromUrlFlag === "1",
+  )
+}
+
+const getCachedMarketplaceSearchListings = unstable_cache(
+  loadMarketplaceSearchListings,
+  ["marketplace-search-listings"],
+  {
+    revalidate: MARKETPLACE_SEARCH_PAGE_REVALIDATE_SECONDS,
+    tags: [MARKETPLACE_SEARCH_PAGE_CACHE_TAG],
+  },
+)
+
+async function getMarketplaceSearchListingsCached(
+  queryNormalized: string,
+  categoryId: string,
+  categoryName: string,
+  brand: SearchBrandRow | null,
+  brandFromUrl: boolean,
+  parsedQuery: MarketplaceParsedQuery | null,
+): Promise<MarketplaceSearchListingsCache> {
+  const args = [
+    queryNormalized,
+    categoryId,
+    categoryName,
+    brand?.id ?? "",
+    brand?.name ?? "",
+    brandFromUrl ? "1" : "0",
+    parsedQuery ? JSON.stringify(parsedQuery) : "",
+  ] as const
+  if (process.env.NODE_ENV === "development") {
+    return loadMarketplaceSearchListings(...args)
+  }
+  return getCachedMarketplaceSearchListings(...args)
+}
+
+async function loadSearchPageUser(): Promise<{ id: string } | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return user ? { id: user.id } : null
+}
+
+async function loadFavoritedListingIds(userId: string, listingIds: string[]): Promise<string[]> {
+  if (listingIds.length === 0) return []
+  const supabase = await createClient()
+  const matched: string[] = []
+  for (let index = 0; index < listingIds.length; index += 80) {
+    const chunk = listingIds.slice(index, index + 80)
+    const { data: favs } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", userId)
+      .in("listing_id", chunk)
+    for (const row of favs ?? []) matched.push(row.listing_id)
+  }
+  return matched
+}
 
 type MarketplaceSearchResolutionMeta = {
   resultCount: number
@@ -187,67 +367,20 @@ export async function SearchPageView({
   skipAuthLookup?: boolean
 }) {
   const brandSlugRequested = brandSlugFromUrl.trim()
+  const queryNormalized = normalizeMarketplaceSearchQueryForAnalytics(rawQuery)
 
-  const supabase = await createClient()
-
-  let brandFromUrl: { id: string; name: string; slug: string } | null = null
-  if (brandSlugRequested) {
-    const { data: b } = await supabase
-      .from("brands")
-      .select("id, name, slug")
-      .eq("slug", brandSlugRequested)
-      .maybeSingle()
-    if (b) {
-      brandFromUrl = { id: b.id, name: b.name, slug: b.slug }
-    }
-  }
-
-  const parsedQuery =
-    rawQuery.trim().length >= 2
-      ? await parseMarketplaceQuery(supabase, rawQuery, {
-          brandHint: brandFromUrl
-            ? { ...brandFromUrl, logo_url: null }
-            : null,
-        })
-      : null
+  const intent = await getMarketplaceSearchIntentCached(queryNormalized, brandSlugRequested)
+  const { brandFromUrl, parsedQuery, brandRow } = intent
 
   if (!categorySlugFromUrl.trim()) {
     const modelPageHref = marketplaceModelPageHrefFromParsed(parsedQuery)
     if (modelPageHref) redirect(modelPageHref)
   }
 
-  let brandRow: { id: string; name: string; slug: string } | null =
-    brandFromUrl ??
-    (parsedQuery?.brand
-      ? {
-          id: parsedQuery.brand.id,
-          name: parsedQuery.brand.name,
-          slug: parsedQuery.brand.slug,
-        }
-      : null)
+  // Session read stays off the cached path. Hearts hydrate in the browser.
+  const userPromise = skipAuthLookup ? Promise.resolve(null) : loadSearchPageUser()
 
-  // Brand-only free-text still resolves via directory when the parser misses.
-  // Skip for bare section keywords ("fins") and shape / fin-layout queries
-  // ("fish", "fish twin") — those must not match Futures Fins / Fish Stix, etc.
-  if (
-    !brandRow &&
-    rawQuery.trim() &&
-    !parsedQuery?.model &&
-    !isMarketplaceSectionOnlyQuery(rawQuery) &&
-    !isMarketplaceBoardStyleOnlyQuery(rawQuery) &&
-    !isMarketplaceGenericSurfSearchOnly(rawQuery)
-  ) {
-    brandRow = await resolveDirectoryBrandRowFromLabel(supabase, rawQuery)
-  }
-
-  const [{ data: { user } }, categoryRows] = await Promise.all([
-    // When skipAuthLookup is set, the page is cached by ISR so we must not
-    // bake per-user state into the HTML. Skip the auth round-trip entirely.
-    skipAuthLookup
-      ? Promise.resolve({ data: { user: null } })
-      : supabase.auth.getUser(),
-    getCachedBrowseCategories(),
-  ])
+  const categoryRows = await getCachedBrowseCategories()
 
   const sortedCategories = sortMarketplaceBrowseCategories(categoryRows)
   const requestedSlug = categorySlugFromUrl.trim()
@@ -268,14 +401,17 @@ export async function SearchPageView({
       isLikelyTypoBrandMatch(rawQuery, brandRow.name),
   )
 
-  const { listings, searchMeta } = await resolveSearchListings(
-    supabase,
-    rawQuery,
-    matched ? { id: matched.id, name: matched.name } : null,
-    brandUnknown ? null : brandRow,
-    parsedQuery,
-    Boolean(brandFromUrl),
-  )
+  const [{ listings, searchMeta }, user] = await Promise.all([
+    getMarketplaceSearchListingsCached(
+      queryNormalized,
+      matched?.id ?? "",
+      matched?.name ?? "",
+      brandUnknown ? null : brandRow,
+      Boolean(brandFromUrl),
+      parsedQuery,
+    ),
+    userPromise,
+  ])
 
   if (rawQuery.trim()) {
     if (searchMeta) {
@@ -312,14 +448,12 @@ export async function SearchPageView({
     })
   }
 
-  let favoritedListingIds: string[] = []
-  if (user) {
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-    favoritedListingIds = (favs ?? []).map((f) => f.listing_id)
-  }
+  const favoritedListingIds = user
+    ? await loadFavoritedListingIds(
+        user.id,
+        listings.map((listing) => listing.id),
+      )
+    : []
 
   const queryTrimmed = rawQuery.trim()
   const heading = searchResultsHeading({
@@ -369,6 +503,7 @@ export async function SearchPageView({
           <BoardsNoResultsSaveSearch
             criteria={marketplaceSearchSavedCriteria(rawQuery)}
             isLoggedIn={!!user}
+            hydrateSession={skipAuthLookup}
             clearHref="/search/recent"
           />
         ) : (
@@ -393,7 +528,7 @@ export async function SearchPageView({
 }
 
 async function resolveSearchListings(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   rawQuery: string,
   category: { id: string; name: string } | null,
   brand: { id: string; name: string } | null,
@@ -648,7 +783,7 @@ function applyBoardTypeFilter<
 }
 
 async function buildSearchFromSupabase(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   rawQuery: string,
   categoryId: string | null,
   limit: number,
@@ -683,7 +818,7 @@ async function buildSearchFromSupabase(
 
 /** Supabase fallback when strict listing text match returns nothing (prefix on strongest token). */
 async function buildSearchFromSupabaseTypoFallback(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   rawQuery: string,
   categoryId: string | null,
   limit: number,
@@ -772,7 +907,7 @@ function rowToRecentListing(row: any): RecentListing {
 }
 
 async function buildSearchQuery(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   rawQuery: string,
   categoryId: string | null,
   limit: number,

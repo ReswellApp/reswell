@@ -58,10 +58,12 @@ export function RecentFeedClient({
 }: RecentFeedClientProps) {
   const [clientFavIds, setClientFavIds] = useState<string[] | null>(null)
   const [clientViewerUserId, setClientViewerUserId] = useState<string | null>(viewerUserId)
+  const listingIdsKey = listings.map((listing) => listing.id).join(",")
 
   useEffect(() => {
     if (!hydrateOwnFavorites) return
     let cancelled = false
+    const ids = listingIdsKey.length > 0 ? listingIdsKey.split(",") : []
 
     async function hydrate() {
       const supabase = createClient()
@@ -70,24 +72,29 @@ export function RecentFeedClient({
       } = await supabase.auth.getUser()
       if (cancelled) return
       setClientViewerUserId(user?.id ?? null)
-      if (!user) {
+      if (!user || ids.length === 0) {
         setClientFavIds([])
         return
       }
-      const { data: favs } = await supabase
-        .from("favorites")
-        .select("listing_id")
-        .eq("user_id", user.id)
-      if (!cancelled) {
-        setClientFavIds((favs ?? []).map((f) => f.listing_id))
+      const matched: string[] = []
+      for (let index = 0; index < ids.length; index += 80) {
+        const chunk = ids.slice(index, index + 80)
+        const { data: favs } = await supabase
+          .from("favorites")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", chunk)
+        if (cancelled) return
+        for (const row of favs ?? []) matched.push(row.listing_id)
       }
+      if (!cancelled) setClientFavIds(matched)
     }
 
     void hydrate()
     return () => {
       cancelled = true
     }
-  }, [hydrateOwnFavorites])
+  }, [hydrateOwnFavorites, listingIdsKey])
 
   // When hydrateOwnFavorites is set, clientFavIds starts null (before hydration)
   // and updates after the auth check; fall back to the server-provided array
