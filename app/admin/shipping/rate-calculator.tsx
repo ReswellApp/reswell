@@ -1359,7 +1359,7 @@ export function ShippingRateCalculator({
                   Results · {sortedRates.length} options
                 </h3>
                 <p className="text-[12px] text-muted-foreground">
-                  Total includes shipping, insurance, confirmation, and other line items.
+                  Total is shipping, confirmation, and other carrier fees. ShipEngine insurance is not added.
                 </p>
               </div>
               <div className={`overflow-x-auto ${shipTableShell}`}>

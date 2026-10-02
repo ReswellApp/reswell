@@ -337,19 +337,11 @@ export async function POST(
       weightLb: body.parcel.weight_lb,
     }
 
-    const orderTotal = Number(o.amount ?? 0)
-    const shippingAmt = Number(o.shipping_amount ?? 0)
-    const insuredValueUsd =
-      Number.isFinite(orderTotal) && orderTotal > 0
-        ? Math.max(0.01, Math.round((orderTotal - (Number.isFinite(shippingAmt) ? shippingAmt : 0)) * 100) / 100)
-        : null
-
     const ratesResult = await fetchRatesForSurfboardOrder({
       shipFrom: resolved.from,
       shipTo: resolved.to,
       parcel,
       listingSection: listing.section,
-      insuredValueUsd,
     })
 
     if (!ratesResult.ok) {
