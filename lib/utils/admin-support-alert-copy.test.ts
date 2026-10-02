@@ -4,11 +4,11 @@ import {
   buildSupportTicketAdminAlertSms,
   shouldNotifyStaffSupportCaseOpened,
   supportTicketAdminAlertDeskUrl,
-} from "./adminSupportAlerts.ts"
+} from "./admin-support-alert-copy.ts"
 
 const CASE_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
-describe("adminSupportAlerts", () => {
+describe("admin support alert copy", () => {
   it("skips staff-opened cases", () => {
     assert.equal(shouldNotifyStaffSupportCaseOpened("staff"), false)
     assert.equal(shouldNotifyStaffSupportCaseOpened("requester"), true)

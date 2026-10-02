@@ -4,14 +4,13 @@ import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import type { SupportCaseRow } from "@/lib/db/supportCases"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 import {
-  adminLiveChatHrefForCase,
-  adminSupportCaseHref,
-} from "@/lib/utils/support-case-paths"
-import { isLiveChatSupportChannel } from "@/lib/utils/support-ticket-display"
+  buildSupportTicketAdminAlertSms,
+  shouldNotifyStaffSupportCaseOpened,
+  supportTicketAdminAlertDeskUrl,
+  type SupportTicketAdminAlertKind,
+} from "@/lib/utils/admin-support-alert-copy"
 
 export const SUPPORT_TICKET_ADMIN_ALERT_METRIC = "Support Ticket Admin Alert"
-
-export type SupportTicketAdminAlertKind = "case_opened" | "customer_reply"
 
 export type SupportTicketAdminAlertInput = {
   id: string
@@ -20,45 +19,6 @@ export type SupportTicketAdminAlertInput = {
   source_channel?: string | null
   opened_by?: SupportCaseRow["opened_by"] | null
   uniqueId?: string | null
-}
-
-const PREVIEW_MAX = 80
-
-export function supportTicketAdminAlertDeskUrl(input: {
-  id: string
-  source_channel?: string | null
-  origin?: string
-}): string {
-  const origin = (input.origin ?? publicSiteOriginForEmail()).replace(/\/$/, "")
-  const href = isLiveChatSupportChannel(input.source_channel)
-    ? adminLiveChatHrefForCase(input.id)
-    : adminSupportCaseHref(input.id)
-  return `${origin}${href}`
-}
-
-export function buildSupportTicketAdminAlertSms(input: {
-  kind: SupportTicketAdminAlertKind
-  id: string
-  subject: string
-  preview?: string | null
-  ticketUrl: string
-}): string {
-  const ref = formatSupportCaseReference(input.id)
-  const subject = input.subject.trim() || "Support ticket"
-  if (input.kind === "case_opened") {
-    return `Reswell CS: new ticket ${ref} — ${subject}. ${input.ticketUrl}`
-  }
-  const preview = (input.preview ?? "").replace(/\s+/g, " ").trim()
-  const snippet =
-    preview.length > PREVIEW_MAX ? `${preview.slice(0, PREVIEW_MAX)}…` : preview
-  const detail = snippet || subject
-  return `Reswell CS: reply on ${ref} — ${detail}. ${input.ticketUrl}`
-}
-
-export function shouldNotifyStaffSupportCaseOpened(
-  openedBy: SupportCaseRow["opened_by"] | null | undefined,
-): boolean {
-  return openedBy !== "staff"
 }
 
 async function sendSupportTicketAdminAlert(args: {
@@ -71,6 +31,7 @@ async function sendSupportTicketAdminAlert(args: {
   const ticketUrl = supportTicketAdminAlertDeskUrl({
     id: caseId,
     source_channel: args.case.source_channel,
+    origin: publicSiteOriginForEmail(),
   })
   const smsMessage = buildSupportTicketAdminAlertSms({
     kind: args.kind,
