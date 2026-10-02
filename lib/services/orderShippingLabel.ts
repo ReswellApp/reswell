@@ -207,7 +207,6 @@ export async function fetchRatesForSurfboardOrder(params: {
   tierId?: SurfboardShippingTierId | null
   adminCustomCarton?: boolean
   listingSection?: string | null
-  insuredValueUsd?: number | null
 }) {
   return fetchShipEngineRatesForSurfboard(params)
 }

@@ -5,8 +5,6 @@ import {
   isLabelImagesNotSupportedError,
 } from "@/lib/shipengine/errors"
 import {
-  getShipEngineLabelInsuranceProvider,
-  isShipEngineLabelInsuranceEnabled,
   pickInsuranceClaimUrl,
   pickInsuranceCost,
   pickShipEngineLabelIds,
@@ -118,8 +116,6 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   listingSection?: string | null
   /** Admin-only picker option for urgent member shipments. */
   includeSameAndNextDayRates?: boolean
-  /** Declared value for ParcelGuard / carrier insurance when enabled. */
-  insuredValueUsd?: number | null
 }): Promise<
   | { ok: true; rates: ShipEngineRateOption[] }
   | { ok: false; error: string; status: number }
@@ -163,15 +159,6 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     }
   }
 
-  const insuranceEnabled = isShipEngineLabelInsuranceEnabled()
-  const insured =
-    insuranceEnabled &&
-    typeof params.insuredValueUsd === "number" &&
-    Number.isFinite(params.insuredValueUsd) &&
-    params.insuredValueUsd > 0
-      ? params.insuredValueUsd
-      : null
-
   const shipment = buildShipEngineRateShipment(params.shipFrom, params.shipTo, {
     weightValue: params.parcel.weightLb,
     weightUnit: "pound",
@@ -181,9 +168,6 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     dimUnit: "inch",
     packageCode: "package",
     validateAddress: "no_validation",
-    insuranceProvider: insured != null ? getShipEngineLabelInsuranceProvider() : null,
-    insuredValueAmount: insured,
-    insuredValueCurrency: "usd",
   })
 
   const body = {

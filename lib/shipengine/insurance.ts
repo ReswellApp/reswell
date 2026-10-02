@@ -1,35 +1,20 @@
 /**
  * ShipEngine ParcelGuard / insurance helpers for marketplace labels.
  * Claims are filed via portal URL — there is no ShipEngine "file claim" API.
+ *
+ * Reswell does not buy ShipEngine insurance (ParcelGuard, Shipsurance, carrier,
+ * or third-party). Rate quotes and label purchases send `insurance_provider: none`.
+ * `SHIPENGINE_LABEL_INSURANCE_ENABLED` is ignored so a leftover env value cannot
+ * add insurance back onto shipping.
  */
 
-export type ShipEngineInsuranceProvider =
-  | "none"
-  | "funding_source"
-  | "parcelguard"
-  | "carrier"
-  | "shipsurance"
-  | "third_party"
-  | "x_cover"
-
 export function isShipEngineLabelInsuranceEnabled(): boolean {
-  const raw = process.env.SHIPENGINE_LABEL_INSURANCE_ENABLED?.trim().toLowerCase()
-  return raw === "1" || raw === "true" || raw === "yes"
+  return false
 }
 
-/** Default provider when insurance is enabled (ParcelGuard via funding_source). */
-export function getShipEngineLabelInsuranceProvider(): Exclude<ShipEngineInsuranceProvider, "none"> {
-  const raw = process.env.SHIPENGINE_LABEL_INSURANCE_PROVIDER?.trim().toLowerCase()
-  if (
-    raw === "parcelguard" ||
-    raw === "funding_source" ||
-    raw === "carrier" ||
-    raw === "shipsurance" ||
-    raw === "x_cover"
-  ) {
-    return raw
-  }
-  return "funding_source"
+/** Shipment fields for rate quotes and label purchases. Insurance is never bought. */
+export function shipEngineShipmentInsurance(): { insurance_provider: "none" } {
+  return { insurance_provider: "none" }
 }
 
 export function pickInsuranceClaimUrl(label: Record<string, unknown>): string | null {

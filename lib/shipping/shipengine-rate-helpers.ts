@@ -3,6 +3,7 @@
  * Used by the admin rate calculator and public surfboard estimate API.
  */
 
+import { shipEngineShipmentInsurance } from "@/lib/shipengine/insurance"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 
@@ -72,9 +73,6 @@ export function buildShipmentBody(
     dimUnit: "inch" | "centimeter"
     packageCode: string
     validateAddress: "no_validation" | "validate_only" | "validate_and_clean"
-    insuranceProvider?: string | null
-    insuredValueAmount?: number | null
-    insuredValueCurrency?: string | null
   },
 ) {
   const pkg: Record<string, unknown> = {
@@ -93,25 +91,12 @@ export function buildShipmentBody(
   if (labelMessages) {
     pkg.label_messages = labelMessages
   }
-  const insuredAmount =
-    typeof opts.insuredValueAmount === "number" && Number.isFinite(opts.insuredValueAmount)
-      ? opts.insuredValueAmount
-      : null
-  const insuranceProvider = opts.insuranceProvider?.trim() || null
-  if (insuranceProvider && insuranceProvider !== "none" && insuredAmount != null && insuredAmount > 0) {
-    pkg.insured_value = {
-      currency: (opts.insuredValueCurrency?.trim() || "usd").toLowerCase(),
-      amount: Math.round(insuredAmount * 100) / 100,
-    }
-  }
   const shipment: Record<string, unknown> = {
     validate_address: opts.validateAddress,
     ship_from: addressToPayload(shipFrom, "from"),
     ship_to: addressToPayload(shipTo, "to"),
     packages: [pkg],
-  }
-  if (insuranceProvider && insuranceProvider !== "none" && insuredAmount != null && insuredAmount > 0) {
-    shipment.insurance_provider = insuranceProvider
+    ...shipEngineShipmentInsurance(),
   }
   return shipment
 }
