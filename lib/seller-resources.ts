@@ -6,10 +6,11 @@ export const HOW_TO_SHIP_HREF = "/seller-resources/how-to-ship"
 export const SALES_MAP_HREF = "/map"
 
 /**
- * Seller Resources dropdown — How to Sell, How to Ship, Sales Map, More Sell Resources.
+ * Seller Resources dropdown — For surf shops, How to Sell, How to Ship, Sales Map, More Sell Resources.
  * Pricing Hub and Sell-Out List stay out of the nav until those pages have data.
  */
 export const sellerResourcesNavLinks: SellerResourceLink[] = [
+  { label: "For surf shops", href: "/for-surf-shops" },
   { label: "How to Sell", href: HOW_TO_SELL_HREF },
   { label: "How to Ship", href: HOW_TO_SHIP_HREF },
   { label: "Sales Map", href: SALES_MAP_HREF },

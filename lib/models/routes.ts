@@ -33,6 +33,7 @@ export const MODEL_PAGE_RESERVED_BRAND_SEGMENTS = new Set([
   "favorites",
   "fins",
   "following",
+  "for-surf-shops",
   "giveaways",
   "help",
   "import",

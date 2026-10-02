@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BookOpen, Map, Package } from "lucide-react"
+import { BookOpen, Map, Package, Store } from "lucide-react"
 import { helpArticlePath, helpTopicPath } from "@/lib/help-center/paths"
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
@@ -11,9 +11,16 @@ import {
   sellerResourcesComingSoon,
 } from "@/lib/seller-resources"
 import { SANTA_BARBARA_DROPOFF_HREF } from "@/lib/dropoff-santa-barbara"
+import { FOR_SURF_SHOPS_PATH } from "@/lib/for-surf-shops"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 
 const PRIMARY = [
+  {
+    title: "For surf shops",
+    href: FOR_SURF_SHOPS_PATH,
+    body: "Open a free account and list the used boards on your rack.",
+    icon: Store,
+  },
   {
     title: "How to Sell",
     href: HOW_TO_SELL_HREF,
@@ -57,9 +64,9 @@ export function MoreSellResourcesContent() {
       <HowToSellSection
         eyebrow="Guides"
         title="Start with the basics"
-        lead="How to list, how to ship, and where boards are actually selling."
+        lead="Open a shop account, then learn how to list, how to ship, and where boards are selling."
       >
-        <ul className="grid gap-5 md:grid-cols-3">
+        <ul className="grid gap-5 sm:grid-cols-2">
           {PRIMARY.map((item) => {
             const Icon = item.icon
             return (
