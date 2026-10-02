@@ -253,8 +253,6 @@ type AdjustmentLabelRow = {
   order_item_id?: string | null
   tracking_number: string | null
   tracking_carrier: string | null
-  label_pdf_url: string | null
-  label_storage_path: string | null
 }
 
 /**
@@ -286,16 +284,12 @@ export async function dbGetShipEngineAdjustmentClaimContext(
         .order("sort_order", { ascending: true }),
       supabase
         .from("order_shipping_labels")
-        .select(
-          "order_id, order_item_id, tracking_number, tracking_carrier, label_pdf_url, label_storage_path",
-        )
+        .select("order_id, order_item_id, tracking_number, tracking_carrier")
         .in("order_id", orderIds)
         .order("created_at", { ascending: false }),
       supabase
         .from("order_admin_shipping_labels")
-        .select(
-          "order_id, tracking_number, tracking_carrier, label_pdf_url, label_storage_path",
-        )
+        .select("order_id, tracking_number, tracking_carrier")
         .in("order_id", orderIds)
         .order("created_at", { ascending: false }),
     ])
@@ -413,13 +407,7 @@ export async function dbGetShipEngineAdjustmentClaimContext(
       itemImageUrl: imageUrl || null,
       sellerName: order ? profiles.get(order.seller_id) ?? null : null,
       carrier: label?.tracking_carrier?.trim() || order?.tracking_carrier?.trim() || null,
-      hasOriginalLabel: Boolean(
-        adjustment.order_id &&
-          adjustment.tracking_number &&
-          (label?.label_pdf_url?.trim() ||
-            label?.label_storage_path?.trim() ||
-            adjustment.shipment_id),
-      ),
+      hasOriginalLabel: Boolean(adjustment.order_id && adjustment.tracking_number),
     })
   }
 
