@@ -19,6 +19,10 @@ import {
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
 import { liveChatCaseAlreadyHasVisitorTurn } from "@/lib/live-chat/team-display"
+import {
+  notifyStaffSupportCaseOpened,
+  notifyStaffSupportCustomerReply,
+} from "@/lib/services/adminSupportAlerts"
 
 const LIVE_CHAT_CASE_SUBJECT = "Live chat"
 
@@ -211,6 +215,8 @@ export async function openLiveChatSupportCase(
       console.error("[liveChatSupportCase] failed to link support_case_id on session", session.id)
     }
 
+    notifyStaffSupportCaseOpened(opened.data)
+
     return {
       supportCaseId: opened.data.id,
       contactMessageId: String(ticket.id),
@@ -231,13 +237,24 @@ export async function appendLiveChatVisitorTurnToCase(
   const messages = await listSupportCaseMessages(svc, caseId, { includeInternal: true })
   if (liveChatCaseAlreadyHasVisitorTurn(messages, content)) return
 
-  await insertSupportCaseMessage(svc, {
+  const posted = await insertSupportCaseMessage(svc, {
     case_id: caseId,
     author_user_id: session.user_id,
     author_role: "customer",
     body: content,
   })
   await touchSupportCaseAfterMessage(svc, { id: caseId, preview: content })
+  if (!posted.error) {
+    notifyStaffSupportCustomerReply({
+      id: caseId,
+      subject: LIVE_CHAT_CASE_SUBJECT,
+      preview: content,
+      source_channel: "live_chat",
+      uniqueId: posted.id
+        ? `support-ticket-admin-alert-reply-${posted.id}`
+        : undefined,
+    })
+  }
 }
 
 export async function appendLiveChatAgentTurnToCase(
