@@ -9,6 +9,8 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 
 const ALERT_METRIC = "ShipEngine Label Adjustment Alert"
 const ALERT_BATCH_SIZE = 500
+export const SHIPENGINE_ADJUSTMENT_ALERT_PROFILE_ID =
+  "reswell-admin-shipengine-adjustment-alerts"
 
 export type ShipEngineAdjustmentAdminAlertSummary = {
   sent: boolean
@@ -16,39 +18,15 @@ export type ShipEngineAdjustmentAdminAlertSummary = {
   adjustmentCount: number
   totalIncreaseUsd: number
   hasMore: boolean
-  reason?: string
-}
-
-export function normalizeAdminAlertPhone(value: string | undefined): string | null {
-  const trimmed = value?.trim()
-  if (!trimmed) return null
-
-  const normalized = trimmed.startsWith("+")
-    ? `+${trimmed.slice(1).replace(/\D/g, "")}`
-    : trimmed.replace(/\D/g, "").length === 10
-      ? `+1${trimmed.replace(/\D/g, "")}`
-      : `+${trimmed.replace(/\D/g, "")}`
-
-  return /^\+[1-9]\d{7,14}$/.test(normalized) ? normalized : null
 }
 
 export async function bootstrapShipEngineAdjustmentAdminAlertMetric(): Promise<
-  | { ok: true; status: number; skipped: boolean }
+  | { ok: true; status: number; skipped: boolean; profileId: string }
   | { ok: false; error: string }
 > {
-  const phoneNumber = normalizeAdminAlertPhone(
-    process.env.SHIPENGINE_ADJUSTMENT_ALERT_PHONE,
-  )
-  if (!phoneNumber) {
-    return {
-      ok: false,
-      error: "SHIPENGINE_ADJUSTMENT_ALERT_PHONE must be set to a valid E.164 phone number",
-    }
-  }
-
   const event = await sendKlaviyoServerEvent({
     metricName: ALERT_METRIC,
-    profile: { phone_number: phoneNumber },
+    profile: { external_id: SHIPENGINE_ADJUSTMENT_ALERT_PROFILE_ID },
     uniqueId: "shipengine-adjustment-alert-metric-seed-v1",
     value: 1,
     valueCurrency: "USD",
@@ -74,37 +52,18 @@ export async function bootstrapShipEngineAdjustmentAdminAlertMetric(): Promise<
     }
   }
 
-  return { ok: true, status: event.status, skipped: event.skipped }
+  return {
+    ok: true,
+    status: event.status,
+    skipped: event.skipped,
+    profileId: SHIPENGINE_ADJUSTMENT_ALERT_PROFILE_ID,
+  }
 }
 
 export async function sendShipEngineAdjustmentAdminAlert(): Promise<
   | { ok: true; summary: ShipEngineAdjustmentAdminAlertSummary }
   | { ok: false; error: string }
 > {
-  const configuredPhone = process.env.SHIPENGINE_ADJUSTMENT_ALERT_PHONE
-  const phoneNumber = normalizeAdminAlertPhone(configuredPhone)
-
-  if (!configuredPhone?.trim()) {
-    return {
-      ok: true,
-      summary: {
-        sent: false,
-        skipped: true,
-        adjustmentCount: 0,
-        totalIncreaseUsd: 0,
-        hasMore: false,
-        reason: "SHIPENGINE_ADJUSTMENT_ALERT_PHONE not set",
-      },
-    }
-  }
-
-  if (!phoneNumber) {
-    return {
-      ok: false,
-      error: "SHIPENGINE_ADJUSTMENT_ALERT_PHONE must be a valid E.164 phone number",
-    }
-  }
-
   let supabase: ReturnType<typeof createServiceRoleClient>
   try {
     supabase = createServiceRoleClient()
@@ -149,7 +108,7 @@ export async function sendShipEngineAdjustmentAdminAlert(): Promise<
 
   const event = await sendKlaviyoServerEvent({
     metricName: ALERT_METRIC,
-    profile: { phone_number: phoneNumber },
+    profile: { external_id: SHIPENGINE_ADJUSTMENT_ALERT_PROFILE_ID },
     uniqueId: `shipengine-adjustment-alert-${uniqueIdHash}`,
     value: totalIncreaseUsd,
     valueCurrency: "USD",

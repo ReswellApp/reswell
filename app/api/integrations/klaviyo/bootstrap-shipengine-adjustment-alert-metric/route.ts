@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
-import { bootstrapShipEngineAdjustmentAdminAlertMetric } from "@/lib/services/shipEngineAdjustmentAdminAlert"
+import {
+  bootstrapShipEngineAdjustmentAdminAlertMetric,
+  SHIPENGINE_ADJUSTMENT_ALERT_PROFILE_ID,
+} from "@/lib/services/shipEngineAdjustmentAdminAlert"
 
 /**
  * Seeds the Klaviyo metric used by the ShipEngine adjustment admin SMS flow.
@@ -20,7 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       data: result,
       message:
-        'Metric seeded. Create a Klaviyo flow triggered by "ShipEngine Label Adjustment Alert", filter reswell_metric_seed != true, and add a transactional SMS using {{ event.sms_message }}.',
+        `Metric seeded for Klaviyo profile external ID "${SHIPENGINE_ADJUSTMENT_ALERT_PROFILE_ID}". Add the admin phone and transactional SMS consent to that profile, then create a flow triggered by "ShipEngine Label Adjustment Alert", filter reswell_metric_seed != true, and add a transactional SMS using {{ event.sms_message }}.`,
     })
   } catch (error) {
     console.error(
