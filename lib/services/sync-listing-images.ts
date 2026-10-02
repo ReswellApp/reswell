@@ -3,6 +3,10 @@ import {
   listingStorageObjectPathFromUrl,
   persistableListingThumbnailUrl,
 } from "@/lib/listing-media-proxy-url"
+import {
+  orderListingImageWritesForPrimaryTrigger,
+  type ListingImageWriteOrder,
+} from "@/lib/services/listing-image-write-order"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 
 export type ListingImageUpdateOp = {
@@ -111,8 +115,8 @@ export async function listingImagesAlreadySynced(
 
 /**
  * Syncs `listing_images` for a listing update. Removes deleted rows, inserts new
- * photos, and updates order/metadata. Runs inserts/updates in parallel and skips
- * unchanged existing rows so text-only edits do not trigger N sequential DB calls.
+ * photos, and updates order/metadata. Skips unchanged rows. Remaining writes run
+ * one at a time, new primary last, so the cover trigger stamps photo 1.
  */
 export async function syncListingImages(
   supabase: SupabaseClient,
@@ -164,8 +168,35 @@ export async function syncListingImages(
     )
   }
 
-  await Promise.all([
-    ...inserts.map(async (img) => {
+  type PendingImageWrite = ListingImageWriteOrder &
+    (
+      | { kind: "insert"; img: ListingImageUpdateOp }
+      | { kind: "update"; img: ListingImageUpdateOp & { id: string } }
+    )
+
+  const pendingWrites: PendingImageWrite[] = [
+    ...inserts.map((img) => ({
+      kind: "insert" as const,
+      img,
+      isPrimary: img.isPrimary,
+      sortOrder: img.sortOrder,
+    })),
+    ...updates
+      .filter((img) => {
+        const existing = existingById.get(img.id)
+        return !existing || listingImageRowNeedsUpdate(existing, img)
+      })
+      .map((img) => ({
+        kind: "update" as const,
+        img,
+        isPrimary: img.isPrimary,
+        sortOrder: img.sortOrder,
+      })),
+  ]
+
+  for (const write of orderListingImageWritesForPrimaryTrigger(pendingWrites)) {
+    if (write.kind === "insert") {
+      const img = write.img
       const { error } = await supabase.from("listing_images").insert({
         listing_id: listingId,
         url: img.url.trim(),
@@ -174,32 +205,28 @@ export async function syncListingImages(
         sort_order: img.sortOrder,
       })
       if (error) throw new Error(error.message)
-    }),
-    ...updates.map(async (img) => {
-      const existing = existingById.get(img.id)
-      if (existing && !listingImageRowNeedsUpdate(existing, img)) {
-        return
-      }
+      continue
+    }
 
-      const rowUpdate: {
-        sort_order: number
-        is_primary: boolean
-        url?: string
-        thumbnail_url?: string | null
-      } = { sort_order: img.sortOrder, is_primary: img.isPrimary }
+    const img = write.img
+    const rowUpdate: {
+      sort_order: number
+      is_primary: boolean
+      url?: string
+      thumbnail_url?: string | null
+    } = { sort_order: img.sortOrder, is_primary: img.isPrimary }
 
-      const url = img.url.trim()
-      if (url) {
-        rowUpdate.url = url
-        rowUpdate.thumbnail_url = normalizedThumbnailUrl(img.thumbnailUrl, img.url)
-      }
+    const url = img.url.trim()
+    if (url) {
+      rowUpdate.url = url
+      rowUpdate.thumbnail_url = normalizedThumbnailUrl(img.thumbnailUrl, img.url)
+    }
 
-      const { error } = await supabase
-        .from("listing_images")
-        .update(rowUpdate)
-        .eq("id", img.id)
-        .eq("listing_id", listingId)
-      if (error) throw new Error(error.message)
-    }),
-  ])
+    const { error } = await supabase
+      .from("listing_images")
+      .update(rowUpdate)
+      .eq("id", img.id)
+      .eq("listing_id", listingId)
+    if (error) throw new Error(error.message)
+  }
 }

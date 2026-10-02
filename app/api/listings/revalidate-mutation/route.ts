@@ -3,10 +3,8 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
-import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
+import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
 import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
-import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
 import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient } from "@/lib/supabase/server"
 
@@ -49,9 +47,7 @@ export async function POST(request: NextRequest) {
     typeof sellerProfile?.seller_slug === "string" ? sellerProfile.seller_slug.trim() : ""
 
   after(() => {
-    revalidateListingDetailPage(listingId, slug ?? null)
-    revalidateBoardsBrowseCatalog()
-    revalidateNavSuggestedSurfboards()
+    expirePublicListingSurfacesAfterEdit(listingId, slug ?? null)
     if (sellerSlug) {
       revalidatePath(`/sellers/${sellerSlug}`, "page")
     }
