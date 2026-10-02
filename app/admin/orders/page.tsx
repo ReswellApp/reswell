@@ -68,6 +68,7 @@ type OrderRow = {
   status: string
   amount: number | string
   shipping_adjusted_fee: number
+  shipping_adjusted_fee_charged?: number
   payment_method: string
   fulfillment_method: string | null
   delivery_status: string | null
@@ -698,7 +699,11 @@ export default function AdminOrdersPage() {
                           <p className="font-semibold tabular-nums text-rose-700 dark:text-rose-400">
                             +{formatUsd(r.shipping_adjusted_fee)}
                           </p>
-                          <p className="text-xs text-muted-foreground">Carrier adjusted fee</p>
+                          <p className="text-xs text-muted-foreground">
+                            {r.shipping_adjusted_fee_charged && r.shipping_adjusted_fee_charged > 0
+                              ? "Deducted from seller"
+                              : "On record only"}
+                          </p>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>

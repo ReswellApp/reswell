@@ -226,10 +226,19 @@ export const activityRowSurfaceNeutral =
   "hover:bg-muted/35 border-l-2 border-l-transparent hover:border-l-border/80"
 
 export function parseDescription(raw: string, type: string): { title: string; subtitle: string } {
-  if (raw.startsWith("Shipping label adjustment — ")) {
+  if (raw.startsWith("Adjustment fee returned — ")) {
     return {
-      title: "Shipping label adjustment",
-      subtitle: raw.slice("Shipping label adjustment — ".length),
+      title: "Adjustment fee returned",
+      subtitle: raw.slice("Adjustment fee returned — ".length),
+    }
+  }
+  if (raw.startsWith("Adjustment fee — ") || raw.startsWith("Shipping label adjustment — ")) {
+    const marker = raw.startsWith("Adjustment fee — ")
+      ? "Adjustment fee — "
+      : "Shipping label adjustment — "
+    return {
+      title: "Adjustment fee",
+      subtitle: raw.slice(marker.length),
     }
   }
 

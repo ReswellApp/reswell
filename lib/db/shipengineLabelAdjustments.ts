@@ -22,6 +22,7 @@ export type ShipEngineLabelAdjustmentRow = {
   order_id: string | null
   wallet_transaction_id: string | null
   wallet_debited_at: string | null
+  charge_seller_wallet: boolean
   created_at: string
 }
 
@@ -69,6 +70,7 @@ function mapRow(row: Record<string, unknown>): ShipEngineLabelAdjustmentRow {
       typeof row.wallet_transaction_id === "string" ? row.wallet_transaction_id : null,
     wallet_debited_at:
       typeof row.wallet_debited_at === "string" ? row.wallet_debited_at : null,
+    charge_seller_wallet: row.charge_seller_wallet === true,
     created_at: String(row.created_at),
   }
 }
@@ -311,25 +313,49 @@ function addAdjustmentTotal(
   totals.set(key, Math.round(((totals.get(key) ?? 0) + value) * 100) / 100)
 }
 
+export type OrderAdjustmentFeeTotals = {
+  /** Every positive carrier bill on the order. */
+  recordedUsd: number
+  /** Amount actually deducted from the seller wallet. Past bills stay at 0. */
+  chargedUsd: number
+}
+
+function addAdjustmentFeeTotals(
+  totals: Map<string, OrderAdjustmentFeeTotals>,
+  key: string,
+  amount: number | string | null,
+  charged: boolean,
+): void {
+  const value = num(amount)
+  if (value == null || value <= 0) return
+  const current = totals.get(key) ?? { recordedUsd: 0, chargedUsd: 0 }
+  current.recordedUsd = Math.round((current.recordedUsd + value) * 100) / 100
+  if (charged) current.chargedUsd = Math.round((current.chargedUsd + value) * 100) / 100
+  totals.set(key, current)
+}
+
 /** Positive ShipEngine adjustment fees summed by Reswell order id. */
 export async function dbGetIncreasedAdjustmentTotalsByOrderIds(
   supabase: SupabaseClient,
   orderIds: string[],
-): Promise<{ data: Map<string, number>; error: Error | null }> {
+): Promise<{ data: Map<string, OrderAdjustmentFeeTotals>; error: Error | null }> {
   const ids = [...new Set(orderIds.filter(Boolean))]
-  const totals = new Map<string, number>()
+  const totals = new Map<string, OrderAdjustmentFeeTotals>()
 
   for (let i = 0; i < ids.length; i += 100) {
     const { data, error } = await supabase
       .from("shipengine_label_adjustments")
-      .select("order_id, adjustment_amount_usd")
+      .select("order_id, adjustment_amount_usd, charge_seller_wallet, wallet_transaction_id")
       .in("order_id", ids.slice(i, i + 100))
       .gt("adjustment_amount_usd", 0)
 
     if (error) return { data: new Map(), error: new Error(error.message) }
     for (const row of data ?? []) {
       const orderId = typeof row.order_id === "string" ? row.order_id : null
-      if (orderId) addAdjustmentTotal(totals, orderId, row.adjustment_amount_usd)
+      if (!orderId) continue
+      const charged =
+        row.charge_seller_wallet === true && typeof row.wallet_transaction_id === "string"
+      addAdjustmentFeeTotals(totals, orderId, row.adjustment_amount_usd, charged)
     }
   }
 

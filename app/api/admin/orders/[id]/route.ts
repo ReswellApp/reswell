@@ -112,7 +112,8 @@ export async function GET(
   return NextResponse.json({
     data: {
       ...data,
-      shipping_adjusted_fee: adjustments.data.get(parsed.data) ?? 0,
+      shipping_adjusted_fee: adjustments.data.get(parsed.data)?.recordedUsd ?? 0,
+      shipping_adjusted_fee_charged: adjustments.data.get(parsed.data)?.chargedUsd ?? 0,
     },
     capabilities,
   })

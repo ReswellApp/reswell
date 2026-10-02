@@ -37,6 +37,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { AdminShippingStats } from '@/lib/services/adminShippingStats'
 import { AdminAdjustedLabelsTab } from './admin-adjusted-labels-tab'
+import { AdminAdjustmentDisputesTab } from './admin-adjustment-disputes-tab'
 import { AdminLabelSpendTab } from './admin-label-spend-tab'
 import { AdminPostageRecoveryTab } from './admin-postage-recovery-tab'
 import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
@@ -183,6 +184,7 @@ export function AdminShippingClient() {
     tabFromUrl === 'create' ||
     tabFromUrl === 'labels-created' ||
     tabFromUrl === 'adjusted-labels' ||
+    tabFromUrl === 'adjustment-disputes' ||
     tabFromUrl === 'label-spend' ||
     tabFromUrl === 'postage-recovery'
       ? tabFromUrl
@@ -474,6 +476,10 @@ export function AdminShippingClient() {
               <DollarSign className="h-4 w-4" />
               Adjusted labels
             </TabsTrigger>
+            <TabsTrigger value="adjustment-disputes" className={tabTriggerClass}>
+              <Scale className="h-4 w-4" />
+              Fee disputes
+            </TabsTrigger>
             <TabsTrigger value="overview" className={tabTriggerClass} disabled={!configured}>
               <Ship className="h-4 w-4" />
               Overview
@@ -516,6 +522,10 @@ export function AdminShippingClient() {
 
           <TabsContent value="adjusted-labels" className="page-enter mt-6">
             <AdminAdjustedLabelsTab />
+          </TabsContent>
+
+          <TabsContent value="adjustment-disputes" className="page-enter mt-6">
+            <AdminAdjustmentDisputesTab />
           </TabsContent>
 
           {configured && overview.configured ? (

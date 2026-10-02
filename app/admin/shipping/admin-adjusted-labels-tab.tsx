@@ -34,6 +34,7 @@ type AdjustedLabelRow = {
   actual_height: number | null
   order_id: string | null
   wallet_debited_at: string | null
+  charge_seller_wallet?: boolean
   created_at: string
   orderDisplayNum: string | null
 }
@@ -247,7 +248,11 @@ export function AdminAdjustedLabelsTab() {
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {row.wallet_debited_at ? "Debited" : "Not debited"}
+                    {row.wallet_debited_at
+                      ? "Debited"
+                      : row.charge_seller_wallet
+                        ? "Pending deduction"
+                        : "Not charged"}
                   </TableCell>
                   <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground">
                     {[row.adjustment_type, row.reason_code].filter(Boolean).join(" · ") || "—"}
