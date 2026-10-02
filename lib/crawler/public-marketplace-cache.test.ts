@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 import { describe, it } from "node:test"
 import {
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
+  isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
 } from "./public-marketplace-cache-policy.ts"
@@ -17,6 +18,16 @@ describe("public marketplace document cache", () => {
     assert.equal(publicMarketplaceCdnCacheControl(true, false), PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL)
     assert.equal(publicMarketplaceCdnCacheControl(true, true), null)
     assert.equal(publicMarketplaceCdnCacheControl(false, false), null)
+  })
+
+  it("does not CDN-cache server action posts on public marketplace URLs", () => {
+    assert.equal(isCacheablePublicMarketplaceRequest("GET", false), true)
+    assert.equal(isCacheablePublicMarketplaceRequest("HEAD", false), true)
+    assert.equal(isCacheablePublicMarketplaceRequest("POST", false), false)
+    assert.equal(isCacheablePublicMarketplaceRequest("POST", true), false)
+    assert.equal(isCacheablePublicMarketplaceRequest("GET", true), false)
+    const proxy = readFileSync(new URL("../../proxy.ts", import.meta.url), "utf8")
+    assert.match(proxy, /isCacheablePublicMarketplaceRequest/)
   })
 
   it("keeps cookies() off the anonymous shell", () => {
@@ -52,7 +63,8 @@ describe("public marketplace document cache", () => {
     )
     assert.doesNotMatch(page, /BoardsBrowseAdminCuratorGate/)
     assert.doesNotMatch(page, /select\("is_admin"\)/)
-    assert.match(curator, /getAdminSession\(/)
+    assert.match(curator, /browserProfileIsAdmin\(/)
+    assert.match(curator, /fromBrowser !== null/)
     assert.doesNotMatch(curator, /from ["']next\/headers["']/)
   })
 })
