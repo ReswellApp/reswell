@@ -1,6 +1,6 @@
 import { after, NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
-import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
+import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
@@ -346,10 +346,7 @@ async function putImpersonatedListing(request: NextRequest) {
 
   after(() => {
     try {
-      if (slug.trim()) {
-        revalidatePath(`/l/${slug.trim()}`, "page")
-        revalidateListingPublicDetailCatalog()
-      }
+      expirePublicListingSurfacesAfterEdit(listingId, slug)
       if (listingSection === "fins") {
         revalidatePath("/fins")
       }

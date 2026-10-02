@@ -40,7 +40,7 @@ function listingPublicDetailCacheTags(param: string): string[] {
 function getCachedPublicListingDetailRow(param: string): Promise<PublicListingLookupResult> {
   return unstable_cache(
     () => loadPublicListingByParam(param, SURFBOARD_LISTING_SELECT),
-    ["listing-public-detail", param],
+    ["listing-public-detail-v2", param],
     {
       revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
       tags: listingPublicDetailCacheTags(param),

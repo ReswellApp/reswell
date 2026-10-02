@@ -1,6 +1,8 @@
 import { after, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser, resolveServerAuth } from "@/lib/auth/get-safe-server-user"
+import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
+import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
 import {
   IMPERSONATION_COOKIE,
@@ -285,13 +287,17 @@ export async function PUT(
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
 
-  if (result.published) {
-    after(() => {
+  after(() => {
+    expirePublicListingSurfacesAfterEdit(listingId, result.slug)
+    void revalidateSellersAfterListingChange(writeDb, ownerUserId).catch((error) => {
+      console.error("[owned-edit] seller revalidate:", error)
+    })
+    if (result.published) {
       void schedulePublishedListingSideEffects(writeDb, listingId, ownerUserId).catch((error) => {
         console.error("[owned-edit] publish side effects:", error)
       })
-    })
-  }
+    }
+  })
 
   return NextResponse.json({
     success: true,
