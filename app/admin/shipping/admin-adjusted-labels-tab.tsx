@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -13,7 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DollarSign, Loader2, RefreshCw, TriangleAlert } from "lucide-react"
+import {
+  DollarSign,
+  ExternalLink,
+  Loader2,
+  Package,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react"
 import { toast } from "sonner"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 
@@ -36,6 +44,11 @@ type AdjustedLabelRow = {
   wallet_debited_at: string | null
   created_at: string
   orderDisplayNum: string | null
+  itemTitle: string | null
+  itemImageUrl: string | null
+  sellerName: string | null
+  carrier: string | null
+  hasOriginalLabel: boolean
 }
 
 function formatUsd(value: number): string {
@@ -180,7 +193,7 @@ export function AdminAdjustedLabelsTab() {
         </Alert>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow className="border-border/40 hover:bg-transparent">
@@ -191,10 +204,13 @@ export function AdminAdjustedLabelsTab() {
                 Increase
               </TableHead>
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Tracking
+                Item
               </TableHead>
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Order
+                Order / seller
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Shipment
               </TableHead>
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Wallet
@@ -205,19 +221,22 @@ export function AdminAdjustedLabelsTab() {
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Actual
               </TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Label
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
                   <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
                   Loading adjusted labels…
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
                   No price-increase adjustments yet. Sync from ShipEngine after the nightly report
                   lands, or wait for the daily cron.
                 </TableCell>
@@ -231,20 +250,48 @@ export function AdminAdjustedLabelsTab() {
                   <TableCell className="font-semibold tabular-nums text-rose-700 dark:text-rose-400">
                     {formatUsd(row.adjustment_amount_usd)}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {row.tracking_number || "—"}
+                  <TableCell className="min-w-[190px]">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted">
+                        {row.itemImageUrl ? (
+                          <Image
+                            src={row.itemImageUrl}
+                            alt=""
+                            fill
+                            sizes="48px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <Package className="absolute inset-0 m-auto h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span className="line-clamp-2 text-sm font-medium">
+                        {row.itemTitle || "Order item"}
+                      </span>
+                    </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="min-w-[130px]">
                     {row.order_id ? (
-                      <Link
-                        href={`/admin/orders/${row.order_id}`}
-                        className="font-mono text-sm font-medium underline-offset-4 hover:underline"
-                      >
-                        {row.orderDisplayNum || row.order_id.slice(0, 8)}
-                      </Link>
+                      <>
+                        <Link
+                          href={`/admin/orders/${row.order_id}`}
+                          className="font-mono text-sm font-medium underline-offset-4 hover:underline"
+                        >
+                          {row.orderDisplayNum || row.order_id.slice(0, 8)}
+                        </Link>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {row.sellerName || "Unknown seller"}
+                        </div>
+                      </>
                     ) : (
                       <span className="text-xs text-muted-foreground">Unmatched</span>
                     )}
+                  </TableCell>
+                  <TableCell className="min-w-[170px] text-xs">
+                    <div className="font-medium">{row.carrier || "Unknown carrier"}</div>
+                    <div className="mt-1 font-mono text-muted-foreground">
+                      {row.tracking_number || "No tracking"}
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {row.wallet_debited_at ? "Debited" : "Not debited"}
@@ -259,6 +306,22 @@ export function AdminAdjustedLabelsTab() {
                       {row.actual_package ? ` · ${row.actual_package}` : ""}
                     </div>
                     <div>{formatDims(row)}</div>
+                  </TableCell>
+                  <TableCell>
+                    {row.order_id && row.tracking_number && row.hasOriginalLabel ? (
+                      <Button asChild size="sm" variant="outline">
+                        <a
+                          href={`/api/admin/orders/${row.order_id}/shipping-label/download?inline=1&tracking=${encodeURIComponent(row.tracking_number)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open label
+                          <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Unavailable</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

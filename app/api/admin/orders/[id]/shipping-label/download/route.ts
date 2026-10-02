@@ -9,6 +9,7 @@ import {
 } from "@/lib/services/resolveOrderShippingLabelPdf"
 
 const orderIdSchema = z.string().uuid()
+const trackingSchema = z.string().trim().min(1).max(100)
 const LABEL_BUCKET = "order-shipping-labels"
 
 function contentDispositionHeader(fileName: string, inline: boolean): string {
@@ -39,6 +40,11 @@ export async function GET(
   }
 
   const orderId = parsed.data
+  const requestedTracking = request.nextUrl.searchParams.get("tracking")
+  const parsedTracking = requestedTracking ? trackingSchema.safeParse(requestedTracking) : null
+  if (parsedTracking && !parsedTracking.success) {
+    return NextResponse.json({ error: "Invalid tracking number" }, { status: 400 })
+  }
   const serviceSupabase = createServiceRoleClient()
   const { data: order, error: orderErr } = await serviceSupabase
     .from("orders")
@@ -53,7 +59,8 @@ export async function GET(
   const label = await resolveOrderShippingLabelPdf(serviceSupabase, {
     orderId,
     trackingNumber:
-      typeof order.tracking_number === "string" ? order.tracking_number : null,
+      parsedTracking?.data ??
+      (typeof order.tracking_number === "string" ? order.tracking_number : null),
   })
   if (!label) {
     return NextResponse.json({ error: "No shipping label for this order" }, { status: 404 })

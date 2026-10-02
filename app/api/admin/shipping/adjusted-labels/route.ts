@@ -2,7 +2,10 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import { dbListIncreasedLabelAdjustments } from "@/lib/db/shipengineLabelAdjustments"
+import {
+  dbGetShipEngineAdjustmentClaimContext,
+  dbListIncreasedLabelAdjustments,
+} from "@/lib/db/shipengineLabelAdjustments"
 import { syncShipEngineLabelAdjustments } from "@/lib/services/syncShipEngineLabelAdjustments"
 import { z } from "zod"
 
@@ -34,29 +37,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Could not load adjusted labels" }, { status: 500 })
   }
 
-  const orderIds = [...new Set(rows.map((row) => row.order_id).filter((id): id is string => Boolean(id)))]
-  const orderMap = new Map<string, { order_num: string | null }>()
-  if (orderIds.length > 0) {
-    const { data: orders, error: ordErr } = await supabase
-      .from("orders")
-      .select("id, order_num")
-      .in("id", orderIds)
-    if (ordErr) {
-      console.error("[admin adjusted-labels orders]", ordErr)
-      return NextResponse.json({ error: "Could not load orders" }, { status: 500 })
-    }
-    for (const order of orders ?? []) {
-      orderMap.set(order.id as string, { order_num: (order.order_num as string | null) ?? null })
-    }
+  const claimContext = await dbGetShipEngineAdjustmentClaimContext(supabase, rows)
+  if (claimContext.error) {
+    console.error("[admin adjusted-labels claim context]", claimContext.error)
+    return NextResponse.json({ error: "Could not load order details" }, { status: 500 })
   }
 
   const enriched = rows.map((row) => {
-    const order = row.order_id ? orderMap.get(row.order_id) : null
+    const context = claimContext.data.get(row.id)
     return {
       ...row,
-      orderDisplayNum: order
-        ? formatOrderNumForCustomer(order.order_num, row.order_id ?? "")
+      orderDisplayNum: row.order_id
+        ? formatOrderNumForCustomer(context?.orderNum ?? null, row.order_id)
         : null,
+      itemTitle: context?.itemTitle ?? null,
+      itemImageUrl: context?.itemImageUrl ?? null,
+      sellerName: context?.sellerName ?? null,
+      carrier: context?.carrier ?? null,
+      hasOriginalLabel: context?.hasOriginalLabel ?? false,
     }
   })
 

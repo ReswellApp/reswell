@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabels"
+import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 
 export type OrderShippingLabelOrigin = "auto_reswell_checkout" | "seller_paid"
 
@@ -278,6 +279,73 @@ export async function getLatestPreparedShippingLabelForOrder(
     return urls
   }
   const { created_at: _c, ...urls } = marketplace
+  return urls
+}
+
+type StoredLabelCandidate = PreparedShippingLabelUrls & {
+  created_at: string | null
+  tracking_number: string | null
+}
+
+function newestMatchingLabel(
+  rows: unknown[] | null,
+  trackingNumber: string,
+): StoredLabelCandidate | null {
+  const wanted = normalizeTrackingNumberForCarrier(trackingNumber)
+  if (!wanted) return null
+
+  for (const value of rows ?? []) {
+    const row = value as Partial<StoredLabelCandidate>
+    if (
+      normalizeTrackingNumberForCarrier(row.tracking_number ?? "") !== wanted ||
+      (!row.label_pdf_url?.trim() && !row.label_storage_path?.trim())
+    ) {
+      continue
+    }
+    return {
+      label_pdf_url: row.label_pdf_url?.trim() || null,
+      label_storage_path: row.label_storage_path?.trim() || null,
+      ...normalizePaperless(row),
+      tracking_number: row.tracking_number ?? null,
+      created_at: row.created_at ?? null,
+    }
+  }
+  return null
+}
+
+/** Exact stored marketplace/admin label for a tracking number, newest first. */
+export async function getPreparedShippingLabelForOrderByTracking(
+  supabase: SupabaseClient,
+  orderId: string,
+  trackingNumber: string,
+): Promise<PreparedShippingLabelUrls | null> {
+  const columns =
+    "label_pdf_url, label_storage_path, tracking_number, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code, created_at"
+  const [marketplace, admin] = await Promise.all([
+    supabase
+      .from("order_shipping_labels")
+      .select(columns)
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: false })
+      .limit(25),
+    supabase
+      .from("order_admin_shipping_labels")
+      .select(columns)
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: false })
+      .limit(25),
+  ])
+
+  const candidates = [
+    newestMatchingLabel(marketplace.data, trackingNumber),
+    newestMatchingLabel(admin.data, trackingNumber),
+  ].filter((row): row is StoredLabelCandidate => row != null)
+  if (candidates.length === 0) return null
+
+  candidates.sort(
+    (a, b) => Date.parse(b.created_at ?? "") - Date.parse(a.created_at ?? ""),
+  )
+  const { created_at: _createdAt, tracking_number: _trackingNumber, ...urls } = candidates[0]
   return urls
 }
 
