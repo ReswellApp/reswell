@@ -1,0 +1,73 @@
+{
+  "generated_for": "Nowtro / Aleutian Juice official named standup catalog",
+  "source": "https://www.nowtro.com/nowtro-boards, https://www.nowtro.com/vector, https://www.nowtro.com/longboards (official Squarespace model lineup — excludes merch, order-deposit pages, action shots, fin close-ups, multi-board racks, and models without a unique product-front)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "nowtro",
+      "name": "Nowtro",
+      "website_url": "https://www.nowtro.com",
+      "location_label": "Cayucos / San Luis Obispo, California",
+      "founder_name": "Dave Parmenter",
+      "lead_shaper_name": "Dave Parmenter",
+      "short_description": "Custom handmade Aleutian Juice surfboards by Dave Parmenter in Cayucos / San Luis Obispo, California — Nowtro refinements of single-fins, hybrids, and longboards.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/nowtro.png",
+      "models": [
+        {
+          "name": "Widow-maker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447824878052-4RP46535DUN6J931ART6/image-asset.jpeg?format=jpg",
+          "description": "The Widow-maker is more than just a turbo-boosted single-fin. It’s a design that lets you go fast when you want; and stop dead in your tracks if the wave calls for it. It allows you to use the entire wave face in complete control, without having to go through the classic tri-fin triple pump wind-up every time you want to do a maneuver. For guns the Widow-maker delivers all the benefits of a single-fin – lower drag, no high-speed max-outs, meaningful bottom turns and greater control in the barrel – yet with the low profile small Widow-maker side fins there’s still always that subtle snap and bite in top turns and cutbacks. The Widow-maker fin configuration adapts well to most designs, but especially big-wave guns and single-fin shapes over 6’5”.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Straight Single Fin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447825208134-UVK05Z90Q9VFBYL7M0PL/dave-parmenter-single-fin-six-channel?format=jpg",
+          "description": "As a surfboard design the single-fin has always been maligned by the myth that they are ‘stiff’ handling surfboards. Actually, they are much looser than multi-fin boards, though the rider must really know how to surf to get them moving in ordinary conditions. You cannot simply pump away with Thruster body English and get them up on step. In fact, that is one of the main reasons singles are in fashion again – they teach you how to surf properly, using the rails and trim, and tapping energy zones on the wave unreachable on the tri-fin with it’s power-giving but grabby side fins.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MPegg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447825383958-AL2BV31BQRCFNES07SC1/aleutian-juice-mp-disc?format=jpg",
+          "description": "The MPegg is a component-specific replica of the stubby Michael Peterson rode at Kirra in Morning of the Earth. All the funky elements are filtered out and what remains is Fish-like speed in a large bore single-fin that is both fun-ctional in slop and a source of new sensations and lines in perfect point surf. The MPegg is not a set design and can be expanded or narrowed, thickened or thinned, finned or de-finned to suit the rider's taste.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Occ-Ster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447825021593-IBVRDNIHSGZVOMX46KUY/aleutian-juice-surfboards-occhilupo?format=jpg",
+          "description": "In 1984 Rusty Preisendorfer made a 6’1” tri-fin and handed it to young Aussie firebrand Mark Occhilupo. As surfed by Occy, this board brought the 3-year-old Thruster concept into full fruition. When I began shaping under Rusty’s label in 1988, I received copies of all the original templates and have never stopped making those Occy-type boards for myself, and about 15 years ago they began coming into vogue again because modern surfboard design had become too anorexic for most surfers. The Occster IS a modern shortboard – it just puts the ‘THRUST’ back into THRUSTER.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Micro-Stubby",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447738528406-79SRG202YYZEYI215HD1/aleutian-juice-micro-stubby?format=jpg",
+          "description": "A hybrid of a hybrid, the Micro-Stubby is a ridden as a much shorter, thinner, and curvier version of the Stubb-Vector. For surfers trying to wean themselves off of absurdly underpowered flick sticks, this is the surfboard you want under your feet. For those susceptible to peer pressure, this board resembles a groovy pro shortboard, but skates over dead spots like a Fish and chucks you up at the lip with twice the speed of a conventional shortboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447830825779-MKG30FA44CDW6EP2G2VL/dave-parmenter-classic-longboard?format=jpg",
+          "description": "The true retro longboard first and foremost incorporates design features that prohibit modern body English and fosters a classic look and feel of riding waves. These boards are time machines and are incredibly efficient at stitching together the most appalling junk surf. As Phil Edwards said, “I don’t care what people say about the shortboard being faster – on a longboard you just get further down the beach.”",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Modern",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447826477707-L54D00NCFMB2XJ78LG61/aleutian-juice-hawaii-longboard?format=jpg",
+          "description": "The modern longboard is a hybrid beast, sharing with its 1960s progenitors only the cursory attempts at a similar outline. The remainder of the design elements – foil, rocker, rail shape, fin array – all are derived from the warehouse of early 1990s gun components. These extremely versatile hybrid boards are intended to deliver all the paddle power and glide of a classic longboard yet break away into modern shortboard riffs when the wave calls for it.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "50/50",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447826555570-0VD7A9XLCK544X55SA3T/dave-parmenter-aleutian-juice-longboard?format=jpg",
+          "description": "As the moniker implies, the 50/50 style longboard attempts (and usually succeeds) in melding the best of the old and new in longboard designs. Generally, this 50/50 is based on the premise of the 2 X 1 fin array – a compromise between a multi-fin and a single-fin. Here is a versatile surfboard that can dance to jazz or rock-and-roll.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Makaha Machine",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5648c5bce4b003ec2cc22a2d/1447832224391-POWLM61WPC4AXGO9HHUM/dave-parmenter-makaha-machine?format=jpg",
+          "description": "The Makaha Machine is a refined, re-imagined version of those Brewer “Pipeliners,” honed during the nearly 2o years I lived at Makaha Beach attempting to make if from the Point through the Bowl. At full length, the Makaha Machine is a doomsday rhino chaser, all indomitable paddle power with battering-ram penetration and bombproof holding power that sneers at chop and wind. In the smaller lengths they can be foiled thin and hybridized to transform into first-rate ‘desert island' surfboards, combining mid-length multi-fin performance with modern longboard reach and glide.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
