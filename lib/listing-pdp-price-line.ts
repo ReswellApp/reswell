@@ -14,7 +14,7 @@ export function peerListingShippingSubline(
   const n = Math.max(0, Number.parseFloat(String(shippingPrice ?? 0)) || 0)
 
   if (mode === "free") return "Includes free shipping"
-  if (n > 0) return `+ $${n.toFixed(2)} shipping`
   if (mode === "reswell") return "Shipping calculated at checkout"
+  if (n > 0) return `+ $${n.toFixed(2)} shipping`
   return "Shipping options at checkout"
 }

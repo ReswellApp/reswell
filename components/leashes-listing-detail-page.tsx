@@ -54,6 +54,7 @@ import { getBrandById } from "@/lib/brands/server"
 import { resolveListingModelPageHref } from "@/lib/services/modelPage"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { flatShippingUsdForPublicListing } from "@/lib/listing-fulfillment"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import {
@@ -283,7 +284,10 @@ async function renderLeashesListingDetailPage({
     null
   const primaryImageUrl = primaryImageRaw ? proxiedListingImageSrc(primaryImageRaw) : null
 
-  const shippingFlatRate = Math.max(0, Number.parseFloat(String(leash.shipping_price ?? 0)) || 0)
+  const shippingFlatRate = flatShippingUsdForPublicListing(
+    leash.shipping_price,
+    (leash.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
+  )
 
   const makeOfferConfig =
     canPeerPurchase && acceptOffers && listPriceNum > 0
@@ -321,10 +325,10 @@ async function renderLeashesListingDetailPage({
       shippingPriceCaption = "Local pickup · shipping not offered"
     } else if (shippingOffered && boardShippingCostMode === "free") {
       shippingPriceCaption = "Free shipping included"
-    } else if (shippingOffered && shippingFlatRate > 0) {
-      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
     } else if (shippingOffered && boardShippingCostMode === "reswell") {
       shippingPriceCaption = "Shipping rate calculated at checkout"
+    } else if (shippingOffered && shippingFlatRate > 0) {
+      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
     } else if (shippingOffered && boardShippingCostMode === "flat") {
       shippingPriceCaption =
         shippingFlatRate > 0

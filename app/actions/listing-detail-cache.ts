@@ -75,13 +75,13 @@ export async function revalidateListingDetailAfterListingMutation(
     typeof sellerProfile?.seller_slug === "string" ? sellerProfile.seller_slug.trim() : ""
 
   after(() => {
-    revalidateListingDetailPage(listingId, slug ?? null)
     revalidateBoardsBrowseCatalog()
     revalidateNavSuggestedSurfboards()
     if (sellerSlug) {
       revalidatePath(`/sellers/${sellerSlug}`, "page")
     }
     revalidateSellersDirectoryCatalog()
+    revalidateListingDetailPage(listingId, slug ?? null)
     try {
       const serviceSupabase = createServiceRoleClient()
       syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)

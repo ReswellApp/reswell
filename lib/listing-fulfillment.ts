@@ -64,27 +64,42 @@ export function boardFulfillmentSectionTitle(
   return "Local pickup only"
 }
 
+export type PublicListingShippingCostMode = "reswell" | "flat" | "free"
+
+/**
+ * Dollar amount to render as flat shipping on a public listing.
+ * Reswell-calculated and free shipping ignore a leftover `shipping_price`
+ * from a previous flat-rate setting.
+ */
+export function flatShippingUsdForPublicListing(
+  shippingPrice: number | string | null | undefined,
+  shippingCostMode: PublicListingShippingCostMode | null | undefined,
+): number {
+  if (shippingCostMode === "reswell" || shippingCostMode === "free") return 0
+  return Math.max(0, Number.parseFloat(String(shippingPrice ?? 0)) || 0)
+}
+
 /**
  * One label per enabled option for listing detail metadata.
  * Shipping is listed first when both options are offered.
- * When the seller set a flat shipping amount or free shipping, include that in the label.
- * Reswell-calculated and unknown $0 rates say the rate is calculated at checkout.
+ * Free and Reswell-calculated shipping say so even if `shipping_price` still holds an old flat amount.
+ * A stored flat rate, or a legacy row with a price and no mode, includes the dollar amount.
  */
 export function boardFulfillmentDetailLabels(
   localPickup: boolean | null | undefined,
   shippingAvailable: boolean | null | undefined,
   shippingPrice?: number | string | null,
-  boardShippingCostMode?: "reswell" | "flat" | "free" | null,
+  boardShippingCostMode?: PublicListingShippingCostMode | null,
 ): string[] {
   const labels: string[] = []
   if (shippingAvailable) {
-    const n = Math.max(0, Number.parseFloat(String(shippingPrice ?? 0)) || 0)
+    const n = flatShippingUsdForPublicListing(shippingPrice, boardShippingCostMode)
     const mode = boardShippingCostMode ?? null
 
     if (mode === "free") {
       labels.push("Free shipping")
-    } else if (mode === "flat" && n > 0) {
-      labels.push(`Shipping (+$${n.toFixed(2)})`)
+    } else if (mode === "reswell") {
+      labels.push("Shipping calculated at checkout")
     } else if (n > 0) {
       labels.push(`Shipping (+$${n.toFixed(2)})`)
     } else {
