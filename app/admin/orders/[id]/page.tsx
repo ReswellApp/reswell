@@ -30,7 +30,10 @@ import { toast } from "sonner"
 
 type OrderApiResponse =
   | {
-      data: AdminOrderDetail & { shipping_adjusted_fee: number }
+      data: AdminOrderDetail & {
+        shipping_adjusted_fee: number
+        shipping_adjusted_fee_charged: number
+      }
       capabilities: {
         canRefund: boolean
         canReleaseShippingSellerEarnings: boolean
@@ -333,9 +336,14 @@ export default function AdminOrderDetailPage() {
             </div>
             {o.shipping_adjusted_fee > 0 ? (
               <div>
-                <p className="text-muted-foreground">Shipping price adjusted fee</p>
+                <p className="text-muted-foreground">Carrier adjustment</p>
                 <p className="font-semibold tabular-nums text-rose-700 dark:text-rose-400">
                   +${o.shipping_adjusted_fee.toFixed(2)}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {o.shipping_adjusted_fee_charged > 0
+                    ? `$${o.shipping_adjusted_fee_charged.toFixed(2)} was deducted from the seller wallet as an adjustment fee. The buyer’s shipping payment stays the amount above.`
+                    : "Recorded before seller adjustment fees. The buyer’s shipping payment stays the amount above. Reswell keeps this carrier bill."}
                 </p>
               </div>
             ) : null}

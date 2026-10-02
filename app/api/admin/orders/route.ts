@@ -221,7 +221,8 @@ export async function GET(request: NextRequest) {
 
   const enriched = rows.map((r) => ({
     ...r,
-    shipping_adjusted_fee: adjustments.data.get(r.id as string) ?? 0,
+    shipping_adjusted_fee: adjustments.data.get(r.id as string)?.recordedUsd ?? 0,
+    shipping_adjusted_fee_charged: adjustments.data.get(r.id as string)?.chargedUsd ?? 0,
     buyer: partyById.get(r.buyer_id) ?? null,
     seller: partyById.get(r.seller_id) ?? null,
     listing: typeof r.listing_id === "string" ? listingById.get(r.listing_id) ?? null : null,

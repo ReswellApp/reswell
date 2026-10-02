@@ -274,11 +274,17 @@ export function EarningsActivityList({
                   ? parseFloat(t.balance_after)
                   : 0
                 const visualKind = singleRowVisualKind(t, titleForSingleRow(t), reversedOrderIds)
-                const label = kindLabel(visualKind, t.type)
+                const label =
+                  t.reference_type === "shipengine_label_adjustment"
+                    ? "Adjustment fee"
+                    : t.reference_type === "shipengine_label_adjustment_reversal"
+                      ? "Returned"
+                      : kindLabel(visualKind, t.type)
                 const parsedDescription = parseDescription(t.description, t.type)
                 const title = titleForSingleRow(t)
                 const adjustmentExplanation =
-                  t.reference_type === "shipengine_label_adjustment"
+                  t.reference_type === "shipengine_label_adjustment" ||
+                  t.reference_type === "shipengine_label_adjustment_reversal"
                     ? parsedDescription.subtitle
                     : null
                 const time = formatTimeOnly(t.created_at)

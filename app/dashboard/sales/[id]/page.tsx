@@ -84,6 +84,8 @@ import {
 import { SantaBarbaraDropoffInstructionsCard } from "@/components/features/sales/santa-barbara-dropoff-instructions-card"
 import { RESWELL_WAREHOUSE_ADDRESS } from "@/lib/reswell-warehouse-address"
 import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
+import { SellerAdjustmentFeeCard } from "@/components/features/sales/seller-adjustment-fee-card"
+import { listSellerChargedAdjustmentFees } from "@/lib/services/shippingAdjustmentDispute"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -345,6 +347,11 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   } = amounts
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
   const serviceSupabase = createServiceRoleClient()
+  const chargedAdjustmentFees = await listSellerChargedAdjustmentFees({
+    orderId: id,
+    sellerId: user.id,
+    trackingCarrier: sale.tracking_carrier,
+  })
   const preparedShippingLabel = await getLatestPreparedShippingLabelForOrder(serviceSupabase, id)
   const marketplaceLabels = await listOrderShippingLabelsForOrder(serviceSupabase, id)
   const shipments = await listOrderShipmentsWithItems(serviceSupabase, id)
@@ -677,6 +684,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               </div>
             </CardContent>
           </Card>
+
+          <SellerAdjustmentFeeCard
+            orderId={sale.id}
+            buyerShippingUsd={shippingAmount}
+            fees={chargedAdjustmentFees}
+          />
 
           {!isSantaBarbaraDropoffOrder &&
           sale.fulfillment_method === "shipping" &&
