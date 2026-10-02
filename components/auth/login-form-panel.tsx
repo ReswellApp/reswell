@@ -21,8 +21,15 @@ import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
+import { resolveLoginEntryAction } from "@/lib/auth/login-entry-gate"
+import { promiseWithTimeout } from "@/lib/auth/promise-with-timeout"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
+import { probeServerSessionOnce } from "@/lib/auth/wait-for-server-session-ready"
 import { cn } from "@/lib/utils"
+
+/** Bound the auth-lock read so a stuck GoTrue refresh cannot hide the form. */
+const LOGIN_SESSION_PROBE_MS = 1200
+const LOGIN_SERVER_PROBE_MS = 1500
 
 function RequiredMark() {
   return (
@@ -69,43 +76,107 @@ export function LoginFormPanel({
   const router = useRouter()
 
   useEffect(() => {
-    const supabase = createClient()
+    let cancelled = false
     const dest = safeRedirectPath(redirectTo)
-    void (async () => {
-      if (signedOut) {
-        try {
-          await supabase.auth.signOut({ scope: "local" })
-        } catch {
-          /* stale client storage only */
-        }
-        setGate("ready")
-        return
-      }
 
-      let session = (await supabase.auth.getSession()).data.session
-      // Signed-out visitors have no auth cookies. Polling `getSession` and then
-      // `getUser()` only holds the form behind the spinner and contends on the
-      // Supabase auth lock with the newsletter probe.
-      if (!session?.user && hasSupabaseAuthCookiesClient()) {
-        session = await waitForClientSession({
-          supabase,
-          maxAttempts: 8,
-          msBetween: 40,
-          networkFallback: false,
-        })
-      }
-      if (session?.user) {
-        if (variant === "modal") {
-          onLoggedIn?.()
-          setGate("ready")
+    const showForm = () => {
+      if (!cancelled) setGate("ready")
+    }
+
+    // Last resort if sign-out or the session read never settles.
+    // Longer than the session + server probes so a real session can still redirect.
+    const failSafe = window.setTimeout(showForm, 4500)
+
+    void (async () => {
+      try {
+        const supabase = createClient()
+        if (signedOut) {
+          try {
+            await supabase.auth.signOut({ scope: "local" })
+          } catch {
+            /* stale client storage only */
+          }
+          showForm()
           return
         }
+
+        let session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] =
+          null
+        try {
+          session = (
+            await promiseWithTimeout(supabase.auth.getSession(), LOGIN_SESSION_PROBE_MS)
+          ).data.session
+        } catch {
+          session = null
+        }
+
+        // Signed-out visitors have no auth cookies. Polling `getSession` and then
+        // `getUser()` only holds the form behind the spinner and contends on the
+        // Supabase auth lock with the newsletter probe.
+        if (!session?.user && hasSupabaseAuthCookiesClient()) {
+          try {
+            session = await promiseWithTimeout(
+              waitForClientSession({
+                supabase,
+                maxAttempts: 8,
+                msBetween: 40,
+                networkFallback: false,
+              }),
+              LOGIN_SESSION_PROBE_MS,
+            )
+          } catch {
+            session = null
+          }
+        }
+
+        if (cancelled) return
+
+        if (session?.user && variant === "modal") {
+          onLoggedIn?.()
+          showForm()
+          return
+        }
+
+        const serverProbe = session?.user
+          ? await probeServerSessionOnce(LOGIN_SERVER_PROBE_MS)
+          : "anonymous"
+        const action = resolveLoginEntryAction({
+          signedOut: false,
+          hasClientUser: Boolean(session?.user),
+          serverProbe,
+          redirectPath: dest,
+        })
+
+        if (action === "clear-stale-session") {
+          try {
+            await supabase.auth.signOut({ scope: "local" })
+          } catch {
+            /* local storage only — the form still has to appear */
+          }
+          showForm()
+          return
+        }
+
+        if (action === "show-form") {
+          showForm()
+          return
+        }
+
+        window.clearTimeout(failSafe)
+        if (cancelled) return
         setGate("redirecting")
         await navigateAfterClientAuth(dest, router)
-        return
+      } catch {
+        showForm()
+      } finally {
+        window.clearTimeout(failSafe)
       }
-      setGate("ready")
     })()
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(failSafe)
+    }
   }, [onLoggedIn, redirectTo, router, signedOut, variant])
 
   const handleLogin = async (e: React.FormEvent) => {
