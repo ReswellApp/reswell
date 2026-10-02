@@ -40,4 +40,19 @@ describe("public marketplace document cache", () => {
     assert.match(proxy, /shouldAttachDeviceCookieOnDocument/)
     assert.match(proxy, /applyPublicMarketplaceCacheHints/)
   })
+
+  it("resolves the /boards pin CMS after mount, not in the cached document", () => {
+    const page = readFileSync(
+      new URL("../../components/boards-browse-page.tsx", import.meta.url),
+      "utf8",
+    )
+    const curator = readFileSync(
+      new URL("../../components/boards-browse-admin-curator.tsx", import.meta.url),
+      "utf8",
+    )
+    assert.doesNotMatch(page, /BoardsBrowseAdminCuratorGate/)
+    assert.doesNotMatch(page, /select\("is_admin"\)/)
+    assert.match(curator, /getAdminSession\(/)
+    assert.doesNotMatch(curator, /from ["']next\/headers["']/)
+  })
 })

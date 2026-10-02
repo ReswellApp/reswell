@@ -79,22 +79,6 @@ import {
 import { getOpenBoardsGiveaway } from "@/lib/giveaways/boards-enter-props"
 import type { BoardsGiveawayEnterProps } from "@/components/features/giveaways/boards-giveaway-enter-button"
 
-async function BoardsBrowseAdminCuratorGate() {
-  const { supabase, user } = await getCachedRequestSession()
-  if (!user) return null
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle()
-  return (
-    <BoardsBrowseAdminCurator
-      isAdmin={profile?.is_admin === true}
-      className="border-white/55 bg-white/95 text-[#001A4A] shadow-sm hover:bg-white"
-    />
-  )
-}
-
 async function BoardsBrowseFiltersSection({
   searchParams: searchParamsPromise,
   children,
@@ -790,9 +774,7 @@ export async function BoardsBrowsePage(props: {
               giveawayEnter={giveawayEnter}
               headerAction={
                 props.showListYourSurfboardCta ? undefined : (
-                  <Suspense fallback={null}>
-                    <BoardsBrowseAdminCuratorGate />
-                  </Suspense>
+                  <BoardsBrowseAdminCurator className="border-white/55 bg-white/95 text-[#001A4A] shadow-sm hover:bg-white" />
                 )
               }
             >
