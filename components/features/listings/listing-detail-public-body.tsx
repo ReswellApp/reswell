@@ -6,6 +6,7 @@ import { isGoogleMerchantPeerSection } from "@/lib/google-merchant/config"
 import type { GoogleMerchantListingRow } from "@/lib/google-merchant/map-listing-to-product-input"
 import { asListingImageArray } from "@/lib/listing-image-display"
 import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-load"
+import { overlayListingPublicCommerceFields } from "@/lib/listing-public-commerce"
 
 type PublicListingRow = Record<string, unknown> & {
   id: string
@@ -109,7 +110,7 @@ export async function ListingDetailPublicBody({
   listingParam: string
   sectionProps: ListingDetailPageSharedProps
 }) {
-  const listing = normalizePublicListingRow(listingRaw)
+  const listing = await overlayListingPublicCommerceFields(normalizePublicListingRow(listingRaw))
   const cachedPublicProps: ListingDetailPageSharedProps = {
     ...sectionProps,
     prefetchedListing: listing.section === "new" ? undefined : listing,

@@ -1,8 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
-import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
-import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateAfterListingWrite } from "@/lib/cache/revalidate-after-listing-write"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { patchListingPriceByOwner } from "@/lib/db/listings"
 import { notifyKlaviyoFavoritePriceDrop } from "@/lib/services/klaviyoFavoritePriceDrop"
@@ -137,12 +135,12 @@ export async function updateSellerListingQuickPrice(
   }
 
   void syncListingToGoogleMerchantBestEffort(supabase, listingId)
-  await revalidateSellersAfterListingChange(supabase, sellerUserId)
-
-  revalidateListingDetailPage(listingId, row.slug)
-  if (row.section === "surfboards") {
-    revalidateBoardsBrowseCatalog()
-  }
+  await revalidateAfterListingWrite(supabase, {
+    listingId,
+    slug: row.slug,
+    sellerUserId,
+    section: row.section,
+  })
 
   if (nextUsd < currentUsd) {
     void notifyKlaviyoFavoritePriceDrop(supabase, {
