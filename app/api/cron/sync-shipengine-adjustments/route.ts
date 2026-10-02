@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { syncShipEngineLabelAdjustments } from "@/lib/services/syncShipEngineLabelAdjustments"
+import { runShipEngineAdjustmentCron } from "@/lib/services/runShipEngineAdjustmentCron"
 
 export const maxDuration = 60
 
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await syncShipEngineLabelAdjustments()
+    const result = await runShipEngineAdjustmentCron()
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 500 })
     }

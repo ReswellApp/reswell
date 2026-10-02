@@ -31,6 +31,15 @@ export type ShipEngineAdjustmentDebitSummary = {
   alreadyCharged: number
 }
 
+export type ShipEngineUnalertedAdjustmentRow = {
+  id: string
+  tracking_number: string | null
+  order_id: string | null
+  adjustment_amount_usd: number
+  adjustment_at: string | null
+  created_at: string
+}
+
 function num(v: number | string | null | undefined): number | null {
   if (v == null) return null
   const n = Number(v)
@@ -228,6 +237,68 @@ export async function dbListIncreasedLabelAdjustments(
     total: count ?? 0,
     error: null,
   }
+}
+
+export async function dbListUnalertedIncreasedAdjustments(
+  supabase: SupabaseClient,
+  limit = 500,
+): Promise<{
+  data: ShipEngineUnalertedAdjustmentRow[]
+  hasMore: boolean
+  error: Error | null
+}> {
+  const boundedLimit = Math.max(1, Math.min(limit, 500))
+  const { data, error } = await supabase
+    .from("shipengine_label_adjustments")
+    .select(
+      "id, tracking_number, order_id, adjustment_amount_usd, adjustment_at, created_at",
+    )
+    .gt("adjustment_amount_usd", 0)
+    .is("admin_alerted_at", null)
+    .order("created_at", { ascending: true })
+    .limit(boundedLimit + 1)
+
+  if (error) {
+    return { data: [], hasMore: false, error: new Error(error.message) }
+  }
+
+  const rows = (data ?? []).slice(0, boundedLimit).map((row) => ({
+    id: String(row.id),
+    tracking_number:
+      typeof row.tracking_number === "string" ? row.tracking_number : null,
+    order_id: typeof row.order_id === "string" ? row.order_id : null,
+    adjustment_amount_usd:
+      num(row.adjustment_amount_usd as number | string | null) ?? 0,
+    adjustment_at:
+      typeof row.adjustment_at === "string" ? row.adjustment_at : null,
+    created_at: String(row.created_at),
+  }))
+
+  return {
+    data: rows,
+    hasMore: (data?.length ?? 0) > boundedLimit,
+    error: null,
+  }
+}
+
+export async function dbMarkShipEngineAdjustmentsAdminAlerted(
+  supabase: SupabaseClient,
+  adjustmentIds: string[],
+  alertedAt: string,
+): Promise<{ error: Error | null }> {
+  const ids = [...new Set(adjustmentIds.filter(Boolean))]
+
+  for (let i = 0; i < ids.length; i += 100) {
+    const { error } = await supabase
+      .from("shipengine_label_adjustments")
+      .update({ admin_alerted_at: alertedAt })
+      .in("id", ids.slice(i, i + 100))
+      .is("admin_alerted_at", null)
+
+    if (error) return { error: new Error(error.message) }
+  }
+
+  return { error: null }
 }
 
 function addAdjustmentTotal(
