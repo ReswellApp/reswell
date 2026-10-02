@@ -8,14 +8,26 @@ import {
   evaluateAdCatalogCrawlerAccess,
 } from '@/lib/crawler/ad-catalog-crawler'
 import {
+  isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
 } from '@/lib/crawler/public-marketplace-paths'
 
-function applyPublicMarketplaceCacheHints(response: NextResponse, pathname: string): NextResponse {
+function applyPublicMarketplaceCacheHints(
+  request: NextRequest,
+  response: NextResponse,
+): NextResponse {
   if (response.status >= 300 && response.status < 400) return response
+  if (
+    !isCacheablePublicMarketplaceRequest(
+      request.method,
+      request.headers.has('next-action'),
+    )
+  ) {
+    return response
+  }
   const cacheControl = publicMarketplaceCdnCacheControl(
-    pathname,
+    request.nextUrl.pathname,
     response.headers.has('set-cookie'),
   )
   if (!cacheControl) return response
@@ -54,7 +66,7 @@ export async function proxy(request: NextRequest) {
       ? attachDeviceCookie(request, response)
       : response
 
-    return applyPublicMarketplaceCacheHints(withDevice, pathname)
+    return applyPublicMarketplaceCacheHints(request, withDevice)
   } catch (error) {
     console.error('[middleware] proxy failed; passing through', {
       pathname,

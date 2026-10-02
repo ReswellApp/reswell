@@ -32,6 +32,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getAdminSession } from "@/app/actions/account"
+import { browserProfileIsAdmin } from "@/lib/auth/browser-profile-is-admin"
+import { createClient } from "@/lib/supabase/client"
 import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
 import { cn } from "@/lib/utils"
@@ -116,9 +118,11 @@ type BoardsBrowseAdminCuratorProps = {
 /**
  * Admin CMS for /boards: pin listings to the top, suppress to sort last, or hide site-wide.
  *
- * `/boards` is one cached document for every visitor (ISR + CDN). Resolving
- * `is_admin` during that render bakes the button in or out depending on who
- * filled the cache. Check the session after mount instead.
+ * `/boards` is one cached document for every visitor (ISR + CDN). The header on
+ * that document stays on Sign up / Log in until the browser has a Supabase auth
+ * cookie. Resolve admin from that same browser session after mount. A server
+ * action on this URL can see cookies the header cannot, and must not be the
+ * only signal — that is how the plus showed next to Log in.
  */
 export function BoardsBrowseAdminCurator({ className }: BoardsBrowseAdminCuratorProps) {
   const router = useRouter()
@@ -215,15 +219,26 @@ export function BoardsBrowseAdminCurator({ className }: BoardsBrowseAdminCurator
 
   React.useEffect(() => {
     let cancelled = false
-    getAdminSession()
-      .then((session: { isAdmin?: boolean }) => {
+    const supabase = createClient()
+    void (async () => {
+      try {
+        const fromBrowser = await browserProfileIsAdmin(supabase)
+        if (cancelled) return
+        if (fromBrowser !== null) {
+          setIsAdmin(fromBrowser)
+          setAdminLoaded(true)
+          return
+        }
+        // Cookies are present but the browser auth call failed (lock abort,
+        // blip). Ask the server only in that case — never for a logged-out header.
+        const session = await getAdminSession()
         if (cancelled) return
         setIsAdmin(session.isAdmin === true)
         setAdminLoaded(true)
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setAdminLoaded(true)
-      })
+      }
+    })()
     return () => {
       cancelled = true
     }

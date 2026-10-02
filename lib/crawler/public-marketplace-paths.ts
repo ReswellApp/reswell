@@ -1,11 +1,15 @@
 import { isModelPagePathname } from "@/lib/models/routes"
 import {
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
+  isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl as cdnCacheControlForPublicHtml,
   shouldAttachDeviceCookieOnDocument as shouldAttachDeviceCookie,
 } from "@/lib/crawler/public-marketplace-cache-policy"
 
-export { PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL }
+export {
+  PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
+  isCacheablePublicMarketplaceRequest,
+}
 
 /**
  * Anonymous marketplace HTML. These documents must not `Set-Cookie` and must not
