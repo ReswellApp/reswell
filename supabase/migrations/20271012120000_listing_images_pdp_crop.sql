@@ -7,7 +7,7 @@ ALTER TABLE public.listing_images
   ADD COLUMN IF NOT EXISTS pdp_crop_y numeric;
 
 COMMENT ON COLUMN public.listing_images.pdp_crop_zoom IS
-  'PDP hero zoom. 0 = contain (full photo), 1 = cover, >1 extra zoom. NULL = default cover.';
+  'PDP hero zoom. 0 = contain (full photo), 1 = cover, >1 extra zoom. NULL = no seller crop (contain).';
 COMMENT ON COLUMN public.listing_images.pdp_crop_x IS
   'PDP hero focal X percent (0-100). NULL = 50.';
 COMMENT ON COLUMN public.listing_images.pdp_crop_y IS
