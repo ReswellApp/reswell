@@ -8,8 +8,9 @@
  * (e.g. `https://www.reswell.app/search?q=roberts+5%2710`) and
  * `{{ event.Search_Query }}` for the raw keyword.
  *
- * `photo_url` is the full photo of the newest listing in that search
- * (empty when nothing matches — never the site logo). `Price`, `Title`,
+ * `photo_url` is `https://www.reswell.app/media/listings/...` for the newest
+ * listing in that search (empty when nothing matches — never the site logo
+ * or the Supabase storage host). `Price`, `Title`,
  * `Listing_URL`, and `Listing_ID` describe that same listing.
  */
 

@@ -48,9 +48,11 @@ describe("savedSearchHeroFromListing", () => {
     assert.equal(listing.listingUrl, "https://www.reswell.app/l/ci-happy-everyday")
     assert.match(listing.imageSrc, /board-full\.jpg/)
     assert.doesNotMatch(listing.imageSrc, /thumb/)
-    assert.match(listing.klaviyoPhotoUrl, /board-full\.jpg/)
-    assert.doesNotMatch(listing.klaviyoPhotoUrl, /opengraph-image/)
-    assert.doesNotMatch(listing.klaviyoPhotoUrl, /thumb/)
+    assert.equal(
+      listing.klaviyoPhotoUrl,
+      "https://www.reswell.app/media/listings/user/board-full.jpg",
+    )
+    assert.doesNotMatch(listing.klaviyoPhotoUrl, /supabase\.co/)
   })
 
   it("sends no photo url when the listing has no image", () => {
@@ -79,7 +81,11 @@ describe("savedSearchHeroFromListing", () => {
     })
 
     assert.ok(listing)
-    assert.match(listing.klaviyoPhotoUrl, /thumb/)
+    assert.equal(
+      listing.klaviyoPhotoUrl,
+      "https://www.reswell.app/media/listings/user/board-full-thumb.jpg",
+    )
+    assert.doesNotMatch(listing.klaviyoPhotoUrl, /supabase\.co/)
     assert.equal(listing.imageSrc.includes("thumb") || listing.imageSrc.length > 0, true)
   })
 })

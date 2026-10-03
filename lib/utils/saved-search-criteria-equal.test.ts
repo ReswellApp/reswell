@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   boardSavedCriteriaEquals,
+  matchingSavedSearchId,
   savedSearchMatchesCriteria,
 } from "./saved-search-criteria-equal.ts"
 
@@ -45,6 +46,31 @@ describe("savedSearchMatchesCriteria", () => {
         { q: "chris", anySection: true },
       ),
       true,
+    )
+  })
+})
+
+describe("matchingSavedSearchId", () => {
+  it("returns the id of the matching saved search", () => {
+    assert.equal(
+      matchingSavedSearchId(
+        [
+          { id: "other", criteria: { q: "lost", anySection: true } },
+          { id: "chris-search", criteria: { q: "Chris", anySection: true } },
+        ],
+        { q: "chris", anySection: true },
+      ),
+      "chris-search",
+    )
+  })
+
+  it("returns null when the search is not saved", () => {
+    assert.equal(
+      matchingSavedSearchId(
+        [{ id: "other", criteria: { q: "lost", anySection: true } }],
+        { q: "chris", anySection: true },
+      ),
+      null,
     )
   })
 })

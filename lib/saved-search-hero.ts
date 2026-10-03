@@ -1,9 +1,9 @@
 /**
- * Client-safe snapshot of the newest listing in a saved search.
- * The save-search bar and the Klaviyo `Saved Search` event share this shape.
+ * Snapshot of the newest listing in a saved search.
+ * Sent on the Klaviyo `Saved Search` event. Not shown in the save-search bar.
  */
 
-import { klaviyoEmailListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
+import { klaviyoMediaListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
   listingHeroSlideSrc,
@@ -21,7 +21,7 @@ export type SavedSearchHeroListing = {
   href: string
   /** Proxied full photo for the save-search bar. Empty when the listing has no photo. */
   imageSrc: string
-  /** Absolute HTTPS photo for Klaviyo. Empty when the listing has no photo — never the site logo. */
+  /** Absolute `https://www.reswell.app/media/listings/...` photo. Empty when the listing has no photo. */
   klaviyoPhotoUrl: string
   /** Absolute listing URL for the email. */
   listingUrl: string
@@ -73,7 +73,7 @@ export function savedSearchHeroFromListing(
     priceLabel: formatSavedSearchHeroPrice(price),
     href,
     imageSrc,
-    klaviyoPhotoUrl: klaviyoEmailListingPhotoUrl(photoRaw),
+    klaviyoPhotoUrl: klaviyoMediaListingPhotoUrl(photoRaw),
     listingUrl: `${origin}${href}`,
   }
 }

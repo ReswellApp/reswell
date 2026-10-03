@@ -3,15 +3,14 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Heart, Loader2, Check } from "lucide-react"
-import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
 import { Button } from "@/components/ui/button"
-import type { SavedSearchHeroListing } from "@/lib/saved-search-hero"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   createBoardSavedSearchAction,
+  deleteBoardSavedSearchAction,
   listBoardSavedSearchesAction,
 } from "@/lib/actions/boardSavedSearch"
-import { savedSearchMatchesCriteria } from "@/lib/utils/saved-search-criteria-equal"
+import { matchingSavedSearchId } from "@/lib/utils/saved-search-criteria-equal"
 import {
   boardSavedCriteriaCanSaveFromEmptyState,
   type BoardSavedSearchCriteria,
@@ -56,41 +55,13 @@ function matchingNoun(section: PeerListingSection | "any" | undefined): string {
  *
  * `empty` is the large dead-end card. `compact` is a slim bar under matching results.
  */
-function SaveSearchHeroPhoto({
-  hero,
-  compact,
-}: {
-  hero: SavedSearchHeroListing
-  compact: boolean
-}) {
-  if (!hero.imageSrc) return null
-  return (
-    <Link
-      href={hero.href}
-      className={cn(
-        "relative block shrink-0 overflow-hidden bg-neutral-200",
-        compact ? "h-16 w-12 rounded-lg" : "mx-auto mb-6 h-44 w-32 rounded-xl",
-      )}
-      aria-label={`${hero.title}, ${hero.priceLabel}`}
-    >
-      <ListingMediaFillImage
-        src={hero.imageSrc}
-        alt=""
-        className="object-cover"
-        sizes={compact ? "48px" : "128px"}
-      />
-    </Link>
-  )
-}
-
 export function BoardsNoResultsSaveSearch({
   criteria,
   isLoggedIn,
   className,
   clearHref,
   variant = "empty",
-  initiallySaved = false,
-  hero = null,
+  initialSavedSearchId = null,
 }: {
   criteria: BoardSavedSearchCriteria
   isLoggedIn: boolean
@@ -99,31 +70,32 @@ export function BoardsNoResultsSaveSearch({
   clearHref?: string
   /** Large empty-state card, or a slim bar that sits under matching listings. */
   variant?: "empty" | "compact"
-  /** True when this shopper already saved the same search. */
-  initiallySaved?: boolean
-  /** Newest listing in this search, with its price and full photo. */
-  hero?: SavedSearchHeroListing | null
+  /** Saved-search row for this criteria, when the shopper already saved it. */
+  initialSavedSearchId?: string | null
 }) {
   const openSignIn = useSignInGate()
   const { toast } = useToast()
   const [pending, setPending] = useState(false)
-  const [saved, setSaved] = useState(initiallySaved)
+  const [savedSearchId, setSavedSearchId] = useState<string | null>(initialSavedSearchId)
+  const [hovering, setHovering] = useState(false)
+  const saved = Boolean(savedSearchId)
 
   useEffect(() => {
-    setSaved(initiallySaved)
-  }, [initiallySaved])
+    setSavedSearchId(initialSavedSearchId)
+  }, [initialSavedSearchId])
 
   useEffect(() => {
-    if (!isLoggedIn || initiallySaved) return
+    if (!isLoggedIn || initialSavedSearchId) return
     let cancelled = false
     void listBoardSavedSearchesAction().then((res) => {
       if (cancelled || "error" in res) return
-      if (savedSearchMatchesCriteria(res.data, criteria)) setSaved(true)
+      const id = matchingSavedSearchId(res.data, criteria)
+      if (id) setSavedSearchId(id)
     })
     return () => {
       cancelled = true
     }
-  }, [criteria, initiallySaved, isLoggedIn])
+  }, [criteria, initialSavedSearchId, isLoggedIn])
   const canSave = boardSavedCriteriaCanSaveFromEmptyState(criteria)
   const section = criteria.anySection
     ? "any"
@@ -167,10 +139,41 @@ export function BoardsNoResultsSaveSearch({
       return
     }
 
-    setSaved(true)
+    setSavedSearchId(res.id)
     toast({
       title: "Search saved",
       description: `We'll email you when a matching ${noun} is listed on Reswell.`,
+    })
+  }
+
+  async function handleUnsave() {
+    if (!savedSearchId) return
+    if (!isLoggedIn) {
+      openSignIn(undefined, { skipSessionProbe: true })
+      return
+    }
+
+    setPending(true)
+    const res = await deleteBoardSavedSearchAction({ id: savedSearchId })
+    setPending(false)
+
+    if ("error" in res) {
+      if (res.error === "Sign in to manage saved searches.") {
+        openSignIn()
+        return
+      }
+      toast({
+        title: "Could not unsave",
+        description: res.error,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setSavedSearchId(null)
+    toast({
+      title: "Search unsaved",
+      description: "We won't email you about new matches for this search.",
     })
   }
 
@@ -188,49 +191,32 @@ export function BoardsNoResultsSaveSearch({
         )}
         aria-labelledby={headingId}
       >
-        <div
-          className={cn(
-            compact && "flex min-w-0 flex-1 items-center gap-3 text-left",
-          )}
-        >
-          {hero ? <SaveSearchHeroPhoto hero={hero} compact={compact} /> : null}
-          <div className={cn(compact && "min-w-0")}>
-            <h2
-              id={headingId}
-              className={cn(
-                "font-semibold tracking-tight text-foreground",
-                compact ? "text-sm" : "text-xl sm:text-2xl",
-              )}
-            >
-              Let the Gear Come to You
-            </h2>
-            <p
-              className={cn(
-                "text-foreground/80",
-                compact
-                  ? "mt-0.5 text-xs leading-snug sm:text-sm"
-                  : "mx-auto mt-3 max-w-lg text-sm sm:text-base",
-              )}
-            >
-              {saved
-                ? compact
-                  ? `This search is saved. We'll email you when a new matching ${noun} is listed on Reswell.`
-                  : `This search is saved. We'll email you when a matching ${noun} is listed on Reswell.`
-                : compact
-                  ? `Save this search and we'll email you when a new matching ${noun} is listed on Reswell.`
-                  : `Save this search and we'll email you when a matching ${noun} is listed on Reswell.`}
-            </p>
-            {hero ? (
-              <p
-                className={cn(
-                  "font-semibold tabular-nums text-foreground",
-                  compact ? "mt-1 text-sm" : "mt-3 text-base",
-                )}
-              >
-                {hero.priceLabel}
-              </p>
-            ) : null}
-          </div>
+        <div className={cn(compact && "min-w-0")}>
+          <h2
+            id={headingId}
+            className={cn(
+              "font-semibold tracking-tight text-foreground",
+              compact ? "text-sm" : "text-xl sm:text-2xl",
+            )}
+          >
+            Let the Gear Come to You
+          </h2>
+          <p
+            className={cn(
+              "text-foreground/80",
+              compact
+                ? "mt-0.5 text-xs leading-snug sm:text-sm"
+                : "mx-auto mt-3 max-w-lg text-sm sm:text-base",
+            )}
+          >
+            {saved
+              ? compact
+                ? `This search is saved. We'll email you when a new matching ${noun} is listed on Reswell.`
+                : `This search is saved. We'll email you when a matching ${noun} is listed on Reswell.`
+              : compact
+                ? `Save this search and we'll email you when a new matching ${noun} is listed on Reswell.`
+                : `Save this search and we'll email you when a matching ${noun} is listed on Reswell.`}
+          </p>
         </div>
         <Button
           type="button"
@@ -240,19 +226,31 @@ export function BoardsNoResultsSaveSearch({
             "shrink-0 rounded-full bg-background font-medium shadow-none",
             compact ? "h-8 px-3.5" : "mt-6 px-5",
           )}
-          disabled={pending || saved}
-          onClick={() => void handleSave()}
+          disabled={pending}
+          aria-pressed={saved}
+          onClick={() => void (saved ? handleUnsave() : handleSave())}
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+          onFocus={() => setHovering(true)}
+          onBlur={() => setHovering(false)}
         >
           {pending ? (
             <>
               <Loader2 className={cn("animate-spin", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
-              Saving…
+              {saved ? "Removing…" : "Saving…"}
             </>
           ) : saved ? (
-            <>
-              <Check className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
-              Search Saved
-            </>
+            hovering ? (
+              <>
+                <Heart className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+                Unsave
+              </>
+            ) : (
+              <>
+                <Check className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+                Search Saved
+              </>
+            )
           ) : (
             <>
               <Heart className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />

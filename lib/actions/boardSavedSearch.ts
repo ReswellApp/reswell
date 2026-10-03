@@ -197,6 +197,14 @@ export async function deleteBoardSavedSearchAction(raw: unknown) {
 
   revalidatePath("/board-finder")
   revalidatePath("/boards")
+  revalidatePath("/fins")
+  revalidatePath("/wetsuits")
+  revalidatePath("/magazines")
+  revalidatePath("/boardbags")
+  revalidatePath("/surfpacks")
+  revalidatePath("/leashes")
+  revalidatePath("/apparel")
+  revalidatePath("/accessories")
   revalidatePath("/search")
 
   return { success: true as const }
