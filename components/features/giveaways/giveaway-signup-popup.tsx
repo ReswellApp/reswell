@@ -27,6 +27,7 @@ import { peekJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { createClient } from "@/lib/supabase/client"
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 
 const RECENT_SIGNUP_MS = 24 * 60 * 60 * 1000
 
@@ -71,6 +72,8 @@ export function GiveawaySignupPopup({
   const router = useRouter()
   const giveaway = getGiveawayBySlug(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
   const [open, setOpen] = useState(forceOpen)
+  const visible = Boolean(giveaway && isGiveawayOpen(giveaway) && open)
+  useBodyScrollLock(visible)
 
   useEffect(() => {
     if (forceOpen) {
@@ -135,6 +138,7 @@ export function GiveawaySignupPopup({
   return (
     <Dialog
       open={open}
+      modal={false}
       onOpenChange={(next) => {
         if (!next) close()
       }}
@@ -142,14 +146,16 @@ export function GiveawaySignupPopup({
       <DialogContent
         showCloseButton={false}
         overlayClassName="bg-black/50"
-        className="max-w-[400px] gap-0 overflow-hidden border border-black/10 bg-white p-0 shadow-lg sm:rounded-2xl"
+        className="max-w-[400px] gap-0 overflow-y-auto border border-black/10 bg-white p-0 shadow-lg sm:rounded-2xl"
+        onPointerDownOutside={() => close()}
+        onFocusOutside={(event) => event.preventDefault()}
       >
         <DialogTitle className="sr-only">List a surfboard to win a surfboard</DialogTitle>
         <div className="relative px-6 pb-6 pt-7 sm:px-7 sm:pb-7 sm:pt-8">
           <button
             type="button"
             onClick={close}
-            className="absolute right-4 top-4 rounded-sm p-1 text-black/50 transition hover:text-black"
+            className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-black/50 transition hover:text-black"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -176,7 +182,7 @@ export function GiveawaySignupPopup({
           <button
             type="button"
             onClick={close}
-            className="mt-2 w-full py-1.5 text-center text-[13px] leading-snug text-black/45 underline-offset-2 hover:text-black/70 hover:underline"
+            className="mt-2 flex min-h-11 w-full items-center justify-center text-center text-[13px] leading-snug text-black/45 underline-offset-2 hover:text-black/70 hover:underline"
           >
             I don&apos;t want to win a custom surfboard
           </button>
