@@ -29,6 +29,7 @@ import {
 } from "@/components/features/listings/listing-gallery-photo"
 import { withListingMediaPdpVariant } from "@/lib/listing-media-proxy-url"
 import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { isInAppBrowser } from "@/lib/utils/is-in-app-browser"
 import { cn } from "@/lib/utils"
 
@@ -352,6 +353,10 @@ export function ListingImageLightbox({
   const isZoomedOutRef = useRef(true)
   const coarsePointer = usePrefersCoarsePointer()
   const isMaxMd = useMaxMd()
+  // Radix's modal lock (react-remove-scroll) calls preventDefault() on the
+  // first touchmove inside this full-screen dialog. On a phone that freezes
+  // the whole screen the moment a swipe starts.
+  useBodyScrollLock(open)
 
   const count = proxiedUrls.length
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
@@ -538,7 +543,7 @@ export function ListingImageLightbox({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} modal={false} onOpenChange={handleOpenChange}>
       <DialogPortal>
         <DialogOverlay
           className={cn(
@@ -554,6 +559,7 @@ export function ListingImageLightbox({
           onInteractOutside={(e) => {
             if (!isZoomedOut) e.preventDefault()
           }}
+          onFocusOutside={(event) => event.preventDefault()}
           className={cn(
             "pointer-events-auto fixed inset-x-0 top-0 z-[70] flex h-dvh max-h-dvh min-h-0 min-w-0 flex-col overflow-hidden outline-none",
             LIGHTBOX_SURFACE_CLASS,
