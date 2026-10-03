@@ -573,8 +573,8 @@ export function ListingImageLightbox({
           <div className="relative min-h-0 min-w-0 flex-1">
             {count > 0 ? (
               useSwipeCarousel ? (
-                <div ref={setLightboxViewport} className="absolute inset-0 overflow-hidden overscroll-x-contain">
-                  <div className="flex h-full will-change-transform">
+                <div ref={setLightboxViewport} className="absolute inset-0 overflow-hidden overscroll-x-contain [touch-action:manipulation]">
+                  <div className="flex h-full [touch-action:manipulation] will-change-transform">
                     {proxiedUrls.map((url, slideIndex) => (
                       <div
                         key={`${url}-${slideIndex}`}

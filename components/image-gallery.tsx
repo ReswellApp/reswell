@@ -41,7 +41,7 @@ import { useListingGallerySwipe } from "@/components/features/listings/hooks/use
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
-import { isInAppBrowserClient } from "@/lib/utils/is-in-app-browser"
+import { listingGalleryBlocksEmblaDragNow } from "@/lib/utils/listing-gallery-touch"
 
 function preloadListingImageLightbox() {
   return import("@/components/features/listings/listing-image-lightbox")
@@ -126,23 +126,24 @@ export function ImageGallery({
   const videoIndex = hasVideo ? images.length : -1
   const slideCount = images.length + (hasVideo ? 1 : 0)
   const canSwipe = slideCount > 1
-  // Meta's in-app browser ignores touch-action. Embla's non-passive touchmove
-  // then freezes the page because the hero covers almost the whole screen.
-  const blockEmblaTouchDrag = isInAppBrowserClient()
+  // Embla's non-passive touchmove calls preventDefault() once a swipe is
+  // slightly sideways. On a phone the hero covers the screen, so that locks
+  // the tab. A passive flick changes photos instead.
+  const blockEmblaTouchDrag = listingGalleryBlocksEmblaDragNow()
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: canSwipe,
     align: "start",
     duration: 22,
     dragThreshold: 8,
     // Boolean false — a callback that returns false still installs the listener.
-    watchDrag: blockEmblaTouchDrag
-      ? false
-      : (_api, event) => {
-          if (!canSwipe) return false
-          const target = event.target
-          if (target instanceof Element && target.closest("video")) return false
-          return true
-        },
+    watchDrag:
+      blockEmblaTouchDrag || !canSwipe
+        ? false
+        : (_api, event) => {
+            const target = event.target
+            if (target instanceof Element && target.closest("video")) return false
+            return true
+          },
   })
   const setGalleryViewport = useCallback(
     (node: HTMLElement | null) => {
@@ -446,7 +447,7 @@ export function ImageGallery({
         <div
           ref={setGalleryViewport}
           className={cn(
-            "absolute inset-0 z-[1] overflow-hidden outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring [touch-action:pan-y_pinch-zoom]",
+            "absolute inset-0 z-[1] overflow-hidden outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring [touch-action:manipulation]",
             isVideoSelected ? "cursor-default" : "cursor-zoom-in",
           )}
           role={hasVideo ? undefined : "button"}
@@ -472,7 +473,7 @@ export function ImageGallery({
             openLightbox()
           }}
         >
-          <div className="flex h-full [touch-action:pan-y_pinch-zoom]">
+          <div className="flex h-full [touch-action:manipulation]">
             {images.map((image, i) => {
               const isSelected = i === selectedIndex
               const slideSrc = previewUrls[i] || heroUrls[i]
@@ -480,7 +481,7 @@ export function ImageGallery({
               return (
                 <div
                   key={image.id || `hero-${i}-${image.url}`}
-                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full backface-hidden transform-gpu"
+                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full overflow-hidden backface-hidden transform-gpu"
                   style={listingPhotoBackdropStyle(
                     slideSrc,
                     crop
