@@ -37,6 +37,19 @@ describe("resolveListingPdpCrop", () => {
   it("clamps out-of-range values", () => {
     assert.deepEqual(resolveListingPdpCrop(9, -10, 140), { zoom: 4, x: 0, y: 100 })
   })
+
+  it("accepts PostgREST numeric strings", () => {
+    assert.deepEqual(resolveListingPdpCrop("1.25", "20", "80"), { zoom: 1.25, x: 20, y: 80 })
+    assert.deepEqual(
+      listingPdpCropFromImageRow({
+        pdp_crop_zoom: "0",
+        pdp_crop_x: "50",
+        pdp_crop_y: "50",
+      }),
+      LISTING_PDP_CROP_FIT,
+    )
+    assert.equal(resolveListingPdpCrop(" ", "", null), null)
+  })
 })
 
 describe("listingPdp render scale", () => {
