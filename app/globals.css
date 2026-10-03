@@ -451,15 +451,22 @@
 
 /* Radix Dialog / Sheet / AlertDialog use react-remove-scroll (body[data-scroll-locked]).
    In some browsers the document scrolls on `html`; locking only `body` leaves background
-   scroll. Mirror the lock on `html` while any modal scroll lock is active. */
-html:has(body[data-scroll-locked]) {
-  overflow: hidden !important;
-  overscroll-behavior: none;
+   scroll on a trackpad. Mirror that lock on `html` for fine pointers only.
+   On a phone, `overflow: hidden` on `html` (with the body lock) makes WebKit drop taps
+   on `position: fixed` dialogs. The promo then cannot be dismissed and the page is stuck. */
+@media (pointer: fine) {
+  html:has(body[data-scroll-locked]),
+  html[data-reswell-scroll-lock] {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
 }
 
-html[data-reswell-scroll-lock] {
-  overflow: hidden !important;
-  overscroll-behavior: none;
+@media (pointer: coarse) {
+  html:has(body[data-scroll-locked]),
+  html[data-reswell-scroll-lock] {
+    overscroll-behavior: none;
+  }
 }
 
 html[data-reswell-scroll-lock] body {

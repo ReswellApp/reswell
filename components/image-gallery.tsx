@@ -378,7 +378,7 @@ export function ImageGallery({
         <div
           ref={emblaRef}
           className={cn(
-            "absolute inset-0 z-[1] overflow-hidden overscroll-x-contain outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring",
+            "absolute inset-0 z-[1] touch-pan-y overflow-hidden overscroll-x-contain outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring",
             isVideoSelected ? "cursor-default" : "cursor-zoom-in",
           )}
           role={hasVideo ? undefined : "button"}
