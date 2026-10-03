@@ -54,6 +54,8 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Followed Seller New Listing": "engagement",
   "Support Tickets": "engagement",
   "Support Tickets Response": "engagement",
+  "Support Ticket Admin Alert": "transactional",
+  "ShipEngine Label Adjustment Alert": "transactional",
   "Seller Reviewed Buyer": "engagement",
   Newsletter: "marketing",
   "Newsletter Promo Expiring": "marketing",
