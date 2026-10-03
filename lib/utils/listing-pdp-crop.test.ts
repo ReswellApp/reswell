@@ -19,6 +19,7 @@ import {
   listingPdpRenderScale,
   listingPdpZoomFromRenderScale,
   resolveListingPdpCrop,
+  retainMeasuredSize,
 } from "./listing-pdp-crop.ts"
 
 describe("resolveListingPdpCrop", () => {
@@ -188,5 +189,26 @@ describe("listingPdpCropCssFit", () => {
     assert.equal(listingPdpCropNeedsPreciseLayout({ zoom: 0.4, x: 50, y: 50 }), true)
     assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_FIT, null), true)
     assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_COVER, null), false)
+  })
+})
+
+describe("retainMeasuredSize", () => {
+  it("reuses the same object when the bitmap size is unchanged", () => {
+    const first = retainMeasuredSize(null, 800, 1200)
+    assert.deepEqual(first, { w: 800, h: 1200 })
+    assert.equal(retainMeasuredSize(first, 800, 1200), first)
+  })
+
+  it("replaces the object when the bitmap size changes", () => {
+    const first = retainMeasuredSize(null, 800, 1200)
+    const next = retainMeasuredSize(first, 900, 1200)
+    assert.deepEqual(next, { w: 900, h: 1200 })
+    assert.notEqual(next, first)
+  })
+
+  it("ignores an unmeasured bitmap", () => {
+    const first = retainMeasuredSize(null, 800, 1200)
+    assert.equal(retainMeasuredSize(first, 0, 0), first)
+    assert.equal(retainMeasuredSize(null, 0, 400), null)
   })
 })
