@@ -1,6 +1,14 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react"
 import { Loader2, Minus, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { useListingPdpCropGestures } from "@/components/features/listings/hooks/use-listing-pdp-crop-gestures"
@@ -15,6 +23,7 @@ import {
   listingPdpCropToLayout,
   listingPdpCropsEqual,
   listingPdpLayoutToCrop,
+  retainMeasuredSize,
   type ListingPdpCrop,
   type ListingPdpCropLayout,
 } from "@/lib/utils/listing-pdp-crop"
@@ -41,10 +50,14 @@ function cropOrDefault(crop: ListingPdpCrop | null): ListingPdpCrop {
 
 function rememberNaturalSize(
   img: HTMLImageElement | null,
-  setNatural: (size: { w: number; h: number }) => void,
+  setNatural: Dispatch<SetStateAction<{ w: number; h: number } | null>>,
 ): void {
   if (!img || img.naturalWidth <= 0 || img.naturalHeight <= 0) return
-  setNatural({ w: img.naturalWidth, h: img.naturalHeight })
+  const w = img.naturalWidth
+  const h = img.naturalHeight
+  // Inline refs run again every render. A new size object here loops until
+  // React throws and the listing page becomes the error screen.
+  setNatural((prev) => retainMeasuredSize(prev, w, h))
 }
 
 export function ListingPdpCropEditor({
@@ -56,6 +69,7 @@ export function ListingPdpCropEditor({
   onSaved,
 }: ListingPdpCropEditorProps) {
   const frameRef = useRef<HTMLDivElement>(null)
+  const photoImgRef = useRef<HTMLImageElement | null>(null)
   const [index, setIndex] = useState(initialIndex)
   const [crops, setCrops] = useState<Record<string, ListingPdpCrop>>({})
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
@@ -78,8 +92,21 @@ export function ListingPdpCropEditor({
     const next: Record<string, ListingPdpCrop> = {}
     for (const image of images) next[image.id] = cropOrDefault(image.crop)
     setCrops(next)
-    setIndex(Math.min(Math.max(0, initialIndex), Math.max(0, images.length - 1)))
-    setNatural(null)
+    const nextIndex = Math.min(Math.max(0, initialIndex), Math.max(0, images.length - 1))
+    setIndex(nextIndex)
+    const nextPhoto = images[nextIndex] ?? images[0] ?? null
+    const img = photoImgRef.current
+    if (
+      img &&
+      nextPhoto &&
+      img.getAttribute("data-photo-id") === nextPhoto.id &&
+      img.complete
+    ) {
+      // New object so the layout effect reapplies after the reset below.
+      setNatural(retainMeasuredSize(null, img.naturalWidth, img.naturalHeight))
+    } else {
+      setNatural(null)
+    }
     setLayout(null)
   }, [open, images, initialIndex])
 
@@ -98,7 +125,11 @@ export function ListingPdpCropEditor({
     const measure = () => {
       const rect = el.getBoundingClientRect()
       if (rect.width <= 0 || rect.height <= 0) return
-      setFrame({ w: rect.width, h: rect.height })
+      const w = rect.width
+      const h = rect.height
+      setFrame((prev) =>
+        prev && Math.abs(prev.w - w) < 0.5 && Math.abs(prev.h - h) < 0.5 ? prev : { w, h },
+      )
     }
     measure()
     const observer = new ResizeObserver(measure)
@@ -246,6 +277,7 @@ export function ListingPdpCropEditor({
               src={src}
               alt=""
               draggable={false}
+              data-photo-id={photo?.id}
               className="absolute max-w-none select-none will-change-transform"
               style={
                 layout
@@ -258,6 +290,7 @@ export function ListingPdpCropEditor({
                   : { inset: 0, width: "100%", height: "100%", objectFit: "contain" }
               }
               ref={(img) => {
+                photoImgRef.current = img
                 // iOS Chrome / Google app often skip onLoad for cached images.
                 if (img?.complete) rememberNaturalSize(img, setNatural)
               }}
