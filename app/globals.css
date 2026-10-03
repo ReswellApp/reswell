@@ -783,10 +783,11 @@ html[data-reswell-scroll-lock] body {
   max-height: min(92vh, 56rem);
   max-height: min(92dvh, 56rem);
   max-height: min(92svh, 56rem);
-  /* Vertical page scroll must win when the finger starts on the photo.
-     Meta's in-app browser ignores this; the gallery also skips Embla's
-     non-passive touch listener there. */
-  touch-action: pan-y pinch-zoom;
+  /* `pan-y` on a hero that cannot itself scroll leaves a sideways swipe
+     unclaimed. iOS then locks the tab, whether or not Embla calls
+     preventDefault(). `manipulation` lets the page scroll vertically.
+     Phones change photos with a passive flick; a mouse still drags. */
+  touch-action: manipulation;
 }
 
 .listing-pdp-hero img:not(.listing-pdp-seller-crop),

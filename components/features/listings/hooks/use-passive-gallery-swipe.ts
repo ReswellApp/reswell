@@ -5,7 +5,7 @@ import { listingGallerySwipeDirection } from "@/lib/utils/listing-gallery-touch"
 
 /**
  * Changes listing photos on a horizontal flick without calling `preventDefault`.
- * Used where Embla's drag listeners would freeze page scroll (Meta in-app browser).
+ * Used on phones, where Embla's drag listeners freeze the listing hero.
  */
 export function useListingGallerySwipe(
   enabled: boolean,
