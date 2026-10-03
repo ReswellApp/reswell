@@ -1,7 +1,11 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
-import { LIVE_CHAT_ORDER_LOOKUP_FALLBACK, LIVE_CHAT_PRESENCE_REPLY } from "../live-chat/fallback-reply.ts"
+import {
+  LIVE_CHAT_LOOK_INTO_IT_REPLY,
+  LIVE_CHAT_ORDER_LOOKUP_FALLBACK,
+  LIVE_CHAT_PRESENCE_REPLY,
+} from "../live-chat/fallback-reply.ts"
 import {
   DEFAULT_LIVE_CHAT_REPLY_PROMPT,
   LIVE_CHAT_GREETING_REPLY,
@@ -112,6 +116,7 @@ describe("live chat CS prompt", () => {
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /Never list buying/)
     assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /Do not ask for an order number on a greeting/)
     assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /You are Reswell Team/)
+    assert.match(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /look into it now/)
     assert.doesNotMatch(DEFAULT_LIVE_CHAT_REPLY_PROMPT, /what's the order number/)
   })
 
@@ -151,5 +156,20 @@ describe("live chat CS prompt", () => {
     assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_LEGACY_UNGROUNDED_REPLY), true)
     assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_UNGROUNDED_REPLY), true)
     assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_TOPIC_MENU_REPLY), true)
+    assert.equal(isLiveChatCannedFailureReply(LIVE_CHAT_LOOK_INTO_IT_REPLY), true)
+  })
+
+  it("keeps the ticket open when Hayden promised to look into it", () => {
+    assert.equal(
+      shouldHonorLiveChatTicketClose({
+        closeTicket: true,
+        reply: LIVE_CHAT_LOOK_INTO_IT_REPLY,
+        lastCustomerMessage: "can you look at this",
+        needsHumanReview: true,
+      }),
+      false,
+    )
+    assert.equal(resolveLiveChatFallbackReply("can you look at this"), LIVE_CHAT_LOOK_INTO_IT_REPLY)
+    assert.doesNotMatch(LIVE_CHAT_LOOK_INTO_IT_REPLY, /order number/i)
   })
 })
