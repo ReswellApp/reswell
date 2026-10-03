@@ -9,7 +9,12 @@ import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
 import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
+import { newestListingForSavedSearch } from "@/lib/services/newestSavedSearchListing"
+import type { SavedSearchHeroListing } from "@/lib/saved-search-hero"
 import { marketplaceSearchSavedCriteria } from "@/lib/utils/peer-saved-search-criteria"
+import { savedSearchMatchesCriteria } from "@/lib/utils/saved-search-criteria-equal"
+import { fetchBoardSavedSearchesForUser } from "@/lib/db/savedSearches"
+import { BOARD_SAVED_SEARCHES_MAX } from "@/lib/validations/boardSavedSearch"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
 import {
@@ -322,6 +327,21 @@ export async function SearchPageView({
   }
 
   const queryTrimmed = rawQuery.trim()
+  const savedSearchCriteria = queryTrimmed ? marketplaceSearchSavedCriteria(queryTrimmed) : null
+  let searchAlreadySaved = false
+  let savedSearchHero: SavedSearchHeroListing | null = null
+  if (savedSearchCriteria && !brandUnknown) {
+    const [savedRows, hero] = await Promise.all([
+      user
+        ? fetchBoardSavedSearchesForUser(supabase, user.id, BOARD_SAVED_SEARCHES_MAX)
+        : Promise.resolve(null),
+      newestListingForSavedSearch(supabase, savedSearchCriteria),
+    ])
+    if (savedRows && !savedRows.error) {
+      searchAlreadySaved = savedSearchMatchesCriteria(savedRows.data, savedSearchCriteria)
+    }
+    savedSearchHero = hero
+  }
   const heading = searchResultsHeading({
     brandUnknown,
     query: queryTrimmed,
@@ -367,8 +387,10 @@ export async function SearchPageView({
       <section className="container mx-auto py-8">
         {listings.length === 0 && rawQuery.trim() && !brandUnknown ? (
           <BoardsNoResultsSaveSearch
-            criteria={marketplaceSearchSavedCriteria(rawQuery)}
+            criteria={savedSearchCriteria ?? marketplaceSearchSavedCriteria(rawQuery)}
             isLoggedIn={!!user}
+            initiallySaved={searchAlreadySaved}
+            hero={savedSearchHero}
             clearHref="/search/recent"
           />
         ) : (
@@ -390,8 +412,10 @@ export async function SearchPageView({
             {listings.length > 0 && rawQuery.trim() && !brandUnknown ? (
               <BoardsNoResultsSaveSearch
                 variant="compact"
-                criteria={marketplaceSearchSavedCriteria(rawQuery)}
+                criteria={savedSearchCriteria ?? marketplaceSearchSavedCriteria(rawQuery)}
                 isLoggedIn={!!user}
+                initiallySaved={searchAlreadySaved}
+                hero={savedSearchHero}
               />
             ) : null}
           </>

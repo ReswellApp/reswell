@@ -4,6 +4,8 @@ import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoSavedSearch } from "@/lib/klaviyo/track-saved-search"
+import { newestListingForSavedSearch } from "@/lib/services/newestSavedSearchListing"
+import { getDb } from "@/lib/supabase/db"
 import {
   countBoardSavedSearchesForUser,
   deleteBoardSavedSearchForUser,
@@ -11,6 +13,7 @@ import {
   insertBoardSavedSearch,
   type BoardSavedSearchRow,
 } from "@/lib/db/savedSearches"
+import { savedSearchMatchesCriteria } from "@/lib/utils/saved-search-criteria-equal"
 import {
   BOARD_SAVED_SEARCHES_MAX,
   createBoardSavedSearchActionSchema,
@@ -88,6 +91,25 @@ export async function createBoardSavedSearchAction(raw: unknown) {
     return { error: "Choose at least one filter before saving." as const }
   }
 
+  const existing = await fetchBoardSavedSearchesForUser(
+    supabase,
+    user.id,
+    BOARD_SAVED_SEARCHES_MAX,
+  )
+  if (!existing.error) {
+    const already = existing.data.find((row) =>
+      savedSearchMatchesCriteria([row], criteria),
+    )
+    if (already) {
+      return {
+        success: true as const,
+        id: already.id,
+        emailNotificationsEnabled: already.email_notifications_enabled,
+        alreadySaved: true as const,
+      }
+    }
+  }
+
   const { count, error: countError } = await countBoardSavedSearchesForUser(supabase, user.id)
   if (countError) {
     return { error: "Could not save search. Try again." as const }
@@ -108,16 +130,28 @@ export async function createBoardSavedSearchAction(raw: unknown) {
     return { error: "Could not save search. Try again." as const }
   }
 
+  const savedSearchId = data.id
+  const savedLabel = data.label
+  const emailNotificationsEnabled = data.email_notifications_enabled
+  const savedAt = data.created_at
+
   after(() => {
-    void trackKlaviyoSavedSearch({
-      userId: user.id,
-      email: user.email,
-      savedSearchId: data.id,
-      criteria,
-      label: data.label,
-      emailNotificationsEnabled: data.email_notifications_enabled,
-      savedAt: data.created_at,
-    }).catch((err) => {
+    void (async () => {
+      const hero = await newestListingForSavedSearch(
+        getDb({ consistency: "eventual", purpose: "catalog" }),
+        criteria,
+      )
+      await trackKlaviyoSavedSearch({
+        userId: user.id,
+        email: user.email,
+        savedSearchId,
+        criteria,
+        label: savedLabel,
+        emailNotificationsEnabled,
+        savedAt,
+        hero,
+      })
+    })().catch((err) => {
       console.error("[saved_search] Klaviyo Saved Search event failed:", err)
     })
   })
@@ -163,6 +197,7 @@ export async function deleteBoardSavedSearchAction(raw: unknown) {
 
   revalidatePath("/board-finder")
   revalidatePath("/boards")
+  revalidatePath("/search")
 
   return { success: true as const }
 }

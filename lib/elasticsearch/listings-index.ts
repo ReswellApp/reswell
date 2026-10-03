@@ -765,6 +765,8 @@ export async function searchListingIdsFromElasticsearch(
     lengthInches?: number | null
     /** Canonical board-style slugs (`listings.board_type` / surfboard category). */
     boardTypes?: string[] | null
+    /** `newest` ignores relevance and returns the latest matching listing first. */
+    order?: "relevance" | "newest"
   },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
@@ -822,6 +824,7 @@ export async function searchListingIdsFromElasticsearch(
       return []
     }
 
+    const newestFirst = options?.order === "newest"
     const res = q && queryBody
       ? await es.search({
           index: ELASTICSEARCH_LISTINGS_INDEX,
@@ -829,7 +832,9 @@ export async function searchListingIdsFromElasticsearch(
           _source: false,
           track_total_hits: false,
           query: queryBody,
-          sort: [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }],
+          sort: newestFirst
+            ? [{ created_at: { order: "desc" } }]
+            : [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }],
         })
       : await es.search({
           index: ELASTICSEARCH_LISTINGS_INDEX,

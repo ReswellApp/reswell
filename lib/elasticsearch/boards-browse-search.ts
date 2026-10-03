@@ -384,7 +384,7 @@ export type BoardsBrowseEsSearchParams = BoardsBrowseEsContext & {
   facets?: BoardsBrowseFacetSelections
   dimensionTokens?: string[]
   geo?: { lat: number; lng: number; radiusMi?: number }
-  /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest` | `top-picks` (24h rotate). */
+  /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest` | `top-picks` | `created-at` (internal, ignores keyword score). */
   sort: string
   useSuppressionSort?: boolean
   restrictToIds?: string[]
@@ -469,6 +469,11 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
         unit: "mi",
       },
     })
+    return sort
+  }
+
+  if (params.sort === "created-at") {
+    sort.push({ created_at: { order: "desc" } })
     return sort
   }
 

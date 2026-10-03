@@ -81,13 +81,14 @@ export async function notifyBoardSavedSearchMatchesForListing(
     .from("listing_images")
     .select("url, thumbnail_url")
     .eq("listing_id", listingId)
+    .order("is_primary", { ascending: false })
     .order("sort_order", { ascending: true })
     .limit(1)
     .maybeSingle()
 
   const photoUrl =
-    (firstImage?.thumbnail_url && String(firstImage.thumbnail_url).trim()) ||
     (firstImage?.url && String(firstImage.url).trim()) ||
+    (firstImage?.thumbnail_url && String(firstImage.thumbnail_url).trim()) ||
     null
 
   let sent = 0

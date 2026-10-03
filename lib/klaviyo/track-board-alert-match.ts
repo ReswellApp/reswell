@@ -19,7 +19,7 @@
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { boardAlertMatchFinderProperties } from "@/lib/klaviyo/board-alert-match-details"
-import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
+import { klaviyoEmailListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 
@@ -73,9 +73,7 @@ export async function trackKlaviyoBoardAlertMatch(
       Title: payload.listingTitle,
       Price: Number.isFinite(priceNum) ? priceNum : payload.listingPrice,
       Listing_URL: payload.listingAbsoluteUrl,
-      photo_url: payload.listingPhotoUrl
-        ? absoluteKlaviyoListingPhotoUrl(payload.listingPhotoUrl)
-        : "",
+      photo_url: klaviyoEmailListingPhotoUrl(payload.listingPhotoUrl),
       Brand: payload.brand ?? "",
       Model: payload.model ?? "",
       Dimensions: payload.dimensions ?? "",
