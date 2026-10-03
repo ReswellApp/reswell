@@ -1,0 +1,43 @@
+{
+  "generated_for": "MSD Surfboards official named standup catalog",
+  "source": "https://www.msdsurf.com/surfboards/ (official Jimdo catalog — excludes team rider mentions without catalog pages, Instagram, and any non-surfboard SKUs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "msd-surfboards",
+      "name": "MSD Surfboards",
+      "website_url": "https://www.msdsurf.com",
+      "location_label": "Miami, Queensland, Australia",
+      "founder_name": "Craig Maddison",
+      "lead_shaper_name": "Craig Maddison",
+      "short_description": "Boutique Gold Coast surfboards shaped by Craig 'Madda' Maddison in Miami, Queensland — custom shortboards and small-wave models tested over four decades.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/msd-surfboards.png",
+      "models": [
+        {
+          "name": "MK1",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=1500x10000:format=png/path/s3cef4c44cf04af5b/image/i4fa3ed953b73c196/version/1757376603/gold-coast-surfboards.png",
+          "description": "The MK1 model is the consummate all-rounder. Increased area and moderate rocker make this the most versatile board in the MSD range. Whilst it remains the competitors go to board day in day out, it is also very adaptable for surfers at all levels and can be tailored for all sizes, tail shapes and fin combinations. Generally surfed 1-2 inches shorter than your all-rounder.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grub",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=1500x10000:format=png/path/s3cef4c44cf04af5b/image/ia9559ed871967d81/version/1757381295/gold-coast-surfboards.png",
+          "description": "The GRUB is basically a short double ender with extra drive. This board has a low rocker/single to deep double concave combo with a mid to low rail. Whilst for the modern youth it gets in quick, feeds quick with an increased aerial recovery ability, it also offers surfers in general a couple of extra gears in a much shorter board. Generally surfed 3-4 inches shorter than your all-rounder. Quad Nubster / Tri.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "ProPod",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=1500x10000:format=png/path/s3cef4c44cf04af5b/image/i0ee09ea8a04aadae/version/1757572629/gold-coast-surfboards.png",
+          "description": "The ProPod, blending a basic short, wide, low rockered design with a drivey tail pod, will cover flat spots easily and has a squirty release off the top. Having no extreme features is what makes it the optimum step down from your all-rounder. Primarily a tri-fin design, it accommodates all fin combinations. Generally surfed 3-4 inches shorter than your all-rounder.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "RPG",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=1500x10000:format=png/path/s3cef4c44cf04af5b/image/i6023d98c4f146b0b/version/1757376908/gold-coast-surfboards.png",
+          "description": "The RPG model is a heavily tested and proven, high performance all-rounder that has been tweaked and rebirthed over the years. Having generally leaner curves, slightly lower volume and a medium single double concave, it suits high level surfers and most step-up requirements. Great on the points. It can be tailored for all sizes, is primarily a tri/quad fin design comprising round to round pin or tight swallow tail pods.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
