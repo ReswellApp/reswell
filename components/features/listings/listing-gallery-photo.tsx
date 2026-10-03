@@ -125,11 +125,8 @@ export function ListingGalleryPhoto({
           loading={priority ? "eager" : loading}
           ref={(img) => markPaintedAfterDecode(img, () => setPreviewReady(true))}
           onLoad={(event) => {
-            const img = event.currentTarget
-            markPaintedAfterDecode(img, () => {
-              setPreviewReady(true)
-              rememberSize(img, onLoaded)
-            })
+            // Preview is paint-only — never size the hero from the tile derivative.
+            markPaintedAfterDecode(event.currentTarget, () => setPreviewReady(true))
           }}
         />
       ) : null}
@@ -150,7 +147,13 @@ export function ListingGalleryPhoto({
         priority={priority}
         fetchPriority={fetchPriority}
         loading={loading}
-        ref={(img) => markPaintedAfterDecode(img, () => setSrcReady(true))}
+        ref={(img) =>
+          markPaintedAfterDecode(img, () => {
+            setSrcReady(true)
+            // iOS Chrome / Google app often skip onLoad for cached images.
+            if (img) rememberSize(img, onLoaded)
+          })
+        }
         onLoad={(event) => {
           const img = event.currentTarget
           markPaintedAfterDecode(img, () => {

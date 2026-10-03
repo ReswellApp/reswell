@@ -46,9 +46,6 @@ function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void):
   }
   finish()
 }
-/** Mobile: a little larger than contain, well short of full cover, so edges stay mostly visible. */
-const MOBILE_OVERSCAN_CLASS = "origin-top object-top scale-[1.12]"
-
 const LIGHTBOX_IMAGE_SIZES =
   "(max-width: 768px) 100vw, (max-width: 1280px) 70vw, 60vw"
 
@@ -224,7 +221,6 @@ function LightboxSlide({
             className={cn(
               PHOTO_LAYER,
               "pointer-events-none z-[1]",
-              !fitCard && MOBILE_OVERSCAN_CLASS,
               placeholderLoaded ? "opacity-100" : "opacity-0",
             )}
             sizes={LIGHTBOX_IMAGE_SIZES}
@@ -286,7 +282,6 @@ function LightboxSlide({
               className={cn(
                 PHOTO_LAYER,
                 "!pointer-events-auto",
-                !fitCard && MOBILE_OVERSCAN_CLASS,
                 placeholderLoaded && loadedSrc !== src
                   ? "transition-opacity duration-200 ease-out"
                   : null,
@@ -294,6 +289,13 @@ function LightboxSlide({
               )}
               sizes={LIGHTBOX_IMAGE_SIZES}
               priority={priority}
+              ref={(img) =>
+                markPaintedAfterDecode(img, () => {
+                  setLoadedSrc(src)
+                  setPlaceholderLoaded(true)
+                  if (img) rememberAspectRatio(img.naturalWidth, img.naturalHeight)
+                })
+              }
               onLoad={(event) => {
                 const img = event.currentTarget
                 markPaintedAfterDecode(img, () => {
