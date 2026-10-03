@@ -8,6 +8,7 @@
  * Flow filters can branch on properties such as Listing_ID, Saved_Search_ID, Section, Brand, Model,
  * Alert_Kind (`search` | `model` | `brand`). Keep one metric — do not create separate model/brand
  * metrics. Clone the flow and filter on Alert_Kind if you want different copy.
+ * `Search_URL` is the saved search itself (e.g. `https://www.reswell.app/search?q=roberts+5%2710`).
  */
 
 import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
@@ -38,6 +39,9 @@ export type KlaviyoBoardAlertMatchPayload = {
    */
   alertKind?: string | null
   savedSearchLabel?: string | null
+  /** Absolute URL of the saved search (`/search?q=…` or a section browse link). */
+  searchUrl?: string | null
+  searchQuery?: string | null
 }
 
 export async function trackKlaviyoBoardAlertMatch(
@@ -70,6 +74,8 @@ export async function trackKlaviyoBoardAlertMatch(
       Section: payload.section ?? "",
       Alert_Kind: payload.alertKind ?? "",
       Saved_Search_Label: payload.savedSearchLabel ?? "",
+      Search_Query: payload.searchQuery ?? "",
+      Search_URL: payload.searchUrl ?? "",
     },
     profile: {
       external_id: payload.subscriberUserId,
