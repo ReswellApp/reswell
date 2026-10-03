@@ -44,21 +44,26 @@ function matchingNoun(section: PeerListingSection | "any" | undefined): string {
 }
 
 /**
- * Empty-results CTA: save the current browse/search filters and enable email alerts
+ * Save-search CTA: persist the current browse/search filters and enable email alerts
  * (Klaviyo `Board Alert Match` when a matching listing goes live).
  * Signed-out users get the same auth gate as favorites.
+ *
+ * `empty` is the large dead-end card. `compact` is a slim bar under matching results.
  */
 export function BoardsNoResultsSaveSearch({
   criteria,
   isLoggedIn,
   className,
   clearHref,
+  variant = "empty",
 }: {
   criteria: BoardSavedSearchCriteria
   isLoggedIn: boolean
   className?: string
   /** Optional clear-filters link (defaults from criteria.section). */
   clearHref?: string
+  /** Large empty-state card, or a slim bar that sits under matching listings. */
+  variant?: "empty" | "compact"
 }) {
   const openSignIn = useSignInGate()
   const { toast } = useToast()
@@ -114,53 +119,79 @@ export function BoardsNoResultsSaveSearch({
     })
   }
 
+  const compact = variant === "compact"
+  const headingId = compact ? "boards-results-save-heading" : "boards-no-results-save-heading"
+
   return (
-    <div className={cn("py-8 sm:py-12", className)}>
+    <div className={cn(compact ? "mt-6 sm:mt-8" : "py-8 sm:py-12", className)}>
       <section
-        className="rounded-2xl bg-neutral-100 px-6 py-12 text-center sm:px-10 sm:py-16"
-        aria-labelledby="boards-no-results-save-heading"
+        className={cn(
+          "bg-neutral-100",
+          compact
+            ? "flex flex-col items-center gap-3 rounded-xl px-4 py-3 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-5 sm:py-3 sm:text-left"
+            : "rounded-2xl px-6 py-12 text-center sm:px-10 sm:py-16",
+        )}
+        aria-labelledby={headingId}
       >
-        <h2
-          id="boards-no-results-save-heading"
-          className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
-        >
-          Let the Gear Come to You
-        </h2>
-        <p className="mx-auto mt-3 max-w-lg text-sm text-foreground/80 sm:text-base">
-          Save this search and we&apos;ll email you when a matching {noun} is listed on Reswell.
-        </p>
+        <div className={cn(compact && "min-w-0")}>
+          <h2
+            id={headingId}
+            className={cn(
+              "font-semibold tracking-tight text-foreground",
+              compact ? "text-sm" : "text-xl sm:text-2xl",
+            )}
+          >
+            Let the Gear Come to You
+          </h2>
+          <p
+            className={cn(
+              "text-foreground/80",
+              compact
+                ? "mt-0.5 text-xs leading-snug sm:text-sm"
+                : "mx-auto mt-3 max-w-lg text-sm sm:text-base",
+            )}
+          >
+            Save this search and we&apos;ll email you when a matching {noun} is listed on Reswell.
+          </p>
+        </div>
         <Button
           type="button"
           variant="outline"
-          className="mt-6 rounded-full bg-background px-5 font-medium shadow-none"
+          size={compact ? "sm" : "default"}
+          className={cn(
+            "shrink-0 rounded-full bg-background font-medium shadow-none",
+            compact ? "h-8 px-3.5" : "mt-6 px-5",
+          )}
           disabled={pending || saved}
           onClick={() => void handleSave()}
         >
           {pending ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              <Loader2 className={cn("animate-spin", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
               Saving…
             </>
           ) : saved ? (
             <>
-              <Check className="mr-2 h-4 w-4" aria-hidden />
+              <Check className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
               Search Saved
             </>
           ) : (
             <>
-              <Heart className="mr-2 h-4 w-4" aria-hidden />
+              <Heart className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
               Save Search
             </>
           )}
         </Button>
       </section>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        <Link href={resolvedClearHref} className="underline underline-offset-2 hover:text-foreground">
-          Clear filters
-        </Link>
-        {" · "}
-        Try adjusting your search
-      </p>
+      {compact ? null : (
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href={resolvedClearHref} className="underline underline-offset-2 hover:text-foreground">
+            Clear filters
+          </Link>
+          {" · "}
+          Try adjusting your search
+        </p>
+      )}
     </div>
   )
 }

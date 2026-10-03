@@ -26,6 +26,8 @@ export const boardSavedSearchCriteriaSchema = z.object({
    * `kind` is reserved for apparel category slugs.
    */
   alertKind: z.enum(["search", "model", "brand"]).optional(),
+  /** Present when the snapshot was saved from `/board-finder`. */
+  source: z.literal("board-finder").optional(),
   q: z.string().trim().max(500).optional(),
   brand: z.string().trim().max(200).optional(),
   brandId: z.string().trim().uuid().optional(),

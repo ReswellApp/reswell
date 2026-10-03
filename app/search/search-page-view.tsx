@@ -372,20 +372,29 @@ export async function SearchPageView({
             clearHref="/search/recent"
           />
         ) : (
-          <RecentFeedClient
-            listings={listings}
-            favoritedListingIds={favoritedListingIds}
-            isLoggedIn={!!user}
-            viewerUserId={user?.id ?? null}
-            hydrateOwnFavorites={skipAuthLookup}
-            emptyMessage={
-              brandUnknown
-                ? "No brand matches that URL. Return to search and pick a brand from suggestions."
-                : brandRow
-                  ? "No active listings for this brand yet. Try another category or check back soon."
-                  : "No listings to show yet. Check back soon or browse by category."
-            }
-          />
+          <>
+            <RecentFeedClient
+              listings={listings}
+              favoritedListingIds={favoritedListingIds}
+              isLoggedIn={!!user}
+              viewerUserId={user?.id ?? null}
+              hydrateOwnFavorites={skipAuthLookup}
+              emptyMessage={
+                brandUnknown
+                  ? "No brand matches that URL. Return to search and pick a brand from suggestions."
+                  : brandRow
+                    ? "No active listings for this brand yet. Try another category or check back soon."
+                    : "No listings to show yet. Check back soon or browse by category."
+              }
+            />
+            {listings.length > 0 && rawQuery.trim() && !brandUnknown ? (
+              <BoardsNoResultsSaveSearch
+                variant="compact"
+                criteria={marketplaceSearchSavedCriteria(rawQuery)}
+                isLoggedIn={!!user}
+              />
+            ) : null}
+          </>
         )}
       </section>
     </main>

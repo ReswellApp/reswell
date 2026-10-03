@@ -1,7 +1,9 @@
 "use server"
 
+import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { trackKlaviyoSavedSearch } from "@/lib/klaviyo/track-saved-search"
 import {
   countBoardSavedSearchesForUser,
   deleteBoardSavedSearchForUser,
@@ -105,6 +107,20 @@ export async function createBoardSavedSearchAction(raw: unknown) {
   if (error || !data) {
     return { error: "Could not save search. Try again." as const }
   }
+
+  after(() => {
+    void trackKlaviyoSavedSearch({
+      userId: user.id,
+      email: user.email,
+      savedSearchId: data.id,
+      criteria,
+      label: data.label,
+      emailNotificationsEnabled: data.email_notifications_enabled,
+      savedAt: data.created_at,
+    }).catch((err) => {
+      console.error("[saved_search] Klaviyo Saved Search event failed:", err)
+    })
+  })
 
   revalidatePath("/board-finder")
   revalidatePath("/boards")

@@ -32,6 +32,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Seller Made Offer": "engagement",
   "Offer Accepted": "engagement",
   "Board Alert Match": "engagement",
+  "Saved Search": "engagement",
   "Board Listing Request": "engagement",
   "Message Sent": "engagement",
   "Inactive Seller": "lifecycle",

@@ -11,6 +11,7 @@ import {
   listingMatchesSavedSearch,
   type ListingRowForBoardAlert,
 } from "@/lib/services/boardSavedSearchMatch"
+import { savedSearchAbsoluteUrl } from "@/lib/klaviyo/saved-search-url"
 import { inferSavedSearchAlertKind } from "@/lib/utils/saved-search-alert-kind"
 import { boardSavedSearchCriteriaSchema } from "@/lib/validations/boardSavedSearch"
 
@@ -119,6 +120,9 @@ export async function notifyBoardSavedSearchMatchesForListing(
         ? inferSavedSearchAlertKind(parsedCriteria.data)
         : "search",
       savedSearchLabel: sub.label,
+      searchQuery: parsedCriteria.success ? (parsedCriteria.data.q?.trim() ?? "") : "",
+      searchUrl: parsedCriteria.success ? savedSearchAbsoluteUrl(parsedCriteria.data) : "",
+      criteria: parsedCriteria.success ? parsedCriteria.data : null,
     })
     sent += 1
   }

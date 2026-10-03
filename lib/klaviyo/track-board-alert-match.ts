@@ -8,11 +8,20 @@
  * Flow filters can branch on properties such as Listing_ID, Saved_Search_ID, Section, Brand, Model,
  * Alert_Kind (`search` | `model` | `brand`). Keep one metric — do not create separate model/brand
  * metrics. Clone the flow and filter on Alert_Kind if you want different copy.
+ * `Search_URL` is the saved search itself (e.g. `https://www.reswell.app/search?q=roberts+5%2710`).
+ *
+ * Board Finder saves (`Alert_Source` = `board-finder`) also send every field the shopper
+ * filled in: `Wanted_Brand`, `Wanted_Model`, `Wanted_Size`, `Wanted_Style`, `Wanted_Condition`,
+ * `Wanted_Min_Price`, `Wanted_Max_Price`, `Wanted_Volume`, `Wanted_Construction`,
+ * `Wanted_Fin_System`, plus `Brand_URL`, `Model_URL`, and `Board_Finder_URL`.
+ * Listing fields (`Brand`, `Model`, `Title`) describe the board that just listed.
  */
 
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { boardAlertMatchFinderProperties } from "@/lib/klaviyo/board-alert-match-details"
 import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
-import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 
 export type KlaviyoBoardAlertMatchPayload = {
   subscriberUserId: string
@@ -38,6 +47,11 @@ export type KlaviyoBoardAlertMatchPayload = {
    */
   alertKind?: string | null
   savedSearchLabel?: string | null
+  /** Absolute URL of the saved search (`/search?q=…` or a section browse link). */
+  searchUrl?: string | null
+  searchQuery?: string | null
+  /** Saved snapshot. Board Finder fields are expanded onto the event. */
+  criteria?: BoardSavedSearchCriteria | null
 }
 
 export async function trackKlaviyoBoardAlertMatch(
@@ -70,6 +84,9 @@ export async function trackKlaviyoBoardAlertMatch(
       Section: payload.section ?? "",
       Alert_Kind: payload.alertKind ?? "",
       Saved_Search_Label: payload.savedSearchLabel ?? "",
+      Search_Query: payload.searchQuery ?? "",
+      Search_URL: payload.searchUrl ?? "",
+      ...(payload.criteria ? boardAlertMatchFinderProperties(payload.criteria) : {}),
     },
     profile: {
       external_id: payload.subscriberUserId,
