@@ -5,6 +5,7 @@ import { Loader2, Minus, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { useListingPdpCropGestures } from "@/components/features/listings/hooks/use-listing-pdp-crop-gestures"
 import { Slider } from "@/components/ui/slider"
+import { listingHeroAspectCss } from "@/lib/listing-hero-frame"
 import { cn } from "@/lib/utils"
 import {
   LISTING_PDP_CROP_COVER,
@@ -224,7 +225,16 @@ export function ListingPdpCropEditor({
             "relative w-full max-w-[22rem] overflow-hidden rounded-[28px] bg-[#111] shadow-[0_0_0_1px_rgba(255,255,255,0.12)] touch-none select-none sm:max-w-[26rem]",
             natural ? "cursor-grab active:cursor-grabbing" : "cursor-wait",
           )}
-          style={{ aspectRatio: "3 / 4" }}
+          style={{
+            aspectRatio:
+              natural && natural.h > 0
+                ? listingHeroAspectCss(natural.w / natural.h)
+                : "3 / 4",
+            width:
+              natural && natural.h > 0
+                ? `min(100%, 22rem, calc(min(58svh, 32rem) * ${natural.w} / ${natural.h}))`
+                : undefined,
+          }}
           onPointerDown={gestures.onPointerDown}
           onPointerMove={gestures.onPointerMove}
           onPointerUp={gestures.onPointerUp}
