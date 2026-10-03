@@ -151,7 +151,9 @@ export function BoardsNoResultsSaveSearch({
                 : "mx-auto mt-3 max-w-lg text-sm sm:text-base",
             )}
           >
-            Save this search and we&apos;ll email you when a matching {noun} is listed on Reswell.
+            {compact
+              ? `Save this search and we'll email you when a new matching ${noun} is listed on Reswell.`
+              : `Save this search and we'll email you when a matching ${noun} is listed on Reswell.`}
           </p>
         </div>
         <Button
