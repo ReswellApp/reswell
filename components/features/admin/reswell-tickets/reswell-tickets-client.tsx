@@ -244,6 +244,10 @@ export function ReswellTicketsClient() {
                   files.map((file) => state.uploadDescriptionImage(selected.id, file)),
                 )
               }}
+              onDispatchCursor={(force) => state.dispatchCursor(selected.id, force)}
+              onSyncCursor={(silent) => state.syncCursor(selected.id, { silent })}
+              onFollowUpCursor={(text) => state.followUpCursor(selected.id, text)}
+              cursorBusy={state.cursorBusyId === selected.id}
               onClose={() => state.setSelectedId(null)}
             />
           </div>
@@ -270,6 +274,10 @@ export function ReswellTicketsClient() {
                 files.map((file) => state.uploadDescriptionImage(selected.id, file)),
               )
             }}
+            onDispatchCursor={(force) => state.dispatchCursor(selected.id, force)}
+            onSyncCursor={(silent) => state.syncCursor(selected.id, { silent })}
+            onFollowUpCursor={(text) => state.followUpCursor(selected.id, text)}
+            cursorBusy={state.cursorBusyId === selected.id}
             onClose={() => state.setSelectedId(null)}
           />
         </div>

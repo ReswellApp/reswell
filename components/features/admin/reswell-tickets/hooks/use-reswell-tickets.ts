@@ -40,6 +40,7 @@ export function useReswellTickets() {
   const [sort, setSort] = useState<TicketSortKey>('created')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
+  const [cursorBusyId, setCursorBusyId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setError(null)
@@ -315,6 +316,56 @@ export function useReswellTickets() {
     }
   }, [tickets])
 
+  const runCursorAction = useCallback(
+    async (
+      ticketId: string,
+      payload: { action: 'dispatch'; force?: boolean } | { action: 'sync' } | { action: 'follow_up'; text: string },
+      options?: { silent?: boolean },
+    ) => {
+      const silent = options?.silent === true
+      if (!silent) setCursorBusyId(ticketId)
+      try {
+        const res = await fetch(`/api/admin/reswell-tickets/${ticketId}/cursor`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const body = await readJson(res)
+        if (!res.ok) {
+          if (!silent) toast.error(errorMessage(body, 'Could not talk to Cursor'))
+          return
+        }
+        if (body && typeof body === 'object' && 'data' in body) {
+          replaceTicket((body as { data: ReswellTicket }).data)
+        }
+        if (payload.action === 'dispatch') toast.success('Cursor agent started')
+        if (payload.action === 'follow_up') toast.success('Follow-up sent to Cursor')
+      } catch {
+        if (!silent) toast.error('Could not talk to Cursor')
+      } finally {
+        if (!silent) setCursorBusyId(null)
+      }
+    },
+    [replaceTicket],
+  )
+
+  const dispatchCursor = useCallback(
+    (ticketId: string, force?: boolean) => runCursorAction(ticketId, { action: 'dispatch', force }),
+    [runCursorAction],
+  )
+
+  const syncCursor = useCallback(
+    (ticketId: string, options?: { silent?: boolean }) =>
+      runCursorAction(ticketId, { action: 'sync' }, options),
+    [runCursorAction],
+  )
+
+  const followUpCursor = useCallback(
+    (ticketId: string, text: string) => runCursorAction(ticketId, { action: 'follow_up', text }),
+    [runCursorAction],
+  )
+
   const uploadDescriptionImage = useCallback(async (ticketId: string, file: File) => {
     const pendingId = `pending-${crypto.randomUUID()}`
     const previewUrl = URL.createObjectURL(file)
@@ -470,5 +521,9 @@ export function useReswellTickets() {
     addFile,
     deleteFile,
     uploadDescriptionImage,
+    dispatchCursor,
+    syncCursor,
+    followUpCursor,
+    cursorBusyId,
   }
 }
