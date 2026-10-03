@@ -9,8 +9,6 @@ import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
 import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
-import { newestListingForSavedSearch } from "@/lib/services/newestSavedSearchListing"
-import type { SavedSearchHeroListing } from "@/lib/saved-search-hero"
 import { marketplaceSearchSavedCriteria } from "@/lib/utils/peer-saved-search-criteria"
 import { savedSearchMatchesCriteria } from "@/lib/utils/saved-search-criteria-equal"
 import { fetchBoardSavedSearchesForUser } from "@/lib/db/savedSearches"
@@ -329,18 +327,13 @@ export async function SearchPageView({
   const queryTrimmed = rawQuery.trim()
   const savedSearchCriteria = queryTrimmed ? marketplaceSearchSavedCriteria(queryTrimmed) : null
   let searchAlreadySaved = false
-  let savedSearchHero: SavedSearchHeroListing | null = null
-  if (savedSearchCriteria && !brandUnknown) {
-    const [savedRows, hero] = await Promise.all([
-      user
-        ? fetchBoardSavedSearchesForUser(supabase, user.id, BOARD_SAVED_SEARCHES_MAX)
-        : Promise.resolve(null),
-      newestListingForSavedSearch(supabase, savedSearchCriteria),
-    ])
-    if (savedRows && !savedRows.error) {
-      searchAlreadySaved = savedSearchMatchesCriteria(savedRows.data, savedSearchCriteria)
-    }
-    savedSearchHero = hero
+  if (user && savedSearchCriteria && !brandUnknown) {
+    const { data: savedRows } = await fetchBoardSavedSearchesForUser(
+      supabase,
+      user.id,
+      BOARD_SAVED_SEARCHES_MAX,
+    )
+    searchAlreadySaved = savedSearchMatchesCriteria(savedRows, savedSearchCriteria)
   }
   const heading = searchResultsHeading({
     brandUnknown,
@@ -390,7 +383,6 @@ export async function SearchPageView({
             criteria={savedSearchCriteria ?? marketplaceSearchSavedCriteria(rawQuery)}
             isLoggedIn={!!user}
             initiallySaved={searchAlreadySaved}
-            hero={savedSearchHero}
             clearHref="/search/recent"
           />
         ) : (
@@ -415,7 +407,6 @@ export async function SearchPageView({
                 criteria={savedSearchCriteria ?? marketplaceSearchSavedCriteria(rawQuery)}
                 isLoggedIn={!!user}
                 initiallySaved={searchAlreadySaved}
-                hero={savedSearchHero}
               />
             ) : null}
           </>

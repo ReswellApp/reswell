@@ -1,6 +1,6 @@
 /**
- * Client-safe snapshot of the newest listing in a saved search.
- * The save-search bar and the Klaviyo `Saved Search` event share this shape.
+ * Snapshot of the newest listing in a saved search.
+ * Sent on the Klaviyo `Saved Search` event. Not shown in the save-search bar.
  */
 
 import { klaviyoEmailListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
