@@ -10,7 +10,7 @@ export function BoardFinderPreviewTicket({
   emailOptIn: boolean
 }) {
   return (
-    <div className="rounded-2xl border border-white/50 bg-white/90 p-4 shadow-[0_10px_30px_-18px_rgba(11,36,48,0.55)] backdrop-blur-md sm:p-5">
+    <div className="rounded-2xl border border-[#e3eaef] bg-white p-4 sm:p-5">
       <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-[#3d6b86]">
         {hasCriteria ? "This search" : "Waiting"}
       </p>
