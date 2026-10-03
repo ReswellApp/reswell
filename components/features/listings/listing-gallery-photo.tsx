@@ -12,6 +12,8 @@ export interface ListingGalleryPhotoProps {
   alt: string
   sizes: string
   className?: string
+  /** Listing PDP hero uses contain so the full photo is on the page. Thumbs stay cover. */
+  objectFit?: "cover" | "contain"
   priority?: boolean
   fetchPriority?: "high" | "low" | "auto"
   loading?: "eager" | "lazy"
@@ -19,7 +21,7 @@ export interface ListingGalleryPhotoProps {
 }
 
 const PHOTO_LAYER =
-  "bg-transparent select-none object-cover object-center backface-hidden transform-gpu [-webkit-user-drag:none]"
+  "bg-transparent select-none object-center backface-hidden transform-gpu [-webkit-user-drag:none]"
 
 /** Block HTML image-drag so Embla swipe still owns the pointer. Right-click is unchanged. */
 export function preventNativeListingImageDrag(event: DragEvent<HTMLImageElement>): void {
@@ -82,6 +84,7 @@ export function ListingGalleryPhoto({
   alt,
   sizes,
   className,
+  objectFit = "cover",
   priority = false,
   fetchPriority,
   loading,
@@ -117,6 +120,7 @@ export function ListingGalleryPhoto({
           aria-hidden
           className={cn(
             PHOTO_LAYER,
+            objectFit === "contain" ? "object-contain" : "object-cover",
             "pointer-events-none z-[1]",
             className,
             previewReady ? "opacity-100" : "opacity-0",
@@ -138,6 +142,7 @@ export function ListingGalleryPhoto({
         onDragStart={preventNativeListingImageDrag}
         className={cn(
           PHOTO_LAYER,
+          objectFit === "contain" ? "object-contain" : "object-cover",
           "pointer-events-auto z-[2]",
           className,
           preview && previewReady ? "transition-opacity duration-200 ease-out" : null,
