@@ -1,4 +1,5 @@
 import { shipEngineRequest } from "@/lib/shipengine/client"
+import { filterToShipEngineWalletCarrierIds } from "@/lib/shipengine/reswell-carriers"
 import { getShipEngineLabelImageId, isShipEngineConfigured } from "@/lib/shipengine/config"
 import {
   formatShipEngineApiError,
@@ -102,7 +103,7 @@ async function fetchCarrierIds(): Promise<string[]> {
     const id = row && typeof row.carrier_id === "string" ? row.carrier_id.trim() : ""
     if (id) ids.push(id)
   }
-  return ids
+  return filterToShipEngineWalletCarrierIds(ids)
 }
 
 export async function fetchShipEngineRatesForSurfboard(params: {
@@ -154,7 +155,7 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   if (!carrierIds.length) {
     return {
       ok: false,
-      error: "No shipping carriers are available right now. Try again later or contact support.",
+      error: "ShipEngine One Balance carriers are not connected.",
       status: 422,
     }
   }
