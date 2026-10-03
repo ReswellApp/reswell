@@ -34,8 +34,16 @@ type ListingPdpCropEditorProps = {
   onSaved?: (crops: Record<string, ListingPdpCrop | null>) => void
 }
 
-function cropOrCover(crop: ListingPdpCrop | null): ListingPdpCrop {
-  return crop ?? LISTING_PDP_CROP_COVER
+function cropOrDefault(crop: ListingPdpCrop | null): ListingPdpCrop {
+  return crop ?? LISTING_PDP_CROP_FIT
+}
+
+function rememberNaturalSize(
+  img: HTMLImageElement | null,
+  setNatural: (size: { w: number; h: number }) => void,
+): void {
+  if (!img || img.naturalWidth <= 0 || img.naturalHeight <= 0) return
+  setNatural({ w: img.naturalWidth, h: img.naturalHeight })
 }
 
 export function ListingPdpCropEditor({
@@ -56,7 +64,7 @@ export function ListingPdpCropEditor({
   const [saving, setSaving] = useState(false)
 
   const photo = images[index] ?? images[0] ?? null
-  const currentCrop = photo ? cropOrCover(crops[photo.id] ?? photo.crop) : LISTING_PDP_CROP_COVER
+  const currentCrop = photo ? cropOrDefault(crops[photo.id] ?? photo.crop) : LISTING_PDP_CROP_FIT
 
   const initialCrops = useMemo(() => {
     const next: Record<string, ListingPdpCrop | null> = {}
@@ -67,7 +75,7 @@ export function ListingPdpCropEditor({
   useEffect(() => {
     if (!open) return
     const next: Record<string, ListingPdpCrop> = {}
-    for (const image of images) next[image.id] = cropOrCover(image.crop)
+    for (const image of images) next[image.id] = cropOrDefault(image.crop)
     setCrops(next)
     setIndex(Math.min(Math.max(0, initialIndex), Math.max(0, images.length - 1)))
     setNatural(null)
@@ -135,7 +143,7 @@ export function ListingPdpCropEditor({
     if (!photo) return
     const changed = images
       .map((image) => {
-        const next = crops[image.id] ?? cropOrCover(image.crop)
+        const next = crops[image.id] ?? cropOrDefault(image.crop)
         const prev = initialCrops[image.id] ?? null
         if (listingPdpCropsEqual(next, prev)) return null
         return { id: image.id, ...next }
@@ -237,12 +245,14 @@ export function ListingPdpCropEditor({
                       left: layout.left,
                       top: layout.top,
                     }
-                  : { inset: 0, width: "100%", height: "100%", objectFit: "cover" }
+                  : { inset: 0, width: "100%", height: "100%", objectFit: "contain" }
               }
+              ref={(img) => {
+                // iOS Chrome / Google app often skip onLoad for cached images.
+                if (img?.complete) rememberNaturalSize(img, setNatural)
+              }}
               onLoad={(event) => {
-                const img = event.currentTarget
-                if (img.naturalWidth <= 0 || img.naturalHeight <= 0) return
-                setNatural({ w: img.naturalWidth, h: img.naturalHeight })
+                rememberNaturalSize(event.currentTarget, setNatural)
               }}
             />
           ) : null}

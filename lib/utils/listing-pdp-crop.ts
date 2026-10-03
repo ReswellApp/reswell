@@ -40,7 +40,7 @@ export function clampListingPdpCrop(crop: ListingPdpCrop): ListingPdpCrop {
   }
 }
 
-/** Null columns keep today's object-cover center. Any stored value is a seller crop. */
+/** Null columns mean no seller crop. The /l hero then uses contain. */
 export function resolveListingPdpCrop(
   zoom: number | null | undefined,
   x: number | null | undefined,
@@ -65,12 +65,13 @@ export function listingPdpCropFromImageRow(row: {
   return resolveListingPdpCrop(row.pdp_crop_zoom, row.pdp_crop_x, row.pdp_crop_y)
 }
 
+/** Unset or Fit — the /l hero already contains. Fill (cover) is an explicit save. */
 export function isListingPdpCropDefault(crop: ListingPdpCrop | null | undefined): boolean {
   if (!crop) return true
   return (
-    Math.abs(crop.zoom - LISTING_PDP_CROP_COVER.zoom) < ZOOM_EPS &&
-    Math.abs(crop.x - LISTING_PDP_CROP_COVER.x) < 0.05 &&
-    Math.abs(crop.y - LISTING_PDP_CROP_COVER.y) < 0.05
+    Math.abs(crop.zoom - LISTING_PDP_CROP_FIT.zoom) < ZOOM_EPS &&
+    Math.abs(crop.x - LISTING_PDP_CROP_FIT.x) < 0.05 &&
+    Math.abs(crop.y - LISTING_PDP_CROP_FIT.y) < 0.05
   )
 }
 
@@ -231,17 +232,17 @@ export function listingPdpCropObjectPosition(crop: ListingPdpCrop): string {
 
 /**
  * CSS-only first paint. Intermediate zooms refine with a measured layout after load.
- * zoom 0 → contain (full board). zoom 1 / null → cover (today's crop).
+ * null (thumbs) and zoom 1 → cover. zoom 0 → contain.
  */
 export function listingPdpCropCssFit(crop: ListingPdpCrop | null): "cover" | "contain" {
-  if (!crop || isListingPdpCropDefault(crop)) return "cover"
+  if (!crop) return "cover"
   if (crop.zoom <= ZOOM_EPS) return "contain"
   return "cover"
 }
 
 export function listingPdpCropNeedsPreciseLayout(crop: ListingPdpCrop | null): boolean {
-  if (!crop || isListingPdpCropDefault(crop)) return false
-  return crop.zoom > ZOOM_EPS && Math.abs(crop.zoom - 1) > ZOOM_EPS
+  if (!crop || crop.zoom <= ZOOM_EPS) return false
+  return Math.abs(crop.zoom - 1) > ZOOM_EPS
 }
 
 export function listingPdpCropsEqual(

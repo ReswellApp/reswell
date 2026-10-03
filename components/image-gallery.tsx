@@ -368,6 +368,7 @@ export function ImageGallery({
         )}
         <ListingPdpCropIsland
           images={images}
+          initialIndex={selectedIndex < images.length ? selectedIndex : 0}
           hidden={isVideoSelected}
           onCropsSaved={(saved) => {
             setCropOverrides((prev) => ({ ...prev, ...saved }))

@@ -34,12 +34,14 @@ export type ListingPdpCropIslandImage = {
 
 type ListingPdpCropIslandProps = {
   images: ListingPdpCropIslandImage[]
+  initialIndex?: number
   hidden?: boolean
   onCropsSaved?: (crops: Record<string, ListingPdpCrop | null>) => void
 }
 
 export function ListingPdpCropIsland({
   images,
+  initialIndex = 0,
   hidden = false,
   onCropsSaved,
 }: ListingPdpCropIslandProps) {
@@ -120,6 +122,7 @@ export function ListingPdpCropIsland({
               onOpenChange={setOpen}
               listingId={listingId}
               images={editorImages}
+              initialIndex={initialIndex}
               onSaved={(saved) => {
                 setSavedCrops((prev) => ({ ...prev, ...saved }))
                 onCropsSaved?.(saved)
