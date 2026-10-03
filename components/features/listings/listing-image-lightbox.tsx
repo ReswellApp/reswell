@@ -28,6 +28,8 @@ import {
   preventNativeListingImageDrag,
 } from "@/components/features/listings/listing-gallery-photo"
 import { withListingMediaPdpVariant } from "@/lib/listing-media-proxy-url"
+import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
+import { listingGalleryShouldBlockEmblaDrag } from "@/lib/utils/listing-gallery-touch"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
@@ -355,6 +357,13 @@ export function ListingImageLightbox({
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
   isZoomedOutRef.current = isZoomedOut
   const useSwipeCarousel = count > 1
+  // Same non-passive Embla listener as the hero. On a phone it locks the tab
+  // while swiping an enlarged photo. A passive flick changes photos instead.
+  const blockEmblaTouchDrag = listingGalleryShouldBlockEmblaDrag(
+    typeof navigator === "undefined" ? undefined : navigator.userAgent,
+    coarsePointer,
+  )
+  const [viewportNode, setViewportNode] = useState<HTMLElement | null>(null)
 
   /** Freeze Embla startIndex on open. Passing the live index re-inits mid-swipe and kills drag. */
   const emblaStartIndexRef = useRef(index)
@@ -370,8 +379,32 @@ export function ListingImageLightbox({
     align: "start",
     duration: 22,
     dragThreshold: 8,
-    watchDrag: useSwipeCarousel ? () => isZoomedOutRef.current : false,
+    watchDrag: blockEmblaTouchDrag
+      ? false
+      : useSwipeCarousel
+        ? () => isZoomedOutRef.current
+        : false,
   })
+  const setLightboxViewport = useCallback(
+    (node: HTMLElement | null) => {
+      setViewportNode(node)
+      emblaRef(node)
+    },
+    [emblaRef],
+  )
+  const swipeTo = useRef<(direction: -1 | 1) => void>(() => {})
+  swipeTo.current = (direction) => {
+    if (!emblaApi || !isZoomedOutRef.current) return
+    if (direction > 0) emblaApi.scrollNext()
+    else emblaApi.scrollPrev()
+  }
+  useListingGallerySwipe(
+    blockEmblaTouchDrag && open && isZoomedOut,
+    viewportNode,
+    (direction) => {
+      swipeTo.current(direction)
+    },
+  )
 
   const registerPinchRef = useCallback(
     (slideIndex: number, ref: ReactZoomPanPinchContentRef | null) => {
@@ -507,7 +540,7 @@ export function ListingImageLightbox({
       <DialogPortal>
         <DialogOverlay
           className={cn(
-            "z-[70] touch-none data-[state=open]:!animate-none data-[state=closed]:duration-200",
+            "z-[70] overscroll-none data-[state=open]:!animate-none data-[state=closed]:duration-200",
             LIGHTBOX_SURFACE_CLASS,
           )}
         />
@@ -520,7 +553,7 @@ export function ListingImageLightbox({
             if (!isZoomedOut) e.preventDefault()
           }}
           className={cn(
-            "fixed inset-x-0 top-0 z-[70] flex h-dvh max-h-dvh min-h-0 min-w-0 flex-col overflow-hidden outline-none",
+            "pointer-events-auto fixed inset-x-0 top-0 z-[70] flex h-dvh max-h-dvh min-h-0 min-w-0 flex-col overflow-hidden outline-none",
             LIGHTBOX_SURFACE_CLASS,
             "data-[state=open]:!animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:duration-200",
           )}
@@ -532,7 +565,7 @@ export function ListingImageLightbox({
           <div className="relative min-h-0 min-w-0 flex-1">
             {count > 0 ? (
               useSwipeCarousel ? (
-                <div ref={emblaRef} className="absolute inset-0 overflow-hidden overscroll-x-contain">
+                <div ref={setLightboxViewport} className="absolute inset-0 overflow-hidden overscroll-x-contain touch-pan-y">
                   <div className="flex h-full touch-pan-y will-change-transform">
                     {proxiedUrls.map((url, slideIndex) => (
                       <div
