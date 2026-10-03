@@ -8,7 +8,8 @@ export const LISTING_ROUTE_SHELL_SELECT =
 
 export const SURFBOARD_LISTING_SELECT = `
         *,
-        listing_images (id, url, thumbnail_url, is_primary, sort_order, pdp_crop_zoom, pdp_crop_x, pdp_crop_y),
+        listing_images (*),
+        -- * so /l still loads before pdp_crop_* is migrated; extra image cols are tiny.
         listing_videos (id, url, thumbnail_url, content_type, duration_seconds, sort_order),
         ${LISTING_SELLER_PROFILES_EMBED} (id, seller_slug, is_shop, shop_name, shop_logo_url, display_name, avatar_url, location, created_at, shop_verified, sales_count, follower_count)
       `
@@ -24,7 +25,7 @@ export const SHOP_LISTING_SELECT = `
       user_id,
       views,
       created_at,
-      listing_images (id, url, thumbnail_url, is_primary, sort_order, pdp_crop_zoom, pdp_crop_x, pdp_crop_y),
+      listing_images (*),
       stock_quantity,
       categories (name)
     `
