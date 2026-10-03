@@ -27,9 +27,13 @@ function clampPct(value: number): number {
   return clamp(value, 0, 100)
 }
 
-function parseFinite(raw: number | null | undefined): number | null {
-  if (typeof raw !== "number" || !Number.isFinite(raw)) return null
-  return raw
+function parseFinite(raw: unknown): number | null {
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null
+  if (typeof raw !== "string") return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const n = Number(trimmed)
+  return Number.isFinite(n) ? n : null
 }
 
 export function clampListingPdpCrop(crop: ListingPdpCrop): ListingPdpCrop {
@@ -42,9 +46,9 @@ export function clampListingPdpCrop(crop: ListingPdpCrop): ListingPdpCrop {
 
 /** Null columns mean no seller crop. The /l hero then uses contain. */
 export function resolveListingPdpCrop(
-  zoom: number | null | undefined,
-  x: number | null | undefined,
-  y: number | null | undefined,
+  zoom: unknown,
+  x: unknown,
+  y: unknown,
 ): ListingPdpCrop | null {
   const parsedZoom = parseFinite(zoom)
   const parsedX = parseFinite(x)
@@ -58,9 +62,9 @@ export function resolveListingPdpCrop(
 }
 
 export function listingPdpCropFromImageRow(row: {
-  pdp_crop_zoom?: number | null
-  pdp_crop_x?: number | null
-  pdp_crop_y?: number | null
+  pdp_crop_zoom?: unknown
+  pdp_crop_x?: unknown
+  pdp_crop_y?: unknown
 }): ListingPdpCrop | null {
   return resolveListingPdpCrop(row.pdp_crop_zoom, row.pdp_crop_x, row.pdp_crop_y)
 }
