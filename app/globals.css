@@ -760,27 +760,32 @@ html[data-reswell-scroll-lock] body {
 }
 
 /*
- * Listing PDP mobile hero (`/l/*`).
+ * Listing PDP hero (`/l/*`) — every viewport.
  *
- * Chrome and the Google app on iOS keep a persistent toolbar, so `58dvh` is
- * shorter than Safari’s collapsed chrome. A full-bleed 3:4 frame then exceeds
- * the cap. `min-width: 100%` stops WebKit from shrinking width, and
- * `object-cover` crops the board. Set `--listing-hero-aspect` in slash form
- * (`750 / 1000`) — unitless custom properties are ignored in those WebViews.
+ * Sellers need the whole photo on the page, not a 3:4 cover crop that hides
+ * the tail until enlarge. Frame follows `--listing-hero-aspect` (slash form).
+ * `object-contain` wins over the shared `object-cover` tile class. The height
+ * cap is high enough that a full-width portrait shot still fits.
  */
-@media (max-width: 767px) {
-  .listing-pdp-mobile-hero {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    aspect-ratio: var(--listing-hero-aspect, 3 / 4);
-    max-height: min(58vh, 30rem);
-    max-height: min(58dvh, 30rem);
-    max-height: min(58svh, 30rem);
-  }
+.listing-pdp-hero,
+.listing-pdp-mobile-hero {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: var(--listing-hero-aspect, 3 / 4);
+  max-height: min(92vh, 56rem);
+  max-height: min(92dvh, 56rem);
+  max-height: min(92svh, 56rem);
+}
 
-  .listing-pdp-mobile-hero img {
-    object-fit: contain;
-    object-position: center;
-  }
+.listing-pdp-hero img:not(.listing-pdp-seller-crop),
+.listing-pdp-mobile-hero img:not(.listing-pdp-seller-crop) {
+  object-fit: contain !important;
+  object-position: center;
+}
+
+.listing-pdp-hero img.listing-pdp-seller-crop,
+.listing-pdp-mobile-hero img.listing-pdp-seller-crop {
+  object-fit: var(--listing-pdp-object-fit, cover) !important;
+  object-position: var(--listing-pdp-object-position, center);
 }

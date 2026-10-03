@@ -19,6 +19,8 @@ export interface ListingGalleryPhotoProps {
   alt: string
   sizes: string
   className?: string
+  /** Listing PDP hero uses contain so the full photo is on the page. Thumbs stay cover. */
+  objectFit?: "cover" | "contain"
   priority?: boolean
   fetchPriority?: "high" | "low" | "auto"
   loading?: "eager" | "lazy"
@@ -28,7 +30,7 @@ export interface ListingGalleryPhotoProps {
 }
 
 const PHOTO_LAYER =
-  "bg-transparent select-none backface-hidden transform-gpu [-webkit-user-drag:none]"
+  "bg-transparent select-none object-center backface-hidden transform-gpu [-webkit-user-drag:none]"
 
 /** Block HTML image-drag so Embla swipe still owns the pointer. Right-click is unchanged. */
 export function preventNativeListingImageDrag(event: DragEvent<HTMLImageElement>): void {
@@ -94,6 +96,7 @@ export function ListingGalleryPhoto({
   alt,
   sizes,
   className,
+  objectFit = "cover",
   priority = false,
   fetchPriority,
   loading,
@@ -144,13 +147,13 @@ export function ListingGalleryPhoto({
     return () => observer.disconnect()
   }, [precise, frameEl])
 
-  const cropClass = box
+  const resolvedFit = crop ? cssFit : objectFit
+  const fitClass = box
     ? "inset-auto h-auto w-auto max-w-none"
-    : cssFit === "contain"
+    : resolvedFit === "contain"
       ? "object-contain"
-      : "object-cover object-center"
-  // Seller crops set object-fit inline so they beat `.listing-pdp-mobile-hero img { contain }`.
-  // Unsaved photos omit it and keep main's mobile contain (almost the whole board).
+      : "object-cover"
+  // Seller crops opt out of the listing-hero contain !important rule.
   const cropStyle: CSSProperties | undefined = box
     ? {
         width: box.width,
@@ -158,13 +161,18 @@ export function ListingGalleryPhoto({
         left: box.left,
         top: box.top,
         objectFit: "fill",
+        ["--listing-pdp-object-fit" as string]: "fill",
+        ["--listing-pdp-object-position" as string]: objectPosition ?? "center",
       }
     : crop
       ? {
           objectFit: cssFit,
           ...(objectPosition ? { objectPosition } : {}),
+          ["--listing-pdp-object-fit" as string]: cssFit,
+          ["--listing-pdp-object-position" as string]: objectPosition ?? "center",
         }
       : undefined
+  const layerClass = cn(PHOTO_LAYER, fitClass, crop && "listing-pdp-seller-crop")
 
   function attachFrame(img: HTMLImageElement | null) {
     const parent = img?.parentElement ?? null
@@ -182,8 +190,7 @@ export function ListingGalleryPhoto({
           onDragStart={preventNativeListingImageDrag}
           aria-hidden
           className={cn(
-            PHOTO_LAYER,
-            cropClass,
+            layerClass,
             "pointer-events-none z-[1]",
             className,
             previewReady ? "opacity-100" : "opacity-0",
@@ -208,8 +215,7 @@ export function ListingGalleryPhoto({
         draggable={false}
         onDragStart={preventNativeListingImageDrag}
         className={cn(
-          PHOTO_LAYER,
-          cropClass,
+          layerClass,
           "pointer-events-auto z-[2]",
           className,
           preview && previewReady ? "transition-opacity duration-200 ease-out" : null,

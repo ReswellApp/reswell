@@ -1,12 +1,10 @@
 /**
- * Listing PDP hero frame — mobile Chrome / Google app on iOS (WKWebView).
+ * Listing PDP hero frame (`/l/*`).
  *
- * Those apps keep a persistent toolbar, so `58dvh` is shorter than Safari’s
- * collapsed-chrome viewport. A full-width 3:4 box then overflows the cap;
- * WebKit does not shrink width when `min-width: 100%` is set, and `object-cover`
- * crops the nose and tail. Custom-property fallbacks like
- * `aspect-ratio: var(--x, 3/4)` are also unreliable there (unitless values and
- * Tailwind commas).
+ * The photo must stay visible without opening enlarge. Never force a 3:4
+ * `object-cover` crop — Chrome / Google on iOS and tablet `md:` widths were
+ * clipping nose and tail. Custom-property aspect-ratio must be slash-form
+ * (`750 / 1000`); unitless values are ignored in those WebViews.
  */
 
 export const DEFAULT_LISTING_HERO_ASPECT = 3 / 4
@@ -25,8 +23,11 @@ export function listingHeroAspectCss(ratio: number): string {
   return `${width} / 1000`
 }
 
-export function listingMobileHeroFrameVars(ratio: number): {
+export function listingHeroFrameVars(ratio: number): {
   "--listing-hero-aspect": string
 } {
   return { "--listing-hero-aspect": listingHeroAspectCss(ratio) }
 }
+
+/** @deprecated Use {@link listingHeroFrameVars} */
+export const listingMobileHeroFrameVars = listingHeroFrameVars
