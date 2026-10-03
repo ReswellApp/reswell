@@ -30,6 +30,14 @@ export type MyListingRow = {
   created_at: string
   archived_at: string | null
   hidden_from_site: boolean | null
+  site_visibility_reason: string | null
+  description: string | null
+  shipping_package_tier: string | null
+  shipping_package_band: string | null
+  shipping_packed_length_in: number | null
+  shipping_packed_width_in: number | null
+  shipping_packed_height_in: number | null
+  shipping_packed_weight_oz: number | null
   sold_off_platform: boolean | null
   canDelete: boolean
   canRelist: boolean
@@ -50,7 +58,7 @@ export type FetchMyListingsResult = {
 }
 
 const MY_LISTINGS_SELECT =
-  "id, slug, title, price, compare_at_price, status, section, condition, brand, model, views, created_at, archived_at, hidden_from_site, sold_off_platform, listing_images(url, thumbnail_url, is_primary)"
+  "id, slug, title, description, price, compare_at_price, status, section, condition, brand, model, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
 
 const EMPTY_STATS: MyListingsDashboardStats = {
   totalListings: 0,
@@ -62,6 +70,12 @@ const EMPTY_STATS: MyListingsDashboardStats = {
 function toCount(value: unknown): number {
   if (value == null) return 0
   return typeof value === "number" ? value : Number(value) || 0
+}
+
+function toNumberOrNull(value: unknown): number | null {
+  if (value == null || value === "") return null
+  const n = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(n) ? n : null
 }
 
 async function fetchMyListingsEngagementCounts(
@@ -148,6 +162,15 @@ export async function fetchMyListings(
     const engagement = engagementCounts.get(listing.id)
     return {
       ...listing,
+      description: typeof listing.description === "string" ? listing.description : null,
+      site_visibility_reason:
+        typeof listing.site_visibility_reason === "string" ? listing.site_visibility_reason : null,
+      shipping_package_tier: listing.shipping_package_tier ?? null,
+      shipping_package_band: listing.shipping_package_band ?? null,
+      shipping_packed_length_in: toNumberOrNull(listing.shipping_packed_length_in),
+      shipping_packed_width_in: toNumberOrNull(listing.shipping_packed_width_in),
+      shipping_packed_height_in: toNumberOrNull(listing.shipping_packed_height_in),
+      shipping_packed_weight_oz: toNumberOrNull(listing.shipping_packed_weight_oz),
       cartCount: engagement?.cartCount ?? 0,
       favoriteCount: engagement?.favoriteCount ?? 0,
       canDelete: !blockedIds.has(listing.id),
