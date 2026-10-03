@@ -7,6 +7,11 @@ import useEmblaCarousel from "embla-carousel-react"
 import { cn } from "@/lib/utils"
 import { listingFilmImageSrcFromRow, listingTileImageSrcFromRow } from "@/lib/listing-image-display"
 import {
+  DEFAULT_LISTING_HERO_ASPECT,
+  LISTING_PDP_HERO_IMAGE_SIZES,
+  listingMobileHeroFrameVars,
+} from "@/lib/listing-hero-frame"
+import {
   proxiedListingImageSrc,
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
@@ -125,8 +130,8 @@ export function ImageGallery({
   const isVideoSelected = hasVideo && selectedIndex === videoIndex
   const isVideoFrame = hasVideo && frameIndex === videoIndex
   const mobileHeroAspectRatio = isVideoFrame
-    ? 3 / 4
-    : imageAspectRatios[frameIndex] ?? imageAspectRatios[selectedIndex] ?? 3 / 4
+    ? DEFAULT_LISTING_HERO_ASPECT
+    : imageAspectRatios[frameIndex] ?? imageAspectRatios[selectedIndex] ?? DEFAULT_LISTING_HERO_ASPECT
 
   /** Photo URLs only — video is a trailing carousel slide and stays out of the lightbox. */
   const proxiedUrls = useMemo(
@@ -340,12 +345,12 @@ export function ImageGallery({
           className={cn(
             "relative overflow-hidden bg-transparent select-none",
             compactMobile
-              ? "max-md:h-auto max-md:max-h-[min(58dvh,30rem)] max-md:w-full max-md:min-w-full max-md:[aspect-ratio:var(--hero-aspect,3/4)] max-md:rounded-none md:aspect-[3/4] md:max-h-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
+              ? "listing-pdp-mobile-hero max-md:rounded-none md:aspect-[3/4] md:max-h-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
               : "w-full rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
           )}
           style={
             compactMobile
-              ? ({ "--hero-aspect": mobileHeroAspectRatio } as CSSProperties)
+              ? (listingMobileHeroFrameVars(mobileHeroAspectRatio) as CSSProperties)
               : { paddingBottom: "133.33%" }
           }
         >
@@ -422,7 +427,7 @@ export function ImageGallery({
                     fetchPriority={isSelected ? "high" : "auto"}
                     loading="eager"
                     crop={crop}
-                    sizes="(max-width: 1024px) 100svw, 50svw"
+                    sizes={LISTING_PDP_HERO_IMAGE_SIZES}
                     onLoaded={({ naturalWidth, naturalHeight }) => {
                       const ratio = naturalWidth / naturalHeight
                       setImageAspectRatios((prev) => {

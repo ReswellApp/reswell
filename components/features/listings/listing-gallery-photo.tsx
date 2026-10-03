@@ -145,22 +145,26 @@ export function ListingGalleryPhoto({
   }, [precise, frameEl])
 
   const cropClass = box
-    ? "inset-auto h-auto w-auto max-w-none object-fill"
+    ? "inset-auto h-auto w-auto max-w-none"
     : cssFit === "contain"
       ? "object-contain"
       : "object-cover object-center"
+  // Seller crops set object-fit inline so they beat `.listing-pdp-mobile-hero img { contain }`.
+  // Unsaved photos omit it and keep main's mobile contain (almost the whole board).
   const cropStyle: CSSProperties | undefined = box
     ? {
         width: box.width,
         height: box.height,
         left: box.left,
         top: box.top,
+        objectFit: "fill",
       }
-    : objectPosition && cssFit === "contain"
-      ? { objectPosition }
-      : objectPosition
-        ? { objectPosition }
-        : undefined
+    : crop
+      ? {
+          objectFit: cssFit,
+          ...(objectPosition ? { objectPosition } : {}),
+        }
+      : undefined
 
   function attachFrame(img: HTMLImageElement | null) {
     const parent = img?.parentElement ?? null
@@ -192,11 +196,8 @@ export function ListingGalleryPhoto({
             markPaintedAfterDecode(img, () => setPreviewReady(true))
           }}
           onLoad={(event) => {
-            const img = event.currentTarget
-            markPaintedAfterDecode(img, () => {
-              setPreviewReady(true)
-              rememberSize(img, onLoaded, setNatural)
-            })
+            // Preview is paint-only — never size the hero from the tile derivative.
+            markPaintedAfterDecode(event.currentTarget, () => setPreviewReady(true))
           }}
         />
       ) : null}
@@ -221,7 +222,11 @@ export function ListingGalleryPhoto({
         loading={loading}
         ref={(img) => {
           attachFrame(img)
-          markPaintedAfterDecode(img, () => setSrcReady(true))
+          markPaintedAfterDecode(img, () => {
+            setSrcReady(true)
+            // iOS Chrome / Google app often skip onLoad for cached images.
+            if (img) rememberSize(img, onLoaded, setNatural)
+          })
         }}
         onLoad={(event) => {
           const img = event.currentTarget

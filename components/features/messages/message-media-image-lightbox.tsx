@@ -28,7 +28,6 @@ const DEFAULT_ASPECT_RATIO = 3 / 4
 const LIGHTBOX_SURFACE_CLASS = "bg-[#f3f4f6] dark:bg-muted"
 const PHOTO_LAYER =
   "bg-transparent select-none object-contain object-center backface-hidden transform-gpu [-webkit-user-drag:none] [-webkit-touch-callout:default]"
-const MOBILE_OVERSCAN_CLASS = "origin-top object-top scale-[1.12]"
 const LIGHTBOX_IMAGE_SIZES =
   "(max-width: 768px) 100vw, (max-width: 1280px) 70vw, 60vw"
 const CHROME_BUTTON_CLASS =
@@ -235,7 +234,6 @@ function LightboxSlide({
                 className={cn(
                   PHOTO_LAYER,
                   "!pointer-events-auto",
-                  !fitCard && MOBILE_OVERSCAN_CLASS,
                   loaded ? "opacity-100" : "opacity-0",
                 )}
                 sizes={LIGHTBOX_IMAGE_SIZES}

@@ -284,12 +284,15 @@
     border-color: hsl(var(--border));
   }
   html {
+    overflow-x: hidden;
     overflow-x: clip;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
     /* Instant scroll — inherited `smooth` made nested panes feel laggy on touch/wheel. */
     scroll-behavior: auto;
     background-color: hsl(var(--background));
+    /* iOS Chrome / Google app synthesize a second weight and ghost glyphs. */
+    font-synthesis: none;
   }
   /* Nested scroll regions: explicit auto + iOS momentum (smooth is opt-in via `.scroll-smooth`). */
   .overflow-y-auto,
@@ -300,7 +303,9 @@
     -webkit-overflow-scrolling: touch;
   }
   body {
+    overflow-x: hidden;
     overflow-x: clip;
+    min-height: 100vh;
     min-height: 100dvh;
     background-color: hsl(var(--background));
     color: hsl(var(--muted-foreground));
@@ -311,6 +316,7 @@
     line-height: 1.3;
     font-optical-sizing: auto;
     font-style: normal;
+    font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -751,4 +757,30 @@ html[data-reswell-scroll-lock] body {
 
 .admin-btn-primary:hover {
   background-color: hsl(var(--admin-teal-hover));
+}
+
+/*
+ * Listing PDP mobile hero (`/l/*`).
+ *
+ * Chrome and the Google app on iOS keep a persistent toolbar, so `58dvh` is
+ * shorter than Safari’s collapsed chrome. A full-bleed 3:4 frame then exceeds
+ * the cap. `min-width: 100%` stops WebKit from shrinking width, and
+ * `object-cover` crops the board. Set `--listing-hero-aspect` in slash form
+ * (`750 / 1000`) — unitless custom properties are ignored in those WebViews.
+ */
+@media (max-width: 767px) {
+  .listing-pdp-mobile-hero {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: var(--listing-hero-aspect, 3 / 4);
+    max-height: min(58vh, 30rem);
+    max-height: min(58dvh, 30rem);
+    max-height: min(58svh, 30rem);
+  }
+
+  .listing-pdp-mobile-hero img {
+    object-fit: contain;
+    object-position: center;
+  }
 }
