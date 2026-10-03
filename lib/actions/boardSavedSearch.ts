@@ -4,6 +4,8 @@ import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoSavedSearch } from "@/lib/klaviyo/track-saved-search"
+import { newestListingForSavedSearch } from "@/lib/services/newestSavedSearchListing"
+import { getDb } from "@/lib/supabase/db"
 import {
   countBoardSavedSearchesForUser,
   deleteBoardSavedSearchForUser,
@@ -128,16 +130,28 @@ export async function createBoardSavedSearchAction(raw: unknown) {
     return { error: "Could not save search. Try again." as const }
   }
 
+  const savedSearchId = data.id
+  const savedLabel = data.label
+  const emailNotificationsEnabled = data.email_notifications_enabled
+  const savedAt = data.created_at
+
   after(() => {
-    void trackKlaviyoSavedSearch({
-      userId: user.id,
-      email: user.email,
-      savedSearchId: data.id,
-      criteria,
-      label: data.label,
-      emailNotificationsEnabled: data.email_notifications_enabled,
-      savedAt: data.created_at,
-    }).catch((err) => {
+    void (async () => {
+      const hero = await newestListingForSavedSearch(
+        getDb({ consistency: "eventual", purpose: "catalog" }),
+        criteria,
+      )
+      await trackKlaviyoSavedSearch({
+        userId: user.id,
+        email: user.email,
+        savedSearchId,
+        criteria,
+        label: savedLabel,
+        emailNotificationsEnabled,
+        savedAt,
+        hero,
+      })
+    })().catch((err) => {
       console.error("[saved_search] Klaviyo Saved Search event failed:", err)
     })
   })
