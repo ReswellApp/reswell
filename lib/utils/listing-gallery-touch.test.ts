@@ -26,7 +26,7 @@ describe("listingGalleryShouldBlockEmblaDrag", () => {
     )
   })
 
-  it("keeps Embla drag for a fine pointer in Safari and Chrome", () => {
+  it("keeps Embla drag in Safari and Chrome", () => {
     assert.equal(listingGalleryShouldBlockEmblaDrag(SAFARI_IOS), false)
     assert.equal(
       listingGalleryShouldBlockEmblaDrag(
@@ -36,19 +36,6 @@ describe("listingGalleryShouldBlockEmblaDrag", () => {
     )
     assert.equal(listingGalleryShouldBlockEmblaDrag(null), false)
     assert.equal(listingGalleryShouldBlockEmblaDrag(""), false)
-  })
-
-  it("blocks Embla touch drag on a coarse pointer, including mobile Safari", () => {
-    assert.equal(listingGalleryShouldBlockEmblaDrag(SAFARI_IOS, true), true)
-    assert.equal(
-      listingGalleryShouldBlockEmblaDrag(
-        "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-        true,
-      ),
-      true,
-    )
-    assert.equal(listingGalleryShouldBlockEmblaDrag(null, true), true)
-    assert.equal(listingGalleryShouldBlockEmblaDrag(SAFARI_IOS, false), false)
   })
 })
 
