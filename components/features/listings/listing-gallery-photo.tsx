@@ -1,9 +1,16 @@
 "use client"
 
-import { useState, type CSSProperties, type DragEvent } from "react"
+import { useEffect, useState, type CSSProperties, type DragEvent } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import {
+  listingPdpCropCssFit,
+  listingPdpCropNeedsPreciseLayout,
+  listingPdpCropObjectPosition,
+  listingPdpCropToLayout,
+  type ListingPdpCrop,
+} from "@/lib/utils/listing-pdp-crop"
 
 export interface ListingGalleryPhotoProps {
   src: string
@@ -18,6 +25,8 @@ export interface ListingGalleryPhotoProps {
   fetchPriority?: "high" | "low" | "auto"
   loading?: "eager" | "lazy"
   onLoaded?: (size: { naturalWidth: number; naturalHeight: number }) => void
+  /** /l hero crop only. Thumbnails and tiles omit this. */
+  crop?: ListingPdpCrop | null
 }
 
 const PHOTO_LAYER =
@@ -35,13 +44,14 @@ export function preventNativeListingImageDrag(event: DragEvent<HTMLImageElement>
 export function listingPhotoBackdropStyle(
   src: string | undefined,
   fit: "cover" | "contain" = "cover",
+  position?: string,
 ): CSSProperties | undefined {
   if (!src || src === "/placeholder.svg") return undefined
   const safe = src.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
   return {
     backgroundImage: `url("${safe}")`,
     backgroundSize: fit,
-    backgroundPosition: fit === "contain" ? "center top" : "center",
+    backgroundPosition: position ?? (fit === "contain" ? "center top" : "center"),
     backgroundRepeat: "no-repeat",
   }
 }
@@ -67,8 +77,10 @@ function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void):
 function rememberSize(
   img: { naturalWidth: number; naturalHeight: number },
   onLoaded?: ListingGalleryPhotoProps["onLoaded"],
+  onNatural?: (size: { width: number; height: number }) => void,
 ): void {
   if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+    onNatural?.({ width: img.naturalWidth, height: img.naturalHeight })
     onLoaded?.({ naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight })
   }
 }
@@ -89,11 +101,15 @@ export function ListingGalleryPhoto({
   fetchPriority,
   loading,
   onLoaded,
+  crop = null,
 }: ListingGalleryPhotoProps) {
   const [trackedSrc, setTrackedSrc] = useState(src)
   const [trackedPreview, setTrackedPreview] = useState(previewSrc ?? "")
   const [previewReady, setPreviewReady] = useState(false)
   const [srcReady, setSrcReady] = useState(false)
+  const [natural, setNatural] = useState<{ width: number; height: number } | null>(null)
+  const [frame, setFrame] = useState<{ width: number; height: number } | null>(null)
+  const [frameEl, setFrameEl] = useState<HTMLElement | null>(null)
 
   if (src !== trackedSrc) {
     setTrackedSrc(src)
@@ -107,6 +123,61 @@ export function ListingGalleryPhoto({
   const preview =
     previewSrc && previewSrc !== src && previewSrc !== "/placeholder.svg" ? previewSrc : ""
   const painted = srcReady || previewReady
+  const cssFit = listingPdpCropCssFit(crop)
+  const objectPosition = crop ? listingPdpCropObjectPosition(crop) : undefined
+  const precise = listingPdpCropNeedsPreciseLayout(crop)
+  const box =
+    precise && crop && natural && frame
+      ? listingPdpCropToLayout(frame.width, frame.height, natural.width, natural.height, crop)
+      : null
+
+  useEffect(() => {
+    if (!precise || !frameEl) return
+    const measure = () => {
+      const width = frameEl.clientWidth
+      const height = frameEl.clientHeight
+      if (width <= 0 || height <= 0) return
+      setFrame((prev) =>
+        prev && prev.width === width && prev.height === height ? prev : { width, height },
+      )
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(frameEl)
+    return () => observer.disconnect()
+  }, [precise, frameEl])
+
+  const resolvedFit = crop ? cssFit : objectFit
+  const fitClass = box
+    ? "inset-auto h-auto w-auto max-w-none"
+    : resolvedFit === "contain"
+      ? "object-contain"
+      : "object-cover"
+  // Seller crops opt out of the listing-hero contain !important rule.
+  const cropStyle: CSSProperties | undefined = box
+    ? {
+        width: box.width,
+        height: box.height,
+        left: box.left,
+        top: box.top,
+        objectFit: "fill",
+        ["--listing-pdp-object-fit" as string]: "fill",
+        ["--listing-pdp-object-position" as string]: objectPosition ?? "center",
+      }
+    : crop
+      ? {
+          objectFit: cssFit,
+          ...(objectPosition ? { objectPosition } : {}),
+          ["--listing-pdp-object-fit" as string]: cssFit,
+          ["--listing-pdp-object-position" as string]: objectPosition ?? "center",
+        }
+      : undefined
+  const layerClass = cn(PHOTO_LAYER, fitClass, crop && "listing-pdp-seller-crop")
+
+  function attachFrame(img: HTMLImageElement | null) {
+    const parent = img?.parentElement ?? null
+    setFrameEl((prev) => (prev === parent ? prev : parent))
+  }
 
   return (
     <>
@@ -119,15 +190,18 @@ export function ListingGalleryPhoto({
           onDragStart={preventNativeListingImageDrag}
           aria-hidden
           className={cn(
-            PHOTO_LAYER,
-            objectFit === "contain" ? "object-contain" : "object-cover",
+            layerClass,
             "pointer-events-none z-[1]",
             className,
             previewReady ? "opacity-100" : "opacity-0",
           )}
+          style={cropStyle}
           sizes={sizes}
           loading={priority ? "eager" : loading}
-          ref={(img) => markPaintedAfterDecode(img, () => setPreviewReady(true))}
+          ref={(img) => {
+            attachFrame(img)
+            markPaintedAfterDecode(img, () => setPreviewReady(true))
+          }}
           onLoad={(event) => {
             // Preview is paint-only — never size the hero from the tile derivative.
             markPaintedAfterDecode(event.currentTarget, () => setPreviewReady(true))
@@ -141,29 +215,30 @@ export function ListingGalleryPhoto({
         draggable={false}
         onDragStart={preventNativeListingImageDrag}
         className={cn(
-          PHOTO_LAYER,
-          objectFit === "contain" ? "object-contain" : "object-cover",
+          layerClass,
           "pointer-events-auto z-[2]",
           className,
           preview && previewReady ? "transition-opacity duration-200 ease-out" : null,
           srcReady ? "opacity-100" : "opacity-0",
         )}
+        style={cropStyle}
         sizes={sizes}
         priority={priority}
         fetchPriority={fetchPriority}
         loading={loading}
-        ref={(img) =>
+        ref={(img) => {
+          attachFrame(img)
           markPaintedAfterDecode(img, () => {
             setSrcReady(true)
             // iOS Chrome / Google app often skip onLoad for cached images.
-            if (img) rememberSize(img, onLoaded)
+            if (img) rememberSize(img, onLoaded, setNatural)
           })
-        }
+        }}
         onLoad={(event) => {
           const img = event.currentTarget
           markPaintedAfterDecode(img, () => {
             setSrcReady(true)
-            rememberSize(img, onLoaded)
+            rememberSize(img, onLoaded, setNatural)
           })
         }}
       />

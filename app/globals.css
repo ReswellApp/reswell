@@ -778,8 +778,14 @@ html[data-reswell-scroll-lock] body {
   max-height: min(92svh, 56rem);
 }
 
-.listing-pdp-hero img,
-.listing-pdp-mobile-hero img {
+.listing-pdp-hero img:not(.listing-pdp-seller-crop),
+.listing-pdp-mobile-hero img:not(.listing-pdp-seller-crop) {
   object-fit: contain !important;
   object-position: center;
+}
+
+.listing-pdp-hero img.listing-pdp-seller-crop,
+.listing-pdp-mobile-hero img.listing-pdp-seller-crop {
+  object-fit: var(--listing-pdp-object-fit, cover) !important;
+  object-position: var(--listing-pdp-object-position, center);
 }

@@ -20,6 +20,13 @@ import {
   ListingGalleryPhoto,
   listingPhotoBackdropStyle,
 } from "@/components/features/listings/listing-gallery-photo"
+import { ListingPdpCropIsland } from "@/components/features/listings/listing-pdp-crop-island"
+import {
+  listingPdpCropCssFit,
+  listingPdpCropFromImageRow,
+  listingPdpCropObjectPosition,
+  type ListingPdpCrop,
+} from "@/lib/utils/listing-pdp-crop"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
@@ -40,6 +47,9 @@ interface ImageGalleryProps {
     url: string
     is_primary: boolean
     thumbnail_url?: string | null
+    pdp_crop_zoom?: number | null
+    pdp_crop_x?: number | null
+    pdp_crop_y?: number | null
   }>
   title: string
   /** Optional listing video — rendered as the last carousel slide, not above the photos. */
@@ -92,6 +102,7 @@ export function ImageGallery({
   const [lightboxIndex, setLightboxIndex] = useState(0)
   /** Natural width/height per slide — mobile hero uses this instead of a fixed crop frame. */
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
+  const [cropOverrides, setCropOverrides] = useState<Record<string, ListingPdpCrop | null>>({})
   /** Aspect frame follows the settled slide so the hero height does not jump mid-swipe. */
   const [frameIndex, setFrameIndex] = useState(0)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
@@ -153,6 +164,13 @@ export function ImageGallery({
     () => heroUrls.filter((u) => u && u !== "/placeholder.svg"),
     [heroUrls],
   )
+
+  function cropForImage(image: ImageGalleryProps["images"][number]): ListingPdpCrop | null {
+    if (Object.prototype.hasOwnProperty.call(cropOverrides, image.id)) {
+      return cropOverrides[image.id] ?? null
+    }
+    return listingPdpCropFromImageRow(image)
+  }
 
   const firstHero = heroUrls[0]
   if (firstHero && firstHero !== "/placeholder.svg") {
@@ -348,6 +366,14 @@ export function ImageGallery({
             <span className="sr-only">Enlarge</span>
           </div>
         )}
+        <ListingPdpCropIsland
+          images={images}
+          initialIndex={selectedIndex < images.length ? selectedIndex : 0}
+          hidden={isVideoSelected}
+          onCropsSaved={(saved) => {
+            setCropOverrides((prev) => ({ ...prev, ...saved }))
+          }}
+        />
 
         <div
           ref={emblaRef}
@@ -382,11 +408,20 @@ export function ImageGallery({
             {images.map((image, i) => {
               const isSelected = i === selectedIndex
               const slideSrc = previewUrls[i] || heroUrls[i]
+              const crop = cropForImage(image)
               return (
                 <div
                   key={image.id || `hero-${i}-${image.url}`}
                   className="relative h-full min-w-0 shrink-0 grow-0 basis-full backface-hidden transform-gpu"
-                  style={listingPhotoBackdropStyle(slideSrc, compactMobile ? "contain" : "cover")}
+                  style={listingPhotoBackdropStyle(
+                    slideSrc,
+                    crop
+                      ? listingPdpCropCssFit(crop)
+                      : compactMobile
+                        ? "contain"
+                        : "cover",
+                    crop ? listingPdpCropObjectPosition(crop) : undefined,
+                  )}
                   aria-hidden={!isSelected}
                 >
                   <ListingGalleryPhoto
@@ -397,6 +432,7 @@ export function ImageGallery({
                     priority={i === 0 && selectedIndex === 0}
                     fetchPriority={isSelected ? "high" : "auto"}
                     loading="eager"
+                    crop={crop}
                     sizes={LISTING_PDP_HERO_IMAGE_SIZES}
                     onLoaded={({ naturalWidth, naturalHeight }) => {
                       const ratio = naturalWidth / naturalHeight
