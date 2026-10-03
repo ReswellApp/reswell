@@ -1,4 +1,4 @@
-import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import type { MessagePolicyReasonCode } from "./fraud-reason-codes.ts"
 
 /** Returned as `result.error` when DM text matched a marketplace messaging policy rule. */
 export const MESSAGE_BLOCKED_POLICY_ERROR = "messages_policy_not_allowed" as const

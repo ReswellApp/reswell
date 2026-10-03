@@ -24,6 +24,10 @@ import {
   sendMarketplaceListingMessage,
 } from '@/app/actions/messages'
 import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client'
+import {
+  isAccountRestrictedSendResult,
+  sendRestrictionMessageFromResult,
+} from '@/lib/messages/send-restriction-client'
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listing-image-display'
@@ -87,6 +91,7 @@ export function MessageSellerDialog({
     content: string
     reasonCode: MessagePolicyReasonCode
   } | null>(null)
+  const [sendLockedMessage, setSendLockedMessage] = useState<string | null>(null)
   const [mediaDraftUi, setMediaDraftUi] = useState<ReactNode>(null)
   const handleMediaDraftUiChange = useCallback((node: ReactNode) => {
     setMediaDraftUi(node)
@@ -181,6 +186,12 @@ export function MessageSellerDialog({
           })
 
       if ('error' in result) {
+        if (isAccountRestrictedSendResult(result)) {
+          const locked = sendRestrictionMessageFromResult(result) ?? result.error
+          setSendLockedMessage(locked)
+          toast.error(locked)
+          return
+        }
         const policyReason = getPolicyBlockFromSendResult(result)
         if (policyReason) {
           setBlockedPolicyNotice({ content: trimmed, reasonCode: policyReason })
@@ -332,6 +343,11 @@ export function MessageSellerDialog({
           ) : null}
         </div>
 
+        {sendLockedMessage ? (
+          <div className="shrink-0 border-t border-border/60 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+            <p className="text-sm leading-relaxed text-muted-foreground">{sendLockedMessage}</p>
+          </div>
+        ) : (
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -390,6 +406,10 @@ export function MessageSellerDialog({
                   setBlockedPolicyNotice({ content: originalContent, reasonCode })
                   setNewMessage('')
                 }}
+                onRestricted={(message) => {
+                  setSendLockedMessage(message)
+                  toast.error(message)
+                }}
                 onDraftUiChange={handleMediaDraftUiChange}
                 className="mb-0 text-foreground hover:bg-transparent"
               />
@@ -407,6 +427,7 @@ export function MessageSellerDialog({
             Send message
           </Button>
         </form>
+        )}
         </DialogContent>
       </Dialog>
       <MessageMediaImageLightbox

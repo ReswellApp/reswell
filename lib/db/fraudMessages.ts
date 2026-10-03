@@ -91,7 +91,7 @@ export async function countPhishingFraudMessagesForSender(
     .from("fraud_messages")
     .select("id", { count: "exact", head: true })
     .eq("sender_id", senderId)
-    .eq("reason_code", "phishing_like")
+    .or("reason_code.eq.phishing_like,llm_review_reason_code.eq.phishing_like")
     .in("llm_review_status", [...BLOCKING_FRAUD_REVIEW_STATUSES])
 
   if (error) {
@@ -100,6 +100,32 @@ export async function countPhishingFraudMessagesForSender(
   }
 
   return count ?? 0
+}
+
+/** Recipients this sender tried to DM with a blocked fraud attempt in the window. */
+export async function listDistinctFraudRecipientIdsSince(
+  supabase: SupabaseClient,
+  senderId: string,
+  sinceIso: string,
+): Promise<string[] | null> {
+  const { data, error } = await supabase
+    .from("fraud_messages")
+    .select("recipient_id")
+    .eq("sender_id", senderId)
+    .gte("created_at", sinceIso)
+
+  if (error) {
+    console.error("[listDistinctFraudRecipientIdsSince]", error.message)
+    return null
+  }
+
+  const ids = new Set<string>()
+  for (const row of data ?? []) {
+    if (typeof row.recipient_id === "string" && row.recipient_id.length > 0) {
+      ids.add(row.recipient_id)
+    }
+  }
+  return [...ids]
 }
 
 export interface PendingFraudMessageReviewRow {
