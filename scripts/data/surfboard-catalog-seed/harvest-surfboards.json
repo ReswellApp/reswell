@@ -1,0 +1,73 @@
+{
+  "generated_for": "Harvest Surfboards official named standup catalog",
+  "source": "https://www.harvestsurfboards.com/shapes (official Squarespace Shapes collection — excludes stock one-offs, sized SKUs, and custom enquiry)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "harvest-surfboards",
+      "name": "Harvest Surfboards",
+      "website_url": "https://www.harvestsurfboards.com/",
+      "location_label": "Gold Coast / Tweed Valley, Australia",
+      "founder_name": "Jack Knight",
+      "lead_shaper_name": "Jack Knight",
+      "short_description": "Handcrafted custom surfboards by Jack Knight and his son Aaron in the Gold Coast / Tweed Valley — mid-lengths, twins, slot-channel shortboards and logs refined over decades of shaping.",
+      "logo_url": "https://images.squarespace-cdn.com/content/60e4066569833c537d528980/6bc0037a-8874-4d4d-93f7-ce6b5a3d8157/Harvest-2024.png",
+      "models": [
+        {
+          "name": "The White Knight",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/f7ac357d-1ffd-4e27-b387-bca3209ca2ac/IMG_9054.jpeg?format=jpg",
+          "description": "The White Knight was born from a collaboration between Jack Knight and long-time friend and lifelong surfer Mark Atkinson. It was originally designed as a mid-length for surfers who still wanted to surf with performance, but appreciated the extra paddle power, glide and forgiveness that comes with a little more length and volume.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin Keel Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/1667255068501-OOOCAR1RS8C61HEHTMPT/IMG_5728.JPG?format=jpg",
+          "description": "This board is our take on the traditional fish — fast, responsive, and built to draw long clean lines. With a low rocker, forward foam, and the wide point pushed under the chest, it paddles easy and gets in early.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flow Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/1678760021117-3Q9X468IEXTQJTATSWWS/IMG_6097+2.JPG?format=jpg",
+          "description": "The Flow Twin was born from a late 70s Fluid Foils twin fin that Jack shaped decades ago. A board that recently made its way back to the shaping bay and reignited something special. With its classic outline, low rocker, flatter deck and fuller rails, it’s built for speed and flow.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Slot Channel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/79f2faee-e15a-455c-ac1e-d0dff2392346/IMG_0731.jpeg?format=jpg",
+          "description": "The Slot Channel Swallow is a performance shortboard that Jack has been shaping and refining for over two decades. It’s designed for surfers chasing speed, drive, and control in a board that can handle everything from playful points to punchier beach breaks.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Freeline Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/bd2a13a9-41c7-4531-8288-ea6532267298/IMG_5821.jpeg?format=jpg",
+          "description": "The Freeline Twin is a high-performance twin-fin Jack has been refining since 2017 — originally built for a few locals chasing that fast, skatey twin-fin feeling in a more responsive, everyday shortboard shape.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "M4 Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/b28a63a0-0618-4bd7-a9c6-dcc2d3390ac6/IMG_3551.jpeg?format=jpg",
+          "description": "The M4 Twin is a twin-fin with forward drive and a smooth feel — a reliable everyday board with just enough edge to push when the wave allows. The wide point is set 4” forward for early entry and flow, paired with a rolled deck and lower rails that blend into a sharp edge through the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "JPI Single Fin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/e7ff587c-17a2-4dab-a20c-a4be48dc51df/IMG_5694.jpeg?format=jpg",
+          "description": "In 1976, Jack was shaping boards out of Shane’s factory in Brookvale when Jim Pollard walked in with something new — a full-length, curved channel bottom that followed the rail line. The current JPI Single Fin is inspired by those original shapes, but updated with a few modern tweaks.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wanderer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/3aa00671-7052-4e97-a7b9-1ae2b6ce27ab/IMG_2907.jpeg?format=jpg",
+          "description": "The Wanderer is Jack’s take on a modern mid-length — designed for surfers chasing something cruisey and reliable with just enough performance to keep it lively. It blends the easy paddle and glide of a mini mal with a more refined outline, keeping the wide point forward and drawing into a pulled-in nose for smoother entry and flow.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moon Dust",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60e4066569833c537d528980/1633988812933-HOV56Z902YPCWE3NVF7D/IMG_6414.jpg?format=jpg",
+          "description": "The Moon Dust draws heavily from classic 1960s log templates, but with a few key adjustments to make it more versatile and responsive. The wide point is pulled back to allow better pivot and control off the tail, while a tighter nose helps with lift and placement during noserides.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
