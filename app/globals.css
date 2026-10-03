@@ -776,6 +776,10 @@ html[data-reswell-scroll-lock] body {
   max-height: min(92vh, 56rem);
   max-height: min(92dvh, 56rem);
   max-height: min(92svh, 56rem);
+  /* Vertical page scroll must win when the finger starts on the photo.
+     Meta's in-app browser ignores this; the gallery also skips Embla's
+     non-passive touch listener there. */
+  touch-action: pan-y pinch-zoom;
 }
 
 .listing-pdp-hero img:not(.listing-pdp-seller-crop),

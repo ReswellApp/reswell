@@ -1,6 +1,16 @@
 "use client"
 
-import { type CSSProperties, type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import {
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { preload } from "react-dom"
 import dynamic from "next/dynamic"
 import useEmblaCarousel from "embla-carousel-react"
@@ -27,9 +37,11 @@ import {
   listingPdpCropObjectPosition,
   type ListingPdpCrop,
 } from "@/lib/utils/listing-pdp-crop"
+import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
+import { isInAppBrowserClient } from "@/lib/utils/is-in-app-browser"
 
 function preloadListingImageLightbox() {
   return import("@/components/features/listings/listing-image-lightbox")
@@ -108,24 +120,80 @@ export function ImageGallery({
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressHeroClickRef = useRef(false)
   const thumbRowRef = useRef<HTMLDivElement>(null)
+  const [viewportNode, setViewportNode] = useState<HTMLElement | null>(null)
 
   const hasVideo = Boolean(video?.url?.trim())
   const videoIndex = hasVideo ? images.length : -1
   const slideCount = images.length + (hasVideo ? 1 : 0)
   const canSwipe = slideCount > 1
+  // Meta's in-app browser ignores touch-action. Embla's non-passive touchmove
+  // then freezes the page because the hero covers almost the whole screen.
+  const blockEmblaTouchDrag = isInAppBrowserClient()
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: canSwipe,
     align: "start",
     duration: 22,
     dragThreshold: 8,
-    // Native video controls live on the <video> node — do not start a swipe there.
-    watchDrag: (_api, event) => {
-      if (!canSwipe) return false
-      const target = event.target
-      if (target instanceof Element && target.closest("video")) return false
-      return true
-    },
+    // Boolean false — a callback that returns false still installs the listener.
+    watchDrag: blockEmblaTouchDrag
+      ? false
+      : (_api, event) => {
+          if (!canSwipe) return false
+          const target = event.target
+          if (target instanceof Element && target.closest("video")) return false
+          return true
+        },
   })
+  const setGalleryViewport = useCallback(
+    (node: HTMLElement | null) => {
+      setViewportNode(node)
+      emblaRef(node)
+    },
+    [emblaRef],
+  )
+
+  const selectedIndexRef = useRef(selectedIndex)
+  selectedIndexRef.current = selectedIndex
+  const swipeTo = useRef<(direction: -1 | 1) => void>(() => {})
+  swipeTo.current = (direction) => {
+    suppressHeroClickRef.current = true
+    if (emblaApi && canSwipe) {
+      if (direction > 0) emblaApi.scrollNext()
+      else emblaApi.scrollPrev()
+      return
+    }
+    const prev = selectedIndexRef.current
+    const next =
+      direction > 0 ? (prev === slideCount - 1 ? 0 : prev + 1) : prev === 0 ? slideCount - 1 : prev - 1
+    setSelectedIndex(next)
+    setFrameIndex(next)
+  }
+  useListingGallerySwipe(
+    blockEmblaTouchDrag,
+    viewportNode,
+    (direction) => {
+      swipeTo.current(direction)
+    },
+    () => {
+      suppressHeroClickRef.current = true
+    },
+    () => {
+      suppressHeroClickRef.current = false
+    },
+  )
+
+  // Embla stores the first options object. Re-apply after hydration so a
+  // server render (no user agent) cannot leave the blocking listener attached.
+  useLayoutEffect(() => {
+    if (!emblaApi || !blockEmblaTouchDrag) return
+    emblaApi.reInit({
+      loop: canSwipe,
+      align: "start",
+      duration: 22,
+      dragThreshold: 8,
+      watchDrag: false,
+    })
+  }, [emblaApi, blockEmblaTouchDrag, canSwipe])
 
   const isVideoSelected = hasVideo && selectedIndex === videoIndex
   const isVideoFrame = hasVideo && frameIndex === videoIndex
@@ -376,9 +444,9 @@ export function ImageGallery({
         />
 
         <div
-          ref={emblaRef}
+          ref={setGalleryViewport}
           className={cn(
-            "absolute inset-0 z-[1] overflow-hidden overscroll-x-contain outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring",
+            "absolute inset-0 z-[1] overflow-hidden outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring [touch-action:pan-y_pinch-zoom]",
             isVideoSelected ? "cursor-default" : "cursor-zoom-in",
           )}
           role={hasVideo ? undefined : "button"}
@@ -404,7 +472,7 @@ export function ImageGallery({
             openLightbox()
           }}
         >
-          <div className="flex h-full touch-pan-y will-change-transform backface-hidden">
+          <div className="flex h-full [touch-action:pan-y_pinch-zoom]">
             {images.map((image, i) => {
               const isSelected = i === selectedIndex
               const slideSrc = previewUrls[i] || heroUrls[i]
