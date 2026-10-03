@@ -122,6 +122,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
       savedSearchLabel: sub.label,
       searchQuery: parsedCriteria.success ? (parsedCriteria.data.q?.trim() ?? "") : "",
       searchUrl: parsedCriteria.success ? savedSearchAbsoluteUrl(parsedCriteria.data) : "",
+      criteria: parsedCriteria.success ? parsedCriteria.data : null,
     })
     sent += 1
   }

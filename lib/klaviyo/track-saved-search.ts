@@ -10,6 +10,7 @@
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { boardAlertMatchFinderProperties } from "@/lib/klaviyo/board-alert-match-details"
 import { savedSearchAbsoluteUrl } from "@/lib/klaviyo/saved-search-url"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { boardSavedSearchCriteriaSummary } from "@/lib/utils/board-saved-search-browse-url"
@@ -56,6 +57,9 @@ export async function trackKlaviyoSavedSearch(
       Email_Alerts: payload.emailNotificationsEnabled,
       Section: resolveSavedSearchSection(payload.criteria),
       Alert_Kind: inferSavedSearchAlertKind(payload.criteria),
+      ...boardAlertMatchFinderProperties(payload.criteria),
+      Search_URL: savedSearchAbsoluteUrl(payload.criteria),
+      Search_Query: query,
     },
   })
 }

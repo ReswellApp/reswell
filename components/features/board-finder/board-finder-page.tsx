@@ -43,8 +43,10 @@ export function BoardFinderPage() {
   const openSignIn = useSignInGate()
 
   const [brand, setBrand] = useState("")
+  const [brandSlug, setBrandSlug] = useState("")
   const [catalogBrandId, setCatalogBrandId] = useState("")
   const [model, setModel] = useState("")
+  const [modelSlug, setModelSlug] = useState("")
   const [catalogBrandModelId, setCatalogBrandModelId] = useState("")
   const [style, setStyle] = useState(ANY)
   const [length, setLength] = useState(ANY)
@@ -74,27 +76,44 @@ export function BoardFinderPage() {
     return next
   }, [style, condition, length, volume, construction, finSystem])
 
-  const criteria = useMemo(
-    () =>
-      boardSavedSearchCriteriaFromFilters({
-        q: "",
-        brand,
-        model,
-        catalogBrandId,
-        catalogBrandModelId,
-        boardLength: "",
-        boardWidthInches: "",
-        boardThicknessInches: "",
-        boardVolumeL: "",
-        type: "all",
-        condition: "all",
-        sort: "",
-        minPrice,
-        maxPrice,
-        facets,
-      }),
-    [brand, model, catalogBrandId, catalogBrandModelId, minPrice, maxPrice, facets],
-  )
+  const criteria = useMemo(() => {
+    const snapshot = boardSavedSearchCriteriaFromFilters({
+      q: "",
+      brand,
+      model,
+      catalogBrandId,
+      catalogBrandModelId,
+      boardLength: "",
+      boardWidthInches: "",
+      boardThicknessInches: "",
+      boardVolumeL: "",
+      type: "all",
+      condition: "all",
+      sort: "",
+      minPrice,
+      maxPrice,
+      facets,
+    })
+    // Keep alertKind as a filtered search so size, style, and price stay on the
+    // browse link. Brand and model ids still drive the match.
+    return {
+      ...snapshot,
+      alertKind: "search" as const,
+      source: "board-finder" as const,
+      ...(brandSlug ? { brandSlug } : {}),
+      ...(modelSlug ? { modelSlug } : {}),
+    }
+  }, [
+    brand,
+    brandSlug,
+    model,
+    modelSlug,
+    catalogBrandId,
+    catalogBrandModelId,
+    minPrice,
+    maxPrice,
+    facets,
+  ])
 
   const canSave = boardSavedCriteriaHasSpecificity(criteria)
   const summary = boardSavedSearchCriteriaSummary(criteria)
@@ -219,24 +238,31 @@ export function BoardFinderPage() {
             canSave={canSave}
             onBrandTextChange={(next) => {
               setBrand(next)
+              setBrandSlug("")
               setCatalogBrandId("")
+              setModelSlug("")
               setCatalogBrandModelId("")
             }}
             onCatalogBrandPicked={(b) => {
               setBrand(b.name)
+              setBrandSlug(b.slug)
               setCatalogBrandId(b.id)
+              setModelSlug("")
               setCatalogBrandModelId("")
             }}
             onModelTextChange={(next) => {
               setModel(next)
+              setModelSlug("")
               setCatalogBrandModelId("")
             }}
             onCatalogModelPicked={(row) => {
               setModel(row.name)
+              setModelSlug(row.catalogSlug)
               setCatalogBrandModelId(row.id)
               if (row.brandId) {
                 setCatalogBrandId(row.brandId)
                 setBrand(row.brandName)
+                setBrandSlug(row.brandSlug)
               }
             }}
             onStyleChange={setStyle}
