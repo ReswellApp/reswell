@@ -5,8 +5,6 @@ import { createPortal } from "react-dom"
 import { Crop } from "lucide-react"
 import { ListingPdpCropEditor } from "@/components/features/listings/listing-pdp-crop-editor"
 import { useListingViewer } from "@/components/features/listings/listing-viewer-provider"
-import { loadListingPrivateChrome } from "@/lib/actions/listing-private-chrome"
-import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import {
   listingFilmImageSrcFromRow,
   listingTileImageSrcFromRow,
@@ -18,6 +16,7 @@ import {
 import { cn } from "@/lib/utils"
 import {
   LISTING_PDP_CROP_OPEN_EVENT,
+  listingPdpCropActorIsOwner,
   listingPdpCropFromImageRow,
   type ListingPdpCrop,
 } from "@/lib/utils/listing-pdp-crop"
@@ -47,29 +46,16 @@ export function ListingPdpCropIsland({
 }: ListingPdpCropIslandProps) {
   const viewer = useListingViewer()
   const listingId = viewer?.listingId?.trim() ?? ""
-  const isOwner = Boolean(
-    viewer?.userId && viewer.sellerUserId && viewer.userId === viewer.sellerUserId,
-  )
-  const [isAdmin, setIsAdmin] = useState(false)
+  const isOwner = listingPdpCropActorIsOwner(viewer?.userId, viewer?.sellerUserId)
   const [open, setOpen] = useState(false)
   const [savedCrops, setSavedCrops] = useState<Record<string, ListingPdpCrop | null>>({})
 
   useEffect(() => {
-    if (!listingId || !viewer?.ready || isOwner || !hasSupabaseAuthCookiesClient()) return
-    let cancelled = false
-    void loadListingPrivateChrome(listingId).then((chrome) => {
-      if (!cancelled) setIsAdmin(chrome?.isAdmin === true)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [listingId, viewer?.ready, isOwner])
-
-  useEffect(() => {
+    if (!isOwner) return
     const onOpen = () => setOpen(true)
     window.addEventListener(LISTING_PDP_CROP_OPEN_EVENT, onOpen)
     return () => window.removeEventListener(LISTING_PDP_CROP_OPEN_EVENT, onOpen)
-  }, [])
+  }, [isOwner])
 
   const editorImages = useMemo(
     () =>
@@ -93,7 +79,7 @@ export function ListingPdpCropIsland({
     [images, savedCrops],
   )
 
-  const canEdit = Boolean(listingId && viewer?.ready && (isOwner || isAdmin))
+  const canEdit = Boolean(listingId && viewer?.ready && isOwner)
   if (!canEdit || editorImages.length === 0) return null
 
   return (
