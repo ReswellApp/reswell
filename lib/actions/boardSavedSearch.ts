@@ -11,6 +11,7 @@ import {
   insertBoardSavedSearch,
   type BoardSavedSearchRow,
 } from "@/lib/db/savedSearches"
+import { savedSearchMatchesCriteria } from "@/lib/utils/saved-search-criteria-equal"
 import {
   BOARD_SAVED_SEARCHES_MAX,
   createBoardSavedSearchActionSchema,
@@ -88,6 +89,25 @@ export async function createBoardSavedSearchAction(raw: unknown) {
     return { error: "Choose at least one filter before saving." as const }
   }
 
+  const existing = await fetchBoardSavedSearchesForUser(
+    supabase,
+    user.id,
+    BOARD_SAVED_SEARCHES_MAX,
+  )
+  if (!existing.error) {
+    const already = existing.data.find((row) =>
+      savedSearchMatchesCriteria([row], criteria),
+    )
+    if (already) {
+      return {
+        success: true as const,
+        id: already.id,
+        emailNotificationsEnabled: already.email_notifications_enabled,
+        alreadySaved: true as const,
+      }
+    }
+  }
+
   const { count, error: countError } = await countBoardSavedSearchesForUser(supabase, user.id)
   if (countError) {
     return { error: "Could not save search. Try again." as const }
@@ -163,6 +183,7 @@ export async function deleteBoardSavedSearchAction(raw: unknown) {
 
   revalidatePath("/board-finder")
   revalidatePath("/boards")
+  revalidatePath("/search")
 
   return { success: true as const }
 }

@@ -1,11 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Heart, Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
-import { createBoardSavedSearchAction } from "@/lib/actions/boardSavedSearch"
+import {
+  createBoardSavedSearchAction,
+  listBoardSavedSearchesAction,
+} from "@/lib/actions/boardSavedSearch"
+import { savedSearchMatchesCriteria } from "@/lib/utils/saved-search-criteria-equal"
 import {
   boardSavedCriteriaCanSaveFromEmptyState,
   type BoardSavedSearchCriteria,
@@ -56,6 +60,7 @@ export function BoardsNoResultsSaveSearch({
   className,
   clearHref,
   variant = "empty",
+  initiallySaved = false,
 }: {
   criteria: BoardSavedSearchCriteria
   isLoggedIn: boolean
@@ -64,11 +69,29 @@ export function BoardsNoResultsSaveSearch({
   clearHref?: string
   /** Large empty-state card, or a slim bar that sits under matching listings. */
   variant?: "empty" | "compact"
+  /** True when this shopper already saved the same search. */
+  initiallySaved?: boolean
 }) {
   const openSignIn = useSignInGate()
   const { toast } = useToast()
   const [pending, setPending] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [saved, setSaved] = useState(initiallySaved)
+
+  useEffect(() => {
+    setSaved(initiallySaved)
+  }, [initiallySaved])
+
+  useEffect(() => {
+    if (!isLoggedIn || initiallySaved) return
+    let cancelled = false
+    void listBoardSavedSearchesAction().then((res) => {
+      if (cancelled || "error" in res) return
+      if (savedSearchMatchesCriteria(res.data, criteria)) setSaved(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [criteria, initiallySaved, isLoggedIn])
   const canSave = boardSavedCriteriaCanSaveFromEmptyState(criteria)
   const section = criteria.anySection
     ? "any"
@@ -151,9 +174,13 @@ export function BoardsNoResultsSaveSearch({
                 : "mx-auto mt-3 max-w-lg text-sm sm:text-base",
             )}
           >
-            {compact
-              ? `Save this search and we'll email you when a new matching ${noun} is listed on Reswell.`
-              : `Save this search and we'll email you when a matching ${noun} is listed on Reswell.`}
+            {saved
+              ? compact
+                ? `This search is saved. We'll email you when a new matching ${noun} is listed on Reswell.`
+                : `This search is saved. We'll email you when a matching ${noun} is listed on Reswell.`
+              : compact
+                ? `Save this search and we'll email you when a new matching ${noun} is listed on Reswell.`
+                : `Save this search and we'll email you when a matching ${noun} is listed on Reswell.`}
           </p>
         </div>
         <Button
