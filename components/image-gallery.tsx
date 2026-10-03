@@ -41,7 +41,7 @@ import { useListingGallerySwipe } from "@/components/features/listings/hooks/use
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
-import { listingGalleryBlocksEmblaDragNow } from "@/lib/utils/listing-gallery-touch"
+import { isInAppBrowserClient } from "@/lib/utils/is-in-app-browser"
 
 function preloadListingImageLightbox() {
   return import("@/components/features/listings/listing-image-lightbox")
@@ -126,10 +126,9 @@ export function ImageGallery({
   const videoIndex = hasVideo ? images.length : -1
   const slideCount = images.length + (hasVideo ? 1 : 0)
   const canSwipe = slideCount > 1
-  // Embla's non-passive touchmove calls preventDefault() once a swipe is
-  // slightly sideways. On a phone the hero covers the screen, so that locks
-  // the tab. A passive flick changes photos instead.
-  const blockEmblaTouchDrag = listingGalleryBlocksEmblaDragNow()
+  // Meta's in-app browser ignores touch-action. Embla's non-passive touchmove
+  // then freezes the page because the hero covers almost the whole screen.
+  const blockEmblaTouchDrag = isInAppBrowserClient()
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: canSwipe,
     align: "start",
@@ -184,8 +183,7 @@ export function ImageGallery({
   )
 
   // Embla stores the first options object. Re-apply after hydration so a
-  // server render (no pointer, no user agent) cannot leave the blocking
-  // listener attached.
+  // server render (no user agent) cannot leave the blocking listener attached.
   useLayoutEffect(() => {
     if (!emblaApi || !blockEmblaTouchDrag) return
     emblaApi.reInit({

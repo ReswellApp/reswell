@@ -29,7 +29,8 @@ import {
 } from "@/components/features/listings/listing-gallery-photo"
 import { withListingMediaPdpVariant } from "@/lib/listing-media-proxy-url"
 import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
-import { listingGalleryShouldBlockEmblaDrag } from "@/lib/utils/listing-gallery-touch"
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
+import { isInAppBrowser } from "@/lib/utils/is-in-app-browser"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
@@ -352,17 +353,21 @@ export function ListingImageLightbox({
   const isZoomedOutRef = useRef(true)
   const coarsePointer = usePrefersCoarsePointer()
   const isMaxMd = useMaxMd()
+  // Radix's modal lock (react-remove-scroll) calls preventDefault() on the
+  // first touchmove inside this full-screen dialog. On a phone that freezes
+  // the whole screen the moment a swipe starts.
+  useBodyScrollLock(open)
 
   const count = proxiedUrls.length
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
   isZoomedOutRef.current = isZoomedOut
   const useSwipeCarousel = count > 1
-  // Same non-passive Embla listener as the hero. On a phone it locks the tab
-  // while swiping an enlarged photo. A passive flick changes photos instead.
-  const blockEmblaTouchDrag = listingGalleryShouldBlockEmblaDrag(
-    typeof navigator === "undefined" ? undefined : navigator.userAgent,
-    coarsePointer,
-  )
+  // Embla's drag listener calls preventDefault() on a sideways swipe. Inside
+  // this full-screen dialog that locks the phone. A passive flick changes
+  // photos instead. Mouse drag on a fine pointer stays with Embla.
+  const blockLightboxTouchDrag =
+    coarsePointer ||
+    (typeof navigator !== "undefined" && isInAppBrowser(navigator.userAgent))
   const [viewportNode, setViewportNode] = useState<HTMLElement | null>(null)
 
   /** Freeze Embla startIndex on open. Passing the live index re-inits mid-swipe and kills drag. */
@@ -379,7 +384,9 @@ export function ListingImageLightbox({
     align: "start",
     duration: 22,
     dragThreshold: 8,
-    watchDrag: blockEmblaTouchDrag
+    // Boolean false skips the non-passive touchmove. A callback that returns
+    // false still installs it, which is what freezes the lightbox.
+    watchDrag: blockLightboxTouchDrag
       ? false
       : useSwipeCarousel
         ? () => isZoomedOutRef.current
@@ -399,7 +406,7 @@ export function ListingImageLightbox({
     else emblaApi.scrollPrev()
   }
   useListingGallerySwipe(
-    blockEmblaTouchDrag && open && isZoomedOut,
+    blockLightboxTouchDrag && open && isZoomedOut,
     viewportNode,
     (direction) => {
       swipeTo.current(direction)
@@ -536,7 +543,7 @@ export function ListingImageLightbox({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} modal={false} onOpenChange={handleOpenChange}>
       <DialogPortal>
         <DialogOverlay
           className={cn(
@@ -552,6 +559,7 @@ export function ListingImageLightbox({
           onInteractOutside={(e) => {
             if (!isZoomedOut) e.preventDefault()
           }}
+          onFocusOutside={(event) => event.preventDefault()}
           className={cn(
             "pointer-events-auto fixed inset-x-0 top-0 z-[70] flex h-dvh max-h-dvh min-h-0 min-w-0 flex-col overflow-hidden outline-none",
             LIGHTBOX_SURFACE_CLASS,
@@ -565,8 +573,8 @@ export function ListingImageLightbox({
           <div className="relative min-h-0 min-w-0 flex-1">
             {count > 0 ? (
               useSwipeCarousel ? (
-                <div ref={setLightboxViewport} className="absolute inset-0 overflow-hidden overscroll-x-contain touch-pan-y">
-                  <div className="flex h-full touch-pan-y will-change-transform">
+                <div ref={setLightboxViewport} className="absolute inset-0 overflow-hidden overscroll-x-contain">
+                  <div className="flex h-full will-change-transform">
                     {proxiedUrls.map((url, slideIndex) => (
                       <div
                         key={`${url}-${slideIndex}`}
