@@ -9,7 +9,7 @@ import { listingFilmImageSrcFromRow, listingTileImageSrcFromRow } from "@/lib/li
 import {
   DEFAULT_LISTING_HERO_ASPECT,
   LISTING_PDP_HERO_IMAGE_SIZES,
-  listingMobileHeroFrameVars,
+  listingHeroFrameVars,
 } from "@/lib/listing-hero-frame"
 import {
   proxiedListingImageSrc,
@@ -316,7 +316,7 @@ export function ImageGallery({
         />
       ) : null}
 
-      {/* Main Image — tablet/desktop: stable 3:4; phone: edge-to-edge, natural ratio, height-capped */}
+      {/* Main image — natural ratio, contain (never 3:4 cover-crop the listing photo) */}
       <div
         className={cn(
           compactMobile &&
@@ -327,12 +327,12 @@ export function ImageGallery({
           className={cn(
             "relative overflow-hidden bg-transparent select-none",
             compactMobile
-              ? "listing-pdp-mobile-hero max-md:rounded-none md:aspect-[3/4] md:max-h-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
+              ? "listing-pdp-hero max-md:rounded-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
               : "w-full rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
           )}
           style={
             compactMobile
-              ? (listingMobileHeroFrameVars(mobileHeroAspectRatio) as CSSProperties)
+              ? (listingHeroFrameVars(mobileHeroAspectRatio) as CSSProperties)
               : { paddingBottom: "133.33%" }
           }
         >
@@ -386,12 +386,13 @@ export function ImageGallery({
                 <div
                   key={image.id || `hero-${i}-${image.url}`}
                   className="relative h-full min-w-0 shrink-0 grow-0 basis-full backface-hidden transform-gpu"
-                  style={listingPhotoBackdropStyle(slideSrc)}
+                  style={listingPhotoBackdropStyle(slideSrc, compactMobile ? "contain" : "cover")}
                   aria-hidden={!isSelected}
                 >
                   <ListingGalleryPhoto
                     src={heroUrls[i] || "/placeholder.svg"}
                     previewSrc={previewUrls[i]}
+                    objectFit={compactMobile ? "contain" : "cover"}
                     alt={`${title} - Image ${i + 1}`}
                     priority={i === 0 && selectedIndex === 0}
                     fetchPriority={isSelected ? "high" : "auto"}

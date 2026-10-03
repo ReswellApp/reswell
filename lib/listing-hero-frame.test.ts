@@ -4,6 +4,7 @@ import {
   DEFAULT_LISTING_HERO_ASPECT,
   LISTING_PDP_HERO_IMAGE_SIZES,
   listingHeroAspectCss,
+  listingHeroFrameVars,
   listingMobileHeroFrameVars,
 } from "./listing-hero-frame.ts"
 
@@ -20,11 +21,12 @@ describe("listingHeroAspectCss", () => {
   })
 })
 
-describe("listingMobileHeroFrameVars", () => {
-  it("sets --listing-hero-aspect for the mobile hero frame", () => {
-    assert.deepEqual(listingMobileHeroFrameVars(2 / 3), {
+describe("listingHeroFrameVars", () => {
+  it("sets --listing-hero-aspect for the listing hero frame", () => {
+    assert.deepEqual(listingHeroFrameVars(2 / 3), {
       "--listing-hero-aspect": "667 / 1000",
     })
+    assert.deepEqual(listingMobileHeroFrameVars(2 / 3), listingHeroFrameVars(2 / 3))
   })
 })
 
