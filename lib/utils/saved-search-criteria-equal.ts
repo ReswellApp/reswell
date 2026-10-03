@@ -89,3 +89,11 @@ export function savedSearchMatchesCriteria(
 ): boolean {
   return saved.some((row) => boardSavedCriteriaEquals(row.criteria, criteria))
 }
+
+/** Id of the saved row that matches `criteria`, so the same search can be removed. */
+export function matchingSavedSearchId(
+  saved: readonly { id: string; criteria: BoardSavedSearchCriteria }[],
+  criteria: BoardSavedSearchCriteria,
+): string | null {
+  return saved.find((row) => boardSavedCriteriaEquals(row.criteria, criteria))?.id ?? null
+}

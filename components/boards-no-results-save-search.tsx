@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   createBoardSavedSearchAction,
+  deleteBoardSavedSearchAction,
   listBoardSavedSearchesAction,
 } from "@/lib/actions/boardSavedSearch"
-import { savedSearchMatchesCriteria } from "@/lib/utils/saved-search-criteria-equal"
+import { matchingSavedSearchId } from "@/lib/utils/saved-search-criteria-equal"
 import {
   boardSavedCriteriaCanSaveFromEmptyState,
   type BoardSavedSearchCriteria,
@@ -60,7 +61,7 @@ export function BoardsNoResultsSaveSearch({
   className,
   clearHref,
   variant = "empty",
-  initiallySaved = false,
+  initialSavedSearchId = null,
 }: {
   criteria: BoardSavedSearchCriteria
   isLoggedIn: boolean
@@ -69,29 +70,32 @@ export function BoardsNoResultsSaveSearch({
   clearHref?: string
   /** Large empty-state card, or a slim bar that sits under matching listings. */
   variant?: "empty" | "compact"
-  /** True when this shopper already saved the same search. */
-  initiallySaved?: boolean
+  /** Saved-search row for this criteria, when the shopper already saved it. */
+  initialSavedSearchId?: string | null
 }) {
   const openSignIn = useSignInGate()
   const { toast } = useToast()
   const [pending, setPending] = useState(false)
-  const [saved, setSaved] = useState(initiallySaved)
+  const [savedSearchId, setSavedSearchId] = useState<string | null>(initialSavedSearchId)
+  const [hovering, setHovering] = useState(false)
+  const saved = Boolean(savedSearchId)
 
   useEffect(() => {
-    setSaved(initiallySaved)
-  }, [initiallySaved])
+    setSavedSearchId(initialSavedSearchId)
+  }, [initialSavedSearchId])
 
   useEffect(() => {
-    if (!isLoggedIn || initiallySaved) return
+    if (!isLoggedIn || initialSavedSearchId) return
     let cancelled = false
     void listBoardSavedSearchesAction().then((res) => {
       if (cancelled || "error" in res) return
-      if (savedSearchMatchesCriteria(res.data, criteria)) setSaved(true)
+      const id = matchingSavedSearchId(res.data, criteria)
+      if (id) setSavedSearchId(id)
     })
     return () => {
       cancelled = true
     }
-  }, [criteria, initiallySaved, isLoggedIn])
+  }, [criteria, initialSavedSearchId, isLoggedIn])
   const canSave = boardSavedCriteriaCanSaveFromEmptyState(criteria)
   const section = criteria.anySection
     ? "any"
@@ -135,10 +139,41 @@ export function BoardsNoResultsSaveSearch({
       return
     }
 
-    setSaved(true)
+    setSavedSearchId(res.id)
     toast({
       title: "Search saved",
       description: `We'll email you when a matching ${noun} is listed on Reswell.`,
+    })
+  }
+
+  async function handleUnsave() {
+    if (!savedSearchId) return
+    if (!isLoggedIn) {
+      openSignIn(undefined, { skipSessionProbe: true })
+      return
+    }
+
+    setPending(true)
+    const res = await deleteBoardSavedSearchAction({ id: savedSearchId })
+    setPending(false)
+
+    if ("error" in res) {
+      if (res.error === "Sign in to manage saved searches.") {
+        openSignIn()
+        return
+      }
+      toast({
+        title: "Could not unsave",
+        description: res.error,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setSavedSearchId(null)
+    toast({
+      title: "Search unsaved",
+      description: "We won't email you about new matches for this search.",
     })
   }
 
@@ -191,19 +226,31 @@ export function BoardsNoResultsSaveSearch({
             "shrink-0 rounded-full bg-background font-medium shadow-none",
             compact ? "h-8 px-3.5" : "mt-6 px-5",
           )}
-          disabled={pending || saved}
-          onClick={() => void handleSave()}
+          disabled={pending}
+          aria-pressed={saved}
+          onClick={() => void (saved ? handleUnsave() : handleSave())}
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+          onFocus={() => setHovering(true)}
+          onBlur={() => setHovering(false)}
         >
           {pending ? (
             <>
               <Loader2 className={cn("animate-spin", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
-              Saving…
+              {saved ? "Removing…" : "Saving…"}
             </>
           ) : saved ? (
-            <>
-              <Check className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
-              Search Saved
-            </>
+            hovering ? (
+              <>
+                <Heart className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+                Unsave
+              </>
+            ) : (
+              <>
+                <Check className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+                Search Saved
+              </>
+            )
           ) : (
             <>
               <Heart className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
