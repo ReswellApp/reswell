@@ -8,6 +8,7 @@ type ListingViewerValue = {
   userId: string | null
   ready: boolean
   sellerUserId: string | null
+  listingId: string | null
 }
 
 const ListingViewerContext = createContext<ListingViewerValue | null>(null)
@@ -31,9 +32,11 @@ function browserHasSession(): Promise<boolean> {
  */
 export function ListingViewerProvider({
   sellerUserId,
+  listingId = null,
   children,
 }: {
   sellerUserId: string | null
+  listingId?: string | null
   children: ReactNode
 }) {
   const [userId, setUserId] = useState<string | null>(null)
@@ -58,7 +61,7 @@ export function ListingViewerProvider({
   }, [])
 
   return (
-    <ListingViewerContext.Provider value={{ userId, ready, sellerUserId }}>
+    <ListingViewerContext.Provider value={{ userId, ready, sellerUserId, listingId }}>
       {children}
     </ListingViewerContext.Provider>
   )

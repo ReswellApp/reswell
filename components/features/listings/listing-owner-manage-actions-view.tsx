@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Sparkles } from "lucide-react"
+import { Crop, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EndListingButton } from "@/components/end-listing-button"
 import { ListingVacationModeButton } from "@/components/features/sell/listing-vacation-mode-button"
@@ -11,6 +11,7 @@ import { SellerOfferToCartHolders } from "@/components/features/listings/seller-
 import { isPeerListingSection, peerListingEditHref } from "@/lib/peer-listing-sections"
 import type { ListingEnrichmentGap } from "@/lib/sell-flow/listing-enrichment"
 import { cn } from "@/lib/utils"
+import { openListingPdpCropEditor } from "@/lib/utils/listing-pdp-crop"
 
 export interface ListingOwnerManageActionsViewProps {
   listingId: string
@@ -81,6 +82,17 @@ export function ListingOwnerManageActionsView({
               {isDraft ? "Continue listing" : "Edit listing"}
             </Link>
           </Button>
+          {!isSold ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full border-border/60 shadow-none"
+              onClick={() => openListingPdpCropEditor()}
+            >
+              <Crop className="size-3.5" aria-hidden />
+              Adjust photos
+            </Button>
+          ) : null}
           {showQuickPriceEdit && !isDraft ? (
             <QuickEditListingPriceDialog
               listingId={listingId}
