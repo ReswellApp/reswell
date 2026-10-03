@@ -9,6 +9,7 @@ import {
   isListingPdpCropDefault,
   listingPdpContainScale,
   listingPdpCoverScale,
+  listingPdpCropActorIsOwner,
   listingPdpCropCssFit,
   listingPdpCropFromImageRow,
   listingPdpCropNeedsPreciseLayout,
@@ -155,6 +156,20 @@ describe("clamp and gestures", () => {
     assert.ok(zoomed.top <= 0)
     assert.ok(zoomed.left + zoomed.width >= 300 - 1e-6)
     assert.ok(zoomed.top + zoomed.height >= 400 - 1e-6)
+  })
+})
+
+describe("listingPdpCropActorIsOwner", () => {
+  it("allows the crop control only when the viewer id is the listing owner", () => {
+    const ownerId = "11111111-1111-4111-8111-111111111111"
+    const otherId = "22222222-2222-4222-8222-222222222222"
+    assert.equal(listingPdpCropActorIsOwner(ownerId, ownerId), true)
+    assert.equal(listingPdpCropActorIsOwner(`  ${ownerId}  `, ownerId), true)
+    assert.equal(listingPdpCropActorIsOwner(otherId, ownerId), false)
+    assert.equal(listingPdpCropActorIsOwner(null, ownerId), false)
+    assert.equal(listingPdpCropActorIsOwner(ownerId, null), false)
+    assert.equal(listingPdpCropActorIsOwner("", ownerId), false)
+    assert.equal(listingPdpCropActorIsOwner("   ", "   "), false)
   })
 })
 

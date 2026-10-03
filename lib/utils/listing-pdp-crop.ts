@@ -266,3 +266,13 @@ export function openListingPdpCropEditor(): void {
   if (typeof window === "undefined") return
   window.dispatchEvent(new CustomEvent(LISTING_PDP_CROP_OPEN_EVENT))
 }
+
+/** Photo crop is allowed only when the signed-in user id is the listing owner. */
+export function listingPdpCropActorIsOwner(
+  actorUserId: string | null | undefined,
+  listingOwnerUserId: string | null | undefined,
+): boolean {
+  const actor = actorUserId?.trim() ?? ""
+  const owner = listingOwnerUserId?.trim() ?? ""
+  return actor.length > 0 && actor === owner
+}
