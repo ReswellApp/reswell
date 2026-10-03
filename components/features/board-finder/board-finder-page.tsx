@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { BoardFinderAtmosphere } from "@/components/features/board-finder/board-finder-atmosphere"
 import { BoardFinderForm } from "@/components/features/board-finder/board-finder-form"
-import { BoardFinderPreviewTicket } from "@/components/features/board-finder/board-finder-preview-ticket"
 import { BoardFinderSavedList } from "@/components/features/board-finder/board-finder-saved-list"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -205,19 +205,30 @@ export function BoardFinderPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
-      <header className="max-w-xl">
-        <h1 className="font-headline text-3xl font-bold tracking-tight text-[#001A4A] sm:text-4xl">
-          Board Finder
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Save up to {BOARD_SAVED_SEARCHES_MAX} searches. We’ll email you when a matching board
-          lists.
-        </p>
+    <main className="flex-1 bg-[#eef3f6]">
+      <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
+      <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-xl">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#3d6b86]">
+            Board Finder
+          </p>
+          <h1 className="mt-3 font-headline text-4xl font-semibold tracking-tight text-[#13233f] sm:text-5xl">
+            We’ll watch for it.
+          </h1>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-[#5c6d80]">
+            Save up to {BOARD_SAVED_SEARCHES_MAX} searches. When a matching board lists, we email
+            you.
+          </p>
+        </div>
+        {!savedLoading ? (
+          <p className="inline-flex w-fit items-center rounded-full bg-white px-3.5 py-1.5 text-xs tabular-nums text-[#5c6d80] ring-1 ring-[#e3eaef]">
+            {savedSearches.length} of {BOARD_SAVED_SEARCHES_MAX} watching
+          </p>
+        ) : null}
       </header>
 
-      <div className="mt-10 grid items-start gap-12 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-16">
-        <section>
+      <div className="mt-10 grid items-start gap-8 lg:mt-14 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] lg:gap-12">
+        <section className="order-2 rounded-[1.75rem] border border-[#e3eaef] bg-white px-5 py-6 sm:px-8 sm:py-8 lg:order-1">
           <BoardFinderForm
             brand={brand}
             catalogBrandId={catalogBrandId}
@@ -279,28 +290,33 @@ export function BoardFinderPage() {
           />
         </section>
 
-        <aside className="space-y-8 lg:sticky lg:top-24">
-          <BoardFinderPreviewTicket
-            title={ticketTitle}
-            detail={canSave ? summary : ""}
-            hasCriteria={canSave}
-            emailOptIn={emailOptIn}
-          />
-          <BoardFinderSavedList
-            savedSearches={savedSearches}
-            savedLoading={savedLoading}
-            deletingId={deletingId}
-            onDelete={(id) => void handleDelete(id)}
-          />
-        </aside>
+        <BoardFinderAtmosphere
+          className="order-1 lg:order-2"
+          title={ticketTitle}
+          detail={canSave ? summary : ""}
+          hasCriteria={canSave}
+          emailOptIn={emailOptIn}
+        />
       </div>
 
-      <p className="mt-14 text-sm text-muted-foreground">
+      <BoardFinderSavedList
+        className="mt-8 lg:mt-12"
+        savedSearches={savedSearches}
+        savedLoading={savedLoading}
+        deletingId={deletingId}
+        onDelete={(id) => void handleDelete(id)}
+      />
+
+      <p className="mt-10 text-sm text-[#5c6d80]">
         Already listed?{" "}
-        <Link href="/boards" className="font-medium text-[#001A4A] underline underline-offset-4">
+        <Link
+          href="/boards"
+          className="font-medium text-[#13233f] underline decoration-[#c5d0da] underline-offset-4 hover:decoration-[#13233f]"
+        >
           Shop boards
         </Link>
       </p>
+      </div>
     </main>
   )
 }
