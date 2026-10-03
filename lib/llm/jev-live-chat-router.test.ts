@@ -36,7 +36,7 @@ describe("Jev live-chat writer router", () => {
     assert.equal(called, false)
     assert.equal(route.source, "fallback")
     assert.equal(route.writer, "pro")
-    assert.equal(route.model, "google/gemini-2.5-pro")
+    assert.equal(route.model, "anthropic/claude-sonnet-4.5")
     assert.match(route.reason, /Jev router off/)
   })
 
@@ -56,7 +56,7 @@ describe("Jev live-chat writer router", () => {
 
     assert.equal(route.source, "jev")
     assert.equal(route.writer, "flash")
-    assert.equal(route.model, "google/gemini-2.5-flash")
+    assert.equal(route.model, "anthropic/claude-haiku-4.5")
   })
 
   it("does not invent a writer when Jev throws", async () => {
@@ -81,5 +81,6 @@ describe("Jev live-chat writer router", () => {
     const route = fallbackLiveChatWriterRoute("manual")
     assert.equal(route.source, "fallback")
     assert.equal(route.writer, "pro")
+    assert.equal(route.model, "anthropic/claude-sonnet-4.5")
   })
 })
