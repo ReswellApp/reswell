@@ -9,28 +9,28 @@ export function BoardFinderPreviewTicket({
   hasCriteria: boolean
   emailOptIn: boolean
 }) {
-  if (!hasCriteria) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Add a brand, size, style, or price — then save it as an alert.
-      </p>
-    )
-  }
-
   return (
-    <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        This search
+    <div className="rounded-2xl border border-white/50 bg-white/90 p-4 shadow-[0_10px_30px_-18px_rgba(11,36,48,0.55)] backdrop-blur-md sm:p-5">
+      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-[#3d6b86]">
+        {hasCriteria ? "This search" : "Waiting"}
       </p>
-      <p className="mt-1 font-headline text-xl font-semibold tracking-tight text-[#001A4A]">
-        {title}
+      <p className="mt-2 font-headline text-xl font-semibold tracking-tight text-[#13233f] sm:text-2xl">
+        {hasCriteria ? title : "Nothing set yet."}
       </p>
-      {detail && detail !== title ? (
-        <p className="mt-1 text-sm text-muted-foreground">{detail}</p>
+      <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-[#5c6d80]">
+        {hasCriteria
+          ? detail && detail !== title
+            ? detail
+            : emailOptIn
+              ? "We’ll email you when a match lists."
+              : "Saved quietly, without email."
+          : "Add a brand, size, style, or price. We’ll turn it into an alert."}
+      </p>
+      {hasCriteria && detail && detail !== title ? (
+        <p className="mt-2 text-sm text-[#5c6d80]">
+          {emailOptIn ? "We’ll email you when a match lists." : "Saved quietly, without email."}
+        </p>
       ) : null}
-      <p className="mt-2 text-sm text-muted-foreground">
-        {emailOptIn ? "Email when a match lists." : "Saved without email."}
-      </p>
     </div>
   )
 }

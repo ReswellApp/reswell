@@ -26,9 +26,11 @@ import { cn } from "@/lib/utils"
 
 const ANY = "any"
 
-const fieldLabel = "text-sm font-medium text-[#001A4A]"
-const selectTrigger = "h-11 rounded-md border-border bg-background text-[#001A4A]"
-const priceInput = "h-11 rounded-md border-border bg-background text-[#001A4A]"
+const fieldLabel = "text-[13px] font-medium tracking-tight text-[#13233f]"
+const selectTrigger =
+  "h-12 rounded-2xl border-[#d5dee8] bg-[#f7f9fb] text-[15px] text-[#13233f] shadow-none focus:ring-[#3d6b86]/25"
+const priceInput =
+  "h-12 rounded-2xl border-[#d5dee8] bg-[#f7f9fb] text-[15px] text-[#13233f] shadow-none placeholder:text-[#8b9aab]"
 
 export function BoardFinderForm({
   brand,
@@ -98,73 +100,82 @@ export function BoardFinderForm({
   onSave: () => void
 }) {
   return (
-    <div className="space-y-5">
-      <BoardsBrowseCatalogBrandModel
-        brandText={brand}
-        catalogBrandId={catalogBrandId}
-        modelText={model}
-        showLabels
-        onBrandTextChange={onBrandTextChange}
-        onCatalogBrandPicked={onCatalogBrandPicked}
-        onModelTextChange={onModelTextChange}
-        onCatalogModelPicked={onCatalogModelPicked}
-      />
-
-      <div className="space-y-1.5">
-        <Label htmlFor="board-finder-length" className={fieldLabel}>
-          Size
-        </Label>
-        <Select value={length} onValueChange={onLengthChange}>
-          <SelectTrigger id="board-finder-length" className={selectTrigger}>
-            <SelectValue placeholder="Any size" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY}>Any size</SelectItem>
-            {LENGTH_BUCKETS.map((bucket) => (
-              <SelectItem key={bucket.value} value={bucket.value}>
-                {bucket.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="space-y-7">
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#3d6b86]">
+          What to watch
+        </p>
+        <div className="mt-4 [&_input]:h-12 [&_input]:rounded-2xl [&_input]:border-[#d5dee8] [&_input]:bg-[#f7f9fb] [&_input]:shadow-none [&_label]:text-[13px] [&_label]:font-medium [&_label]:tracking-tight [&_label]:text-[#13233f]">
+          <BoardsBrowseCatalogBrandModel
+            brandText={brand}
+            catalogBrandId={catalogBrandId}
+            modelText={model}
+            showLabels
+            onBrandTextChange={onBrandTextChange}
+            onCatalogBrandPicked={onCatalogBrandPicked}
+            onModelTextChange={onModelTextChange}
+            onCatalogModelPicked={onCatalogModelPicked}
+          />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="board-finder-style" className={fieldLabel}>
-          Style
-        </Label>
-        <Select value={style} onValueChange={onStyleChange}>
-          <SelectTrigger id="board-finder-style" className={selectTrigger}>
-            <SelectValue placeholder="Any style" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY}>Any style</SelectItem>
-            {BOARD_STYLE_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="board-finder-length" className={fieldLabel}>
+            Size
+          </Label>
+          <Select value={length} onValueChange={onLengthChange}>
+            <SelectTrigger id="board-finder-length" className={selectTrigger}>
+              <SelectValue placeholder="Any size" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>Any size</SelectItem>
+              {LENGTH_BUCKETS.map((bucket) => (
+                <SelectItem key={bucket.value} value={bucket.value}>
+                  {bucket.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="board-finder-condition" className={fieldLabel}>
-          Condition
-        </Label>
-        <Select value={condition} onValueChange={onConditionChange}>
-          <SelectTrigger id="board-finder-condition" className={selectTrigger}>
-            <SelectValue placeholder="Any condition" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY}>Any condition</SelectItem>
-            {CONDITION_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="space-y-1.5">
+          <Label htmlFor="board-finder-style" className={fieldLabel}>
+            Style
+          </Label>
+          <Select value={style} onValueChange={onStyleChange}>
+            <SelectTrigger id="board-finder-style" className={selectTrigger}>
+              <SelectValue placeholder="Any style" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>Any style</SelectItem>
+              {BOARD_STYLE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="board-finder-condition" className={fieldLabel}>
+            Condition
+          </Label>
+          <Select value={condition} onValueChange={onConditionChange}>
+            <SelectTrigger id="board-finder-condition" className={selectTrigger}>
+              <SelectValue placeholder="Any condition" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>Any condition</SelectItem>
+              {CONDITION_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -198,10 +209,12 @@ export function BoardFinderForm({
 
       <button
         type="button"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-[#001A4A]"
+        className="flex w-full items-center gap-3 text-left text-sm text-[#5c6d80] hover:text-[#13233f]"
         onClick={onToggleMore}
+        aria-expanded={showMore}
       >
-        Volume, construction, fins
+        <span>Volume, construction, fins</span>
+        <span className="h-px flex-1 bg-[#e3eaef]" aria-hidden />
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showMore && "rotate-180")} />
       </button>
 
@@ -264,19 +277,19 @@ export function BoardFinderForm({
         </div>
       ) : null}
 
-      <div className="flex items-start gap-3 pt-1">
+      <div className="flex items-start gap-3 rounded-2xl bg-[#f4f7fa] px-4 py-3.5">
         <Checkbox
           id="board-finder-email"
           checked={emailOptIn}
           onCheckedChange={(v) => onEmailOptInChange(v === true)}
-          className="mt-0.5 data-[state=checked]:border-[#001A4A] data-[state=checked]:bg-[#001A4A]"
+          className="mt-0.5 data-[state=checked]:border-[#13233f] data-[state=checked]:bg-[#13233f]"
           disabled={atSavedLimit}
         />
         <Label
           htmlFor="board-finder-email"
           className={cn(
-            "text-sm leading-snug text-[#001A4A]",
-            atSavedLimit ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer",
+            "text-sm leading-snug text-[#13233f]",
+            atSavedLimit ? "cursor-not-allowed text-[#7d8c9b]" : "cursor-pointer",
           )}
         >
           Email me when a match lists
@@ -285,7 +298,12 @@ export function BoardFinderForm({
 
       <Button
         type="button"
-        className="h-11 w-full rounded-md bg-[#001A4A] text-sm font-semibold text-white hover:bg-[#001A4A]/90"
+        className={cn(
+          "h-12 w-full rounded-full text-[15px] font-medium tracking-tight shadow-none",
+          canSave
+            ? "bg-[#13233f] text-white hover:bg-[#1c3358]"
+            : "bg-[#e7eef3] text-[#13233f] hover:bg-[#dce6ee]",
+        )}
         disabled={pending || (isSignedIn && atSavedLimit)}
         onClick={onSave}
       >
