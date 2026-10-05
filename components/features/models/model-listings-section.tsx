@@ -1,4 +1,7 @@
+"use client"
+
 import { RecentFeedClient } from "@/components/recent-feed-client"
+import { useModelPageViewer } from "@/components/features/models/model-page-viewer"
 import { ModelEmptyState } from "@/components/features/models/model-empty-state"
 import { ModelPageSectionHeading } from "@/components/features/models/model-page-section"
 import { ModelTopPick } from "@/components/features/models/model-top-pick"
@@ -29,14 +32,20 @@ export function ModelListingsSection({
   isLoggedIn: boolean
   viewerUserId: string | null
 }) {
+  const viewer = useModelPageViewer()
+  const favoritedIds = viewer.ready ? viewer.favoritedIds : favoritedListingIds
+  const loggedIn = viewer.ready ? viewer.isLoggedIn : isLoggedIn
+  const userId = viewer.ready ? viewer.userId : viewerUserId
+  const savedSearchId = viewer.ready ? viewer.savedSearchId : initialSavedSearchId
+
   if (listings.length === 0 && soldListings.length === 0) {
     return (
       <ModelEmptyState
         brandName={brandName}
         modelName={modelName}
         criteria={criteria}
-        isLoggedIn={isLoggedIn}
-        initialSavedSearchId={initialSavedSearchId}
+        isLoggedIn={loggedIn}
+        initialSavedSearchId={savedSearchId}
       />
     )
   }
@@ -48,8 +57,8 @@ export function ModelListingsSection({
       {showTopPick && topPick ? (
         <ModelTopPick
           listing={topPick}
-          isFavorited={favoritedListingIds.includes(topPick.id)}
-          isLoggedIn={isLoggedIn}
+          isFavorited={favoritedIds.includes(topPick.id)}
+          isLoggedIn={loggedIn}
         />
       ) : listings.length === 0 ? (
         <SaveEntitySearchCta
@@ -61,8 +70,8 @@ export function ModelListingsSection({
           savedSearchLabel={`${brandName} ${modelName}`}
           successTitle="Model saved"
           successDescription={`We'll email you when a ${brandName} ${modelName} is listed on Reswell.`}
-          isLoggedIn={isLoggedIn}
-          initialSavedSearchId={initialSavedSearchId}
+          isLoggedIn={loggedIn}
+          initialSavedSearchId={savedSearchId}
         />
       ) : null}
 
@@ -75,9 +84,9 @@ export function ModelListingsSection({
           <div className="mt-6">
             <RecentFeedClient
               listings={listings}
-              favoritedListingIds={favoritedListingIds}
-              isLoggedIn={isLoggedIn}
-              viewerUserId={viewerUserId}
+              favoritedListingIds={favoritedIds}
+              isLoggedIn={loggedIn}
+              viewerUserId={userId}
             />
           </div>
         </div>
@@ -92,9 +101,9 @@ export function ModelListingsSection({
           <div className="mt-6">
             <RecentFeedClient
               listings={soldListings}
-              favoritedListingIds={favoritedListingIds}
-              isLoggedIn={isLoggedIn}
-              viewerUserId={viewerUserId}
+              favoritedListingIds={favoritedIds}
+              isLoggedIn={loggedIn}
+              viewerUserId={userId}
               soldPresentation
             />
           </div>

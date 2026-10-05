@@ -2,15 +2,19 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { ModelPageView } from "@/components/features/models/model-page-view"
 import { getDb } from "@/lib/supabase/db"
-import { createClient } from "@/lib/supabase/server"
 import { isReservedModelPageBrandSegment } from "@/lib/models/routes"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { getModelPage } from "@/lib/services/modelPage"
-import { viewerSavedSearchIdForModel } from "@/lib/services/viewerSavedSearch"
 import { modelSavedSearchCriteria } from "@/lib/utils/saved-search-alert-kind"
 import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 
+/**
+ * Hourly ISR. This document is anonymous marketplace HTML, so the render stays
+ * on the replica anon client. A session read during the static fill throws
+ * DYNAMIC_SERVER_USAGE and Next serves "This page couldn't load".
+ * Favorites and "Save this model" hydrate in the browser after paint.
+ */
 export const revalidate = 3600
 export const dynamicParams = true
 
@@ -68,24 +72,9 @@ export default async function ModelPage({ params }: Props) {
   const { brand: brandSlug, model: modelSlug } = await params
   if (isReservedModelPageBrandSegment(brandSlug)) notFound()
 
-  const supabase = await createClient()
+  const supabase = getDb({ consistency: "eventual" })
   const page = await getModelPage(supabase, brandSlug, modelSlug)
   if (!page) notFound()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  let favoritedListingIds: string[] = []
-  const favoriteCandidateIds = [...page.listings, ...page.soldListings].map((listing) => listing.id)
-  if (user && favoriteCandidateIds.length > 0) {
-    const ids = favoriteCandidateIds
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", ids)
-    favoritedListingIds = (favs ?? []).map((row) => row.listing_id)
-  }
 
   const criteria = modelSavedSearchCriteria({
     brandName: page.brand.name,
@@ -98,20 +87,15 @@ export default async function ModelPage({ params }: Props) {
       ? page.model.product_category_slug
       : "surfboards",
   })
-  const initialSavedSearchId = await viewerSavedSearchIdForModel(
-    supabase,
-    user?.id,
-    page.model.id,
-  )
 
   return (
     <ModelPageView
       page={page}
       criteria={criteria}
-      initialSavedSearchId={initialSavedSearchId}
-      favoritedListingIds={favoritedListingIds}
-      isLoggedIn={!!user}
-      viewerUserId={user?.id ?? null}
+      initialSavedSearchId={null}
+      favoritedListingIds={[]}
+      isLoggedIn={false}
+      viewerUserId={null}
     />
   )
 }

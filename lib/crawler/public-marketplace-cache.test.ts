@@ -44,6 +44,12 @@ describe("public marketplace document cache", () => {
       "utf8",
     )
     const proxy = readFileSync(new URL("../../proxy.ts", import.meta.url), "utf8")
+    const modelPage = readFileSync(
+      new URL("../../app/[brand]/[model]/page.tsx", import.meta.url),
+      "utf8",
+    )
+    assert.doesNotMatch(modelPage, /createClient\(/)
+    assert.doesNotMatch(modelPage, /auth\.getUser\(/)
     assert.doesNotMatch(chrome, /from ["']next\/headers["']/)
     assert.doesNotMatch(listing, /from ["']next\/headers["']/)
     assert.match(listing, /anonymousPublicView:\s*true/)
