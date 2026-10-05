@@ -48,39 +48,47 @@ export function ListingSoldOwnerNotice({
   sectionLabel,
   listingId,
   canRelist = false,
+  className,
 }: {
   dashboardListingsHref: string
   sectionLabel: string
   listingId: string
   canRelist?: boolean
+  className?: string
 }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center">
-      <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <Package className="h-5 w-5" />
+    <div
+      className={`flex flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${className ?? ""}`}
+    >
+      <div className="flex min-w-0 items-start gap-2.5">
+        <Package className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <div className="min-w-0">
+          <p className="text-sm font-medium leading-tight text-foreground">
+            This {sectionLabel} sold on Reswell
+          </p>
+          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+            {canRelist
+              ? "This page stays visible for your records. If you marked it sold by accident, you can relist it."
+              : "This page stays visible for your records. Buyers can’t purchase it or send offers. Editing and “end listing” are disabled for sold listings."}
+          </p>
+        </div>
       </div>
-      <p className="font-medium text-foreground">This {sectionLabel} sold on Reswell</p>
-      <p className="mt-2 text-sm text-muted-foreground leading-snug">
-        {canRelist
-          ? "This page stays visible for your records. If you marked it sold by accident, you can relist it."
-          : "This page stays visible for your records. Buyers can’t purchase it or send offers. Editing and “end listing” are disabled for sold listings."}
-      </p>
-      {canRelist ? (
-        <div className="mt-4">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 pl-6 sm:pl-0">
+        {canRelist ? (
           <RelistListingButton
             listingId={listingId}
-            triggerSize="default"
+            triggerSize="sm"
             triggerVariant="outline"
-            triggerClassName="rounded-full"
+            triggerClassName="h-8 rounded-full px-3"
           />
-        </div>
-      ) : null}
-      <Link
-        href={dashboardListingsHref}
-        className="mt-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
-      >
-        View your listings in the dashboard
-      </Link>
+        ) : null}
+        <Link
+          href={dashboardListingsHref}
+          className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+        >
+          View your listings in the dashboard
+        </Link>
+      </div>
     </div>
   )
 }

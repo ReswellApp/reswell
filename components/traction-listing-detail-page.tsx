@@ -342,9 +342,6 @@ async function renderTractionListingDetailPage({
     }
   }
 
-  const softPanelClass =
-    "rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 dark:border-border dark:bg-muted/15"
-
   const favoriteNextToOffer = !!(canPeerPurchase && makeOfferConfig)
   const showShareOnGalleryOverlay = isOwnListing || !favoriteNextToOffer
   const showFavoriteOnGalleryOverlay = !isOwnListing
@@ -652,14 +649,13 @@ async function renderTractionListingDetailPage({
             ) : null}
 
             {isOwnListing && isSold && (
-              <div className={softPanelClass}>
-                <ListingSoldOwnerNotice
-                  dashboardListingsHref="/dashboard/listings"
-                  sectionLabel="listing"
-                  listingId={traction.id as string}
-                  canRelist={canSellerRelist}
-                />
-              </div>
+              <ListingSoldOwnerNotice
+                dashboardListingsHref="/dashboard/listings"
+                sectionLabel="listing"
+                listingId={traction.id as string}
+                canRelist={canSellerRelist}
+                className="mt-5"
+              />
             )}
 
             {isOwnListing ? (
