@@ -5,9 +5,9 @@ import { parseAirCargoAirport } from "../validations/air-cargo-airport.ts"
 import {
   AIR_CARGO_RATE_ID,
   AIR_CARGO_SERVICE_CODE,
-  AIR_CARGO_USD_PER_PIECE,
+  AIR_CARGO_UNPRICED_ERROR,
+  airCargoPackageRates,
   airCargoPieceCount,
-  airCargoShippingUsd,
   applyAirCargoToOrderShippingJson,
   composeAirCargoCheckoutQuote,
   isAirCargoServiceCode,
@@ -25,16 +25,20 @@ const GROUND = {
 }
 
 describe("air cargo pricing", () => {
-  it("charges one piece when boards ship together and one piece per board when separate", () => {
+  it("counts pieces without turning that count into a price", () => {
     assert.equal(airCargoPieceCount({ packagingMode: "together", listingCount: 3 }), 1)
     assert.equal(airCargoPieceCount({ packagingMode: "separate", listingCount: 3 }), 3)
-    assert.equal(airCargoShippingUsd(1), AIR_CARGO_USD_PER_PIECE)
-    assert.equal(airCargoShippingUsd(3), AIR_CARGO_USD_PER_PIECE * 3)
+    const split = airCargoPackageRates(["a", "b", "c"], 100)
+    assert.deepEqual(
+      split.map((rate) => rate.shippingCents),
+      [3334, 3333, 3333],
+    )
   })
 
-  it("keeps ground selected and appends air cargo until the buyer asks for it", () => {
+  it("does not invent an air cargo price when the lane has not been quoted", () => {
     const composed = composeAirCargoCheckoutQuote({
       offersAirCargo: true,
+      airCargoQuoteUsd: null,
       requestedServiceCode: "ups_ground",
       pieceCount: 1,
       listingIds: ["board-1"],
@@ -50,14 +54,27 @@ describe("air cargo pricing", () => {
     assert.equal(composed.ok, true)
     if (!composed.ok) return
     assert.equal(composed.shippingUsd, 88)
-    assert.equal(composed.selectedRate?.serviceCode, "ups_ground")
-    assert.equal(composed.availableRates?.some((rate) => isAirCargoServiceCode(rate.serviceCode)), true)
-    assert.equal(composed.groundUnavailableReason, null)
+    assert.equal(composed.availableRates?.some((rate) => isAirCargoServiceCode(rate.serviceCode)), false)
   })
 
-  it("switches the charged total to the published air cargo price", () => {
+  it("refuses to charge air cargo when no lane quote exists", () => {
     const composed = composeAirCargoCheckoutQuote({
       offersAirCargo: true,
+      requestedServiceCode: AIR_CARGO_SERVICE_CODE,
+      pieceCount: 1,
+      listingIds: ["board-1"],
+      packagingMode: "together",
+      carrier: { ok: false, error: "No carrier rates returned for this shipment." },
+    })
+    assert.equal(composed.ok, false)
+    if (composed.ok) return
+    assert.equal(composed.error, AIR_CARGO_UNPRICED_ERROR)
+  })
+
+  it("charges the quoted lane total, not a flat fee per board", () => {
+    const composed = composeAirCargoCheckoutQuote({
+      offersAirCargo: true,
+      airCargoQuoteUsd: 248.4,
       requestedServiceCode: AIR_CARGO_SERVICE_CODE,
       pieceCount: 2,
       listingIds: ["board-1", "board-2"],
@@ -76,17 +93,18 @@ describe("air cargo pricing", () => {
     })
     assert.equal(composed.ok, true)
     if (!composed.ok) return
-    assert.equal(composed.shippingUsd, 270)
+    assert.equal(composed.shippingUsd, 248.4)
     assert.equal(composed.selectedRate?.rateId, AIR_CARGO_RATE_ID)
     assert.equal(composed.groundShippingUsd, 210)
-    assert.equal(composed.packageRates?.length, 2)
-    assert.equal(composed.packageRates?.[0]?.shippingCents, 13500)
+    assert.equal(composed.packageRates?.[0]?.shippingCents, 12420)
+    assert.equal(composed.packageRates?.[1]?.shippingCents, 12420)
     assert.equal(composed.packageRates?.[1]?.serviceCode, AIR_CARGO_SERVICE_CODE)
   })
 
-  it("offers air cargo alone when the carrier quote fails", () => {
+  it("can stand alone when ground fails and this lane has a cargo quote", () => {
     const composed = composeAirCargoCheckoutQuote({
       offersAirCargo: true,
+      airCargoQuoteUsd: 310,
       requestedServiceCode: null,
       pieceCount: 1,
       listingIds: ["board-1"],
@@ -95,9 +113,8 @@ describe("air cargo pricing", () => {
     })
     assert.equal(composed.ok, true)
     if (!composed.ok) return
-    assert.equal(composed.shippingUsd, 135)
+    assert.equal(composed.shippingUsd, 310)
     assert.equal(composed.selectedRate?.serviceCode, AIR_CARGO_SERVICE_CODE)
-    assert.equal(composed.availableRates?.length, 1)
     assert.match(composed.groundUnavailableReason ?? "", /No carrier rates/)
   })
 

@@ -147,6 +147,9 @@ function jsonQuotedShipping(input: {
   const packagingMode = input.packagingMode ?? DEFAULT_SHIPPING_PACKAGING_MODE
   const composed = composeAirCargoCheckoutQuote({
     offersAirCargo: input.offersAirCargo,
+    // Lane quote (origin + destination airport + packed piece) is not wired yet.
+    // Leaving this null keeps air cargo off checkout instead of charging a flat fee.
+    airCargoQuoteUsd: null,
     requestedServiceCode: input.requestedServiceCode,
     pieceCount: airCargoPieceCount({
       packagingMode,

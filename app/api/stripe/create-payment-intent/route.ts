@@ -44,13 +44,7 @@ import { ensureCheckoutBuyerShippingAddress } from "@/lib/services/checkoutBuyer
 import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
-import {
-  AIR_CARGO_SERVICE_CODE,
-  AIR_CARGO_USD_PER_PIECE,
-  airCargoPieceCount,
-  airCargoShippingUsd,
-  isAirCargoServiceCode,
-} from "@/lib/shipping/air-cargo"
+import { AIR_CARGO_SERVICE_CODE, isAirCargoServiceCode } from "@/lib/shipping/air-cargo"
 import { parseAirCargoAirport } from "@/lib/validations/air-cargo-airport"
 import {
   checkoutOffersShippingPackagingChoice,
@@ -453,26 +447,19 @@ export async function POST(request: NextRequest) {
     if (!airport.ok) {
       return NextResponse.json({ error: airport.error }, { status: 400, headers: JSON_NO_STORE_HEADERS })
     }
-    const pieces = airCargoPieceCount({
-      packagingMode,
-      listingCount: listingIdsOrdered.length,
-    })
-    const expectedCents = Math.round(airCargoShippingUsd(pieces) * 100)
     const quotedCents = Math.round((preverifiedShipping?.shippingUsd ?? 0) * 100)
-    if (quotedCents !== expectedCents) {
+    if (quotedCents <= 0) {
       return NextResponse.json(
-        { error: "Air cargo price changed. Refresh shipping and try again." },
+        { error: "Air cargo for this route isn't priced yet." },
         { status: 400, headers: JSON_NO_STORE_HEADERS },
       )
     }
     if (packagingMode === "separate") {
       const rates = preverifiedShipping?.packageRates ?? []
-      const pieceCents = Math.round(AIR_CARGO_USD_PER_PIECE * 100)
       const ratesMatch =
-        rates.length === pieces &&
-        rates.every(
-          (rate) => isAirCargoServiceCode(rate.serviceCode) && rate.shippingCents === pieceCents,
-        )
+        rates.length === listingIdsOrdered.length &&
+        rates.every((rate) => isAirCargoServiceCode(rate.serviceCode) && rate.shippingCents > 0) &&
+        rates.reduce((sum, rate) => sum + rate.shippingCents, 0) === quotedCents
       if (!ratesMatch) {
         return NextResponse.json(
           { error: "Air cargo quote does not match this order. Refresh shipping and try again." },
