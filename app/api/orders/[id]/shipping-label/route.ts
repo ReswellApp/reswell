@@ -25,6 +25,7 @@ import {
   SANTA_BARBARA_DROPOFF_PHONE_E164,
 } from "@/lib/dropoff-santa-barbara"
 import { RESWELL_WAREHOUSE_ADDRESS } from "@/lib/reswell-warehouse-address"
+import { readOrderAirCargo } from "@/lib/shipping/air-cargo"
 
 export const dynamic = "force-dynamic"
 
@@ -69,6 +70,16 @@ export async function GET(
 
   if (orderErr || !order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  }
+
+  if (readOrderAirCargo((order as { shipping_address?: unknown }).shipping_address)) {
+    return NextResponse.json(
+      {
+        error:
+          "This order ships by air cargo. Add the air waybill on the sale page instead of buying a parcel label.",
+      },
+      { status: 400 },
+    )
   }
 
   const row = order as {
@@ -279,6 +290,15 @@ export async function POST(
   }
   if (o.fulfillment_method !== "shipping") {
     return NextResponse.json({ error: "This order is not a shipping order." }, { status: 400 })
+  }
+  if (readOrderAirCargo(o.shipping_address)) {
+    return NextResponse.json(
+      {
+        error:
+          "This order ships by air cargo. Add the air waybill on the sale page instead of buying a parcel label.",
+      },
+      { status: 400 },
+    )
   }
   if (o.delivery_status !== "pending") {
     return NextResponse.json({ error: "This order already has tracking." }, { status: 409 })

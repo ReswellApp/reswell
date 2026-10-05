@@ -7,6 +7,7 @@ import {
   type AppliedNewsletterPromo,
 } from "@/components/checkout-order-summary-aside"
 import { CheckoutPurchaseDetails, type PurchaseDetailsState } from "@/components/checkout-purchase-details"
+import { CheckoutShippingMethod } from "@/components/features/checkout/checkout-shipping-method"
 import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 import { PurchaseOptions } from "@/components/purchase-options"
 import { ProtectionTrustBlock } from "@/components/protection-trust-block"
@@ -48,6 +49,8 @@ import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
+import { AIR_CARGO_SERVICE_CODE, isAirCargoServiceCode } from "@/lib/shipping/air-cargo"
+import { parseAirCargoAirport } from "@/lib/validations/air-cargo-airport"
 
 export type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 
@@ -194,8 +197,12 @@ export function CheckoutClient({
       displayName?: string
     } | null
     availableShippingRates?: PeerCheckoutShippingRateOption[] | null
+    groundShippingUsd?: number | null
+    groundUnavailableReason?: string | null
   } | null>(null)
   const [selectedShippingServiceCode, setSelectedShippingServiceCode] = useState<string | null>(null)
+  const [lastGroundServiceCode, setLastGroundServiceCode] = useState<string | null>(null)
+  const [airCargoAirport, setAirCargoAirport] = useState("")
   const [shipQuoteToken, setShipQuoteToken] = useState<string | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
@@ -240,6 +247,8 @@ export function CheckoutClient({
     setPromoCodeInput("")
     setShipQuoteToken(null)
     setSelectedShippingServiceCode(null)
+    setLastGroundServiceCode(null)
+    setAirCargoAirport("")
     pendingPromoAutoApplyTried.current = false
   }, [listingIdsKey, impliedFulfillment, effectivePackagingMode])
 
@@ -314,6 +323,8 @@ export function CheckoutClient({
               serviceName: string
             } | null
             availableShippingRates?: PeerCheckoutShippingRateOption[] | null
+            groundShippingUsd?: number | null
+            groundUnavailableReason?: string | null
           }
         }
         if (cancelled) return
@@ -332,12 +343,27 @@ export function CheckoutClient({
                 )?.displayName ?? data.data.selectedRate.serviceName,
             }
           : null
+        const offeredCodes = new Set(
+          (data.data.availableShippingRates ?? []).map((rate) => rate.serviceCode),
+        )
+        if (
+          selectedShippingServiceCode &&
+          !offeredCodes.has(selectedShippingServiceCode) &&
+          selectedRate?.serviceCode
+        ) {
+          setSelectedShippingServiceCode(selectedRate.serviceCode)
+        }
+        if (selectedRate?.serviceCode && !isAirCargoServiceCode(selectedRate.serviceCode)) {
+          setLastGroundServiceCode(selectedRate.serviceCode)
+        }
         setShipQuote({
           shippingUsd: data.data.shippingUsd,
           totalUsd: data.data.totalUsd,
           usedReswellQuote: data.data.usedReswellQuote,
           selectedRate,
           availableShippingRates: data.data.availableShippingRates ?? null,
+          groundShippingUsd: data.data.groundShippingUsd ?? null,
+          groundUnavailableReason: data.data.groundUnavailableReason ?? null,
         })
         setShipQuoteToken(data.data.quoteToken?.trim() || null)
       } catch {
@@ -509,7 +535,19 @@ export function CheckoutClient({
   }, [displayTotals.total, appliedPromo?.discountUsd])
 
   const shippingQuoteReady = !needsShipping || (!!shipQuote && !quoteLoading && !quoteError)
-  const paymentBlocked = !purchaseDetails.readyToPay || !shippingQuoteReady
+  const activeShippingServiceCode =
+    selectedShippingServiceCode ?? shipQuote?.selectedRate?.serviceCode ?? null
+  const airCargoSelected = isAirCargoServiceCode(activeShippingServiceCode)
+  const airportCheck = parseAirCargoAirport(airCargoAirport)
+  const airCargoAirportReady = !airCargoSelected || airportCheck.ok
+  const showAirCargoChoice = Boolean(
+    shipQuote?.availableShippingRates?.some((rate) => isAirCargoServiceCode(rate.serviceCode)),
+  )
+  const paymentBlocked = !purchaseDetails.readyToPay || !shippingQuoteReady || !airCargoAirportReady
+  const paymentBlockedHint =
+    airCargoSelected && shippingQuoteReady && purchaseDetails.readyToPay && !airCargoAirportReady
+      ? "Enter the international airport above to continue to payment."
+      : null
 
   const shippingSummaryRight = (() => {
     if (!needsShipping) {
@@ -723,7 +761,9 @@ export function CheckoutClient({
 
             {needsShipping && (
               <div className="mt-10 space-y-3">
-                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Shipping</h2>
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+                  {showAirCargoChoice ? "Shipping method" : "Shipping"}
+                </h2>
                 {quoteError && purchaseDetails.readyToPay ? (
                   <p className="rounded-[8px] border border-destructive/30 bg-destructive/5 px-4 py-3.5 text-[13px] leading-relaxed text-destructive">
                     {quoteError}
@@ -737,6 +777,27 @@ export function CheckoutClient({
                   <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
                     Getting live carrier rates for your address…
                   </div>
+                ) : showAirCargoChoice && shipQuote?.availableShippingRates?.length ? (
+                  <CheckoutShippingMethod
+                    rates={shipQuote.availableShippingRates}
+                    selectedServiceCode={activeShippingServiceCode}
+                    groundShippingUsd={shipQuote.groundShippingUsd ?? null}
+                    groundUnavailableReason={shipQuote.groundUnavailableReason ?? null}
+                    offersGroundRateChoice={offersShippingRateChoice}
+                    airport={airCargoAirport}
+                    airportError={
+                      airCargoSelected && airCargoAirport.trim().length > 0 && !airportCheck.ok
+                        ? airportCheck.error
+                        : null
+                    }
+                    onAirportChange={setAirCargoAirport}
+                    onSelectAirCargo={() => setSelectedShippingServiceCode(AIR_CARGO_SERVICE_CODE)}
+                    onSelectGround={() => setSelectedShippingServiceCode(lastGroundServiceCode)}
+                    onSelectGroundService={(serviceCode) => {
+                      setLastGroundServiceCode(serviceCode)
+                      setSelectedShippingServiceCode(serviceCode)
+                    }}
+                  />
                 ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
                   <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-[13px] leading-relaxed text-neutral-600">
@@ -809,6 +870,10 @@ export function CheckoutClient({
                   promoCode={appliedPromo?.code ?? null}
                   shippingQuoteToken={shipQuoteToken}
                   packagingMode={offersPackagingChoice ? effectivePackagingMode : null}
+                  airCargoAirport={
+                    airCargoSelected && airportCheck.ok ? airportCheck.airport : null
+                  }
+                  blockedHint={paymentBlockedHint}
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter

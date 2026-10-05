@@ -282,6 +282,7 @@ export function StripeCardCheckout({
   offerId,
   promoCode,
   shippingQuoteToken,
+  airCargoAirport = null,
   packagingMode = null,
   purchaseDetailsReady = true,
   needsShipping = false,
@@ -297,6 +298,8 @@ export function StripeCardCheckout({
   offerId?: string | null
   promoCode?: string | null
   shippingQuoteToken?: string | null
+  /** Sent with the payment when the quote is air cargo. */
+  airCargoAirport?: string | null
   packagingMode?: "together" | "separate" | null
   purchaseDetailsReady?: boolean
   needsShipping?: boolean
@@ -363,6 +366,7 @@ export function StripeCardCheckout({
             ...(offerId ? { offer_id: offerId } : {}),
             ...(promoCode ? { promo_code: promoCode } : {}),
             ...(shippingQuoteToken ? { quote_token: shippingQuoteToken } : {}),
+            ...(airCargoAirport ? { air_cargo_airport: airCargoAirport } : {}),
             ...(packagingMode ? { packaging_mode: packagingMode } : {}),
           }),
         })
@@ -408,6 +412,7 @@ export function StripeCardCheckout({
     offerId,
     promoCode,
     shippingQuoteToken,
+    airCargoAirport,
     packagingMode,
     purchaseDetailsReady,
     needsShipping,

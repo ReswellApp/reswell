@@ -10,6 +10,7 @@ import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAc
 import {
   computePeerBundleShippingUsd,
   computePeerCheckoutTotalsUsd,
+  effectiveBoardShippingMode,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
@@ -22,11 +23,6 @@ import {
   peerCheckoutSurfboardCountError,
 } from "@/lib/surfboard-multi-board-parcel"
 import {
-  findPeerCheckoutRateOption,
-  findPeerCheckoutRateOptionByServiceCode,
-  peerCheckoutSharedSection,
-} from "@/lib/shipping/peer-checkout-usps-services"
-import {
   checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
   resolveShippingPackagingMode,
@@ -34,6 +30,12 @@ import {
 } from "@/lib/shipping/packaging-mode"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 import { ensureCheckoutBuyerShippingAddress } from "@/lib/services/checkoutBuyerAddress"
+import {
+  airCargoPieceCount,
+  composeAirCargoCheckoutQuote,
+  isAirCargoServiceCode,
+  type AirCargoPackageRate,
+} from "@/lib/shipping/air-cargo"
 
 function buildQuoteResponse(input: {
   itemPrice: number
@@ -60,13 +62,14 @@ function buildQuoteResponse(input: {
     }>
   }
 }) {
-  const selectedRate = input.reswellQuote
-    ? {
-        rateId: input.reswellQuote.rateId,
-        serviceCode: input.reswellQuote.serviceCode,
-        serviceName: input.reswellQuote.serviceName,
-      }
-    : null
+  const selectedRate =
+    input.reswellQuote?.rateId
+      ? {
+          rateId: input.reswellQuote.rateId,
+          serviceCode: input.reswellQuote.serviceCode,
+          serviceName: input.reswellQuote.serviceName,
+        }
+      : null
 
   return {
     itemPrice: input.itemPrice,
@@ -93,6 +96,105 @@ function buildQuoteResponse(input: {
           })
         : null,
   }
+}
+
+function listingsOfferAirCargo(listings: PeerSurfboardCheckoutListingRow[]): boolean {
+  return (
+    listings.length > 0 &&
+    listings.every(
+      (listing) => listing.section === "surfboards" && effectiveBoardShippingMode(listing) === "reswell",
+    )
+  )
+}
+
+/** Price and address problems are not solved by switching the buyer to air cargo. */
+function isHardShippingQuoteError(error: string): boolean {
+  return (
+    error === "Invalid listing price" ||
+    error === "Shipping address is required" ||
+    error === "No listings to quote shipping for." ||
+    error === "No listings to rate for shipping."
+  )
+}
+
+function jsonQuotedShipping(input: {
+  itemPrice: number
+  buyerId: string
+  listingIds: string[]
+  addressId: string
+  packagingMode?: ShippingPackagingMode
+  offersAirCargo: boolean
+  requestedServiceCode: string | null
+  carrier:
+    | {
+        ok: true
+        shippingUsd: number
+        usedReswellQuote: boolean
+        selectedRate: { rateId: string; serviceCode: string; serviceName: string } | null
+        availableRates: Array<{
+          rateId: string
+          serviceCode: string
+          serviceName: string
+          displayName: string
+          totalAmount: number
+          deliveryDays: number | null
+          estimatedDeliveryDate: string | null
+        }> | null
+        packageRates?: AirCargoPackageRate[] | null
+      }
+    | { ok: false; error: string }
+}) {
+  const packagingMode = input.packagingMode ?? DEFAULT_SHIPPING_PACKAGING_MODE
+  const composed = composeAirCargoCheckoutQuote({
+    offersAirCargo: input.offersAirCargo,
+    // Lane quote (origin + destination airport + packed piece) is not wired yet.
+    // Leaving this null keeps air cargo off checkout instead of charging a flat fee.
+    airCargoQuoteUsd: null,
+    requestedServiceCode: input.requestedServiceCode,
+    pieceCount: airCargoPieceCount({
+      packagingMode,
+      listingCount: input.listingIds.length,
+    }),
+    listingIds: input.listingIds,
+    packagingMode,
+    carrier: input.carrier,
+  })
+  if (!composed.ok) {
+    return NextResponse.json(
+      { error: composed.error },
+      { status: 422, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+
+  const totalUsd = Math.round((input.itemPrice + composed.shippingUsd) * 100) / 100
+  return NextResponse.json(
+    {
+      data: {
+        ...buildQuoteResponse({
+          itemPrice: input.itemPrice,
+          shippingUsd: composed.shippingUsd,
+          totalUsd,
+          usedReswellQuote: composed.usedReswellQuote,
+          buyerId: input.buyerId,
+          listingIds: input.listingIds,
+          addressId: input.addressId,
+          packagingMode,
+          packageRates: composed.packageRates,
+          reswellQuote: composed.usedReswellQuote
+            ? {
+                rateId: composed.selectedRate?.rateId ?? "",
+                serviceCode: composed.selectedRate?.serviceCode ?? "",
+                serviceName: composed.selectedRate?.serviceName ?? "",
+                availableRates: composed.availableRates ?? [],
+              }
+            : undefined,
+        }),
+        groundShippingUsd: composed.groundShippingUsd,
+        groundUnavailableReason: composed.groundUnavailableReason,
+      },
+    },
+    { headers: JSON_NO_STORE_HEADERS },
+  )
 }
 
 export const dynamic = "force-dynamic"
@@ -251,8 +353,13 @@ export async function POST(request: Request) {
     if (id) qtyById.set(id, qty)
   }
 
+  const offersAirCargo = listingsOfferAirCargo(listingRows)
+  const carrierServiceCode = isAirCargoServiceCode(selectedServiceCode) ? null : selectedServiceCode
+  const carrierRateId = isAirCargoServiceCode(selectedServiceCode) ? null : selectedRateId
+
   if (listingRows.length === 1) {
     const listingRow = listingRows[0]!
+    const qty = qtyById.get(listingRow.id) ?? 1
     const totals = await computePeerCheckoutTotalsUsd({
       listing: listingRow,
       fulfillment: "shipping",
@@ -260,55 +367,37 @@ export async function POST(request: Request) {
       diagnosticTag: `checkout-quote:${listingRow.id}`,
       sellerShipFromName,
       sellerShipFromAddress,
-      selectedRateId,
-      selectedServiceCode,
+      selectedRateId: carrierRateId,
+      selectedServiceCode: carrierServiceCode,
     })
 
-    if (!totals.ok) {
-      return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
-    }
+    const unitPrice = parseFloat(String(listingRow.price))
+    const fallbackItemPrice =
+      Number.isFinite(unitPrice) && unitPrice >= 0 ? Math.round(unitPrice * qty * 100) / 100 : 0
 
-    if (totals.usedReswellQuote && totals.reswellQuote && (selectedRateId || selectedServiceCode)) {
-      const selected =
-        (selectedRateId
-          ? findPeerCheckoutRateOption(totals.reswellQuote.availableRates, selectedRateId)
-          : null) ??
-        findPeerCheckoutRateOptionByServiceCode(
-          totals.reswellQuote.availableRates,
-          selectedServiceCode,
-          listingRow.section,
-          {
-            stateProvince: buyerAddress.state,
-            postalCode: buyerAddress.postal_code,
-          },
-        )
-      if (!selected) {
-        return NextResponse.json(
-          { error: "Selected shipping option is no longer available." },
-          { status: 422, headers: JSON_NO_STORE_HEADERS },
-        )
-      }
-    }
-
-    const qty = qtyById.get(listingRow.id) ?? 1
-    const itemPrice = Math.round(totals.itemPrice * qty * 100) / 100
-    const totalUsd = Math.round((itemPrice + totals.shippingUsd) * 100) / 100
-
-    return NextResponse.json(
-      {
-        data: buildQuoteResponse({
-          itemPrice,
-          shippingUsd: totals.shippingUsd,
-          totalUsd,
-          usedReswellQuote: totals.usedReswellQuote,
-          buyerId: user.id,
-          listingIds,
-          addressId,
-          reswellQuote: totals.reswellQuote,
-        }),
-      },
-      { headers: JSON_NO_STORE_HEADERS },
-    )
+    return jsonQuotedShipping({
+      itemPrice: totals.ok ? Math.round(totals.itemPrice * qty * 100) / 100 : fallbackItemPrice,
+      buyerId: user.id,
+      listingIds,
+      addressId,
+      offersAirCargo: offersAirCargo && (totals.ok || !isHardShippingQuoteError(totals.error)),
+      requestedServiceCode: selectedServiceCode,
+      carrier: totals.ok
+        ? {
+            ok: true,
+            shippingUsd: totals.shippingUsd,
+            usedReswellQuote: totals.usedReswellQuote,
+            selectedRate: totals.reswellQuote
+              ? {
+                  rateId: totals.reswellQuote.rateId,
+                  serviceCode: totals.reswellQuote.serviceCode,
+                  serviceName: totals.reswellQuote.serviceName,
+                }
+              : null,
+            availableRates: totals.reswellQuote?.availableRates ?? null,
+          }
+        : { ok: false, error: totals.error },
+    })
   }
 
   const packagingMode: ShippingPackagingMode =
@@ -327,27 +416,31 @@ export async function POST(request: Request) {
       packagingMode: "separate",
       quantityByListingId,
     })
-    if (!multi.ok) {
-      return NextResponse.json({ error: multi.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
-    }
+    const separateItemPrice = listingRows.reduce((sum, listing) => {
+      const price = parseFloat(String(listing.price))
+      const qty = qtyById.get(listing.id) ?? 1
+      return sum + (Number.isFinite(price) && price > 0 ? price * qty : 0)
+    }, 0)
 
-    return NextResponse.json(
-      {
-        data: buildQuoteResponse({
-          itemPrice: multi.totalItemPriceUsd,
-          shippingUsd: multi.totalShippingUsd,
-          totalUsd: multi.totalUsd,
-          usedReswellQuote: multi.anyUsedReswellQuote,
-          buyerId: user.id,
-          listingIds,
-          addressId,
-          packagingMode: "separate",
-          packageRates: multi.packageRates,
-          reswellQuote: multi.reswellQuote ?? undefined,
-        }),
-      },
-      { headers: JSON_NO_STORE_HEADERS },
-    )
+    return jsonQuotedShipping({
+      itemPrice: multi.ok ? multi.totalItemPriceUsd : Math.round(separateItemPrice * 100) / 100,
+      buyerId: user.id,
+      listingIds,
+      addressId,
+      packagingMode: "separate",
+      offersAirCargo: offersAirCargo && (multi.ok || !isHardShippingQuoteError(multi.error)),
+      requestedServiceCode: selectedServiceCode,
+      carrier: multi.ok
+        ? {
+            ok: true,
+            shippingUsd: multi.totalShippingUsd,
+            usedReswellQuote: multi.anyUsedReswellQuote,
+            selectedRate: null,
+            availableRates: [],
+            packageRates: multi.packageRates,
+          }
+        : { ok: false, error: multi.error },
+    })
   }
 
   /** Multi-item together: one combined-parcel quote for the seller group. */
@@ -364,28 +457,32 @@ export async function POST(request: Request) {
     diagnosticTag: `checkout-quote-bundle:${listingIds.join(",")}`,
     sellerShipFromName,
     sellerShipFromAddress,
-    selectedRateId,
-    selectedServiceCode,
+    selectedRateId: carrierRateId,
+    selectedServiceCode: carrierServiceCode,
   })
 
-  if (!bundleShipping.ok) {
-    return NextResponse.json({ error: bundleShipping.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
-  }
-
-  return NextResponse.json(
-    {
-      data: buildQuoteResponse({
-        itemPrice,
-        shippingUsd: bundleShipping.shippingUsd,
-        totalUsd: Math.round((itemPrice + bundleShipping.shippingUsd) * 100) / 100,
-        usedReswellQuote: bundleShipping.usedReswellQuote,
-        buyerId: user.id,
-        listingIds,
-        addressId,
-        packagingMode: "together",
-        reswellQuote: bundleShipping.quote,
-      }),
-    },
-    { headers: JSON_NO_STORE_HEADERS },
-  )
+  return jsonQuotedShipping({
+    itemPrice,
+    buyerId: user.id,
+    listingIds,
+    addressId,
+    packagingMode: "together",
+    offersAirCargo: offersAirCargo && (bundleShipping.ok || !isHardShippingQuoteError(bundleShipping.error)),
+    requestedServiceCode: selectedServiceCode,
+    carrier: bundleShipping.ok
+      ? {
+          ok: true,
+          shippingUsd: bundleShipping.shippingUsd,
+          usedReswellQuote: bundleShipping.usedReswellQuote,
+          selectedRate: bundleShipping.quote
+            ? {
+                rateId: bundleShipping.quote.rateId,
+                serviceCode: bundleShipping.quote.serviceCode,
+                serviceName: bundleShipping.quote.serviceName,
+              }
+            : null,
+          availableRates: bundleShipping.quote?.availableRates ?? null,
+        }
+      : { ok: false, error: bundleShipping.error },
+  })
 }

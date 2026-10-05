@@ -30,6 +30,8 @@ import {
   orderStatusLocksDuringRefund,
 } from "@/lib/order-status"
 import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
+import { AirCargoPickupNotice } from "@/components/features/checkout/air-cargo-pickup-notice"
+import { readOrderAirCargo } from "@/lib/shipping/air-cargo"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -317,6 +319,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         : "Item (listing removed)"
 
   const ship = sale.shipping_address
+  const airCargo = readOrderAirCargo(ship)
 
   const { data: buyerProfile } = sale.buyer_id
     ? await supabase.from("profiles").select("id, display_name").eq("id", sale.buyer_id).maybeSingle()
@@ -379,6 +382,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       .map((l) => [l.shipment_id as string, l] as const),
   )
   const reswellLabelStillPreparing =
+    !airCargo &&
     !isSantaBarbaraDropoffOrder &&
     isReswellShippingOrder &&
     sale.delivery_status === "pending" &&
@@ -802,7 +806,14 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                   </CardContent>
                 </Card>
               ) : null}
-              {!isSantaBarbaraDropoffOrder && !isReswellShippingOrder ? (
+              {airCargo ? (
+                <AirCargoPickupNotice
+                  airport={airCargo.airport}
+                  audience="seller"
+                  pickupWithinHours={airCargo.pickupWithinHours}
+                />
+              ) : null}
+              {!isSantaBarbaraDropoffOrder && (!isReswellShippingOrder || airCargo) ? (
                 <SellerTrackingForm
                   key={`${sale.tracking_number ?? ""}:${sale.tracking_carrier ?? ""}:${sale.delivery_status}`}
                   orderId={sale.id}

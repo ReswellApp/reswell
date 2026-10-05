@@ -23,6 +23,7 @@ import {
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
 import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
+import { isAirCargoServiceCode } from "@/lib/shipping/air-cargo"
 
 export type PeerCheckoutLineComputation = {
   listingId: string
@@ -278,9 +279,11 @@ export async function computePeerMultiCheckoutUsd(params: {
   if (isMultiLine && fulfillment === "shipping" && !shipSeparately) {
     const bundleShipping = preverifiedShipping
       ? (() => {
-          const parcelCheck = resolveCombinedPackedParcelFromListings(listingsOrdered)
-          if (!parcelCheck.ok) {
-            return parcelCheck
+          if (!isAirCargoServiceCode(preverifiedShipping.serviceCode)) {
+            const parcelCheck = resolveCombinedPackedParcelFromListings(listingsOrdered)
+            if (!parcelCheck.ok) {
+              return parcelCheck
+            }
           }
           const rateId = preverifiedShipping.rateId?.trim() || ""
           return {

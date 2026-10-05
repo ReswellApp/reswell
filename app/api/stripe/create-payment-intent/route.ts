@@ -44,6 +44,8 @@ import { ensureCheckoutBuyerShippingAddress } from "@/lib/services/checkoutBuyer
 import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
+import { AIR_CARGO_SERVICE_CODE, isAirCargoServiceCode } from "@/lib/shipping/air-cargo"
+import { parseAirCargoAirport } from "@/lib/validations/air-cargo-airport"
 import {
   checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
@@ -112,6 +114,7 @@ export async function POST(request: NextRequest) {
     promo_code?: string | null
     quote_token?: string | null
     packaging_mode?: string | null
+    air_cargo_airport?: string | null
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -438,6 +441,35 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  let airCargoAirport: string | null = null
+  if (isAirCargoServiceCode(preverifiedShipping?.serviceCode)) {
+    const airport = parseAirCargoAirport(body.air_cargo_airport)
+    if (!airport.ok) {
+      return NextResponse.json({ error: airport.error }, { status: 400, headers: JSON_NO_STORE_HEADERS })
+    }
+    const quotedCents = Math.round((preverifiedShipping?.shippingUsd ?? 0) * 100)
+    if (quotedCents <= 0) {
+      return NextResponse.json(
+        { error: "Air cargo for this route isn't priced yet." },
+        { status: 400, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+    if (packagingMode === "separate") {
+      const rates = preverifiedShipping?.packageRates ?? []
+      const ratesMatch =
+        rates.length === listingIdsOrdered.length &&
+        rates.every((rate) => isAirCargoServiceCode(rate.serviceCode) && rate.shippingCents > 0) &&
+        rates.reduce((sum, rate) => sum + rate.shippingCents, 0) === quotedCents
+      if (!ratesMatch) {
+        return NextResponse.json(
+          { error: "Air cargo quote does not match this order. Refresh shipping and try again." },
+          { status: 400, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
+    airCargoAirport = airport.airport
+  }
+
   const bundle = await computePeerMultiCheckoutUsd({
     supabase,
     listingsOrdered: listingsForTotals,
@@ -560,7 +592,15 @@ export async function POST(request: NextRequest) {
         ...(bundle.anyUsedReswellQuote
           ? {
               reswell_shipping_cents: String(Math.round(bundle.totalShippingUsd * 100)),
-              ...(bundle.reswellQuote?.rateId && packagingMode === "together"
+              ...(airCargoAirport
+                ? {
+                    shipengine_service_code: AIR_CARGO_SERVICE_CODE,
+                    air_cargo_airport: airCargoAirport,
+                  }
+                : {}),
+              ...(bundle.reswellQuote?.rateId &&
+              packagingMode === "together" &&
+              !isAirCargoServiceCode(bundle.reswellQuote.serviceCode)
                 ? {
                     shipengine_rate_id: bundle.reswellQuote.rateId,
                     ...(bundle.reswellQuote.serviceCode

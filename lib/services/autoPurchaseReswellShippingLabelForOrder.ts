@@ -37,6 +37,7 @@ import {
   rateQuoteFieldsToShippingInput,
 } from "@/lib/shipping/rate-address"
 import { TOGETHER_PACKAGE_KEY } from "@/lib/shipping/packaging-mode"
+import { isAirCargoServiceCode } from "@/lib/shipping/air-cargo"
 import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
 import { insertOrderShipmentsForOrder } from "@/lib/db/orderShipments"
 import {
@@ -421,6 +422,15 @@ export async function autoPurchaseReswellShippingLabelForOrder(
         console.warn(`${tag} could not read payment intent for selected rate:`, e)
       }
     }
+    const airCargoOrder =
+      isAirCargoServiceCode(togetherServiceFromPi) ||
+      (packageRatesFromPi.length > 0 &&
+        packageRatesFromPi.every((rate) => isAirCargoServiceCode(rate.serviceCode)))
+    if (airCargoOrder) {
+      console.info(`${tag} skipped: buyer chose air cargo airport pickup. No parcel label is purchased.`)
+      return
+    }
+
     const rateByListing = new Map(packageRatesFromPi.map((r) => [r.listingId, r.rateId]))
     const serviceByListing = new Map(
       packageRatesFromPi
