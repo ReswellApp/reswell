@@ -61,8 +61,28 @@ export const coastalSaveDeliverySchema = z
     }
   })
 
+export const coastalShipperScheduleToggleSchema = z.object({
+  shipperId: z.string().uuid(),
+  enabled: z.boolean(),
+})
+
+export const coastalShipperRunToggleSchema = z.object({
+  shipperId: z.string().uuid(),
+  runId: z.string().uuid(),
+  enabled: z.boolean(),
+})
+
+export const coastalShipperJobStatusSchema = z.object({
+  shipperId: z.string().uuid(),
+  requestId: z.string().uuid(),
+  status: z.enum(["waiting_for_run", "picked_up", "dropped_off"]),
+})
+
 export type CoastalShipperJoinInput = z.infer<typeof coastalShipperJoinSchema>
 export type CoastalScheduleEnabledInput = z.infer<typeof coastalScheduleEnabledSchema>
 export type CoastalRunInput = z.infer<typeof coastalRunSchema>
 export type CoastalSaveDeliveryInput = z.infer<typeof coastalSaveDeliverySchema>
 export type CoastalMatchPreviewInput = z.infer<typeof coastalMatchPreviewSchema>
+export type CoastalShipperScheduleToggleInput = z.infer<typeof coastalShipperScheduleToggleSchema>
+export type CoastalShipperRunToggleInput = z.infer<typeof coastalShipperRunToggleSchema>
+export type CoastalShipperJobStatusInput = z.infer<typeof coastalShipperJobStatusSchema>

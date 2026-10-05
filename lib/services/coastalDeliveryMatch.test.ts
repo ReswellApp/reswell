@@ -5,6 +5,7 @@ import type { CoastalStopView } from "@/lib/types/coastal-delivery.ts"
 import {
   matchCoastalShippers,
   nextRunDateIso,
+  pacificWeekDateIso,
   suggestPickupStopId,
   type CoastalMatchShipper,
 } from "./coastalDeliveryMatch.ts"
@@ -56,6 +57,14 @@ describe("nextRunDateIso", () => {
     const stillSundayPacific = new Date("2026-10-05T06:30:00.000Z")
     assert.equal(nextRunDateIso(stillSundayPacific, 0), "2026-10-04")
     assert.equal(nextRunDateIso(stillSundayPacific, 1), "2026-10-05")
+  })
+})
+
+describe("pacificWeekDateIso", () => {
+  it("uses the Sunday-through-Saturday week in Pacific time", () => {
+    assert.equal(pacificWeekDateIso(mondayPacific, 0), "2026-10-04")
+    assert.equal(pacificWeekDateIso(mondayPacific, 1), "2026-10-05")
+    assert.equal(pacificWeekDateIso(mondayPacific, 6), "2026-10-10")
   })
 })
 

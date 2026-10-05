@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import type {
+  CoastalAddressSnapshot,
+  CoastalAddressSource,
   CoastalDeliveryChoiceView,
+  CoastalDeliveryStatus,
   CoastalDirection,
   CoastalListingHit,
   CoastalListingPreview,
@@ -19,7 +22,7 @@ export type CoastalShipperScheduleRecord = {
   runs: CoastalRunView[]
 }
 
-const STOP_SELECT = "id, slug, name, sort_order, active"
+const STOP_SELECT = "id, slug, name, sort_order, latitude, longitude, active"
 const SHIPPER_SELECT = "id, user_id, display_name, phone, notes, schedule_enabled"
 const RUN_SELECT = "id, shipper_id, day_of_week, direction, enabled"
 const LISTING_SELECT = "id, title, city, state, status, section"
@@ -204,7 +207,6 @@ export async function upsertCoastalDeliveryRequest(
       dropoff_stop_id: input.dropoffStopId,
       shipper_id: input.shipperId,
       matched_run_id: input.matchedRunId,
-      status: "waiting_for_run",
       created_by: input.createdBy,
     },
     { onConflict: "listing_id" },
@@ -217,6 +219,274 @@ export async function deleteCoastalDeliveryRequest(
   listingId: string,
 ): Promise<void> {
   const { error } = await supabase.from("coastal_delivery_requests").delete().eq("listing_id", listingId)
+  if (error) throw error
+}
+
+const JOB_REQUEST_SELECT =
+  "id, listing_id, pickup_stop_id, seller_origin_label, dropoff_stop_id, shipper_id, matched_run_id, status, pickup_address, dropoff_address"
+const JOB_LISTING_SELECT = "id, title, city, state, status, user_id, latitude, longitude"
+const SALE_ORDER_SELECT =
+  "id, order_num, listing_id, buyer_id, seller_id, status, is_admin_test, shipping_address, created_at"
+
+export type CoastalShipperJobRecord = {
+  id: string
+  listingId: string
+  pickupStopId: string
+  sellerOriginLabel: string
+  dropoffStopId: string
+  shipperId: string | null
+  matchedRunId: string | null
+  status: CoastalDeliveryStatus
+  pickupAddress: CoastalAddressSnapshot | null
+  dropoffAddress: CoastalAddressSnapshot | null
+}
+
+export type CoastalJobListingRecord = {
+  id: string
+  title: string
+  city: string | null
+  state: string | null
+  status: string
+  userId: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
+export type CoastalSaleOrderRecord = {
+  id: string
+  orderNum: string | null
+  listingIds: string[]
+  buyerId: string | null
+  sellerId: string | null
+  status: string
+  isAdminTest: boolean
+  shippingAddress: unknown
+  createdAt: string
+}
+
+/** One shipper row, that shipper's runs, and those runs' stops. Does not read other shippers. */
+export async function getCoastalShipperSchedule(
+  supabase: SupabaseClient,
+  filter: { userId: string } | { shipperId: string },
+): Promise<CoastalShipperScheduleRecord | null> {
+  const request =
+    "userId" in filter
+      ? supabase.from("coastal_shippers").select(SHIPPER_SELECT).eq("user_id", filter.userId)
+      : supabase.from("coastal_shippers").select(SHIPPER_SELECT).eq("id", filter.shipperId)
+  const { data, error } = await request.maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  const shipper = asRecord(data)
+  const shipperId = stringField(shipper, "id")
+  if (!shipperId) return null
+
+  const { data: runs, error: runsError } = await supabase
+    .from("coastal_shipper_runs")
+    .select(RUN_SELECT)
+    .eq("shipper_id", shipperId)
+  if (runsError) throw runsError
+  const runRows = asRecords(runs)
+  const runIds = runRows.flatMap((row) => {
+    const id = stringField(row, "id")
+    return id ? [id] : []
+  })
+
+  let stopRows: Record<string, unknown>[] = []
+  if (runIds.length > 0) {
+    const { data: runStops, error: runStopsError } = await supabase
+      .from("coastal_shipper_run_stops")
+      .select("run_id, stop_id")
+      .in("run_id", runIds)
+    if (runStopsError) throw runStopsError
+    stopRows = asRecords(runStops)
+  }
+
+  return assembleSchedules([shipper], runRows, stopRows)[0] ?? null
+}
+
+/** Jobs assigned to this shipper or matched to one of their runs. */
+export async function listCoastalShipperJobs(
+  supabase: SupabaseClient,
+  shipperId: string,
+  runIds: string[],
+): Promise<CoastalShipperJobRecord[]> {
+  const [byShipper, byRun] = await Promise.all([
+    supabase.from("coastal_delivery_requests").select(JOB_REQUEST_SELECT).eq("shipper_id", shipperId),
+    runIds.length > 0
+      ? supabase.from("coastal_delivery_requests").select(JOB_REQUEST_SELECT).in("matched_run_id", runIds)
+      : Promise.resolve({ data: [], error: null }),
+  ])
+  if (byShipper.error) throw byShipper.error
+  if (byRun.error) throw byRun.error
+
+  const byId = new Map<string, CoastalShipperJobRecord>()
+  for (const row of [...asRecords(byShipper.data), ...asRecords(byRun.data)]) {
+    const job = mapShipperJob(row)
+    if (job) byId.set(job.id, job)
+  }
+  return [...byId.values()]
+}
+
+export async function listCoastalJobListings(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<CoastalJobListingRecord[]> {
+  if (listingIds.length === 0) return []
+  const { data, error } = await supabase.from("listings").select(JOB_LISTING_SELECT).in("id", listingIds)
+  if (error) throw error
+  return asRecords(data).flatMap((row) => {
+    const id = stringField(row, "id")
+    if (!id) return []
+    return [
+      {
+        id,
+        title: stringField(row, "title")?.trim() || "Untitled listing",
+        city: stringField(row, "city"),
+        state: stringField(row, "state"),
+        status: stringField(row, "status") || "unknown",
+        userId: stringField(row, "user_id"),
+        latitude: finiteNumber(row.latitude),
+        longitude: finiteNumber(row.longitude),
+      },
+    ]
+  })
+}
+
+/**
+ * Real checkout rows for these listings: the order's primary listing and any peer line item.
+ * Admin test orders are included so the caller can ignore them.
+ */
+export async function listCoastalSaleOrdersForListings(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<CoastalSaleOrderRecord[]> {
+  if (listingIds.length === 0) return []
+  const [primary, items] = await Promise.all([
+    supabase.from("orders").select(SALE_ORDER_SELECT).in("listing_id", listingIds),
+    supabase.from("order_items").select("order_id, listing_id").in("listing_id", listingIds),
+  ])
+  if (primary.error) throw primary.error
+  if (items.error) throw items.error
+
+  const listingsByOrder = new Map<string, Set<string>>()
+  const addLink = (orderId: string, listingId: string) => {
+    if (!listingIds.includes(listingId)) return
+    const current = listingsByOrder.get(orderId) ?? new Set<string>()
+    current.add(listingId)
+    listingsByOrder.set(orderId, current)
+  }
+
+  const primaryRows = asRecords(primary.data)
+  for (const row of primaryRows) {
+    const orderId = stringField(row, "id")
+    const listingId = stringField(row, "listing_id")
+    if (orderId && listingId) addLink(orderId, listingId)
+  }
+
+  const knownOrderIds = new Set(primaryRows.flatMap((row) => {
+    const id = stringField(row, "id")
+    return id ? [id] : []
+  }))
+  const extraOrderIds = [
+    ...new Set(
+      asRecords(items.data).flatMap((row) => {
+        const orderId = stringField(row, "order_id")
+        const listingId = stringField(row, "listing_id")
+        if (orderId && listingId) addLink(orderId, listingId)
+        return orderId && !knownOrderIds.has(orderId) ? [orderId] : []
+      }),
+    ),
+  ]
+
+  let extraRows: Record<string, unknown>[] = []
+  if (extraOrderIds.length > 0) {
+    const extra = await supabase.from("orders").select(SALE_ORDER_SELECT).in("id", extraOrderIds)
+    if (extra.error) throw extra.error
+    extraRows = asRecords(extra.data)
+  }
+
+  return [...primaryRows, ...extraRows].flatMap((row) => {
+    const id = stringField(row, "id")
+    if (!id) return []
+    const listingId = stringField(row, "listing_id")
+    const linked = listingsByOrder.get(id) ?? new Set<string>()
+    if (listingId && listingIds.includes(listingId)) linked.add(listingId)
+    if (linked.size === 0) return []
+    return [
+      {
+        id,
+        orderNum: stringField(row, "order_num"),
+        listingIds: [...linked],
+        buyerId: stringField(row, "buyer_id"),
+        sellerId: stringField(row, "seller_id"),
+        status: stringField(row, "status") ?? "",
+        isAdminTest: row.is_admin_test === true,
+        shippingAddress: row.shipping_address ?? null,
+        createdAt: stringField(row, "created_at") ?? "",
+      },
+    ]
+  })
+}
+
+export async function listCoastalProfileNames(
+  supabase: SupabaseClient,
+  profileIds: string[],
+): Promise<Map<string, string>> {
+  const ids = [...new Set(profileIds.filter((id) => id.length > 0))]
+  const names = new Map<string, string>()
+  if (ids.length === 0) return names
+  const { data, error } = await supabase.from("profiles").select("id, display_name, shop_name").in("id", ids)
+  if (error) throw error
+  for (const row of asRecords(data)) {
+    const id = stringField(row, "id")
+    if (!id) continue
+    const displayName = stringField(row, "display_name")?.trim() ?? ""
+    const shopName = stringField(row, "shop_name")?.trim() ?? ""
+    const name = displayName || shopName
+    if (name) names.set(id, name)
+  }
+  return names
+}
+
+export async function setCoastalShipperRunEnabled(
+  supabase: SupabaseClient,
+  shipperId: string,
+  runId: string,
+  enabled: boolean,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("coastal_shipper_runs")
+    .update({ enabled })
+    .eq("id", runId)
+    .eq("shipper_id", shipperId)
+    .select("id")
+    .maybeSingle()
+  if (error) throw error
+  return Boolean(data)
+}
+
+export async function updateCoastalDeliveryStatus(
+  supabase: SupabaseClient,
+  requestId: string,
+  status: CoastalDeliveryStatus,
+): Promise<void> {
+  const { error } = await supabase.from("coastal_delivery_requests").update({ status }).eq("id", requestId)
+  if (error) throw error
+}
+
+export async function updateCoastalDeliverySnapshots(
+  supabase: SupabaseClient,
+  requestId: string,
+  pickupAddress: CoastalAddressSnapshot | null,
+  dropoffAddress: CoastalAddressSnapshot | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("coastal_delivery_requests")
+    .update({
+      pickup_address: snapshotToJson(pickupAddress),
+      dropoff_address: snapshotToJson(dropoffAddress),
+    })
+    .eq("id", requestId)
   if (error) throw error
 }
 
@@ -328,6 +598,8 @@ function mapStop(row: Record<string, unknown>): CoastalStopView {
     slug: stringField(row, "slug") ?? "",
     name: stringField(row, "name") ?? "",
     sortOrder: typeof row.sort_order === "number" ? row.sort_order : Number(row.sort_order ?? 0),
+    latitude: finiteNumber(row.latitude),
+    longitude: finiteNumber(row.longitude),
   }
 }
 
@@ -361,7 +633,7 @@ function mapDeliveryRequest(row: Record<string, unknown>): CoastalDeliveryChoice
     dropoffStopId,
     shipperId: stringField(row, "shipper_id"),
     matchedRunId: stringField(row, "matched_run_id"),
-    status: "waiting_for_run",
+    status: parseDeliveryStatus(row.status),
   }
 }
 
@@ -370,6 +642,76 @@ function friendlyRunError(error: { message: string; code?: string }): Error {
     return new Error("You already have a run that day in that direction.")
   }
   return new Error(error.message || "Could not save that run.")
+}
+
+function mapShipperJob(row: Record<string, unknown>): CoastalShipperJobRecord | null {
+  const id = stringField(row, "id")
+  const listingId = stringField(row, "listing_id")
+  const pickupStopId = stringField(row, "pickup_stop_id")
+  const dropoffStopId = stringField(row, "dropoff_stop_id")
+  if (!id || !listingId || !pickupStopId || !dropoffStopId) return null
+  return {
+    id,
+    listingId,
+    pickupStopId,
+    sellerOriginLabel: stringField(row, "seller_origin_label") ?? "",
+    dropoffStopId,
+    shipperId: stringField(row, "shipper_id"),
+    matchedRunId: stringField(row, "matched_run_id"),
+    status: parseDeliveryStatus(row.status),
+    pickupAddress: parseAddressSnapshot(row.pickup_address),
+    dropoffAddress: parseAddressSnapshot(row.dropoff_address),
+  }
+}
+
+function parseDeliveryStatus(value: unknown): CoastalDeliveryStatus {
+  if (value === "picked_up" || value === "dropped_off" || value === "waiting_for_run") return value
+  return "waiting_for_run"
+}
+
+function parseAddressSnapshot(value: unknown): CoastalAddressSnapshot | null {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) return null
+  const row = value as Record<string, unknown>
+  const source: CoastalAddressSource | null = row.source === "order" || row.source === "listing" ? row.source : null
+  const label = stringField(row, "label")
+  if (!source || !label) return null
+  return {
+    label,
+    line1: stringField(row, "line1"),
+    line2: stringField(row, "line2"),
+    city: stringField(row, "city"),
+    state: stringField(row, "state"),
+    postalCode: stringField(row, "postal_code"),
+    latitude: finiteNumber(row.latitude),
+    longitude: finiteNumber(row.longitude),
+    source,
+    geocodeAttempted: row.geocode_attempted === true,
+  }
+}
+
+function snapshotToJson(snapshot: CoastalAddressSnapshot | null): Record<string, unknown> | null {
+  if (!snapshot) return null
+  return {
+    label: snapshot.label,
+    line1: snapshot.line1,
+    line2: snapshot.line2,
+    city: snapshot.city,
+    state: snapshot.state,
+    postal_code: snapshot.postalCode,
+    latitude: snapshot.latitude,
+    longitude: snapshot.longitude,
+    source: snapshot.source,
+    geocode_attempted: snapshot.geocodeAttempted,
+  }
+}
+
+function finiteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
 }
 
 function stringField(row: Record<string, unknown>, key: string): string | null {

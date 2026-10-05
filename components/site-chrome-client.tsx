@@ -47,6 +47,9 @@ function hideSiteChrome(pathname: string | null): boolean {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     return true
   }
+  if (pathname === "/coastal-delivery" || pathname.startsWith("/coastal-delivery/")) {
+    return true
+  }
   return isThreadsRoute(pathname)
 }
 
@@ -65,6 +68,8 @@ function hideFooter(pathname: string | null): boolean {
     pathname.startsWith("/import/") ||
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
+    pathname === "/coastal-delivery" ||
+    pathname.startsWith("/coastal-delivery/") ||
     isSupportCaseThreadRoute(pathname)
   )
 }

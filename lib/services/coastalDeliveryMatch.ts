@@ -57,11 +57,21 @@ export function routeDirection(pickupSort: number, dropoffSort: number): Coastal
 export function nextRunDateIso(now: Date, dayOfWeek: number): string {
   const civil = pacificCivilDate(now)
   const delta = (dayOfWeek - civil.weekday + 7) % 7
-  const utc = new Date(Date.UTC(civil.year, civil.month - 1, civil.day + delta))
-  const year = utc.getUTCFullYear()
-  const month = String(utc.getUTCMonth() + 1).padStart(2, "0")
-  const day = String(utc.getUTCDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
+  return formatIsoDate(civil.year, civil.month, civil.day + delta)
+}
+
+/** This weekday inside the America/Los_Angeles week that contains `now` (Sunday through Saturday). */
+export function pacificWeekDateIso(now: Date, dayOfWeek: number): string {
+  const civil = pacificCivilDate(now)
+  return formatIsoDate(civil.year, civil.month, civil.day - civil.weekday + dayOfWeek)
+}
+
+function formatIsoDate(year: number, month: number, day: number): string {
+  const utc = new Date(Date.UTC(year, month - 1, day))
+  const y = utc.getUTCFullYear()
+  const m = String(utc.getUTCMonth() + 1).padStart(2, "0")
+  const d = String(utc.getUTCDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
 }
 
 export function suggestPickupStopId(city: string | null | undefined, stops: CoastalStopView[]): string | null {

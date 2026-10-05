@@ -6,6 +6,7 @@ import { ROBOTS_PUBLIC_ALLOW_PATHS } from "@/lib/seo/robots-public-paths"
 /** Auth-gated and non-indexable app shells — shared across crawler rules. */
 export const ROBOTS_BLOCKED_APP_PATHS = [
   "/admin",
+  "/coastal-delivery",
   "/dashboard",
   "/messages",
   "/offers",
