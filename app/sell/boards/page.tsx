@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
+import { getSurfboardShippedSellOffer } from "@/lib/services/surfboardShippedOffer"
 import { sellerHasPublishedListingInSection } from "@/lib/db/sellerFirstListing"
 import { resolveBoardSellCreateViewMode } from "@/lib/sell-flow/resolve-board-sell-create-view-mode"
 import type { BoardSellViewMode } from "@/lib/sell-flow/board-sell-view-mode"
@@ -71,6 +72,9 @@ export default async function SellBoardsPage({
         sellerHasPublishedListingInSection(supabase, user.id, "surfboards"),
       ])
     : [false, false]
+  const surfboardShippedSell = initialActorIsAdmin
+    ? await getSurfboardShippedSellOffer()
+    : null
 
   const initialViewMode: BoardSellViewMode = editId
     ? "guided"
@@ -88,6 +92,7 @@ export default async function SellBoardsPage({
         hasPublishedSurfboard={hasPublishedSurfboard}
         fromGiveaway={fromGiveaway}
         initialViewMode={initialViewMode}
+        surfboardShippedSell={surfboardShippedSell}
       />
     </Suspense>
   )

@@ -48,6 +48,17 @@ import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
+import { previewSurfboardShippedCheckoutAction } from "@/lib/actions/surfboardShippedActions"
+import {
+  SURFBOARD_SHIPPED_FEE_USD,
+  SURFBOARD_SHIPPED_NAME,
+  SURFBOARD_SHIPPED_WINDOW_LABEL,
+  isCaliforniaAddressState,
+} from "@/lib/services/surfboardShipped"
+import type {
+  SurfboardShippedCheckoutPreview,
+  SurfboardShippedCheckoutSeed,
+} from "@/lib/services/surfboardShippedOffer"
 
 export type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 
@@ -65,6 +76,8 @@ interface CheckoutClientProps {
   suggestedFulfillment?: "pickup" | "shipping" | null
   /** Listing ids whose displayed price is the accepted offer amount. */
   acceptedOfferListingIds?: string[]
+  /** Admin checkout seed. Null hides Surfboard Shipped. */
+  surfboardShippedSeed?: SurfboardShippedCheckoutSeed | null
 }
 
 function CheckoutShippingArrival({ rate }: { rate: PeerCheckoutShippingRateOption }) {
@@ -95,6 +108,7 @@ export function CheckoutClient({
   offerId = null,
   suggestedFulfillment = null,
   acceptedOfferListingIds,
+  surfboardShippedSeed = null,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
   const offerSuggestedFulfillment = normalizeOfferFulfillment(suggestedFulfillment)
@@ -125,28 +139,37 @@ export function CheckoutClient({
     ? listings.every((l) => !!l.shipping_available)
     : !!primaryListing.shipping_available
 
-  const [method, setMethod] = useState<"pickup" | "shipping">(() => {
+  const [method, setMethod] = useState<"pickup" | "shipping" | "surfboard_shipped">(() => {
     if (offerSuggestedFulfillment === "pickup" && canPick) return "pickup"
     if (offerSuggestedFulfillment === "shipping" && canShip) return "shipping"
     if (canPick && !canShip) return "pickup"
     if (!canPick && canShip) return "shipping"
+    if (!canPick && !canShip && surfboardShippedSeed) return "surfboard_shipped"
     return "pickup"
   })
 
+  const surfboardShippedSelected = method === "surfboard_shipped"
+
   /** Multi-item payment intents always require an explicit fulfillment. */
-  const impliedFulfillment: "pickup" | "shipping" =
-    canPick && canShip ? method : !canPick && canShip ? "shipping" : "pickup"
+  const carrierMethod: "pickup" | "shipping" = method === "shipping" ? "shipping" : "pickup"
+  const impliedFulfillment: "pickup" | "shipping" = surfboardShippedSelected
+    ? "shipping"
+    : canPick && canShip
+      ? carrierMethod
+      : !canPick && canShip
+        ? "shipping"
+        : "pickup"
 
   const fulfillmentForApi = isBundle
     ? impliedFulfillment
-    : canPick && canShip
-      ? method
+    : surfboardShippedSelected || (canPick && canShip)
+      ? impliedFulfillment
       : undefined
 
   const needsShipping = impliedFulfillment === "shipping"
 
   const offersPackagingChoice =
-    needsShipping && checkoutOffersShippingPackagingChoice(listings)
+    needsShipping && !surfboardShippedSelected && checkoutOffersShippingPackagingChoice(listings)
   const [packagingMode, setPackagingMode] = useState<ShippingPackagingMode>(
     DEFAULT_SHIPPING_PACKAGING_MODE,
   )
@@ -178,7 +201,19 @@ export function CheckoutClient({
   const [purchaseDetails, setPurchaseDetails] = useState<PurchaseDetailsState>({
     readyToPay: false,
     shippingAddressId: null,
+    shippingState: null,
+    shippingCity: null,
   })
+  const [surfboardPreview, setSurfboardPreview] = useState<SurfboardShippedCheckoutPreview | null>(
+    null,
+  )
+  const buyerAddressIsCalifornia =
+    !purchaseDetails.shippingState || isCaliforniaAddressState(purchaseDetails.shippingState)
+  const showSurfboardShipped =
+    !isBundle &&
+    surfboardShippedSeed != null &&
+    buyerAddressIsCalifornia &&
+    (surfboardPreview == null || surfboardPreview.available || !purchaseDetails.shippingAddressId)
 
   const listingIds = useMemo(() => listings.map((l) => l.id), [listings])
   const listingIdsKey = listingIds.join(",")
@@ -248,6 +283,80 @@ export function CheckoutClient({
   }, [])
 
   useEffect(() => {
+    if (!surfboardShippedSeed || !purchaseDetails.shippingAddressId || isBundle) {
+      setSurfboardPreview(null)
+      return
+    }
+    if (!isCaliforniaAddressState(purchaseDetails.shippingState)) {
+      setSurfboardPreview({
+        available: false,
+        feeUsd: SURFBOARD_SHIPPED_FEE_USD,
+        window: null,
+        shippers: [],
+        matchedShipperName: null,
+        matchedWeekday: null,
+      })
+      return
+    }
+    let cancelled = false
+    void previewSurfboardShippedCheckoutAction({
+      listingId: primaryListing.id,
+      addressId: purchaseDetails.shippingAddressId,
+    }).then((preview) => {
+      if (!cancelled) setSurfboardPreview(preview)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [
+    isBundle,
+    primaryListing.id,
+    purchaseDetails.shippingAddressId,
+    purchaseDetails.shippingState,
+    surfboardShippedSeed,
+  ])
+
+  useEffect(() => {
+    if (method !== "surfboard_shipped") return
+    if (showSurfboardShipped) return
+    setMethod(canPick ? "pickup" : canShip ? "shipping" : "pickup")
+  }, [canPick, canShip, method, showSurfboardShipped])
+
+  useEffect(() => {
+    if (surfboardShippedSelected) {
+      if (!needsShipping) return
+      if (!purchaseDetails.shippingAddressId || !surfboardPreview) {
+        setShipQuote(null)
+        setShipQuoteToken(null)
+        setQuoteError(null)
+        setQuoteLoading(Boolean(purchaseDetails.shippingAddressId))
+        return
+      }
+      if (!resolved.ok) {
+        setShipQuote(null)
+        setShipQuoteToken(null)
+        setQuoteLoading(false)
+        setQuoteError(resolved.error)
+        return
+      }
+      if (!surfboardPreview.available) {
+        setShipQuote(null)
+        setShipQuoteToken(null)
+        setQuoteLoading(false)
+        setQuoteError(null)
+        return
+      }
+      setShipQuote({
+        shippingUsd: SURFBOARD_SHIPPED_FEE_USD,
+        totalUsd: Math.round((resolved.itemPrice + SURFBOARD_SHIPPED_FEE_USD) * 100) / 100,
+        usedReswellQuote: false,
+      })
+      setShipQuoteToken(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      return
+    }
+
     if (!needsShipping) {
       setShipQuote(null)
       setShipQuoteToken(null)
@@ -363,6 +472,8 @@ export function CheckoutClient({
     resolved,
     selectedShippingServiceCode,
     effectivePackagingMode,
+    surfboardShippedSelected,
+    surfboardPreview,
   ])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
@@ -635,6 +746,49 @@ export function CheckoutClient({
               </div>
             ) : null}
 
+            {showSurfboardShipped && surfboardShippedSeed ? (
+              <div className="mb-10 space-y-3">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+                  {SURFBOARD_SHIPPED_NAME}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setMethod("surfboard_shipped")}
+                  className={cn(
+                    "w-full rounded-[8px] border p-4 text-left transition-colors",
+                    surfboardShippedSelected
+                      ? "border-[#5574AD] bg-[#5574AD]/[0.04]"
+                      : "border-neutral-200 bg-white hover:border-neutral-300",
+                  )}
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Truck className="h-4 w-4 shrink-0 text-neutral-600" />
+                    {SURFBOARD_SHIPPED_NAME} · ${SURFBOARD_SHIPPED_FEE_USD}
+                  </span>
+                  <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                    Drop-off in {surfboardPreview?.window?.label ?? SURFBOARD_SHIPPED_WINDOW_LABEL}.
+                    {surfboardPreview?.matchedShipperName
+                      ? ` ${surfboardPreview.matchedShipperName} is live and driving this coast${
+                          surfboardPreview.matchedWeekday
+                            ? ` (${surfboardPreview.matchedWeekday} runs)`
+                            : ""
+                        }.`
+                      : " A live coastal shipper picks the board up and drives it to you."}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-foreground">
+                    {(surfboardPreview?.available
+                      ? surfboardPreview.shippers
+                      : surfboardShippedSeed.liveShippers
+                    ).map((shipper) => (
+                      <li key={shipper.id}>
+                        {shipper.displayName} · Live
+                      </li>
+                    ))}
+                  </ul>
+                </button>
+              </div>
+            ) : null}
+
             {offersPackagingChoice ? (
               <div className="mb-10 space-y-3">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Packaging</h2>
@@ -783,6 +937,8 @@ export function CheckoutClient({
                           ? `USPS Media Mail is $${displayTotals.shipping.toFixed(2)} — included in your total.`
                           : `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
                         : "Free shipping from this seller — included in your total."
+                      : surfboardShippedSelected
+                        ? `${SURFBOARD_SHIPPED_NAME} is $${SURFBOARD_SHIPPED_FEE_USD.toFixed(2)} — included in your total. Drop-off in ${SURFBOARD_SHIPPED_WINDOW_LABEL}.`
                       : displayTotals.shipping > 0
                         ? `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
                         : "Free shipping from this seller — included in your total."}
@@ -813,6 +969,7 @@ export function CheckoutClient({
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter
                   buyerEmail={buyerEmail ?? null}
+                  surfboardShipped={surfboardShippedSelected}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">
                   Secure payment processed by{" "}

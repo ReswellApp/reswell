@@ -49,6 +49,8 @@ interface PurchaseOptionsProps {
   hideStripeFooter?: boolean
   /** Prefills Link / billing email when the buyer is signed in. */
   buyerEmail?: string | null
+  /** Flat Surfboard Shipped checkout. Skips the carrier quote. */
+  surfboardShipped?: boolean
 }
 
 function purchaseDetailsPlaceholder(needsShipping: boolean): string {
@@ -74,6 +76,7 @@ export function PurchaseOptions({
   submitButtonClassName,
   hideStripeFooter = false,
   buyerEmail,
+  surfboardShipped = false,
 }: PurchaseOptionsProps) {
   const showCard = stripeCardCheckoutEnabled()
 
@@ -114,6 +117,7 @@ export function PurchaseOptions({
             packagingMode={packagingMode}
             purchaseDetailsReady
             needsShipping={needsShipping}
+            surfboardShipped={surfboardShipped}
             submitButtonLabel={submitButtonLabel}
             submitButtonClassName={submitButtonClassName}
             buyerEmail={buyerEmail}

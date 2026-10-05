@@ -32,6 +32,9 @@ export type PurchaseDetailsState = {
   readyToPay: boolean
   /** Required for Stripe when shipping; null for pickup-only checkout. */
   shippingAddressId: string | null
+  /** Selected saved-address state, when one is chosen. */
+  shippingState?: string | null
+  shippingCity?: string | null
 }
 
 export function CheckoutPurchaseDetails({
@@ -181,6 +184,8 @@ export function CheckoutPurchaseDetails({
       onStateChange({
         readyToPay: pickupNameOk && phoneReady,
         shippingAddressId: null,
+        shippingState: null,
+        shippingCity: null,
       })
       return
     }
@@ -189,6 +194,8 @@ export function CheckoutPurchaseDetails({
       onStateChange({
         readyToPay: false,
         shippingAddressId: null,
+        shippingState: null,
+        shippingCity: null,
       })
       return
     }
@@ -198,6 +205,8 @@ export function CheckoutPurchaseDetails({
       onStateChange({
         readyToPay: !!selected && phoneReady,
         shippingAddressId: selectedId,
+        shippingState: selected?.state ?? null,
+        shippingCity: selected?.city ?? null,
       })
       return
     }
@@ -205,6 +214,8 @@ export function CheckoutPurchaseDetails({
     onStateChange({
       readyToPay: false,
       shippingAddressId: null,
+      shippingState: null,
+      shippingCity: null,
     })
   }, [needsShipping, pickupName, phoneReady, showNewForm, selectedId, addresses, onStateChange])
 
