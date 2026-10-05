@@ -1,14 +1,17 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react"
 import {
   listingDirectPublicImageUrl,
   listingPdpVideoPlaybackSrc,
 } from "@/lib/listing-media-proxy-url"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
+import { LISTING_GALLERY_VIDEO_CONTROLS_STRIP_PX } from "@/lib/utils/listing-gallery-touch"
 import { cn } from "@/lib/utils"
 
 export type { ListingPdpVideoSource }
+
+type SurfaceGesture = { x: number; y: number; moved: boolean }
 
 type ListingPdpVideoProps = {
   video: ListingPdpVideoSource
@@ -32,6 +35,7 @@ export function ListingPdpVideo({
   active = true,
 }: ListingPdpVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const surfaceGestureRef = useRef<SurfaceGesture | null>(null)
   const [failed, setFailed] = useState(false)
   const src = useMemo(() => listingPdpVideoPlaybackSrc(video.url), [video.url])
   const poster = useMemo(() => {
@@ -49,6 +53,35 @@ export function ListingPdpVideo({
     videoRef.current?.pause()
   }, [active])
 
+  function rememberSurfacePoint(event: PointerEvent<HTMLElement>) {
+    surfaceGestureRef.current = { x: event.clientX, y: event.clientY, moved: false }
+  }
+
+  function trackSurfaceMove(event: PointerEvent<HTMLElement>) {
+    const gesture = surfaceGestureRef.current
+    if (!gesture) return
+    if (
+      Math.abs(event.clientX - gesture.x) > 8 ||
+      Math.abs(event.clientY - gesture.y) > 8
+    ) {
+      gesture.moved = true
+    }
+  }
+
+  function onSurfaceClick(event: MouseEvent<HTMLDivElement>) {
+    event.stopPropagation()
+    const moved = surfaceGestureRef.current?.moved ?? false
+    surfaceGestureRef.current = null
+    if (moved) return
+    const el = videoRef.current
+    if (!el) return
+    if (el.paused) {
+      void el.play().catch(() => undefined)
+    } else {
+      el.pause()
+    }
+  }
+
   if (!src) return null
 
   return (
@@ -56,7 +89,7 @@ export function ListingPdpVideo({
       className={cn(
         fill
           ? "absolute inset-0 bg-black"
-          : "overflow-hidden rounded-2xl bg-black shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
+          : "relative overflow-hidden rounded-2xl bg-black shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
         className,
       )}
     >
@@ -72,12 +105,32 @@ export function ListingPdpVideo({
         preload={active ? "auto" : "metadata"}
         poster={poster}
         aria-label={`${title} video`}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => {
+          event.stopPropagation()
+          rememberSurfacePoint(event)
+        }}
+        onPointerMove={trackSurfaceMove}
+        onClick={(event) => {
+          event.stopPropagation()
+          if (surfaceGestureRef.current?.moved) event.preventDefault()
+          surfaceGestureRef.current = null
+        }}
         onError={() => setFailed(true)}
       />
+      {/* Picture area joins the gallery swipe. The bottom strip stays the native controls. */}
+      <div
+        className="absolute inset-x-0 top-0 z-[2] transform-gpu [touch-action:pan-y]"
+        aria-hidden={true}
+        style={{ bottom: LISTING_GALLERY_VIDEO_CONTROLS_STRIP_PX }}
+        onPointerDown={(event) => {
+          event.stopPropagation()
+          rememberSurfacePoint(event)
+        }}
+        onPointerMove={trackSurfaceMove}
+        onClick={onSurfaceClick}
+      />
       {failed ? (
-        <p className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center px-6 text-center text-sm text-white/80">
+        <p className="pointer-events-none absolute inset-0 z-[3] flex items-center justify-center px-6 text-center text-sm text-white/80">
           This video can’t play in this browser.
         </p>
       ) : null}

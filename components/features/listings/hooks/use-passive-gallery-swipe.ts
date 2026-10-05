@@ -1,10 +1,22 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { listingGallerySwipeDirection } from "@/lib/utils/listing-gallery-touch"
+import {
+  listingGallerySwipeDirection,
+  listingGalleryTouchOnVideoControls,
+} from "@/lib/utils/listing-gallery-touch"
+
+/** Scrubbing the native control bar must not advance the gallery. */
+function touchOnVideoControls(target: EventTarget | null, clientY: number): boolean {
+  if (!(target instanceof Element)) return false
+  const video = target.closest("video")
+  if (!video) return false
+  return listingGalleryTouchOnVideoControls(clientY, video.getBoundingClientRect().bottom)
+}
 
 /**
- * Changes listing photos on a horizontal flick without calling `preventDefault`.
+ * Changes listing photos, including the video slide, on a horizontal flick
+ * without calling `preventDefault`.
  * Used on phones, where Embla's drag listeners freeze the listing hero.
  */
 export function useListingGallerySwipe(
@@ -35,13 +47,13 @@ export function useListingGallerySwipe(
         active = false
         return
       }
-      const target = event.target
-      if (target instanceof Element && target.closest("video")) {
+      const touch = event.touches[0]
+      if (!touch) {
         active = false
         return
       }
-      const touch = event.touches[0]
-      if (!touch) {
+      // The picture is a carousel slide. Only the control strip opts out.
+      if (touchOnVideoControls(event.target, touch.clientY)) {
         active = false
         return
       }
@@ -93,16 +105,18 @@ export function useListingGallerySwipe(
       else finish(cancelX, cancelY)
     }
 
-    const options: AddEventListenerOptions = { passive: true }
+    // Capture so a flick is seen even when the video element keeps the touch.
+    // Stay passive — preventDefault here freezes listing scroll on phones.
+    const options: AddEventListenerOptions = { passive: true, capture: true }
     node.addEventListener("touchstart", onStart, options)
     node.addEventListener("touchmove", onMove, options)
     node.addEventListener("touchend", onEnd, options)
     node.addEventListener("touchcancel", onCancel, options)
     return () => {
-      node.removeEventListener("touchstart", onStart)
-      node.removeEventListener("touchmove", onMove)
-      node.removeEventListener("touchend", onEnd)
-      node.removeEventListener("touchcancel", onCancel)
+      node.removeEventListener("touchstart", onStart, options)
+      node.removeEventListener("touchmove", onMove, options)
+      node.removeEventListener("touchend", onEnd, options)
+      node.removeEventListener("touchcancel", onCancel, options)
     }
   }, [enabled, node])
 }
