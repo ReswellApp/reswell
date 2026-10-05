@@ -40,8 +40,13 @@ export type MyListingRow = {
   shipping_packed_weight_oz: number | null
   city: string | null
   state: string | null
+  latitude: number | null
+  longitude: number | null
   local_pickup: boolean | null
   shipping_available: boolean | null
+  board_shipping_cost_mode: string | null
+  shipping_price: number | null
+  dropoff_location_id: string | null
   dimensions: string | null
   length_total_inches: number | null
   volume_liters: number | null
@@ -74,7 +79,7 @@ export type FetchMyListingsResult = {
 }
 
 const MY_LISTINGS_SELECT =
-  "id, slug, title, description, price, compare_at_price, status, section, condition, brand, model, city, state, local_pickup, shipping_available, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
+  "id, slug, title, description, price, compare_at_price, status, section, condition, brand, model, city, state, latitude, longitude, local_pickup, shipping_available, board_shipping_cost_mode, shipping_price, dropoff_location_id, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
 
 const EMPTY_STATS: MyListingsDashboardStats = {
   totalListings: 0,
@@ -191,8 +196,19 @@ export async function fetchMyListings(
       model: typeof listing.model === "string" ? listing.model : null,
       city: typeof listing.city === "string" ? listing.city : null,
       state: typeof listing.state === "string" ? listing.state : null,
-      local_pickup: listing.local_pickup === true,
+      latitude: toNumberOrNull(listing.latitude),
+      longitude: toNumberOrNull(listing.longitude),
+      local_pickup: listing.local_pickup === false ? false : listing.local_pickup === true ? true : null,
       shipping_available: listing.shipping_available === true,
+      board_shipping_cost_mode:
+        listing.board_shipping_cost_mode === "reswell" ||
+        listing.board_shipping_cost_mode === "flat" ||
+        listing.board_shipping_cost_mode === "free"
+          ? listing.board_shipping_cost_mode
+          : null,
+      shipping_price: toNumberOrNull(listing.shipping_price),
+      dropoff_location_id:
+        typeof listing.dropoff_location_id === "string" ? listing.dropoff_location_id : null,
       dimensions: typeof listing.dimensions === "string" ? listing.dimensions : null,
       length_total_inches: toNumberOrNull(listing.length_total_inches),
       volume_liters: toNumberOrNull(listing.volume_liters),

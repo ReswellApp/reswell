@@ -26,8 +26,13 @@ export type ListingQuickEditRow = {
   model: string | null
   city: string | null
   state: string | null
+  latitude: number | string | null
+  longitude: number | string | null
   local_pickup: boolean | null
   shipping_available: boolean | null
+  board_shipping_cost_mode: string | null
+  shipping_price: number | string | null
+  dropoff_location_id: string | null
   dimensions: string | null
   length_total_inches: number | string | null
   volume_liters: number | string | null
@@ -43,7 +48,7 @@ export type ListingQuickEditRow = {
 }
 
 const LISTING_QUICK_EDIT_SELECT =
-  "id, user_id, status, title, description, price, compare_at_price, condition, slug, section, archived_at, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, brand, model, city, state, local_pickup, shipping_available, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size"
+  "id, user_id, status, title, description, price, compare_at_price, condition, slug, section, archived_at, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, brand, model, city, state, latitude, longitude, local_pickup, shipping_available, board_shipping_cost_mode, shipping_price, dropoff_location_id, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size"
 
 export async function loadListingQuickEditRow(
   supabase: SupabaseClient,
@@ -67,8 +72,13 @@ export type ListingQuickFieldPatch = {
   model?: string | null
   city?: string | null
   state?: string | null
+  latitude?: number | null
+  longitude?: number | null
   local_pickup?: boolean
   shipping_available?: boolean
+  shipping_price?: number | null
+  board_shipping_cost_mode?: string | null
+  dropoff_location_id?: string | null
   dimensions?: string | null
   length_total_inches?: number | null
   volume_liters?: number | null

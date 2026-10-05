@@ -47,6 +47,8 @@ import {
   type ShopPackageSizeId,
 } from "@/lib/shop-category-package-sizes"
 import {
+  listingDeskCartonFromSize,
+  listingDeskInferredPackageSizeId,
   listingDeskSpecFromRow,
   listingDeskSpecsEqual,
   type ListingDeskSpec,
@@ -91,8 +93,13 @@ interface DeskEditorListing {
   model: string | null
   city: string | null
   state: string | null
+  latitude: number | null
+  longitude: number | null
   local_pickup: boolean | null
   shipping_available: boolean | null
+  board_shipping_cost_mode: string | null
+  shipping_price: number | null
+  dropoff_location_id: string | null
   dimensions: string | null
   length_total_inches: number | null
   volume_liters: number | null
@@ -140,6 +147,17 @@ function draftsEqual(a: ListingQuickDraft, b: ListingQuickDraft): boolean {
   )
 }
 
+function cartonFieldChanged(spec: Partial<ListingDeskSpec>): boolean {
+  return (
+    spec.packageLengthIn !== undefined ||
+    spec.packageWidthIn !== undefined ||
+    spec.packageHeightIn !== undefined ||
+    spec.packageWeightLb !== undefined ||
+    spec.packageWeightOz !== undefined ||
+    spec.dropoffLocationId !== undefined
+  )
+}
+
 function packageChipLabel(packageSizeId: string): string | null {
   if (!packageSizeId) return null
   if (packageSizeId === "custom") return "Custom box"
@@ -179,9 +197,18 @@ export function ListingInlineEditor({
 
   useEffect(() => {
     if (!appliedPackageSizeId || packageSyncNonce === 0) return
-    setDraft((current) => ({ ...current, packageSizeId: appliedPackageSizeId }))
-    savedRef.current = { ...savedRef.current, packageSizeId: appliedPackageSizeId }
-  }, [appliedPackageSizeId, packageSyncNonce])
+    const carton = listingDeskCartonFromSize(listing.section, appliedPackageSizeId)
+    setDraft((current) => ({
+      ...current,
+      packageSizeId: appliedPackageSizeId,
+      spec: carton ? { ...current.spec, ...carton } : current.spec,
+    }))
+    savedRef.current = {
+      ...savedRef.current,
+      packageSizeId: appliedPackageSizeId,
+      spec: carton ? { ...savedRef.current.spec, ...carton } : savedRef.current.spec,
+    }
+  }, [appliedPackageSizeId, packageSyncNonce, listing.section])
 
   useEffect(() => {
     if (window.location.hash !== `#listing-editor-${listing.id}`) return
@@ -291,11 +318,25 @@ export function ListingInlineEditor({
 
   function updateDraft(patch: Partial<Omit<ListingQuickDraft, "spec">> & { spec?: Partial<ListingDeskSpec> }) {
     setStatus("idle")
-    setDraft((current) => ({
-      ...current,
-      ...patch,
-      spec: patch.spec ? { ...current.spec, ...patch.spec } : current.spec,
-    }))
+    setDraft((current) => {
+      let spec = patch.spec ? { ...current.spec, ...patch.spec } : current.spec
+      let packageSizeId = patch.packageSizeId ?? current.packageSizeId
+      if (patch.packageSizeId && isShopPackageSizeId(patch.packageSizeId)) {
+        const carton = listingDeskCartonFromSize(listing.section, patch.packageSizeId)
+        if (carton) {
+          spec = {
+            ...spec,
+            ...carton,
+            shippingAvailable: true,
+            shippingCostMode: "reswell",
+            dropoffLocationId: "",
+          }
+        }
+      } else if (patch.spec && cartonFieldChanged(patch.spec)) {
+        packageSizeId = listingDeskInferredPackageSizeId(listing.section, spec)
+      }
+      return { ...current, ...patch, spec, packageSizeId }
+    })
   }
 
   const sectionLabel = isPeerListingSection(listing.section)

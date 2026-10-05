@@ -30,8 +30,13 @@ type DeskListing = ListingsDeskAnalyticsInput & {
   model: string | null
   city: string | null
   state: string | null
+  latitude: number | null
+  longitude: number | null
   local_pickup: boolean | null
   shipping_available: boolean | null
+  board_shipping_cost_mode: string | null
+  shipping_price: number | null
+  dropoff_location_id: string | null
   dimensions: string | null
   length_total_inches: number | null
   volume_liters: number | null
@@ -99,7 +104,7 @@ export function ListingsAdvancedView({
             Edit listings
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Title and price save as you type. Open a listing to edit the rest of it. Photo changes use the full editor.
+            Title and price save as you type. Open a listing to edit shipping, condition, and the rest of it. Photo changes use the full editor.
           </p>
         </div>
         {visibleListings.length === 0 ? (

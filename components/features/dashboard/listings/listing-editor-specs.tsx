@@ -3,6 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ChoiceChip } from "@/components/features/dashboard/listings/choice-chip"
+import { ListingDeskShipping } from "@/components/features/dashboard/listings/listing-desk-shipping"
 import { Input } from "@/components/ui/input"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
@@ -120,44 +121,13 @@ export function ListingEditorSpecs({
         </div>
       ))}
 
-      <div>
-        <p className="text-[12px] font-medium text-muted-foreground">Delivery</p>
-        <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Delivery">
-          <ChoiceChip
-            selected={spec.localPickup}
-            disabled={disabled}
-            onClick={() => onChange({ localPickup: !spec.localPickup })}
-          >
-            Local pickup
-          </ChoiceChip>
-          <ChoiceChip
-            selected={spec.shippingAvailable}
-            disabled={disabled}
-            onClick={() => onChange({ shippingAvailable: !spec.shippingAvailable })}
-          >
-            Shipping
-          </ChoiceChip>
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <SpecText
-          id={`${listingId}-city`}
-          label="City"
-          value={spec.city}
-          disabled={disabled}
-          placeholder="City"
-          onChange={(city) => onChange({ city })}
-        />
-        <SpecText
-          id={`${listingId}-state`}
-          label="State"
-          value={spec.state}
-          disabled={disabled}
-          placeholder="State"
-          onChange={(state) => onChange({ state })}
-        />
-      </div>
+      <ListingDeskShipping
+        listingId={listingId}
+        section={section}
+        spec={spec}
+        disabled={disabled}
+        onChange={onChange}
+      />
     </div>
   )
 }
