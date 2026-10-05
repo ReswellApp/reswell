@@ -263,8 +263,9 @@ export function listingPdpCropsEqual(
 }
 
 /**
- * Same pixel size keeps the previous object. The Adjust editor reads natural
- * size from an inline ref, and React 19 invokes that ref on every render.
+ * Same pixel size keeps the previous object. Cached listing images can report
+ * their natural size from both a ref and onLoad; repeated reports must not
+ * schedule another render.
  */
 export function retainMeasuredSize(
   prev: { w: number; h: number } | null,

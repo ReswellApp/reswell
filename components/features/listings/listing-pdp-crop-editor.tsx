@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -80,6 +81,11 @@ export function ListingPdpCropEditor({
 
   const photo = images[index] ?? images[0] ?? null
   const currentCrop = photo ? cropOrDefault(crops[photo.id] ?? photo.crop) : LISTING_PDP_CROP_FIT
+  const attachPhotoImage = useCallback((img: HTMLImageElement | null) => {
+    photoImgRef.current = img
+    // iOS Chrome / Google app often skip onLoad for cached images.
+    if (img?.complete) rememberNaturalSize(img, setNatural)
+  }, [])
 
   const initialCrops = useMemo(() => {
     const next: Record<string, ListingPdpCrop | null> = {}
@@ -289,11 +295,7 @@ export function ListingPdpCropEditor({
                     }
                   : { inset: 0, width: "100%", height: "100%", objectFit: "contain" }
               }
-              ref={(img) => {
-                photoImgRef.current = img
-                // iOS Chrome / Google app often skip onLoad for cached images.
-                if (img?.complete) rememberNaturalSize(img, setNatural)
-              }}
+              ref={attachPhotoImage}
               onLoad={(event) => {
                 rememberNaturalSize(event.currentTarget, setNatural)
               }}
