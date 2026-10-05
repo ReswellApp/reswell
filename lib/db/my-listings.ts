@@ -38,6 +38,22 @@ export type MyListingRow = {
   shipping_packed_width_in: number | null
   shipping_packed_height_in: number | null
   shipping_packed_weight_oz: number | null
+  city: string | null
+  state: string | null
+  local_pickup: boolean | null
+  shipping_available: boolean | null
+  dimensions: string | null
+  length_total_inches: number | null
+  volume_liters: number | null
+  fins_setup: string | null
+  fin_system: string | null
+  construction: string | null
+  fins_included: boolean | null
+  tail_shape: string | null
+  fin_size: string | null
+  wetsuit_size: string | null
+  apparel_kind: string | null
+  traction_size: string | null
   sold_off_platform: boolean | null
   canDelete: boolean
   canRelist: boolean
@@ -58,7 +74,7 @@ export type FetchMyListingsResult = {
 }
 
 const MY_LISTINGS_SELECT =
-  "id, slug, title, description, price, compare_at_price, status, section, condition, brand, model, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
+  "id, slug, title, description, price, compare_at_price, status, section, condition, brand, model, city, state, local_pickup, shipping_available, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
 
 const EMPTY_STATS: MyListingsDashboardStats = {
   totalListings: 0,
@@ -171,6 +187,24 @@ export async function fetchMyListings(
       shipping_packed_width_in: toNumberOrNull(listing.shipping_packed_width_in),
       shipping_packed_height_in: toNumberOrNull(listing.shipping_packed_height_in),
       shipping_packed_weight_oz: toNumberOrNull(listing.shipping_packed_weight_oz),
+      brand: typeof listing.brand === "string" ? listing.brand : null,
+      model: typeof listing.model === "string" ? listing.model : null,
+      city: typeof listing.city === "string" ? listing.city : null,
+      state: typeof listing.state === "string" ? listing.state : null,
+      local_pickup: listing.local_pickup === true,
+      shipping_available: listing.shipping_available === true,
+      dimensions: typeof listing.dimensions === "string" ? listing.dimensions : null,
+      length_total_inches: toNumberOrNull(listing.length_total_inches),
+      volume_liters: toNumberOrNull(listing.volume_liters),
+      fins_setup: typeof listing.fins_setup === "string" ? listing.fins_setup : null,
+      fin_system: typeof listing.fin_system === "string" ? listing.fin_system : null,
+      construction: typeof listing.construction === "string" ? listing.construction : null,
+      fins_included: listing.fins_included === true ? true : listing.fins_included === false ? false : null,
+      tail_shape: typeof listing.tail_shape === "string" ? listing.tail_shape : null,
+      fin_size: typeof listing.fin_size === "string" ? listing.fin_size : null,
+      wetsuit_size: typeof listing.wetsuit_size === "string" ? listing.wetsuit_size : null,
+      apparel_kind: typeof listing.apparel_kind === "string" ? listing.apparel_kind : null,
+      traction_size: typeof listing.traction_size === "string" ? listing.traction_size : null,
       cartCount: engagement?.cartCount ?? 0,
       favoriteCount: engagement?.favoriteCount ?? 0,
       canDelete: !blockedIds.has(listing.id),

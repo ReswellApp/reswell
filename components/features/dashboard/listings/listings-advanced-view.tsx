@@ -26,6 +26,24 @@ type DeskListing = ListingsDeskAnalyticsInput & {
   shipping_packed_width_in: number | null
   shipping_packed_height_in: number | null
   shipping_packed_weight_oz: number | null
+  brand: string | null
+  model: string | null
+  city: string | null
+  state: string | null
+  local_pickup: boolean | null
+  shipping_available: boolean | null
+  dimensions: string | null
+  length_total_inches: number | null
+  volume_liters: number | null
+  fins_setup: string | null
+  fin_system: string | null
+  construction: string | null
+  fins_included: boolean | null
+  tail_shape: string | null
+  fin_size: string | null
+  wetsuit_size: string | null
+  apparel_kind: string | null
+  traction_size: string | null
 }
 
 interface ListingsAdvancedViewProps {
@@ -81,8 +99,7 @@ export function ListingsAdvancedView({
             Edit listings
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Title and price save as you type. Open a listing for condition, box size, and description.
-            Photos and shipping still use the full editor.
+            Title and price save as you type. Open a listing to edit the rest of it. Photo changes use the full editor.
           </p>
         </div>
         {visibleListings.length === 0 ? (

@@ -457,6 +457,7 @@ export function MyListingsClient({
         shipping_packed_width_in: saved.shipping_packed_width_in,
         shipping_packed_height_in: saved.shipping_packed_height_in,
         shipping_packed_weight_oz: saved.shipping_packed_weight_oz,
+        ...saved.desk,
       },
     }))
   }

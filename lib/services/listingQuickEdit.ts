@@ -19,6 +19,12 @@ import {
   listingPackageColumnsForShopSize,
   type ShopPackageSizeId,
 } from "@/lib/shop-category-package-sizes"
+import {
+  listingDeskColumnsFromSpec,
+  listingDeskStoredColumns,
+  type ListingDeskColumns,
+  type ListingDeskSource,
+} from "@/lib/listings-desk-fields"
 import type { ListingQuickEditBody } from "@/lib/validations/listing-quick-edit"
 
 export type ListingQuickEditSaved = {
@@ -34,6 +40,7 @@ export type ListingQuickEditSaved = {
   shipping_packed_width_in: number | null
   shipping_packed_height_in: number | null
   shipping_packed_weight_oz: number | null
+  desk: ListingDeskColumns
 }
 
 export type UpdateListingQuickEditResult =
@@ -44,6 +51,43 @@ function toNumber(value: string | number | null | undefined): number | null {
   if (value == null || value === "") return null
   const n = typeof value === "number" ? value : Number(value)
   return Number.isFinite(n) ? n : null
+}
+
+function deskSource(row: ListingQuickEditRow): ListingDeskSource {
+  return {
+    section: row.section ?? "",
+    title: row.title,
+    brand: row.brand,
+    model: row.model,
+    city: row.city,
+    state: row.state,
+    local_pickup: row.local_pickup,
+    shipping_available: row.shipping_available,
+    dimensions: row.dimensions,
+    length_total_inches: toNumber(row.length_total_inches),
+    volume_liters: toNumber(row.volume_liters),
+    fins_setup: row.fins_setup,
+    fin_system: row.fin_system,
+    construction: row.construction,
+    fins_included: row.fins_included,
+    tail_shape: row.tail_shape,
+    fin_size: row.fin_size,
+    wetsuit_size: row.wetsuit_size,
+    apparel_kind: row.apparel_kind,
+    traction_size: row.traction_size,
+  }
+}
+
+function sameDeskValue(current: unknown, next: string | number | boolean | null): boolean {
+  if (next == null) return current == null || current === ""
+  if (typeof next === "boolean") return current === next
+  if (typeof next === "number") {
+    const left = toNumber(current as string | number | null)
+    return left != null && Math.abs(left - next) < 0.001
+  }
+  const left = current == null || current === "" ? null : String(current)
+  const right = next == null || next === "" ? null : String(next)
+  return left === right
 }
 
 function savedFromRow(
@@ -73,6 +117,7 @@ function savedFromRow(
     shipping_packed_width_in: toNumber(row.shipping_packed_width_in),
     shipping_packed_height_in: toNumber(row.shipping_packed_height_in),
     shipping_packed_weight_oz: toNumber(row.shipping_packed_weight_oz),
+    desk: listingDeskStoredColumns(deskSource(row)),
   }
 }
 
@@ -118,6 +163,17 @@ export async function updateSellerListingQuickEdit(
   }
   if (params.condition !== undefined && params.condition !== row.condition) {
     patch.condition = params.condition
+  }
+
+  if (params.specs) {
+    const built = listingDeskColumnsFromSpec(section, params.specs)
+    if ("error" in built) return { ok: false, status: 400, error: built.error }
+    for (const [key, value] of Object.entries(built.columns)) {
+      const column = key as keyof typeof built.columns
+      if (!sameDeskValue(row[column as keyof ListingQuickEditRow], value ?? null)) {
+        Object.assign(patch, { [column]: value ?? null })
+      }
+    }
   }
 
   if (params.packageSizeId !== undefined) {
