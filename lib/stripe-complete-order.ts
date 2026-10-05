@@ -58,6 +58,10 @@ import {
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
+import {
+  applyAirCargoToOrderShippingJson,
+  isAirCargoServiceCode,
+} from "@/lib/shipping/air-cargo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
@@ -775,6 +779,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   shippingAddressJson = isTerminalGuestSale
     ? applyTerminalCustomerToOrderShippingJson(pi, shippingAddressJson)
     : shippingAddressJson
+
+  const airCargoAirport = pi.metadata.air_cargo_airport?.trim() || ""
+  if (
+    shippingAddressJson &&
+    airCargoAirport &&
+    isAirCargoServiceCode(pi.metadata.shipengine_service_code)
+  ) {
+    shippingAddressJson = applyAirCargoToOrderShippingJson(shippingAddressJson, airCargoAirport)
+  }
 
   const isPickup = fulfillmentMethod === "pickup"
   const deliveryStatus = isAdminTerminalSale

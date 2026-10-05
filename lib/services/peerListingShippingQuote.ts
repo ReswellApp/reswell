@@ -12,6 +12,7 @@ import {
   peerCheckoutSharedSection,
   type PeerCheckoutShippingRateOption,
 } from "@/lib/shipping/peer-checkout-usps-services"
+import { isAirCargoServiceCode } from "@/lib/shipping/air-cargo"
 
 /**
  * Supabase `listings` select fragment for peer surfboard checkout + ShipEngine.
@@ -279,9 +280,11 @@ export async function computePeerCheckoutTotalsUsd(input: {
   }
 
   if (input.shippingOverride) {
-    const parcelCheck = resolvePackedParcelFromListing(input.listing)
-    if (!parcelCheck.ok) {
-      return parcelCheck
+    if (!isAirCargoServiceCode(input.shippingOverride.serviceCode)) {
+      const parcelCheck = resolvePackedParcelFromListing(input.listing)
+      if (!parcelCheck.ok) {
+        return parcelCheck
+      }
     }
     const ship = input.shippingOverride.shippingUsd
     const rateId = input.shippingOverride.rateId?.trim() || ""

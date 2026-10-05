@@ -37,6 +37,10 @@ interface PurchaseOptionsProps {
   promoCode?: string | null
   /** Signed token from `/api/checkout/shipping-quote` — charges that ShipEngine rate without a second lookup. */
   shippingQuoteToken?: string | null
+  /** Required when the signed quote is air cargo. */
+  airCargoAirport?: string | null
+  /** Replaces the generic “finish details” line when payment is blocked for a specific reason. */
+  blockedHint?: string | null
   /** Multi-surfboard: together (one box) vs separate (one label per board). */
   packagingMode?: "together" | "separate" | null
   /** When false, card checkout stays disabled until purchase details are complete. */
@@ -67,6 +71,8 @@ export function PurchaseOptions({
   offerId,
   promoCode,
   shippingQuoteToken,
+  airCargoAirport = null,
+  blockedHint = null,
   packagingMode = null,
   purchaseDetailsReady = true,
   needsShipping = false,
@@ -98,7 +104,7 @@ export function PurchaseOptions({
     <div className="flex min-h-[400px] flex-col">
       {!canMountStripe ? (
         <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-          {purchaseDetailsPlaceholder(needsShipping)}
+          {blockedHint ?? purchaseDetailsPlaceholder(needsShipping)}
         </div>
       ) : (
         <div className="flex flex-1 flex-col space-y-3">
@@ -111,6 +117,7 @@ export function PurchaseOptions({
             offerId={offerId ?? null}
             promoCode={promoCode ?? null}
             shippingQuoteToken={shippingQuoteToken ?? null}
+            airCargoAirport={airCargoAirport}
             packagingMode={packagingMode}
             purchaseDetailsReady
             needsShipping={needsShipping}

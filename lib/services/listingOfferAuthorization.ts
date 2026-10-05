@@ -35,6 +35,7 @@ import {
 } from "@/lib/services/checkoutShippingQuoteToken"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import { isAirCargoServiceCode } from "@/lib/shipping/air-cargo"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
@@ -240,6 +241,13 @@ export async function computeOfferAuthorizationTotals(
     }
     if (!verified.payload.usedReswellQuote) {
       return { ok: false, status: 400, error: "Invalid shipping quote token." }
+    }
+    if (isAirCargoServiceCode(verified.payload.serviceCode)) {
+      return {
+        ok: false,
+        status: 400,
+        error: "Air cargo is chosen at checkout. Ship this offer with ground delivery, or buy the board from checkout.",
+      }
     }
     preverifiedShipping = {
       shippingUsd: verified.payload.shippingCents / 100,

@@ -31,6 +31,8 @@ import { OrderReturnsSection } from "@/components/features/orders/order-returns-
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-order-experience"
+import { AirCargoPickupNotice } from "@/components/features/checkout/air-cargo-pickup-notice"
+import { readOrderAirCargo } from "@/lib/shipping/air-cargo"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
@@ -231,6 +233,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
     `Seller ${order.seller_id.slice(0, 8)}…`
 
   const ship = order.shipping_address
+  const airCargo = readOrderAirCargo(ship)
   const addrBlock = ship?.address ? formatAddress(ship.address) : null
   const paidWithCard = !!order.stripe_checkout_session_id
   const fulfill =
@@ -451,6 +454,14 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
             <p className="text-muted-foreground whitespace-pre-line">{addrBlock}</p>
             {ship?.phone && <p className="text-muted-foreground">Phone: {ship.phone}</p>}
             {ship?.email && <p className="text-muted-foreground">Email: {ship.email}</p>}
+            {airCargo ? (
+              <AirCargoPickupNotice
+                airport={airCargo.airport}
+                audience="buyer"
+                pickupWithinHours={airCargo.pickupWithinHours}
+                className="mt-3"
+              />
+            ) : null}
           </CardContent>
         </Card>
       )}
