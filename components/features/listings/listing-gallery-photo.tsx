@@ -1,6 +1,13 @@
 "use client"
 
-import { useEffect, useState, type CSSProperties, type DragEvent } from "react"
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type Dispatch,
+  type DragEvent,
+  type SetStateAction,
+} from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -9,6 +16,7 @@ import {
   listingPdpCropNeedsPreciseLayout,
   listingPdpCropObjectPosition,
   listingPdpCropToLayout,
+  retainMeasuredSize,
   type ListingPdpCrop,
 } from "@/lib/utils/listing-pdp-crop"
 
@@ -77,10 +85,14 @@ function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void):
 function rememberSize(
   img: { naturalWidth: number; naturalHeight: number },
   onLoaded?: ListingGalleryPhotoProps["onLoaded"],
-  onNatural?: (size: { width: number; height: number }) => void,
+  onNatural?: Dispatch<SetStateAction<{ w: number; h: number } | null>>,
 ): void {
   if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-    onNatural?.({ width: img.naturalWidth, height: img.naturalHeight })
+    const w = img.naturalWidth
+    const h = img.naturalHeight
+    // React 19 runs inline refs again after a render. Reusing the measured
+    // object prevents a cached image from creating a render/decode loop.
+    onNatural?.((prev) => retainMeasuredSize(prev, w, h))
     onLoaded?.({ naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight })
   }
 }
@@ -107,7 +119,7 @@ export function ListingGalleryPhoto({
   const [trackedPreview, setTrackedPreview] = useState(previewSrc ?? "")
   const [previewReady, setPreviewReady] = useState(false)
   const [srcReady, setSrcReady] = useState(false)
-  const [natural, setNatural] = useState<{ width: number; height: number } | null>(null)
+  const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
   const [frame, setFrame] = useState<{ width: number; height: number } | null>(null)
   const [frameEl, setFrameEl] = useState<HTMLElement | null>(null)
 
@@ -128,7 +140,7 @@ export function ListingGalleryPhoto({
   const precise = listingPdpCropNeedsPreciseLayout(crop)
   const box =
     precise && crop && natural && frame
-      ? listingPdpCropToLayout(frame.width, frame.height, natural.width, natural.height, crop)
+      ? listingPdpCropToLayout(frame.width, frame.height, natural.w, natural.h, crop)
       : null
 
   useEffect(() => {
