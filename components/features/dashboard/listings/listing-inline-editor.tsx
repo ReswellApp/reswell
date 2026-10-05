@@ -4,17 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { format } from "date-fns"
-import { ExternalLink, Eye, Loader2, Package } from "lucide-react"
+import { Check, ChevronDown, ExternalLink, Eye, Loader2, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -22,7 +13,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Textarea } from "@/components/ui/textarea"
+import {
+  DeskPriceInput,
+  DeskTitleInput,
+  ListingEditorDetails,
+} from "@/components/features/dashboard/listings/listing-editor-fields"
 import {
   updateListingQuickEditAction,
   type ListingQuickEditSaved,
@@ -30,8 +25,8 @@ import {
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import {
-  LISTING_CONDITION_SELL_OPTIONS,
   capitalizeWords,
+  formatCondition,
   isListingSellableCondition,
   type ListingSellableCondition,
 } from "@/lib/listing-labels"
@@ -47,8 +42,7 @@ import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
 import {
   inferShopPackageSizeId,
   isShopPackageSizeId,
-  shopPackageSizeLabel,
-  shopPackageSizesForSection,
+  shopPackageChipLabel,
   type ShopPackageSizeId,
 } from "@/lib/shop-category-package-sizes"
 import { LISTING_QUICK_EDIT_DESCRIPTION_MAX } from "@/lib/validations/listing-quick-edit"
@@ -92,6 +86,8 @@ interface ListingInlineEditorProps {
   listing: DeskEditorListing
   appliedPackageSizeId?: ShopPackageSizeId | null
   packageSyncNonce?: number
+  expanded?: boolean
+  onExpandedChange?: (expanded: boolean) => void
   onSaved: (listingId: string, saved: ListingQuickEditSaved) => void
 }
 
@@ -117,106 +113,29 @@ function draftsEqual(a: ListingQuickDraft, b: ListingQuickDraft): boolean {
   )
 }
 
-function ListingFields({
-  listingId,
-  section,
-  draft,
-  disabled,
-  onChange,
-}: {
-  listingId: string
-  section: string
-  draft: ListingQuickDraft
-  disabled: boolean
-  onChange: (patch: Partial<ListingQuickDraft>) => void
-}) {
-  const packageSizes = isPeerListingSection(section) ? shopPackageSizesForSection(section) : []
-  const packageValue = draft.packageSizeId || undefined
+function packageChipLabel(packageSizeId: string): string | null {
+  if (!packageSizeId) return null
+  if (packageSizeId === "custom") return "Custom box"
+  if (isShopPackageSizeId(packageSizeId)) return shopPackageChipLabel(packageSizeId)
+  return null
+}
 
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <div className="space-y-1.5 sm:col-span-2">
-        <Label htmlFor={`${listingId}-title`}>Title</Label>
-        <Input
-          id={`${listingId}-title`}
-          value={draft.title}
-          maxLength={LISTING_TITLE_MAX_LENGTH}
-          disabled={disabled}
-          onChange={(event) => onChange({ title: event.target.value })}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${listingId}-price`}>Price</Label>
-        <Input
-          id={`${listingId}-price`}
-          inputMode="decimal"
-          value={draft.priceInput}
-          disabled={disabled}
-          onChange={(event) => onChange({ priceInput: event.target.value })}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${listingId}-condition`}>Condition</Label>
-        <Select
-          value={draft.condition || undefined}
-          onValueChange={(condition) => onChange({ condition })}
-          disabled={disabled}
-        >
-          <SelectTrigger id={`${listingId}-condition`} aria-label="Condition">
-            <SelectValue placeholder="Condition" />
-          </SelectTrigger>
-          <SelectContent>
-            {LISTING_CONDITION_SELL_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {packageSizes.length > 0 ? (
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor={`${listingId}-package`}>Package size</Label>
-          <Select
-            value={packageValue}
-            onValueChange={(packageSizeId) => onChange({ packageSizeId })}
-            disabled={disabled}
-          >
-            <SelectTrigger id={`${listingId}-package`} aria-label="Package size">
-              <SelectValue placeholder="Package size" />
-            </SelectTrigger>
-            <SelectContent>
-              {draft.packageSizeId === "custom" ? (
-                <SelectItem value="custom">Custom box</SelectItem>
-              ) : null}
-              {packageSizes.map((sizeId) => (
-                <SelectItem key={sizeId} value={sizeId}>
-                  {shopPackageSizeLabel(sizeId)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ) : null}
-      <div className="space-y-1.5 sm:col-span-2">
-        <Label htmlFor={`${listingId}-description`}>Description</Label>
-        <Textarea
-          id={`${listingId}-description`}
-          value={draft.description}
-          maxLength={LISTING_QUICK_EDIT_DESCRIPTION_MAX}
-          rows={3}
-          disabled={disabled}
-          onChange={(event) => onChange({ description: event.target.value })}
-        />
-      </div>
-    </div>
-  )
+function deskStatusLabel(status: string): string | null {
+  if (status === "active") return null
+  if (status === "draft") return "Draft"
+  if (status === "sold") return "Sold"
+  if (status === "pending_sale") return "Pending sale"
+  if (status === "pending") return "Pending"
+  if (status === "delinquent") return "Delinquent"
+  return capitalizeWords(status.replace(/[_-]/g, " "))
 }
 
 export function ListingInlineEditor({
   listing,
   appliedPackageSizeId = null,
   packageSyncNonce = 0,
+  expanded = false,
+  onExpandedChange,
   onSaved,
 }: ListingInlineEditorProps) {
   const editable = canQuickEditListing(listing.status)
@@ -236,6 +155,11 @@ export function ListingInlineEditor({
     setDraft((current) => ({ ...current, packageSizeId: appliedPackageSizeId }))
     savedRef.current = { ...savedRef.current, packageSizeId: appliedPackageSizeId }
   }, [appliedPackageSizeId, packageSyncNonce])
+
+  useEffect(() => {
+    if (window.location.hash !== `#listing-editor-${listing.id}`) return
+    onExpandedChange?.(true)
+  }, [listing.id, onExpandedChange])
 
   useEffect(() => {
     if (!editable) return
@@ -343,20 +267,23 @@ export function ListingInlineEditor({
     ? PEER_LISTING_SECTION_LABELS[listing.section]
     : capitalizeWords(listing.section.replace(/[-_]/g, " "))
   const listedDate = format(new Date(listing.created_at), "MMM d, yyyy")
-  const statusLabel =
-    status === "saving" ? "Saving…" : status === "saved" ? "Saved" : status === "error" ? error : null
+  const conditionLabel = formatCondition(draft.condition)
+  const boxLabel = packageChipLabel(draft.packageSizeId)
+  const statusPill = deskStatusLabel(listing.status)
+  const facts = [sectionLabel, listedDate, `${listing.views.toLocaleString()} views`, conditionLabel, boxLabel]
+    .filter((fact): fact is string => Boolean(fact))
+    .join(" · ")
+  const displayTitle = capitalizeWords(draft.title || listing.title)
+  const detailsId = `listing-editor-details-${listing.id}`
 
   return (
-    <article
-      id={`listing-editor-${listing.id}`}
-      className="scroll-mt-24 rounded-2xl border border-border/70 bg-card p-4 shadow-sm"
-    >
-      <div className="flex flex-col gap-4 sm:flex-row">
+    <article id={`listing-editor-${listing.id}`} className="scroll-mt-24 px-3 py-3 sm:px-4 sm:py-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         <button
           type="button"
-          className={cn(listingPortraitThumbClass, "w-20 sm:w-[88px]")}
+          className={listingPortraitThumbClass}
           onClick={() => setQuickViewOpen(true)}
-          aria-label={`Quick view ${capitalizeWords(listing.title)}`}
+          aria-label={`Quick view ${displayTitle}`}
         >
           {imageSrc ? (
             <Image
@@ -369,76 +296,125 @@ export function ListingInlineEditor({
             />
           ) : (
             <span className="absolute inset-0 flex items-center justify-center">
-              <Package className="h-7 w-7 text-muted-foreground" />
+              <Package className="h-6 w-6 text-muted-foreground" />
             </span>
           )}
         </button>
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[12px] text-muted-foreground">
-              {sectionLabel} · Listed {listedDate} ·{" "}
-              {listing.views.toLocaleString()} views
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => setQuickViewOpen(true)}>
-                <Eye className="h-3.5 w-3.5" />
-                Quick view
-              </Button>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            {editable ? (
+              <DeskTitleInput
+                id={`${listing.id}-title`}
+                value={draft.title}
+                onChange={(title) => updateDraft({ title })}
+                className="min-w-0 flex-1"
+              />
+            ) : (
+              <p className="px-2 py-1 text-[16px] font-semibold tracking-tight text-foreground">
+                {displayTitle}
+              </p>
+            )}
+            <div className="flex items-center gap-2 sm:pt-0.5">
               {editable ? (
-                <Button asChild size="sm" variant="outline" className="rounded-full">
-                  <Link href={editHref}>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Full editor
-                  </Link>
-                </Button>
-              ) : null}
+                <DeskPriceInput
+                  id={`${listing.id}-price`}
+                  value={draft.priceInput}
+                  onChange={(priceInput) => updateDraft({ priceInput })}
+                />
+              ) : (
+                <p className="px-1 text-sm font-semibold tabular-nums text-foreground">
+                  ${Number(listing.price).toLocaleString()}
+                </p>
+              )}
+              <SaveState status={status} />
             </div>
           </div>
-          {editable ? (
-            <ListingFields
-              listingId={listing.id}
-              section={listing.section}
-              draft={draft}
-              disabled={false}
-              onChange={updateDraft}
-            />
-          ) : (
-            <div>
-              <p className="font-semibold text-foreground">{capitalizeWords(listing.title)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {listing.status === "sold"
-                  ? "Sold listings stay as they were at checkout."
-                  : "This listing can’t be edited from the desk."}
-              </p>
-            </div>
-          )}
-          <p
-            className={cn(
-              "flex min-h-5 items-center gap-1.5 text-[12px]",
-              status === "error" ? "text-destructive" : "text-muted-foreground",
-            )}
-            aria-live="polite"
-          >
-            {status === "saving" ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
-            {statusLabel}
-          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 px-2">
+            {statusPill ? (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {statusPill}
+              </span>
+            ) : null}
+            <p className="text-[12px] leading-5 text-muted-foreground">{facts}</p>
+          </div>
+          {!editable ? (
+            <p className="mt-1 px-2 text-[12px] text-muted-foreground">
+              {listing.status === "sold"
+                ? "Sold listings stay as they were at checkout."
+                : "This listing can’t be edited from the desk."}
+            </p>
+          ) : null}
+          {status === "error" && error ? (
+            <p className="mt-1 px-2 text-[13px] text-destructive" aria-live="polite">
+              {error}
+            </p>
+          ) : null}
+          <div className="mt-2 flex items-center gap-1 px-1">
+            {editable ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-10 rounded-full px-3 text-[13px]"
+                aria-expanded={expanded}
+                aria-controls={detailsId}
+                onClick={() => onExpandedChange?.(!expanded)}
+              >
+                {expanded ? "Hide details" : "Details"}
+                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full"
+              aria-label={`Quick view ${displayTitle}`}
+              onClick={() => setQuickViewOpen(true)}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            {editable ? (
+              <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-full">
+                <Link href={editHref} aria-label={`Open full editor for ${displayTitle}`}>
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
+      {editable && expanded ? (
+        <div
+          id={detailsId}
+          className="mt-4 border-t border-border/60 pt-4 sm:ml-[calc(72px+1rem)] lg:ml-[calc(88px+1rem)]"
+        >
+          <ListingEditorDetails
+            listingId={listing.id}
+            section={listing.section}
+            description={draft.description}
+            condition={draft.condition}
+            packageSizeId={draft.packageSizeId}
+            disabled={false}
+            onChange={updateDraft}
+          />
+        </div>
+      ) : null}
       <Sheet open={quickViewOpen} onOpenChange={setQuickViewOpen}>
         <SheetContent className="overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>{capitalizeWords(draft.title || listing.title)}</SheetTitle>
+            <SheetTitle>Quick edit</SheetTitle>
             <SheetDescription>
               {listing.views.toLocaleString()} views · {listing.favoriteCount.toLocaleString()} saves ·{" "}
               {listing.cartCount.toLocaleString()} in carts
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-5">
             <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted">
               {imageSrc ? (
                 <Image
                   src={imageSrc}
-                  alt={capitalizeWords(listing.title)}
+                  alt={displayTitle}
                   fill
                   className="object-cover"
                   sizes="400px"
@@ -451,15 +427,31 @@ export function ListingInlineEditor({
               )}
             </div>
             {editable ? (
-              <ListingFields
-                listingId={`${listing.id}-quick`}
-                section={listing.section}
-                draft={draft}
-                disabled={false}
-                onChange={updateDraft}
-              />
+              <>
+                <DeskTitleInput
+                  id={`${listing.id}-quick-title`}
+                  value={draft.title}
+                  onChange={(title) => updateDraft({ title })}
+                />
+                <DeskPriceInput
+                  id={`${listing.id}-quick-price`}
+                  value={draft.priceInput}
+                  onChange={(priceInput) => updateDraft({ priceInput })}
+                />
+                <ListingEditorDetails
+                  listingId={`${listing.id}-quick`}
+                  section={listing.section}
+                  description={draft.description}
+                  condition={draft.condition}
+                  packageSizeId={draft.packageSizeId}
+                  disabled={false}
+                  onChange={updateDraft}
+                />
+              </>
             ) : (
-              <p className="text-sm text-muted-foreground">{draft.description || "No description yet."}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {draft.description || "No description yet."}
+              </p>
             )}
             <Button asChild variant="outline" className="w-full rounded-full">
               <Link href={viewHref}>Open listing</Link>
@@ -468,5 +460,18 @@ export function ListingInlineEditor({
         </SheetContent>
       </Sheet>
     </article>
+  )
+}
+
+function SaveState({ status }: { status: "idle" | "saving" | "saved" | "error" }) {
+  if (status === "idle" || status === "error") return <span className="hidden w-[4.5rem] shrink-0 sm:inline-flex" aria-hidden />
+  return (
+    <span
+      className="inline-flex min-w-[4.5rem] shrink-0 items-center justify-end gap-1 text-[12px] font-medium text-muted-foreground"
+      aria-live="polite"
+    >
+      {status === "saving" ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Check className="h-3.5 w-3.5" aria-hidden />}
+      {status === "saving" ? "Saving" : "Saved"}
+    </span>
   )
 }

@@ -52,6 +52,7 @@ export function ListingsAdvancedView({
     section: string
     packageSizeId: ShopPackageSizeId
   } | null>(null)
+  const [openEditorId, setOpenEditorId] = useState<string | null>(null)
 
   return (
     <div
@@ -79,8 +80,9 @@ export function ListingsAdvancedView({
           <h2 id="listings-editor-heading" className="text-base font-semibold text-foreground">
             Edit listings
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Changes save automatically. Photos and shipping method still use the full editor.
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Title and price save as you type. Open a listing for condition, box size, and description.
+            Photos and shipping still use the full editor.
           </p>
         </div>
         {visibleListings.length === 0 ? (
@@ -88,18 +90,22 @@ export function ListingsAdvancedView({
             No listings match this view.
           </p>
         ) : (
-          <div className="space-y-3">
-            {visibleListings.map((listing) => (
-              <ListingInlineEditor
-                key={listing.id}
-                listing={listing}
-                appliedPackageSizeId={
-                  packageSync?.section === listing.section ? packageSync.packageSizeId : null
-                }
-                packageSyncNonce={packageSync?.section === listing.section ? packageSync.nonce : 0}
-                onSaved={onListingSaved}
-              />
-            ))}
+          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="divide-y divide-border/60">
+              {visibleListings.map((listing) => (
+                <ListingInlineEditor
+                  key={listing.id}
+                  listing={listing}
+                  expanded={openEditorId === listing.id}
+                  onExpandedChange={(open) => setOpenEditorId(open ? listing.id : null)}
+                  appliedPackageSizeId={
+                    packageSync?.section === listing.section ? packageSync.packageSizeId : null
+                  }
+                  packageSyncNonce={packageSync?.section === listing.section ? packageSync.nonce : 0}
+                  onSaved={onListingSaved}
+                />
+              ))}
+            </div>
           </div>
         )}
       </section>
