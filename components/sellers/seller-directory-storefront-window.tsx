@@ -59,8 +59,16 @@ function StorefrontMosaic({
   imagePriority?: boolean
 }) {
   if (slots.length === 1) {
+    // Listing photos and tile banners are absolutely positioned, so this cell
+    // has no in-flow height. Multi-photo grids stretch via `h-full`; a lone
+    // photo has to do the same or the card background shows through as white.
     return (
-      <MosaicCell slot={slots[0]!} sizes={STOREFRONT_SIZES.full} imagePriority={imagePriority} />
+      <MosaicCell
+        slot={slots[0]!}
+        sizes={STOREFRONT_SIZES.full}
+        imagePriority={imagePriority}
+        className="h-full"
+      />
     )
   }
 
