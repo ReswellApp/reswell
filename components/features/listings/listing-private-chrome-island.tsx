@@ -53,7 +53,7 @@ export function ListingPrivateChromeIsland({
         <ListingDetailAdminBar listing={snapshot} cartHolders={chrome.adminHolders} />
       ) : null}
       {chrome.owner && status === "sold" ? (
-        <div className="container mx-auto px-4 pt-4 sm:px-6">
+        <div className="container mx-auto px-4 pt-3 sm:px-6">
           <ListingSoldOwnerNotice
             dashboardListingsHref="/dashboard/listings"
             sectionLabel={sectionLabel(section)}

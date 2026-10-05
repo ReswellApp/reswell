@@ -291,9 +291,6 @@ async function renderMagazinesListingDetailPage({
     }
   }
 
-  const softPanelClass =
-    "rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 dark:border-border dark:bg-muted/15"
-
   const showShareOnGalleryOverlay = true
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
@@ -573,14 +570,13 @@ async function renderMagazinesListingDetailPage({
             ) : null}
 
             {isOwnListing && isSold && (
-              <div className={softPanelClass}>
-                <ListingSoldOwnerNotice
-                  dashboardListingsHref="/dashboard/listings"
-                  sectionLabel="listing"
-                  listingId={magazine.id as string}
-                  canRelist={canSellerRelist}
-                />
-              </div>
+              <ListingSoldOwnerNotice
+                dashboardListingsHref="/dashboard/listings"
+                sectionLabel="listing"
+                listingId={magazine.id as string}
+                canRelist={canSellerRelist}
+                className="mt-5"
+              />
             )}
 
             {isOwnListing ? (

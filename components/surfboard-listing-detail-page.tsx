@@ -340,9 +340,6 @@ async function renderSurfboardListingDetailPage({
     }
   }
 
-  const softPanelClass =
-    "rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 dark:border-border dark:bg-muted/15"
-
   const favoriteNextToOffer = !!(canPeerPurchase && makeOfferConfig)
   /** Share stays on image except when inline with Make an offer row (favorite goes on image corner). */
   const showShareOnGalleryOverlay = isOwnListing || !favoriteNextToOffer
@@ -655,14 +652,13 @@ async function renderSurfboardListingDetailPage({
               ) : null}
 
               {isOwnListing && isSold && (
-                <div className={softPanelClass}>
-                  <ListingSoldOwnerNotice
-                    dashboardListingsHref="/dashboard/listings"
-                    sectionLabel="board"
-                    listingId={board.id}
-                    canRelist={canSellerRelist}
-                  />
-                </div>
+                <ListingSoldOwnerNotice
+                  dashboardListingsHref="/dashboard/listings"
+                  sectionLabel="board"
+                  listingId={board.id}
+                  canRelist={canSellerRelist}
+                  className="mt-5"
+                />
               )}
 
               {isOwnListing ? (
