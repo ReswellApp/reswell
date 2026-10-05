@@ -111,12 +111,12 @@ export function CaseInboxListPane({
               onChange={(e) => onSearch(e.target.value)}
               disabled={loading}
               placeholder="Search cases and history…"
-              className="h-8 border-border/60 bg-muted/20 pl-8 text-sm"
+              className="h-10 border-border/60 bg-muted/20 pl-8 text-sm md:h-8"
               aria-label="Search conversations"
             />
           </div>
           <Select value={sort} onValueChange={(value) => onSort(value as CaseInboxSort)} disabled={loading}>
-            <SelectTrigger className="h-8 w-[104px] shrink-0 bg-background text-xs" aria-label="Sort conversations">
+            <SelectTrigger className="h-10 w-[96px] shrink-0 bg-background text-xs md:h-8 md:w-[104px]" aria-label="Sort conversations">
               <ArrowUpDown className="mr-1 h-3 w-3" aria-hidden />
               <SelectValue />
             </SelectTrigger>
@@ -174,7 +174,7 @@ export function CaseInboxListPane({
                     type="button"
                     onClick={() => onSelect(item.key)}
                     className={cn(
-                      "flex w-full gap-2.5 px-3 py-2 text-left transition-colors",
+                      "flex w-full gap-2.5 px-3 py-3 text-left transition-colors md:py-2",
                       active ? "bg-muted" : "hover:bg-muted/40",
                     )}
                   >

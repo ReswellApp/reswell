@@ -756,22 +756,33 @@ export function CaseInboxAdminClient({
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
-      <header className="flex shrink-0 items-center gap-3 border-b border-border/60 px-3 py-2">
-        <div className="min-w-0">
-          <h1 className="text-sm font-semibold tracking-tight text-foreground">Support operations</h1>
-          <p className="hidden text-[11px] text-muted-foreground sm:block">
-            Admin only ·{" "}
-            <Link href="/help" className="underline-offset-2 hover:underline">
-              Help / FAQ
-            </Link>
-            {" · "}
-            {counts.open} open conversations
+      <header
+        className={cn(
+          "shrink-0 items-center gap-2 border-b border-border/60 px-3 py-2",
+          selectedKey ? "hidden md:flex" : "flex",
+        )}
+      >
+        <div className="min-w-0 flex-1">
+          <h1 className="hidden text-sm font-semibold tracking-tight text-foreground md:block">
+            Support operations
+          </h1>
+          <p className="truncate text-[11px] text-muted-foreground">
+            <span className="md:hidden">{counts.open} open</span>
+            <span className="hidden md:inline">
+              Admin only ·{" "}
+              <Link href="/help" className="underline-offset-2 hover:underline">
+                Help / FAQ
+              </Link>
+              {" · "}
+              {counts.open} open conversations
+            </span>
           </p>
         </div>
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <AdminCreateSupportCaseDialog
             onCreated={(caseId) => {
               const key = inboxCaseKey(caseId)
+              setDetailsOpen(false)
               setSelectedKey(key)
               void load({
                 mode: "refresh",
@@ -857,7 +868,10 @@ export function CaseInboxAdminClient({
             onSearch={setSearch}
             onSort={setSort}
             onTypeFilter={setTypeOverlay}
-            onSelect={setSelectedKey}
+            onSelect={(key) => {
+              setDetailsOpen(false)
+              setSelectedKey(key)
+            }}
             onLoadMore={() =>
               void load({
                 mode: "page",
@@ -910,7 +924,11 @@ export function CaseInboxAdminClient({
                   draft={draft}
                   pending={replyPending}
                   savePending={savePending}
-                  onBack={() => setSelectedKey(null)}
+                  onBack={() => {
+                    setDetailsOpen(false)
+                    setSelectedKey(null)
+                  }}
+                  onOpenDetails={() => setDetailsOpen(true)}
                   onTake={takeSelected}
                   onAssigned={(id) => {
                     applyAssignee(selected.key, id)
@@ -964,6 +982,7 @@ export function CaseInboxAdminClient({
                 <CaseInboxDetails
                   item={selected}
                   staff={staff}
+                  onCloseDetails={() => setDetailsOpen(false)}
                   currentStaffId={currentStaffId}
                   isAdmin={isAdmin}
                   initialCustomerContext={
