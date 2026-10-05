@@ -6,7 +6,6 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -41,7 +40,7 @@ import { useListingGallerySwipe } from "@/components/features/listings/hooks/use
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
-import { listingGalleryBlocksEmblaDragNow } from "@/lib/utils/listing-gallery-touch"
+import { LISTING_GALLERY_EMBLA_WATCH_DRAG } from "@/lib/utils/listing-gallery-touch"
 
 function preloadListingImageLightbox() {
   return import("@/components/features/listings/listing-image-lightbox")
@@ -126,24 +125,14 @@ export function ImageGallery({
   const videoIndex = hasVideo ? images.length : -1
   const slideCount = images.length + (hasVideo ? 1 : 0)
   const canSwipe = slideCount > 1
-  // Embla's non-passive touchmove calls preventDefault() once a swipe is
-  // slightly sideways. On a phone the hero covers the screen, so that locks
-  // the tab. A passive flick changes photos instead.
-  const blockEmblaTouchDrag = listingGalleryBlocksEmblaDragNow()
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: canSwipe,
     align: "start",
     duration: 22,
     dragThreshold: 8,
-    // Boolean false — a callback that returns false still installs the listener.
-    watchDrag:
-      blockEmblaTouchDrag || !canSwipe
-        ? false
-        : (_api, event) => {
-            const target = event.target
-            if (target instanceof Element && target.closest("video")) return false
-            return true
-          },
+    // Keep Embla for layout and snapping only. Any truthy value installs its
+    // non-passive touchmove listener, which can lock mobile Safari.
+    watchDrag: LISTING_GALLERY_EMBLA_WATCH_DRAG,
   })
   const setGalleryViewport = useCallback(
     (node: HTMLElement | null) => {
@@ -170,7 +159,7 @@ export function ImageGallery({
     setFrameIndex(next)
   }
   useListingGallerySwipe(
-    blockEmblaTouchDrag,
+    canSwipe,
     viewportNode,
     (direction) => {
       swipeTo.current(direction)
@@ -182,19 +171,6 @@ export function ImageGallery({
       suppressHeroClickRef.current = false
     },
   )
-
-  // Embla stores the first options object. Re-apply after hydration so a
-  // server render (no user agent) cannot leave the blocking listener attached.
-  useLayoutEffect(() => {
-    if (!emblaApi || !blockEmblaTouchDrag) return
-    emblaApi.reInit({
-      loop: canSwipe,
-      align: "start",
-      duration: 22,
-      dragThreshold: 8,
-      watchDrag: false,
-    })
-  }, [emblaApi, blockEmblaTouchDrag, canSwipe])
 
   const isVideoSelected = hasVideo && selectedIndex === videoIndex
   const isVideoFrame = hasVideo && frameIndex === videoIndex
