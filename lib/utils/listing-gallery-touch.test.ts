@@ -1,53 +1,13 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
-  listingGalleryShouldBlockEmblaDrag,
+  LISTING_GALLERY_EMBLA_WATCH_DRAG,
   listingGallerySwipeDirection,
 } from "./listing-gallery-touch.ts"
 
-const FACEBOOK_IOS =
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/456.0.0.0.0;FBBV/1;FBDV/iPhone15,2;FBMD/iPhone;FBSN/iOS;FBSV/17.4;FBSS/3;FBID/phone;FBLC/en_US;FBOP/5]"
-
-const INSTAGRAM_IOS =
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21E219 Instagram 321.0.0.0.0 (iPhone15,2; iOS 17_4; en_US; en; scale=3.00; 1179x2556; 123)"
-
-const SAFARI_IOS =
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1"
-
-describe("listingGalleryShouldBlockEmblaDrag", () => {
-  it("blocks Embla touch drag in Meta in-app browsers", () => {
-    assert.equal(listingGalleryShouldBlockEmblaDrag(FACEBOOK_IOS), true)
-    assert.equal(listingGalleryShouldBlockEmblaDrag(INSTAGRAM_IOS), true)
-    assert.equal(
-      listingGalleryShouldBlockEmblaDrag(
-        "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.0.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/450.0.0.0.0;]",
-      ),
-      true,
-    )
-  })
-
-  it("keeps Embla drag for a mouse pointer", () => {
-    assert.equal(listingGalleryShouldBlockEmblaDrag(SAFARI_IOS, false), false)
-    assert.equal(
-      listingGalleryShouldBlockEmblaDrag(
-        "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-        false,
-      ),
-      false,
-    )
-    assert.equal(listingGalleryShouldBlockEmblaDrag(null), false)
-    assert.equal(listingGalleryShouldBlockEmblaDrag(""), false)
-  })
-
-  it("blocks Embla touch drag on a coarse pointer, including Safari", () => {
-    assert.equal(listingGalleryShouldBlockEmblaDrag(SAFARI_IOS, true), true)
-    assert.equal(
-      listingGalleryShouldBlockEmblaDrag(
-        "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-        true,
-      ),
-      true,
-    )
+describe("listing gallery drag policy", () => {
+  it("never lets Embla install its blocking touchmove listener", () => {
+    assert.equal(LISTING_GALLERY_EMBLA_WATCH_DRAG, false)
   })
 })
 

@@ -30,7 +30,7 @@ import {
 import { withListingMediaPdpVariant } from "@/lib/listing-media-proxy-url"
 import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
-import { isInAppBrowser } from "@/lib/utils/is-in-app-browser"
+import { LISTING_GALLERY_EMBLA_WATCH_DRAG } from "@/lib/utils/listing-gallery-touch"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
@@ -362,12 +362,6 @@ export function ListingImageLightbox({
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
   isZoomedOutRef.current = isZoomedOut
   const useSwipeCarousel = count > 1
-  // Embla's drag listener calls preventDefault() on a sideways swipe. Inside
-  // this full-screen dialog that locks the phone. A passive flick changes
-  // photos instead. Mouse drag on a fine pointer stays with Embla.
-  const blockLightboxTouchDrag =
-    coarsePointer ||
-    (typeof navigator !== "undefined" && isInAppBrowser(navigator.userAgent))
   const [viewportNode, setViewportNode] = useState<HTMLElement | null>(null)
 
   /** Freeze Embla startIndex on open. Passing the live index re-inits mid-swipe and kills drag. */
@@ -384,13 +378,9 @@ export function ListingImageLightbox({
     align: "start",
     duration: 22,
     dragThreshold: 8,
-    // Boolean false skips the non-passive touchmove. A callback that returns
-    // false still installs it, which is what freezes the lightbox.
-    watchDrag: blockLightboxTouchDrag
-      ? false
-      : useSwipeCarousel
-        ? () => isZoomedOutRef.current
-        : false,
+    // Keep Embla for layout and snapping only. A callback still installs its
+    // non-passive touchmove listener and can lock the full-screen lightbox.
+    watchDrag: LISTING_GALLERY_EMBLA_WATCH_DRAG,
   })
   const setLightboxViewport = useCallback(
     (node: HTMLElement | null) => {
@@ -406,7 +396,7 @@ export function ListingImageLightbox({
     else emblaApi.scrollPrev()
   }
   useListingGallerySwipe(
-    blockLightboxTouchDrag && open && isZoomedOut,
+    useSwipeCarousel && open && isZoomedOut,
     viewportNode,
     (direction) => {
       swipeTo.current(direction)
