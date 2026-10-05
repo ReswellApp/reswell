@@ -115,6 +115,13 @@ export function shopPackageSizeLabel(sizeId: ShopPackageSizeId): string {
   return SOFT_PACKAGE_PRESETS[sizeId].label
 }
 
+/** Short name for a size chip. The category already supplies the context. */
+export function shopPackageChipLabel(sizeId: ShopPackageSizeId): string {
+  if (sizeId === "shortboard_compact") return "Compact"
+  if (sizeId === "shortboard_medium") return "Medium"
+  return shopPackageSizeLabel(sizeId)
+}
+
 export function shopPackageSizeSummary(sizeId: ShopPackageSizeId): string {
   if (sizeId === "shortboard_compact") return SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact.summary
   if (sizeId === "shortboard_medium") return SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium.summary
