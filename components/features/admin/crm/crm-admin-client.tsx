@@ -784,6 +784,7 @@ export function CrmAdminClient() {
               No contacts match your filters.
             </div>
           ) : (
+            <>
             <CrmContactMobileList
               contacts={filteredContacts}
               selectedIds={selectedIds}
@@ -920,6 +921,7 @@ export function CrmAdminClient() {
                 </TableBody>
               </Table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
