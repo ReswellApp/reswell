@@ -61,8 +61,19 @@ function deskSource(row: ListingQuickEditRow): ListingDeskSource {
     model: row.model,
     city: row.city,
     state: row.state,
+    latitude: row.latitude,
+    longitude: row.longitude,
     local_pickup: row.local_pickup,
     shipping_available: row.shipping_available,
+    board_shipping_cost_mode: row.board_shipping_cost_mode,
+    shipping_price: row.shipping_price,
+    dropoff_location_id: row.dropoff_location_id,
+    shipping_package_tier: row.shipping_package_tier,
+    shipping_package_band: row.shipping_package_band,
+    shipping_packed_length_in: row.shipping_packed_length_in,
+    shipping_packed_width_in: row.shipping_packed_width_in,
+    shipping_packed_height_in: row.shipping_packed_height_in,
+    shipping_packed_weight_oz: row.shipping_packed_weight_oz,
     dimensions: row.dimensions,
     length_total_inches: toNumber(row.length_total_inches),
     volume_liters: toNumber(row.volume_liters),
@@ -278,6 +289,18 @@ export async function updateSellerListingQuickEdit(
           "shipping_packed_weight_oz" in patch
             ? patch.shipping_packed_weight_oz ?? null
             : fresh.shipping_packed_weight_oz,
+        latitude: "latitude" in patch ? patch.latitude ?? null : fresh.latitude,
+        longitude: "longitude" in patch ? patch.longitude ?? null : fresh.longitude,
+        local_pickup: "local_pickup" in patch ? patch.local_pickup ?? null : fresh.local_pickup,
+        shipping_available:
+          "shipping_available" in patch ? patch.shipping_available ?? null : fresh.shipping_available,
+        board_shipping_cost_mode:
+          "board_shipping_cost_mode" in patch
+            ? patch.board_shipping_cost_mode ?? null
+            : fresh.board_shipping_cost_mode,
+        shipping_price: "shipping_price" in patch ? patch.shipping_price ?? null : fresh.shipping_price,
+        dropoff_location_id:
+          "dropoff_location_id" in patch ? patch.dropoff_location_id ?? null : fresh.dropoff_location_id,
       },
       priceUsd,
       compareAtPriceUsd,
