@@ -258,7 +258,15 @@ export async function SearchPageView({
     ? sortedCategories.find((c) => c.slug === requestedSlug)
     : undefined
   const selectedSlug = matched?.slug ?? null
-  const categorySlugForLog = matched?.slug ?? null
+  // A typed search already states what the shopper wants. The board-type menu
+  // beside the results heading narrows that query without saying so, so it
+  // only applies on browse (recent listings, brand inventory).
+  const categoryFilter = rawQuery.trim()
+    ? null
+    : matched
+      ? { id: matched.id, name: matched.name }
+      : null
+  const categorySlugForLog = categoryFilter ? (matched?.slug ?? null) : null
 
   const brandUnknown = Boolean(brandSlugRequested && !brandFromUrl)
   const matchedModel = Boolean(parsedQuery?.model || (parsedQuery?.modelIds.length ?? 0) > 0)
@@ -274,7 +282,7 @@ export async function SearchPageView({
   const { listings, searchMeta } = await resolveSearchListings(
     supabase,
     rawQuery,
-    matched ? { id: matched.id, name: matched.name } : null,
+    categoryFilter,
     brandUnknown ? null : brandRow,
     parsedQuery,
     Boolean(brandFromUrl),
@@ -366,14 +374,16 @@ export async function SearchPageView({
               <p className="mt-1 text-sm text-muted-foreground">{heading.subtitle}</p>
             ) : null}
           </div>
-          <Suspense fallback={null}>
-            <SearchCategoryFilters
-              query={rawQuery}
-              selectedSlug={selectedSlug}
-              categories={sortedCategories}
-              brandSlug={brandRow?.slug ?? (brandSlugRequested || null)}
-            />
-          </Suspense>
+          {queryTrimmed ? null : (
+            <Suspense fallback={null}>
+              <SearchCategoryFilters
+                query={rawQuery}
+                selectedSlug={selectedSlug}
+                categories={sortedCategories}
+                brandSlug={brandRow?.slug ?? (brandSlugRequested || null)}
+              />
+            </Suspense>
+          )}
         </div>
       </section>
 
