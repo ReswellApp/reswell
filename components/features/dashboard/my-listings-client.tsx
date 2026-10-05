@@ -52,7 +52,17 @@ import {
   sellerProfileSectionSortRank,
 } from "@/lib/peer-listing-sections"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
+import { ListingsAdvancedView } from "@/components/features/dashboard/listings/listings-advanced-view"
+import {
+  ListingsViewTabs,
+  type ListingsDeskView,
+} from "@/components/features/dashboard/listings/listings-view-tabs"
+import { ShopVacationButton } from "@/components/features/dashboard/listings/shop-vacation-button"
+import type { ListingQuickEditSaved } from "@/lib/actions/listingQuickEdit"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
+import type { ListingPackageColumns, ShopCategoryPackageSizeMap } from "@/lib/shop-category-package-sizes"
+import { canQuickEditListing } from "@/lib/listing-quick-edit-access"
+import { shopVacationTargetIds } from "@/lib/shop-vacation"
 import { cn } from "@/lib/utils"
 import {
   dashboardFilterSelectClass,
@@ -100,6 +110,9 @@ interface MyListingsClientProps {
   fetchError?: string
   sellerBanned?: boolean
   initialStatusFilter?: StatusFilter
+  initialView?: ListingsDeskView
+  sellerStoreHref?: string | null
+  shopCategoryPackageSizes?: ShopCategoryPackageSizeMap
 }
 
 function listingRowImageSrc(listing: MyListingRow): string | null {
@@ -247,10 +260,10 @@ function StatCard({
   onClick?: () => void
 }) {
   const className = cn(
-    "flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-colors",
+    "flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3.5 text-left shadow-sm transition-colors",
     active
-      ? "bg-primary/10 ring-1 ring-primary/20"
-      : "bg-muted/70 hover:bg-muted",
+      ? "bg-primary/10 ring-1 ring-primary/25"
+      : "hover:bg-muted/50",
     onClick && "cursor-pointer",
   )
 
@@ -312,6 +325,9 @@ export function MyListingsClient({
   fetchError,
   sellerBanned = false,
   initialStatusFilter = "all",
+  initialView = "basic",
+  sellerStoreHref = null,
+  shopCategoryPackageSizes = {},
 }: MyListingsClientProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
@@ -321,6 +337,28 @@ export function MyListingsClient({
   const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>("all")
   const [endListingId, setEndListingId] = useState<string | null>(null)
   const [vacationById, setVacationById] = useState<Record<string, boolean>>({})
+  const [view, setView] = useState<ListingsDeskView>(initialView)
+  const [listingPatches, setListingPatches] = useState<Record<string, Partial<MyListingRow>>>({})
+
+  const displayListings = useMemo(
+    () => listings.map((listing) => ({ ...listing, ...listingPatches[listing.id] })),
+    [listings, listingPatches],
+  )
+
+  function replaceListingsQuery(updates: Record<string, string | null>) {
+    const params = new URLSearchParams(window.location.search)
+    for (const [key, value] of Object.entries(updates)) {
+      if (!value) params.delete(key)
+      else params.set(key, value)
+    }
+    const query = params.toString()
+    router.replace(query ? `/dashboard/listings?${query}` : "/dashboard/listings")
+  }
+
+  function handleViewChange(next: ListingsDeskView) {
+    setView(next)
+    replaceListingsQuery({ view: next === "advanced" ? "advanced" : null })
+  }
 
   useEffect(() => {
     setVacationById((current) => {
@@ -359,7 +397,7 @@ export function MyListingsClient({
     setSectionFilter("all")
     setStatusFilter("active")
     setEngagementFilter(next)
-    router.replace("/dashboard/listings")
+    replaceListingsQuery({ status: null })
   }
 
   async function handleDiscardDraft(id: string) {
@@ -380,7 +418,7 @@ export function MyListingsClient({
   const { pinnedDraft, visibleListings, hiddenDraftCount } = useMemo(
     () =>
       partitionVisibleListings({
-        listings,
+        listings: displayListings,
         searchQuery,
         sort,
         engagementFilter,
@@ -388,7 +426,7 @@ export function MyListingsClient({
         sectionFilter,
         vacationById,
       }),
-    [listings, searchQuery, sort, engagementFilter, statusFilter, sectionFilter, vacationById],
+    [displayListings, searchQuery, sort, engagementFilter, statusFilter, sectionFilter, vacationById],
   )
 
   function handleViewAllDrafts() {
@@ -400,7 +438,61 @@ export function MyListingsClient({
 
   function handleBackFromDrafts() {
     setStatusFilter("all")
-    router.replace("/dashboard/listings")
+    replaceListingsQuery({ status: null })
+  }
+
+  function handleListingSaved(listingId: string, saved: ListingQuickEditSaved) {
+    setListingPatches((current) => ({
+      ...current,
+      [listingId]: {
+        ...current[listingId],
+        title: saved.title,
+        description: saved.description,
+        condition: saved.condition,
+        price: saved.priceUsd,
+        compare_at_price: saved.compareAtPriceUsd,
+        shipping_package_tier: saved.shipping_package_tier,
+        shipping_package_band: saved.shipping_package_band,
+        shipping_packed_length_in: saved.shipping_packed_length_in,
+        shipping_packed_width_in: saved.shipping_packed_width_in,
+        shipping_packed_height_in: saved.shipping_packed_height_in,
+        shipping_packed_weight_oz: saved.shipping_packed_weight_oz,
+      },
+    }))
+  }
+
+  function handlePackageApplied(section: string, columns: ListingPackageColumns) {
+    setListingPatches((current) => {
+      const next = { ...current }
+      for (const listing of listings) {
+        if (listing.section !== section || !canQuickEditListing(listing.status)) continue
+        next[listing.id] = { ...next[listing.id], ...columns }
+      }
+      return next
+    })
+  }
+
+  const vacationAwareListings = useMemo(
+    () =>
+      displayListings.map((listing) => {
+        const override = vacationById[listing.id]
+        if (override === undefined) return listing
+        return {
+          ...listing,
+          hidden_from_site: override,
+          site_visibility_reason: override ? "seller_vacation" : null,
+        }
+      }),
+    [displayListings, vacationById],
+  )
+
+  function handleShopVacation(enabled: boolean) {
+    const targets = shopVacationTargetIds(vacationAwareListings, enabled ? "on" : "off")
+    setVacationById((current) => {
+      const next = { ...current }
+      for (const listingId of targets) next[listingId] = enabled
+      return next
+    })
   }
 
   const listingCountLabel =
@@ -431,9 +523,14 @@ export function MyListingsClient({
     <div className="space-y-6">
       <DashboardPageHeader
         title="Listings"
-        description="Summary of your listing inventory and performance."
+        description={
+          view === "advanced"
+            ? "Run the shop from one page — analytics, tools, and listing edits."
+            : "Summary of your listing inventory and performance."
+        }
         actions={
           <>
+            <ShopVacationButton listings={vacationAwareListings} onComplete={handleShopVacation} />
             {!sellerBanned ? (
               <Button asChild size="sm" className="rounded-full">
                 <Link href="/sell?new=1">
@@ -446,8 +543,11 @@ export function MyListingsClient({
         }
       />
 
+      <ListingsViewTabs value={view} onChange={handleViewChange} />
+
       {sellerBanned ? <SellerBanRestrictedPanel compact /> : null}
 
+      {view === "basic" ? (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Package} label="Total Listings" value={stats.totalListings} />
         <StatCard icon={Eye} label="Total Views" value={stats.totalViews} />
@@ -466,6 +566,7 @@ export function MyListingsClient({
           onClick={() => toggleEngagementFilter("saved")}
         />
       </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative min-w-0 flex-1">
@@ -532,11 +633,25 @@ export function MyListingsClient({
         </div>
       </div>
 
-      {fetchError && (
-        <p className="text-sm text-destructive">Could not load listings. Please refresh the page.</p>
-      )}
+      {view === "advanced" ? (
+        <ListingsAdvancedView
+          allListings={vacationAwareListings}
+          visibleListings={
+            listings.length === 0 ? [] : pinnedDraft ? [pinnedDraft, ...visibleListings] : visibleListings
+          }
+          sellerStoreHref={sellerStoreHref}
+          sellerBanned={sellerBanned}
+          shopCategoryPackageSizes={shopCategoryPackageSizes}
+          onListingSaved={handleListingSaved}
+          onPackageApplied={handlePackageApplied}
+        />
+      ) : null}
 
-      {!fetchError && listings.length === 0 ? (
+      {view === "basic" && fetchError ? (
+        <p className="text-sm text-destructive">Could not load listings. Please refresh the page.</p>
+      ) : null}
+
+      {view === "basic" && !fetchError && listings.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
@@ -556,8 +671,15 @@ export function MyListingsClient({
             ) : null}
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-3">
+      ) : null}
+
+      {view === "basic" && !fetchError && listings.length > 0 ? (
+        <div
+          id="listings-view-panel-basic"
+          role="tabpanel"
+          aria-labelledby="listings-view-basic"
+          className="space-y-3 rounded-2xl border border-border/70 bg-card px-4 shadow-sm sm:px-5"
+        >
           {statusFilter === "draft" ? (
             <button
               type="button"
@@ -627,7 +749,7 @@ export function MyListingsClient({
             </p>
           )}
         </div>
-      )}
+      ) : null}
 
       <EndListingDialog
         listingId={endListingId}

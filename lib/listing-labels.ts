@@ -33,19 +33,21 @@ export const LISTING_CONDITION_LABELS: Record<string, string> = {
   poor: "Poor",
 }
 
-const LISTING_CONDITION_ORDER = ["brand_new", "excellent", "very_good", "good", "fair", "poor"] as const
+export const LISTING_SELLABLE_CONDITIONS = [
+  "brand_new",
+  "excellent",
+  "very_good",
+  "good",
+  "fair",
+  "poor",
+] as const
+
+export type ListingSellableCondition = (typeof LISTING_SELLABLE_CONDITIONS)[number]
 
 export function isListingSellableCondition(
   c: string | null | undefined,
-): c is (typeof LISTING_CONDITION_ORDER)[number] {
-  return (
-    c === "brand_new" ||
-    c === "excellent" ||
-    c === "very_good" ||
-    c === "good" ||
-    c === "fair" ||
-    c === "poor"
-  )
+): c is ListingSellableCondition {
+  return c != null && (LISTING_SELLABLE_CONDITIONS as readonly string[]).includes(c)
 }
 
 /**
@@ -80,13 +82,12 @@ export function formatHomePeerListingConditionLine(condition: string | null | un
 }
 
 /** Sell-form and browse filter condition values (excludes legacy `new`). */
-export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] = LISTING_CONDITION_ORDER.map(
-  (v) => ({ value: v, label: LISTING_CONDITION_LABELS[v] ?? v }),
-)
+export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] =
+  LISTING_SELLABLE_CONDITIONS.map((v) => ({ value: v, label: LISTING_CONDITION_LABELS[v] ?? v }))
 
 /** Rows for browse filters (values only; pair with `{ value: \"all\", label: \"Condition Any\" }`). */
 export function listingConditionFilterRows(): { value: string; label: string }[] {
-  return LISTING_CONDITION_ORDER.map((v) => ({
+  return LISTING_SELLABLE_CONDITIONS.map((v) => ({
     value: v,
     label: LISTING_CONDITION_LABELS[v],
   }))
