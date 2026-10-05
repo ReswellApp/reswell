@@ -35,6 +35,10 @@ export type SurfboardShippedSellDraft = {
     state: string
     postal_code: string
     country: string
+    google_place_id: string | null
+    latitude: number | null
+    longitude: number | null
+    formatted_address: string | null
   } | null
 }
 
@@ -73,6 +77,10 @@ export function SurfboardShippedChoice({
     state: "CA",
     postal_code: "",
     country: "US",
+    google_place_id: "",
+    latitude: null,
+    longitude: null,
+    formatted_address: "",
   })
 
   useEffect(() => {
@@ -91,6 +99,10 @@ export function SurfboardShippedChoice({
             state: form.state.trim(),
             postal_code: form.postal_code.trim(),
             country: "US",
+            google_place_id: form.google_place_id.trim() || null,
+            latitude: form.latitude,
+            longitude: form.longitude,
+            formatted_address: form.formatted_address.trim() || null,
           }
         : null
     onChange({
@@ -130,6 +142,10 @@ export function SurfboardShippedChoice({
           state: choice.address.state ?? "CA",
           postal_code: choice.address.postal_code,
           country: "US",
+          google_place_id: choice.address.google_place_id ?? "",
+          latitude: choice.address.latitude ?? null,
+          longitude: choice.address.longitude ?? null,
+          formatted_address: choice.address.formatted_address ?? "",
         })
       }
       setReady(true)
@@ -160,8 +176,9 @@ export function SurfboardShippedChoice({
             {SURFBOARD_SHIPPED_NAME}
           </Label>
           <p className="text-xs leading-snug text-muted-foreground sm:text-sm">
-            A live coastal shipper picks the board up and drives it to the buyer. Buyers in
-            California pay ${SURFBOARD_SHIPPED_FEE_USD} at checkout. Drop-off is {SURFBOARD_SHIPPED_WINDOW_LABEL}.
+            A live coastal shipper picks the board up at a California street and drives it to the
+            buyer. Any California city qualifies. Buyers pay ${SURFBOARD_SHIPPED_FEE_USD} at checkout.
+            Drop-off is {SURFBOARD_SHIPPED_WINDOW_LABEL}.
           </p>
           <ul className="space-y-1 text-xs text-foreground sm:text-sm">
             {offer.liveShippers.map((shipper) => (
@@ -185,6 +202,10 @@ export function SurfboardShippedChoice({
                   state: row.state ?? "CA",
                   postal_code: row.postal_code,
                   country: "US",
+                  google_place_id: row.google_place_id ?? "",
+                  latitude: row.latitude ?? null,
+                  longitude: row.longitude ?? null,
+                  formatted_address: row.formatted_address ?? "",
                 })
               }}
               onChange={(next) => {

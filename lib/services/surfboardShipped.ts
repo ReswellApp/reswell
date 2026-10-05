@@ -1,5 +1,4 @@
-import { matchCoastalShippers, suggestPickupStopId, type CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
-import type { CoastalStopView } from "@/lib/types/coastal-delivery"
+import { nextRunDateIso, type CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
 import { COASTAL_WEEKDAY_LABELS } from "@/lib/types/coastal-delivery"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
@@ -71,22 +70,39 @@ export function surfboardShippedSellVisible(input: {
   )
 }
 
-/** Checkout option. Hidden unless every gate passes, including a corridor match. */
+/**
+ * Google resolved a street in California. City centroids and other states do not count.
+ * Los Angeles, Oakland, and same-city trips qualify when this is true for both ends.
+ */
+export function isGoogleCaliforniaStreet(
+  address: {
+    country?: string | null
+    state?: string | null
+    line1?: string | null
+  } | null
+  | undefined,
+): boolean {
+  if (!address) return false
+  const country = (address.country ?? "").trim().toUpperCase()
+  if (country !== "US" && country !== "USA" && country !== "UNITED STATES") return false
+  if (!isCaliforniaAddressState(address.state)) return false
+  return /^\d/.test((address.line1 ?? "").trim())
+}
+
+/** Checkout option. Hidden unless Google placed both streets in California and a shipper is live. */
 export function surfboardShippedCheckoutVisible(input: {
   isAdmin: boolean
   sellerOptedIn: boolean
-  pickupState: string | null | undefined
-  buyerState: string | null | undefined
+  pickupInCalifornia: boolean
+  buyerInCalifornia: boolean
   shippers: CoastalMatchShipper[]
-  hasMatch: boolean
 }): boolean {
   return (
     input.isAdmin &&
     input.sellerOptedIn &&
-    isCaliforniaAddressState(input.pickupState) &&
-    isCaliforniaAddressState(input.buyerState) &&
-    liveSurfboardShippers(input.shippers).length > 0 &&
-    input.hasMatch
+    input.pickupInCalifornia &&
+    input.buyerInCalifornia &&
+    liveSurfboardShippers(input.shippers).length > 0
   )
 }
 
@@ -100,45 +116,51 @@ export function surfboardShippedWindow(now: Date): SurfboardShippedWindow {
 }
 
 /**
- * Snap pickup and drop-off cities to corridor stops and attach the soonest
- * covering run. The window is offered only when this returns a shipper.
+ * Attach the soonest live run. Any California street qualifies, including the
+ * same city. Corridor stop names are not used.
  */
 export function attachSurfboardShippedShipper(input: {
-  pickupCity: string | null | undefined
-  dropoffCity: string | null | undefined
-  stops: CoastalStopView[]
   shippers: CoastalMatchShipper[]
   now: Date
 }): SurfboardShippedAttachment | null {
-  const pickupStopId = suggestPickupStopId(input.pickupCity, input.stops)
-  const dropoffStopId = suggestPickupStopId(input.dropoffCity, input.stops)
-  if (!pickupStopId || !dropoffStopId) return null
+  const ranked = input.shippers
+    .filter(coastalShipperIsLive)
+    .map((shipper) => {
+      const enabled = shipper.runs.filter((run) => run.enabled)
+      const soonest = [...enabled].sort((a, b) => {
+        const byDate = nextRunDateIso(input.now, a.dayOfWeek).localeCompare(
+          nextRunDateIso(input.now, b.dayOfWeek),
+        )
+        if (byDate !== 0) return byDate
+        return a.id.localeCompare(b.id)
+      })[0]
+      if (!soonest) return null
+      return {
+        shipper,
+        run: soonest,
+        nextRunOn: nextRunDateIso(input.now, soonest.dayOfWeek),
+      }
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null)
+    .sort(
+      (a, b) =>
+        a.nextRunOn.localeCompare(b.nextRunOn) ||
+        a.shipper.displayName.localeCompare(b.shipper.displayName),
+    )
 
-  const pickup = input.stops.find((stop) => stop.id === pickupStopId)
-  const dropoff = input.stops.find((stop) => stop.id === dropoffStopId)
-  if (!pickup || !dropoff) return null
-
-  const result = matchCoastalShippers({
-    pickup: { id: pickup.id, sortOrder: pickup.sortOrder },
-    dropoff: { id: dropoff.id, sortOrder: dropoff.sortOrder },
-    shippers: input.shippers,
-    now: input.now,
-  })
-  if (result.reason !== "ok" || result.matches.length === 0) return null
-
-  const soonest = result.matches[0]
+  const soonest = ranked[0]
   if (!soonest) return null
 
   return {
-    shipperId: soonest.shipperId,
-    displayName: soonest.displayName,
-    runId: soonest.runId,
-    dayOfWeek: soonest.dayOfWeek,
-    weekdayLabel: COASTAL_WEEKDAY_LABELS[soonest.dayOfWeek] ?? "Run",
+    shipperId: soonest.shipper.shipperId,
+    displayName: soonest.shipper.displayName,
+    runId: soonest.run.id,
+    dayOfWeek: soonest.run.dayOfWeek,
+    weekdayLabel: COASTAL_WEEKDAY_LABELS[soonest.run.dayOfWeek] ?? "Run",
     nextRunOn: soonest.nextRunOn,
-    availableShippers: result.matches.map((match) => ({
-      id: match.shipperId,
-      displayName: match.displayName,
+    availableShippers: ranked.map((row) => ({
+      id: row.shipper.shipperId,
+      displayName: row.shipper.displayName,
       live: true as const,
     })),
   }

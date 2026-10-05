@@ -184,5 +184,9 @@ export function buyerAddressInsertFromCarrierFields(
     country,
     residential: carrier?.residential ?? "unknown",
     address_validated_at: carrier ? new Date().toISOString() : null,
+    google_place_id: original.google_place_id ?? null,
+    latitude: original.latitude ?? null,
+    longitude: original.longitude ?? null,
+    formatted_address: original.formatted_address ?? null,
   }
 }

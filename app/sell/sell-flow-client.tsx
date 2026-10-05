@@ -3443,11 +3443,12 @@ function SellPageContentInner({
             !pickup.line1 ||
             !pickup.city ||
             !pickup.postal_code ||
+            !pickup.google_place_id ||
             !isCaliforniaAddressState(pickup.state)
           ) {
             setLoading(false)
             setPublishValidationBanner(
-              "Surfboard Shipped needs a California pickup name, phone, and address.",
+              "Search a California street for Surfboard Shipped pickup. Google has to place the address.",
             )
             return
           }

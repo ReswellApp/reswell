@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/brands/admin-server"
-import { listCoastalShipperSchedules, listCoastalStops } from "@/lib/db/coastal-delivery"
+import { listCoastalShipperSchedules } from "@/lib/db/coastal-delivery"
 import type { CoastalShipperScheduleRecord } from "@/lib/db/coastal-delivery"
 import {
   fetchListingSurfboardShipped,
@@ -10,11 +10,14 @@ import {
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import type { CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
+import { googleResolveStreetAddress } from "@/lib/maps/google-geocoding-server"
+import type { GoogleResolvedStreet } from "@/lib/maps/google-geocoding-server"
 import {
   SURFBOARD_SHIPPED_FEE_CENTS,
   SURFBOARD_SHIPPED_FEE_USD,
   attachSurfboardShippedShipper,
   isCaliforniaAddressState,
+  isGoogleCaliforniaStreet,
   liveSurfboardShippers,
   surfboardShippedWindow,
   type LiveSurfboardShipper,
@@ -102,8 +105,13 @@ export async function saveListingSurfboardShipped(
 
     const phone = toE164UsPhone(addressInput.phone)
     if (!phone) return { error: "Enter a US phone number." }
-    if (!isCaliforniaAddressState(addressInput.state)) {
-      return { error: "Pickup must be in California." }
+
+    const resolved = await googleResolveStreetAddress({
+      placeId: addressInput.google_place_id,
+      query: streetQuery(addressInput),
+    })
+    if (!isGoogleCaliforniaStreet(resolved) || !resolved) {
+      return { error: "Pickup must be a California street address." }
     }
 
     const ownedAddressId = input.addressId
@@ -113,16 +121,7 @@ export async function saveListingSurfboardShipped(
     const saved = await saveSurfboardShippedPickupAddress(
       db,
       listing.row.userId,
-      {
-        full_name: addressInput.full_name,
-        phone,
-        line1: addressInput.line1,
-        line2: addressInput.line2?.trim() || null,
-        city: addressInput.city,
-        state: addressInput.state,
-        postal_code: addressInput.postal_code,
-        country: "US",
-      },
+      addressFieldsFromGoogle(addressInput.full_name, phone, resolved),
       ownedAddressId,
     )
     if (saved.error || !saved.address) {
@@ -221,7 +220,7 @@ export async function previewSurfboardShippedCheckout(input: {
   if (!isCaliforniaAddressState(buyer.state)) return hidden
 
   try {
-    const charge = await buildCharge(input.listingId, buyer.city, buyer.state)
+    const charge = await buildCharge(input.listingId, buyer)
     if (!charge) return hidden
     return {
       available: true,
@@ -239,8 +238,7 @@ export async function previewSurfboardShippedCheckout(input: {
 
 export async function prepareSurfboardShippedCharge(input: {
   listingId: string
-  buyerCity: string
-  buyerState: string | null
+  buyer: StreetAddress
 }): Promise<
   { ok: true; charge: SurfboardShippedCharge } | { ok: false; error: string; status: number }
 > {
@@ -248,7 +246,7 @@ export async function prepareSurfboardShippedCharge(input: {
   if (!session) return { ok: false, error: UNAVAILABLE, status: 403 }
 
   try {
-    const charge = await buildCharge(input.listingId, input.buyerCity, input.buyerState)
+    const charge = await buildCharge(input.listingId, input.buyer)
     if (!charge) return { ok: false, error: UNAVAILABLE, status: 422 }
     return {
       ok: true,
@@ -299,10 +297,17 @@ async function loadOptedInPickup(
   return { pickup }
 }
 
+type StreetAddress = Pick<
+  ProfileAddressRow,
+  "line1" | "line2" | "city" | "state" | "postal_code" | "country"
+> & {
+  google_place_id?: string | null
+  formatted_address?: string | null
+}
+
 async function buildCharge(
   listingId: string,
-  buyerCity: string,
-  buyerState: string | null,
+  buyer: StreetAddress,
 ): Promise<{
   feeUsd: number
   shipperId: string
@@ -312,20 +317,30 @@ async function buildCharge(
   matchedShipperName: string
   matchedWeekday: string
 } | null> {
-  if (!isCaliforniaAddressState(buyerState)) return null
+  if (!isCaliforniaAddressState(buyer.state)) return null
   const db = createServiceRoleClient()
-  const [stops, shippers, pickup] = await Promise.all([
-    listCoastalStops(db),
+  const [shippers, pickup] = await Promise.all([
     loadMatchShippers(),
     loadOptedInPickup(db, listingId),
   ])
   if (!pickup) return null
   if (liveSurfboardShippers(shippers).length === 0) return null
 
+  const [pickupResolved, buyerResolved] = await Promise.all([
+    googleResolveStreetAddress({
+      placeId: pickup.pickup.google_place_id,
+      query: streetQuery(pickup.pickup),
+    }),
+    googleResolveStreetAddress({
+      placeId: buyer.google_place_id,
+      query: streetQuery(buyer),
+    }),
+  ])
+  if (!isGoogleCaliforniaStreet(pickupResolved) || !isGoogleCaliforniaStreet(buyerResolved)) {
+    return null
+  }
+
   const attached = attachSurfboardShippedShipper({
-    pickupCity: pickup.pickup.city,
-    dropoffCity: buyerCity,
-    stops,
     shippers,
     now: new Date(),
   })
@@ -339,6 +354,36 @@ async function buildCharge(
     shippers: attached.availableShippers,
     matchedShipperName: attached.displayName,
     matchedWeekday: attached.weekdayLabel,
+  }
+}
+
+function streetQuery(address: StreetAddress): string {
+  const formatted = address.formatted_address?.trim()
+  if (formatted) return formatted
+  return [address.line1, address.line2, address.city, address.state, address.postal_code, address.country || "US"]
+    .map((part) => (part ?? "").trim())
+    .filter(Boolean)
+    .join(", ")
+}
+
+function addressFieldsFromGoogle(
+  fullName: string,
+  phone: string,
+  resolved: GoogleResolvedStreet,
+): Parameters<typeof saveSurfboardShippedPickupAddress>[2] {
+  return {
+    full_name: fullName,
+    phone,
+    line1: resolved.line1,
+    line2: resolved.line2 || null,
+    city: resolved.city,
+    state: resolved.state,
+    postal_code: resolved.postalCode,
+    country: "US",
+    google_place_id: resolved.placeId,
+    latitude: resolved.latitude,
+    longitude: resolved.longitude,
+    formatted_address: resolved.formattedAddress,
   }
 }
 

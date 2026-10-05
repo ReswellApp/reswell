@@ -1,23 +1,18 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
-import type { CoastalStopView } from "@/lib/types/coastal-delivery.ts"
 import type { CoastalMatchShipper } from "./coastalDeliveryMatch.ts"
 import {
   SURFBOARD_SHIPPED_FEE_CENTS,
   SURFBOARD_SHIPPED_FEE_USD,
   attachSurfboardShippedShipper,
   isCaliforniaAddressState,
+  isGoogleCaliforniaStreet,
   readSurfboardShippedPaymentMetadata,
   surfboardShippedCheckoutVisible,
   surfboardShippedSellVisible,
   surfboardShippedWindow,
 } from "./surfboardShipped.ts"
-
-const stops: CoastalStopView[] = [
-  { id: "santa-cruz", slug: "santa-cruz", name: "Santa Cruz", sortOrder: 20 },
-  { id: "san-francisco", slug: "san-francisco", name: "San Francisco", sortOrder: 50 },
-]
 
 function shipper(
   id: string,
@@ -85,22 +80,34 @@ describe("surfboard shipped gates", () => {
     )
   })
 
-  it("hides checkout unless the buyer is an admin, both addresses are in California, and a run matches", () => {
+  it("hides checkout unless the buyer is an admin, Google placed both streets in California, and a shipper is live", () => {
     const base = {
       isAdmin: true,
       sellerOptedIn: true,
-      pickupState: "CA",
-      buyerState: "California",
+      pickupInCalifornia: true,
+      buyerInCalifornia: true,
       shippers: live,
-      hasMatch: true,
     }
     assert.equal(surfboardShippedCheckoutVisible(base), true)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, isAdmin: false }), false)
-    assert.equal(surfboardShippedCheckoutVisible({ ...base, buyerState: "NY" }), false)
-    assert.equal(surfboardShippedCheckoutVisible({ ...base, pickupState: "WA" }), false)
+    assert.equal(surfboardShippedCheckoutVisible({ ...base, buyerInCalifornia: false }), false)
+    assert.equal(surfboardShippedCheckoutVisible({ ...base, pickupInCalifornia: false }), false)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, sellerOptedIn: false }), false)
-    assert.equal(surfboardShippedCheckoutVisible({ ...base, hasMatch: false }), false)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, shippers: [] }), false)
+  })
+
+  it("accepts any Google-resolved California street, including Los Angeles and Oakland", () => {
+    assert.equal(
+      isGoogleCaliforniaStreet({ country: "US", state: "CA", line1: "123 Abbot Kinney Blvd" }),
+      true,
+    )
+    assert.equal(
+      isGoogleCaliforniaStreet({ country: "US", state: "California", line1: "1 Broadway" }),
+      true,
+    )
+    assert.equal(isGoogleCaliforniaStreet({ country: "US", state: "NV", line1: "10 Fremont St" }), false)
+    assert.equal(isGoogleCaliforniaStreet({ country: "US", state: "CA", line1: "Market St" }), false)
+    assert.equal(isGoogleCaliforniaStreet(null), false)
   })
 })
 
@@ -117,11 +124,8 @@ describe("surfboard shipped match and window", () => {
     assert.equal(window.endDate, "2026-06-29")
   })
 
-  it("attaches the soonest covering run", () => {
+  it("attaches the soonest live run for any California trip, including the same city", () => {
     const attached = attachSurfboardShippedShipper({
-      pickupCity: "Santa Cruz",
-      dropoffCity: "San Francisco",
-      stops,
       shippers: [shipper("later", "Blair", 5), shipper("sooner", "Avery", 1)],
       now,
     })
@@ -153,23 +157,17 @@ describe("surfboard shipped match and window", () => {
     assert.equal(readSurfboardShippedPaymentMetadata(null), null)
   })
 
-  it("hides the match when a city is outside the corridor or no run is live", () => {
+  it("does not attach when no run is live", () => {
     assert.equal(
       attachSurfboardShippedShipper({
-        pickupCity: "Los Angeles",
-        dropoffCity: "San Francisco",
-        stops,
-        shippers: [shipper("a", "Avery", 2)],
+        shippers: [shipper("a", "Avery", 2, true, false)],
         now,
       }),
       null,
     )
     assert.equal(
       attachSurfboardShippedShipper({
-        pickupCity: "Santa Cruz",
-        dropoffCity: "San Francisco",
-        stops,
-        shippers: [shipper("a", "Avery", 2, true, false)],
+        shippers: [shipper("a", "Avery", 2, false, true)],
         now,
       }),
       null,

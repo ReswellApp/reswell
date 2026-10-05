@@ -9,6 +9,7 @@ import {
   CheckoutAddressLine1Field,
   type ResolvedCheckoutAddress,
 } from "@/components/features/checkout/checkout-address-line1-field"
+import type { GoogleFullPlaceResolved } from "@/components/features/checkout/google-places-address-input"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -76,6 +77,7 @@ export function CheckoutPurchaseDetails({
     country: "US",
   })
   const [saving, setSaving] = useState(false)
+  const [googlePin, setGooglePin] = useState<GoogleFullPlaceResolved | null>(null)
 
   const phoneValid = useMemo(() => toE164UsPhone(phone) != null, [phone])
 
@@ -232,6 +234,7 @@ export function CheckoutPurchaseDetails({
   const cancelNewAddressForm = () => {
     setShowNewForm(false)
     setSelectedId(prevSelectedRef.current)
+    setGooglePin(null)
     setDraft({
       line1: "",
       line2: "",
@@ -267,6 +270,14 @@ export function CheckoutPurchaseDetails({
         phone: phone.trim(),
         label: null,
         is_default: addresses.length === 0,
+        ...(googlePin
+          ? {
+              google_place_id: googlePin.placeId,
+              latitude: googlePin.latitude,
+              longitude: googlePin.longitude,
+              formatted_address: googlePin.formattedAddress,
+            }
+          : {}),
       })
       if (error || !address) {
         toast.error(error ?? "Could not save address")
@@ -276,6 +287,7 @@ export function CheckoutPurchaseDetails({
       setSelectedId(address.id)
       prevSelectedRef.current = address.id
       setShowNewForm(false)
+      setGooglePin(null)
       setDraft({
         line1: "",
         line2: "",
@@ -438,8 +450,15 @@ export function CheckoutPurchaseDetails({
                     placeholder="Street number and name"
                     debounceMs={150}
                     value={draft.line1}
-                    onChange={(v) => setDraft((d) => ({ ...d, line1: v }))}
+                    onChange={(v) => {
+                      setGooglePin(null)
+                      setDraft((d) => ({ ...d, line1: v }))
+                    }}
                     onAddressResolved={applyResolvedAddress}
+                    onFullPlaceResolved={(place) => {
+                      applyResolvedAddress(place.address)
+                      setGooglePin(place)
+                    }}
                     inputClassName={fieldClass}
                   />
                 </div>

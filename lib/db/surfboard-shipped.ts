@@ -4,7 +4,13 @@ import {
   findMatchingProfileAddress,
   insertProfileAddress,
 } from "@/lib/db/profile-addresses"
-import type { ProfileAddressFieldsFromOrder, ProfileAddressRow } from "@/lib/profile-address"
+import {
+  googleAddressSnapshot,
+  isMissingGoogleAddressColumn,
+  withoutGoogleAddressColumns,
+  type ProfileAddressFieldsFromOrder,
+  type ProfileAddressRow,
+} from "@/lib/profile-address"
 
 export const SURFBOARD_SHIPPED_PICKUP_LABEL = "Surfboard Shipped pickup"
 
@@ -72,24 +78,39 @@ export async function saveSurfboardShippedPickupAddress(
   fields: ProfileAddressFieldsFromOrder,
   addressId: string | null,
 ): Promise<{ address: ProfileAddressRow | null; error: string | null }> {
-  if (addressId) {
-    const { data, error } = await supabase
+    if (addressId) {
+    const pin = googleAddressSnapshot(fields)
+    const patch = {
+      full_name: fields.full_name,
+      phone: fields.phone,
+      line1: fields.line1,
+      line2: fields.line2,
+      city: fields.city,
+      state: fields.state,
+      postal_code: fields.postal_code,
+      country: fields.country,
+      label: SURFBOARD_SHIPPED_PICKUP_LABEL,
+      ...pin,
+    }
+    let { data, error } = await supabase
       .from("addresses")
-      .update({
-        full_name: fields.full_name,
-        phone: fields.phone,
-        line1: fields.line1,
-        line2: fields.line2,
-        city: fields.city,
-        state: fields.state,
-        postal_code: fields.postal_code,
-        country: fields.country,
-        label: SURFBOARD_SHIPPED_PICKUP_LABEL,
-      })
+      .update(patch)
       .eq("id", addressId)
       .eq("profile_id", profileId)
       .select("*")
       .maybeSingle()
+
+    if (error && Object.keys(pin).length > 0 && isMissingGoogleAddressColumn(error.message)) {
+      const retry = await supabase
+        .from("addresses")
+        .update(withoutGoogleAddressColumns(patch))
+        .eq("id", addressId)
+        .eq("profile_id", profileId)
+        .select("*")
+        .maybeSingle()
+      data = retry.data
+      error = retry.error
+    }
 
     if (error || !data) {
       return { address: null, error: error?.message ?? "Pickup address was not found." }

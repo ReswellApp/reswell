@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { resolveAddressShippingIdentity } from "@/lib/db/addressShippingIdentity"
 import { profileAddressInputSchema, profileAddressPatchSchema } from "@/lib/address-input"
+import { googleAddressSnapshot, isMissingGoogleAddressColumn, withoutGoogleAddressColumns } from "@/lib/profile-address"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
@@ -107,25 +108,29 @@ export async function createProfileAddress(
     await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
   }
 
-  const { data, error } = await supabase
-    .from("addresses")
-    .insert({
-      profile_id: user.id,
-      full_name: carrierFields.full_name,
-      phone: carrierFields.phone,
-      line1: carrierFields.line1,
-      line2: carrierFields.line2,
-      city: carrierFields.city,
-      state: carrierFields.state,
-      postal_code: carrierFields.postal_code,
-      country: carrierFields.country,
-      label: input.label?.trim() || null,
-      is_default: isDefault,
-      residential: carrierFields.residential ?? "unknown",
-      address_validated_at: carrierFields.address_validated_at ?? null,
-    })
-    .select()
-    .single()
+  const pin = googleAddressSnapshot(input)
+  const row = {
+    profile_id: user.id,
+    full_name: carrierFields.full_name,
+    phone: carrierFields.phone,
+    line1: carrierFields.line1,
+    line2: carrierFields.line2,
+    city: carrierFields.city,
+    state: carrierFields.state,
+    postal_code: carrierFields.postal_code,
+    country: carrierFields.country,
+    label: input.label?.trim() || null,
+    is_default: isDefault,
+    residential: carrierFields.residential ?? "unknown",
+    address_validated_at: carrierFields.address_validated_at ?? null,
+    ...pin,
+  }
+  let { data, error } = await supabase.from("addresses").insert(row).select().single()
+  if (error && Object.keys(pin).length > 0 && isMissingGoogleAddressColumn(error.message)) {
+    const retry = await supabase.from("addresses").insert(withoutGoogleAddressColumns(row)).select().single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     return { address: null, error: error.message }

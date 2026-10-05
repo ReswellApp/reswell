@@ -2,7 +2,11 @@
 
 import { useCallback, useState } from "react"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
-import { GooglePlacesAddressInput, type GoogleResolvedAddress } from "./google-places-address-input"
+import {
+  GooglePlacesAddressInput,
+  type GoogleFullPlaceResolved,
+  type GoogleResolvedAddress,
+} from "./google-places-address-input"
 
 const HAS_GOOGLE_KEY = Boolean(
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim(),
@@ -33,6 +37,8 @@ interface CheckoutAddressLine1FieldProps {
   onChange: (line1: string) => void
   /** Called when the user selects a suggestion (Google Places or OSM + structured reverse geocode). */
   onAddressResolved: (address: ResolvedCheckoutAddress) => void
+  /** Google Places result, including place id and coordinates. */
+  onFullPlaceResolved?: (place: GoogleFullPlaceResolved) => void
   inputClassName?: string
   placeholder?: string
   debounceMs?: number
@@ -49,6 +55,7 @@ export function CheckoutAddressLine1Field({
   value,
   onChange,
   onAddressResolved,
+  onFullPlaceResolved,
   inputClassName = "",
   placeholder = "Street number and name",
   debounceMs = 150,
@@ -146,6 +153,7 @@ export function CheckoutAddressLine1Field({
       value={value}
       onChange={onChange}
       onAddressResolved={mapGoogle}
+      onFullPlaceResolved={onFullPlaceResolved}
       onProviderError={onGoogleFail}
       placeholder={placeholder}
       inputClassName={inputClassName}

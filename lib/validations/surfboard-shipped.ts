@@ -31,6 +31,10 @@ const pickupAddressSchema = z.object({
       const country = value.toUpperCase()
       return country === "US" || country === "USA" || country === "UNITED STATES"
     }, "Pickup must be in the United States."),
+  google_place_id: z.string().trim().min(1).max(256).nullable().optional(),
+  latitude: z.number().finite().gte(-90).lte(90).nullable().optional(),
+  longitude: z.number().finite().gte(-180).lte(180).nullable().optional(),
+  formatted_address: z.string().trim().min(1).max(300).nullable().optional(),
 })
 
 export const saveListingSurfboardShippedSchema = z

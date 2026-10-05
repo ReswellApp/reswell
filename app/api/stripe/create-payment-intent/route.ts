@@ -410,8 +410,7 @@ export async function POST(request: NextRequest) {
     }
     const prepared = await prepareSurfboardShippedCharge({
       listingId: listingIdsOrdered[0]!,
-      buyerCity: buyerAddress.city,
-      buyerState: buyerAddress.state,
+      buyer: buyerAddress,
     })
     if (!prepared.ok) {
       return NextResponse.json(
