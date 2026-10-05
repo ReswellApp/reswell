@@ -22,10 +22,28 @@ export type ListingQuickEditRow = {
   shipping_packed_width_in: number | string | null
   shipping_packed_height_in: number | string | null
   shipping_packed_weight_oz: number | string | null
+  brand: string | null
+  model: string | null
+  city: string | null
+  state: string | null
+  local_pickup: boolean | null
+  shipping_available: boolean | null
+  dimensions: string | null
+  length_total_inches: number | string | null
+  volume_liters: number | string | null
+  fins_setup: string | null
+  fin_system: string | null
+  construction: string | null
+  fins_included: boolean | null
+  tail_shape: string | null
+  fin_size: string | null
+  wetsuit_size: string | null
+  apparel_kind: string | null
+  traction_size: string | null
 }
 
 const LISTING_QUICK_EDIT_SELECT =
-  "id, user_id, status, title, description, price, compare_at_price, condition, slug, section, archived_at, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz"
+  "id, user_id, status, title, description, price, compare_at_price, condition, slug, section, archived_at, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, brand, model, city, state, local_pickup, shipping_available, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size"
 
 export async function loadListingQuickEditRow(
   supabase: SupabaseClient,
@@ -45,6 +63,24 @@ export type ListingQuickFieldPatch = {
   title?: string
   description?: string
   condition?: string
+  brand?: string | null
+  model?: string | null
+  city?: string | null
+  state?: string | null
+  local_pickup?: boolean
+  shipping_available?: boolean
+  dimensions?: string | null
+  length_total_inches?: number | null
+  volume_liters?: number | null
+  fins_setup?: string | null
+  fin_system?: string | null
+  construction?: string | null
+  fins_included?: boolean | null
+  tail_shape?: string | null
+  fin_size?: string | null
+  wetsuit_size?: string | null
+  apparel_kind?: string | null
+  traction_size?: string | null
 } & Partial<ListingPackageColumns>
 
 export async function patchListingQuickFieldsByOwner(
@@ -56,7 +92,7 @@ export async function patchListingQuickFieldsByOwner(
     allowedStatuses: readonly string[]
   },
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  const update: Record<string, string | number | null> = {
+  const update: Record<string, string | number | boolean | null> = {
     ...params.patch,
     updated_at: new Date().toISOString(),
   }

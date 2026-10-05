@@ -18,6 +18,7 @@ import {
   DeskTitleInput,
   ListingEditorDetails,
 } from "@/components/features/dashboard/listings/listing-editor-fields"
+import { ListingEditorSpecs } from "@/components/features/dashboard/listings/listing-editor-specs"
 import {
   updateListingQuickEditAction,
   type ListingQuickEditSaved,
@@ -45,6 +46,11 @@ import {
   shopPackageChipLabel,
   type ShopPackageSizeId,
 } from "@/lib/shop-category-package-sizes"
+import {
+  listingDeskSpecFromRow,
+  listingDeskSpecsEqual,
+  type ListingDeskSpec,
+} from "@/lib/listings-desk-fields"
 import { LISTING_QUICK_EDIT_DESCRIPTION_MAX } from "@/lib/validations/listing-quick-edit"
 import { cn } from "@/lib/utils"
 import {
@@ -58,6 +64,7 @@ type ListingQuickDraft = {
   condition: string
   priceInput: string
   packageSizeId: string
+  spec: ListingDeskSpec
 }
 
 interface DeskEditorListing {
@@ -80,6 +87,24 @@ interface DeskEditorListing {
   shipping_packed_width_in: number | null
   shipping_packed_height_in: number | null
   shipping_packed_weight_oz: number | null
+  brand: string | null
+  model: string | null
+  city: string | null
+  state: string | null
+  local_pickup: boolean | null
+  shipping_available: boolean | null
+  dimensions: string | null
+  length_total_inches: number | null
+  volume_liters: number | null
+  fins_setup: string | null
+  fin_system: string | null
+  construction: string | null
+  fins_included: boolean | null
+  tail_shape: string | null
+  fin_size: string | null
+  wetsuit_size: string | null
+  apparel_kind: string | null
+  traction_size: string | null
 }
 
 interface ListingInlineEditorProps {
@@ -100,6 +125,7 @@ function draftFromListing(listing: DeskEditorListing): ListingQuickDraft {
     condition: isListingSellableCondition(listing.condition) ? listing.condition : "",
     priceInput: Number.isFinite(price) ? String(Math.round(price * 100) / 100) : "",
     packageSizeId: inferred ?? "",
+    spec: listingDeskSpecFromRow(listing),
   }
 }
 
@@ -109,7 +135,8 @@ function draftsEqual(a: ListingQuickDraft, b: ListingQuickDraft): boolean {
     a.description.trim() === b.description.trim() &&
     a.condition === b.condition &&
     a.priceInput.trim() === b.priceInput.trim() &&
-    a.packageSizeId === b.packageSizeId
+    a.packageSizeId === b.packageSizeId &&
+    listingDeskSpecsEqual(a.spec, b.spec)
   )
 }
 
@@ -182,6 +209,7 @@ export function ListingInlineEditor({
       condition?: ListingSellableCondition
       priceUsd?: number
       packageSizeId?: ShopPackageSizeId
+      specs?: ListingDeskSpec
     } = { listingId: listing.id }
     const title = snapshot.title.trim()
     if (title !== saved.title.trim()) {
@@ -226,6 +254,9 @@ export function ListingInlineEditor({
     ) {
       payload.packageSizeId = snapshot.packageSizeId
     }
+    if (!listingDeskSpecsEqual(snapshot.spec, saved.spec)) {
+      payload.specs = snapshot.spec
+    }
     if (Object.keys(payload).length === 1) return
 
     const requestId = requestRef.current + 1
@@ -258,9 +289,13 @@ export function ListingInlineEditor({
     }
   }
 
-  function updateDraft(patch: Partial<ListingQuickDraft>) {
+  function updateDraft(patch: Partial<Omit<ListingQuickDraft, "spec">> & { spec?: Partial<ListingDeskSpec> }) {
     setStatus("idle")
-    setDraft((current) => ({ ...current, ...patch }))
+    setDraft((current) => ({
+      ...current,
+      ...patch,
+      spec: patch.spec ? { ...current.spec, ...patch.spec } : current.spec,
+    }))
   }
 
   const sectionLabel = isPeerListingSection(listing.section)
@@ -384,11 +419,20 @@ export function ListingInlineEditor({
           </div>
         </div>
       </div>
-      {editable && expanded ? (
+          {editable && expanded ? (
         <div
           id={detailsId}
-          className="mt-4 border-t border-border/60 pt-4 sm:ml-[calc(72px+1rem)] lg:ml-[calc(88px+1rem)]"
+          className="mt-4 space-y-5 border-t border-border/60 pt-4 sm:ml-[calc(72px+1rem)] lg:ml-[calc(88px+1rem)]"
         >
+          <ListingEditorSpecs
+            listingId={listing.id}
+            section={listing.section}
+            spec={draft.spec}
+            images={listing.listing_images}
+            editHref={editHref}
+            disabled={false}
+            onChange={(spec) => updateDraft({ spec })}
+          />
           <ListingEditorDetails
             listingId={listing.id}
             section={listing.section}
@@ -437,6 +481,15 @@ export function ListingInlineEditor({
                   id={`${listing.id}-quick-price`}
                   value={draft.priceInput}
                   onChange={(priceInput) => updateDraft({ priceInput })}
+                />
+                <ListingEditorSpecs
+                  listingId={`${listing.id}-quick`}
+                  section={listing.section}
+                  spec={draft.spec}
+                  images={listing.listing_images}
+                  editHref={editHref}
+                  disabled={false}
+                  onChange={(spec) => updateDraft({ spec })}
                 />
                 <ListingEditorDetails
                   listingId={`${listing.id}-quick`}
