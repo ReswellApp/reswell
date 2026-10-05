@@ -52,6 +52,7 @@ import {
 import { CrmAnalytics } from "@/components/features/admin/crm/crm-analytics"
 import { CrmBoardView } from "@/components/features/admin/crm/crm-board-view"
 import { CrmBulkBar } from "@/components/features/admin/crm/crm-bulk-bar"
+import { CrmContactMobileList } from "@/components/features/admin/crm/crm-contact-mobile-list"
 import {
   CRM_DEFAULT_FILTERS,
   CRM_SEGMENTS,
@@ -528,7 +529,7 @@ export function CrmAdminClient() {
             external leads.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ToggleGroup
             type="single"
             value={view}
@@ -548,13 +549,14 @@ export function CrmAdminClient() {
           </ToggleGroup>
           <Button
             variant="outline"
+            className="min-w-0 flex-1 sm:flex-none"
             onClick={() => downloadContactsCsv(filteredContacts)}
             disabled={filteredContacts.length === 0}
           >
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button onClick={() => setAddContactOpen(true)}>
+          <Button className="min-w-0 flex-1 sm:flex-none" onClick={() => setAddContactOpen(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
             Add contact
           </Button>
@@ -638,12 +640,12 @@ export function CrmAdminClient() {
                 className="pl-9"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
               <Select
                 value={filters.status}
                 onValueChange={(v) => updateFilter({ status: v as CrmContactStatus | "all" })}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full min-w-0 sm:w-[140px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -659,7 +661,7 @@ export function CrmAdminClient() {
                 value={filters.priority}
                 onValueChange={(v) => updateFilter({ priority: v as CrmContactPriority | "all" })}
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full min-w-0 sm:w-[140px]">
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -675,7 +677,7 @@ export function CrmAdminClient() {
                 value={filters.source}
                 onValueChange={(v) => updateFilter({ source: v as CrmContactSource | "all" })}
               >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-full min-w-0 sm:w-[150px]">
                   <SelectValue placeholder="Source" />
                 </SelectTrigger>
                 <SelectContent>
@@ -691,7 +693,7 @@ export function CrmAdminClient() {
                 value={filters.assignedTo}
                 onValueChange={(v) => updateFilter({ assignedTo: v as CrmFilterState["assignedTo"] })}
               >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-full min-w-0 sm:w-[150px]">
                   <SelectValue placeholder="Owner" />
                 </SelectTrigger>
                 <SelectContent>
@@ -709,7 +711,7 @@ export function CrmAdminClient() {
                   value={filters.tagId ?? "all"}
                   onValueChange={(v) => updateFilter({ tagId: v === "all" ? null : v })}
                 >
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full min-w-0 sm:w-[150px]">
                     <SelectValue placeholder="Tag" />
                   </SelectTrigger>
                   <SelectContent>
@@ -782,7 +784,14 @@ export function CrmAdminClient() {
               No contacts match your filters.
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
+            <>
+            <CrmContactMobileList
+              contacts={filteredContacts}
+              selectedIds={selectedIds}
+              onOpen={setSelectedContactId}
+              onToggleSelect={toggleSelectOne}
+            />
+            <div className="hidden overflow-hidden rounded-md border md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -912,6 +921,7 @@ export function CrmAdminClient() {
                 </TableBody>
               </Table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -1080,7 +1090,7 @@ function AddContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-lg p-4 sm:w-full sm:p-6">
         <DialogHeader>
           <DialogTitle>Add contact</DialogTitle>
           <DialogDescription>
@@ -1341,7 +1351,7 @@ function ContactDetailSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full max-w-full overflow-y-auto p-4 sm:max-w-xl sm:p-6">
           <SheetHeader className="space-y-4 pb-4">
             <div className="flex items-start gap-4">
               <Avatar className="h-14 w-14">
@@ -1406,9 +1416,13 @@ function ContactDetailSheet({
 
           <Tabs defaultValue="overview" className="mt-2">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="boards">Boards ({interests.length})</TabsTrigger>
-              <TabsTrigger value="activity">Activity ({interactions.length})</TabsTrigger>
+              <TabsTrigger value="overview" className="px-1 text-xs sm:text-sm">Overview</TabsTrigger>
+              <TabsTrigger value="boards" className="px-1 text-xs sm:text-sm">
+                Boards{interests.length ? ` (${interests.length})` : ""}
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="px-1 text-xs sm:text-sm">
+                Activity{interactions.length ? ` (${interactions.length})` : ""}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4 pt-4">
@@ -1926,7 +1940,7 @@ function AddBoardInterestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-lg p-4 sm:w-full sm:p-6">
         <DialogHeader>
           <DialogTitle>Add board interest</DialogTitle>
           <DialogDescription>
@@ -2180,7 +2194,7 @@ function LogInteractionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-md p-4 sm:w-full sm:p-6">
         <DialogHeader>
           <DialogTitle>Log touchpoint</DialogTitle>
           <DialogDescription>Record a call, email, or note. This updates last contacted automatically.</DialogDescription>

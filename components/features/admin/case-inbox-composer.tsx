@@ -1,6 +1,6 @@
 "use client"
 
-import { forwardRef, useImperativeHandle, useRef } from "react"
+import { forwardRef, useImperativeHandle, useRef, useState } from "react"
 import { Loader2, RefreshCw, Sparkles } from "lucide-react"
 import {
   supportReplyExampleRatingClass,
@@ -88,6 +88,7 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
     ref,
   ) {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const [promptOpen, setPromptOpen] = useState(false)
 
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus(),
@@ -186,17 +187,29 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
           </div>
         ) : null}
         {mode === "reply" && !closed && onRewritePromptChange ? (
-          <label className="mb-2 block">
-            <span className="mb-1 block text-[11px] font-medium text-muted-foreground">Prompt</span>
-            <Textarea
-              value={rewritePrompt}
-              onChange={(e) => onRewritePromptChange(e.target.value)}
-              rows={2}
-              maxLength={2000}
-              placeholder="Tell the agent how to write this reply — tone, what to offer, what to skip…"
-              className="min-h-[56px] resize-none bg-muted/40 text-sm"
-            />
-          </label>
+          <div className="mb-2">
+            <button
+              type="button"
+              className="mb-1 inline-flex min-h-8 items-center text-[11px] font-medium text-muted-foreground sm:hidden"
+              onClick={() => setPromptOpen((open) => !open)}
+              aria-expanded={promptOpen}
+            >
+              {promptOpen ? "Hide prompt" : "Prompt agent"}
+            </button>
+            <label className={cn("block", promptOpen ? "block" : "hidden sm:block")}>
+              <span className="mb-1 hidden text-[11px] font-medium text-muted-foreground sm:block">
+                Prompt
+              </span>
+              <Textarea
+                value={rewritePrompt}
+                onChange={(e) => onRewritePromptChange(e.target.value)}
+                rows={2}
+                maxLength={2000}
+                placeholder="Tell the agent how to write this reply — tone, what to offer, what to skip…"
+                className="min-h-[48px] resize-none bg-muted/40 text-sm sm:min-h-[56px]"
+              />
+            </label>
+          </div>
         ) : null}
         {closed && mode === "reply" ? (
           <p className="rounded-md bg-muted/50 px-3 py-2 text-[13px] text-muted-foreground">
@@ -229,7 +242,7 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
           </label>
         )}
         {closed && mode === "reply" ? null : (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <SupportMacrosPicker
               variant="menu"
               kindFilter={kindFilter}
@@ -238,20 +251,21 @@ export const CaseInboxComposer = forwardRef<CaseInboxComposerHandle, CaseInboxCo
               hasOrderVars={hasOrderVars}
               onInsert={onInsertMacro}
             />
-            <div className="ml-auto flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:ml-auto sm:flex sm:flex-wrap">
               {mode === "reply" && !closed ? (
-                <>
+                <div className="grid grid-cols-2 gap-2 sm:flex">
                   <Button type="button" size="sm" variant="outline" disabled={pending || !draft.trim()} onClick={() => onSend("waiting")}>
                     Send &amp; wait
                   </Button>
                   <Button type="button" size="sm" variant="outline" disabled={pending || !draft.trim()} onClick={() => onSend("resolve")}>
                     Send &amp; resolve
                   </Button>
-                </>
+                </div>
               ) : null}
               <Button
                 type="button"
                 size="sm"
+                className="w-full sm:w-auto"
                 disabled={pending || !draft.trim()}
                 onClick={() => onSend("keep_open")}
               >

@@ -127,7 +127,7 @@ export function AdminAppShell({
             className={cn(
               'min-w-0 max-w-full flex-1',
               workspace
-                ? 'flex min-h-0 flex-col overflow-hidden p-0'
+                ? 'flex min-h-0 flex-col overflow-hidden p-0 pb-[env(safe-area-inset-bottom)]'
                 : 'overflow-x-clip px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-8',
             )}
           >

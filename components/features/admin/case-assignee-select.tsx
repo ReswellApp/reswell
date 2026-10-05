@@ -61,7 +61,7 @@ export function CaseAssigneeSelect({
         onValueChange={assign}
         disabled={pending}
       >
-        <SelectTrigger className="h-7 w-[150px] shrink-0 border-0 bg-transparent px-1 shadow-none text-xs font-medium text-foreground" aria-label="Assignee">
+        <SelectTrigger className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 shadow-none text-xs font-medium text-foreground md:h-7 md:w-[150px] md:flex-none" aria-label="Assignee">
           <SelectValue placeholder="Unassigned" />
         </SelectTrigger>
         <SelectContent>

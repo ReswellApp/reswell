@@ -46,17 +46,17 @@ export function CaseInboxCommandBar({
 
   return (
     <div
-      className="flex shrink-0 items-center gap-3 overflow-x-auto px-5 py-2"
+      className="grid shrink-0 grid-cols-2 gap-x-2 gap-y-1 px-3 py-2 md:flex md:items-center md:gap-3 md:overflow-x-auto md:px-5"
       aria-label="Case workflow"
     >
-      <label className="flex shrink-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+      <label className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
         Status
         <Select
           value={item.status === "resolved" ? "resolved" : "in_progress"}
           onValueChange={(value) => onStatus(value as SupportCaseStatus)}
           disabled={pending}
         >
-          <SelectTrigger className="h-7 w-[132px] border-0 bg-transparent px-1 shadow-none text-xs font-medium text-foreground">
+          <SelectTrigger className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 shadow-none text-xs font-medium text-foreground md:h-7 md:w-[132px] md:flex-none">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -69,14 +69,14 @@ export function CaseInboxCommandBar({
         </Select>
       </label>
 
-      <span className="text-border" aria-hidden>
+      <span className="hidden text-border md:inline" aria-hidden>
         /
       </span>
 
-      <label className="flex shrink-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+      <label className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
         Priority
         <Select value={item.priority} onValueChange={(value) => onPriority(value as CaseInboxPriority)} disabled={pending}>
-          <SelectTrigger className="h-7 w-[88px] border-0 bg-transparent px-1 shadow-none text-xs font-medium capitalize text-foreground">
+          <SelectTrigger className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 shadow-none text-xs font-medium capitalize text-foreground md:h-7 md:w-[88px] md:flex-none">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -88,11 +88,11 @@ export function CaseInboxCommandBar({
         </Select>
       </label>
 
-      <span className="text-border" aria-hidden>
+      <span className="hidden text-border md:inline" aria-hidden>
         /
       </span>
 
-      <label className="flex shrink-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+      <label className="col-span-2 flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground md:col-auto">
         Assignee
         <CaseAssigneeSelect
           compact
@@ -106,7 +106,7 @@ export function CaseInboxCommandBar({
       </label>
 
       {currentStaffId && !assignedToMe ? (
-        <Button type="button" size="sm" variant="outline" className="ml-auto h-7 shrink-0" disabled={pending} onClick={onTake}>
+        <Button type="button" size="sm" variant="outline" className="col-span-2 h-8 md:ml-auto md:h-7 md:w-auto" disabled={pending} onClick={onTake}>
           <UserCheck className="mr-1 h-3.5 w-3.5" aria-hidden />
           Take over
         </Button>

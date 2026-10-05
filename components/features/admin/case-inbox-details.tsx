@@ -84,6 +84,7 @@ interface CaseInboxDetailsProps {
   onRefundComplete: () => void
   onWalletCredited?: () => void
   initialCustomerContext?: SupportCaseCustomerContext | null
+  onCloseDetails?: () => void
 }
 
 export function CaseInboxDetails({
@@ -110,9 +111,21 @@ export function CaseInboxDetails({
   onRefundComplete,
   onWalletCredited,
   initialCustomerContext = null,
+  onCloseDetails,
 }: CaseInboxDetailsProps) {
   return (
     <aside className="flex h-full min-h-0 w-full flex-col overflow-hidden border-t border-border/50 bg-[#fafafa] dark:bg-muted/10 md:border-l md:border-t-0">
+      {onCloseDetails ? (
+        <div className="flex shrink-0 items-center border-b border-border/50 px-3 py-2 md:hidden">
+          <button
+            type="button"
+            className="inline-flex min-h-9 items-center text-sm font-medium text-muted-foreground"
+            onClick={onCloseDetails}
+          >
+            ← Conversation
+          </button>
+        </div>
+      ) : null}
       {!item.isOpen ? (
         <div className="shrink-0 border-b border-border/50 px-4 py-3">
           <Button type="button" variant="outline" className="w-full" disabled={savePending} onClick={onReopen}>
@@ -127,14 +140,14 @@ export function CaseInboxDetails({
         defaultValue={item.kind === "protection_claim" ? "claim" : "overview"}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <TabsList className="mx-3 mt-3 grid h-9 shrink-0 grid-cols-4">
-          <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-          <TabsTrigger value="order" className="text-xs">Order</TabsTrigger>
-          <TabsTrigger value="claim" className="text-xs">Claim</TabsTrigger>
-          <TabsTrigger value="history" className="text-xs">History</TabsTrigger>
+        <TabsList className="mx-3 mt-3 grid h-9 w-[calc(100%-1.5rem)] shrink-0 grid-cols-4">
+          <TabsTrigger value="overview" className="px-1 text-[11px] sm:text-xs">Overview</TabsTrigger>
+          <TabsTrigger value="order" className="px-1 text-[11px] sm:text-xs">Order</TabsTrigger>
+          <TabsTrigger value="claim" className="px-1 text-[11px] sm:text-xs">Claim</TabsTrigger>
+          <TabsTrigger value="history" className="px-1 text-[11px] sm:text-xs">History</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-5 pt-3">
+        <TabsContent value="overview" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 pb-5 pt-3 md:px-4">
           <CaseCustomerContext
             caseId={item.id}
             linkedOrderId={item.orderId}
@@ -210,7 +223,7 @@ export function CaseInboxDetails({
           </div>
         </TabsContent>
 
-        <TabsContent value="order" className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-5 pt-3">
+        <TabsContent value="order" className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 pb-5 pt-3 md:px-4">
           {item.orderId ? (
             <>
               {item.order ? (
@@ -247,7 +260,7 @@ export function CaseInboxDetails({
           )}
         </TabsContent>
 
-        <TabsContent value="claim" className="min-h-0 flex-1 overflow-y-auto px-4 pb-5 pt-3">
+        <TabsContent value="claim" className="min-h-0 flex-1 overflow-y-auto px-3 pb-5 pt-3 md:px-4">
           {item.kind === "protection_claim" && item.order && item.orderId ? (
             <ProtectionClaimDesk orderSupportRequestId={item.order.id} orderId={item.orderId} initialCarrierClaimStatus={item.order.carrier_claim_status} initialCarrierClaimId={item.order.carrier_claim_id} initialCarrierClaimUrl={item.order.carrier_claim_url} initialInsuranceClaimUrl={item.order.insurance_claim_url} initialRepairCreditTotal={item.order.repair_credit_total} />
           ) : (
@@ -255,7 +268,7 @@ export function CaseInboxDetails({
           )}
         </TabsContent>
 
-        <TabsContent value="history" className="min-h-0 flex-1 overflow-y-auto px-4 pb-5 pt-4">
+        <TabsContent value="history" className="min-h-0 flex-1 overflow-y-auto px-3 pb-5 pt-4 md:px-4">
           <CaseActivityTimeline events={events} staffNames={staffNames} />
         </TabsContent>
       </Tabs>
