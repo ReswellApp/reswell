@@ -140,6 +140,7 @@ export function BoardsNoResultsSaveSearch({
     }
 
     setSavedSearchId(res.id)
+    setHovering(false)
     toast({
       title: "Search saved",
       description: `We'll email you when a matching ${noun} is listed on Reswell.`,
