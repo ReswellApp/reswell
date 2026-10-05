@@ -59,9 +59,14 @@ export default async function CoastalDeliveryOverviewPage() {
                   {shipper.displayName}
                   {shipper.isYou ? " (you)" : ""}
                 </span>
-                <span className="text-muted-foreground">
-                  {shipper.scheduleEnabled ? "Schedule on" : "Schedule off"} · {shipper.enabledRunCount}/
-                  {shipper.runCount} runs on
+                <span className="flex flex-wrap items-center gap-3">
+                  <span className="text-muted-foreground">
+                    {shipper.scheduleEnabled ? "Schedule on" : "Schedule off"} · {shipper.enabledRunCount}/
+                    {shipper.runCount} runs on
+                  </span>
+                  <Link href={`/coastal-delivery/${shipper.id}`} className="underline">
+                    Driver dashboard
+                  </Link>
                 </span>
               </li>
             ))}

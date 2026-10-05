@@ -22,7 +22,31 @@ export type CoastalStopView = {
   slug: string
   name: string
   sortOrder: number
+  latitude?: number | null
+  longitude?: number | null
 }
+
+export const COASTAL_DELIVERY_STATUSES = ["waiting_for_run", "picked_up", "dropped_off"] as const
+
+export type CoastalDeliveryStatus = (typeof COASTAL_DELIVERY_STATUSES)[number]
+
+export type CoastalAddressSource = "order" | "listing"
+
+/** Residential place copied onto a delivery request from an order or listing. */
+export type CoastalAddressSnapshot = {
+  label: string
+  line1: string | null
+  line2: string | null
+  city: string | null
+  state: string | null
+  postalCode: string | null
+  latitude: number | null
+  longitude: number | null
+  source: CoastalAddressSource
+  geocodeAttempted: boolean
+}
+
+export type CoastalPlaceKind = "house" | "stop"
 
 export type CoastalRunView = {
   id: string
@@ -65,7 +89,7 @@ export type CoastalDeliveryChoiceView = {
   dropoffStopId: string
   shipperId: string | null
   matchedRunId: string | null
-  status: "waiting_for_run"
+  status: CoastalDeliveryStatus
 }
 
 export type CoastalMatch = {
@@ -89,4 +113,59 @@ export type CoastalListingPreview = {
   state: string | null
   status: string
   suggestedPickupStopId: string | null
+}
+
+export type CoastalDashboardJob = {
+  id: string
+  listingId: string
+  listingTitle: string
+  saleLabel: string
+  buyerName: string | null
+  sellerName: string
+  sellerOriginLabel: string
+  status: CoastalDeliveryStatus
+  matchedRunId: string | null
+  pickupStopId: string
+  dropoffStopId: string
+  pickupLabel: string
+  dropoffLabel: string
+  pickupStopName: string
+  dropoffStopName: string
+  pickupKind: CoastalPlaceKind
+  dropoffKind: CoastalPlaceKind
+  pickupLatitude: number | null
+  pickupLongitude: number | null
+  dropoffLatitude: number | null
+  dropoffLongitude: number | null
+  nextHandoff: string
+  statusActionsEnabled: boolean
+}
+
+export type CoastalRunSheetSection = {
+  key: string
+  title: string
+  subtitle: string
+  runId: string | null
+  enabled: boolean
+  jobs: CoastalDashboardJob[]
+}
+
+export type CoastalCoverageStop = {
+  id: string
+  name: string
+  sortOrder: number
+  latitude: number
+  longitude: number
+}
+
+export type CoastalShipperDashboardData = {
+  shipperId: string
+  displayName: string
+  scheduleEnabled: boolean
+  previewing: boolean
+  weekLabel: string
+  coverage: CoastalCoverageStop[]
+  sections: CoastalRunSheetSection[]
+  jobCount: number
+  hasRuns: boolean
 }
