@@ -24,6 +24,13 @@ describe("model page build policy", () => {
     assert.doesNotMatch(modelPageSource, /fetchBrandModelSitemapEntries/)
   })
 
+  it("renders the catalog shell without a session cookie read", () => {
+    assert.doesNotMatch(modelPageSource, /createClient\(/)
+    assert.doesNotMatch(modelPageSource, /auth\.getUser\(/)
+    assert.doesNotMatch(modelPageSource, /from ["']next\/headers["']/)
+    assert.match(modelPageSource, /getDb\(\{ consistency: "eventual" \}\)/)
+  })
+
   it("keeps every catalog model in the pages sitemap", () => {
     const rows = Array.from({ length: 4000 }, (_, index) => ({
       brandSlug: `brand-${Math.floor(index / 20)}`,

@@ -1,6 +1,7 @@
 import { ModelListingsSection } from "@/components/features/models/model-listings-section"
 import { ModelPageBreadcrumbs } from "@/components/features/models/model-page-breadcrumbs"
 import { ModelPageHeader } from "@/components/features/models/model-page-header"
+import { ModelPageViewerProvider } from "@/components/features/models/model-page-viewer"
 import { ModelPageSection } from "@/components/features/models/model-page-section"
 import { ModelPageTabs } from "@/components/features/models/model-page-tabs"
 import { ModelPriceGuidePanel } from "@/components/features/models/model-price-guide-panel"
@@ -25,60 +26,59 @@ export function ModelPageView({
   isLoggedIn: boolean
   viewerUserId: string | null
 }) {
-  return (
-    <main className="flex-1">
-      <div className="container mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8">
-        <ModelPageBreadcrumbs
-          brandName={page.brand.name}
-          brandSlug={page.brand.slug}
-          modelName={page.model.name}
-          categorySlug={page.model.product_category_slug}
-        />
-        <div className="mt-6">
-          <ModelPageHeader
-            page={page}
-            criteria={criteria}
-            isLoggedIn={isLoggedIn}
-            initialSavedSearchId={initialSavedSearchId}
-          />
-        </div>
-        <div className="mt-8">
-          <ModelPageTabs reviewCount={page.reviewStats.reviewCount} />
-        </div>
+  const listingIds = [...page.listings, ...page.soldListings].map((listing) => listing.id)
 
-        <ModelPageSection id={modelPageSectionId("listings")} first>
-          <ModelListingsSection
+  return (
+    <ModelPageViewerProvider listingIds={listingIds} brandModelId={page.model.id}>
+      <main className="flex-1">
+        <div className="container mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8">
+          <ModelPageBreadcrumbs
             brandName={page.brand.name}
-            modelName={page.model.name}
-            listings={page.listings}
-            soldListings={page.soldListings}
-            topPick={page.topPick}
-            criteria={criteria}
-            initialSavedSearchId={initialSavedSearchId}
-            favoritedListingIds={favoritedListingIds}
-            isLoggedIn={isLoggedIn}
-            viewerUserId={viewerUserId}
-          />
-        </ModelPageSection>
-        <ModelPageSection id={modelPageSectionId("details")}>
-          <ModelProductDetails page={page} />
-        </ModelPageSection>
-        <ModelPageSection id={modelPageSectionId("price-guide")}>
-          <ModelPriceGuidePanel
-            page={page.priceGuide}
             brandSlug={page.brand.slug}
-            modelSlug={page.modelSlug}
-          />
-        </ModelPageSection>
-        <ModelPageSection id={modelPageSectionId("reviews")} last>
-          <ModelReviewsPanel
-            reviews={page.reviews}
-            avgRating={page.reviewStats.avgRating}
-            reviewCount={page.reviewStats.reviewCount}
             modelName={page.model.name}
+            categorySlug={page.model.product_category_slug}
           />
-        </ModelPageSection>
-      </div>
-    </main>
+          <div className="mt-6">
+            <ModelPageHeader page={page} criteria={criteria} />
+          </div>
+          <div className="mt-8">
+            <ModelPageTabs reviewCount={page.reviewStats.reviewCount} />
+          </div>
+
+          <ModelPageSection id={modelPageSectionId("listings")} first>
+            <ModelListingsSection
+              brandName={page.brand.name}
+              modelName={page.model.name}
+              listings={page.listings}
+              soldListings={page.soldListings}
+              topPick={page.topPick}
+              criteria={criteria}
+              initialSavedSearchId={initialSavedSearchId}
+              favoritedListingIds={favoritedListingIds}
+              isLoggedIn={isLoggedIn}
+              viewerUserId={viewerUserId}
+            />
+          </ModelPageSection>
+          <ModelPageSection id={modelPageSectionId("details")}>
+            <ModelProductDetails page={page} />
+          </ModelPageSection>
+          <ModelPageSection id={modelPageSectionId("price-guide")}>
+            <ModelPriceGuidePanel
+              page={page.priceGuide}
+              brandSlug={page.brand.slug}
+              modelSlug={page.modelSlug}
+            />
+          </ModelPageSection>
+          <ModelPageSection id={modelPageSectionId("reviews")} last>
+            <ModelReviewsPanel
+              reviews={page.reviews}
+              avgRating={page.reviewStats.avgRating}
+              reviewCount={page.reviewStats.reviewCount}
+              modelName={page.model.name}
+            />
+          </ModelPageSection>
+        </div>
+      </main>
+    </ModelPageViewerProvider>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Check, Heart, Loader2 } from "lucide-react"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Button } from "@/components/ui/button"
@@ -44,6 +44,12 @@ export function SaveEntitySearchButton({
   const [savedSearchId, setSavedSearchId] = useState<string | null>(initialSavedSearchId)
   const [hovering, setHovering] = useState(false)
   const saved = Boolean(savedSearchId)
+
+  // Cached pages learn an existing saved id after paint. Only adopt a real id so a
+  // click that lands first is not cleared when hydration reports "not saved yet".
+  useEffect(() => {
+    if (initialSavedSearchId) setSavedSearchId(initialSavedSearchId)
+  }, [initialSavedSearchId])
 
   async function handleClick() {
     if (!isLoggedIn) {
